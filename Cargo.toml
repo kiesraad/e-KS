@@ -30,7 +30,7 @@ typst = "0.14.1"
 tower = "0.5.2"
 
 [package]
-name = "e-ks"
+name = "e-ks-core"
 version.workspace = true
 edition.workspace = true
 rust-version.workspace = true

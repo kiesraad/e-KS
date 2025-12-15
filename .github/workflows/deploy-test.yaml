@@ -1,0 +1,128 @@
+name: Deploy to test environment
+run-name: 'Deploy "${{ github.ref_name }}" to test environment'
+
+on:
+  workflow_dispatch:
+
+permissions:
+  packages: write
+  contents: read
+
+jobs:
+  rust:
+    name: Build rust code
+    runs-on: ubuntu-latest
+    outputs:
+      tag: ${{ steps.create-tag.outputs.tag }}
+      branch-name: ${{ steps.branch-name.outputs.branch-name }}
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Create version tag
+        id: create-tag
+        shell: bash
+        run: |
+          export tag=$(git show -s --format="%ct-%h" $GITHUB_SHA)
+          echo "tag=$tag" >> $GITHUB_ENV
+          echo "tag=$tag" >> "$GITHUB_OUTPUT"
+
+      - name: Canonical branch name
+        id: branch-name
+        shell: bash
+        run: |
+          branch_name_without_prefix=${GITHUB_REF#refs/heads/}
+          
+          # Replace all remaining forward slashes '/' with hyphens '-'
+          canonical_branch_name=${branch_name_without_prefix//\//-}
+          
+          # Set the output variable
+          echo "branch-name=$canonical_branch_name" >> "$GITHUB_OUTPUT"
+          
+          # Print for verification
+          echo "Original GITHUB_REF: $GITHUB_REF"
+          echo "Canonical Branch Name: $branch-name"
+
+      - name: Setup Rust
+        shell: bash
+        run: >
+          rustup update stable &&
+          rustup default stable
+
+      - name: Cargo cache
+        uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2
+
+      - name: Build
+        run: cargo --locked build --release
+
+      - uses: actions/upload-artifact@v5
+        with:
+          name: e-ks-core
+          path: target/release/e-ks-core
+
+
+  build-docker:
+    name: Build Docker container
+    runs-on: ubuntu-latest
+    needs: rust
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+
+      - name: Login to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Download rust binaries
+        uses: actions/download-artifact@v6
+        with:
+          name: e-ks-core
+          path: target/release
+
+      - name: Build and push docker image
+        uses: docker/build-push-action@v6
+        with:
+          file: deploy/ci.Dockerfile
+          target: e-ks-core
+          push: true
+          build-args: "version=${{ needs.rust.outputs.tag }}"
+          context: target/release
+          tags: "ghcr.io/kiesraad/e-ks/eks-core:${{ needs.rust.outputs.tag }}"
+
+  helm:
+    name: Install with Helm
+    runs-on: ubuntu-latest
+    env:
+      KUBECONFIG: ${{ github.workspace }}/kubeconfig
+    environment:
+      url: https://${{ needs.rust.outputs.branch-name }}.eks-test.nl
+      name: staging
+    needs: [ build-docker, rust ]
+    steps:
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - name: Install Helm
+        run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
+      - name: Create kubeconfig file
+        run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
+      - name: Set the current version in the Helm chart
+        uses: mikefarah/yq@master
+        with:
+          cmd: yq -i '.version="${{ needs.rust.outputs.tag }}" | .appVersion="${{ needs.rust.outputs.tag }}"' deploy/e-ks/Chart.yaml
+      - name: Add image pull secret
+        shell: bash
+        run: |
+          # create new namespace if it does not exist already
+          kubectl get namespace ${{ needs.rust.outputs.branch-name }} || {
+            kubectl create ns ${{ needs.rust.outputs.branch-name }}
+            kubectl create secret docker-registry regcred --docker-server=https://ghcr.io --docker-username=${{ vars.image_pull_secret_username }} --docker-password=${{ secrets.image_pull_secret_token }} --namespace ${{ needs.rust.outputs.branch-name }}
+          }
+      - name: Install application
+        working-directory: deploy
+        run: |
+          helm upgrade --install e-ks ./e-ks --namespace ${{ needs.rust.outputs.branch-name }} \
+            --set hostname="${{ needs.rust.outputs.branch-name }}.eks-test.nl"

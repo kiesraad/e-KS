@@ -1,0 +1,25 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: eks
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-production-http
+spec:
+  ingressClassName: traefik
+  rules:
+    - host: {{ .Values.hostname }}
+      http:
+        paths:
+          - backend:
+              service:
+                name: eks
+                port:
+                  name: http
+            pathType: Prefix
+            path: "/"
+
+  tls:
+    - hosts:
+        -  {{ .Values.hostname }}
+      secretName: eks-tls-cert
