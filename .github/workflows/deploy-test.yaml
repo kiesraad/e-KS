@@ -41,10 +41,6 @@ jobs:
           
           # Set the output variable
           echo "branch-name=$canonical_branch_name" >> "$GITHUB_OUTPUT"
-          
-          # Print for verification
-          echo "Original GITHUB_REF: $GITHUB_REF"
-          echo "Canonical Branch Name: $branch-name"
 
       - name: Setup Rust
         shell: bash
