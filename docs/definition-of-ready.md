@@ -5,7 +5,7 @@ There are two levels of the definition of ready (DoR):
 ## DoR epic level:
 
 - Security en privacy aspects have been identified
-- De implementation issues are ready (Tech Lead)
+- The implementation issues are ready (Tech Lead)
 - Design is ready (UI/UX designer)
 - Test plan has been prepared 
 - Defined when and how feedback is given
@@ -19,4 +19,4 @@ There are two levels of the definition of ready (DoR):
 - Acceptance criteria are described
 - Time estimate is provided
 - Design is finalised
-- Most important testcases are provided
+- Most important test cases are provided
