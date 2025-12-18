@@ -11,12 +11,22 @@ RUN addgroup --gid ${gid} ${group} && adduser --uid ${uid} --gid ${gid} --system
 WORKDIR /home/${user}
 USER $user
 
-FROM final-base AS e-ks-core
+FROM final-base AS eks_core
 ARG version=dev
 
-COPY --chown=nonroot:nonroot ./e-ks-core ./e-ks-core
-RUN chmod 700 e-ks-core
+COPY --chown=nonroot:nonroot ./eks_core ./eks_core
+RUN chmod 700 eks_core
 
 EXPOSE 3000
 ENV VERSION=${version}
-ENTRYPOINT ["./e-ks-core"]
+ENTRYPOINT ["./eks_core"]
+
+FROM final-base AS migrate_db
+ARG version=dev
+
+COPY --chown=nonroot:nonroot ./migrate_db ./migrate_db
+RUN chmod 700 migrate_db
+
+EXPOSE 3000
+ENV VERSION=${version}
+ENTRYPOINT ["./migrate_db"]

@@ -4,11 +4,12 @@ metadata:
   name: eks
   namespace: {{ .Release.Namespace }}
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt-production-http
+    # TODO move to production
+    cert-manager.io/cluster-issuer: letsencrypt-staging-http
 spec:
   ingressClassName: traefik
   rules:
-    - host: {{ .Values.hostname }}
+    - host: {{ include "fullHostname" . | quote }}
       http:
         paths:
           - backend:
@@ -21,5 +22,5 @@ spec:
 
   tls:
     - hosts:
-        -  {{ .Values.hostname }}
+        - {{ include "fullHostname" . | quote }}
       secretName: eks-tls-cert

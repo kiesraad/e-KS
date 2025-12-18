@@ -14,8 +14,7 @@ repository = "https://github.com/kiesraad/e-KS"
 readme = "README.md"
 publish = false
 description = "Elektronisch kandidaatstellingssysteem"
-# TODO
-#documentation = "github pages"
+documentation = "https://kiesraad.github.io/e-KS/e_ks/"
 
 [workspace.dependencies]
 dotenvy = "0.15.7"
@@ -25,9 +24,11 @@ tracing-subscriber = { version = "0.3.22", features = ["env-filter"] }
 axum = "0.8.7"
 serde = { version = "1.0", features = ["derive"] }
 askama = { version = "0.14.0", features = ["derive", "alloc"], default-features = false }
-sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "tls-rustls-aws-lc-rs"], default-features = false }
+sqlx = { version = "0.8.6", features = ["postgres", "runtime-tokio", "tls-rustls-aws-lc-rs", "migrate", "macros"], default-features = false }
 typst = "0.14.1"
 tower = "0.5.2"
+anyhow = "1.0.100"
+
 
 [package]
 name = "e-ks-core"
@@ -48,6 +49,8 @@ serde = { workspace = true }
 sqlx = { workspace = true }
 askama = { workspace = true }
 tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+anyhow = { workspace = true }
 
 [dev-dependencies]
 tower = { workspace = true }

@@ -16,9 +16,14 @@ kubectl apply -f cert-issuers.yaml
 ```
 
 ## Postgres
+> [!CAUTION]
+> Change the password for the superuser to a secure password
 
 ```shell
-helm upgrade --install postgresql oci://registry-1.docker.io/bitnamicharts/postgresql --version 18.1.14 -n postgresql --create-namespace -f psql-values.yaml
+helm upgrade --install postgresql \
+  oci://registry-1.docker.io/bitnamicharts/postgresql \
+  --version 18.1.14 -n postgresql --create-namespace -f psql-values.yaml \
+  --set auth.postgresPassword="supersecurepassword"
 ```
 
 

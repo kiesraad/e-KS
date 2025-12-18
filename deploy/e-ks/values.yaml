@@ -1,1 +1,13 @@
 hostname: "eks-test.nl"
+subdomain: "<branchname>"
+
+db:
+  setup: false
+  erase: false
+  runMigrations: false
+
+  # connection parameters
+  host: postgresql.postgresql.svc.cluster.local
+  port: 5432
+  user: postgres
+  password: "supersecurepassword"

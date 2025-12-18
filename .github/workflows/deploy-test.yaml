@@ -3,6 +3,8 @@ run-name: 'Deploy "${{ github.ref_name }}" to test environment'
 
 on:
   workflow_dispatch:
+  # TODO remove 'on push'
+  push:
 
 permissions:
   packages: write
@@ -58,12 +60,14 @@ jobs:
 
       - uses: actions/upload-artifact@v5
         with:
-          name: e-ks-core
-          path: target/release/e-ks-core
+          name: target
+          path: | 
+            target/release/eks_core
+            target/release/migrate_db
 
 
   build-docker:
-    name: Build Docker container
+    name: Build Docker containers
     runs-on: ubuntu-latest
     needs: rust
     steps:
@@ -81,18 +85,37 @@ jobs:
       - name: Download rust binaries
         uses: actions/download-artifact@v6
         with:
-          name: e-ks-core
+          name: target
           path: target/release
 
-      - name: Build and push docker image
+      - name: Build and push eks-core docker image
         uses: docker/build-push-action@v6
         with:
           file: deploy/ci.Dockerfile
-          target: e-ks-core
+          target: eks_core
           push: true
           build-args: "version=${{ needs.rust.outputs.tag }}"
           context: target/release
           tags: "ghcr.io/kiesraad/e-ks/eks-core:${{ needs.rust.outputs.tag }}"
+
+      - name: Build and push migrate_db docker image
+        uses: docker/build-push-action@v6
+        with:
+          file: deploy/ci.Dockerfile
+          target: migrate_db
+          push: true
+          build-args: "version=${{ needs.rust.outputs.tag }}"
+          context: target/release
+          tags: "ghcr.io/kiesraad/e-ks/migrate_db:${{ needs.rust.outputs.tag }}"
+
+      - name: Build and push db docker image
+        uses: docker/build-push-action@v6
+        with:
+          file: deploy/db.Dockerfile
+          push: true
+          build-args: "version=${{ needs.rust.outputs.tag }}"
+          context: target/release
+          tags: "ghcr.io/kiesraad/e-ks/db:${{ needs.rust.outputs.tag }}"
 
   helm:
     name: Install with Helm
@@ -113,7 +136,7 @@ jobs:
         uses: mikefarah/yq@master
         with:
           cmd: yq -i '.version="${{ needs.rust.outputs.tag }}" | .appVersion="${{ needs.rust.outputs.tag }}"' deploy/e-ks/Chart.yaml
-      - name: Add image pull secret
+      - name: Create namespace
         shell: bash
         run: |
           # create new namespace if it does not exist already
@@ -125,4 +148,8 @@ jobs:
         working-directory: deploy
         run: |
           helm upgrade --install e-ks ./e-ks --namespace ${{ needs.rust.outputs.branch-name }} \
-            --set hostname="${{ needs.rust.outputs.branch-name }}.eks-test.nl"
+            --set subdomain="${{ needs.rust.outputs.branch-name }}" \
+            --set db.setup=true \
+            --set db.erase=true \
+            --set db.runMigrations=true \
+            --set db.password=${{ secrets.PGPASSWORD }}
