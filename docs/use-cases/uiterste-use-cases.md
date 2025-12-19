@@ -52,7 +52,7 @@ __Hoofdscenario:__
 
 1. Kiesraad ontvangt schriftelijk verzoek tot registratie
 2. Kiesraad stelt vast dat de partij is ingeschreven bij de KvK
-3. Kiesraad stelt vast dat het verzoek door het gehele bestuur is ondertekend
+3. Kiesraad stelt vast dat het verzoek door het bevoegde bestuur is ondertekend
 4. Kiesraad stelt vast dat alle benodige gegevens zijn ingevuld
 5. Kiesraad registreert politieke groepering in administratie
 6. Kiesraad stuurt een bericht ter bevestiging aan politieke groepering
