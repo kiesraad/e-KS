@@ -43,6 +43,39 @@ __Uitbreidingen__:
 
 ## Centraal stembureau registreert politieke groeperingen
 
+__Niveau:__ Hoog-over, vlieger, 🪁
+
+### Hoofdscenario en uitbreidingen
+
+__Hoofdscenario:__
+*check met expert registratie (Richard)*
+
+1. Kiesraad ontvangt schriftelijk verzoek tot registratie
+2. Kiesraad stelt vast dat de partij is ingeschreven bij de KvK
+3. Kiesraad stelt vast dat het verzoek door het gehele bestuur is ondertekend
+4. Kiesraad stelt vast dat alle benodige gegevens zijn ingevuld
+5. Kiesraad registreert politieke groepering in administratie
+6. Kiesraad stuurt een bericht ter bevestiging aan politieke groepering
+
+__Uitbreiding:__
+
+2a. Partij is niet ingeschreven bij KvK
+- 2a1. Kiesraad stuurt partij bericht
+- 2a2. Partij schrijft zich in KvK
+     - 2a2a. Partij schrijf niet in in KvK en registreert zich dus niet
+ - 2a3. Vervolg, zie stap 1
+
+3a. Verzoek is niet volledig ondertekend
+- 3a1. Kiesraad stuurt partij bericht
+- 3a2. Partij ondertekent stukken volledig
+     - 3a2a. Partij tekent stukken niet volledig en registreert zich dus niet
+- 3a3. Vervolg, zie stap 1
+
+4a. Niet alle gegevens aangeleverd
+- 4a1. Kiesraad stuurt partij bericht
+- 4a2. Partij levert ontbrekende gegevens aan
+    - Partij levert ontbrekende gegevens niet aan en registreert zich dus niet
+    - 
 ## Centraal stembureau controleert politieke groeperingen en kandidaten (Voorinlevering)
 
 __Niveau:__ Hoog-over, wolk, ☁️
