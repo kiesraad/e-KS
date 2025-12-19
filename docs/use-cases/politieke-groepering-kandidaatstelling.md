@@ -1,4 +1,4 @@
-# Use cases Politieke groepering
+# Use cases politieke groepering - kandidaatstelling
 
 ## Politieke groepering maakt de set benodigde documenten (vlieger)
 
