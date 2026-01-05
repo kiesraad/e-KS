@@ -4,11 +4,8 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, Context, DbConnection,
-    candidate_lists::{repository, structs::MAX_CANDIDATES},
-    form::{FieldErrors, ValidationError},
-    persons::repository as persons_repository,
-    t,
+    AppError, Context, DbConnection, candidate_lists::repository,
+    persons::repository as persons_repository, t,
 };
 
 use super::{CandidateListAddPersonPath, load_candidate_list};
@@ -32,14 +29,6 @@ pub(crate) async fn add_person_to_candidate_list(
         .any(|c| c.person.id == form.person_id)
     {
         return Ok(Redirect::to(&detail.list.view_path()).into_response());
-    }
-
-    if detail.candidates.len() >= MAX_CANDIDATES {
-        let errors: FieldErrors = vec![(
-            "person_id".to_string(),
-            ValidationError::ValueTooLong(detail.candidates.len() + 1, MAX_CANDIDATES),
-        )];
-        return Err(AppError::ValidationError(errors));
     }
 
     let person = persons_repository::get_person(&mut conn, &form.person_id)

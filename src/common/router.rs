@@ -10,9 +10,10 @@ use crate::{AppState, candidate_lists, common::proxy::proxy_handler, pages, pers
 
 pub fn create() -> Router<AppState> {
     let router = Router::new()
+        .route("/", get(pages::index))
         .merge(persons::router())
         .merge(candidate_lists::router())
-        .fallback(get(pages::index));
+        .fallback(get(pages::not_found));
 
     #[cfg(feature = "dev-features")]
     let router = router
@@ -57,7 +58,7 @@ mod tests {
     use crate::{AppState, test_utils::response_body_string};
 
     #[sqlx::test]
-    async fn fallback_route_renders_index(pool: PgPool) {
+    async fn index_route_renders_index(pool: PgPool) {
         let app = create().with_state(AppState::new_for_tests(pool));
 
         let response = app
@@ -68,5 +69,24 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
+    }
+
+    #[sqlx::test]
+    async fn fallback_route_renders_not_found(pool: PgPool) {
+        let app = create().with_state(AppState::new_for_tests(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/missing")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Pagina niet gevonden"));
     }
 }

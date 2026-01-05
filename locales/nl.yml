@@ -42,6 +42,10 @@ gender:
   female: vrouw
   male: man
   x: x
+not_found:
+  title: Pagina niet gevonden
+  message: De pagina die je zoekt bestaat niet of is verplaatst.
+  back_to_overview: Ga naar het overzicht
 person:
   actions:
     add: Persoon toevoegen

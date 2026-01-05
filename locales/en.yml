@@ -42,6 +42,10 @@ gender:
   female: Female
   male: Male
   x: X
+not_found:
+  title: Page not found
+  message: The page you are looking for does not exist or has been moved.
+  back_to_overview: Go to overview
 person:
   actions:
     add: Add person

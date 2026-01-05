@@ -18,27 +18,27 @@ mod reorder;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists")]
+#[typed_path("/candidate-lists", rejection(AppError))]
 pub(crate) struct CandidateListsPath;
 
 #[derive(TypedPath)]
-#[typed_path("/candidate-lists/new")]
+#[typed_path("/candidate-lists/new", rejection(AppError))]
 pub(crate) struct CandidateListsNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}")]
+#[typed_path("/candidate-lists/{id}", rejection(AppError))]
 pub(crate) struct ViewCandidateListPath {
     pub(crate) id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/add")]
+#[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
 pub(crate) struct CandidateListAddPersonPath {
     pub(crate) id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/reorder")]
+#[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
 pub(crate) struct CandidateListReorderPath {
     pub(crate) id: Uuid,
 }

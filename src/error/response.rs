@@ -102,6 +102,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::NotFound,
                 message: msg.to_string(),
             },
+            AppError::GenericNotFound => ErrorResponse {
+                error: ErrorResponseVariant::NotFound,
+                message: "Page not found".to_string(),
+            },
             AppError::Unauthorized => ErrorResponse {
                 error: ErrorResponseVariant::Unauthorized,
                 message: "You are not authorized to perform this action.".to_string(),
@@ -111,6 +115,10 @@ impl ErrorResponse {
                 message: format!("Bad request: {e}"),
             },
             AppError::FormRejection(e) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {e}"),
+            },
+            AppError::PathRejection(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },

@@ -1,6 +1,6 @@
 use axum::extract::{
     multipart::MultipartError,
-    rejection::{FormRejection, JsonRejection},
+    rejection::{FormRejection, JsonRejection, PathRejection},
 };
 use std::fmt::{Display, Formatter};
 
@@ -10,11 +10,13 @@ use crate::form::FieldErrors;
 pub type AppResponse<T> = Result<T, AppError>;
 
 /// Application wide error enum
-#[derive(Debug)]
+#[derive(Default, Debug)]
 pub enum AppError {
     // Request level errors
     Unauthorized,
     InternalServerError,
+    #[default]
+    GenericNotFound,
     NotFound(String),
     DatabaseError(sqlx::Error),
     TemplateError(askama::Error),
@@ -22,6 +24,7 @@ pub enum AppError {
     FormRejection(FormRejection),
     ValidationError(FieldErrors),
     JsonRejection(JsonRejection),
+    PathRejection(PathRejection),
 
     // Application level errors
     MissingEnvVar(&'static str),
@@ -41,9 +44,11 @@ impl Display for AppError {
             AppError::ServerError(err) => write!(f, "Server error: {err}"),
             AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
+            AppError::PathRejection(err) => write!(f, "Path error: {err}"),
             AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
+            AppError::GenericNotFound => write!(f, "Page not found"),
         }
     }
 }
@@ -83,6 +88,12 @@ impl From<FormRejection> for AppError {
 impl From<JsonRejection> for AppError {
     fn from(err: JsonRejection) -> Self {
         AppError::JsonRejection(err)
+    }
+}
+
+impl From<PathRejection> for AppError {
+    fn from(err: PathRejection) -> Self {
+        AppError::PathRejection(err)
     }
 }
 

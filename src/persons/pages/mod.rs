@@ -4,7 +4,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppState,
+    AppError, AppState,
     pagination::Pagination,
     persons::structs::{Person, PersonSort},
 };
@@ -15,21 +15,21 @@ mod list;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons")]
+#[typed_path("/persons", rejection(AppError))]
 pub(crate) struct PersonsPath;
 
 #[derive(TypedPath)]
-#[typed_path("/persons/new")]
+#[typed_path("/persons/new", rejection(AppError))]
 pub(crate) struct PersonsNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}")]
+#[typed_path("/persons/{id}", rejection(AppError))]
 pub(crate) struct EditPersonPath {
     pub(crate) id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/delete")]
+#[typed_path("/persons/{id}/delete", rejection(AppError))]
 pub(crate) struct DeletePersonPath {
     pub(crate) id: Uuid,
 }
