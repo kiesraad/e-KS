@@ -1,6 +1,6 @@
 //! Proxy handler for forwarding requests to an upstream server.
 //! See <https://github.com/tokio-rs/axum/blob/main/examples/reverse-proxy/src/main.rs>
-//! Note that "legacy" is currently to only stable high-level client in hyper-util (and is not deprecated).
+//! Note that "legacy" is currently the only stable high-level client in hyper-util (and is not deprecated).
 
 use axum::{
     body::Body,

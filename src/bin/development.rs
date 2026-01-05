@@ -18,8 +18,7 @@ use utils::{run, stop_running_containers, wait_for_postgres};
 async fn main() -> Result<()> {
     println!("⏳ Starting development environment...");
 
-    stop_running_containers()
-        .await?;
+    stop_running_containers().await?;
     run("docker", &["compose", "up", "-d"]).await?;
 
     let config = load_config().await?;

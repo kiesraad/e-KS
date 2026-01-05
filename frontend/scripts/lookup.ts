@@ -2,7 +2,7 @@ window.addEventListener("load", () => {
   const postalCodeInput = document.getElementById(
     "postal_code",
   ) as HTMLInputElement | null;
-  const houdeNumberInput = document.getElementById(
+  const houseNumberInput = document.getElementById(
     "house_number",
   ) as HTMLInputElement | null;
   const localityInput = document.getElementById(
@@ -15,7 +15,7 @@ window.addEventListener("load", () => {
   // only run if all form fields are found
   if (
     !postalCodeInput ||
-    !houdeNumberInput ||
+    !houseNumberInput ||
     !localityInput ||
     !streetNameInput
   ) {
@@ -26,7 +26,7 @@ window.addEventListener("load", () => {
     // only perform lookup when postal code and house number are filled and locality and street name are empty
     if (
       !postalCodeInput.value ||
-      !houdeNumberInput.value ||
+      !houseNumberInput.value ||
       localityInput.value ||
       streetNameInput.value
     ) {
@@ -34,7 +34,7 @@ window.addEventListener("load", () => {
     }
 
     // fetch address data from backend
-    const url = `/lookup?pc=${postalCodeInput.value}&n=${houdeNumberInput.value}`;
+    const url = `/lookup?pc=${postalCodeInput.value}&n=${houseNumberInput.value}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -54,5 +54,5 @@ window.addEventListener("load", () => {
   };
 
   postalCodeInput.addEventListener("change", lookup);
-  houdeNumberInput.addEventListener("change", lookup);
+  houseNumberInput.addEventListener("change", lookup);
 });
