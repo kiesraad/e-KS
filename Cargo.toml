@@ -50,6 +50,7 @@ tracing-subscriber = { version = "0.3.20", features = ["env-filter", "fmt"] }
 serde = { version = "1.0.228", features = ["derive"] }
 serde_json = "1.0.145"
 serde_urlencoded = "0.7"
+anyhow = { version = "1.0.86", optional = true }
 
 # blessed.rs
 rand = "0.9.2"
@@ -59,7 +60,6 @@ uuid = { version = "1.11.0", features = ["serde", "v4"] }
 
 # well maintained + many downloads
 askama = "0.15.1" # 31M downloads (Dirkjan Ochtman)
-anyhow = { version = "1.0.86", optional = true }
 dotenvy = { version = "0.15.7", optional = true } # 69M downloads (Allan Zhang)
 strum = { version = "0.27.2", features = ["derive"] } # 307M downloads (Peter Glotfelty)
 csv = "1.4.0" # 136M downloads (Andrew Gallant)

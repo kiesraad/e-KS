@@ -38,7 +38,7 @@ struct DevelopmentConfig {
 
 #[tokio::main]
 async fn main() -> Result<()> {
-    println!("Starting development environment...");
+    println!("⏳ Starting development environment...");
 
     stop_running_containers().context("stop running containers")?;
     run_status(Command::new("docker").args(["compose", "up", "-d"]))
@@ -121,8 +121,7 @@ async fn wait_for_shutdown() {
 }
 
 async fn shutdown(mut children: Vec<ManagedChild>) {
-    println!("Shutting down development environment...");
-    let _ = Command::new("docker").args(["compose", "stop"]).status();
+    println!("⏳ Shutting down development environment (expect docker/postgres)...");
 
     for managed in &mut children {
         let _ = managed.child.kill();
@@ -130,6 +129,6 @@ async fn shutdown(mut children: Vec<ManagedChild>) {
 
     for mut managed in children {
         let _ = managed.child.wait();
-        println!("Stopped {}.", managed.name);
+        println!(" ⏹ Stopped {}", managed.name);
     }
 }
