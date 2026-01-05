@@ -1,0 +1,26 @@
+ul {
+  padding-left: 1.75rem;
+}
+
+.hidden {
+  display: none;
+}
+
+::selection {
+  background-color: var(--shadow-color-focus);
+}
+
+dl {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  color: var(--gray-500);
+  font-size: var(--font-size-sm);
+
+  dt {
+    font-weight: 500;
+  }
+
+  dd {
+      font-weight: 400;
+  }
+}

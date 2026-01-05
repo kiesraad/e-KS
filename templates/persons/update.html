@@ -1,0 +1,23 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ t!("person.form.edit.title")|trans|fill(person.display_name()) }}{% endblock %}
+{% block persons_nav_class %}active{% endblock %}
+
+{% block content %}
+<section>
+  <form method="post" action="{{ person.edit_path() }}" class="form">
+    <fieldset>
+      <legend>
+        <h2>{{ t!("person.form.edit.title")|trans|fill(person.display_name()) }}</h2>
+      </legend>
+      <dl>
+        <dt>{{ t!("person.created_at")|trans }}:</dt>
+        <dd>{{ person.created() }}</dd>
+        <dt>{{ t!("person.updated_at")|trans }}:</dt>
+        <dd>{{ person.updated() }}</dd>
+      </dl>
+      {% include "persons/form.html" %}
+    </fieldset>
+  </form>
+</section>
+{% endblock %}

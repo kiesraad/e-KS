@@ -36,6 +36,8 @@ jobs:
         run: cargo install cargo-llvm-cov
       - name: Install Nextest
         run: cargo install cargo-nextest
+      - name: Setup project
+        run: cargo run --bin setup
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --branch --profile ci
       - name: Upload test results to Codecov

@@ -1,0 +1,81 @@
+action:
+  add: Add
+  cancel: Cancel
+  close: Close
+  create: Create
+  edit: Edit
+  save: Save
+candidate_list:
+  actions:
+    add: New candidate list
+    back_to_list: Back to candidate lists
+    view: View
+  add_candidate: Add candidate
+  fields:
+    created_at: Created at
+    electoral_districts: Electoral districts
+    id: Id
+    person: Person
+    person_count: Number of persons
+    persons: Persons
+    position: Position
+    updated_at: Updated at
+  form:
+    create:
+      no_electoral_districts: No electoral districts configured.
+      title: Create candidate list
+  districts:
+    all: All
+  list:
+    empty: No candidate lists yet.
+  not_found: Candidate {} not found.
+  empty: No candidate lists found.
+  title: Candidate lists
+  view:
+    empty: This candidate list has no persons yet.
+    title: Candidate list
+form:
+  errors:
+    invalid_field: The '{}' field contains an invalid value.
+    missing_field: The '{}' field is required.
+gender:
+  female: Female
+  male: Male
+  x: X
+person:
+  actions:
+    add: Add person
+    back_to_list: Back to persons
+  created_at: Created at
+  fields:
+    date_of_birth: Date of birth
+    first_name: First name
+    gender: Gender
+    house_number: House number
+    house_number_addition: House number addition
+    initials: Initials
+    last_name: Last name
+    locality: Locality
+    name: Name
+    postal_code: Postal code
+    street_name: Street name
+  form:
+    create:
+      title: Add person
+    edit:
+      title: Edit person '{}'
+  list:
+    empty: No persons found.
+  not_found: Person {} not found.
+  title: Persons
+  updated_at: Updated at
+  view:
+    empty: No details available for this person.
+    title: Person details
+validation:
+  invalid_csrf_token: The CSRF token is invalid.
+  invalid_email: Invalid email address.
+  invalid_value: The provided value is not valid.
+  value_should_not_be_empty: This field must not be empty.
+  value_too_long: The value is too long ({} characters), maximum {} characters allowed.
+  value_too_short: The value is too short ({} characters), minimum {} characters required.

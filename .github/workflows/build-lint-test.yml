@@ -63,6 +63,8 @@ jobs:
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
           workspaces: ". -> target"
+      - name: Setup project
+        run: cargo run --bin setup
       - name: Check Clippy with all features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings
       - name: Check Clippy without default features
@@ -77,44 +79,6 @@ jobs:
         with:
           name: e-ks-core
           path: target/x86_64-unknown-linux-musl/debug/e-ks-core
-
-  pdf-gen:
-    name: PDF generator clippy, test & build
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        working-directory: ./pdf-gen
-    env:
-      CARGO_TERM_COLOR: always
-      RUSTDOCFLAGS: "-D warnings"
-    steps:
-      - uses: actions/checkout@v6.0.1
-      # Compile and test
-      - name: Install musl
-        run: sudo apt-get update && sudo apt-get install -y musl-tools
-      - name: Setup Rust
-        shell: bash
-        run: >
-          rustup update stable &&
-          rustup default stable &&
-          rustup target add x86_64-unknown-linux-musl &&
-          rustup component add --toolchain stable clippy
-      - name: Cargo cache
-        uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-        with:
-          workspaces: "pdf-gen -> target"
-      - name: Check Clippy with all features
-        run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings
-      - name: Check Clippy without default features
-        run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --no-default-features -- -D warnings
-      - name: Run tests
-        run: cargo --locked test --target=x86_64-unknown-linux-musl -- --nocapture
-      - name: Build
-        run: cargo --locked build --target=x86_64-unknown-linux-musl
-      - uses: actions/upload-artifact@v6
-        with:
-          name: pdf-gen
-          path: target/x86_64-unknown-linux-musl/debug/pdf-gen
 
   audit-dependencies:
     name: Audit dependencies

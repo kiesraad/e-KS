@@ -1,0 +1,81 @@
+action:
+  add: Toevoegen
+  cancel: Annuleren
+  close: Sluiten
+  create: Aanmaken
+  edit: Bewerken
+  save: Opslaan
+candidate_list:
+  actions:
+    add: Nieuwe kandidatenlijst
+    back_to_list: Terug naar kandidatenlijsten
+    view: Bekijken
+  add_candidate: Kandidaat toevoegen
+  fields:
+    created_at: Aangemaakt op
+    electoral_districts: Kiesdistricten
+    id: Id
+    person: Persoon
+    person_count: Aantal personen
+    persons: Personen
+    position: Positie
+    updated_at: Laatst bijgewerkt op
+  form:
+    create:
+      no_electoral_districts: Geen kiesdistricten geconfigureerd.
+      title: Kandidatenlijst aanmaken
+  districts:
+    all: Alle
+  list:
+    empty: Nog geen kandidatenlijsten.
+  not_found: Kandidatenlijst {} niet gevonden.
+  empty: Geen kandidatenlijsten gevonden.
+  title: Kandidatenlijsten
+  view:
+    empty: Deze kandidatenlijst heeft nog geen kandidaten.
+    title: Kandidatenlijst
+form:
+  errors:
+    invalid_field: The '{}' field contains an invalid value.
+    missing_field: The '{}' field is required.
+gender:
+  female: vrouw
+  male: man
+  x: x
+person:
+  actions:
+    add: Persoon toevoegen
+    back_to_list: Terug naar personen
+  created_at: Aangemaakt op
+  fields:
+    date_of_birth: Geboortedatum
+    first_name: Roepnaam
+    gender: Geslacht
+    house_number: Huisnummer
+    house_number_addition: Huisnummer toevoeging
+    initials: Voorletters
+    last_name: Achternaam
+    locality: Woonplaats
+    name: Naam
+    postal_code: Postcode
+    street_name: Straatnaam
+  form:
+    create:
+      title: Persoon toevoegen
+    edit:
+      title: Persoon bewerken '{}'
+  list:
+    empty: Geen personen gevonden.
+  not_found: Persoon {} niet gevonden.
+  title: Personen
+  updated_at: Laatst bijgewerkt op
+  view:
+    empty: Geen personen gevonden.
+    title: Persoon
+validation:
+  invalid_csrf_token: De CSRF-token is ongeldig.
+  invalid_email: Ongeldig e-mailadres.
+  invalid_value: De opgegeven waarde is ongeldig.
+  value_should_not_be_empty: Dit veld mag niet leeg zijn.
+  value_too_long: De waarde is te lang ({} tekens), maximaal {} tekens toegestaan.
+  value_too_short: De waarde is te kort ({} tekens), minimaal {} tekens vereist.

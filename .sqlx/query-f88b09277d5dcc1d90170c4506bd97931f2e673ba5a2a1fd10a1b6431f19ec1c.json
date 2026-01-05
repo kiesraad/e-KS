@@ -1,0 +1,126 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE persons\n        SET\n            gender = $1,\n            last_name = $2,\n            first_name = $3,\n            initials = $4,\n            date_of_birth = $5,\n            locality = $6,\n            postal_code = $7,\n            house_number = $8,\n            house_number_addition = $9,\n            street_name = $10,\n            updated_at = NOW()\n        WHERE id = $11\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            first_name,\n            initials,\n            date_of_birth,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "gender?: Gender",
+        "type_info": {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female",
+                "x"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "first_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "date_of_birth",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 6,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 12,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female",
+                "x"
+              ]
+            }
+          }
+        },
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "f88b09277d5dcc1d90170c4506bd97931f2e673ba5a2a1fd10a1b6431f19ec1c"
+}

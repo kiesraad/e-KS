@@ -1,0 +1,25 @@
+<table class="table">
+  <thead>
+    <tr>
+      <th scope="col">{{ t!("person.fields.last_name")|trans }}</th>
+      <th scope="col">{{ t!("person.fields.initials")|trans }}</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for person in persons %}
+    <tr class="clickable">
+      <td>{{ person.last_name }}</td>
+      <td>
+        {{ person.initials }}
+        ({{ person.first_name_display() }})
+      </td>
+      <td>
+        <button type="submit" name="person_id" value="{{ person.id }}">
+          <span>{{ t!("action.add")|trans }}</span>
+        </button>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

@@ -1,0 +1,165 @@
+button.button,
+a.button,
+label.button {
+  color: var(--base-white);
+  border-radius: var(--rounded-default);
+  border: var(--button-border-width) solid var(--button-color-primary);
+  background: var(--button-color-primary);
+  text-decoration: none;
+
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+
+  /* Shadow/xs */
+  box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
+
+  display: inline-flex;
+  padding: calc(1rem - var(--button-border-width)) calc(1.75rem - var(--button-border-width));
+  justify-content: center;
+  align-items: center;
+  gap: 0.75rem;
+  cursor: pointer;
+
+  width: max-content;
+
+  &:hover {
+    background-color: var(--button-color-primary-hover);
+    border-color: var(--button-color-primary-hover);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: var(--border-color-focus);
+    background-color: var(--button-color-primary-focus);
+    box-shadow: 0 0 0 4px var(--shadow-color-focus);
+  }
+
+  &:active {
+    background-color: var(--button-color-primary-active);
+    border-color: var(--button-color-primary-active);
+  }
+
+  svg {
+    height: 1.25rem;
+    fill: currentColor;
+  }
+
+  &.primary-destructive {
+    border-color: var(--red-600);
+    background: var(--red-600);
+    color: var(--base-white);
+  }
+
+  &.secondary {
+    color: var(--text-color-body);
+    border-color: var(--bg-gray-darkest);
+    background: var(--button-color-secondary);
+
+    &:hover {
+      background-color: var(--button-color-secondary-hover);
+    }
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+      --button-border-width: 2px;
+      border-color: var(--border-color-focus);
+      background-color: var(--button-color-secondary-focus);
+      box-shadow: 0 0 0 4px var(--shadow-color-focus);
+    }
+
+    &:active {
+      border-color: var(--border-color-default);
+      background-color: var(--button-color-secondary-active);
+    }
+  }
+
+  &.tertiary {
+    background: transparent;
+    border-color: transparent;
+    color: var(--button-color-primary);
+
+    &:hover {
+      background: rgba(16, 48, 81, 0.1);
+    }
+  }
+
+  &.tertiary-destructive {
+    --button-border-width: 0px;
+    border: none;
+    background: transparent;
+    color: var(--red-700);
+
+    &:not(:hover, :active) {
+      box-shadow: none;
+    }
+
+    &:hover {
+      background: var(--red-50);
+    }
+
+    &:focus,
+    &:focus-visible {
+      outline: none;
+      --button-border-width: 2px;
+      border: var(--button-border-width) solid var(--border-color-focus);
+      box-shadow: 0 0 0 4px var(--shadow-color-focus);
+    }
+
+    &:active {
+      border-color: var(--red-100);
+      background-color: var(--red-100);
+    }
+  }
+
+  /* Below variants to be able to override styling */
+  &:disabled,
+  &.disabled {
+    background: var(--button-color-bg-disabled);
+    border-color: var(--button-color-bg-disabled);
+    color: var(--button-color-disabled);
+    pointer-events: none;
+  }
+
+  &.xs {
+    font-size: var(--font-size-sm);
+    line-height: 1.25rem;
+    padding: calc(0.5rem - var(--button-border-width)) calc(0.875rem - var(--button-border-width));
+  }
+
+  &.sm {
+    font-size: var(--font-size-sm);
+    line-height: 1.25rem;
+    padding: calc(0.625rem - var(--button-border-width)) calc(1rem - var(--button-border-width));
+  }
+
+  &.md {
+    font-size: var(--font-size-md);
+    line-height: 1.5rem;
+    padding: calc(0.75rem - var(--button-border-width)) calc(1.25rem - var(--button-border-width));
+  }
+  
+  &.xl {
+    min-width: 13rem;
+  }
+
+  &.underlined {
+    font-weight: 400;
+    background-color: transparent;
+    border: none;
+    color: var(--interactive-default);
+    cursor: pointer;
+    padding: 0;
+    box-shadow: none;
+
+    &:hover {
+      text-decoration: underline;
+    }
+
+    &:focus {
+      text-decoration: underline;
+      box-shadow: 0 0 0 4px var(--shadow-color-focus);
+    }
+  }
+}

@@ -1,0 +1,30 @@
+<table class="sortable" data-sortable-update-url="{{ details.list.reorder_path() }}">
+  <thead>
+    <tr>
+      <th scope="col"></th>
+      <th scope="col">{{ t!("candidate_list.fields.position")|trans }}</th>
+      <th scope="col">{{ t!("person.fields.name")|trans }}</th>
+      <th scope="col">{{ t!("person.fields.locality")|trans }}</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for candidate in details.candidates %}
+    <tr class="clickable" data-id="{{ candidate.person.id }}">
+      <td class="drag-handle"><span></span></td>
+      <td class="font-number">{{ candidate.position }}</td>
+      <td>
+        <strong>{{ candidate.person.last_name }}</strong>
+        {{ candidate.person.initials }}
+        ({{ candidate.person.first_name_display() }})
+      </td>
+      <td>{{ candidate.person.locality|display }}</td>
+      <td>
+        <a href="{{ candidate.person.edit_path() }}">
+          <span>{{ t!("action.edit")|trans }}</span>
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

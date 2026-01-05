@@ -1,0 +1,105 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO candidate_lists (id, electoral_districts, created_at, updated_at)\n        VALUES ($1, $2, $3, $4)\n        RETURNING\n            id,\n            electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\",\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "electoral_districts: Vec<ElectoralDistrict>",
+        "type_info": {
+          "Custom": {
+            "name": "electoral_district[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "electoral_district",
+                  "kind": {
+                    "Enum": [
+                      "DR",
+                      "FL",
+                      "FR",
+                      "GE",
+                      "GR",
+                      "LI",
+                      "NB",
+                      "NH",
+                      "OV",
+                      "UT",
+                      "ZE",
+                      "ZH",
+                      "BO",
+                      "SE",
+                      "SA",
+                      "KN"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 3,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "electoral_district[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "electoral_district",
+                  "kind": {
+                    "Enum": [
+                      "DR",
+                      "FL",
+                      "FR",
+                      "GE",
+                      "GR",
+                      "LI",
+                      "NB",
+                      "NH",
+                      "OV",
+                      "UT",
+                      "ZE",
+                      "ZH",
+                      "BO",
+                      "SE",
+                      "SA",
+                      "KN"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        },
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "0cfe0e2121e5d3942589ea61fa7c4a52150e8bcb44f2fdf01083c57d9376be0e"
+}

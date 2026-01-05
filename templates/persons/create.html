@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ t!("person.form.create.title")|trans }}
+{% endblock %}
+{% block persons_nav_class %}active{% endblock %}
+
+{% block content %}
+<section>
+  <form method="post" action="{{ Person::new_path() }}" class="form">
+    <fieldset>
+      <legend>
+        <h2>{{ t!("person.form.create.title")|trans }}</h2>
+      </legend>
+      {% include "persons/form.html" %}
+    </fieldset>
+  </form>
+</section>
+{% endblock %}

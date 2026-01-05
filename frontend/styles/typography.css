@@ -1,0 +1,140 @@
+body {
+  font-family: var(--font-text), sans-serif;
+  font-size: var(--font-size-md);
+  line-height: 1.5em;
+  color: var(--text-color-body);
+
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6,
+.heading-xl,
+.heading-lg {
+  margin-top: 0;
+  font-family: var(--font-header-body), sans-serif;
+  color: var(--text-color-header);
+  font-style: normal;
+  font-weight: normal;
+}
+
+h1,
+.heading-xl {
+  font-family: var(--font-header), sans-serif;
+  font-size: 2.25rem;
+  line-height: 2.75rem;
+  letter-spacing: -0.045rem;
+}
+
+h2,
+.heading-lg {
+  font-family: var(--font-header), sans-serif;
+  font-size: 1.5rem;
+  font-weight: 500;
+  line-height: 2rem;
+  margin-bottom: 1.5rem;
+}
+
+h3,
+.heading-md {
+  font-size: 1.25em;
+  font-weight: bold;
+}
+
+h4 {
+  font-size: 1.25rem;
+}
+
+h5 {
+  font-size: 1.125rem;
+}
+
+h6 {
+  font-weight: bold;
+  font-size: 1rem;
+  margin-bottom: 0;
+}
+
+p {
+  margin-top: 0;
+  font-size: var(--font-size-md);
+  margin-bottom: 0;
+  color: var(--text-color-body);
+}
+
+a {
+  color: var(--link-default);
+
+  &:visited {
+    color: var(--link-visited);
+  }
+
+  &:hover {
+    color: var(--link-hover);
+  }
+
+  &:active {
+    color: var(--link-active);
+  }
+}
+
+.underlined {
+  text-decoration: underline;
+  color: var(--link-default);
+}
+
+/* Font weight */
+.bold {
+  font-weight: bold;
+}
+
+.normal {
+  font-weight: normal;
+}
+
+/* Font size */
+.fs-xs {
+  font-size: var(--font-size-xs);
+}
+
+.fs-sm {
+  font-size: var(--font-size-sm);
+}
+
+.fs-md {
+  font-size: var(--font-size-md);
+}
+
+.fs-lg {
+  font-size: var(--font-size-lg);
+}
+
+/* Text wrap, transformations etc. */
+.break-word {
+  word-break: break-word;
+}
+
+.nowrap {
+  text-wrap: nowrap;
+}
+
+.text-align-r {
+  text-align: right;
+}
+
+/* Number styling */
+.font-number {
+  font-family: var(--font-number);
+  font-feature-settings: "ss09" on;
+}
+
+/* Slashed zero */
+.font-number-slashed-0 {
+  font-family: var(--font-number);
+}

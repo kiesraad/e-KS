@@ -24,3 +24,23 @@ Belangrijke stukken of [formulieren voor de kandidaatstellingsprocedure](https:/
 
 Een overzicht van de voorgestelde technische afwegingen staat in [deze presentatie](https://github.com/user-attachments/files/24053801/e-KS-PSA.pdf).
 
+## Development setup
+
+1) Install dependencies and provision the local environment:
+
+```bash
+cargo run --bin setup
+```
+
+2) Start the development environment (services, frontend build, app, logs):
+
+```bash
+cargo run --bin development
+```
+
+## Rust binaries
+
+- `eks`: main application server.
+- `fixtures`: loads seed data into the database.
+- `setup`: installs tooling (esbuild/biome/bag-service), provisions Docker, runs migrations, and loads fixtures.
+- `development`: starts the full dev environment and shuts it down on interrupt/quit.

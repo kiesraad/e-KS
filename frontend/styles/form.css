@@ -1,0 +1,117 @@
+.form legend,
+.form p,
+.form ul {
+  width: 32rem;
+}
+
+.form .form-field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-sm);
+}
+
+.form .form-field > label {
+  color: var(--text-color-header);
+  font-weight: bold;
+  gap: 0.5rem;
+}
+
+.form .form-field.actions {
+  flex-direction: row;
+  justify-content: flex-start;
+  gap: var(--space-ml);
+}
+
+.form fieldset {
+  border: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+.form fieldset legend {
+  font-size: var(--font-size-lg);
+  font-weight: bold;
+  color: var(--text-color-header);
+}
+
+.form span {
+  display: inline-block;
+  font-size: var(--font-size-md);
+  font-style: normal;
+  line-height: 1.5rem;
+}
+
+.form span.subtext {
+  font-weight: normal;
+}
+
+.form span.hint {
+  color: var(--color-help-text);
+  font-weight: normal;
+  margin-top: 0.5rem;
+}
+
+.form span.error {
+  color: var(--color-error-darker);
+  font-weight: normal;
+  margin-top: 0.5rem;
+}
+
+.form input[type="text"],
+.form textarea,
+.form select {
+  display: flex;
+  padding: 1rem 1.5rem 1rem 1rem;
+  justify-content: space-between;
+  align-items: center;
+  align-self: stretch;
+  border-style: solid;
+  border-width: 2px;
+  border-color: var(--bg-gray-darkest);
+  background: var(--base-white);
+}
+
+.form input[type="text"]:hover,
+.form input[type="text"]:focus,
+.form input[type="text"]:focus-visible,
+.form textarea:hover,
+.form textarea:focus,
+.form textarea:focus-visible,
+.form select:hover,
+.form select:focus,
+.form select:focus-visible {
+  outline: none;
+  border-color: var(--border-color-focus);
+}
+
+.form input[type="text"]:focus,
+.form input[type="text"]:focus-visible,
+.form textarea:focus,
+.form textarea:focus-visible,
+.form select:focus,
+.form select:focus-visible {
+  box-shadow: 0 0 0 3px var(--shadow-color-focus);
+}
+
+.form input[type="number"] {
+  appearance: textfield;
+}
+
+.form input[type="number"]::-webkit-outer-spin-button,
+.form input[type="number"]::-webkit-inner-spin-button {
+  -webkit-appearance: none;
+  margin: 0;
+}
+
+.form textarea {
+  align-items: flex-start;
+  resize: none;
+}
+
+.form label.required::after {
+  display: inline-block;
+  content: " *";
+  color: var(--color-error-darker);
+}

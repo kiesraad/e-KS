@@ -1,0 +1,685 @@
+/**
+ * Holds the state of a single drag interaction and exposes helpers to update it.
+ */
+class DragSession {
+  readonly target: HTMLTableRowElement;
+  readonly startRect: DOMRect;
+  readonly startIndex: number;
+  readonly startY: number;
+  readonly startScrollY: number;
+  readonly touchId: number | null;
+
+  boundaryTop = 0;
+  boundaryBottom = 0;
+  positions: number[] = [];
+  liveOrder: HTMLTableRowElement[];
+  pendingY: number | null = null;
+  animationScheduled = false;
+  isDragging = false;
+
+  /**
+   * Create a new drag session for a row.
+   */
+  constructor(
+    target: HTMLTableRowElement,
+    clientY: number,
+    startIndex: number,
+    rows: HTMLTableRowElement[],
+    touchId: number | null,
+  ) {
+    this.target = target;
+    this.startRect = target.getBoundingClientRect();
+    this.startIndex = startIndex;
+    this.startY = clientY;
+    this.startScrollY = window.scrollY;
+    this.liveOrder = rows;
+    this.touchId = touchId;
+  }
+
+  /**
+   * Capture current table geometry for drag calculations.
+   */
+  setGeometry(rows: HTMLTableRowElement[]) {
+    const rects = rows.map((r) => r.getBoundingClientRect());
+    const scrollY = window.scrollY;
+    this.positions = rects.map((rect) => rect.top + scrollY + rect.height / 2);
+    this.boundaryTop = Math.min(...rects.map((rect) => rect.top + scrollY));
+    this.boundaryBottom = Math.max(
+      ...rects.map((rect) => rect.bottom + scrollY),
+    );
+  }
+
+  /**
+   * Store the latest pointer Y position.
+   */
+  setPendingY(clientY: number) {
+    this.pendingY = clientY;
+  }
+
+  getPendingY() {
+    return this.pendingY;
+  }
+
+  /**
+   * Mark an animation frame as scheduled; returns false if one is already pending.
+   */
+  scheduleAnimation() {
+    if (this.animationScheduled) {
+      return false;
+    }
+
+    this.animationScheduled = true;
+    return true;
+  }
+
+  /**
+   * Reset scheduling flags at the start of a frame.
+   */
+  startFrame() {
+    this.animationScheduled = false;
+  }
+
+  /**
+   * Note that the drag has moved the row.
+   */
+  markDragging() {
+    this.isDragging = true;
+  }
+
+  /**
+   * Compute constrained drag distances and current bounds.
+   */
+  computeDragDelta(pendingY: number) {
+    const currentScroll = window.scrollY;
+    const startDocY = this.startY + this.startScrollY;
+    const currentDocY = pendingY + currentScroll;
+
+    let deltaY = currentDocY - startDocY;
+    const startRectTopDoc = this.startRect.top + this.startScrollY;
+    const startRectBottomDoc = this.startRect.bottom + this.startScrollY;
+    const minDelta = this.boundaryTop - startRectTopDoc;
+    const maxDelta = this.boundaryBottom - startRectBottomDoc;
+    if (deltaY < minDelta) {
+      deltaY = minDelta;
+    } else if (deltaY > maxDelta) {
+      deltaY = maxDelta;
+    }
+
+    const currentTop = startRectTopDoc + deltaY;
+    const currentBottom = currentTop + this.startRect.height;
+    return { deltaY, currentTop, currentBottom };
+  }
+
+  /**
+   * Apply transforms to other rows based on the dragged position.
+   */
+  shiftOtherRows(
+    rows: HTMLTableRowElement[],
+    currentTop: number,
+    currentBottom: number,
+  ) {
+    const moveUp = `translate(0, ${-this.startRect.height}px)`;
+    const moveDown = `translate(0, ${this.startRect.height}px)`;
+
+    const movedAbove = new Set<number>();
+    const movedBelow = new Set<number>();
+
+    rows.forEach((row, index) => {
+      if (row === this.target) {
+        return;
+      }
+
+      const originallyBelow = index > this.startIndex;
+      const originallyAbove = index < this.startIndex;
+
+      if (originallyBelow && currentBottom > this.positions[index]) {
+        row.style.transform = moveUp;
+        movedBelow.add(index);
+      } else if (originallyAbove && currentTop < this.positions[index]) {
+        row.style.transform = moveDown;
+        movedAbove.add(index);
+      } else {
+        row.style.transform = "";
+      }
+    });
+
+    return { movedAbove, movedBelow };
+  }
+
+  /**
+   * Recompute the live order of rows while dragging.
+   */
+  updateLiveOrder(
+    rows: HTMLTableRowElement[],
+    movedAbove: Set<number>,
+    movedBelow: Set<number>,
+  ) {
+    const dragIndex = this.startIndex - movedAbove.size + movedBelow.size;
+    const newOrder: Array<HTMLTableRowElement | null> = Array(rows.length).fill(
+      null,
+    );
+
+    rows.forEach((row, index) => {
+      let newIndex = index;
+
+      if (row === this.target) {
+        newIndex = dragIndex;
+      } else if (index < this.startIndex && movedAbove.has(index)) {
+        newIndex = index + 1;
+      } else if (index > this.startIndex && movedBelow.has(index)) {
+        newIndex = index - 1;
+      }
+
+      newOrder[newIndex] = row;
+    });
+
+    const compactOrder = newOrder.filter(
+      (row): row is HTMLTableRowElement => row !== null,
+    );
+    this.liveOrder = compactOrder;
+    return compactOrder;
+  }
+
+  /**
+   * Get the current order or fall back to the original rows.
+   */
+  getOrder(fallback: HTMLTableRowElement[]) {
+    return this.liveOrder ?? fallback;
+  }
+
+  /**
+   * Find the active touch for this drag session.
+   */
+  getActiveTouch(touches: TouchList): Touch | null {
+    if (this.touchId === null) {
+      return null;
+    }
+
+    return (
+      Array.from(touches).find((touch) => touch.identifier === this.touchId) ??
+      null
+    );
+  }
+}
+
+/**
+ * Enables drag-and-drop reordering for sortable tables in the DOM.
+ */
+class SortableTable {
+  private tbody: HTMLTableSectionElement;
+  private handles: HTMLElement[];
+  private rows: HTMLTableRowElement[];
+  private onChange?: (order: string[]) => void;
+  private positionCellCache = new Map<
+    HTMLTableRowElement,
+    HTMLTableCellElement
+  >();
+
+  private drag: DragSession | null = null;
+  private suppressClick = false;
+  private dragStartOrder: string[] | null = null;
+
+  constructor(
+    tbody: HTMLTableSectionElement,
+    options: { onChange?: (order: string[]) => void } = {},
+  ) {
+    this.tbody = tbody;
+    this.rows = Array.from(tbody.querySelectorAll<HTMLTableRowElement>("tr"));
+    this.handles = Array.from(
+      tbody.querySelectorAll<HTMLElement>("tr td.drag-handle"),
+    );
+    this.onChange = options.onChange;
+
+    this.attachHandleEvents();
+    this.attachGlobalEvents();
+  }
+
+  /**
+   * Bind drag start events to each handle.
+   */
+  private attachHandleEvents() {
+    this.handles.forEach((handle) => {
+      const row = handle.closest("tr") as HTMLTableRowElement;
+
+      handle.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+
+        this.clearAnimations();
+        this.startDrag(row, event.clientY);
+      });
+
+      handle.addEventListener(
+        "touchstart",
+        (event) => {
+          if (this.drag) {
+            return;
+          }
+
+          const touch = event.changedTouches[0];
+          if (!touch) {
+            return;
+          }
+
+          event.preventDefault();
+
+          this.clearAnimations();
+          this.startDrag(row, touch.clientY, touch.identifier);
+        },
+        { passive: false },
+      );
+    });
+  }
+
+  /**
+   * Bind global move/end/click handlers for drag interactions.
+   */
+  private attachGlobalEvents() {
+    window.addEventListener("mousemove", (event) =>
+      this.handleMouseMove(event),
+    );
+    window.addEventListener("mouseup", (event) => this.handleMouseUp(event));
+    window.addEventListener(
+      "touchmove",
+      (event) => this.handleTouchMove(event),
+      { passive: false },
+    );
+    window.addEventListener("touchend", (event) => this.handleTouchEnd(event));
+    window.addEventListener("touchcancel", (event) =>
+      this.handleTouchEnd(event),
+    );
+    window.addEventListener(
+      "click",
+      (event) => {
+        if (!this.suppressClick) {
+          return;
+        }
+
+        event.preventDefault();
+        event.stopPropagation();
+        this.suppressClick = false;
+      },
+      true,
+    );
+  }
+
+  /**
+   * Initialize a drag session for the given row.
+   */
+  private startDrag(
+    row: HTMLTableRowElement,
+    clientY: number,
+    touchId: number | null = null,
+  ) {
+    this.dragStartOrder = this.getRowOrderIds(this.rows);
+    this.drag = new DragSession(
+      row,
+      clientY,
+      this.rows.indexOf(row),
+      this.rows.slice(),
+      touchId,
+    );
+
+    row.classList.add("dragging");
+    this.computeGeometry();
+    this.updatePositionLabels(this.rows);
+  }
+
+  /**
+   * Update cached geometry for drag calculations.
+   */
+  private computeGeometry() {
+    this.drag?.setGeometry(this.rows);
+  }
+
+  /**
+   * Queue a drag update for the latest pointer Y position.
+   */
+  private handlePointerMove(clientY: number) {
+    if (!this.drag) {
+      return;
+    }
+
+    this.drag.setPendingY(clientY);
+    this.scheduleDragUpdate();
+  }
+
+  /**
+   * Mouse move handler forwarding to shared pointer logic.
+   */
+  private handleMouseMove(event: MouseEvent) {
+    this.handlePointerMove(event.clientY);
+  }
+
+  /**
+   * Touch move handler forwarding to shared pointer logic.
+   */
+  private handleTouchMove(event: TouchEvent) {
+    const touch = this.drag?.getActiveTouch(event.changedTouches);
+    if (!touch) {
+      return;
+    }
+
+    event.preventDefault();
+    this.handlePointerMove(touch.clientY);
+  }
+
+  /**
+   * Mouse up handler that finalizes the drag.
+   */
+  private handleMouseUp(event: MouseEvent) {
+    event.preventDefault();
+    this.finishDrag();
+  }
+
+  /**
+   * Touch end handler that finalizes the drag.
+   */
+  private handleTouchEnd(event: TouchEvent) {
+    if (!this.drag?.getActiveTouch(event.changedTouches)) {
+      return;
+    }
+
+    event.preventDefault();
+    this.finishDrag();
+  }
+
+  /**
+   * Finish a drag session: reorder rows and apply indicators.
+   */
+  private finishDrag() {
+    if (!this.drag) {
+      return;
+    }
+
+    const drag = this.drag;
+
+    if (drag.isDragging) {
+      this.suppressClick = true;
+    }
+
+    const finalOrder = drag.getOrder(this.rows);
+
+    const movedUp: HTMLTableRowElement[] = [];
+    const movedDown: HTMLTableRowElement[] = [];
+
+    finalOrder.forEach((row, index) => {
+      const previousIndex = this.rows.indexOf(row);
+      if (previousIndex > index) {
+        movedUp.push(row);
+      } else if (previousIndex < index) {
+        movedDown.push(row);
+      }
+    });
+
+    const draggedRow = drag.target;
+
+    finalOrder.forEach((row) => {
+      row.style.transform = "";
+      row.classList.remove("dragging");
+      this.tbody.appendChild(row);
+    });
+
+    this.rows = finalOrder;
+
+    this.drag = null;
+
+    this.updatePositionLabels(this.rows);
+
+    this.notifyChangeIfNeeded(drag.isDragging);
+
+    if (draggedRow) {
+      draggedRow.classList.add("flash-success");
+      window.setTimeout(
+        () => draggedRow.classList.remove("flash-success"),
+        2000,
+      );
+    }
+
+    movedUp.forEach((row) => {
+      this.applyIndicator(row, "up");
+    });
+    movedDown.forEach((row) => {
+      this.applyIndicator(row, "down");
+    });
+  }
+
+  /**
+   * Schedule a frame to update drag transforms.
+   */
+  private scheduleDragUpdate() {
+    if (!this.drag || !this.drag.scheduleAnimation()) {
+      return;
+    }
+
+    requestAnimationFrame(() => this.runDragUpdate());
+  }
+
+  /**
+   * Apply one drag animation frame.
+   */
+  private runDragUpdate() {
+    const drag = this.drag;
+    if (!drag) {
+      return;
+    }
+
+    drag.startFrame();
+
+    const pendingY = drag.getPendingY();
+    if (pendingY === null) {
+      return;
+    }
+
+    const scrolled = this.autoScrollIfNeeded(pendingY);
+
+    drag.markDragging();
+
+    const { deltaY, currentTop, currentBottom } =
+      drag.computeDragDelta(pendingY);
+    drag.target.style.transform = `translate(0, ${deltaY}px)`;
+
+    const { movedAbove, movedBelow } = drag.shiftOtherRows(
+      this.rows,
+      currentTop,
+      currentBottom,
+    );
+
+    const compactOrder = drag.updateLiveOrder(
+      this.rows,
+      movedAbove,
+      movedBelow,
+    );
+    this.updatePositionLabels(compactOrder);
+
+    if (scrolled) {
+      this.scheduleDragUpdate();
+    }
+  }
+
+  /**
+   * Scroll the viewport when dragging near its edges.
+   */
+  private autoScrollIfNeeded(pointerY: number) {
+    const threshold = 40;
+    const step = 15;
+    const viewportHeight = window.innerHeight;
+    let scrolled = false;
+
+    if (pointerY < threshold) {
+      window.scrollBy(0, -Math.min(step, threshold - pointerY));
+      scrolled = true;
+    } else if (pointerY > viewportHeight - threshold) {
+      window.scrollBy(
+        0,
+        Math.min(step, pointerY - (viewportHeight - threshold)),
+      );
+      scrolled = true;
+    }
+
+    return scrolled;
+  }
+
+  /**
+   * Clear any ongoing row animations/indicators before a new drag.
+   */
+  private clearAnimations() {
+    this.rows.forEach((row) => {
+      row.classList.remove("flash-success");
+      const cell = this.getPositionCell(row);
+      if (cell) {
+        cell.classList.remove(
+          "position-indicator",
+          "pos-up",
+          "pos-down",
+          "fade-out",
+        );
+      }
+    });
+  }
+
+  /**
+   * Apply position change indicator styling to a row.
+   */
+  private applyIndicator(row: HTMLTableRowElement, direction: "up" | "down") {
+    const cell = this.getPositionCell(row);
+    if (!cell) {
+      return;
+    }
+
+    cell.classList.remove("position-indicator", "pos-up", "pos-down");
+    cell.classList.add(
+      "position-indicator",
+      direction === "up" ? "pos-up" : "pos-down",
+    );
+    window.setTimeout(() => {
+      cell.classList.add("fade-out");
+      window.setTimeout(() => {
+        cell.classList.remove(
+          "position-indicator",
+          "pos-up",
+          "pos-down",
+          "fade-out",
+        );
+      }, 2000);
+    }, 500);
+  }
+
+  /**
+   * Cache and return the position cell for a row.
+   */
+  private getPositionCell(
+    row: HTMLTableRowElement,
+  ): HTMLTableCellElement | null {
+    if (this.positionCellCache.has(row)) {
+      return this.positionCellCache.get(row) ?? null;
+    }
+
+    const cells = Array.from(row.querySelectorAll<HTMLTableCellElement>("td"));
+    const cell = cells[1] ?? null;
+    if (cell) {
+      this.positionCellCache.set(row, cell);
+    }
+
+    return cell;
+  }
+
+  /**
+   * Update numeric position labels for the given ordering.
+   */
+  private updatePositionLabels(orderedRows: HTMLTableRowElement[]) {
+    orderedRows.forEach((row, index) => {
+      const cell = this.getPositionCell(row);
+      if (!cell) {
+        return;
+      }
+
+      const newValue = String(index + 1);
+      if (cell.textContent !== newValue) {
+        cell.textContent = newValue;
+      }
+    });
+  }
+
+  /**
+   * Return the current row ordering as data-id values.
+   */
+  private getRowOrderIds(rows: HTMLTableRowElement[]) {
+    const ids: string[] = [];
+
+    for (const row of rows) {
+      const id = row.dataset.id;
+      if (!id) {
+        return null;
+      }
+      ids.push(id);
+    }
+
+    return ids;
+  }
+
+  /**
+   * Invoke the change callback when the order changes.
+   */
+  private notifyChangeIfNeeded(didDrag: boolean) {
+    if (!this.onChange || !didDrag) {
+      this.dragStartOrder = null;
+      return;
+    }
+
+    const previous = this.dragStartOrder;
+    const current = this.getRowOrderIds(this.rows);
+    this.dragStartOrder = null;
+
+    if (!previous || !current) {
+      return;
+    }
+
+    if (previous.length !== current.length) {
+      this.onChange(current);
+      return;
+    }
+
+    const hasChanged = previous.some(
+      (value, index) => value !== current[index],
+    );
+    if (hasChanged) {
+      this.onChange(current);
+    }
+  }
+}
+
+window.addEventListener("load", () => {
+  document
+    .querySelectorAll<HTMLTableElement>("table.sortable")
+    .forEach((table) => {
+      const tbody = table.querySelector("tbody");
+
+      if (!tbody) {
+        return;
+      }
+
+      const updateUrl = table.dataset.sortableUpdateUrl;
+      const onChange = updateUrl
+        ? (order: string[]) => {
+            void fetch(updateUrl, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({ person_ids: order }),
+            })
+              .then((response) => {
+                if (!response.ok) {
+                  console.error(
+                    "Failed to update candidate order",
+                    response.status,
+                  );
+                }
+              })
+              .catch((error) => {
+                console.error("Failed to update candidate order", error);
+              });
+          }
+        : undefined;
+
+      new SortableTable(tbody, { onChange });
+    });
+});

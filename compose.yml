@@ -1,0 +1,10 @@
+services:
+  psql:
+    image: ghcr.io/tweedegolf/postgres:17
+    environment:
+      POSTGRES_USER: eks
+      POSTGRES_DB: eks
+      POSTGRES_HOST_AUTH_METHOD: trust
+      TZ: Europe/Amsterdam
+    ports: ['127.0.0.1:5432:5432']
+    networks: [default]

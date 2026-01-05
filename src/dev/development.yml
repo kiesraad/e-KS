@@ -1,0 +1,38 @@
+children:
+  - name: esbuild
+    command: ./tools/esbuild
+    args:
+      - --bundle
+      - --watch=forever
+      - --serve=127.0.0.1:8888
+      - --servedir=frontend/static/
+      - --outdir=frontend/static/
+      - --public-path=/static/
+      - --loader:.woff2=file
+      - --loader:.svg=file
+      - --define:IS_PRODUCTION=false
+      - --log-level=warning
+      - frontend/index.ts
+  - name: bag-service
+    command: ./tools/bag-service
+    args:
+      - 127.0.0.1:8080
+    wait_for_postgres: true
+  - name: cargo watch
+    command: cargo
+    args:
+      - watch
+      - --watch
+      - src
+      - -x
+      - run
+    wait_for_postgres: true
+  - name: docker logs
+    command: docker
+    args:
+      - compose
+      - logs
+      - -f
+      - --since
+      - 5s
+    wait_for_postgres: true

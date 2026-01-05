@@ -1,0 +1,22 @@
+{% extends "layout.html" %}
+
+{% block page_title %}{{ t!("candidate_list.title")|trans }}{% endblock %}
+{% block candidate_lists_nav_class %}active{% endblock %}
+
+{% block content %}
+<nav>
+  <a href="{{ crate::candidate_lists::structs::CandidateList::new_path() }}" class="button md secondary">
+    {{ t!("candidate_list.actions.add")|trans }}
+  </a>
+</nav>
+
+{% if candidate_lists.is_empty() %}
+<section>
+  <p>{{ t!("candidate_list.empty")|trans }}</p>
+</section>
+{% else %}
+<section>
+  {% include "candidate_lists/list_table.html" %}
+</section>
+{% endif %}
+{% endblock %}

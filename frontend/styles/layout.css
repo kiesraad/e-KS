@@ -1,0 +1,83 @@
+body {
+    display: flex;
+    flex-direction: column;
+}
+
+header {
+    nav {
+        display: flex;
+        justify-content: space-between;
+        min-height: 3rem;
+        padding: 0 var(--space-xxl);
+
+        background-color: var(--base-brand-blue);
+        color: var(--base-white);
+        
+        ul {
+            list-style: none;
+            margin: 0;
+            padding: 0;
+            display: flex;
+
+            li {
+                a {
+                    display: inline-block;
+                    text-decoration: none;
+                    height: 3rem;
+                    padding: 0 0.75rem;
+                    line-height: 3rem;
+                    color: var(--base-white);
+
+                    &:visited, &:hover {
+                        color: var(--base-white);
+                    }
+
+                    &.logout {
+                        text-decoration: underline
+                    }
+
+                    &.active {
+                        border-bottom: 4px solid var(--accent-orange);
+                        font-weight: bold;
+                    }
+                }
+
+                &.user-info {
+                    display: flex;
+                    align-items: center;
+                    gap: var(--space-sm);
+                }
+            }
+        }
+    }
+
+    h1 {
+        min-height: 7rem;
+        line-height: 7rem;
+        padding: var(--space-md) var(--space-xxl);
+        margin: 0;
+    }
+}
+
+main {
+    background-color: var(--bg-gray);
+    flex: auto;
+    gap: var( --space-lg);
+    padding: var(--space-xl) var(--space-xxl);
+
+    nav {
+        min-height: var(--space-xxl);
+    }
+}
+
+footer {
+    background-color: var(--base-white);
+    color: var(--color-help-text);
+    font-size: var(--font-size-sm);
+    flex: 0 0 var(--space-xxl);
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 var(--space-xxl);
+    line-height: 1.25rem;
+    display: flex;
+}

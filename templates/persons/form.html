@@ -1,0 +1,92 @@
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+<p class="form-field">
+  <label for="last_name" class="required">{{ t!("person.fields.last_name")|trans }}</label>
+  <input type="text" name="last_name" id="last_name" value="{{ form.data.last_name }}" required />
+  {% for error in form|error("last_name") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="initials" class="required">{{ t!("person.fields.initials")|trans }}</label>
+  <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" required />
+  {% for error in form|error("initials") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="first_name">{{ t!("person.fields.first_name")|trans }}</label>
+  <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
+  {% for error in form|error("first_name") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="gender">{{ t!("person.fields.gender")|trans }}</label>
+  <select name="gender" id="gender">
+    <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
+    <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ t!("gender.male")|trans }}</option>
+    <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ t!("gender.female")|trans }}
+    </option>
+    <option value="x" {% if form.data.gender=="x" %}selected{% endif %}>{{ t!("gender.x")|trans }}</option>
+  </select>
+  {% for error in form|error("gender") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="date_of_birth">{{ t!("person.fields.date_of_birth")|trans }}</label>
+  <input type="text" name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}" placeholder="dd-mm-jjjj"
+    inputmode="numeric" />
+  {% for error in form|error("date_of_birth") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="postal_code">{{ t!("person.fields.postal_code")|trans }}</label>
+  <input type="text" name="postal_code" id="postal_code" value="{{ form.data.postal_code }}" />
+  {% for error in form|error("postal_code") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+<p class="form-field">
+  <label for="house_number">{{ t!("person.fields.house_number")|trans }}</label>
+  <input type="text" name="house_number" id="house_number" value="{{ form.data.house_number }}" />
+  {% for error in form|error("house_number") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+
+<p class="form-field">
+  <label for="house_number_addition">{{ t!("person.fields.house_number_addition")|trans }}</label>
+  <input type="text" name="house_number_addition" id="house_number_addition"
+    value="{{ form.data.house_number_addition }}" />
+  {% for error in form|error("house_number_addition") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+
+<p class="form-field">
+  <label for="street_name">{{ t!("person.fields.street_name")|trans }}</label>
+  <input type="text" name="street_name" id="street_name" value="{{ form.data.street_name }}" />
+  {% for error in form|error("street_name") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+
+<p class="form-field">
+  <label for="locality">{{ t!("person.fields.locality")|trans }}</label>
+  <input type="text" name="locality" id="locality" value="{{ form.data.locality }}" list="locality-suggestions" />
+  <datalist id="locality-suggestions"></datalist>
+  {% for error in form|error("locality") %}
+  <span class="error">{{ error }}</span>
+  {% endfor %}
+</p>
+
+<p class="form-field actions">
+  <button type="submit" class="button">
+    {{ t!("action.save")|trans }}
+  </button>
+  <a href="{{ Person::list_path() }}" class="button secondary">
+    {{ t!("action.cancel")|trans }}
+  </a>
+</p>

@@ -1,0 +1,53 @@
+<table>
+  <thead>
+    <tr>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::LastName) }}">
+          {{ t!("person.fields.last_name")|trans }}
+          {{ pagination.dir_icon(PersonSort::LastName) }}
+        </a>
+      </th>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::Initials) }}">
+          {{ t!("person.fields.initials")|trans }}
+          {{ pagination.dir_icon(PersonSort::Initials) }}
+        </a>
+      </th>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::FirstName) }}">
+          {{ t!("person.fields.first_name")|trans }}
+          {{ pagination.dir_icon(PersonSort::FirstName) }}
+        </a>
+      </th>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::Gender) }}">
+          {{ t!("person.fields.gender")|trans }}
+          {{ pagination.dir_icon(PersonSort::Gender) }}
+        </a>
+      </th>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::Locality) }}">
+          {{ t!("person.fields.locality")|trans }}
+          {{ pagination.dir_icon(PersonSort::Locality) }}
+        </a>
+      </th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for person in persons %}
+    <tr class="clickable">
+      <td>{{ person.last_name }}</td>
+      <td>{{ person.initials }}</td>
+      <td>{{ person.first_name_display() }}</td>
+      <td>{{ person.gender_key()|trans }}</td>
+      <td>{{ person.locality|display }}</td>
+      <td>
+        <a href="{{ person.edit_path() }}">
+          <span>{{ t!("action.edit")|trans }}</span>
+        </a>
+      </td>
+    </tr>
+    {% endfor %}
+  </tbody>
+</table>

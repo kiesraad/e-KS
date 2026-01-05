@@ -1,0 +1,26 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                cl.id AS \"id!\",\n                COUNT(clp.person_id)::bigint AS \"person_count!\"\n            FROM candidate_lists cl\n            LEFT JOIN candidate_lists_persons clp ON clp.candidate_list_id = cl.id\n            GROUP BY cl.id\n            ORDER BY cl.updated_at DESC, cl.created_at DESC\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "person_count!",
+        "type_info": "Int8"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      null
+    ]
+  },
+  "hash": "c7ce8bd934602274ecefc5007499d943fa9b7a210dd2cc98a743412864c827c1"
+}
