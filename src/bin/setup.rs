@@ -9,7 +9,7 @@ use utils::{platform_string, run_status, stop_running_containers, temp_dir, wait
 
 const ESBUILD_VERSION: &str = "0.27.1";
 const BIOME_VERSION: &str = "2.3.10";
-const BAG_SERVICE_VERSION: &str = "0.3.0";
+const BAG_SERVICE_VERSION: &str = "0.3.1";
 const ESBUILD_BASE_URL: &str = "https://registry.npmjs.org/@esbuild";
 const BIOME_BASE_URL: &str = "https://github.com/biomejs/biome/releases/download/@biomejs/biome@";
 const BAG_SERVICE_BASE_URL: &str =
@@ -132,7 +132,9 @@ fn install_biome(platform: &str, target: &Path) -> Result<()> {
 
 fn install_bag_service(platform: &str, target: &Path) -> Result<()> {
     let platform_suffix = match platform {
-        "Darwin arm64" => "bag-service-apple-aarch64",
+        "Darwin arm64" => "bag-service-macos-arm64",
+        "Darwin x86_64" => "bag-service-macos-x64",
+        "Linux arm64" | "Linux aarch64" => "bag-service-linux-arm64",
         "Linux x86_64" => "bag-service-linux-x64",
         _ => anyhow::bail!("unsupported platform: {platform}"),
     };
