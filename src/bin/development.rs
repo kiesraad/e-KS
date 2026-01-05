@@ -1,12 +1,10 @@
-use std::{
-    fs, io,
-    path::PathBuf,
-    process::{Child, Command, Stdio},
-};
+use std::{io, path::PathBuf, process::Stdio};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use tokio::{
+    fs,
+    process::{Child, Command},
     signal,
     signal::unix::{SignalKind, signal as unix_signal},
 };
@@ -14,10 +12,42 @@ use tokio::{
 #[path = "../dev/utils.rs"]
 mod utils;
 
-use utils::{run_status, stop_running_containers, wait_for_postgres};
+use utils::{run, stop_running_containers, wait_for_postgres};
+
+#[tokio::main]
+async fn main() -> Result<()> {
+    println!("⏳ Starting development environment...");
+
+    stop_running_containers()
+        .await?;
+    run("docker", &["compose", "up", "-d"]).await?;
+
+    let config = load_config().await?;
+
+    let mut children = Vec::new();
+    let mut waited_for_postgres = false;
+
+    for config in config.children {
+        if config.wait_for_postgres && !waited_for_postgres {
+            wait_for_postgres().await?;
+            waited_for_postgres = true;
+        }
+
+        println!("🚀 Starting {}", config.name);
+        children.push(ManagedChild {
+            child: config.spawn()?,
+            config,
+        });
+    }
+
+    wait_for_shutdown().await;
+    shutdown(children).await;
+
+    Ok(())
+}
 
 struct ManagedChild {
-    name: String,
+    config: ChildConfig,
     child: Child,
 }
 
@@ -36,63 +66,27 @@ struct DevelopmentConfig {
     children: Vec<ChildConfig>,
 }
 
-#[tokio::main]
-async fn main() -> Result<()> {
-    println!("⏳ Starting development environment...");
-
-    stop_running_containers().context("stop running containers")?;
-    run_status(Command::new("docker").args(["compose", "up", "-d"]))
-        .context("start docker compose containers")?;
-
-    let config = load_config().context("load development config")?;
-    let mut children = Vec::new();
-    let mut waited_for_postgres = false;
-
-    for child_config in config.children {
-        if child_config.wait_for_postgres && !waited_for_postgres {
-            wait_for_postgres(
-                "Waiting for PostgreSQL...",
-                Some("PostgreSQL is ready, starting cargo watch..."),
-                false,
-            )
-            .await
-            .context("wait for postgres")?;
-            waited_for_postgres = true;
-        }
-
-        let args: Vec<&str> = child_config.args.iter().map(String::as_str).collect();
-        children.push(ManagedChild {
-            name: child_config.name,
-            child: spawn_child(&child_config.command, &args)?,
-        });
+impl ChildConfig {
+    fn spawn(&self) -> io::Result<Child> {
+        Command::new(&self.command)
+            .args(&self.args)
+            .stdin(Stdio::null())
+            .spawn()
     }
-
-    wait_for_shutdown().await;
-    shutdown(children).await;
-
-    Ok(())
 }
 
-fn spawn_child(program: &str, args: &[&str]) -> io::Result<Child> {
-    Command::new(program)
-        .args(args)
-        .stdin(Stdio::null())
-        .spawn()
-}
+async fn load_config() -> Result<DevelopmentConfig> {
+    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
+        .join("src")
+        .join("dev")
+        .join("development.yml");
 
-fn load_config() -> Result<DevelopmentConfig> {
-    let path = config_path();
-    let contents = fs::read_to_string(&path).with_context(|| format!("read {}", path.display()))?;
+    let contents = fs::read_to_string(&path)
+        .await
+        .context("read development.yml")?;
     let config: DevelopmentConfig =
         serde_saphyr::from_str(&contents).context("parse development.yml")?;
     Ok(config)
-}
-
-fn config_path() -> PathBuf {
-    PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("dev")
-        .join("development.yml")
 }
 
 async fn wait_for_shutdown() {
@@ -124,11 +118,11 @@ async fn shutdown(mut children: Vec<ManagedChild>) {
     println!("⏳ Shutting down development environment (expect docker/postgres)...");
 
     for managed in &mut children {
-        let _ = managed.child.kill();
+        let _ = managed.child.kill().await;
     }
 
     for mut managed in children {
-        let _ = managed.child.wait();
-        println!(" ⏹ Stopped {}", managed.name);
+        let _ = managed.child.wait().await;
+        println!(" ⏹ Stopped {}", managed.config.name);
     }
 }

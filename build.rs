@@ -71,6 +71,9 @@ fn load_locales() {
 }
 
 fn main() {
+    std::fs::create_dir_all("./frontend/static")
+        .expect("Failed to create frontend/static directory");
+
     #[cfg(feature = "memory-serve")]
     memory_serve::load_directory("./frontend/static");
 

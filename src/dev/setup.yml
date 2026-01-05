@@ -1,0 +1,44 @@
+tools:
+  - name: esbuild
+    version: "0.27.1"
+    base_url: "https://registry.npmjs.org/@esbuild"
+  - name: biome
+    version: "2.3.10"
+    base_url: "https://github.com/biomejs/biome/releases/download/@biomejs/biome@"
+  - name: bag-service
+    version: "0.3.1"
+    base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
+commands:
+  docker_compose_rm:
+    command: docker
+    args:
+      - compose
+      - rm
+      - -f
+      - -v
+  docker_compose_up:
+    command: docker
+    args:
+      - compose
+      - up
+      - -d
+  esbuild_bundle:
+    command: ./tools/esbuild
+    args:
+      - --bundle
+      - frontend/index.ts
+      - --outdir=frontend/static
+      - --minify
+      - --sourcemap
+      - --define:IS_PRODUCTION=true
+      - --loader:.woff2=file
+      - --loader:.svg=file
+      - --public-path=/static/
+  load_fixtures:
+    command: cargo
+    args:
+      - run
+      - --features
+      - fixtures
+      - --bin
+      - fixtures

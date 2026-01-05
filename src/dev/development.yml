@@ -17,16 +17,6 @@ children:
     command: ./tools/bag-service
     args:
       - 127.0.0.1:8080
-    wait_for_postgres: true
-  - name: cargo watch
-    command: cargo
-    args:
-      - watch
-      - --watch
-      - src
-      - -x
-      - run
-    wait_for_postgres: true
   - name: docker logs
     command: docker
     args:
@@ -35,4 +25,12 @@ children:
       - -f
       - --since
       - 5s
+  - name: cargo watch
+    command: cargo
+    args:
+      - watch
+      - --watch
+      - src
+      - -x
+      - run
     wait_for_postgres: true

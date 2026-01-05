@@ -1,68 +1,65 @@
 use std::{
-    path::PathBuf,
-    process::{Command, Stdio},
+    path::{Path, PathBuf},
+    process::Stdio,
     time::Duration,
 };
 
 use anyhow::Result;
-use tokio::time::sleep;
+use tokio::{process::Command, time::sleep};
 
-pub fn run_status(cmd: &mut Command) -> Result<()> {
-    let status = cmd.status()?;
+pub async fn run(command: &str, args: &[&str]) -> Result<()> {
+    println!("$> {command} {}", args.join(" "));
+    let status = Command::new(command).args(args).status().await?;
 
     if !status.success() {
-        anyhow::bail!("command failed: {:?}", cmd);
+        anyhow::bail!("command failed: {:?}", command);
     }
 
     Ok(())
 }
 
-pub fn stop_running_containers() -> Result<()> {
-    let output = Command::new("docker").args(["ps", "-q"]).output()?;
+pub async fn stop_running_containers() -> Result<()> {
+    let output = Command::new("docker").args(["ps", "-q"]).output().await?;
     if output.status.success() {
         let ids = String::from_utf8_lossy(&output.stdout);
         let ids: Vec<&str> = ids.split_whitespace().collect();
         if !ids.is_empty() {
-            let mut cmd = Command::new("docker");
-            cmd.arg("kill");
-            cmd.args(ids);
-            run_status(&mut cmd)?;
+            let mut args = Vec::with_capacity(ids.len() + 1);
+            args.push("kill");
+            args.extend(ids.iter().cloned());
+            run("docker", &args).await?;
         }
     }
     Ok(())
 }
 
-pub async fn wait_for_postgres(
-    wait_message: &str,
-    ready_message: Option<&str>,
-    repeat_wait_message: bool,
-) -> Result<()> {
-    if !repeat_wait_message {
-        println!("{wait_message}");
-    }
-
+pub async fn wait_for_postgres() -> Result<()> {
     loop {
         let status = Command::new("pg_isready")
             .args(["-h", "127.0.0.1", "-q"])
             .stdout(Stdio::null())
             .stderr(Stdio::null())
-            .status()?;
+            .status()
+            .await?;
+
         if status.success() {
-            if let Some(message) = ready_message {
-                println!("{message}");
-            }
             return Ok(());
         }
-        if repeat_wait_message {
-            println!("{wait_message}");
-        }
+
+        println!("⏳ Waiting for PostgreSQL...");
         sleep(Duration::from_secs(1)).await;
     }
 }
 
 #[allow(unused)]
-pub fn platform_string() -> Result<String> {
-    let output = Command::new("uname").args(["-ms"]).output()?;
+pub fn pts(path: &Path) -> Result<&str> {
+    path.to_str()
+        .ok_or_else(|| anyhow::anyhow!("convert {path:?} to str"))
+}
+
+#[allow(unused)]
+pub async fn platform_string() -> Result<String> {
+    let output = Command::new("uname").args(["-ms"]).output().await?;
 
     if !output.status.success() {
         anyhow::bail!("uname -ms failed");
@@ -72,8 +69,8 @@ pub fn platform_string() -> Result<String> {
 }
 
 #[allow(unused)]
-pub fn temp_dir() -> Result<PathBuf> {
-    let output = Command::new("mktemp").arg("-d").output()?;
+pub async fn temp_dir() -> Result<PathBuf> {
+    let output = Command::new("mktemp").arg("-d").output().await?;
 
     if !output.status.success() {
         anyhow::bail!("mktemp -d failed");
