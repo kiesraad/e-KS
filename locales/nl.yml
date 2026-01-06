@@ -5,6 +5,7 @@ action:
   create: Aanmaken
   edit: Bewerken
   save: Opslaan
+  signout: Afmelden
 candidate_list:
   actions:
     add: Nieuwe kandidatenlijst
@@ -83,3 +84,8 @@ validation:
   value_should_not_be_empty: Dit veld mag niet leeg zijn.
   value_too_long: De waarde is te lang ({} tekens), maximaal {} tekens toegestaan.
   value_too_short: De waarde is te kort ({} tekens), minimaal {} tekens vereist.
+common:
+  title: Kiesraad - Kandidaat stellen
+  general_information: Algemene gegevens
+  submit: Inleveren
+  version: Versie

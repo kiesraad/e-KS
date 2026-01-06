@@ -24,7 +24,7 @@ pub use common::{
     templates::HtmlTemplate,
     translate,
 };
-pub use error::{AppError, AppResponse, ErrorResponse};
+pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens};
 
 #[cfg(test)]

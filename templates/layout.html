@@ -4,26 +4,25 @@
   <header>
     <nav>
       <ul>
-        <li><a href="/" class="{% block overview_nav_class %}{% endblock %}">Overzicht</a></li>
-        <li><a href="{{ crate::persons::structs::Person::list_path() }}" class="{% block persons_nav_class %}{% endblock %}">Personen</a></li>
-        <li><a href="{{ crate::candidate_lists::structs::CandidateList::list_path() }}" class="{% block candidate_lists_nav_class %}{% endblock %}">Kandidatenlijsten</a></li>
-        <li><a href="/">Inleveren</a></li>
+        <li><a href="/" class="{% block overview_nav_class %}{% endblock %}">{{ t!("common.general_information")|trans }}</a></li>
+        <li><a href="{{ crate::candidate_lists::structs::CandidateList::list_path() }}" class="{% block candidate_lists_nav_class %}{% endblock %}">{{ t!("candidate_list.title")|trans }}</a></li>
+        <li><a href="/">{{ t!("common.submit")|trans }}</a></li>
       </ul>
       <ul>
         <li class="user-info">
           <strong>Evert Klaas Smit</strong>
           <span>(Lijst Hekking)</span>
         </li>
-        <li><a href="/" class="logout">Afmelden</a></li>
+        <li><a href="/" class="logout">{{ t!("action.signout")|trans }}</a></li>
       </ul>
     </nav>
-    <h1>{% block page_title %}Kiesraad - e-KS{% endblock %}</h1>
+    <h1>{% block page_title %}{{ t!("common.title")|trans }}{% endblock %}</h1>
   </header>
   <main>
     {% block content %}{% endblock %}
   </main>
   <footer>
-    <span>Kiesraad - e-KS</span>
-    <span>Versie <strong>1.0.0</strong></span>
+    <span>{{ t!("common.title")|trans }}</span>
+    <span>{{ t!("common.version")|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
   </footer>
 {% endblock %}

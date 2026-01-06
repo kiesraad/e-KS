@@ -1,19 +1,20 @@
 //! Builds the application Axum router and wires feature routes.
 //! Used by the server startup to assemble all routes.
 
-use axum::{Router, routing::get};
+use axum::{Router, middleware, routing::get};
 
 #[cfg(feature = "http-logging")]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
-use crate::{AppState, candidate_lists, pages, persons};
+use crate::{
+    AppState, candidate_lists, pages, persons, render_error_pages,
+};
 
 pub fn create() -> Router<AppState> {
     let router = Router::new()
         .route("/", get(pages::index))
         .merge(persons::router())
-        .merge(candidate_lists::router())
-        .fallback(get(pages::not_found));
+        .merge(candidate_lists::router());
 
     #[cfg(feature = "dev-features")]
     let router = router
@@ -49,6 +50,8 @@ pub fn create() -> Router<AppState> {
     );
 
     router
+        .layer(middleware::from_fn(render_error_pages))
+        .fallback(get(pages::not_found))
 }
 
 #[cfg(test)]

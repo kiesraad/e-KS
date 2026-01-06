@@ -1,10 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::OriginalUri,
-    http::StatusCode,
-    response::{Html, IntoResponse},
-};
-use tracing::error;
+use axum::{extract::OriginalUri, http::StatusCode, response::IntoResponse};
 
 use crate::{AppError, Context, HtmlTemplate, filters, t};
 
@@ -12,11 +7,8 @@ use crate::{AppError, Context, HtmlTemplate, filters, t};
 #[template(path = "index.html")]
 pub struct IndexTemplate {}
 
-pub async fn index() -> Result<Html<String>, AppError> {
-    IndexTemplate {}.render().map(Html).map_err(|err| {
-        error!(?err, "failed to render index template");
-        AppError::InternalServerError
-    })
+pub async fn index(context: Context) -> impl IntoResponse {
+    HtmlTemplate(IndexTemplate {}, context)
 }
 
 #[derive(Template)]
@@ -42,13 +34,13 @@ pub async fn not_found(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::response::Html;
 
     use crate::test_utils::response_body_string;
 
     #[tokio::test]
     async fn index_renders_html() {
-        let Html(body) = index().await.unwrap();
+        let body = index(Context::default()).await.into_response();
+        let body = response_body_string(body).await;
         assert!(body.contains("Hello World!"));
     }
 

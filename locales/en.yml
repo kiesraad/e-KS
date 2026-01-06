@@ -5,6 +5,7 @@ action:
   create: Create
   edit: Edit
   save: Save
+  signout: Sign out
 candidate_list:
   actions:
     add: New candidate list
@@ -83,3 +84,8 @@ validation:
   value_should_not_be_empty: This field must not be empty.
   value_too_long: The value is too long ({} characters), maximum {} characters allowed.
   value_too_short: The value is too short ({} characters), minimum {} characters required.
+common:
+  title: Kiesraad - Kandidaat stellen
+  general_information: General Information
+  submit: Submit
+  version: Version

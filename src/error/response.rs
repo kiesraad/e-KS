@@ -1,12 +1,14 @@
 use askama::Template;
 use axum::{
+    extract::Request,
     http::StatusCode,
-    response::{Html, IntoResponse, Response},
+    middleware::Next,
+    response::{IntoResponse, Response},
 };
 use serde::Serialize;
 use tracing::error;
 
-use crate::Context;
+use crate::{Context, HtmlTemplate, filters, t};
 
 use super::app_error::AppError;
 
@@ -46,12 +48,12 @@ pub struct ErrorResponse {
     message: String,
 }
 
-#[derive(Template)]
+#[derive(Template, Clone)]
 #[template(path = "error.html")]
-struct ErrorTemplate<'a> {
-    status_code: u16,
-    title: &'a str,
-    message: &'a str,
+struct ErrorTemplate {
+    status_code: StatusCode,
+    title: String,
+    message: String,
 }
 
 /// Convert ErrorResponse into an HTTP response
@@ -60,19 +62,29 @@ impl IntoResponse for ErrorResponse {
         let ErrorResponse { error, message } = self;
         let status_code = error.status_code();
 
-        let template = ErrorTemplate {
-            status_code: status_code.as_u16(),
-            title: error.title(),
-            message: &message,
+        let error_template = ErrorTemplate {
+            status_code,
+            title: error.title().to_string(),
+            message,
         };
 
-        match template.render() {
-            Ok(html) => (status_code, Html(html)).into_response(),
-            Err(err) => {
-                error!(?err, "failed to render error template");
-                status_code.into_response()
-            }
-        }
+        let mut response = status_code.into_response();
+        response.extensions_mut().insert(error_template);
+        response
+    }
+}
+
+/// Middleware to render error pages based on ErrorTemplate in response extensions
+pub async fn render_error_pages(context: Context, request: Request, next: Next) -> Response {
+    let mut response = next.run(request).await;
+
+    match response.extensions_mut().remove::<ErrorTemplate>() {
+        None => response,
+        Some(error_template) => (
+            error_template.status_code,
+            HtmlTemplate(error_template.clone(), context),
+        )
+            .into_response(),
     }
 }
 
@@ -147,11 +159,28 @@ impl ErrorResponse {
 mod tests {
     use super::*;
     use crate::{form::ValidationError, test_utils::response_body_string};
-    use axum::http::StatusCode;
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode},
+        middleware,
+        routing::get,
+    };
+    use tower::ServiceExt;
 
     #[tokio::test]
     async fn not_found_renders_template_with_message() {
-        let response = AppError::NotFound("missing".to_string()).into_response();
+        let app = Router::new()
+            .route(
+                "/",
+                get(|| async { AppError::NotFound("missing".to_string()) }),
+            )
+            .layer(middleware::from_fn(render_error_pages));
+
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .expect("response");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
@@ -161,8 +190,19 @@ mod tests {
 
     #[tokio::test]
     async fn validation_error_maps_to_bad_request() {
-        let errors = vec![("name".to_string(), ValidationError::InvalidValue)];
-        let response = AppError::ValidationError(errors).into_response();
+        let app = Router::new()
+            .route(
+                "/",
+                get(|| async {
+                    let errors = vec![("name".to_string(), ValidationError::InvalidValue)];
+                    AppError::ValidationError(errors)
+                }),
+            )
+            .layer(middleware::from_fn(render_error_pages));
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .expect("response");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         let body = response_body_string(response).await;
@@ -171,7 +211,16 @@ mod tests {
 
     #[tokio::test]
     async fn database_error_maps_to_internal_server_error() {
-        let response = AppError::DatabaseError(sqlx::Error::RowNotFound).into_response();
+        let app = Router::new()
+            .route(
+                "/",
+                get(|| async { AppError::DatabaseError(sqlx::Error::RowNotFound) }),
+            )
+            .layer(middleware::from_fn(render_error_pages));
+        let response = app
+            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
+            .await
+            .expect("response");
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
