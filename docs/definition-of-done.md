@@ -2,6 +2,7 @@
 
 ## DoD PR
 
+- Should be linked to one or more issues (merging the PR resolved the issue(s))
 - Should be assigned (one person should be responsible for maintaining the PR)
 - Unit tests for all added code
 - Rust integration tests for all implemented user flows (tests that do not share code with the main crate)
