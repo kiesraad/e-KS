@@ -1,10 +1,10 @@
 use std::{
     path::{Path, PathBuf},
-    process::Stdio,
     time::Duration,
 };
 
 use anyhow::Result;
+use sqlx::Connection;
 use tokio::{process::Command, time::sleep};
 
 pub async fn run(command: &str, args: &[&str]) -> Result<()> {
@@ -34,16 +34,16 @@ pub async fn stop_running_containers() -> Result<()> {
 }
 
 pub async fn wait_for_postgres() -> Result<()> {
-    loop {
-        let status = Command::new("pg_isready")
-            .args(["-h", "127.0.0.1", "-q"])
-            .stdout(Stdio::null())
-            .stderr(Stdio::null())
-            .status()
-            .await?;
+    let database_url = std::env::var("DATABASE_URL")
+        .unwrap_or_else(|_| "postgres://eks@localhost/eks".to_string());
 
-        if status.success() {
-            return Ok(());
+    loop {
+        match sqlx::PgConnection::connect(&database_url).await {
+            Ok(_) => return Ok(()),
+            Err(sqlx::Error::Configuration(err)) => {
+                anyhow::bail!("invalid DATABASE_URL: {err}");
+            }
+            Err(_) => {}
         }
 
         println!("⏳ Waiting for PostgreSQL...");
