@@ -47,3 +47,8 @@ commands:
     args:
       - install
       - cargo-watch
+  install_cargo_sqlx:
+    command: cargo
+    args:
+      - install
+      - sqlx-cli
