@@ -6,9 +6,7 @@ use axum::{Router, middleware, routing::get};
 #[cfg(feature = "http-logging")]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
-use crate::{
-    AppState, candidate_lists, pages, persons, render_error_pages,
-};
+use crate::{AppState, candidate_lists, pages, persons, render_error_pages};
 
 pub fn create() -> Router<AppState> {
     let router = Router::new()
