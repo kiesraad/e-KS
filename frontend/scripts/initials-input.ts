@@ -18,7 +18,7 @@ window.addEventListener("load", () => {
       }
 
       if (initials.length > 0) {
-        input.value = initials.split("").join(".") + ".";
+        input.value = `${initials.split("").join(".")}.`;
       } else {
         input.value = "";
       }

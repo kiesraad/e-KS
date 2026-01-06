@@ -26,13 +26,18 @@ Een overzicht van de voorgestelde technische afwegingen staat in [deze presentat
 
 ## Development setup
 
-1) Install dependencies and provision the local environment:
+1) Install prerequisites:
+
+- [Rust](https://www.rust-lang.org/tools/install)
+- [Docker](https://docs.docker.com/get-docker/)
+
+2) Install dependencies and provision the local environment:
 
 ```bash
 cargo run --bin setup
 ```
 
-2) Start the development environment (services, frontend build, app, logs):
+3) Start the development environment (services, frontend build, app, logs):
 
 ```bash
 cargo run --bin development

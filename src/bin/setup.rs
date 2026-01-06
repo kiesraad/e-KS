@@ -32,6 +32,9 @@ async fn main() -> Result<()> {
     println!("📦 Bundling frontend assets with esbuild...");
     config.commands.esbuild_bundle.run().await?;
 
+    println!("📚 Installing cargo-watch (if it is not yet installed)...");
+    config.commands.install_cargo_watch.run().await?;
+
     wait_for_postgres().await?;
 
     println!("🚚 Running sqlx migrations and loading fixtures...");
@@ -60,6 +63,7 @@ struct CommandConfig {
 struct CommandsConfig {
     docker_compose_rm: CommandConfig,
     docker_compose_up: CommandConfig,
+    install_cargo_watch: CommandConfig,
     esbuild_bundle: CommandConfig,
     load_fixtures: CommandConfig,
 }

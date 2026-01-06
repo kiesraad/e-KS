@@ -42,3 +42,8 @@ commands:
       - fixtures
       - --bin
       - fixtures
+  install_cargo_watch:
+    command: cargo
+    args:
+      - install
+      - cargo-watch
