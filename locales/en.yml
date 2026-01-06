@@ -8,9 +8,10 @@ action:
   signout: Sign out
 candidate_list:
   actions:
-    add: New candidate list
+    add: Add list
     back_to_list: Back to candidate lists
     view: View
+    manage: Manage list
   add_candidate: Add candidate
   fields:
     created_at: Created at
@@ -32,6 +33,7 @@ candidate_list:
   not_found: Candidate {} not found.
   empty: No candidate lists found.
   title: Candidate lists
+  title_single: Candidate list
   view:
     empty: This candidate list has no persons yet.
     title: Candidate list
@@ -51,6 +53,7 @@ person:
   actions:
     add: Add person
     back_to_list: Back to persons
+    manage: Manage persons
   created_at: Created at
   fields:
     date_of_birth: Date of birth
@@ -74,6 +77,8 @@ person:
   not_found: Person {} not found.
   title: Persons
   updated_at: Updated at
+  all: All persons
+  total: '{} persons in total'
   view:
     empty: No details available for this person.
     title: Person details
@@ -87,5 +92,6 @@ validation:
 common:
   title: Kiesraad - Kandidaat stellen
   general_information: General Information
+  electoral_districts: Electoral districts
   submit: Submit
   version: Version

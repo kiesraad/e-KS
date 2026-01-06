@@ -4,19 +4,39 @@
 {% block candidate_lists_nav_class %}active{% endblock %}
 
 {% block content %}
-<nav>
-  <a href="{{ crate::candidate_lists::structs::CandidateList::new_path() }}" class="button md secondary">
-    {{ t!("candidate_list.actions.add")|trans }}
-  </a>
-</nav>
+<section>
+  <div class="cards">
+    {# manage persons card #}
+    <div class="card card-persons">
+      <h3>{{ t!("person.all")|trans }}</h3>
+      <p class="statistic">
+        {{ t!("person.total")|trans|fill(total_persons) }}
+      </p>
+      <a href="{{ Person::list_path() }}">
+        {{ t!("person.actions.manage")|trans }}
+      </a>
+    </div>
 
-{% if candidate_lists.is_empty() %}
-<section>
-  <p>{{ t!("candidate_list.empty")|trans }}</p>
+    {# candidate lists cards #}
+    {% for candidate_list in candidate_lists %}
+    <div class="card card-list">
+      <h3>{{ t!("candidate_list.title_single")|trans }} {{ loop.index0|ABC }}</h3>
+      <p class="statistic truncated">
+        {{ t!("common.electoral_districts")|trans }}:
+        {{ candidate_list.list.display_districts(election, locale) }}
+      </p>
+      <a href="{{ candidate_list.list.view_path() }}">
+        {{ t!("candidate_list.actions.manage")|trans }}
+      </a>
+    </div>
+    {% endfor %}
+
+    {# add new candidate list card #}
+    <div class="card card-add-list">
+      <a href="{{ CandidateList::new_path() }}" class="button secondary md">
+        {{ t!("candidate_list.actions.add")|trans }}
+      </a>
+    </div>
+  </div>
 </section>
-{% else %}
-<section>
-  {% include "candidate_lists/list_table.html" %}
-</section>
-{% endif %}
 {% endblock %}

@@ -31,6 +31,10 @@ children:
       - watch
       - --watch
       - src
+      - --watch
+      - templates
+      - --watch
+      - locales
       - -x
       - run
     wait_for_postgres: true

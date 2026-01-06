@@ -8,9 +8,10 @@ action:
   signout: Afmelden
 candidate_list:
   actions:
-    add: Nieuwe kandidatenlijst
+    add: Lijst aanmaken
     back_to_list: Terug naar kandidatenlijsten
     view: Bekijken
+    manage: Beheer lijst
   add_candidate: Kandidaat toevoegen
   fields:
     created_at: Aangemaakt op
@@ -32,6 +33,7 @@ candidate_list:
   not_found: Kandidatenlijst {} niet gevonden.
   empty: Geen kandidatenlijsten gevonden.
   title: Kandidatenlijsten
+  title_single: Lijstelsel
   view:
     empty: Deze kandidatenlijst heeft nog geen kandidaten.
     title: Kandidatenlijst
@@ -51,6 +53,7 @@ person:
   actions:
     add: Persoon toevoegen
     back_to_list: Terug naar personen
+    manage: Personen beheren
   created_at: Aangemaakt op
   fields:
     date_of_birth: Geboortedatum
@@ -74,6 +77,8 @@ person:
   not_found: Persoon {} niet gevonden.
   title: Personen
   updated_at: Laatst bijgewerkt op
+  all: Alle personen
+  total: '{} personen in totaal'
   view:
     empty: Geen personen gevonden.
     title: Persoon
@@ -87,5 +92,6 @@ validation:
 common:
   title: Kiesraad - Kandidaat stellen
   general_information: Algemene gegevens
+  electoral_districts: Kieskringen
   submit: Inleveren
   version: Versie

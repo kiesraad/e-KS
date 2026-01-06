@@ -1,0 +1,45 @@
+
+.cards {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-lg);
+}
+
+.card {
+    width: 18rem;
+    background-color: var(--base-white);
+    padding: var(--space-lg);
+
+    h3 {
+        font-size: var(--font-size-lg);
+        color: var(--gray-800);
+        margin-bottom: var(--space-sm);
+    }
+
+    p {
+        font-size: var(--font-size-md);
+        color: var(--gray-600);
+        margin-bottom: var(--space-lg);
+    }
+
+    a {
+        display: block;
+        text-decoration: none;
+        color: var(--button-color-primary);
+        font-size: var(--font-size-md);
+        background: url("../icons/chevronRight.svg") no-repeat right center;
+        background-size: 1.25rem;
+        padding: var(--space-sm);
+        padding-right: var(--space-ml);
+
+        &:hover {
+            background-color: var(--color-hover);
+        }
+    }
+
+    &.card-add-list {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+}

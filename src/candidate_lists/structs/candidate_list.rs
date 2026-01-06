@@ -3,10 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
-use crate::{
-    ElectionConfig, ElectoralDistrict, Locale, constants::DEFAULT_DATE_TIME_FORMAT,
-    persons::structs::Person, t,
-};
+use crate::{ElectionConfig, ElectoralDistrict, Locale, persons::structs::Person, t};
 
 /// Maximum number of persons allowed on a candidate list.
 pub const MAX_CANDIDATES: usize = 80;
@@ -51,19 +48,10 @@ impl CandidateList {
                 .join(", ")
         }
     }
-
-    pub fn created(&self) -> String {
-        self.created_at.format(DEFAULT_DATE_TIME_FORMAT).to_string()
-    }
-
-    pub fn updated(&self) -> String {
-        self.updated_at.format(DEFAULT_DATE_TIME_FORMAT).to_string()
-    }
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
     use uuid::Uuid;
 
     use super::*;
@@ -96,19 +84,5 @@ mod tests {
             list.display_districts(&ElectionConfig::EK2027, &Locale::Nl),
             "Utrecht, Drenthe"
         );
-    }
-
-    #[test]
-    fn formats_created_and_updated_timestamps() {
-        let timestamp = Utc.with_ymd_and_hms(2024, 5, 6, 7, 8, 9).unwrap();
-        let list = CandidateList {
-            id: Uuid::new_v4(),
-            electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: timestamp,
-            updated_at: timestamp,
-        };
-
-        assert_eq!(list.created(), "06-05-2024 07:08:09");
-        assert_eq!(list.updated(), "06-05-2024 07:08:09");
     }
 }
