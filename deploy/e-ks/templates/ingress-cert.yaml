@@ -1,0 +1,12 @@
+apiVersion: cert-manager.io/v1
+kind: Certificate
+metadata:
+  name: eks-tls-cert
+  namespace: {{ .Release.Namespace }}
+spec:
+  secretName: eks-tls-cert
+  issuerRef:
+    name: letsencrypt-production-http
+    kind: ClusterIssuer
+  dnsNames:
+    - {{ include "fullHostname" . | quote }}

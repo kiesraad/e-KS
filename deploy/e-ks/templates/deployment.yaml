@@ -1,0 +1,27 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: eks
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: eks
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: core
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: eks
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: eks
+        version: {{ .Chart.AppVersion }}
+    spec:
+      imagePullSecrets:
+        - name: regcred
+      containers:
+        - name: eks
+          image: "ghcr.io/kiesraad/e-ks/eks-core:{{ .Chart.AppVersion }}"
+          ports:
+            - containerPort: 3000
+              name: http

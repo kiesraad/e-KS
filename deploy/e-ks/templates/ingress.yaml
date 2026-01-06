@@ -1,0 +1,21 @@
+apiVersion: traefik.io/v1alpha1
+kind: IngressRoute
+metadata:
+  name: eks
+  namespace: {{ .Release.Namespace }}
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-staging-http
+spec:
+  entryPoints:
+    - websecure
+  routes:
+    - match: Host(`{{ include "fullHostname" . }}`)
+      kind: Rule
+      middlewares:
+        - name: test-auth
+          namespace: ingress
+      services:
+        - name: eks
+          port: http
+  tls:
+    secretName: eks-tls-cert

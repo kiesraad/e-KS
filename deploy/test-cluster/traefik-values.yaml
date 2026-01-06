@@ -1,0 +1,5 @@
+ingressClass:
+  name: traefik
+providers:
+  kubernetesCRD:
+    allowCrossNamespace: true

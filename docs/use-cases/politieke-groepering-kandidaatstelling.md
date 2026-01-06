@@ -35,16 +35,19 @@ __Hoofdscenario:__
 __Niveau:__ Gebruikersdoel, zee, 🌊
 
 
-
 ### Hoofdscenario en uitbreidingen
 
 __Hoofdscenario:__
 
 1. De politieke groepering selecteert het type groepering.
-2. De gemachtigde vult de gegevens van de lijstinleveraar in. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
+2. De gemachtigde vult de gegevens van de lijstinleveraar in, dit kan ook een bestaande kandidaat zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
 3. De politieke groepering vult de gegevens van de politieke groepering in: aanduiding, volledige statuaire naam, gemachtigde per groepering. **art. R (voor Eerste Kamerverkiezing)** 
 4. De applicatie bepaalt de maximale lengte van de lijst o.b.v. de uitslag van de vorige verkiezing. **art. R 4 (voor Eerste Kamerverkiezing)** 
 5. De politieke groepering bevestigt de maximale lijstlengte.
+
+__Uitbreidingen__: 
+3a. [De politieke groepering kiest ervoor om de lijst samen in te leveren](#de-politieke-groepering-kiest-ervoor-om-de-lijst-samen-in-te-leveren)
+  
 
 ### Open punten
 
@@ -166,3 +169,15 @@ __Hoofdscenario:__
 2. Politieke groepering stelt vast dat de schriftelijke te maken wijzigingen ook in de applicatie staan. **@Richard: papier is leidend.**
 3. Politieke groepering corrigeert de fouten
 4. Vervolg zie: [De lijstinleveraar stelt vast alle gegevens volledig zijn en downloadt en print alle benodigde documenten. (zee)]((#de-lijstinleveraar-stelt-vast-alle-gegevens-volledig-zijn-en-downloadt-en-print-alle-benodigde-documenten-zee))
+
+## De politieke groepering kiest ervoor om de lijst samen in te leveren
+
+__Niveau:__ Gebruikersdoel, zee, 🌊
+
+__Hoofdscenario:__
+
+1. De politieke groepering geeft aan dat ze meedoen met een samengevoegde aanduiding
+2. De politieke groepering geeft aan met welke andere aanduidingen ze meedoen
+3. De applicatie zorgt ervoor dat als de andere aanduidingen inloggen, ze ook de gegevens kunnen inzien. *hier moeten we nog even over nadenken, que security is dit natuurlijk niet top*
+4. De politieke groepering vult de aanduiding in, deze is max 35 leestekens*.
+

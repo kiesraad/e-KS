@@ -2,7 +2,6 @@ use askama::Template;
 use axum::{Router, extract::Query, response::Html, routing::get};
 use serde::Deserialize;
 use tokio::net::TcpListener;
-use tracing::log::warn;
 
 #[tokio::main]
 async fn main() {
@@ -17,20 +16,13 @@ fn router() -> Router {
 
 #[derive(Deserialize)]
 struct Params {
-    a: bool,
-    b: bool,
+    name: Option<String>,
 }
 
-async fn index(Query(Params { a, b }): Query<Params>) -> Html<String> {
-    let mut s = "world".to_string();
-    if a {
-        s = format!("{s}a");
-    }
-    if b {
-        warn!("check codecov");
-        s = format!("{s}b");
-    }
-    Html(Index { name: &s }.render().unwrap())
+async fn index(Query(Params { name }): Query<Params>) -> Html<String> {
+    let name = name.as_deref().unwrap_or("world");
+
+    Html(Index { name }.render().unwrap())
 }
 
 #[derive(askama::Template)]

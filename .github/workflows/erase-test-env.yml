@@ -1,0 +1,82 @@
+name: Erase test environment
+run-name: 'Erase "${{ github.head_ref || github.ref_name }}" test environment'
+
+on:
+  pull_request:
+    types:
+      - closed
+  workflow_dispatch:
+
+permissions:
+  deployments: write
+
+jobs:
+  canonical-name:
+    runs-on: ubuntu-latest
+    outputs:
+      branch-name: ${{ steps.branch-name.outputs.branch-name }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Canonical branch name
+        id: branch-name
+        shell: bash
+        run: |
+          branch_name_without_prefix="${{ github.head_ref || github.ref_name }}"
+          
+          # Replace all remaining forward slashes '/' with hyphens '-'
+          canonical_branch_name=${branch_name_without_prefix//\//-}
+          
+          # Set the output variable
+          echo "branch-name=$canonical_branch_name" >> "$GITHUB_OUTPUT"
+
+  helm-uninstall:
+    name: Helm uninstall
+    runs-on: ubuntu-latest
+    needs: canonical-name
+    env:
+      KUBECONFIG: ${{ github.workspace }}/kubeconfig
+    environment:
+      url: https://${{ needs.canonical-name.outputs.branch-name }}.eks-test.nl
+      name: staging
+    steps:
+      - name: Install Helm
+        run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
+      - name: Create kubeconfig file
+        run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
+      - name: Helm uninstall
+        run: helm uninstall e-ks -n ${{ needs.canonical-name.outputs.branch-name }} --wait
+      - name: Delete namespace
+        run: kubectl delete namespace ${{ needs.canonical-name.outputs.branch-name }}
+
+  delete-gh-deployment:
+    name: Delete GitHub deployments
+    runs-on: ubuntu-latest
+    needs: [ canonical-name, helm-uninstall ]
+    steps:
+      - name: Deactivate and Delete Deployments
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENV_NAME: "staging"
+          REF_NAME: ${{ needs.canonical-name.outputs.branch-name }}
+        run: |
+          # 1. Get all deployment IDs for this environment and ref
+          DEPLOYMENT_IDS=$(gh api repos/kiesraad/e-ks/deployments?environment=$ENV_NAME\&ref=$REF_NAME | jq ".[] | .id")
+          
+          if [ -z "$DEPLOYMENT_IDS" ]; then
+            echo "No deployments found for this branch."
+            exit 0
+          fi
+          
+          for DEP_ID in $DEPLOYMENT_IDS; do
+            echo "Processing Deployment ID: $DEP_ID"
+          
+            # 2. Create an 'inactive' status (Required before deletion)
+            gh api repos/kiesraad/e-ks/deployments/$DEP_ID/statuses \
+              -f state='inactive' \
+              -H "Accept: application/vnd.github.ant-man-preview+json"
+          
+            # 3. Delete the deployment record
+            gh api -X DELETE repos/kiesraad/e-ks/deployments/$DEP_ID
+          
+            echo "Deployment $DEP_ID deactivated and deleted."
+          done

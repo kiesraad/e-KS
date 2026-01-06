@@ -73,10 +73,10 @@ jobs:
         run: cargo doc --workspace --no-deps --all-features
       - name: Build
         run: cargo --locked build --target=x86_64-unknown-linux-musl
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
-          name: e-ks
-          path: target/x86_64-unknown-linux-musl/debug/e-ks
+          name: e-ks-core
+          path: target/x86_64-unknown-linux-musl/debug/e-ks-core
 
   pdf-gen:
     name: PDF generator clippy, test & build
@@ -111,7 +111,7 @@ jobs:
         run: cargo --locked test --target=x86_64-unknown-linux-musl -- --nocapture
       - name: Build
         run: cargo --locked build --target=x86_64-unknown-linux-musl
-      - uses: actions/upload-artifact@v5
+      - uses: actions/upload-artifact@v6
         with:
           name: pdf-gen
           path: target/x86_64-unknown-linux-musl/debug/pdf-gen
