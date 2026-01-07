@@ -1,0 +1,16 @@
+{
+  "name": "eks-starter-playwright",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Playwright tests for eks-starter",
+  "scripts": {
+    "test": "playwright test",
+    "test:chrome": "playwright test --project=chrome",
+    "test:full": "playwright test --project=chrome --project=firefox --project=webkit --project=edge",
+    "test:ui": "playwright test --ui",
+    "report": "playwright show-report"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.47.2"
+  }
+}

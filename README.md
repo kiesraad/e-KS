@@ -49,3 +49,7 @@ cargo run --bin development
 - `fixtures`: loads seed data into the database.
 - `setup`: installs tooling (esbuild/biome/bag-service), provisions Docker, runs migrations, and loads fixtures.
 - `development`: starts the full dev environment and shuts it down on interrupt/quit.
+
+## Playwright tests
+
+Playwright lives in `playwright`. See `playwright/README.md` for setup and run instructions.
