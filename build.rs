@@ -58,11 +58,23 @@ fn load_locales() {
 
         flatten_yaml("", &docs[0], &mut file);
 
+        #[cfg(feature = "dev-features")]
         writeln!(
             file,
             "($other:literal) => {{
-            ::core::compile_error!(concat!(\"unknown translation key: \", $other));
-        }};\n}}\npub use inner_t_{} as t_{};\n",
+                concat!(\"[\", $other, \"]\")
+            }};\n}}\npub use inner_t_{} as t_{};\n",
+            lang.to_lowercase(),
+            lang.to_lowercase()
+        )
+        .unwrap();
+
+        #[cfg(not(feature = "dev-features"))]
+        writeln!(
+            file,
+            "($other:literal) => {{
+                ::core::compile_error!(concat!(\"unknown translation key: \", $other))
+            }};\n}}\npub use inner_t_{} as t_{};\n",
             lang.to_lowercase(),
             lang.to_lowercase()
         )

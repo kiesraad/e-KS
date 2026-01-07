@@ -12,28 +12,26 @@ documentation = "https://kiesraad.github.io/e-KS/e_ks/"
 repository = "https://github.com/kiesraad/e-KS"
 
 [features]
-default = ["dotenv", "livereload", "dev-features", "anyhow", "http-logging"]
+default = ["livereload", "dev-features", "http-logging"]
 memory-serve = ["dep:memory-serve"]
-dotenv = ["dep:dotenvy"]
 fixtures = []
 livereload = []
-dev-features = []
+dev-features = ["dep:anyhow", "dep:dotenvy"]
 http-logging = ["dep:tower-http"]
-anyhow = ["dep:anyhow"]
 
 [[bin]]
 name = "fixtures"
-required-features = ["fixtures", "anyhow"]
+required-features = ["fixtures", "dev-features"]
 test = false
 
 [[bin]]
 name = "development"
-required-features = ["anyhow"]
+required-features = ["dev-features"]
 test = false
 
 [[bin]]
 name = "setup"
-required-features = ["anyhow"]
+required-features = ["dev-features"]
 test = false
 
 [dependencies]

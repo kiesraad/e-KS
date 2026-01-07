@@ -4,7 +4,7 @@ use eks::{AppState, fixtures, logging};
 #[tokio::main]
 async fn main() -> Result<()> {
     // Load environment variables from a .env file if present
-    #[cfg(feature = "dotenv")]
+    #[cfg(feature = "dev-features")]
     dotenvy::dotenv().ok();
 
     // Initialize tracing subscriber (logging)

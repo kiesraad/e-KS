@@ -3,7 +3,7 @@ use eks::{AppError, AppState, logging, router, server};
 #[tokio::main]
 async fn main() -> Result<(), AppError> {
     // Load environment variables from a .env file if present
-    #[cfg(feature = "dotenv")]
+    #[cfg(feature = "dev-features")]
     dotenvy::dotenv().ok();
 
     // Initialize tracing subscriber (logging)
