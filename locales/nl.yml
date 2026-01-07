@@ -53,7 +53,7 @@ person:
   actions:
     add: Persoon toevoegen
     back_to_list: Terug naar personen
-    manage: Personen beheren
+    manage: Beheer personen
   created_at: Aangemaakt op
   fields:
     date_of_birth: Geboortedatum

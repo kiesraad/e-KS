@@ -27,6 +27,7 @@ header {
                     padding: 0 0.75rem;
                     line-height: 3rem;
                     color: var(--base-white);
+                    white-space: nowrap;
 
                     &:visited, &:hover {
                         color: var(--base-white);
@@ -46,6 +47,7 @@ header {
                     display: flex;
                     align-items: center;
                     gap: var(--space-sm);
+                    white-space: nowrap;
                 }
             }
         }
