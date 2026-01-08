@@ -56,7 +56,7 @@ jobs:
         run: ./build.sh
 
       - name: Build fixtures
-        run: cargo build --release --bin fixtures --features fixtures,anyhow
+        run: cargo build --release --bin fixtures --features fixtures,dev-features
 
       - uses: actions/upload-artifact@v6
         with:
