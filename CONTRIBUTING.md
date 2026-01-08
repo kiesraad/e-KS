@@ -20,3 +20,5 @@ Hierdoor is het te vroeg voor concrete bijdragen aan de broncode. Op enig moment
 Op dit moment is deze repository volop in ontwikkeling en nog **niet** bedoeld voor actief gebruik. Het kan zijn dat bepaalde beveiligingsmaatregelen in de programmatuur nog niet zijn aangebracht. Als je iets tegenkomt wat niet in orde lijkt, mag dit op de gebruikelijke manier gemeld worden via de [issue tracker](https://github.com/kiesraad/e-KS/issues).
 
 Beveiligingsmeldingen die niet te maken hebben met de content van deze repository, vragen we je te melden conform ons [beveiligingsbeleid](SECURITY.md).
+
+Just a small change
