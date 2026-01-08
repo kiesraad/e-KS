@@ -47,6 +47,7 @@ commands:
     args:
       - install
       - cargo-watch
+      - --locked
   install_cargo_sqlx:
     command: cargo
     args:
@@ -55,6 +56,7 @@ commands:
       - --no-default-features
       - --features
       - postgres
+      - --locked
   migrate_database:
     command: cargo
     args:
