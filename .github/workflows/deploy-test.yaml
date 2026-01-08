@@ -48,6 +48,8 @@ jobs:
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+        with:
+          shared-key: eks
 
       - name: Tools cache
         uses: actions/cache@v5
