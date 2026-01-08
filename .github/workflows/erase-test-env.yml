@@ -44,8 +44,11 @@ jobs:
       - name: Create kubeconfig file
         run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
       - name: Helm uninstall
+        # The branch might have never been deployed
+        continue-on-error: true
         run: helm uninstall e-ks -n ${{ needs.canonical-name.outputs.branch-name }} --wait
       - name: Delete namespace
+        continue-on-error: true
         run: kubectl delete namespace ${{ needs.canonical-name.outputs.branch-name }}
 
   delete-gh-deployment:
