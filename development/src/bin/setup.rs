@@ -1,21 +1,22 @@
-use std::path::{Path, PathBuf};
+use std::path::Path;
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use tokio::{fs, process::Command};
 
-#[path = "../dev/utils.rs"]
-mod utils;
+use eks_development::{
+    platform_string, pts, run, stop_running_containers, temp_dir, wait_for_postgres,
+};
 
-use utils::{platform_string, pts, run, stop_running_containers, temp_dir, wait_for_postgres};
+const BIN_DIR: &str = "bin";
 
 #[tokio::main]
 async fn main() -> Result<()> {
     let platform = platform_string().await.context("detect platform")?;
     let config = load_config().await.context("load setup config")?;
-    let tools_dir = Path::new("tools");
+    let bin_dir = Path::new(BIN_DIR);
 
-    fs::create_dir_all(tools_dir)
+    fs::create_dir_all(bin_dir)
         .await
         .context("create tools directory")?;
 
@@ -24,7 +25,7 @@ async fn main() -> Result<()> {
     if args.len() == 2 {
         let tool_name = &args[1];
         if let Some(tool) = config.tools.iter().find(|t| &t.name == tool_name) {
-            tool.verify_installed(&platform, tools_dir).await?;
+            tool.verify_installed(&platform, bin_dir).await?;
 
             return Ok(());
         } else {
@@ -33,7 +34,7 @@ async fn main() -> Result<()> {
     }
 
     for tool in config.tools {
-        tool.verify_installed(&platform, tools_dir).await?;
+        tool.verify_installed(&platform, bin_dir).await?;
     }
 
     println!("🚀 Setting up Docker containers...");
@@ -53,11 +54,15 @@ async fn main() -> Result<()> {
 
     wait_for_postgres().await?;
 
-    println!("🚚 Running sqlx migrations and loading fixtures...");
+    println!("🛠️  Running database migrations...");
+    config.commands.migrate_database.run().await?;
+
+    println!("🚚 Loading database fixtures...");
     config.commands.load_fixtures.run().await?;
 
-    println!("✅ Setup complete!");
-    println!("You can now run 'cargo run --bin development' to start the development environment.");
+    println!("✅ Yay, setup complete!");
+
+    println!("🔨 You can run 'bin/dev' to start the development environment.");
 
     Ok(())
 }
@@ -81,6 +86,7 @@ struct CommandsConfig {
     docker_compose_up: CommandConfig,
     install_cargo_watch: CommandConfig,
     install_cargo_sqlx: CommandConfig,
+    migrate_database: CommandConfig,
     esbuild_bundle: CommandConfig,
     load_fixtures: CommandConfig,
 }
@@ -92,9 +98,8 @@ struct SetupConfig {
 }
 
 async fn load_config() -> Result<SetupConfig> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/dev/setup.yml");
-    let contents = fs::read_to_string(&path).await.context("read setup.yml")?;
-    let config: SetupConfig = serde_saphyr::from_str(&contents).context("parse setup.yml")?;
+    let contents = include_str!("../../setup.yml");
+    let config: SetupConfig = serde_saphyr::from_str(contents).context("parse setup.yml")?;
 
     Ok(config)
 }
@@ -115,8 +120,8 @@ impl CommandConfig {
 }
 
 impl ToolConfig {
-    async fn verify_installed(&self, platform: &str, tools_dir: &Path) -> Result<()> {
-        let target = tools_dir.join(&self.name);
+    async fn verify_installed(&self, platform: &str, bin_dir: &Path) -> Result<()> {
+        let target = bin_dir.join(&self.name);
 
         if fs::try_exists(&target).await? {
             println!("✅ {} already installed", self.name);

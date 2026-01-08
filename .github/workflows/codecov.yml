@@ -12,6 +12,7 @@ permissions:
 
 env:
   TZ: "Europe/Amsterdam"
+  SQLX_OFFLINE: "true"
 
 jobs:
   codecov:
@@ -32,14 +33,25 @@ jobs:
           rustup default nightly
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
+
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
+
       - name: Install Nextest
         run: cargo install cargo-nextest
+
+      - name: Tools cache
+        uses: actions/cache@v5
+        with:
+          path: bin
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+
       - name: Setup project
-        run: cargo run --bin setup
+        run: bin/init.sh
+
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --branch --profile ci
+
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
@@ -49,8 +61,10 @@ jobs:
           files: target/nextest/ci/junit.xml
           disable_search: true
           fail_ci_if_error: true
+
       - name: Create code coverage report
         run: cargo llvm-cov report --cobertura --output-path ./target/llvm-cov-target/codecov.json
+
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
         with:
@@ -59,5 +73,6 @@ jobs:
           files: target/llvm-cov-target/codecov.json
           disable_search: true
           fail_ci_if_error: true
+          
       - name: Report disk space
         run: df -h

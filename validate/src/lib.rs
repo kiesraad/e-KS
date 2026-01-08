@@ -254,13 +254,13 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
         })?;
     }
 
-    if let Some(Validator::ParseWith { ty, .. }) = &opts.validator {
-        if ty.is_none() {
-            return Err(syn::Error::new_spanned(
-                field,
-                "parse_with requires ty = \"Type\"",
-            ));
-        }
+    if let Some(Validator::ParseWith { ty, .. }) = &opts.validator
+        && ty.is_none()
+    {
+        return Err(syn::Error::new_spanned(
+            field,
+            "parse_with requires ty = \"Type\"",
+        ));
     }
 
     Ok(opts)

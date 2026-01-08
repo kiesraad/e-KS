@@ -13,7 +13,7 @@ permissions:
 
 env:
   TZ: "Europe/Amsterdam"
-
+  SQLX_OFFLINE: "true"
 
 jobs:
   newline:
@@ -21,6 +21,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.1
+
       - name: Check newline
         shell: bash
         run: ./.github/workflows/check_newline.sh
@@ -30,6 +31,7 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.1
+
       - name: Setup Rust
         shell: bash
         run: >
@@ -49,9 +51,10 @@ jobs:
       RUSTDOCFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@v6.0.1
-      # Compile and test
+
       - name: Install musl
         run: sudo apt-get update && sudo apt-get install -y musl-tools
+
       - name: Setup Rust
         shell: bash
         run: >
@@ -59,25 +62,41 @@ jobs:
           rustup default stable &&
           rustup target add x86_64-unknown-linux-musl &&
           rustup component add --toolchain stable clippy rust-docs
+
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
         with:
           workspaces: ". -> target"
+
+      - name: Tools cache
+        uses: actions/cache@v5
+        with:
+          path: bin
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+
       - name: Setup project
-        run: cargo run --bin setup
+        run: bin/init.sh
+
       - name: Lint Typescript using Biome
-        run: ./tools/biome check ./frontend/scripts
+        run: ./bin/biome check ./frontend/scripts
+
       - name: Check Clippy with all features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings
+
       - name: Check Clippy without default features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --no-default-features -- -D warnings
+
       - name: Run tests
         run: cargo --locked test --target=x86_64-unknown-linux-musl -- --nocapture
+
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
+
       - name: Build
         run: cargo --locked build --target=x86_64-unknown-linux-musl
-      - uses: actions/upload-artifact@v6
+
+      - name: Upload build artifact
+        uses: actions/upload-artifact@v6
         with:
           name: e-ks-core
           path: target/x86_64-unknown-linux-musl/debug/e-ks-core
@@ -104,11 +123,17 @@ jobs:
           shared-key: playwright
           workspaces: ". -> target"
 
+      - name: Tools cache
+        uses: actions/cache@v5
+        with:
+          path: bin
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+
       - name: Setup project
-        run: cargo run --bin setup
+        run: bin/init.sh
 
       - name: Run in dev mode
-        run: NO_COLOR=true cargo run --bin development > logs &
+        run: NO_COLOR=true bin/dev > logs &
 
       - name: Install dependencies
         run: npm ci

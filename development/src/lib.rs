@@ -1,11 +1,10 @@
-use std::{
-    path::{Path, PathBuf},
-    time::Duration,
-};
+use std::path::{Path, PathBuf};
 
 use anyhow::Result;
-use sqlx::Connection;
-use tokio::{process::Command, time::sleep};
+use tokio::{
+    process::Command,
+    time::{Duration, sleep, timeout},
+};
 
 pub async fn run(command: &str, args: &[&str]) -> Result<()> {
     println!("$> {command} {}", args.join(" "));
@@ -34,30 +33,32 @@ pub async fn stop_running_containers() -> Result<()> {
 }
 
 pub async fn wait_for_postgres() -> Result<()> {
-    let database_url = std::env::var("DATABASE_URL")
-        .unwrap_or_else(|_| "postgres://eks@localhost/eks".to_string());
+    for _ in 0..20 {
+        let attempt = timeout(
+            Duration::from_secs(1),
+            Command::new("docker")
+                .args(["compose", "exec", "-T", "psql", "pg_isready", "-U", "eks"])
+                .status(),
+        )
+        .await;
 
-    loop {
-        match sqlx::PgConnection::connect(&database_url).await {
-            Ok(_) => return Ok(()),
-            Err(sqlx::Error::Configuration(err)) => {
-                anyhow::bail!("invalid DATABASE_URL: {err}");
-            }
-            Err(_) => {}
+        if matches!(attempt, Ok(Ok(status)) if status.success()) {
+            println!("✅ PostgreSQL is up!");
+            return Ok(());
         }
 
         println!("⏳ Waiting for PostgreSQL...");
         sleep(Duration::from_secs(1)).await;
     }
+
+    anyhow::bail!("PostgreSQL did not start in time");
 }
 
-#[allow(unused)]
 pub fn pts(path: &Path) -> Result<&str> {
     path.to_str()
         .ok_or_else(|| anyhow::anyhow!("convert {path:?} to str"))
 }
 
-#[allow(unused)]
 pub async fn platform_string() -> Result<String> {
     let output = Command::new("uname").args(["-ms"]).output().await?;
 
@@ -68,7 +69,6 @@ pub async fn platform_string() -> Result<String> {
     Ok(String::from_utf8_lossy(&output.stdout).trim().to_string())
 }
 
-#[allow(unused)]
 pub async fn temp_dir() -> Result<PathBuf> {
     let output = Command::new("mktemp").arg("-d").output().await?;
 

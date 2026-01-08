@@ -1,6 +1,6 @@
 children:
   - name: esbuild
-    command: ./tools/esbuild
+    command: ./bin/esbuild
     args:
       - --bundle
       - --watch=forever
@@ -14,7 +14,7 @@ children:
       - --log-level=warning
       - frontend/index.ts
   - name: bag-service
-    command: ./tools/bag-service
+    command: ./bin/bag-service
     args:
       - 127.0.0.1:8080
   - name: docker logs

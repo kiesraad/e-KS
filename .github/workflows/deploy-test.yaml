@@ -49,8 +49,14 @@ jobs:
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
 
+      - name: Tools cache
+        uses: actions/cache@v5
+        with:
+          path: bin
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+
       - name: Setup esbuild
-        run: cargo run --bin setup -- esbuild
+        run: bin/init.sh esbuild
 
       - name: Build e-ks
         run: ./build.sh

@@ -2,7 +2,7 @@
 
 set -euo pipefail
 
-./tools/esbuild --bundle frontend/index.ts \
+./bin/esbuild --bundle frontend/index.ts \
     --outdir=frontend/static \
     --minify \
     --sourcemap \

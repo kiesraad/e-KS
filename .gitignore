@@ -26,3 +26,8 @@
 
 /frontend/static/*
 /tools
+/bin/esbuild
+/bin/biome
+/bin/bag-service
+/bin/dev
+/bin/setup

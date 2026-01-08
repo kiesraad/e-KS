@@ -1,0 +1,20 @@
+[package]
+name = "eks-development"
+version = "0.1.0"
+edition = "2024"
+license = "EUPL-1.2"
+publish = false
+
+[[bin]]
+name = "dev"
+test = false
+
+[[bin]]
+name = "setup"
+test = false
+
+[dependencies]
+anyhow = { version = "1.0.86" }
+tokio = { version = "1.48.0", features = ["full"] }
+serde = { version = "1.0.228", features = ["derive"] }
+serde-saphyr = "0.0.13"

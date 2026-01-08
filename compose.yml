@@ -1,6 +1,7 @@
 services:
   psql:
     image: ghcr.io/tweedegolf/postgres:18
+    command: ["postgres", "-c", "log_min_messages=fatal"]
     environment:
       POSTGRES_USER: eks
       POSTGRES_DB: eks

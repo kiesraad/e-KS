@@ -31,24 +31,28 @@ Een overzicht van de voorgestelde technische afwegingen staat in [deze presentat
 - [Rust](https://www.rust-lang.org/tools/install)
 - [Docker](https://docs.docker.com/get-docker/)
 
-2) Install dependencies and provision the local environment:
+2) Build and download development tools:
 
 ```bash
-cargo run --bin setup
+bin/init.sh
 ```
 
-3) Start the development environment (services, frontend build, app, logs):
+3) Start the development environment (postgres, esbuild, cargo watch, etc.):
 
 ```bash
-cargo run --bin development
+bin/dev
 ```
 
-## Rust binaries
+## Development tools
 
-- `eks`: main application server.
-- `fixtures`: loads seed data into the database.
-- `setup`: installs tooling (esbuild/biome/bag-service), provisions Docker, runs migrations, and loads fixtures.
-- `development`: starts the full dev environment and shuts it down on interrupt/quit.
+- `bin/esbuild`: transpile and bundle Typsescript and CSS, also services frontend assets in development
+- `bin/biome`: format and lint Typescript
+- `bin/setup`: download tools, setup database, run migrations, etc.
+- `bin/dev`: start development environment (postgres, esbuild, cargo watch, etc.)
+- `bin/test`: run backend and frontend tests
+- `bin/init.sh`: build and download development tools
+- `bin/check.sh`: run linters and formatters
+- `bin/build.sh`: build backend and frontend for production
 
 ## Playwright tests
 

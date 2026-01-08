@@ -1,18 +1,14 @@
-use std::{io, path::PathBuf, process::Stdio};
+use std::{io, process::Stdio};
 
 use anyhow::{Context, Result};
 use serde::Deserialize;
 use tokio::{
-    fs,
     process::{Child, Command},
     signal,
     signal::unix::{SignalKind, signal as unix_signal},
 };
 
-#[path = "../dev/utils.rs"]
-mod utils;
-
-use utils::{run, stop_running_containers, wait_for_postgres};
+use eks_development::{run, stop_running_containers, wait_for_postgres};
 
 #[tokio::main]
 async fn main() -> Result<()> {
@@ -75,16 +71,9 @@ impl ChildConfig {
 }
 
 async fn load_config() -> Result<DevelopmentConfig> {
-    let path = PathBuf::from(env!("CARGO_MANIFEST_DIR"))
-        .join("src")
-        .join("dev")
-        .join("development.yml");
-
-    let contents = fs::read_to_string(&path)
-        .await
-        .context("read development.yml")?;
+    let contents = include_str!("../../development.yml");
     let config: DevelopmentConfig =
-        serde_saphyr::from_str(&contents).context("parse development.yml")?;
+        serde_saphyr::from_str(contents).context("parse development.yml")?;
     Ok(config)
 }
 
