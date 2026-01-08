@@ -11,6 +11,15 @@ pub fn display<'a>(value: &'a Option<String>, _: &dyn askama::Values) -> askama:
     Ok(value.as_deref().unwrap_or_default())
 }
 
+/// Generate an alphabetical index number
+///
+/// For example:
+/// - 0 -> "A"
+/// - 1 -> "B"
+/// - 2 -> "C"
+/// - 26 -> "AA"
+/// - 27 -> "AB"
+/// - 155239747 -> "MARLON"
 #[askama::filter_fn]
 pub fn ABC(value: &usize, _: &dyn askama::Values) -> askama::Result<String> {
     let mut result = String::new();
