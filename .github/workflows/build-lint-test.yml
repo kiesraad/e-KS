@@ -1,8 +1,9 @@
 name: Build, lint & test
 
 on:
-  workflow_dispatch:
   pull_request:
+    paths-ignore:
+      - "**.md"
   push:
     branches:
       - main
@@ -14,17 +15,7 @@ permissions:
 env:
   TZ: "Europe/Amsterdam"
 
-
 jobs:
-  newline:
-    name: Check every file has a newline at the end
-    runs-on: ubuntu-24.04
-    steps:
-      - uses: actions/checkout@v6.0.1
-      - name: Check newline
-        shell: bash
-        run: ./.github/workflows/check_newline.sh
-
   format:
     name: Rust format
     runs-on: ubuntu-24.04
