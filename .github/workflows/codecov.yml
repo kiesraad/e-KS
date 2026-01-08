@@ -13,6 +13,7 @@ permissions:
 env:
   TZ: "Europe/Amsterdam"
   SQLX_OFFLINE: "true"
+  DOCKER_CLI_PROGRESS: plain
 
 jobs:
   codecov:

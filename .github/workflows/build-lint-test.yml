@@ -14,6 +14,7 @@ permissions:
 env:
   TZ: "Europe/Amsterdam"
   SQLX_OFFLINE: "true"
+  DOCKER_CLI_PROGRESS: plain
 
 jobs:
   newline:
@@ -106,7 +107,7 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       CARGO_TERM_COLOR: always
-      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/playwright
+      PLAYWRIGHT_BROWSERS_PATH: .cache/playwright
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
@@ -145,7 +146,7 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: ~/.cache/playwright
+          path: .cache/playwright
           key: playwright-browsers-${{ runner.os }}-${{ hashFiles('playwright/package-lock.json') }}
 
       - name: Install Playwright Browsers
