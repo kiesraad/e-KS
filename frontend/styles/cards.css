@@ -34,6 +34,7 @@
   .statistic {
     font-style: italic;
     font-size: var(--font-size-md);
+    overflow: hidden;
   }
 
   a {

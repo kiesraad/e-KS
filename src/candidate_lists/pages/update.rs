@@ -61,9 +61,8 @@ pub(crate) async fn update_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     State(app_state): State<AppState>,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    Form(form): Form<CandidateListForm>,
+    form: Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     let electoral_districts = app_state.config().election.electoral_districts();
 
@@ -71,7 +70,7 @@ pub(crate) async fn update_candidate_list(
         .await?
         .ok_or(candidate_list_not_found(id, context.locale))?;
 
-    match form.validate(None, &csrf_tokens) {
+    match form.validate(Some(&candidate_list), app_state.csrf_tokens()) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 form: form_data,

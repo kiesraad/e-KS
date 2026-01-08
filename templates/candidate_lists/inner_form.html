@@ -1,0 +1,17 @@
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+<fieldset>
+  <legend>
+    {{ t!("candidate_list.fields.electoral_districts")|trans }}
+  </legend>
+  <div class="checklist">
+    {% for d in electoral_districts %}
+    <div class="checkbox">
+      <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.code() }}"
+        {% if form.data.electoral_districts.contains(&d) %}checked{% endif %} />
+      <label for="electoral_district_{{ d.code() }}">
+        {{ d.title() }}
+      </label>
+    </div>
+    {% endfor %}
+  </div>
+</fieldset>

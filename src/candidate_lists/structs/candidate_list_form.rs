@@ -31,7 +31,12 @@ impl CandidateListForm {
         current: Option<&CandidateList>,
     ) -> CandidateList {
         if let Some(current) = current {
-            current.clone()
+            CandidateList {
+                id: current.id,
+                electoral_districts: validated.electoral_districts,
+                created_at: current.created_at,
+                updated_at: chrono::Utc::now(),
+            }
         } else {
             CandidateList {
                 id: Uuid::new_v4(),
