@@ -1,0 +1,16 @@
+name: Check newline at the end of files
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  newline:
+    name: Check every file has a newline at the end
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6.0.1
+      - name: Check newline
+        shell: bash
+        run: ./bin/check_newline.sh
