@@ -68,6 +68,7 @@ person:
     manage: Manage persons
   created_at: Created at
   fields:
+    bsn: Dutch social security number
     date_of_birth: Date of birth
     first_name: First name
     gender: Gender
@@ -75,6 +76,7 @@ person:
     house_number_addition: House number addition
     initials: Initials
     last_name: Last name
+    last_name_prefix: Last name prefix
     locality: Locality
     name: Name
     postal_code: Postal code
@@ -83,7 +85,7 @@ person:
     create:
       title: Add person
     edit:
-      title: Edit person '{}'
+      title: Edit person ʻ{}ʼ
   list:
     empty: No persons found.
   not_found: Person {} not found.
@@ -95,6 +97,7 @@ person:
     empty: No details available for this person.
     title: Person details
 validation:
+  invalid_checksum: Invalid checksum.
   invalid_csrf_token: The CSRF token is invalid.
   invalid_email: Invalid email address.
   invalid_value: The provided value is not valid.

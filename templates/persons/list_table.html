@@ -37,7 +37,7 @@
   <tbody>
     {% for person in persons %}
     <tr class="clickable">
-      <td>{{ person.last_name }}</td>
+      <td>{{ person.last_name_with_prefix_appended() }}</td>
       <td>{{ person.initials }}</td>
       <td>{{ person.first_name_display() }}</td>
       <td>{{ person.gender_key()|trans }}</td>

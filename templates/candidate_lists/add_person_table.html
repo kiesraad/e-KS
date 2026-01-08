@@ -12,7 +12,7 @@
     <tr class="clickable">
       <td></td>
       <td>
-        <strong>{{ person.last_name }},</strong>
+        <strong>{{ person.last_name_with_prefix_appended() }},</strong>
         {{ person.initials }}
         {% if let Some(first_name) = person.first_name %}
         ({{ first_name }})

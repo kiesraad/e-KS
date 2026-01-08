@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n            SELECT id, electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\", created_at, updated_at\n            FROM candidate_lists\n            ORDER BY updated_at DESC, created_at DESC\n            ",
+  "query": "\n            SELECT id, electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\", created_at, updated_at\n            FROM candidate_lists\n            ORDER BY created_at ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -65,5 +65,5 @@
       false
     ]
   },
-  "hash": "51d23dfafaa88992eb1dc9d30636debcae478e7169660209c78249a16b7bb4fa"
+  "hash": "a9f737d93207da82688461919e1588f53cc1c5d30093d0963b9c03a761889e20"
 }

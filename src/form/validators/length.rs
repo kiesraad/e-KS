@@ -33,7 +33,6 @@ pub fn validate_length(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::form::ValidationError;
 
     #[test]
     fn accepts_trimmed_value_within_bounds() {

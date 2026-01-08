@@ -16,6 +16,12 @@ pub struct PersonForm {
     #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
     pub last_name: String,
     #[validate(
+        with = "validate_length(1, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
+    pub last_name_prefix: String,
+    #[validate(
         with = "validate_length(2, 255)",
         with = "validate_teletex_chars()",
         optional
@@ -30,6 +36,8 @@ pub struct PersonForm {
         optional
     )]
     pub date_of_birth: String,
+    #[validate(with = "validate_eleven_check()", optional)]
+    pub bsn: String,
     #[validate(with = "validate_length(2, 255)", optional)]
     pub locality: String,
     #[validate(with = "validate_length(2, 16)", optional)]
@@ -49,12 +57,14 @@ impl From<Person> for PersonForm {
         PersonForm {
             gender: person.gender.map(|g| g.to_string()).unwrap_or_default(),
             last_name: person.last_name,
+            last_name_prefix: person.last_name_prefix.unwrap_or_default(),
             first_name: person.first_name.unwrap_or_default(),
             initials: person.initials,
             date_of_birth: person
                 .date_of_birth
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
+            bsn: person.bsn.unwrap_or_default(),
             locality: person.locality.unwrap_or_default(),
             postal_code: person.postal_code.unwrap_or_default(),
             house_number: person.house_number.unwrap_or_default(),
@@ -80,9 +90,11 @@ impl PersonForm {
             Person {
                 gender: validated.gender,
                 last_name: validated.last_name,
+                last_name_prefix: validated.last_name_prefix,
                 first_name: validated.first_name,
                 initials: validated.initials,
                 date_of_birth: validated.date_of_birth,
+                bsn: validated.bsn,
                 locality: validated.locality,
                 postal_code: validated.postal_code,
                 house_number: validated.house_number,
@@ -95,9 +107,11 @@ impl PersonForm {
                 id: Uuid::new_v4(),
                 gender: validated.gender,
                 last_name: validated.last_name,
+                last_name_prefix: validated.last_name_prefix,
                 first_name: validated.first_name,
                 initials: validated.initials,
                 date_of_birth: validated.date_of_birth,
+                bsn: validated.bsn,
                 locality: validated.locality,
                 postal_code: validated.postal_code,
                 house_number: validated.house_number,
@@ -130,9 +144,11 @@ mod tests {
             id: Uuid::nil(),
             gender: Some(Gender::Female),
             last_name: "Old".to_string(),
+            last_name_prefix: None,
             first_name: Some("Existing".to_string()),
             initials: "E.X.".to_string(),
             date_of_birth: None,
+            bsn: None,
             locality: Some("Oldtown".to_string()),
             postal_code: Some("1234AB".to_string()),
             house_number: Some("10".to_string()),
@@ -151,9 +167,11 @@ mod tests {
         let form = PersonForm {
             gender: "male".to_string(),
             last_name: "  Doe ".to_string(),
+            last_name_prefix: "  van de ".to_string(),
             first_name: " John ".to_string(),
             initials: "J.D.".to_string(),
             date_of_birth: "01-02-2020".to_string(),
+            bsn: "".to_string(),
             locality: " Utrecht ".to_string(),
             postal_code: " 1234 AB ".to_string(),
             house_number: " 12 ".to_string(),
@@ -188,9 +206,11 @@ mod tests {
         let form = PersonForm {
             gender: "invalid".to_string(),
             last_name: "X".to_string(),
+            last_name_prefix: "".to_string(),
             first_name: " B ".to_string(),
             initials: "jd".to_string(),
             date_of_birth: "2020/01/01".to_string(),
+            bsn: "".to_string(),
             locality: "y".to_string(),
             postal_code: "x".to_string(),
             house_number: "".to_string(),

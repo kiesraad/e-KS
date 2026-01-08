@@ -1,6 +1,6 @@
 use crate::form::ValidationError;
 
-/// Validates initials they should be uppercase aphonumeric and every initial should be followedby a point.
+/// Validates initials they should be uppercase alphanumeric and every initial should be followed by a point.
 pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
     |value: &str| {
         let initials = value.trim();
@@ -27,7 +27,6 @@ pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::form::ValidationError;
 
     #[test]
     fn accepts_trimmed_uppercase_initials() {

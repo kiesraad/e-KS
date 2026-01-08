@@ -68,6 +68,7 @@ person:
     manage: Beheer personen
   created_at: Aangemaakt op
   fields:
+    bsn: Burgerservicenummer
     date_of_birth: Geboortedatum
     first_name: Roepnaam
     gender: Geslacht
@@ -75,6 +76,7 @@ person:
     house_number_addition: Huisnummer toevoeging
     initials: Voorletters
     last_name: Achternaam
+    last_name_prefix: Voorvoegsel
     locality: Woonplaats
     name: Naam
     postal_code: Postcode
@@ -83,7 +85,7 @@ person:
     create:
       title: Persoon toevoegen
     edit:
-      title: Persoon bewerken '{}'
+      title: Persoon bewerken ʻ{}ʼ
   list:
     empty: Geen personen gevonden.
   not_found: Persoon {} niet gevonden.
@@ -95,6 +97,7 @@ person:
     empty: Geen personen gevonden.
     title: Persoon
 validation:
+  invalid_checksum: Voldoet niet aan de elfproef.
   invalid_csrf_token: De CSRF-token is ongeldig.
   invalid_email: Ongeldig e-mailadres.
   invalid_value: De opgegeven waarde is ongeldig.

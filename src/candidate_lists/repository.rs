@@ -58,7 +58,7 @@ pub(crate) async fn list_candidate_list(
             r#"
             SELECT id, electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", created_at, updated_at
             FROM candidate_lists
-            ORDER BY updated_at DESC, created_at DESC
+            ORDER BY created_at ASC
             "#,
         )
         .fetch_all(conn)
@@ -92,9 +92,11 @@ pub(super) async fn get_candidate_list(
             p.id as "id!",
             p.gender as "gender?: Gender",
             p.last_name as "last_name!",
+            p.last_name_prefix,
             p.first_name,
             p.initials as "initials!",
             p.date_of_birth,
+            p.bsn,
             p.locality as "locality",
             p.postal_code as "postal_code",
             p.house_number as "house_number",
@@ -118,9 +120,11 @@ pub(super) async fn get_candidate_list(
             id: row.id,
             gender: row.gender,
             last_name: row.last_name,
+            last_name_prefix: row.last_name_prefix,
             first_name: row.first_name,
             initials: row.initials,
             date_of_birth: row.date_of_birth,
+            bsn: row.bsn,
             locality: row.locality,
             postal_code: row.postal_code,
             house_number: row.house_number,
@@ -250,9 +254,11 @@ mod tests {
             id,
             gender: Some(Gender::Female),
             last_name: last_name.to_string(),
+            last_name_prefix: None,
             first_name: Some("Marlon".to_string()),
             initials: "M.B.".to_string(),
             date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
+            bsn: None,
             locality: Some("Utrecht".to_string()),
             postal_code: Some("1234 AB".to_string()),
             house_number: Some("10".to_string()),

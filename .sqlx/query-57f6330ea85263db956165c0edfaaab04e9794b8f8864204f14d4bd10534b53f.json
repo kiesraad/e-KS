@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO persons (\n            id,\n            gender,\n            last_name,\n            first_name,\n            initials,\n            date_of_birth,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13)\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            first_name,\n            initials,\n            date_of_birth,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE persons\n        SET\n            gender = $1,\n            last_name = $2,\n            last_name_prefix = $3,\n            first_name = $4,\n            initials = $5,\n            date_of_birth = $6,\n            bsn = $7,\n            locality = $8,\n            postal_code = $9,\n            house_number = $10,\n            house_number_addition = $11,\n            street_name = $12,\n            updated_at = NOW()\n        WHERE id = $13\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -31,58 +31,67 @@
       },
       {
         "ordinal": 3,
-        "name": "first_name",
+        "name": "last_name_prefix",
         "type_info": "Varchar"
       },
       {
         "ordinal": 4,
-        "name": "initials",
+        "name": "first_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 5,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
         "name": "date_of_birth",
         "type_info": "Date"
       },
       {
-        "ordinal": 6,
+        "ordinal": 7,
+        "name": "bsn",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 8,
         "name": "locality",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 9,
         "name": "postal_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "house_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "house_number_addition",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "street_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         {
           "Custom": {
             "name": "gender",
@@ -98,14 +107,15 @@
         "Varchar",
         "Varchar",
         "Varchar",
+        "Varchar",
         "Date",
+        "Bpchar",
         "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
-        "Timestamptz",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -113,7 +123,9 @@
       true,
       false,
       true,
+      true,
       false,
+      true,
       true,
       true,
       true,
@@ -124,5 +136,5 @@
       false
     ]
   },
-  "hash": "5dc3136542d7bb0a45d2d2ac6e83becc798dc3062842a597c375396f967783c2"
+  "hash": "57f6330ea85263db956165c0edfaaab04e9794b8f8864204f14d4bd10534b53f"
 }

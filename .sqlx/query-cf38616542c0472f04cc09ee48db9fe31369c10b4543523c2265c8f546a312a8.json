@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            clp.position,\n            p.id as \"id!\",\n            p.gender as \"gender?: Gender\",\n            p.last_name as \"last_name!\",\n            p.first_name,\n            p.initials as \"initials!\",\n            p.date_of_birth,\n            p.locality as \"locality\",\n            p.postal_code as \"postal_code\",\n            p.house_number as \"house_number\",\n            p.house_number_addition,\n            p.street_name as \"street_name\",\n            p.created_at as \"created_at!\",\n            p.updated_at as \"updated_at!\"\n        FROM candidate_lists_persons clp\n        JOIN persons p ON p.id = clp.person_id\n        WHERE clp.candidate_list_id = $1\n        ORDER BY clp.position ASC\n        ",
+  "query": "\n        SELECT\n            clp.position,\n            p.id as \"id!\",\n            p.gender as \"gender?: Gender\",\n            p.last_name as \"last_name!\",\n            p.last_name_prefix,\n            p.first_name,\n            p.initials as \"initials!\",\n            p.date_of_birth,\n            p.bsn,\n            p.locality as \"locality\",\n            p.postal_code as \"postal_code\",\n            p.house_number as \"house_number\",\n            p.house_number_addition,\n            p.street_name as \"street_name\",\n            p.created_at as \"created_at!\",\n            p.updated_at as \"updated_at!\"\n        FROM candidate_lists_persons clp\n        JOIN persons p ON p.id = clp.person_id\n        WHERE clp.candidate_list_id = $1\n        ORDER BY clp.position ASC\n        ",
   "describe": {
     "columns": [
       {
@@ -36,51 +36,61 @@
       },
       {
         "ordinal": 4,
-        "name": "first_name",
+        "name": "last_name_prefix",
         "type_info": "Varchar"
       },
       {
         "ordinal": 5,
-        "name": "initials!",
+        "name": "first_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 6,
+        "name": "initials!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
         "name": "date_of_birth",
         "type_info": "Date"
       },
       {
-        "ordinal": 7,
+        "ordinal": 8,
+        "name": "bsn",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
         "name": "locality",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 8,
+        "ordinal": 10,
         "name": "postal_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 11,
         "name": "house_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
+        "ordinal": 12,
         "name": "house_number_addition",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 13,
         "name": "street_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 12,
+        "ordinal": 14,
         "name": "created_at!",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 13,
+        "ordinal": 15,
         "name": "updated_at!",
         "type_info": "Timestamptz"
       }
@@ -96,7 +106,9 @@
       true,
       false,
       true,
+      true,
       false,
+      true,
       true,
       true,
       true,
@@ -107,5 +119,5 @@
       false
     ]
   },
-  "hash": "e43a4844bc4a6845640d6a8d13cee41ffb4f1a3d3233ea78cfd36dda5047a366"
+  "hash": "cf38616542c0472f04cc09ee48db9fe31369c10b4543523c2265c8f546a312a8"
 }

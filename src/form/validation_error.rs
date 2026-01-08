@@ -6,13 +6,13 @@ type MinLength = usize;
 
 #[derive(Debug, PartialEq, Eq, Clone)]
 pub enum ValidationError {
-    #[allow(unused)]
     InvalidValue,
     InvalidEmail,
     ValueShouldNotBeEmpty,
     InvalidCsrfToken,
     ValueTooLong(ActualLength, MaxLength),
     ValueTooShort(ActualLength, MinLength),
+    InvalidChecksum,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -35,9 +35,8 @@ impl ValidationError {
             ValidationError::ValueTooShort(actual, min) => {
                 t!("validation.value_too_short", locale, actual, min)
             }
-            ValidationError::InvalidCsrfToken => {
-                t!("validation.invalid_csrf_token", locale)
-            }
+            ValidationError::InvalidCsrfToken => t!("validation.invalid_csrf_token", locale),
+            ValidationError::InvalidChecksum => t!("validation.invalid_checksum", locale),
         }
         .to_string()
     }

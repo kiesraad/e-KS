@@ -11,10 +11,12 @@ use super::Gender;
 pub struct Person {
     pub id: Uuid,
     pub last_name: String,
+    pub last_name_prefix: Option<String>,
     pub initials: String,
     pub first_name: Option<String>,
     pub gender: Option<Gender>,
     pub date_of_birth: Option<NaiveDate>,
+    pub bsn: Option<String>,
     pub locality: Option<String>,
     pub postal_code: Option<String>,
     pub house_number: Option<String>,
@@ -25,11 +27,29 @@ pub struct Person {
 }
 
 impl Person {
-    pub fn display_name(&self) -> String {
-        if let Some(first_name) = &self.first_name {
-            format!("{} {}", first_name, self.last_name)
+    /// Returns e.g. "van Dijk"
+    pub fn last_name_with_prefix(&self) -> String {
+        if let Some(prefix) = &self.last_name_prefix {
+            format!("{} {}", prefix, self.last_name)
         } else {
             format!("{} {}", self.initials, self.last_name)
+        }
+    }
+
+    /// Returns e.g. "Dijk, van"
+    pub fn last_name_with_prefix_appended(&self) -> String {
+        if let Some(prefix) = &self.last_name_prefix {
+            format!("{}, {}", self.last_name, prefix)
+        } else {
+            self.last_name.clone()
+        }
+    }
+
+    pub fn display_name(&self) -> String {
+        if let Some(first_name) = &self.first_name {
+            format!("{} {}", first_name, self.last_name_with_prefix())
+        } else {
+            self.last_name_with_prefix()
         }
     }
 

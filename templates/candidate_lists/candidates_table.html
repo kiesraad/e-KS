@@ -17,7 +17,7 @@
         <span class="position-badge">{{ candidate.position }}</span>
       </td>
       <td>
-        <strong>{{ candidate.person.last_name }},</strong>
+        <strong>{{ candidate.person.last_name_with_prefix_appended() }},</strong>
         {{ candidate.person.initials }}
         {% if let Some(first_name) = candidate.person.first_name %}
         ({{ first_name }})
