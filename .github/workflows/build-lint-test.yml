@@ -24,7 +24,7 @@ jobs:
 
       - name: Check newline
         shell: bash
-        run: ./.github/workflows/check_newline.sh
+        run: ./bin/check_newline.sh
 
   format:
     name: Rust format
@@ -106,11 +106,14 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       CARGO_TERM_COLOR: always
+      PLAYWRIGHT_BROWSERS_PATH: ~/.cache/playwright
     steps:
       - uses: actions/checkout@v6
       - uses: actions/setup-node@v6
         with:
           node-version: lts/*
+          cache: npm
+          cache-dependency-path: playwright/package-lock.json
 
       - name: Setup Rust
         shell: bash
@@ -139,6 +142,12 @@ jobs:
         run: npm ci
         working-directory: playwright
 
+      - name: Cache Playwright browsers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/playwright
+          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('playwright/package-lock.json') }}
+
       - name: Install Playwright Browsers
         run: npx playwright install --with-deps
         working-directory: playwright
@@ -160,7 +169,6 @@ jobs:
         with:
           name: application logs
           path: logs
-
 
   audit-dependencies:
     name: Audit dependencies

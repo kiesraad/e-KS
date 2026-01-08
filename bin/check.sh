@@ -21,4 +21,4 @@ cargo test --all-features
 ./bin/biome check ./frontend/scripts 
 
 # generic
-./.github/workflows/check_newline.sh
+./bin/check_newline.sh
