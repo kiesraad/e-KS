@@ -33,9 +33,11 @@ candidate_list:
     position: Positie
     updated_at: Laatst bijgewerkt op
   form:
+    no_electoral_districts: Geen kiesdistricten geconfigureerd.
     create:
-      no_electoral_districts: Geen kiesdistricten geconfigureerd.
       title: Kandidatenlijst aanmaken
+    update:
+      title: Kandidatenlijst aanpassen
   districts:
     all: Alle
   list:

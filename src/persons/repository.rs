@@ -454,8 +454,12 @@ mod tests {
         candidate_lists_repository::create_candidate_list(&mut conn, &list).await?;
         create_person(&mut conn, &person_a).await?;
         create_person(&mut conn, &person_b).await?;
-        candidate_lists_repository::update_candidate_list(&mut conn, &list_id, &[person_a.id])
-            .await?;
+        candidate_lists_repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[person_a.id],
+        )
+        .await?;
 
         let persons = list_persons_not_on_candidate_list(&mut conn, &list_id).await?;
         assert_eq!(persons.len(), 1);

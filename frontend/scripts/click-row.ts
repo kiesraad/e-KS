@@ -7,12 +7,9 @@ window.addEventListener("load", () => {
         return;
       }
 
-      const link = row.querySelector("a,button") as
-        | HTMLButtonElement
-        | HTMLLinkElement
-        | null;
+      const link = row.querySelector("a,button");
       if (link) {
-        link.click();
+        (link as HTMLButtonElement | HTMLLinkElement).click();
       }
     });
   });

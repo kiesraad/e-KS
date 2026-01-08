@@ -43,6 +43,15 @@ impl CandidateListForm {
     }
 }
 
+impl From<CandidateList> for CandidateListForm {
+    fn from(value: CandidateList) -> Self {
+        CandidateListForm {
+            electoral_districts: value.electoral_districts,
+            csrf_token: String::new(),
+        }
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

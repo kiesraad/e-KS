@@ -33,9 +33,11 @@ candidate_list:
     position: Position
     updated_at: Updated at
   form:
+    no_electoral_districts: No electoral districts configured.
     create:
-      no_electoral_districts: No electoral districts configured.
       title: Create candidate list
+    update:
+      title: Update candidate list
   districts:
     all: All
   list:

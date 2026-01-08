@@ -19,6 +19,7 @@ mod edit_position;
 mod list;
 mod reorder;
 mod update_person;
+mod update;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
@@ -28,6 +29,12 @@ pub(crate) struct CandidateListsPath;
 #[derive(TypedPath)]
 #[typed_path("/candidate-lists/new", rejection(AppError))]
 pub(crate) struct CandidateListsNewPath;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
+pub(crate) struct CandidateListsEditPath {
+    pub(crate) id: Uuid,
+}
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}", rejection(AppError))]
@@ -87,6 +94,10 @@ impl CandidateList {
 
     pub fn new_path() -> String {
         CandidateListsNewPath {}.to_uri().to_string()
+    }
+
+    pub fn update_path(&self) -> String {
+        CandidateListsEditPath { id: self.id }.to_uri().to_string()
     }
 
     pub fn add_person_path(&self) -> String {
@@ -153,6 +164,9 @@ pub fn router() -> Router<AppState> {
         .typed_post(create::create_candidate_list)
         // manage single list
         .typed_get(view::view_candidate_list)
+        .typed_get(update::edit_candidate_list_form)
+        .typed_post(update::update_candidate_list)
+        .typed_post(add_person::add_person_to_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
         .typed_get(add_person::add_existing_person)
         .typed_post(add_person::add_person_to_candidate_list)
@@ -172,7 +186,7 @@ pub(super) async fn load_candidate_list(
     id: &Uuid,
     locale: Locale,
 ) -> Result<CandidateListDetail, AppError> {
-    repository::get_candidate_list(conn, id)
+    repository::get_candidate_list_details(conn, id)
         .await?
         .ok_or_else(|| candidate_list_not_found(*id, locale))
 }
@@ -406,7 +420,7 @@ mod tests {
         assert_eq!(location, list.edit_person_address_path(&person.id));
 
         let mut conn = pool.acquire().await?;
-        let detail = repository::get_candidate_list(&mut conn, &list_id)
+        let detail = repository::get_candidate_list_details(&mut conn, &list_id)
             .await?
             .expect("candidate list");
         assert_eq!(detail.candidates.len(), 1);
@@ -426,7 +440,8 @@ mod tests {
         repository::create_candidate_list(&mut conn, &list).await?;
         persons_repository::create_person(&mut conn, &person_a).await?;
         persons_repository::create_person(&mut conn, &person_b).await?;
-        repository::update_candidate_list(&mut conn, &list_id, &[person_a.id, person_b.id]).await?;
+        repository::update_candidate_list_order(&mut conn, &list_id, &[person_a.id, person_b.id])
+            .await?;
 
         let response = reorder::reorder_candidate_list(
             CandidateListReorderPath { id: list_id },
@@ -443,7 +458,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
         let mut conn = pool.acquire().await?;
-        let detail = repository::get_candidate_list(&mut conn, &list_id)
+        let detail = repository::get_candidate_list_details(&mut conn, &list_id)
             .await?
             .expect("candidate list");
         assert_eq!(detail.candidates.len(), 2);

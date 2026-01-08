@@ -64,11 +64,11 @@ pub(crate) async fn list_candidate_list(
         .await
 }
 
-pub(super) async fn get_candidate_list(
+pub(crate) async fn get_candidate_list(
     conn: &mut PgConnection,
     list_id: &Uuid,
-) -> Result<Option<CandidateListDetail>, sqlx::Error> {
-    let list = sqlx::query_as!(
+) -> Result<Option<CandidateList>, sqlx::Error> {
+    sqlx::query_as!(
         CandidateList,
         r#"
         SELECT id, electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", created_at, updated_at
@@ -78,7 +78,14 @@ pub(super) async fn get_candidate_list(
         list_id,
     )
     .fetch_optional(&mut *conn)
-    .await?;
+    .await
+}
+
+pub(super) async fn get_candidate_list_details(
+    conn: &mut PgConnection,
+    list_id: &Uuid,
+) -> Result<Option<CandidateListDetail>, sqlx::Error> {
+    let list = get_candidate_list(conn, list_id).await?;
 
     let Some(list) = list else {
         return Ok(None);
@@ -172,7 +179,7 @@ pub(crate) async fn create_candidate_list(
     .await
 }
 
-pub(crate) async fn update_candidate_list(
+pub(crate) async fn update_candidate_list_order(
     conn: &mut PgConnection,
     list_id: &Uuid,
     person_ids: &[Uuid],
@@ -208,9 +215,34 @@ pub(crate) async fn update_candidate_list(
 
     tx.commit().await?;
 
-    get_candidate_list(conn, list_id)
+    get_candidate_list_details(conn, list_id)
         .await?
         .ok_or(sqlx::Error::RowNotFound)
+}
+
+pub(crate) async fn update_candidate_list(
+    conn: &mut PgConnection,
+    updated_candidate_list: &CandidateList,
+) -> Result<CandidateList, sqlx::Error> {
+    sqlx::query_as!(
+        CandidateList,
+        r#"
+        UPDATE candidate_lists
+        SET
+            electoral_districts = $1,
+            updated_at = NOW()
+        WHERE id = $2
+        RETURNING
+            id,
+            electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>",
+            created_at,
+            updated_at
+        "#,
+        &updated_candidate_list.electoral_districts as &[ElectoralDistrict],
+        updated_candidate_list.id
+    )
+    .fetch_one(conn)
+    .await
 }
 
 async fn insert_candidates(
@@ -304,9 +336,9 @@ mod tests {
         create_candidate_list(&mut conn, &list).await?;
         persons_repository::create_person(&mut conn, &person_a).await?;
         persons_repository::create_person(&mut conn, &person_b).await?;
-        update_candidate_list(&mut conn, &list_id, &[person_a.id, person_b.id]).await?;
+        update_candidate_list_order(&mut conn, &list_id, &[person_a.id, person_b.id]).await?;
 
-        let detail = get_candidate_list(&mut conn, &list_id)
+        let detail = get_candidate_list_details(&mut conn, &list_id)
             .await?
             .expect("candidate list");
         assert_eq!(detail.candidates.len(), 2);
@@ -319,7 +351,7 @@ mod tests {
     #[sqlx::test]
     async fn update_candidate_list_returns_row_not_found(pool: PgPool) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await?;
-        let err = update_candidate_list(&mut conn, &Uuid::new_v4(), &[])
+        let err = update_candidate_list_order(&mut conn, &Uuid::new_v4(), &[])
             .await
             .unwrap_err();
         assert!(matches!(err, sqlx::Error::RowNotFound));
