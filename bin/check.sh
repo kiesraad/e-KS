@@ -5,7 +5,7 @@ set -euo pipefail
 export MEMORY_SERVE_QUIET=1
 
 # check postgres is running
-if pg_isready -h 127.0.0.1 -q; then
+if docker compose exec -T psql pg_isready -U eks; then
     cargo sqlx migrate run --database-url postgres://eks@localhost/eks
     cargo sqlx prepare --database-url postgres://eks@localhost/eks -- --all-features
 fi
