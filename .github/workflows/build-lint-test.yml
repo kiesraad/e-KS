@@ -16,17 +16,40 @@ env:
 
 
 jobs:
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      changed: ${{ steps.filter.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v6.0.1
+        with:
+          fetch-depth: '0'
+
+      - name: Filter changes for non-Markdown files
+        id: filter
+        run: | 
+          if [[ $(git diff --name-only $GITHUB_BASE_REF HEAD | grep -v "\.md$") ]]  ; then 
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
   newline:
     name: Check every file has a newline at the end
     runs-on: ubuntu-24.04
+    needs: changes
     steps:
       - uses: actions/checkout@v6.0.1
+      - name: debug
+        run: echo ${{ needs.changes.outputs.changed }}
       - name: Check newline
         shell: bash
         run: ./.github/workflows/check_newline.sh
 
   format:
     name: Rust format
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v6.0.1
@@ -42,6 +65,8 @@ jobs:
 
   rust:
     name: clippy, test & build
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
     runs-on: ubuntu-24.04
     env:
       CARGO_TERM_COLOR: always
@@ -84,6 +109,8 @@ jobs:
 
   playwright:
     name: Playwright tests
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
     runs-on: ubuntu-24.04
     env:
       CARGO_TERM_COLOR: always
@@ -139,6 +166,8 @@ jobs:
 
   audit-dependencies:
     name: Audit dependencies
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
