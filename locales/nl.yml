@@ -33,7 +33,7 @@ candidate_list:
   not_found: Kandidatenlijst {} niet gevonden.
   empty: Geen kandidatenlijsten gevonden.
   title: Kandidatenlijsten
-  title_single: Lijstelsel
+  title_single: Lijststel
   view:
     empty: Deze kandidatenlijst heeft nog geen kandidaten.
     title: Kandidatenlijst
