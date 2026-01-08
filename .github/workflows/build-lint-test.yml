@@ -66,8 +66,6 @@ jobs:
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-        with:
-          workspaces: ". -> target"
 
       - name: Tools cache
         uses: actions/cache@v5
@@ -123,9 +121,6 @@ jobs:
 
       - name: Cargo cache
         uses: Swatinem/rust-cache@779680da715d629ac1d338a641029a2f4372abb5 # v2
-        with:
-          shared-key: playwright
-          workspaces: ". -> target"
 
       - name: Tools cache
         uses: actions/cache@v5
@@ -146,7 +141,7 @@ jobs:
       - name: Cache Playwright browsers
         uses: actions/cache@v5
         with:
-          path: .cache/playwright
+          path: playwright/.cache/playwright
           key: playwright-browsers-${{ runner.os }}-${{ hashFiles('playwright/package-lock.json') }}
 
       - name: Install Playwright Browsers
