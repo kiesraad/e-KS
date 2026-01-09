@@ -14,8 +14,8 @@ permissions:
 env:
   TZ: "Europe/Amsterdam"
   SQLX_OFFLINE: "true"
-  DOCKER_CLI_PROGRESS: plain
-  BUILDKIT_PROGRESS: plain
+  DOCKER_CLI_PROGRESS: quiet
+  BUILDKIT_PROGRESS: quiet
 
 jobs:
   newline:
