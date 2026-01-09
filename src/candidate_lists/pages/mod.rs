@@ -251,12 +251,13 @@ mod tests {
 
     #[sqlx::test]
     async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool);
+        let app_state = AppState::new_for_tests(pool.clone());
 
         let response = create::new_candidate_list_form(
             CandidateListsNewPath {},
             Context::new(Locale::En),
             CsrfTokens::default(),
+            DbConnection(pool.acquire().await?),
             State(app_state),
         )
         .await

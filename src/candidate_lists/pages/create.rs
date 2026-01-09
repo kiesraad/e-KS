@@ -26,13 +26,28 @@ pub(crate) async fn new_candidate_list_form(
     _: CandidateListsNewPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    DbConnection(mut conn): DbConnection,
     State(app_state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
     let electoral_districts = app_state.config().get_districts();
 
+    let used_districts = repository::get_used_districts(&mut conn).await?;
+    let available_districts: Vec<ElectoralDistrict> = electoral_districts
+        .iter()
+        .filter(|d| !used_districts.contains(d))
+        .map(|d| d.clone())
+        .collect();
+
+    let form = FormData::new_with_data(
+        CandidateListForm {
+            electoral_districts: available_districts,
+            csrf_token: csrf_tokens.issue().value,
+        },
+        &csrf_tokens,
+    );
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
-            form: FormData::new(&csrf_tokens),
+            form,
             electoral_districts,
         },
         context,

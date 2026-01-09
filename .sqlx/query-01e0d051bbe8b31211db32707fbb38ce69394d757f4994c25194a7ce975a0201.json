@@ -1,0 +1,51 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT array_agg(DISTINCT e) AS \"electoral_districts: Vec<ElectoralDistrict>\"\n        FROM candidate_lists cl \n        CROSS JOIN LATERAL unnest(cl.electoral_districts ) AS e;\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "electoral_districts: Vec<ElectoralDistrict>",
+        "type_info": {
+          "Custom": {
+            "name": "electoral_district[]",
+            "kind": {
+              "Array": {
+                "Custom": {
+                  "name": "electoral_district",
+                  "kind": {
+                    "Enum": [
+                      "DR",
+                      "FL",
+                      "FR",
+                      "GE",
+                      "GR",
+                      "LI",
+                      "NB",
+                      "NH",
+                      "OV",
+                      "UT",
+                      "ZE",
+                      "ZH",
+                      "BO",
+                      "SE",
+                      "SA",
+                      "KN"
+                    ]
+                  }
+                }
+              }
+            }
+          }
+        }
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      null
+    ]
+  },
+  "hash": "01e0d051bbe8b31211db32707fbb38ce69394d757f4994c25194a7ce975a0201"
+}
