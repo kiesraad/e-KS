@@ -23,6 +23,7 @@ candidate_list:
   edit_position: Position on the list
   search_existing_person: Search existing person
   search_placeholder: Search by name, initials or localitty
+  edit_details: Edit list details
   fields:
     created_at: Created at
     electoral_districts: Electoral districts

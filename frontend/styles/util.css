@@ -119,3 +119,7 @@ a.disabled {
 .w-full {
   width: 100%;
 }
+
+.float-right {
+  float: right;
+}

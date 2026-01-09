@@ -23,6 +23,7 @@ candidate_list:
   edit_position: Volgorde op de lijst
   search_existing_person: Zoek bestaande persoon
   search_placeholder: Zoek op naam, voorletters of woonplaats
+  edit_details: Lijstgegevens bewerken
   fields:
     created_at: Aangemaakt op
     electoral_districts: Kiesdistricten

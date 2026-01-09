@@ -26,7 +26,7 @@
       </div>
       <div>
         <p>{{ t!("candidate_list.actions.edit_list_details")|trans }}:</p>
-        <a href="#edit-list" class="button secondary icon-edit">
+        <a href="{{ details.list.update_path() }}" class="button secondary icon-edit">
           {{ t!("candidate_list.actions.edit")|trans }}
         </a>
       </div>
