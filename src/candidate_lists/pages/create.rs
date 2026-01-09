@@ -35,7 +35,7 @@ pub(crate) async fn new_candidate_list_form(
     let available_districts: Vec<ElectoralDistrict> = electoral_districts
         .iter()
         .filter(|d| !used_districts.contains(d))
-        .map(|d| d.clone())
+        .cloned()
         .collect();
 
     let form = FormData::new_with_data(

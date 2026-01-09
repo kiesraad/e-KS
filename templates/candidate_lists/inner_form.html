@@ -3,7 +3,13 @@
   <legend>
     {{ t!("candidate_list.fields.electoral_districts")|trans }}
   </legend>
-  <div class="checklist">
+  <div class="checkbox select-all-checkbox mt-md" name="select-all">
+    <input type="checkbox" for-checklist="district_list"/>
+    <label for="select-all">
+      {{ t!("candidate_list.form.select_all_districts")|trans }}
+    </label>
+  </div>
+  <div class="checklist" id="district_list">
     {% for d in electoral_districts %}
     <div class="checkbox">
       <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.code() }}"

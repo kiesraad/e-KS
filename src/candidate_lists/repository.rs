@@ -155,7 +155,7 @@ pub(super) async fn get_candidate_list_details(
     Ok(Some(CandidateListDetail { list, candidates }))
 }
 
-/// retrieves a vector of all the electoral districts that have been used in all candidate lists
+/// retrieves a vector of all the electoral districts that have been used in one or more candidate lists
 pub(crate) async fn get_used_districts(
     conn: &mut PgConnection,
 ) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
@@ -169,8 +169,8 @@ pub(crate) async fn get_used_districts(
     .fetch_one(&mut *conn)
     .await?
     .electoral_districts
-    // if None is returned, there are no lists, so there are no used districts (empty set) 
-    .unwrap_or_else(|| Vec::new()); // TODO DOO don't forget unit test without lists
+    // if None is returned, there are no lists, so there are no used districts (empty set)
+    .unwrap_or_default(); // TODO DOO don't forget unit test without lists
     Ok(districts)
 }
 
