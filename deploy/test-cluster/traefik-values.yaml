@@ -1,5 +1,39 @@
-ingressClass:
-  name: traefik
 providers:
   kubernetesCRD:
     allowCrossNamespace: true
+  kubernetesGateway:
+    enabled: true
+  # TODO Disable and move to gateway API
+  kubernetesIngress:
+    enabled: false
+
+ingressClass:
+  name: traefik
+
+service:
+  annotations:
+    service.beta.kubernetes.io/scw-loadbalancer-type: lb-s
+
+gateway:
+  name: "traefik"
+  listeners:
+    web:
+      port: 8000
+      protocol: HTTP
+      namespacePolicy:
+        from: All
+    websecure:
+      port: 8443
+      protocol: HTTPS
+      certificateRefs:
+        - kind: Secret
+          name: eks-tls-cert
+      namespacePolicy:
+        from: All
+
+gatewayClass:
+  name: "traefik"
+
+
+deployment:
+  replicas: 2

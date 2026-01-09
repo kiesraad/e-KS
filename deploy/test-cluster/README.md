@@ -3,12 +3,15 @@
 The test cluster requires a few cluster wide applications to function, such as the traefik ingress controller, cert-manager
 and a postgres database. To following explains the required installation steps.
 
-## Traefik ingress controller
-
-> [!CAUTION]
-> Change the password for the http basic auth to a secure password
+## Traefik Gateway Controller
 
 ```shell
+# Apply Gateway API CRDs
+kubectl apply -f https://github.com/kubernetes-sigs/gateway-api/releases/download/v1.4.0/standard-install.yaml
+# Apply traefik Gateway API CRDs
+kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.6/docs/content/reference/dynamic-configuration/kubernetes-gateway-rbac.yml
+
+# Install traefik
 helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik -n ingress --create-namespace -f traefik-values.yaml
 
 kubectl create secret generic --type='kubernetes.io/basic-auth' --from-literal=username=eks --from-literal=password=topsecret -n ingress http-basic-auth
