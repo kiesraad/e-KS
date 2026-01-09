@@ -1,10 +1,6 @@
 use eks::{AppState, fixtures, logging};
 
 async fn run() -> Result<(), Box<dyn std::error::Error>> {
-    // Load environment variables from a .env file if present
-    #[cfg(feature = "dev-features")]
-    dotenvy::dotenv().ok();
-
     // Initialize tracing subscriber (logging)
     logging::init();
 

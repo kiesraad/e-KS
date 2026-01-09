@@ -1,6 +1,6 @@
 import { defineConfig } from '@playwright/test';
 
-const baseURL = process.env.PLAYWRIGHT_BASE_URL || 'http://localhost:3000';
+const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 
 export default defineConfig({
   testDir: './tests',
@@ -11,16 +11,14 @@ export default defineConfig({
   reporter: [['html', { open: 'never' }], ['list']],
   use: {
     baseURL,
-    trace: 'on-first-retry',
-    screenshot: 'only-on-failure',
-    video: 'retain-on-failure',
+    trace: 'on-first-retry'
   },
   projects: [
     {
-      name: 'chrome',
+      name: 'chromium',
       use: {
         browserName: 'chromium',
-        channel: 'chrome',
+        channel: 'chromium',
       },
     },
     {

@@ -15,14 +15,19 @@ pub fn create() -> Router<AppState> {
         .merge(candidate_lists::router());
 
     #[cfg(feature = "dev-features")]
+    let bag_service_url =
+        crate::common::config::get_env("BAG_SERVICE_URL", "http://localhost:8080")
+            .expect("BAG_SERVICE_URL must be set in dev-features mode");
+
+    #[cfg(feature = "dev-features")]
     let router = router
         .route(
             "/lookup",
-            crate::common::proxy::proxy_handler("http://localhost:8080"),
+            crate::common::proxy::proxy_handler(&bag_service_url),
         )
         .route(
             "/suggest",
-            crate::common::proxy::proxy_handler("http://localhost:8080"),
+            crate::common::proxy::proxy_handler(&bag_service_url),
         );
 
     #[cfg(feature = "http-logging")]

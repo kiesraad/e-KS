@@ -48,7 +48,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: bin
-          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
         run: bin/init.sh

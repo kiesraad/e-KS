@@ -1,0 +1,42 @@
+services:
+  playwright:
+    build:
+      dockerfile: docker/playwright.Dockerfile
+    volumes:
+      - ./tests:/app/tests
+    environment:
+      PLAYWRIGHT_TEST_BASE_URL: http://eks:3000
+    depends_on:
+      - eks
+    networks: [default]
+    
+  psql:
+    image: ghcr.io/tweedegolf/postgres:18
+    command: ["postgres", "-c", "log_min_messages=fatal"]
+    environment:
+      POSTGRES_USER: eks
+      POSTGRES_DB: eks
+      POSTGRES_HOST_AUTH_METHOD: trust
+      TZ: Europe/Amsterdam
+    networks: [default]
+
+  eks:
+    image: debian:bookworm-slim
+    working_dir: /app
+    volumes:
+      - ../target/release/eks:/app/eks:ro
+    command: ["/app/eks"]
+    environment:
+      DATABASE_URL: postgres://eks@psql:5432/eks
+      BAG_SERVICE_URL: http://bag-service:8080
+      LOAD_FIXTURES: "true"
+    ports: ["3000:3000"]
+    depends_on:
+      - psql
+      - bag-service
+    networks: [default]
+
+  bag-service:
+    image: ghcr.io/tweedegolf/bag-address-lookup:0.3.2
+    networks: [default]
+

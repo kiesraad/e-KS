@@ -12,7 +12,7 @@ pub struct Config {
 }
 
 /// Helper function to get environment variable or return an error
-fn get_env(name: &'static str, _dev_default: &'static str) -> Result<String, AppError> {
+pub fn get_env(name: &'static str, _dev_default: &'static str) -> Result<String, AppError> {
     match env::var(name) {
         Ok(value) => Ok(value),
         #[cfg(feature = "dev-features")]

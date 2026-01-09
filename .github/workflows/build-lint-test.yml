@@ -74,7 +74,7 @@ jobs:
         uses: actions/cache@v5
         with:
           path: bin
-          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
         run: bin/init.sh
@@ -112,11 +112,6 @@ jobs:
       PLAYWRIGHT_BROWSERS_PATH: .cache/playwright
     steps:
       - uses: actions/checkout@v6
-      - uses: actions/setup-node@v6
-        with:
-          node-version: lts/*
-          cache: npm
-          cache-dependency-path: playwright/package-lock.json
 
       - name: Setup Rust
         shell: bash
@@ -132,45 +127,13 @@ jobs:
         uses: actions/cache@v5
         with:
           path: bin
-          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml') }}
+          key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
         run: bin/init.sh
 
-      - name: Run in dev mode
-        run: NO_COLOR=true bin/dev > logs &
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: playwright
-
-      - name: Cache Playwright browsers
-        uses: actions/cache@v5
-        with:
-          path: playwright/.cache/playwright
-          key: playwright-browsers-${{ runner.os }}-${{ hashFiles('playwright/package-lock.json') }}
-
-      - name: Install Playwright Browsers
-        run: npx playwright install --with-deps
-        working-directory: playwright
-
-      - name: Run Playwright tests
-        run: npx playwright test
-        working-directory: playwright
-
-      - name: Upload Playwright report
-        uses: actions/upload-artifact@v6
-        if: ${{ !cancelled() }}
-        with:
-          name: playwright-report
-          path: playwright/playwright-report/
-
-      - name: Upload application logs
-        uses: actions/upload-artifact@v6
-        if: always()
-        with:
-          name: application logs
-          path: logs
+      - name: Run playwright tests
+        run: bin/test.sh
 
   audit-dependencies:
     name: Audit dependencies

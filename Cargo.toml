@@ -16,7 +16,7 @@ default = ["fixtures", "livereload", "dev-features", "http-logging"]
 memory-serve = ["dep:memory-serve"]
 fixtures = []
 livereload = []
-dev-features = ["dep:dotenvy"]
+dev-features = []
 http-logging = ["dep:tower-http"]
 
 [[bin]]
@@ -47,7 +47,6 @@ uuid = { version = "1.11.0", features = ["serde", "v4"] }
 
 # well maintained + many downloads
 askama = "0.15.1" # 31M downloads (Dirkjan Ochtman)
-dotenvy = { version = "0.15.7", optional = true } # 69M downloads (Allan Zhang)
 strum = { version = "0.27.2", features = ["derive"] } # 307M downloads (Peter Glotfelty)
 csv = "1.4.0" # 136M downloads (Andrew Gallant)
 serde-saphyr = "0.0.13"
