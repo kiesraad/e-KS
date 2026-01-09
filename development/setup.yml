@@ -14,16 +14,15 @@ commands:
     args:
       - compose
       - rm
-      - -f
-      - -v
+      - --force
+      - --volumes
   docker_compose_up:
     command: docker
     args:
       - compose
       - up
       - --quiet-pull
-      - --quiet-build
-      - -d
+      - --detach
   esbuild_bundle:
     command: ./bin/esbuild
     args:

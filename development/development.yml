@@ -22,7 +22,7 @@ children:
     args:
       - compose
       - logs
-      - -f
+      - --force
       - --since
       - 5s
   - name: cargo watch
@@ -35,6 +35,6 @@ children:
       - templates
       - --watch
       - locales
-      - -x
+      - --exec
       - run
     wait_for_postgres: true
