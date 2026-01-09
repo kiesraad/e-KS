@@ -21,6 +21,8 @@ commands:
     args:
       - compose
       - up
+      - --quiet-pull
+      - --quiet-build
       - -d
   esbuild_bundle:
     command: ./bin/esbuild
