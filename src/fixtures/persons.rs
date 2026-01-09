@@ -51,6 +51,11 @@ impl PersonRecord {
                 .house_number_addition
                 .and_then(|n| if n.is_empty() { None } else { Some(n) }),
             street_name: Some(self.street_name),
+            is_dutch: Some(true),
+            custom_country: None,
+            custom_region: None,
+            address_line_1: None,
+            address_line_2: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })

@@ -164,6 +164,11 @@ mod tests {
             house_number: Some("10".to_string()),
             house_number_addition: Some("A".to_string()),
             street_name: Some("Stationsstraat".to_string()),
+            is_dutch: Some(true),
+            custom_country: None,
+            custom_region: None,
+            address_line_1: None,
+            address_line_2: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

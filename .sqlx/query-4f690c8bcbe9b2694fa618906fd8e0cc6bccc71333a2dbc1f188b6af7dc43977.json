@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE persons\n        SET\n            gender = $1,\n            last_name = $2,\n            last_name_prefix = $3,\n            first_name = $4,\n            initials = $5,\n            date_of_birth = $6,\n            bsn = $7,\n            locality = $8,\n            postal_code = $9,\n            house_number = $10,\n            house_number_addition = $11,\n            street_name = $12,\n            updated_at = NOW()\n        WHERE id = $13\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
+  "query": "\n        INSERT INTO persons (\n            id,\n            gender,\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        )\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -81,17 +81,43 @@
       },
       {
         "ordinal": 13,
+        "name": "is_dutch",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "custom_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "custom_region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "address_line_1",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "address_line_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 14,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         {
           "Custom": {
             "name": "gender",
@@ -115,7 +141,13 @@
         "Varchar",
         "Varchar",
         "Varchar",
-        "Uuid"
+        "Bool",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -132,9 +164,14 @@
       true,
       true,
       true,
+      true,
+      true,
+      true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "57f6330ea85263db956165c0edfaaab04e9794b8f8864204f14d4bd10534b53f"
+  "hash": "4f690c8bcbe9b2694fa618906fd8e0cc6bccc71333a2dbc1f188b6af7dc43977"
 }

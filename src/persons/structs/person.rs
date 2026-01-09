@@ -22,6 +22,11 @@ pub struct Person {
     pub house_number: Option<String>,
     pub house_number_addition: Option<String>,
     pub street_name: Option<String>,
+    pub is_dutch: Option<bool>,
+    pub custom_country: Option<String>,
+    pub custom_region: Option<String>,
+    pub address_line_1: Option<String>,
+    pub address_line_2: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }

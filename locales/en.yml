@@ -4,6 +4,7 @@ action:
   close: Close
   create: Create
   edit: Edit
+  next: Next
   save: Save
   signout: Sign out
 candidate_list:
@@ -68,8 +69,10 @@ person:
     manage: Manage persons
   created_at: Created at
   fields:
-    bsn: Dutch social security number
+    bsn: Social security number (BSN)
+    country: Country
     date_of_birth: Date of birth
+    elsewhere: Elsewhere
     first_name: First name
     gender: Gender
     house_number: House number
@@ -79,6 +82,7 @@ person:
     last_name_prefix: Last name prefix
     locality: Locality
     name: Name
+    netherlands: Netherlands
     postal_code: Postal code
     street_name: Street name
   form:

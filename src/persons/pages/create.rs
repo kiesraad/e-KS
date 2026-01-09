@@ -8,10 +8,9 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    pagination::{Pagination, SortDirection},
     persons::{
         repository,
-        structs::{Person, PersonForm, PersonSort},
+        structs::{Person, PersonForm},
     },
     t,
 };
@@ -52,13 +51,8 @@ pub(crate) async fn create_person(
         Ok(person) => {
             repository::create_person(&mut conn, &person).await?;
 
-            let pagination = Pagination {
-                sort: PersonSort::CreatedAt,
-                order: SortDirection::Desc,
-                ..Default::default()
-            };
-
-            Ok(Redirect::to(&Person::list_path_with_pagination(&pagination)).into_response())
+            // Redirect to the address edit page
+            Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
     }
 }

@@ -1,0 +1,12 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        TRUNCATE TABLE candidate_lists_persons, candidate_lists, persons\n        RESTART IDENTITY CASCADE\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": []
+  },
+  "hash": "78353afe9f4b60d0ec09b75e4c6b84582c3355875d892a08e8ae2b9e2f650c0f"
+}

@@ -9,6 +9,7 @@ use crate::{
     persons::structs::{Person, PersonSort},
 };
 
+mod address;
 mod create;
 mod delete;
 mod list;
@@ -34,6 +35,12 @@ pub(crate) struct DeletePersonPath {
     pub(crate) id: Uuid,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/persons/{id}/address", rejection(AppError))]
+pub(crate) struct EditPersonAddressPath {
+    pub(crate) id: Uuid,
+}
+
 impl Person {
     pub fn list_path() -> String {
         PersonsPath {}.to_uri().to_string()
@@ -50,6 +57,10 @@ impl Person {
     pub fn edit_path(&self) -> String {
         EditPersonPath { id: self.id }.to_uri().to_string()
     }
+
+    pub fn edit_address_path(&self) -> String {
+        EditPersonAddressPath { id: self.id }.to_uri().to_string()
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -59,6 +70,8 @@ pub fn router() -> Router<AppState> {
         .typed_get(create::new_person_form)
         .typed_get(update::edit_person_form)
         .typed_post(update::update_person)
+        .typed_get(address::edit_person_address_form)
+        .typed_post(address::update_person_address)
         .typed_post(delete::delete_person)
 }
 
@@ -100,6 +113,11 @@ mod tests {
             house_number: Some("10".to_string()),
             house_number_addition: Some("A".to_string()),
             street_name: Some("Stationsstraat".to_string()),
+            is_dutch: Some(true),
+            custom_country: None,
+            custom_region: None,
+            address_line_1: None,
+            address_line_2: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
@@ -114,11 +132,11 @@ mod tests {
             initials: "M.B.".to_string(),
             date_of_birth: "01-02-1990".to_string(),
             bsn: "".to_string(),
-            locality: "Utrecht".to_string(),
-            postal_code: "1234 AB".to_string(),
-            house_number: "10".to_string(),
-            house_number_addition: "A".to_string(),
-            street_name: "Stationsstraat".to_string(),
+            // locality: "Utrecht".to_string(),
+            // postal_code: "1234 AB".to_string(),
+            // house_number: "10".to_string(),
+            // house_number_addition: "A".to_string(),
+            // street_name: "Stationsstraat".to_string(),
             csrf_token: csrf_token.to_string(),
         }
     }

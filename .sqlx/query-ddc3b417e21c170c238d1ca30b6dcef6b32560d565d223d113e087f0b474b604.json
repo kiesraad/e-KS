@@ -1,0 +1,175 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE persons\n        SET\n            gender = $1,\n            last_name = $2,\n            last_name_prefix = $3,\n            first_name = $4,\n            initials = $5,\n            date_of_birth = $6,\n            bsn = $7,\n            locality = $8,\n            postal_code = $9,\n            house_number = $10,\n            house_number_addition = $11,\n            street_name = $12,\n            is_dutch = $13,\n            custom_country = $14,\n            custom_region = $15,\n            address_line_1 = $16,\n            address_line_2 = $17,\n            updated_at = NOW()\n        WHERE id = $18\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "gender?: Gender",
+        "type_info": {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female",
+                "x"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "first_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "date_of_birth",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 7,
+        "name": "bsn",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "is_dutch",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 14,
+        "name": "custom_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "custom_region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "address_line_1",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "address_line_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 19,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female",
+                "x"
+              ]
+            }
+          }
+        },
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Bpchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "ddc3b417e21c170c238d1ca30b6dcef6b32560d565d223d113e087f0b474b604"
+}

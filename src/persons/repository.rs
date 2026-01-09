@@ -40,6 +40,11 @@ pub(crate) async fn list_persons_not_on_candidate_list(
             house_number,
             house_number_addition,
             street_name,
+            is_dutch,
+            custom_country,
+            custom_region,
+            address_line_1,
+            address_line_2,
             created_at,
             updated_at
         FROM persons
@@ -82,6 +87,11 @@ pub(crate) async fn list_persons(
             house_number,
             house_number_addition,
             street_name,
+            address_line_1,
+            address_line_2,
+            is_dutch,
+            custom_country,
+            custom_region,
             created_at,
             updated_at
         FROM persons
@@ -136,6 +146,11 @@ pub(crate) async fn get_person(
             house_number,
             house_number_addition,
             street_name,
+            is_dutch,
+            custom_country,
+            custom_region,
+            address_line_1,
+            address_line_2,
             created_at,
             updated_at
         FROM persons
@@ -170,10 +185,15 @@ pub(crate) async fn create_person(
             house_number,
             house_number_addition,
             street_name,
+            is_dutch,
+            custom_country,
+            custom_region,
+            address_line_1,
+            address_line_2,
             created_at,
             updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
         RETURNING
             id,
             gender as "gender?: Gender",
@@ -188,6 +208,11 @@ pub(crate) async fn create_person(
             house_number,
             house_number_addition,
             street_name,
+            is_dutch,
+            custom_country,
+            custom_region,
+            address_line_1,
+            address_line_2,
             created_at,
             updated_at
         "#,
@@ -204,6 +229,11 @@ pub(crate) async fn create_person(
         new_person.house_number,
         new_person.house_number_addition,
         new_person.street_name,
+        new_person.is_dutch,
+        new_person.custom_country,
+        new_person.custom_region,
+        new_person.address_line_1,
+        new_person.address_line_2,
         new_person.created_at,
         new_person.updated_at,
     )
@@ -232,8 +262,13 @@ pub(super) async fn update_person(
             house_number = $10,
             house_number_addition = $11,
             street_name = $12,
+            is_dutch = $13,
+            custom_country = $14,
+            custom_region = $15,
+            address_line_1 = $16,
+            address_line_2 = $17,
             updated_at = NOW()
-        WHERE id = $13
+        WHERE id = $18
         RETURNING
             id,
             gender as "gender?: Gender",
@@ -248,6 +283,11 @@ pub(super) async fn update_person(
             house_number,
             house_number_addition,
             street_name,
+            is_dutch,
+            custom_country,
+            custom_region,
+            address_line_1,
+            address_line_2,
             created_at,
             updated_at
         "#,
@@ -263,6 +303,11 @@ pub(super) async fn update_person(
         updated_person.house_number,
         updated_person.house_number_addition,
         updated_person.street_name,
+        updated_person.is_dutch,
+        updated_person.custom_country,
+        updated_person.custom_region,
+        updated_person.address_line_1,
+        updated_person.address_line_2,
         updated_person.id,
     )
     .fetch_one(conn)
@@ -316,6 +361,11 @@ mod tests {
             house_number: Some("10".to_string()),
             house_number_addition: Some("A".to_string()),
             street_name: Some("Stationsstraat".to_string()),
+            is_dutch: Some(true),
+            custom_country: None,
+            custom_region: None,
+            address_line_1: None,
+            address_line_2: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

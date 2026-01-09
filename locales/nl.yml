@@ -4,6 +4,7 @@ action:
   close: Sluiten
   create: Aanmaken
   edit: Bewerken
+  next: Volgende
   save: Opslaan
   signout: Afmelden
 candidate_list:
@@ -68,8 +69,10 @@ person:
     manage: Beheer personen
   created_at: Aangemaakt op
   fields:
-    bsn: Burgerservicenummer
+    bsn: Burgerservicenummer (BSN)
+    country: Land
     date_of_birth: Geboortedatum
+    elsewhere: Ergens anders
     first_name: Roepnaam
     gender: Geslacht
     house_number: Huisnummer
@@ -79,6 +82,7 @@ person:
     last_name_prefix: Voorvoegsel
     locality: Woonplaats
     name: Naam
+    netherlands: Nederland
     postal_code: Postcode
     street_name: Straatnaam
   form:

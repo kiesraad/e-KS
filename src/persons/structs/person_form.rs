@@ -38,16 +38,6 @@ pub struct PersonForm {
     pub date_of_birth: String,
     #[validate(with = "validate_eleven_check()", optional)]
     pub bsn: String,
-    #[validate(with = "validate_length(2, 255)", optional)]
-    pub locality: String,
-    #[validate(with = "validate_length(2, 16)", optional)]
-    pub postal_code: String,
-    #[validate(with = "validate_length(1, 16)", optional)]
-    pub house_number: String,
-    #[validate(with = "validate_length(1, 16)", optional)]
-    pub house_number_addition: String,
-    #[validate(with = "validate_length(2, 255)", optional)]
-    pub street_name: String,
     #[validate(csrf)]
     pub csrf_token: String,
 }
@@ -65,11 +55,6 @@ impl From<Person> for PersonForm {
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
             bsn: person.bsn.unwrap_or_default(),
-            locality: person.locality.unwrap_or_default(),
-            postal_code: person.postal_code.unwrap_or_default(),
-            house_number: person.house_number.unwrap_or_default(),
-            house_number_addition: person.house_number_addition.unwrap_or_default(),
-            street_name: person.street_name.unwrap_or_default(),
             csrf_token: String::new(),
         }
     }
@@ -95,11 +80,6 @@ impl PersonForm {
                 initials: validated.initials,
                 date_of_birth: validated.date_of_birth,
                 bsn: validated.bsn,
-                locality: validated.locality,
-                postal_code: validated.postal_code,
-                house_number: validated.house_number,
-                house_number_addition: validated.house_number_addition,
-                street_name: validated.street_name,
                 ..current_person.clone()
             }
         } else {
@@ -112,11 +92,16 @@ impl PersonForm {
                 initials: validated.initials,
                 date_of_birth: validated.date_of_birth,
                 bsn: validated.bsn,
-                locality: validated.locality,
-                postal_code: validated.postal_code,
-                house_number: validated.house_number,
-                house_number_addition: validated.house_number_addition,
-                street_name: validated.street_name,
+                locality: None,
+                postal_code: None,
+                house_number: None,
+                house_number_addition: None,
+                street_name: None,
+                is_dutch: None,
+                custom_country: None,
+                custom_region: None,
+                address_line_1: None,
+                address_line_2: None,
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
             }
@@ -154,6 +139,11 @@ mod tests {
             house_number: Some("10".to_string()),
             house_number_addition: Some("B".to_string()),
             street_name: Some("Old Street".to_string()),
+            is_dutch: Some(true),
+            custom_country: None,
+            custom_region: None,
+            address_line_1: None,
+            address_line_2: None,
             created_at: timestamp,
             updated_at: timestamp,
         }
@@ -172,11 +162,11 @@ mod tests {
             initials: "J.D.".to_string(),
             date_of_birth: "01-02-2020".to_string(),
             bsn: "".to_string(),
-            locality: " Utrecht ".to_string(),
-            postal_code: " 1234 AB ".to_string(),
-            house_number: " 12 ".to_string(),
-            house_number_addition: " B ".to_string(),
-            street_name: " Stationsstraat ".to_string(),
+            // locality: " Utrecht ".to_string(),
+            // postal_code: " 1234 AB ".to_string(),
+            // house_number: " 12 ".to_string(),
+            // house_number_addition: " B ".to_string(),
+            // street_name: " Stationsstraat ".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -211,11 +201,11 @@ mod tests {
             initials: "jd".to_string(),
             date_of_birth: "2020/01/01".to_string(),
             bsn: "".to_string(),
-            locality: "y".to_string(),
-            postal_code: "x".to_string(),
-            house_number: "".to_string(),
-            house_number_addition: " ".to_string(),
-            street_name: "z".to_string(),
+            // locality: "y".to_string(),
+            // postal_code: "x".to_string(),
+            // house_number: "".to_string(),
+            // house_number_addition: " ".to_string(),
+            // street_name: "z".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -244,22 +234,22 @@ mod tests {
             data.errors()
                 .contains(&("date_of_birth".to_string(), ValidationError::InvalidValue))
         );
-        assert!(
-            data.errors()
-                .contains(&("locality".to_string(), ValidationError::ValueTooShort(1, 2)))
-        );
-        assert!(data.errors().contains(&(
-            "postal_code".to_string(),
-            ValidationError::ValueTooShort(1, 2)
-        )));
-        assert!(data.errors().contains(&(
-            "house_number_addition".to_string(),
-            ValidationError::ValueShouldNotBeEmpty
-        )));
-        assert!(data.errors().contains(&(
-            "street_name".to_string(),
-            ValidationError::ValueTooShort(1, 2)
-        )));
+        // assert!(
+        //     data.errors()
+        //         .contains(&("locality".to_string(), ValidationError::ValueTooShort(1, 2)))
+        // );
+        // assert!(data.errors().contains(&(
+        //     "postal_code".to_string(),
+        //     ValidationError::ValueTooShort(1, 2)
+        // )));
+        // assert!(data.errors().contains(&(
+        //     "house_number_addition".to_string(),
+        //     ValidationError::ValueShouldNotBeEmpty
+        // )));
+        // assert!(data.errors().contains(&(
+        //     "street_name".to_string(),
+        //     ValidationError::ValueTooShort(1, 2)
+        // )));
     }
 
     #[test]

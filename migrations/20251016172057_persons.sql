@@ -15,7 +15,11 @@ CREATE TABLE persons (
     house_number VARCHAR,
     house_number_addition VARCHAR,
     street_name VARCHAR,
-    country CHAR(2),
+    is_dutch BOOLEAN,
+    custom_country VARCHAR,
+    custom_region VARCHAR,
+    address_line_1 VARCHAR,
+    address_line_2 VARCHAR,
     created_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
     updated_at timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
 );

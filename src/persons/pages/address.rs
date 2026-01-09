@@ -6,32 +6,26 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, Locale,
-    filters,
+    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
+    pagination::{Pagination, SortDirection},
     persons::{
+        pages::{EditPersonAddressPath, update::person_not_found},
         repository,
-        structs::{Person, PersonForm},
+        structs::{AddressForm, Person, PersonSort},
     },
     t,
 };
-use uuid::Uuid;
-
-use super::EditPersonPath;
 
 #[derive(Template)]
-#[template(path = "persons/update.html")]
-struct PersonUpdateTemplate {
+#[template(path = "persons/address.html")]
+struct PersonAddressUpdateTemplate {
     person: Person,
-    form: FormData<PersonForm>,
+    form: FormData<AddressForm>,
 }
 
-pub(crate) fn person_not_found(id: Uuid, locale: Locale) -> AppError {
-    AppError::NotFound(t!("person.not_found", &locale, id))
-}
-
-pub(crate) async fn edit_person_form(
-    EditPersonPath { id }: EditPersonPath,
+pub(crate) async fn edit_person_address_form(
+    EditPersonAddressPath { id }: EditPersonAddressPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
@@ -41,20 +35,20 @@ pub(crate) async fn edit_person_form(
         .ok_or(person_not_found(id, context.locale))?;
 
     Ok(HtmlTemplate(
-        PersonUpdateTemplate {
-            form: FormData::new_with_data(PersonForm::from(person.clone()), &csrf_tokens),
+        PersonAddressUpdateTemplate {
+            form: FormData::new_with_data(AddressForm::from(person.clone()), &csrf_tokens),
             person,
         },
         context,
     ))
 }
 
-pub(crate) async fn update_person(
-    EditPersonPath { id }: EditPersonPath,
+pub(crate) async fn update_person_address(
+    EditPersonAddressPath { id }: EditPersonAddressPath,
     context: Context,
     State(app_state): State<AppState>,
     DbConnection(mut conn): DbConnection,
-    form: Form<PersonForm>,
+    form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
     let person = repository::get_person(&mut conn, &id)
         .await?
@@ -62,7 +56,7 @@ pub(crate) async fn update_person(
 
     match form.validate(Some(&person), app_state.csrf_tokens()) {
         Err(form_data) => Ok(HtmlTemplate(
-            PersonUpdateTemplate {
+            PersonAddressUpdateTemplate {
                 person,
                 form: form_data,
             },
@@ -72,8 +66,14 @@ pub(crate) async fn update_person(
         Ok(person) => {
             repository::update_person(&mut conn, &person).await?;
 
-            // Redirect to the address edit page
-            Ok(Redirect::to(&person.edit_address_path()).into_response())
+            // Redirect to the persons list after updating, sorted by updated, so the updated person is visible at the top
+            let pagination = Pagination {
+                sort: PersonSort::UpdatedAt,
+                order: SortDirection::Desc,
+                ..Default::default()
+            };
+
+            Ok(Redirect::to(&Person::list_path_with_pagination(&pagination)).into_response())
         }
     }
 }
