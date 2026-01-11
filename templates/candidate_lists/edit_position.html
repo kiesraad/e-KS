@@ -1,0 +1,53 @@
+{% extends "candidate_lists/view.html" %}
+
+{% block overlay %}
+<div class="overlay-backdrop"></div>
+<div class="overlay">
+  <form method="post" action="{{ details.list.edit_candidate_position_path(candidate.person.id) }}">
+    <header>
+      <h2>
+        <span class="position-badge">{{ candidate.position }}</span>
+        {{ candidate.person.display_name() }}
+      </h2>
+      <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+        <span>
+          {{ t!("action.close")|trans }}
+        </span>
+      </a>
+    </header>
+    <div class="overlay-content steps">
+      <div>
+        <ul>
+          <li>
+            <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="active">
+              {{ t!("candidate_list.edit_position")|trans }}
+            </a>
+          </li>
+          <li>
+            <a href="{{ candidate.person.edit_path() }}" class="ok">
+              {{ t!("candidate_list.edit_personal_details")|trans }}
+            </a>
+          </li>
+        </ul>
+      </div>
+      <div class="form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token.value }}">
+        <p class="form-field">
+          <label for="new_position">{{ t!("candidate_list.fields.position")|trans }}</label>
+          <input type="text" id="new_position" name="new_position" value="{{ candidate.position }}" required>
+        </p>
+        <p class="mt-xl">
+          <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
+            {{ t!("candidate_list.remove_candidate")|trans }}
+          </button>
+        </p>
+      </div>
+    </div>
+    <footer>
+      <button type="submit" class="button" name="action" value="move">
+        {{ t!("action.save")|trans }}
+      </button>
+    </footer>
+  </form>
+</div>
+{% endblock %}

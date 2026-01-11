@@ -87,16 +87,16 @@ label.button {
 
   &.tertiary-destructive {
     --button-border-width: 0px;
-    border: none;
     background: transparent;
     color: var(--red-700);
+    border: 1px solid var(--red-700);
 
     &:not(:hover, :active) {
       box-shadow: none;
     }
 
     &:hover {
-      background: var(--red-50);
+      background-color: var(--red-50);
     }
 
     &:focus,
@@ -176,6 +176,14 @@ label.button {
       background-repeat: no-repeat;
       background-position: right var(--space-md) center;
       padding-right: var(--space-xl);
+      background-size: 20px;
+  }
+
+  &.icon-trash {
+      background-image: url("../icons/trash.svg");
+      background-repeat: no-repeat;
+      background-position: left var(--space-md) center;
+      padding-left: var(--space-xl);
       background-size: 20px;
   }
 }

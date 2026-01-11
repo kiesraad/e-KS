@@ -29,7 +29,7 @@ impl Person {
         if let Some(first_name) = &self.first_name {
             format!("{} {}", first_name, self.last_name)
         } else {
-            self.last_name.clone()
+            format!("{} {}", self.initials, self.last_name)
         }
     }
 

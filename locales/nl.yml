@@ -18,6 +18,9 @@ candidate_list:
     add_new: Nieuwe
     edit_list_details: Pas hier de lijstgegevens aan
   add_candidate: Kandidaat toevoegen
+  remove_candidate: Uit deze lijst verwijderen
+  edit_position: Volgorde op de lijst
+  edit_personal_details: Persoonlijke gegevens
   search_existing_person: Zoek bestaande persoon
   search_placeholder: Zoek op naam, voorletters of woonplaats
   fields:

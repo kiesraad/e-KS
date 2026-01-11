@@ -32,21 +32,21 @@ const longPoll = () => {
     });
 };
 
-// short polling, when the server is down we check it every 500ms
+// short polling, when the server is down we check it every 1000ms
 const shortPoll = () => {
   fetch("/livereload/healthy", {
     cache: "no-store",
-    signal: AbortSignal.timeout(500),
+    signal: AbortSignal.timeout(1000),
   })
     .then((r) => {
       if (r?.ok) {
         globalThis.location.reload();
       } else {
-        setTimeout(shortPoll, 500);
+        setTimeout(shortPoll, 1000);
       }
     })
     .catch(() => {
-      setTimeout(shortPoll, 500);
+      setTimeout(shortPoll, 1000);
     });
 };
 

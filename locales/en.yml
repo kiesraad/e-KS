@@ -18,6 +18,9 @@ candidate_list:
     add_new: New
     edit_list_details: Edit the list details here
   add_candidate: Add candidate
+  remove_candidate: Remove candidate
+  edit_position: Position on the list
+  edit_personal_details: Personal details
   search_existing_person: Search existing person
   search_placeholder: Search by name, initials or localitty
   fields:

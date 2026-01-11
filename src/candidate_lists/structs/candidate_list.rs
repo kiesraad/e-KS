@@ -50,6 +50,14 @@ impl CandidateList {
     }
 }
 
+impl CandidateListDetail {
+    pub fn index(&self, person_id: &Uuid) -> Option<usize> {
+        self.candidates
+            .iter()
+            .position(|c| &c.person.id == person_id)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use uuid::Uuid;

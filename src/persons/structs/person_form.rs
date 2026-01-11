@@ -254,6 +254,6 @@ mod tests {
 
         person.first_name = None;
         assert_eq!(person.first_name_display(), "");
-        assert_eq!(person.display_name(), "Old");
+        assert_eq!(person.display_name(), "E.X. Old");
     }
 }

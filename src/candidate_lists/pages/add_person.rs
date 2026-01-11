@@ -30,14 +30,14 @@ pub async fn add_existing_person_to_candidate_list(
     context: Context,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let detail = load_candidate_list(&mut conn, &id, context.locale).await?;
+    let details: CandidateListDetail = load_candidate_list(&mut conn, &id, context.locale).await?;
     let persons = persons::repository::list_persons_not_on_candidate_list(&mut conn, &id)
         .await
         .map_err(AppError::from)?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate {
-            details: detail,
+            details,
             persons,
             max_candidates: 80,
         },
