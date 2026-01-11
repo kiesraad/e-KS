@@ -6,5 +6,6 @@ import './scripts/sortable';
 import './scripts/lookup';
 import './scripts/locality-suggestions';
 import './scripts/sticky-nav';
+import './scripts/search';
 
 import "./styles/index.css";

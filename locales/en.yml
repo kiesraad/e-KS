@@ -18,6 +18,8 @@ candidate_list:
     add_new: New
     edit_list_details: Edit the list details here
   add_candidate: Add candidate
+  search_existing_person: Search existing person
+  search_placeholder: Search by name, initials or localitty
   fields:
     created_at: Created at
     electoral_districts: Electoral districts

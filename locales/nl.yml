@@ -18,6 +18,8 @@ candidate_list:
     add_new: Nieuwe
     edit_list_details: Pas hier de lijstgegevens aan
   add_candidate: Kandidaat toevoegen
+  search_existing_person: Zoek bestaande persoon
+  search_placeholder: Zoek op naam, voorletters of woonplaats
   fields:
     created_at: Aangemaakt op
     electoral_districts: Kiesdistricten

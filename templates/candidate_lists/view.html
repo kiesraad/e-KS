@@ -11,14 +11,16 @@
 {% endblock %}
 
 {% block content %}
+  {% block overlay %}{% endblock %}
+
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
         <p>{{ t!("candidate_list.actions.add_candidates")|trans }}:</p>
         <div class="buttons">
-          <button class="button secondary icon-plus open-modal" type="button">
+          <a href="{{ details.list.add_person_path() }}" class="button secondary icon-plus open-modal" type="button">
             {{ t!("candidate_list.actions.add_existing")|trans }}
-          </button>
+          </a>
           <a href="{{ Person::new_path() }}" class="button secondary icon-plus open-modal" type="button">
             {{ t!("candidate_list.actions.add_new")|trans }}
           </a>
@@ -32,24 +34,6 @@
       </div>
     </div>
   </nav>
-
-  <dialog class="modal">
-    <form method="post" action="{{ details.list.add_person_path() }}">
-      <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
-        <span>
-          {{ t!("action.close")|trans }}
-        </span>
-      </button>
-      <h2>
-        {{ t!("candidate_list.add_candidate")|trans }}
-      </h2>
-      {% if persons.is_empty() %}
-      <p>{{ t!("person.view.empty")|trans }}</p>
-      {% else %}
-      {% include "candidate_lists/add_person_table.html" %}
-      {% endif %}
-    </form>
-  </dialog>
 
   <section>
   {% if details.candidates.is_empty() %}

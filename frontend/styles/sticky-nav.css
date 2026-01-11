@@ -1,6 +1,6 @@
 .sticky-nav {
     position: sticky;
-    z-index: 1000;
+    z-index: 100;
     top: -2px;
     height: 5.5rem;
     margin-bottom: 5rem;

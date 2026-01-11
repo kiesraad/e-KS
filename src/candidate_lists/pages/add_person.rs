@@ -1,14 +1,49 @@
+use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, Context, DbConnection, candidate_lists::repository,
-    persons::repository as persons_repository, t,
+    AppError, Context, DbConnection, HtmlTemplate,
+    candidate_lists::{
+        repository,
+        structs::{CandidateList, CandidateListDetail},
+    },
+    filters,
+    persons::{self, repository as persons_repository, structs::Person},
+    t,
 };
 
 use super::{CandidateListAddPersonPath, load_candidate_list};
+
+#[derive(Template)]
+#[template(path = "candidate_lists/add_existing_person.html")]
+struct AddExistingPersonTemplate {
+    details: CandidateListDetail,
+    persons: Vec<Person>,
+    max_candidates: usize,
+}
+
+pub async fn add_existing_person_to_candidate_list(
+    CandidateListAddPersonPath { id }: CandidateListAddPersonPath,
+    context: Context,
+    DbConnection(mut conn): DbConnection,
+) -> Result<impl IntoResponse, AppError> {
+    let detail = load_candidate_list(&mut conn, &id, context.locale).await?;
+    let persons = persons::repository::list_persons_not_on_candidate_list(&mut conn, &id)
+        .await
+        .map_err(AppError::from)?;
+
+    Ok(HtmlTemplate(
+        AddExistingPersonTemplate {
+            details: detail,
+            persons,
+            max_candidates: 80,
+        },
+        context,
+    ))
+}
 
 #[derive(Deserialize)]
 pub(crate) struct AddPersonForm {

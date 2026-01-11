@@ -1,7 +1,8 @@
-<table class="table">
+<table class="table mt-sm" id="add-person-table">
   <thead>
     <tr>
-      <th scope="col">{{ t!("person.fields.last_name")|trans }}</th>
+      <th scope="col"></th>
+      <th scope="col">{{ t!("person.fields.name")|trans }}</th>
       <th scope="col">{{ t!("person.fields.initials")|trans }}</th>
       <th scope="col"></th>
     </tr>
@@ -9,10 +10,18 @@
   <tbody>
     {% for person in persons %}
     <tr class="clickable">
-      <td>{{ person.last_name }}</td>
+      <td></td>
       <td>
+        <strong>{{ person.last_name }},</strong>
         {{ person.initials }}
-        ({{ person.first_name_display() }})
+        {% if let Some(first_name) = person.first_name %}
+        ({{ first_name }})
+        {% endif %}
+      </td>
+      <td>
+        {% if let Some(locality) = person.locality %}
+          {{ locality }}
+        {% endif %}
       </td>
       <td>
         <button type="submit" name="person_id" value="{{ person.id }}">

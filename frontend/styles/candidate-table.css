@@ -105,3 +105,30 @@
         }
     }
 }
+
+#add-person-table {
+    tr:nth-child(even) td {
+        background-color: var(--gray-100);
+    }
+
+    td:first-child {
+        width: 2.5rem;
+
+        background-image: url('../icons/politician.svg');
+        background-repeat: no-repeat;
+        background-position: left center;
+        background-size: 2.25rem;
+    }
+
+    td:nth-child(2) {
+        border-left: 1px solid var(--gray-300);
+    }
+
+    tr.clickable {
+        td:last-child {
+            a, button {
+                background-image: url("../icons/plus.svg");
+            }
+        }
+    }
+}

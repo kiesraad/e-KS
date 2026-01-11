@@ -79,6 +79,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(create::new_candidate_list_form)
         .typed_post(create::create_candidate_list)
         .typed_get(view::view_candidate_list)
+        .typed_get(add_person::add_existing_person_to_candidate_list)
         .typed_post(add_person::add_person_to_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
 }
@@ -265,8 +266,8 @@ mod tests {
         repository::create_candidate_list(&mut conn, &list).await?;
         persons_repository::create_person(&mut conn, &person).await?;
 
-        let response = view::view_candidate_list(
-            ViewCandidateListPath { id: list_id },
+        let response = add_person::add_existing_person_to_candidate_list(
+            CandidateListAddPersonPath { id: list_id },
             Context::new(Locale::En),
             DbConnection(pool.acquire().await?),
         )
@@ -276,7 +277,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&format!("/candidate-lists/{list_id}/add")));
+        assert!(body.contains(&list.add_person_path()));
         assert!(body.contains("Doe"));
 
         Ok(())
