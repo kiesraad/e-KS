@@ -264,6 +264,35 @@ pub(crate) async fn update_candidate_list(
     .await
 }
 
+pub(crate) async fn remove_candidate_list(
+    conn: &mut PgConnection,
+    list_id: Uuid,
+) -> Result<(), sqlx::Error> {
+    // delete all the candidates first (otherwise we get a foreign key violation)
+    sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists_persons
+        WHERE candidate_list_id = $1
+        "#,
+        list_id
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    // then, delete the list row itself
+    sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists
+        WHERE id = $1
+        "#,
+        list_id
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
+}
+
 async fn insert_candidates(
     executor: &mut PgConnection,
     list_id: &Uuid,

@@ -16,6 +16,7 @@ mod address;
 mod create;
 mod create_person;
 mod edit_position;
+mod delete;
 mod list;
 mod reorder;
 mod update_person;
@@ -33,6 +34,12 @@ pub(crate) struct CandidateListsNewPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
 pub(crate) struct CandidateListsEditPath {
+    pub(crate) id: Uuid,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{id}/delete", rejection(AppError))]
+pub(crate) struct CandidateListsDeletePath {
     pub(crate) id: Uuid,
 }
 
@@ -98,6 +105,12 @@ impl CandidateList {
 
     pub fn update_path(&self) -> String {
         CandidateListsEditPath { id: self.id }.to_uri().to_string()
+    }
+
+    pub fn delete_path(&self) -> String {
+        CandidateListsDeletePath { id: self.id }
+            .to_uri()
+            .to_string()
     }
 
     pub fn add_person_path(&self) -> String {
@@ -166,6 +179,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(view::view_candidate_list)
         .typed_get(update::edit_candidate_list_form)
         .typed_post(update::update_candidate_list)
+        .typed_post(delete::delete_candidate_list)
         .typed_post(add_person::add_person_to_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
         .typed_get(add_person::add_existing_person)

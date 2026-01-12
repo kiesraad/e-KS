@@ -5,6 +5,7 @@ action:
   create: Create
   edit: Edit
   next: Next
+  delete: Delete
   save: Save
   signout: Sign out
 candidate_list:
@@ -18,6 +19,8 @@ candidate_list:
     add_existing: Existing
     add_new: New
     edit_list_details: Edit the list details here
+    select_all_districts: Select all electoral districts
+    delete_list: Delete candidate list
   add_candidate: Add candidate
   remove_candidate: Remove candidate
   edit_position: Position on the list
@@ -34,8 +37,8 @@ candidate_list:
     position: Position
     updated_at: Updated at
   form:
+    delete_warning_text: Are you sure you want to delete this candidate list?
     no_electoral_districts: No electoral districts configured.
-    select_all_districts: Select all electoral districts
     create:
       title: Create candidate list
     update:
