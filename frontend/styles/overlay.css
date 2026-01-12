@@ -1,5 +1,21 @@
 body.overlay-open {
-    /* TODO: Prevent background scrolling when overlay is open */
+    /* correct position relative top on overlay element */
+    padding-bottom: calc(2 * var(--space-lg));
+
+    & > header, & > main{
+        position: fixed;
+        width: 100%;
+        pointer-events: none;
+        user-select: none;
+    }
+
+    & > main {
+        top: 10rem;
+    }
+
+    footer {
+        display: none;
+    }
 }
 
 .overlay-backdrop {
@@ -16,15 +32,15 @@ body.overlay-open {
 .overlay {
     display: flex;
     flex-direction: column;
-    position: absolute;
+    position: relative;
     z-index: 1000;
-    min-height: calc(100vh - var(--space-lg));
-    background-color: var(--gray-50);
     top: var(--space-lg);
-    right: var(--space-lg);
     left: var(--space-lg);
+    width: calc(100% - 2 * var(--space-lg));
+    min-height: calc(100vh - 2 * var(--space-lg));
+    background-color: var(--gray-50);
     height: auto;
-    border-radius: var(--space-sm) var(--space-sm) 0 0;
+    border-radius: var(--space-sm);
     box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
     transition: all 0.3s ease-in-out;
 
@@ -68,7 +84,7 @@ body.overlay-open {
             display: flex;
             justify-content: stretch;
 
-            div {
+            & > div {
                 padding: var(--space-md);
 
                 &:first-child {
@@ -80,6 +96,7 @@ body.overlay-open {
                         list-style: none;
                         display: flex;
                         flex-direction: column;
+                        gap: var(--space-sm);
 
                         li a {
                             display: block;
@@ -123,6 +140,7 @@ body.overlay-open {
         justify-content: flex-end;
         align-items: center;
         padding: var(--space-md) var(--space-lg);
+        border-radius: 0 0 var(--space-sm) var(--space-sm);
         background-color: var(--gray-50);
     }
 }

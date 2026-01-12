@@ -38,7 +38,7 @@
       {% endfor %}
       <p class="form-field">
         <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
-        <input type="text" id="position" name="position" value="{{ form.data.position }}" required>
+        <input type="number" id="position" name="position" min="1" value="{{ form.data.position }}" required>
         {% for error in form|error("position") %}
         <span class="error">{{ error }}</span>
         {% endfor %}

@@ -1,8 +1,9 @@
 window.addEventListener("load", () => {
+  const container = document.getElementById("position-preview-container");
   const preview = document.getElementById("position-preview");
   const input = document.getElementById("position");
 
-  if (!input || !preview) {
+  if (!input || !preview || !container) {
     return;
   }
 
@@ -38,6 +39,9 @@ window.addEventListener("load", () => {
         }
       }
     }
+
+    container.classList.toggle("fade-top", position > 3);
+    container.classList.toggle("fade-bottom", position < total - 2);
   };
 
   input.addEventListener("input", updatePreview);

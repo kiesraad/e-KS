@@ -62,6 +62,7 @@
 }
 
 .form input[type="text"],
+.form input[type="number"],
 .form textarea,
 .form select {
   display: flex;
@@ -78,6 +79,9 @@
 .form input[type="text"]:hover,
 .form input[type="text"]:focus,
 .form input[type="text"]:focus-visible,
+.form input[type="number"]:hover,
+.form input[type="number"]:focus,
+.form input[type="number"]:focus-visible,
 .form textarea:hover,
 .form textarea:focus,
 .form textarea:focus-visible,
@@ -90,6 +94,8 @@
 
 .form input[type="text"]:focus,
 .form input[type="text"]:focus-visible,
+.form input[type="number"]:focus,
+.form input[type="number"]:focus-visible,
 .form textarea:focus,
 .form textarea:focus-visible,
 .form select:focus,
@@ -102,7 +108,8 @@
 }
 
 .form input[type="number"]::-webkit-outer-spin-button,
-.form input[type="number"]::-webkit-inner-spin-button {
+.form input[type="number"]::-webkit-inner-spin-button
+{
   -webkit-appearance: none;
   margin: 0;
 }
