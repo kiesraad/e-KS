@@ -30,5 +30,5 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: database_url
-                  name: pre-install-secrets
+                  name: helm-hook-secrets
 {{ end }}

@@ -39,5 +39,5 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: pgpassword
-                  name: pre-install-secrets
+                  name: helm-hook-secrets
 {{ end }}

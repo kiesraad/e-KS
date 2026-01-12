@@ -40,5 +40,5 @@ spec:
               valueFrom:
                 secretKeyRef:
                   key: pgpassword
-                  name: post-delete-secrets
+                  name: helm-hook-secrets
 {{ end}}
