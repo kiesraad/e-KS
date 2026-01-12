@@ -11,7 +11,7 @@
   <script src="/static/index.js" defer></script>
 </head>
 
-<body>
+<body class="{% block body_class %}{% endblock %}">
   {% block body %}{% endblock %}
 </body>
 

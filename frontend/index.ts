@@ -7,5 +7,6 @@ import './scripts/lookup';
 import './scripts/locality-suggestions';
 import './scripts/sticky-nav';
 import './scripts/search';
+import './scripts/position-preview';
 
 import "./styles/index.css";

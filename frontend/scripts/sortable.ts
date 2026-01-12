@@ -409,7 +409,7 @@ class SortableTable {
     const movedDown: HTMLTableRowElement[] = [];
 
     finalOrder.forEach((row, index) => {
-      // skipo the dragged element
+      // skip the dragged element
       if (row === drag.target) {
         return;
       }

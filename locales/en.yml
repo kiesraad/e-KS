@@ -44,7 +44,7 @@ candidate_list:
   empty: No candidate lists found.
   title: Candidate lists
   title_single: Candidate list
-  candidate_count: '{} / {} candidates'
+  candidate_count: '<strong>{}</strong> / {} candidates'
   view:
     empty: This candidate list has no persons yet.
     title: Candidate list

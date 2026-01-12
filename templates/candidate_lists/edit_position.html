@@ -1,59 +1,60 @@
 {% extends "candidate_lists/view.html" %}
 
+{% block body_class %}overlay-open{% endblock %}
+
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<div class="overlay">
-  <form method="post" action="{{ details.list.edit_candidate_position_path(candidate.person.id) }}">
-    <header>
-      <h2>
-        <span class="position-badge">{{ candidate.position }}</span>
-        {{ candidate.person.display_name() }}
-      </h2>
-      <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
-        <span>
-          {{ t!("action.close")|trans }}
-        </span>
-      </a>
-    </header>
-    <div class="overlay-content steps">
-      <div>
-        <ul>
-          <li>
-            <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="active">
-              {{ t!("candidate_list.edit_position")|trans }}
-            </a>
-          </li>
-          <li>
-            <a href="{{ candidate.person.edit_path() }}" class="ok">
-              {{ t!("candidate_list.edit_personal_details")|trans }}
-            </a>
-          </li>
-        </ul>
-      </div>
-      <div class="form">
-        <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-        {% for error in form|error("csrf_token") %}
+<form method="post" action="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="overlay">
+  <header>
+    <h2>
+      <span class="position-badge">{{ candidate.position }}</span>
+      {{ candidate.person.display_name() }}
+    </h2>
+    <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+      <span>
+        {{ t!("action.close")|trans }}
+      </span>
+    </a>
+  </header>
+  <div class="overlay-content steps">
+    <div>
+      <ul>
+        <li>
+          <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="active">
+            {{ t!("candidate_list.edit_position")|trans }}
+          </a>
+        </li>
+        <li>
+          <a href="{{ candidate.person.edit_path() }}" class="ok">
+            {{ t!("candidate_list.edit_personal_details")|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="form">
+      <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+      {% for error in form|error("csrf_token") %}
+      <span class="error">{{ error }}</span>
+      {% endfor %}
+      <p class="form-field">
+        <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
+        <input type="text" id="position" name="position" value="{{ form.data.position }}" required>
+        {% for error in form|error("position") %}
         <span class="error">{{ error }}</span>
         {% endfor %}
-        <p class="form-field">
-          <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
-          <input type="text" id="position" name="position" value="{{ form.data.position }}" required>
-          {% for error in form|error("position") %}
-          <span class="error">{{ error }}</span>
-          {% endfor %}
-        </p>
-        <p class="mt-xl">
-          <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
-            {{ t!("candidate_list.remove_candidate")|trans }}
-          </button>
-        </p>
-      </div>
+        <div id="position-preview"></div>
+      </p>
+      <p class="mt-xl">
+        <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
+          {{ t!("candidate_list.remove_candidate")|trans }}
+        </button>
+      </p>
     </div>
-    <footer>
-      <button type="submit" class="button" name="action" value="move">
-        {{ t!("action.save")|trans }}
-      </button>
-    </footer>
-  </form>
-</div>
+  </div>
+  <footer>
+    <button type="submit" class="button" name="action" value="move">
+      {{ t!("action.save")|trans }}
+    </button>
+  </footer>
+</form>
 {% endblock %}
