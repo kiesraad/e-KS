@@ -36,7 +36,9 @@
   color: var(--text-color-header);
 }
 
-.form span {
+.form span.substext,
+.form span.hint,
+.form span.error {
   display: inline-block;
   font-size: var(--font-size-md);
   font-style: normal;

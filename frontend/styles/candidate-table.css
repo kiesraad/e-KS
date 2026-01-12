@@ -132,3 +132,11 @@
         }
     }
 }
+
+#position-preview {
+    tr:nth-child(even) td {
+        background-color: var(--gray-100);
+    }
+
+    
+}

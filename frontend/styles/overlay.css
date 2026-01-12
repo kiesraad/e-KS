@@ -109,6 +109,10 @@ body.overlay-open {
                         }
                     }
                 }
+
+                &:nth-child(2) {
+                    flex: 1;
+                }
             }
         }
     }
