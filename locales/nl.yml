@@ -101,7 +101,7 @@ person:
     empty: Geen personen gevonden.
     title: Persoon
 validation:
-  invalid_checksum: Voldoet niet aan de elfproef.
+  invalid_bsn: Ongeldig BSN.
   invalid_csrf_token: De CSRF-token is ongeldig.
   invalid_email: Ongeldig e-mailadres.
   invalid_value: De opgegeven waarde is ongeldig.

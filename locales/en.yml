@@ -101,7 +101,7 @@ person:
     empty: No details available for this person.
     title: Person details
 validation:
-  invalid_checksum: Invalid checksum.
+  invalid_bsn: Invalid BSN.
   invalid_csrf_token: The CSRF token is invalid.
   invalid_email: Invalid email address.
   invalid_value: The provided value is not valid.

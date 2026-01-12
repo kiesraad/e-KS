@@ -36,7 +36,7 @@ impl ValidationError {
                 t!("validation.value_too_short", locale, actual, min)
             }
             ValidationError::InvalidCsrfToken => t!("validation.invalid_csrf_token", locale),
-            ValidationError::InvalidChecksum => t!("validation.invalid_checksum", locale),
+            ValidationError::InvalidChecksum => t!("validation.invalid_bsn", locale),
         }
         .to_string()
     }
