@@ -1,7 +1,7 @@
 window.addEventListener("load", () => {
-  const modal = document.querySelector(
+  const modal: HTMLDialogElement | null = document.querySelector(
     "dialog.modal",
-  ) as HTMLDialogElement | null;
+  );
 
   if (modal) {
     const openButton = document.querySelector("button.open-modal");

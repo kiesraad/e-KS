@@ -10,7 +10,7 @@ window.addEventListener("load", () => {
     });
 
     input.addEventListener("input", () => {
-      let initials = input.value.toUpperCase().replace(/[^A-Z]/g, "");
+      let initials = input.value.toUpperCase().replaceAll(/[^A-Z]/g, "");
 
       if (lastKey === "Backspace") {
         initials = initials.slice(0, -1);

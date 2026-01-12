@@ -39,14 +39,14 @@ const shortPoll = () => {
     signal: AbortSignal.timeout(500),
   })
     .then((r) => {
-      if (r && r.ok) {
-        window.location.reload();
+      if (r?.ok) {
+        globalThis.location.reload();
       } else {
-        void setTimeout(shortPoll, 500);
+        setTimeout(shortPoll, 500);
       }
     })
     .catch(() => {
-      void setTimeout(shortPoll, 500);
+      setTimeout(shortPoll, 500);
     });
 };
 

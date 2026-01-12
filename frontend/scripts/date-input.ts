@@ -1,15 +1,15 @@
 // Enforce date format DD-MM-YYYY for date_of_birth inputs
 window.addEventListener("load", () => {
-  const dateInputs = document.querySelectorAll(
+  const dateInputs: NodeListOf<HTMLInputElement> = document.querySelectorAll(
     'input[name="date_of_birth"]',
-  ) as NodeListOf<HTMLInputElement>;
+  );
   dateInputs.forEach((input: HTMLInputElement) => {
     input.addEventListener("input", () => {
-      const raw = input.value.replace(/[^\d-]/g, "");
-      const digits = raw.replace(/\D/g, "").slice(0, 8);
+      const raw = input.value.replaceAll(/[^\d-]/g, "");
+      const digits = raw.replaceAll(/\D/g, "").slice(0, 8);
       let hasFirstDash = raw.includes("-");
       let hasSecondDash =
-        hasFirstDash && raw.indexOf("-", raw.indexOf("-") + 1) !== -1;
+        hasFirstDash && raw.includes("-", raw.indexOf("-") + 1);
 
       let day = digits.slice(0, 2);
       let month = digits.slice(2, 4);

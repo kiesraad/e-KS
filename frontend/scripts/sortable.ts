@@ -155,7 +155,7 @@ class DragSession {
     movedBelow: Set<number>,
   ) {
     const dragIndex = this.startIndex - movedAbove.size + movedBelow.size;
-    const newOrder: Array<HTMLTableRowElement | null> = Array(rows.length).fill(
+    const newOrder: Array<HTMLTableRowElement | null> = new Array(rows.length).fill(
       null,
     );
 
@@ -206,11 +206,11 @@ class DragSession {
  * Enables drag-and-drop reordering for sortable tables in the DOM.
  */
 class SortableTable {
-  private tbody: HTMLTableSectionElement;
-  private handles: HTMLElement[];
+  private readonly tbody: HTMLTableSectionElement;
+  private readonly handles: HTMLElement[];
   private rows: HTMLTableRowElement[];
-  private onChange?: (order: string[]) => void;
-  private positionCellCache = new Map<
+  private readonly onChange?: (order: string[]) => void;
+  private readonly positionCellCache = new Map<
     HTMLTableRowElement,
     HTMLTableCellElement
   >();
@@ -240,6 +240,7 @@ class SortableTable {
    */
   private attachHandleEvents() {
     this.handles.forEach((handle) => {
+      // FIXME: what if closest() returns null?
       const row = handle.closest("tr") as HTMLTableRowElement;
 
       handle.addEventListener("mousedown", (event) => {
@@ -275,20 +276,20 @@ class SortableTable {
    * Bind global move/end/click handlers for drag interactions.
    */
   private attachGlobalEvents() {
-    window.addEventListener("mousemove", (event) =>
+    globalThis.addEventListener("mousemove", (event) =>
       this.handleMouseMove(event),
     );
-    window.addEventListener("mouseup", (event) => this.handleMouseUp(event));
-    window.addEventListener(
+    globalThis.addEventListener("mouseup", (event) => this.handleMouseUp(event));
+    globalThis.addEventListener(
       "touchmove",
       (event) => this.handleTouchMove(event),
       { passive: false },
     );
-    window.addEventListener("touchend", (event) => this.handleTouchEnd(event));
-    window.addEventListener("touchcancel", (event) =>
+    globalThis.addEventListener("touchend", (event) => this.handleTouchEnd(event));
+    globalThis.addEventListener("touchcancel", (event) =>
       this.handleTouchEnd(event),
     );
-    window.addEventListener(
+    globalThis.addEventListener(
       "click",
       (event) => {
         if (!this.suppressClick) {
@@ -442,14 +443,14 @@ class SortableTable {
         this.applyIndicator(row, "down");
       });
 
-      this.timeout = window.setTimeout(() => {
+      this.timeout = globalThis.setTimeout(() => {
         document
           .querySelectorAll(".flash-success, .pos-up, .pos-down")
           .forEach((el) => {
             el.classList.add("fade-out");
           });
 
-        this.timeout = window.setTimeout(() => {
+        this.timeout = globalThis.setTimeout(() => {
           this.reset();
         }, 500);
       }, 2000);
@@ -458,7 +459,7 @@ class SortableTable {
 
   private reset() {
     if (this.timeout) {
-      window.clearTimeout(this.timeout);
+      globalThis.clearTimeout(this.timeout);
       this.timeout = null;
     }
 
@@ -473,7 +474,7 @@ class SortableTable {
    * Schedule a frame to update drag transforms.
    */
   private scheduleDragUpdate() {
-    if (!this.drag || !this.drag.scheduleAnimation()) {
+    if (!this.drag?.scheduleAnimation()) {
       return;
     }
 
@@ -678,7 +679,9 @@ window.addEventListener("load", () => {
               });
           }
         : undefined;
-
+      // FIXME: we initialize an object but we never use it
+      // it is of course necessary because there is initialization logic in the constructor
+      // perhaps we should decouple object initialization and initialization logic?
       new SortableTable(tbody, { onChange });
     });
 });
