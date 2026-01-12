@@ -25,6 +25,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let person_ids = persons
         .into_iter()
         .map(|person| person.id)
+        .take(52)
         .collect::<Vec<_>>();
 
     let candidate_list = CandidateList {

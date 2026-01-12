@@ -31,10 +31,16 @@
         </ul>
       </div>
       <div class="form">
-        <input type="hidden" name="csrf_token" value="{{ csrf_token.value }}">
+        <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+        {% for error in form|error("csrf_token") %}
+        <span class="error">{{ error }}</span>
+        {% endfor %}
         <p class="form-field">
-          <label for="new_position">{{ t!("candidate_list.fields.position")|trans }}</label>
-          <input type="text" id="new_position" name="new_position" value="{{ candidate.position }}" required>
+          <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
+          <input type="text" id="position" name="position" value="{{ form.data.position }}" required>
+          {% for error in form|error("position") %}
+          <span class="error">{{ error }}</span>
+          {% endfor %}
         </p>
         <p class="mt-xl">
           <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
