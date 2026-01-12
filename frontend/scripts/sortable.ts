@@ -155,9 +155,9 @@ class DragSession {
     movedBelow: Set<number>,
   ) {
     const dragIndex = this.startIndex - movedAbove.size + movedBelow.size;
-    const newOrder: Array<HTMLTableRowElement | null> = new Array(rows.length).fill(
-      null,
-    );
+    const newOrder: Array<HTMLTableRowElement | null> = new Array(
+      rows.length,
+    ).fill(null);
 
     rows.forEach((row, index) => {
       let newIndex = index;
@@ -279,13 +279,17 @@ class SortableTable {
     globalThis.addEventListener("mousemove", (event) =>
       this.handleMouseMove(event),
     );
-    globalThis.addEventListener("mouseup", (event) => this.handleMouseUp(event));
+    globalThis.addEventListener("mouseup", (event) =>
+      this.handleMouseUp(event),
+    );
     globalThis.addEventListener(
       "touchmove",
       (event) => this.handleTouchMove(event),
       { passive: false },
     );
-    globalThis.addEventListener("touchend", (event) => this.handleTouchEnd(event));
+    globalThis.addEventListener("touchend", (event) =>
+      this.handleTouchEnd(event),
+    );
     globalThis.addEventListener("touchcancel", (event) =>
       this.handleTouchEnd(event),
     );
