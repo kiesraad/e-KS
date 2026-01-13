@@ -54,6 +54,19 @@ pub(crate) struct EditCandidatePositionPath {
     pub(crate) person: Uuid,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
+pub(crate) struct CandidateListNewPersonPath {
+    pub(crate) candidate_list: Uuid,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{candidate_list}/{person}", rejection(AppError))]
+pub(crate) struct CandidateListEditPersonPath {
+    pub(crate) candidate_list: Uuid,
+    pub(crate) person: Uuid,
+}
+
 impl CandidateList {
     pub fn list_path() -> String {
         CandidateListsPath {}.to_uri().to_string()
@@ -86,6 +99,23 @@ impl CandidateList {
         CandidateListReorderPath { id: self.id }
             .to_uri()
             .to_string()
+    }
+
+    pub fn new_person_path(&self) -> String {
+        CandidateListNewPersonPath {
+            candidate_list: self.id,
+        }
+        .to_uri()
+        .to_string()
+    }
+
+    pub fn edit_person_path(&self, person_id: &Uuid) -> String {
+        CandidateListEditPersonPath {
+            candidate_list: self.id,
+            person: *person_id,
+        }
+        .to_uri()
+        .to_string()
     }
 }
 

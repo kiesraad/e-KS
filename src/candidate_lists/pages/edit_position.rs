@@ -15,7 +15,6 @@ use crate::{
     },
     filters,
     form::{FormData, Validate},
-    persons::structs::Person,
     t,
 };
 
