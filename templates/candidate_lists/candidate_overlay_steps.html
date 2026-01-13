@@ -1,0 +1,14 @@
+<div class="steps-nav">
+  <ul>
+    <li>
+      <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="active">
+        {{ t!("candidate_list.edit_position")|trans }}
+      </a>
+    </li>
+    <li>
+      <a href="{{ candidate.person.edit_path() }}" class="ok">
+        {{ t!("candidate_list.edit_personal_details")|trans }}
+      </a>
+    </li>
+  </ul>
+</div>

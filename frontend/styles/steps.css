@@ -1,0 +1,39 @@
+.steps-nav {
+    border-right: 1px solid var(--border-color-default);
+    width: 24rem;
+
+    ul {
+        padding: 0;
+        list-style: none;
+        display: flex;
+        flex-direction: column;
+        gap: var(--space-sm);
+
+        li a {
+            display: block;
+            width: 100%;
+            color: var(--base-black);
+            text-decoration: none;
+            padding-left: var(--space-xl);
+            background-repeat: no-repeat;
+            background-position: left var(--space-sm) center;
+            background-size: 1.5rem;
+            line-height: 2.75rem;
+            border-radius: 3px;
+
+            &:hover {
+                background-color: var(--gray-100);
+            }
+
+            &.ok {
+                background-image: url("../icons/checkmarkSmall.svg");
+            }
+
+            &.active {
+                font-weight: bold;
+                background-image: url("../icons/arrowNarrowRight.svg");
+                background-color: var(--gray-200);
+            }
+        }
+    }
+}
