@@ -37,7 +37,7 @@ impl Person {
         if let Some(prefix) = &self.last_name_prefix {
             format!("{} {}", prefix, self.last_name)
         } else {
-            format!("{} {}", self.initials, self.last_name)
+            self.last_name.clone()
         }
     }
 
@@ -54,7 +54,7 @@ impl Person {
         if let Some(first_name) = &self.first_name {
             format!("{} {}", first_name, self.last_name_with_prefix())
         } else {
-            self.last_name_with_prefix()
+            format!("{} {}", self.initials, self.last_name_with_prefix())
         }
     }
 

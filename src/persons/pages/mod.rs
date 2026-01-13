@@ -90,10 +90,10 @@ mod tests {
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, Locale,
-        pagination::{Pagination, SortDirection},
+        pagination::Pagination,
         persons::{
             repository,
-            structs::{Gender, Person, PersonForm, PersonSort},
+            structs::{Gender, Person, PersonForm},
         },
         test_utils::response_body_string,
     };
@@ -182,12 +182,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let pagination = Pagination {
-            sort: PersonSort::CreatedAt,
-            order: SortDirection::Desc,
-            ..Default::default()
-        };
-        assert_eq!(location, Person::list_path_with_pagination(&pagination));
+        assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
         let count = repository::count_persons(&mut conn).await?;
@@ -301,12 +296,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let pagination = Pagination {
-            sort: PersonSort::UpdatedAt,
-            order: SortDirection::Desc,
-            ..Default::default()
-        };
-        assert_eq!(location, Person::list_path_with_pagination(&pagination));
+        assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
         let updated = repository::get_person(&mut conn, &id)

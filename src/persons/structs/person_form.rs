@@ -128,17 +128,17 @@ mod tests {
         Person {
             id: Uuid::nil(),
             gender: Some(Gender::Female),
-            last_name: "Old".to_string(),
+            last_name: "Klaas Smit".to_string(),
             last_name_prefix: None,
-            first_name: Some("Existing".to_string()),
-            initials: "E.X.".to_string(),
+            first_name: Some("Evert".to_string()),
+            initials: "E.D.".to_string(),
             date_of_birth: None,
             bsn: None,
-            locality: Some("Oldtown".to_string()),
+            locality: Some("Heemdamseburg".to_string()),
             postal_code: Some("1234AB".to_string()),
             house_number: Some("10".to_string()),
             house_number_addition: Some("B".to_string()),
-            street_name: Some("Old Street".to_string()),
+            street_name: Some("Spoorstraat".to_string()),
             is_dutch: Some(true),
             custom_country: None,
             custom_region: None,
@@ -156,17 +156,12 @@ mod tests {
 
         let form = PersonForm {
             gender: "male".to_string(),
-            last_name: "  Doe ".to_string(),
+            last_name: "  Klaas Smit ".to_string(),
             last_name_prefix: "  van de ".to_string(),
-            first_name: " John ".to_string(),
-            initials: "J.D.".to_string(),
+            first_name: " Evert ".to_string(),
+            initials: "E.D.".to_string(),
             date_of_birth: "01-02-2020".to_string(),
             bsn: "".to_string(),
-            // locality: " Utrecht ".to_string(),
-            // postal_code: " 1234 AB ".to_string(),
-            // house_number: " 12 ".to_string(),
-            // house_number_addition: " B ".to_string(),
-            // street_name: " Stationsstraat ".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -174,18 +169,18 @@ mod tests {
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.gender, Some(Gender::Male));
-        assert_eq!(updated.last_name, "Doe");
-        assert_eq!(updated.first_name, Some("John".to_string()));
-        assert_eq!(updated.initials, "J.D.");
+        assert_eq!(updated.last_name, "Klaas Smit");
+        assert_eq!(updated.first_name, Some("Evert".to_string()));
+        assert_eq!(updated.initials, "E.D.");
         assert_eq!(
             updated.date_of_birth,
             Some(NaiveDate::from_ymd_opt(2020, 2, 1).unwrap())
         );
-        assert_eq!(updated.locality, Some("Utrecht".to_string()));
-        assert_eq!(updated.postal_code, Some("1234 AB".to_string()));
-        assert_eq!(updated.house_number, Some("12".to_string()));
+        assert_eq!(updated.locality, Some("Heemdamseburg".to_string()));
+        assert_eq!(updated.postal_code, Some("1234AB".to_string()));
+        assert_eq!(updated.house_number, Some("10".to_string()));
         assert_eq!(updated.house_number_addition, Some("B".to_string()));
-        assert_eq!(updated.street_name, Some("Stationsstraat".to_string()));
+        assert_eq!(updated.street_name, Some("Spoorstraat".to_string()));
         assert_eq!(updated.created_at, current.created_at);
         assert_eq!(updated.updated_at, current.updated_at);
     }
@@ -201,11 +196,6 @@ mod tests {
             initials: "jd".to_string(),
             date_of_birth: "2020/01/01".to_string(),
             bsn: "".to_string(),
-            // locality: "y".to_string(),
-            // postal_code: "x".to_string(),
-            // house_number: "".to_string(),
-            // house_number_addition: " ".to_string(),
-            // street_name: "z".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -213,7 +203,7 @@ mod tests {
             panic!("expected validation errors");
         };
 
-        assert_eq!(data.errors().len(), 9);
+        assert_eq!(data.errors().len(), 5);
         assert!(
             data.errors()
                 .contains(&("gender".to_string(), ValidationError::InvalidValue))
@@ -234,22 +224,6 @@ mod tests {
             data.errors()
                 .contains(&("date_of_birth".to_string(), ValidationError::InvalidValue))
         );
-        // assert!(
-        //     data.errors()
-        //         .contains(&("locality".to_string(), ValidationError::ValueTooShort(1, 2)))
-        // );
-        // assert!(data.errors().contains(&(
-        //     "postal_code".to_string(),
-        //     ValidationError::ValueTooShort(1, 2)
-        // )));
-        // assert!(data.errors().contains(&(
-        //     "house_number_addition".to_string(),
-        //     ValidationError::ValueShouldNotBeEmpty
-        // )));
-        // assert!(data.errors().contains(&(
-        //     "street_name".to_string(),
-        //     ValidationError::ValueTooShort(1, 2)
-        // )));
     }
 
     #[test]
@@ -257,13 +231,13 @@ mod tests {
         let mut person = base_person();
         person.gender = Some(Gender::Male);
 
-        assert_eq!(person.display_name(), "Existing Old");
+        assert_eq!(person.display_name(), "Evert Klaas Smit");
         assert_eq!(person.gender_key(), &["Male", "man"]);
         assert_eq!(person.created(), "06-05-2024 07:08:09");
         assert_eq!(person.updated(), "06-05-2024 07:08:09");
 
         person.first_name = None;
         assert_eq!(person.first_name_display(), "");
-        assert_eq!(person.display_name(), "E.X. Old");
+        assert_eq!(person.display_name(), "E.D. Klaas Smit");
     }
 }

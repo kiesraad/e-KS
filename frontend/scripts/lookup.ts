@@ -27,7 +27,6 @@ window.addEventListener("load", () => {
       .replace(/\s/g, "")
       .toUpperCase();
 
-
     // only perform lookup when postal code and house number are filled and locality and street name are empty
     if (
       !postalCodeInput.value ||
