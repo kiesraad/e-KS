@@ -6,9 +6,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <title>Kiesraad - Kandidaatstelling</title>
   <link rel="icon" href="data:," />
-  <link rel="stylesheet" href="/static/index.css" />
+  <link rel="stylesheet" href="/static/index.css?{{ filters::cache_buster() }}" />
   {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
-  <script src="/static/index.js" defer></script>
+  <script src="/static/index.js?{{ filters::cache_buster() }}" defer></script>
 </head>
 
 <body>

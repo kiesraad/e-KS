@@ -20,7 +20,7 @@
     {# candidate lists cards #}
     {% for candidate_list in candidate_lists %}
     <div class="card card-list">
-      <h3>{{ t!("candidate_list.title_single")|trans }} {{ loop.index0|ABC }}</h3>
+      <h3>{{ t!("candidate_list.title_single")|trans }}</h3>
       <p class="statistic truncated">
         {{ t!("common.electoral_districts")|trans }}:
         {{ candidate_list.list.display_districts(election, locale) }}

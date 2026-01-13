@@ -10,15 +10,11 @@ use crate::Locale;
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Context {
     pub locale: Locale,
-    pub l: usize,
 }
 
 impl Context {
     pub fn new(locale: Locale) -> Self {
-        Self {
-            locale,
-            l: locale.as_usize(),
-        }
+        Self { locale }
     }
 
     pub fn livereload_enabled() -> bool {
@@ -43,10 +39,7 @@ where
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let locale = Locale::from_request_parts(parts, state).await?;
-        Ok(Context {
-            locale,
-            l: locale.as_usize(),
-        })
+        Ok(Context::new(locale))
     }
 }
 
@@ -58,7 +51,6 @@ mod tests {
     fn new_context_sets_locale_and_index() {
         let context = Context::new(Locale::En);
         assert_eq!(context.locale, Locale::En);
-        assert_eq!(context.l, Locale::En.as_usize());
     }
 
     #[test]

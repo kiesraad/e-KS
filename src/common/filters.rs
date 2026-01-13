@@ -11,30 +11,6 @@ pub fn display<'a>(value: &'a Option<String>, _: &dyn askama::Values) -> askama:
     Ok(value.as_deref().unwrap_or_default())
 }
 
-/// Generate an alphabetical index number
-///
-/// For example:
-/// - 0 -> "A"
-/// - 1 -> "B"
-/// - 2 -> "C"
-/// - 26 -> "AA"
-/// - 27 -> "AB"
-/// - 155239747 -> "MARLON"
-#[askama::filter_fn]
-pub fn ABC(value: &usize, _: &dyn askama::Values) -> askama::Result<String> {
-    let mut result = String::new();
-    let mut n = *value + 1;
-
-    while n > 0 {
-        n -= 1;
-        let remainder = (n % 26) as u8;
-        result.insert(0, (b'A' + remainder) as char);
-        n /= 26;
-    }
-
-    Ok(result)
-}
-
 #[askama::filter_fn]
 pub fn trans(key: &[&'static str], values: &dyn askama::Values) -> askama::Result<&'static str> {
     let locale: &Locale = askama::get_value(values, "locale")?;
@@ -60,4 +36,9 @@ pub fn error<T: WithCsrfToken>(
     let locale: &Locale = askama::get_value(values, "locale")?;
 
     Ok(form.error(name, locale))
+}
+
+/// Returns a cache buster string based on the current git commit hash (set during build on github).
+pub fn cache_buster() -> &'static str {
+    option_env!("GITHUB_SHA").unwrap_or("development")
 }
