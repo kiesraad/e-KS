@@ -165,7 +165,7 @@ impl CandidateList {
     }
 }
 
-fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
+pub(crate) fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
     AppError::NotFound(t!("candidate_list.not_found", &locale, id))
 }
 
@@ -215,13 +215,13 @@ mod tests {
         response::IntoResponse,
     };
     use axum_extra::extract::Form;
-    use chrono::{NaiveDate, Utc};
+    use chrono::{DateTime, NaiveDate, Utc};
     use sqlx::PgPool;
     use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale,
-        candidate_lists::structs::CandidateListForm,
+        AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
+        candidate_lists::structs::{CandidateListDeleteForm, CandidateListForm},
         persons::{
             repository as persons_repository,
             structs::{Gender, Person},
@@ -278,7 +278,7 @@ mod tests {
         .unwrap()
         .into_response();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(StatusCode::OK, response.status());
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
         assert!(body.contains("action=\"/candidate-lists/new\""));
@@ -331,7 +331,7 @@ mod tests {
         let csrf_tokens = CsrfTokens::default();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
-            csrf_token: "invalid".to_string(),
+            csrf_token: TokenValue("invalid".to_string()),
         };
 
         let response = create::create_candidate_list(
@@ -345,9 +345,167 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(StatusCode::OK, response.status());
         let body = response_body_string(response).await;
         assert!(body.contains("Create candidate list"));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let mut conn = pool.acquire().await.unwrap();
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
+        let creation_date = DateTime::from_timestamp(0, 0).unwrap();
+        let candidate_list = CandidateList {
+            id: Uuid::new_v4(),
+            electoral_districts: vec![ElectoralDistrict::UT],
+            created_at: creation_date,
+            updated_at: creation_date,
+        };
+        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+
+        let form = CandidateListForm {
+            electoral_districts: vec![ElectoralDistrict::DR],
+            csrf_token,
+        };
+        let response = update::update_candidate_list(
+            CandidateListsEditPath {
+                id: candidate_list.id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(conn),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        // verify redirect
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+
+        // verify updated candidate list object in database
+        let mut conn = pool.acquire().await?;
+        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        assert_eq!(lists.len(), 1);
+
+        let updated_list = &lists[0].list;
+
+        assert_eq!(updated_list.view_path(), location);
+
+        assert_eq!(candidate_list.id, updated_list.id);
+        assert_eq!(
+            vec![ElectoralDistrict::DR],
+            updated_list.electoral_districts
+        );
+        assert_eq!(creation_date, updated_list.created_at);
+        // we don't know the exact update date
+        // best we can do is to check it at least got updated (i.e. not equal to creation_date)
+        assert_ne!(creation_date, updated_list.updated_at);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_candidate_list_invalid_form_renders_template(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let mut conn = pool.acquire().await.unwrap();
+        let csrf_tokens = CsrfTokens::default();
+        let creation_date = DateTime::from_timestamp(0, 0).unwrap();
+        let candidate_list = CandidateList {
+            id: Uuid::new_v4(),
+            electoral_districts: vec![ElectoralDistrict::UT],
+            created_at: creation_date,
+            updated_at: creation_date,
+        };
+        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+
+        let form = CandidateListForm {
+            electoral_districts: vec![ElectoralDistrict::DR],
+            csrf_token: TokenValue("invalid".to_string()),
+        };
+        let response = update::update_candidate_list(
+            CandidateListsEditPath {
+                id: candidate_list.id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(conn),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(StatusCode::OK, response.status());
+        let body = response_body_string(response).await;
+        assert!(body.contains("Edit candidate list"));
+
+        let mut conn = pool.acquire().await?;
+        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        assert_eq!(lists.len(), 1);
+
+        let updated_list = &lists[0].list;
+
+        // verify candidate list didn't update in database
+        assert_eq!(&candidate_list, updated_list);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn delete_candidate_list_and_redirect(pool: PgPool) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let mut conn = pool.acquire().await.unwrap();
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
+        let candidate_list = CandidateList {
+            id: Uuid::new_v4(),
+            electoral_districts: vec![ElectoralDistrict::UT],
+            created_at: DateTime::default(),
+            updated_at: DateTime::default(),
+        };
+        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+
+        let response = delete::delete_candidate_list(
+            CandidateListsDeletePath {
+                id: candidate_list.id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(conn),
+            Form(CandidateListDeleteForm { csrf_token }),
+        )
+        .await
+        .unwrap();
+
+        // verify redirect
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+
+        assert_eq!(location, CandidateList::list_path());
+
+        // verify deletion (i.e. no lists in database left)
+        let mut conn = pool.acquire().await?;
+        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        assert_eq!(lists.len(), 0);
 
         Ok(())
     }

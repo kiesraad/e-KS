@@ -39,7 +39,7 @@ pub struct PersonForm {
     #[validate(with = "validate_eleven_check()", optional)]
     pub bsn: String,
     #[validate(csrf)]
-    pub csrf_token: String,
+    pub csrf_token: TokenValue,
 }
 
 impl From<Person> for PersonForm {

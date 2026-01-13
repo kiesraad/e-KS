@@ -4,12 +4,11 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use uuid::Uuid;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, HtmlTemplate, Locale,
+    AppError, AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{
-        pages::CandidateListsEditPath,
+        pages::{CandidateListsEditPath, candidate_list_not_found},
         repository,
         structs::{CandidateList, CandidateListForm},
     },
@@ -26,17 +25,13 @@ struct CandidateListUpdateTemplate {
     electoral_districts: &'static [ElectoralDistrict],
 }
 
-fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
-    AppError::NotFound(t!("candidate_list.not_found", &locale, id))
-}
-
 pub(crate) async fn edit_candidate_list_form(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     State(app_state): State<AppState>,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Response, AppError> {
     let electoral_districts = app_state.config().get_districts();
 
     let candidate_list = repository::get_candidate_list(&mut conn, &id)
@@ -61,6 +56,7 @@ pub(crate) async fn update_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     State(app_state): State<AppState>,
+    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
@@ -70,7 +66,7 @@ pub(crate) async fn update_candidate_list(
         .await?
         .ok_or(candidate_list_not_found(id, context.locale))?;
 
-    match form.validate(Some(&candidate_list), app_state.csrf_tokens()) {
+    match form.validate(Some(&candidate_list), &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 form: form_data,

@@ -42,7 +42,7 @@ candidate_list:
     create:
       title: Create candidate list
     update:
-      title: Update candidate list
+      title: Edit candidate list
   districts:
     all: All
   list:

@@ -1,7 +1,9 @@
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgHasArrayType, PgTypeInfo};
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq, sqlx::Type, Serialize, Deserialize)]
+#[derive(
+    Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, sqlx::Type, Serialize, Deserialize,
+)]
 #[sqlx(no_pg_array)]
 #[sqlx(type_name = "electoral_district")]
 pub enum ElectoralDistrict {

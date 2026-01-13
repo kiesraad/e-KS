@@ -3,7 +3,7 @@ mod form_data;
 mod validation_error;
 mod validators;
 
-pub use csrf::{CsrfToken, CsrfTokens, WithCsrfToken};
+pub use csrf::{CsrfToken, CsrfTokens, TokenValue, WithCsrfToken};
 pub use form_data::FormData;
 pub use validation_error::ValidationError;
 pub use validators::*;

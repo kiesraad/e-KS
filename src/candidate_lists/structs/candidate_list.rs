@@ -8,7 +8,7 @@ use crate::{ElectionConfig, ElectoralDistrict, Locale, persons::structs::Person,
 /// Maximum number of persons allowed on a candidate list.
 pub const MAX_CANDIDATES: usize = 50;
 
-#[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type)]
+#[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type, PartialEq, Eq)]
 pub struct CandidateList {
     pub id: Uuid,
     pub electoral_districts: Vec<ElectoralDistrict>,

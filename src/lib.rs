@@ -25,7 +25,7 @@ pub use common::{
     translate,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
-pub use form::{CsrfToken, CsrfTokens};
+pub use form::{CsrfToken, CsrfTokens, TokenValue};
 
 #[cfg(test)]
 pub use common::test_utils;

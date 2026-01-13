@@ -32,11 +32,8 @@ pub(crate) async fn new_candidate_list_form(
     let electoral_districts = app_state.config().get_districts();
 
     let used_districts = repository::get_used_districts(&mut conn).await?;
-    let available_districts: Vec<ElectoralDistrict> = electoral_districts
-        .iter()
-        .filter(|d| !used_districts.contains(d))
-        .cloned()
-        .collect();
+    let available_districts: Vec<ElectoralDistrict> =
+        determine_available_districts(electoral_districts, used_districts);
 
     let form = FormData::new_with_data(
         CandidateListForm {
@@ -53,6 +50,17 @@ pub(crate) async fn new_candidate_list_form(
         context,
     )
     .into_response())
+}
+
+fn determine_available_districts(
+    electoral_districts: &[ElectoralDistrict],
+    used_districts: Vec<ElectoralDistrict>,
+) -> Vec<ElectoralDistrict> {
+    electoral_districts
+        .iter()
+        .filter(|d| !used_districts.contains(d))
+        .cloned()
+        .collect()
 }
 
 pub(crate) async fn create_candidate_list(
@@ -79,5 +87,52 @@ pub(crate) async fn create_candidate_list(
                 repository::create_candidate_list(&mut conn, &candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+
+    use std::collections::BTreeSet;
+
+    use crate::{ElectoralDistrict, candidate_lists::pages::create::determine_available_districts};
+
+    #[test]
+    fn test_determine_available_districts() {
+        // setup
+        let all_districts = vec![
+            ElectoralDistrict::DR,
+            ElectoralDistrict::FR,
+            ElectoralDistrict::UT,
+            ElectoralDistrict::OV,
+        ];
+
+        let none_used = vec![];
+        let all_used = all_districts.clone();
+        let some_used = vec![ElectoralDistrict::DR, ElectoralDistrict::FR];
+
+        // test
+        // use sets so we don't need to worry about ordering of the vector
+        let none_used_result: BTreeSet<ElectoralDistrict> =
+            determine_available_districts(&all_districts, none_used)
+                .into_iter()
+                .collect();
+        let all_used_result: BTreeSet<ElectoralDistrict> =
+            determine_available_districts(&all_districts, all_used)
+                .into_iter()
+                .collect();
+        let some_used_result: BTreeSet<ElectoralDistrict> =
+            determine_available_districts(&all_districts, some_used)
+                .into_iter()
+                .collect();
+
+        // validation
+        let all_district_set: BTreeSet<ElectoralDistrict> = all_districts.into_iter().collect();
+        assert_eq!(all_district_set, none_used_result);
+        assert_eq!(BTreeSet::new(), all_used_result);
+        assert_eq!(
+            BTreeSet::from([ElectoralDistrict::UT, ElectoralDistrict::OV]),
+            some_used_result
+        );
     }
 }

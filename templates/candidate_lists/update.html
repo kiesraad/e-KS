@@ -13,6 +13,7 @@
 
   <dialog class="modal">
     <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
+      <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
       <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
         <span>
           {{ t!("action.close")|trans }}

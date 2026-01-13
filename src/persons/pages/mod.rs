@@ -94,8 +94,8 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
-        pagination::Pagination,
+        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue,
+        pagination::{Pagination, SortDirection},
         persons::{
             repository,
             structs::{Gender, Person, PersonForm},
@@ -128,7 +128,7 @@ mod tests {
         }
     }
 
-    fn sample_form(csrf_token: &str) -> PersonForm {
+    fn sample_form(csrf_token: &TokenValue) -> PersonForm {
         PersonForm {
             gender: "female".to_string(),
             last_name: "Doe".to_string(),
