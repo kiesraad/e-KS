@@ -17,8 +17,8 @@ cargo clippy --all-targets --all-features -- -D warnings
 cargo test --all-features
 
 # typescript
-./bin/biome format --write ./frontend/scripts
-./bin/biome check ./frontend/scripts 
+./bin/biome format --fix ./frontend
+./bin/biome check ./frontend 
 
 # generic
 ./bin/check_newline.sh

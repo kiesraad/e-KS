@@ -1,63 +1,63 @@
 table {
-    color: var(--color-help-text);
-    width: 100%;
-    border-collapse: collapse;
+  color: var(--color-help-text);
+  width: 100%;
+  border-collapse: collapse;
 
-    th, td {
-        padding: 0 var(--space-ml);
-        line-height: var(--font-size-lg);
-        border-bottom: 1px solid var(--bg-gray-darkest);
+  th,
+  td {
+    padding: 0 var(--space-ml);
+    line-height: var(--font-size-lg);
+    border-bottom: 1px solid var(--bg-gray-darkest);
+  }
+
+  th {
+    height: 2.75rem;
+    text-align: left;
+    font-size: var(--font-size-xs);
+
+    a {
+      color: var(--color-help-text);
+      text-decoration: none;
+
+      &:hover,
+      &:visited,
+      &:focus {
+        color: var(--color-help-text);
+        text-decoration: underline;
+      }
     }
+  }
 
-    th {
-        height: 2.75rem;
-        text-align: left;
-        font-size: var(--font-size-xs);
+  td {
+    height: 3rem;
+    font-size: var(--font-size-lg);
+  }
 
-        a {
-            color: var(--color-help-text);
-            text-decoration: none;
+  tr.clickable {
+    td:last-child {
+      text-align: right;
 
-            &:hover, &:visited, &:focus {
-                color: var(--color-help-text);
-                text-decoration: underline;
-            }
+      a,
+      button {
+        display: inline-block;
+        background-color: transparent;
+        border: none;
+        background-image: url("../icons/chevronRight.svg");
+        background-position: right center;
+        background-repeat: no-repeat;
+        background-size: 1.25rem;
+        height: 1em;
+        width: var(--space-xxl);
+        cursor: pointer;
+
+        span {
+          display: none;
         }
+      }
     }
 
-    td {
-        height: 3rem;
-        font-size: var(--font-size-lg);
+    &:hover {
+      cursor: pointer;
     }
-
-    tr.clickable {
-        td:last-child {
-            text-align: right;
-
-            a, button {
-                display: inline-block;
-                background-color: transparent;
-                border: none;
-                background-image: url("../icons/chevronRight.svg");
-                background-position: right center;
-                background-repeat: no-repeat;
-                background-size: 1.25rem;
-                height: 1em;
-                width: var(--space-xxl);
-                cursor: pointer;
-
-                span {
-                    display: none;
-                }
-            }
-        }
-
-        &:hover {
-            cursor: pointer;
-        }
-    }
-
-
+  }
 }
-
-

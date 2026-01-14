@@ -88,7 +88,10 @@ jobs:
         run: bin/init.sh
 
       - name: Lint Typescript using Biome
-        run: ./bin/biome check ./frontend/scripts
+        run: ./bin/biome check --error-on-warnings ./frontend/scripts
+
+      - name: Lint CSS using Biome
+        run: ./bin/biome check --error-on-warnings ./frontend/styles
 
       - name: Check Clippy with all features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings

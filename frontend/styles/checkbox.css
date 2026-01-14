@@ -1,14 +1,23 @@
 /* Fieldset styling */
 .checklist {
-  --checklist-column-min-width: 16rem;
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(var(--checklist-column-min-width), 1fr));
-  align-items: start;
-  gap: 0.75rem 1.5rem;
   border: none;
   margin: 0;
-  padding: 2rem 0;
+  padding: var(--space-lg) 0;
   max-width: 40rem;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+
+  &.grid {
+    --checklist-column-min-width: 16rem;
+    display: grid;
+    grid-template-columns: repeat(
+        auto-fit,
+        minmax(var(--checklist-column-min-width), 1fr)
+      );
+    align-items: start;
+    gap: var(--space-md) var(--space-lg);
+  }
 
   legend {
     display: contents;
@@ -73,7 +82,9 @@
       &:focus-visible {
         background-color: var(--checkbox-radio-color-bg-focus-checked);
         &::before {
-          background-color: var(--base-dark-blue); /* change icon color as well */
+          background-color: var(
+            --base-dark-blue
+          ); /* change icon color as well */
         }
       }
     }
@@ -100,7 +111,7 @@
     }
 
     /* Set checkbox indeterminate icon */
-    &[type="checkbox"]:global(.indeterminate):checked::before {
+    &[type="checkbox"].indeterminate:checked::before {
       mask-image: url("../icons/minus.svg");
     }
 

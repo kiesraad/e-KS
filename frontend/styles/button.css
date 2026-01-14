@@ -14,7 +14,8 @@ label.button {
   box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
 
   display: inline-flex;
-  padding: calc(0.75rem - var(--button-border-width)) calc(1.25rem - var(--button-border-width));
+  padding: calc(0.75rem - var(--button-border-width))
+    calc(1.25rem - var(--button-border-width));
   justify-content: center;
   align-items: center;
   gap: 0.75rem;
@@ -125,21 +126,24 @@ label.button {
   &.xs {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.5rem - var(--button-border-width)) calc(0.875rem - var(--button-border-width));
+    padding: calc(0.5rem - var(--button-border-width))
+      calc(0.875rem - var(--button-border-width));
   }
 
   &.sm {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.625rem - var(--button-border-width)) calc(1rem - var(--button-border-width));
+    padding: calc(0.625rem - var(--button-border-width))
+      calc(1rem - var(--button-border-width));
   }
 
   &.lg {
     font-size: var(--font-size-lg);
     line-height: 1.75rem;
-    padding: calc(1rem - var(--button-border-width)) calc(1.75rem - var(--button-border-width));
+    padding: calc(1rem - var(--button-border-width))
+      calc(1.75rem - var(--button-border-width));
   }
-  
+
   &.xl {
     min-width: 13rem;
   }
@@ -164,26 +168,26 @@ label.button {
   }
 
   &.icon-plus {
-      background-image: url("../icons/plus.svg");
-      background-repeat: no-repeat;
-      background-position: left var(--space-md) center;
-      padding-left: var(--space-xl);
-      background-size: 20px;
+    background-image: url("../icons/plus.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: var(--space-xl);
+    background-size: 20px;
   }
 
   &.icon-edit {
-      background-image: url("../icons/edit.svg");
-      background-repeat: no-repeat;
-      background-position: right var(--space-md) center;
-      padding-right: var(--space-xl);
-      background-size: 20px;
+    background-image: url("../icons/edit.svg");
+    background-repeat: no-repeat;
+    background-position: right var(--space-md) center;
+    padding-right: var(--space-xl);
+    background-size: 20px;
   }
 
   &.icon-trash {
-      background-image: url("../icons/trash.svg");
-      background-repeat: no-repeat;
-      background-position: left var(--space-md) center;
-      padding-left: var(--space-xl);
-      background-size: 20px;
+    background-image: url("../icons/trash.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: var(--space-xl);
+    background-size: 20px;
   }
 }

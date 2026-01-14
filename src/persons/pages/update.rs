@@ -6,16 +6,15 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, Locale,
-    filters,
+    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
+        pages::person_not_found,
         repository,
         structs::{Person, PersonForm},
     },
     t,
 };
-use uuid::Uuid;
 
 use super::EditPersonPath;
 
@@ -24,10 +23,6 @@ use super::EditPersonPath;
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonForm>,
-}
-
-pub(crate) fn person_not_found(id: Uuid, locale: Locale) -> AppError {
-    AppError::NotFound(t!("person.not_found", &locale, id))
 }
 
 pub(crate) async fn edit_person_form(

@@ -1,13 +1,23 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}" class="active">
-        {{ t!("candidate_list.edit_position")|trans }}
+      <a href="{{ details.list.edit_person_path(candidate.person.id) }}">
+        {{ t!("person.personal_details")|trans }}
       </a>
     </li>
     <li>
-      <a href="{{ details.list.edit_person_path(candidate.person.id) }}" class="ok">
-        {{ t!("candidate_list.edit_personal_details")|trans }}
+      <a href="{{ details.list.edit_person_address_path(candidate.person.id) }}">
+        {{ t!("person.address")|trans }}
+      </a>
+    </li>
+    <li>
+      <a href="#">
+        {{ t!("person.authorized_person")|trans }}
+      </a>
+    </li>
+    <li>
+      <a href="{{ details.list.edit_candidate_position_path(candidate.person.id) }}">
+        {{ t!("candidate_list.edit_position")|trans }}
       </a>
     </li>
   </ul>

@@ -241,7 +241,7 @@ pub(crate) async fn create_person(
     .await
 }
 
-pub(super) async fn update_person(
+pub(crate) async fn update_person(
     conn: &mut PgConnection,
     updated_person: &Person,
 ) -> Result<Person, sqlx::Error> {

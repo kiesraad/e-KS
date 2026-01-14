@@ -88,6 +88,10 @@ person:
     netherlands: Netherlands
     postal_code: Postal code
     street_name: Street name
+    address_line_1: Address line 1
+    address_line_2: Address line 2
+    custom_region: Region or city
+    custom_country: Country
   form:
     create:
       title: Add person

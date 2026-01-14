@@ -3,7 +3,6 @@ use uuid::Uuid;
 
 use crate::{
     ElectoralDistrict,
-    candidate_lists::structs::MAX_CANDIDATES,
     persons::structs::{Gender, Person},
 };
 
@@ -219,12 +218,7 @@ async fn insert_candidates(
     list_id: &Uuid,
     person_ids: &[Uuid],
 ) -> Result<(), sqlx::Error> {
-    let limited_ids: Vec<Uuid> = person_ids.iter().copied().take(MAX_CANDIDATES).collect();
-    if limited_ids.is_empty() {
-        return Ok(());
-    }
-
-    let positions: Vec<i32> = (1..=limited_ids.len() as i32).collect();
+    let positions: Vec<i32> = (1..=person_ids.len() as i32).collect();
 
     sqlx::query!(
         r#"
@@ -233,7 +227,7 @@ async fn insert_candidates(
         FROM UNNEST($2::uuid[], $3::int[]) AS t(person_id, position)
         "#,
         list_id,
-        &limited_ids,
+        &person_ids,
         &positions,
     )
     .execute(&mut *executor)

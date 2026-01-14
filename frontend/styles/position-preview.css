@@ -1,36 +1,40 @@
 #position-preview-container {
-    height: 15rem;
-    position: relative;
+  height: 15rem;
+  position: relative;
 
-    &.fade-top::before,
-    &.fade-bottom::after {
-        content: "";
-        position: absolute;
-        left: 0;
-        width: 100%;
-        height: 6rem;
-        pointer-events: none;
-    }
+  &.fade-top::before,
+  &.fade-bottom::after {
+    content: "";
+    position: absolute;
+    left: 0;
+    width: 100%;
+    height: 6rem;
+    pointer-events: none;
+  }
 
-    &.fade-top::before {
-        top: 0;
-        background: linear-gradient(to bottom, var(--gray-50), rgba(255, 255, 255, 0));
-    }
+  &.fade-top::before {
+    top: 0;
+    background: linear-gradient(
+      to bottom,
+      var(--gray-50),
+      rgba(255, 255, 255, 0)
+    );
+  }
 
-    &.fade-bottom::after {
-        bottom: 0;
-        background: linear-gradient(to top, var(--gray-50), rgba(255, 255, 255, 0));
-    }
+  &.fade-bottom::after {
+    bottom: 0;
+    background: linear-gradient(to top, var(--gray-50), rgba(255, 255, 255, 0));
+  }
 }
 
 #position-preview {
-    tr:not(.current) {
-        .position-badge {
-            background-color: transparent;
-        }
+  tr:not(.current) {
+    .position-badge {
+      background-color: transparent;
     }
+  }
 
-    td:first-child {
-        width: 4rem;
-    }
+  td:first-child {
+    width: 4rem;
+  }
 }

@@ -75,7 +75,7 @@ person:
     bsn: Burgerservicenummer (BSN)
     country: Land
     date_of_birth: Geboortedatum
-    elsewhere: Ergens anders
+    elsewhere: Een ander land
     first_name: Roepnaam
     gender: Geslacht
     house_number: Huisnummer
@@ -88,6 +88,10 @@ person:
     netherlands: Nederland
     postal_code: Postcode
     street_name: Straatnaam
+    address_line_1: Adresregel 1
+    address_line_2: Adresregel 2
+    custom_region: Plaatsnaam
+    custom_country: Landnaam
   form:
     create:
       title: Persoon toevoegen

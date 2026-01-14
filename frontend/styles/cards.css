@@ -1,71 +1,70 @@
-
 .cards {
-    display: flex;
-    flex-wrap: wrap;
-    gap: var(--space-lg);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-lg);
 }
 
 .card {
-    display: flex;
-    flex-direction: column;
-    width: 18.5rem;
-    max-width: 100%;
-    min-height: 18.5rem;
-    background-color: var(--base-white);
-    padding: var(--space-lg);
-    border: 1px solid var(--gray-200);
-    border-radius: var(--space-sm);
-    padding-top: 6.5rem;
-    background-image: url("../icons/list.svg");
-    background-repeat: no-repeat;
-    background-position: left var(--space-lg) top var(--space-lg);
+  display: flex;
+  flex-direction: column;
+  width: 18.5rem;
+  max-width: 100%;
+  min-height: 18.5rem;
+  background-color: var(--base-white);
+  padding: var(--space-lg);
+  border: 1px solid var(--gray-200);
+  border-radius: var(--space-sm);
+  padding-top: 6.5rem;
+  background-image: url("../icons/list.svg");
+  background-repeat: no-repeat;
+  background-position: left var(--space-lg) top var(--space-lg);
 
-    h3 {
-        font-size: var(--font-size-lg);
-        color: var(--gray-800);
-        margin-bottom: var(--space-sm);
-    }
+  h3 {
+    font-size: var(--font-size-lg);
+    color: var(--gray-800);
+    margin-bottom: var(--space-sm);
+  }
 
-    p {
-        font-size: var(--font-size-md);
-        color: var(--gray-600);
-        margin-bottom: var(--space-lg);
-    }
+  p {
+    font-size: var(--font-size-md);
+    color: var(--gray-600);
+    margin-bottom: var(--space-lg);
+  }
 
-    .statistic {
-        font-style: italic;
-        font-size: var(--font-size-md);
+  .statistic {
+    font-style: italic;
+    font-size: var(--font-size-md);
+  }
+
+  a {
+    display: block;
+    margin-top: auto;
+    text-decoration: none;
+    color: var(--gray-700);
+    font-size: var(--font-size-md);
+    background: url("../icons/chevronRight.svg") no-repeat right center;
+    background-size: 1.25rem;
+    padding: var(--space-sm);
+    padding-right: var(--space-ml);
+
+    &:hover {
+      background-color: var(--color-hover);
     }
+  }
+
+  &.card-persons {
+    border: none;
+    background-image: url("../icons/politician.svg");
+  }
+
+  &.card-add-list {
+    align-items: center;
+    justify-content: center;
+    background-color: transparent;
+    padding-top: var(--space-lg);
 
     a {
-        display: block;
-        margin-top: auto;
-        text-decoration: none;
-        color: var(--gray-700);
-        font-size: var(--font-size-md);
-        background: url("../icons/chevronRight.svg") no-repeat right center;
-        background-size: 1.25rem;
-        padding: var(--space-sm);
-        padding-right: var(--space-ml);
-
-        &:hover {
-            background-color: var(--color-hover);
-        }
+      margin-top: 0;
     }
-
-    &.card-persons {
-        border: none;
-        background-image: url("../icons/politician.svg");
-    }
-
-    &.card-add-list {
-        align-items: center;
-        justify-content: center;
-        background-color: transparent;
-        padding-top: var(--space-lg);
-
-        a {
-            margin-top: 0;
-        }
-    }
+  }
 }

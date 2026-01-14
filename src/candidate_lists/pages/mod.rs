@@ -12,11 +12,13 @@ use super::{
 };
 
 mod add_person;
+mod address;
 mod create;
 mod create_person;
 mod edit_position;
 mod list;
 mod reorder;
+mod update_person;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
@@ -62,8 +64,18 @@ pub(crate) struct CandidateListNewPersonPath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{candidate_list}/{person}", rejection(AppError))]
+#[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
 pub(crate) struct CandidateListEditPersonPath {
+    pub(crate) candidate_list: Uuid,
+    pub(crate) person: Uuid,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/candidate-lists/{candidate_list}/address/{person}",
+    rejection(AppError)
+)]
+pub(crate) struct CandidateListEditAddressPath {
     pub(crate) candidate_list: Uuid,
     pub(crate) person: Uuid,
 }
@@ -118,6 +130,15 @@ impl CandidateList {
         .to_uri()
         .to_string()
     }
+
+    pub fn edit_person_address_path(&self, person_id: &Uuid) -> String {
+        CandidateListEditAddressPath {
+            candidate_list: self.id,
+            person: *person_id,
+        }
+        .to_uri()
+        .to_string()
+    }
 }
 
 fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
@@ -140,6 +161,10 @@ pub fn router() -> Router<AppState> {
         .typed_post(edit_position::update_candidate_position)
         .typed_get(create_person::new_person_candidate_list)
         .typed_post(create_person::create_person_candidate_list)
+        .typed_get(address::edit_person_address_form)
+        .typed_post(address::update_person_address)
+        .typed_get(update_person::edit_person_form)
+        .typed_post(update_person::update_person)
 }
 
 pub(super) async fn load_candidate_list(
@@ -378,7 +403,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(location, list.edit_person_address_path(&person.id));
 
         let mut conn = pool.acquire().await?;
         let detail = repository::get_candidate_list(&mut conn, &list_id)

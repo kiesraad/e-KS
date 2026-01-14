@@ -1,142 +1,141 @@
 #candidate-table {
-    tr {
-        transition: transform 0.3s ease-in-out;
+  tr {
+    transition: transform 0.3s ease-in-out;
 
-        td {
-            transition: background-color 0.5s ease-in-out;
+    td {
+      transition: background-color 0.5s ease-in-out;
+    }
+  }
+
+  tr:nth-child(even) td {
+    background-color: var(--gray-100);
+  }
+
+  th:first-child {
+    padding-left: var(--space-md);
+  }
+
+  th:last-child {
+    text-align: right;
+    font-weight: normal;
+  }
+
+  td.drag-handle {
+    width: 4rem;
+    padding: 0;
+    user-select: none;
+
+    background-image: url("../icons/move.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    background-size: 0.7rem;
+    cursor: grab;
+  }
+
+  tr.dragging {
+    transition: none;
+    z-index: 10;
+    position: relative;
+
+    td {
+      background-color: var(--yellow-100);
+
+      .position-badge {
+        background-color: var(--yellow-200);
+      }
+    }
+  }
+
+  tr.flash-success {
+    td {
+      background-color: var(--green-100);
+
+      .position-badge {
+        background-color: var(--green-200);
+      }
+    }
+  }
+
+  /* td.position-indicator { */
+  td:nth-child(2) {
+    width: 5rem;
+    padding-left: 0;
+    overflow: hidden;
+    background-repeat: no-repeat;
+    background-position: -5rem center;
+    background-image: none;
+    transition: background-position 0.5s ease-in-out;
+
+    &.pos-up {
+      background-image: url("../icons/up.svg");
+      background-position: left 3.25rem center;
+    }
+
+    &.pos-down {
+      background-image: url("../icons/down.svg");
+      background-position: left 3.25rem center;
+    }
+
+    &.fade-out {
+      background-position: -5rem center;
+    }
+  }
+
+  td:nth-child(3) {
+    border-left: 1px solid var(--gray-300);
+  }
+
+  &[data-max="50"] {
+    tr:nth-child(n + 51):not(.dragging) {
+      background-image: repeating-linear-gradient(
+        -45deg,
+        var(--red-200),
+        var(--gray-50) 2px,
+        var(--gray-50) 17px
+      );
+
+      td {
+        background-color: transparent;
+
+        .position-badge {
+          color: var(--red-100);
+          background-color: var(--red-100);
         }
+      }
     }
-
-    tr:nth-child(even) td {
-        background-color: var(--gray-100);
-    }
-
-    th:first-child {
-       padding-left: var(--space-md);
-    }
-
-    th:last-child {
-        text-align: right;
-        font-weight: normal;
-    }
-
-    td.drag-handle {
-        width: 4rem;
-        padding: 0;
-        user-select: none;
- 
-        background-image: url("../icons/move.svg");
-        background-repeat: no-repeat;
-        background-position: left var(--space-md) center;
-        background-size: 0.7rem;
-        cursor: grab;
-    }
-
-    tr.dragging {
-        transition: none;
-        z-index: 10;
-        position: relative;
-
-        td {
-            background-color: var(--yellow-100);
-            
-            .position-badge {
-                background-color: var(--yellow-200);
-            }
-        }
-    }
-
-    tr.flash-success {
-        td {
-            background-color: var(--green-100);
-
-            .position-badge {
-                background-color: var(--green-200);
-            }
-        }
-    }
-
-    /* td.position-indicator { */
-    td:nth-child(2) {
-        width: 5rem;
-        padding-left: 0;
-        overflow: hidden;
-        background-repeat: no-repeat;
-        background-position: -5rem center;
-        background-image: none;
-        transition: background-position 0.5s ease-in-out;
-
-        &.pos-up {
-            background-image: url("../icons/up.svg");
-            background-position: left 3.25rem center;
-        }
-
-        &.pos-down {
-            background-image: url("../icons/down.svg");
-            background-position: left 3.25rem center;
-        }
-
-        &.fade-out {
-            background-position: -5rem center;
-        }
-    }
-
-    td:nth-child(3) {
-        border-left: 1px solid var(--gray-300);
-    }
-
-    &[data-max="50"] {
-        tr:nth-child(n+51):not(.dragging) {
-            background-image: repeating-linear-gradient(
-                -45deg,
-                var(--red-200),
-                var(--gray-50) 2px,
-                var(--gray-50) 17px
-            );
-
-            td {
-                background-color: transparent;
-
-                .position-badge {
-                    color: var(--red-100);
-                    background-color: var(--red-100);
-                }
-            }
-        }
-    }
+  }
 }
 
 #add-person-table {
-    tr:nth-child(even) td {
-        background-color: var(--gray-100);
-    }
+  tr:nth-child(even) td {
+    background-color: var(--gray-100);
+  }
 
-    td:first-child {
-        width: 2.5rem;
+  td:first-child {
+    width: 2.5rem;
 
-        background-image: url('../icons/politician.svg');
-        background-repeat: no-repeat;
-        background-position: left center;
-        background-size: 2.25rem;
-    }
+    background-image: url("../icons/politician.svg");
+    background-repeat: no-repeat;
+    background-position: left center;
+    background-size: 2.25rem;
+  }
 
-    td:nth-child(2) {
-        border-left: 1px solid var(--gray-300);
-    }
+  td:nth-child(2) {
+    border-left: 1px solid var(--gray-300);
+  }
 
-    tr.clickable {
-        td:last-child {
-            a, button {
-                background-image: url("../icons/plus.svg");
-            }
-        }
+  tr.clickable {
+    td:last-child {
+      a,
+      button {
+        background-image: url("../icons/plus.svg");
+      }
     }
+  }
 }
 
 #position-preview {
-    tr:nth-child(even) td {
-        background-color: var(--gray-100);
-    }
-
-    
+  tr:nth-child(even) td {
+    background-color: var(--gray-100);
+  }
 }

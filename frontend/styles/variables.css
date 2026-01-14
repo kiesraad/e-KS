@@ -132,8 +132,12 @@
   --checkbox-radio-color-bg-default-checked: var(--button-color-primary);
   --checkbox-radio-color-bg-active-checked: var(--button-color-primary-active);
   --checkbox-radio-color-bg-hover-checked: var(--button-color-primary-hover);
-  --checkbox-radio-color-bg-focus-checked: var(--checkbox-radio-color-bg-default);
-  --checkbox-radio-color-bg-disabled-checked: var(--checkbox-radio-color-border);
+  --checkbox-radio-color-bg-focus-checked: var(
+    --checkbox-radio-color-bg-default
+  );
+  --checkbox-radio-color-bg-disabled-checked: var(
+    --checkbox-radio-color-border
+  );
   --checkbox-radio-size: 1.25rem;
   --checkbox-radio-svg-size: 0.875rem;
 
@@ -180,7 +184,7 @@
   --base-white: #ffffff;
 
   --accent-orange: #ef8050;
-  --accent-blue: #C9D8E9;
+  --accent-blue: #c9d8e9;
 
   --interactive-default: #155eef;
 
@@ -197,6 +201,7 @@
   --menu-error: var(--color-error-darker);
 
   --badge-size: 2.25rem;
+  --badge-size-lg: 3rem;
 
   --badge-polling-station: var(--base-white);
   --badge-polling-station-bg: #4a75ba;

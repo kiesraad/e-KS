@@ -10,7 +10,7 @@ use crate::{
     form::{FormData, Validate},
     pagination::{Pagination, SortDirection},
     persons::{
-        pages::{EditPersonAddressPath, update::person_not_found},
+        pages::{EditPersonAddressPath, person_not_found},
         repository,
         structs::{AddressForm, Person, PersonSort},
     },

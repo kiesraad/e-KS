@@ -19,7 +19,7 @@
     {% if persons.is_empty() %}
     <p>{{ t!("person.view.empty")|trans }}</p>
     {% else %}
-      <p  class="form-field w-full">
+      <p  class="form-field">
         <label for="search">{{ t!("candidate_list.search_existing_person")|trans }}</label>
         <input type="text" name="search" placeholder="{{ t!("candidate_list.search_placeholder")|trans }}" class="form-control w-full" id="search" autofocus />
       </p>

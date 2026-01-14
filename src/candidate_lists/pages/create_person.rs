@@ -4,16 +4,18 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
+use uuid::Uuid;
 
 use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         pages::{CandidateListNewPersonPath, load_candidate_list},
+        repository,
         structs::{CandidateList, CandidateListDetail, MAX_CANDIDATES},
     },
     filters,
     form::{FormData, Validate},
-    persons::{repository, structs::PersonForm},
+    persons::{self, structs::PersonForm},
     t,
 };
 
@@ -52,25 +54,28 @@ pub(crate) async fn create_person_candidate_list(
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
+    let details: CandidateListDetail =
+        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+
     match form.validate(None, app_state.csrf_tokens()) {
-        Err(form_data) => {
-            let details: CandidateListDetail =
-                load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-
-            Ok(HtmlTemplate(
-                PersonCreateTemplate {
-                    details,
-                    form: form_data,
-                    max_candidates: MAX_CANDIDATES,
-                },
-                context,
-            )
-            .into_response())
-        }
+        Err(form_data) => Ok(HtmlTemplate(
+            PersonCreateTemplate {
+                details,
+                form: form_data,
+                max_candidates: MAX_CANDIDATES,
+            },
+            context,
+        )
+        .into_response()),
         Ok(person) => {
-            repository::create_person(&mut conn, &person).await?;
+            let person = persons::repository::create_person(&mut conn, &person).await?;
 
-            Ok(Redirect::to(&person.edit_address_path()).into_response())
+            let mut person_ids: Vec<Uuid> =
+                details.candidates.iter().map(|c| c.person.id).collect();
+            person_ids.push(person.id);
+            repository::update_candidate_list(&mut conn, &candidate_list, &person_ids).await?;
+
+            Ok(Redirect::to(&details.list.edit_person_address_path(&person.id)).into_response())
         }
     }
 }

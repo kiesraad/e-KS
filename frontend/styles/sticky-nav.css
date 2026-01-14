@@ -1,52 +1,51 @@
 .sticky-nav {
-    position: sticky;
-    z-index: 100;
-    top: -2px;
-    height: 5.5rem;
-    margin-bottom: 5rem;
-    padding-top: var(--space-sm);
+  position: sticky;
+  z-index: 100;
+  top: -2px;
+  height: 5.5rem;
+  margin-bottom: 5rem;
+  padding-top: var(--space-sm);
 
+  .sticky-nav-bar {
+    display: flex;
+    justify-content: space-between;
+    background-color: var(--base-white);
+    padding: var(--space-lg);
+    border-radius: var(--space-sm);
+    overflow-anchor: none;
+    transition: box-shadow 0.5s;
+    transition: padding 0.5s;
+
+    p {
+      display: block;
+      margin: 0;
+      padding-bottom: var(--space-sm);
+      max-height: 2rem;
+      overflow: hidden;
+      opacity: 1;
+      transition: all 0.5s;
+    }
+
+    & > div:nth-child(2) {
+      text-align: right;
+    }
+
+    .buttons {
+      display: flex;
+      gap: var(--space-md);
+    }
+  }
+
+  &.is-stuck {
     .sticky-nav-bar {
-        display: flex;
-        justify-content: space-between;
-        background-color: var(--base-white);
-        padding: var(--space-lg);
-        border-radius: var(--space-sm);
-        overflow-anchor: none;
-        transition: box-shadow 0.5s;
-        transition: padding 0.5s;
+      padding: var(--space-md) var(--space-lg);
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 
-        p {
-            display: block;
-            margin: 0;
-            padding-bottom: var(--space-sm);
-            max-height: 2rem;
-            overflow: hidden;
-            opacity: 1;
-            transition: all 0.5s;
-        }
-
-        & > div:nth-child(2) {
-            text-align: right;
-        }
-
-        .buttons {
-            display: flex;
-            gap: var(--space-md);
-        }
+      p {
+        max-height: 0;
+        padding-bottom: 0;
+        opacity: 0;
+      }
     }
-
-
-    &.is-stuck {
-        .sticky-nav-bar {
-            padding: var(--space-md) var(--space-lg);
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
-
-            p {
-                max-height: 0;
-                padding-bottom: 0;
-                opacity: 0;
-            }
-        }
-    }
+  }
 }

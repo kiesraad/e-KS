@@ -4,9 +4,10 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppState,
+    AppError, AppState, Locale,
     pagination::Pagination,
     persons::structs::{Person, PersonSort},
+    t,
 };
 
 mod address;
@@ -24,7 +25,7 @@ pub(crate) struct PersonsPath;
 pub(crate) struct PersonsNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}", rejection(AppError))]
+#[typed_path("/persons/{id}/edit", rejection(AppError))]
 pub(crate) struct EditPersonPath {
     pub(crate) id: Uuid,
 }
@@ -61,6 +62,10 @@ impl Person {
     pub fn edit_address_path(&self) -> String {
         EditPersonAddressPath { id: self.id }.to_uri().to_string()
     }
+}
+
+pub fn person_not_found(id: Uuid, locale: Locale) -> AppError {
+    AppError::NotFound(t!("person.not_found", &locale, id))
 }
 
 pub fn router() -> Router<AppState> {

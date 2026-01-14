@@ -1,0 +1,103 @@
+<div class="checklist">
+  <div class="checkbox">
+    <input type="radio" name="is_dutch" id="nl" value="true" data-variant="1" {% if form.data.is_dutch=="true"
+      %}checked{% endif %}>
+    <label for="nl">
+      {{ t!("person.fields.netherlands")|trans }}
+    </label>
+  </div>
+  <div class="checkbox">
+    <input type="radio" name="is_dutch" id="int" value="false" data-variant="2" {% if form.data.is_dutch=="false"
+      %}checked{% endif %}>
+    <label for="int">
+      {{ t!("person.fields.elsewhere")|trans }}
+    </label>
+  </div>
+</div>
+
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+
+<div class="form-row" data-variant="1">
+  <p class="form-field form-field-sm">
+    <label for="postal_code">{{ t!("person.fields.postal_code")|trans }}</label>
+    <input type="text" name="postal_code" id="postal_code" value="{{ form.data.postal_code }}" />
+    {% for error in form|error("postal_code") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field form-field-sm">
+    <label for="house_number">{{ t!("person.fields.house_number")|trans }}</label>
+    <input type="text" name="house_number" id="house_number" value="{{ form.data.house_number }}" />
+    {% for error in form|error("house_number") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field form-field-sm">
+    <label for="house_number_addition">{{ t!("person.fields.house_number_addition")|trans }}</label>
+    <input type="text" name="house_number_addition" id="house_number_addition"
+      value="{{ form.data.house_number_addition }}" />
+    {% for error in form|error("house_number_addition") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
+
+<div class="form-row" data-variant="1">
+  <p class="form-field">
+    <label for="street_name">{{ t!("person.fields.street_name")|trans }}</label>
+    <input type="text" name="street_name" id="street_name" value="{{ form.data.street_name }}" />
+    {% for error in form|error("street_name") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field">
+    <label for="locality">{{ t!("person.fields.locality")|trans }}</label>
+    <input type="text" name="locality" id="locality" value="{{ form.data.locality }}" list="locality-suggestions" />
+    <datalist id="locality-suggestions"></datalist>
+    {% for error in form|error("locality") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
+
+<div class="form-row" data-variant="2">
+  <p class="form-field">
+    <label for="address_line_1">{{ t!("person.fields.address_line_1")|trans }}</label>
+    <input type="text" name="address_line_1" id="address_line_1" value="{{ form.data.address_line_1 }}" />
+    {% for error in form|error("address_line_1") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
+<div class="form-row" data-variant="2">
+  <p class="form-field">
+    <label for="address_line_2">{{ t!("person.fields.address_line_2")|trans }}</label>
+    <input type="text" name="address_line_2" id="address_line_2" value="{{ form.data.address_line_2 }}"
+      list="address_line_2-suggestions" />
+    <datalist id="address_line_2-suggestions"></datalist>
+    {% for error in form|error("address_line_2") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
+
+<div class="form-row" data-variant="2">
+  <p class="form-field form-field-sm">
+    <label for="custom_region">{{ t!("person.fields.custom_region")|trans }}</label>
+    <input type="text" name="custom_region" id="custom_region" value="{{ form.data.custom_region }}"
+      list="custom_region-suggestions" />
+    <datalist id="custom_region-suggestions"></datalist>
+    {% for error in form|error("custom_region") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field form-field-sm">
+    <label for="custom_country">{{ t!("person.fields.custom_country")|trans }}</label>
+    <input type="text" name="custom_country" id="custom_country" value="{{ form.data.custom_country }}"
+      list="custom_country-suggestions" />
+    <datalist id="custom_country-suggestions"></datalist>
+    {% for error in form|error("custom_country") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
