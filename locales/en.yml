@@ -21,7 +21,6 @@ candidate_list:
   add_candidate: Add candidate
   remove_candidate: Remove candidate
   edit_position: Position on the list
-  edit_personal_details: Personal details
   search_existing_person: Search existing person
   search_placeholder: Search by name, initials or localitty
   fields:
@@ -68,6 +67,10 @@ person:
     back_to_list: Back to persons
     manage: Manage persons
   created_at: Created at
+  personal_information: Personal information
+  address: Address
+  authorized_person: Authorized person
+  personal_details: Personal details
   fields:
     bsn: Social security number (BSN)
     country: Country

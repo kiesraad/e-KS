@@ -1,43 +1,45 @@
 <div class="form">
-  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-  {% for error in form|error("csrf_token") %}
-  <span class="error">{{ error }}</span>
-  {% endfor %}
-  <p class="form-field">
-    <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
-    <input type="number" id="position" name="position" min="1" value="{{ form.data.position }}" required>
-    {% for error in form|error("position") %}
+  <fieldset>
+    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+    {% for error in form|error("csrf_token") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
-  </p>
-  <div id="position-preview-container">
-    <table class="table" id="position-preview">
-      <tbody>
-        {% for c in details.candidates %}
-        <tr class="{% if c.person.id == candidate.person.id %}current{% endif %}">
-          <td>
-            <span class="position-badge">{{ c.position }}</span>
-          </td>
-          <td>
-            <strong>{{ c.person.last_name }},</strong>
-            {{ c.person.initials }}
-            {% if let Some(first_name) = c.person.first_name %}
-            ({{ first_name }})
-            {% endif %}
-          </td>
-          <td>
-            {% if let Some(locality) = c.person.locality %}
-            {{ locality }}
-            {% endif %}
-          </td>
-        </tr>
-        {% endfor %}
-      </tbody>
-    </table>
-  </div>
-  <p class="mt-xl">
-    <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
-      {{ t!("candidate_list.remove_candidate")|trans }}
-    </button>
-  </p>
+    <p class="form-field form-field-sm">
+      <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
+      <input type="number" id="position" name="position" min="1" value="{{ form.data.position }}" required>
+      {% for error in form|error("position") %}
+      <span class="error">{{ error }}</span>
+      {% endfor %}
+    </p>
+    <div id="position-preview-container">
+      <table class="table" id="position-preview">
+        <tbody>
+          {% for c in details.candidates %}
+          <tr class="{% if c.person.id == candidate.person.id %}current{% endif %}">
+            <td>
+              <span class="position-badge">{{ c.position }}</span>
+            </td>
+            <td>
+              <strong>{{ c.person.last_name }},</strong>
+              {{ c.person.initials }}
+              {% if let Some(first_name) = c.person.first_name %}
+              ({{ first_name }})
+              {% endif %}
+            </td>
+            <td>
+              {% if let Some(locality) = c.person.locality %}
+              {{ locality }}
+              {% endif %}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    <p class="mt-xl">
+      <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
+        {{ t!("candidate_list.remove_candidate")|trans }}
+      </button>
+    </p>
+  </fieldset>
 </div>

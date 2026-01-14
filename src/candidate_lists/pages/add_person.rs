@@ -8,7 +8,7 @@ use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
         repository,
-        structs::{CandidateList, CandidateListDetail},
+        structs::{CandidateList, CandidateListDetail, MAX_CANDIDATES},
     },
     filters,
     persons::{self, repository as persons_repository, structs::Person},
@@ -25,7 +25,7 @@ struct AddExistingPersonTemplate {
     max_candidates: usize,
 }
 
-pub async fn add_existing_person_to_candidate_list(
+pub async fn add_existing_person(
     CandidateListAddPersonPath { id }: CandidateListAddPersonPath,
     context: Context,
     DbConnection(mut conn): DbConnection,
@@ -39,7 +39,7 @@ pub async fn add_existing_person_to_candidate_list(
         AddExistingPersonTemplate {
             details,
             persons,
-            max_candidates: 80,
+            max_candidates: MAX_CANDIDATES,
         },
         context,
     ))

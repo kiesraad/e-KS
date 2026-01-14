@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{ElectionConfig, ElectoralDistrict, Locale, persons::structs::Person, t};
 
 /// Maximum number of persons allowed on a candidate list.
-pub const MAX_CANDIDATES: usize = 80;
+pub const MAX_CANDIDATES: usize = 50;
 
 #[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type)]
 pub struct CandidateList {

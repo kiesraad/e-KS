@@ -208,37 +208,35 @@ class DragSession {
 class SortableTable {
   private readonly tbody: HTMLTableSectionElement;
   private readonly handles: HTMLElement[];
-  private rows: HTMLTableRowElement[];
-  private readonly onChange?: (order: string[]) => void;
   private readonly positionCellCache = new Map<
     HTMLTableRowElement,
     HTMLTableCellElement
   >();
+
+  private rows: HTMLTableRowElement[];
+  private onChange?: (order: string[]) => void;
 
   private drag: DragSession | null = null;
   private suppressClick = false;
   private dragStartOrder: string[] | null = null;
   private timeout: number | null = null;
 
-  constructor(
-    tbody: HTMLTableSectionElement,
-    options: { onChange?: (order: string[]) => void } = {},
-  ) {
+  constructor(tbody: HTMLTableSectionElement) {
     this.tbody = tbody;
     this.rows = Array.from(tbody.querySelectorAll<HTMLTableRowElement>("tr"));
     this.handles = Array.from(
       tbody.querySelectorAll<HTMLElement>("tr td.drag-handle"),
     );
-    this.onChange = options.onChange;
+  }
 
-    this.attachHandleEvents();
-    this.attachGlobalEvents();
+  public setOnChange(callback: (order: string[]) => void) {
+    this.onChange = callback;
   }
 
   /**
    * Bind drag start events to each handle.
    */
-  private attachHandleEvents() {
+  public attachHandleEvents() {
     this.handles.forEach((handle) => {
       // FIXME: what if closest() returns null?
       const row = handle.closest("tr") as HTMLTableRowElement;
@@ -275,7 +273,7 @@ class SortableTable {
   /**
    * Bind global move/end/click handlers for drag interactions.
    */
-  private attachGlobalEvents() {
+  public attachGlobalEvents() {
     globalThis.addEventListener("mousemove", (event) =>
       this.handleMouseMove(event),
     );
@@ -653,39 +651,35 @@ class SortableTable {
 }
 
 window.addEventListener("load", () => {
-  document
-    .querySelectorAll<HTMLTableElement>("table.sortable")
-    .forEach((table) => {
-      const tbody = table.querySelector("tbody");
+  const table: HTMLTableElement | null =
+    document.querySelector("table.sortable");
+  const tbody = table?.querySelector("tbody");
 
-      if (!tbody) {
-        return;
-      }
+  if (!table || !tbody) {
+    return;
+  }
 
-      const updateUrl = table.dataset.sortableUpdateUrl;
-      const onChange = updateUrl
-        ? (order: string[]) => {
-            void fetch(updateUrl, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({ person_ids: order }),
-            })
-              .then((response) => {
-                if (!response.ok) {
-                  console.error(
-                    "Failed to update candidate order",
-                    response.status,
-                  );
-                }
-              })
-              .catch((error) => {
-                console.error("Failed to update candidate order", error);
-              });
+  const updateUrl = table.dataset.sortableUpdateUrl;
+  const sortable = new SortableTable(tbody);
+
+  sortable.attachHandleEvents();
+  sortable.attachGlobalEvents();
+
+  if (updateUrl) {
+    sortable.setOnChange((order: string[]) => {
+      void fetch(updateUrl, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ person_ids: order }),
+      })
+        .then((response) => {
+          if (!response.ok) {
+            console.error("Failed to update candidate order", response.status);
           }
-        : undefined;
-      // FIXME: we initialize an object but we never use it
-      // it is of course necessary because there is initialization logic in the constructor
-      // perhaps we should decouple object initialization and initialization logic?
-      new SortableTable(tbody, { onChange });
+        })
+        .catch((error) => {
+          console.error("Failed to update candidate order", error);
+        });
     });
+  }
 });

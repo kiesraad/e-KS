@@ -1,70 +1,92 @@
-.form legend,
-.form p,
-.form ul {
-  width: 32rem;
-}
+.form {
+  .form-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    max-width: 32rem;
 
-.form .form-field {
-  display: flex;
-  flex-direction: column;
-  gap: var(--space-sm);
-}
+    & > label {
+      color: var(--text-color-header);
+      font-weight: bold;
+      gap: 0.5rem;
 
-.form .form-field > label {
-  color: var(--text-color-header);
-  font-weight: bold;
-  gap: 0.5rem;
-}
+      &.required::after {
+        display: inline-block;
+        content: " *";
+        color: var(--color-error-darker);
+      }
+    }
 
-.form .form-field.actions {
-  flex-direction: row;
-  justify-content: flex-start;
-  gap: var(--space-ml);
-}
+    &.actions {
+      flex-direction: row;
+      justify-content: flex-start;
+      gap: var(--space-ml);
+    }
 
-.form fieldset {
-  border: none;
-  padding: 0;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
-}
+    &.form-field-sm {
+      max-width: 16rem;
+    }
+  }
 
-.form fieldset legend {
-  font-size: var(--font-size-lg);
-  font-weight: bold;
-  color: var(--text-color-header);
-}
+  fieldset {
+    border: none;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-lg);
 
-.form span.substext,
-.form span.hint,
-.form span.error {
-  display: inline-block;
-  font-size: var(--font-size-md);
-  font-style: normal;
-  line-height: 1.5rem;
-}
+    legend {
+      display: block;
+      font-size: var(--font-size-lg);
+      font-weight: bold;
+      color: var(--text-color-header);
+      margin-bottom: var(--space-xl);
+    }
 
-.form span.subtext {
-  font-weight: normal;
-}
+    .form-row {
+      display: flex;
+      gap: var(--space-xl);
 
-.form span.hint {
-  color: var(--color-help-text);
-  font-weight: normal;
-  margin-top: 0.5rem;
-}
+      .form-field {
+        flex: 1;
+      }
+    }
+  }
 
-.form span.error {
-  color: var(--color-error-darker);
-  font-weight: normal;
-  margin-top: 0.5rem;
+  span.substext,
+  span.hint,
+  span.error {
+    display: inline-block;
+    font-size: var(--font-size-md);
+    font-style: normal;
+    line-height: 1.5rem;
+  }
+
+  span.subtext {
+    font-weight: normal;
+  }
+
+  span.hint {
+    color: var(--color-help-text);
+    font-weight: normal;
+    margin-top: 0.5rem;
+  }
+
+  span.error {
+    color: var(--color-error-darker);
+    font-weight: normal;
+    margin-top: 0.5rem;
+  }
+
 }
 
 .form input[type="text"],
 .form input[type="number"],
 .form textarea,
 .form select {
+  width: 100%;
+  max-width: 32rem;
+
   display: flex;
   padding: 1rem 1.5rem 1rem 1rem;
   justify-content: space-between;
@@ -107,20 +129,7 @@
   appearance: textfield;
 }
 
-.form input[type="number"]::-webkit-outer-spin-button,
-.form input[type="number"]::-webkit-inner-spin-button
-{
-  -webkit-appearance: none;
-  margin: 0;
-}
-
 .form textarea {
   align-items: flex-start;
   resize: none;
-}
-
-.form label.required::after {
-  display: inline-block;
-  content: " *";
-  color: var(--color-error-darker);
 }

@@ -20,6 +20,7 @@
             background-size: 1.5rem;
             line-height: 2.75rem;
             border-radius: 3px;
+            font-weight: 600;
 
             &:hover {
                 background-color: var(--gray-100);
@@ -30,9 +31,14 @@
             }
 
             &.active {
-                font-weight: bold;
                 background-image: url("../icons/arrowNarrowRight.svg");
                 background-color: var(--gray-200);
+            }
+
+            &.disabled {
+                pointer-events: none;
+                cursor: default;
+                color: var(--gray-400);
             }
         }
     }

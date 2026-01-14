@@ -1,10 +1,5 @@
-#position {
-    width: 12rem;
-}
-
 #position-preview-container {
     height: 15rem;
-    margin-top: var(--space-md);
     position: relative;
 
     &.fade-top::before,
@@ -39,4 +34,3 @@
         width: 4rem;
     }
 }
-

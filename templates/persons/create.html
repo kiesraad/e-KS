@@ -12,6 +12,14 @@
         <h2>{{ t!("person.form.create.title")|trans }}</h2>
       </legend>
       {% include "persons/form.html" %}
+      <p class="form-field actions">
+        <button type="submit" class="button">
+          {{ t!("action.next")|trans }}
+        </button>
+        <a href="{{ Person::list_path() }}" class="button secondary">
+          {{ t!("action.cancel")|trans }}
+        </a>
+      </p>
     </fieldset>
   </form>
 </section>

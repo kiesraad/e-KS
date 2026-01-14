@@ -86,6 +86,11 @@
   }
 }
 
+a.disabled {
+  pointer-events: none;
+  cursor: default;
+}
+
 /* Width */
 .w-6 {
   width: 6rem;

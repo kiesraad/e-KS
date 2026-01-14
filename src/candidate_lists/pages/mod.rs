@@ -13,6 +13,7 @@ use super::{
 
 mod add_person;
 mod create;
+mod create_person;
 mod edit_position;
 mod list;
 mod reorder;
@@ -125,15 +126,20 @@ fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        // manage lists
         .typed_get(list::list_candidate_lists)
         .typed_get(create::new_candidate_list_form)
         .typed_post(create::create_candidate_list)
+        // manage single list
         .typed_get(view::view_candidate_list)
-        .typed_get(add_person::add_existing_person_to_candidate_list)
+        .typed_post(reorder::reorder_candidate_list)
+        .typed_get(add_person::add_existing_person)
         .typed_post(add_person::add_person_to_candidate_list)
+        // manage person / candidate
         .typed_get(edit_position::edit_candidate_position)
         .typed_post(edit_position::update_candidate_position)
-        .typed_post(reorder::reorder_candidate_list)
+        .typed_get(create_person::new_person_candidate_list)
+        .typed_post(create_person::create_person_candidate_list)
 }
 
 pub(super) async fn load_candidate_list(
@@ -325,7 +331,7 @@ mod tests {
         repository::create_candidate_list(&mut conn, &list).await?;
         persons_repository::create_person(&mut conn, &person).await?;
 
-        let response = add_person::add_existing_person_to_candidate_list(
+        let response = add_person::add_existing_person(
             CandidateListAddPersonPath { id: list_id },
             Context::new(Locale::En),
             DbConnection(pool.acquire().await?),

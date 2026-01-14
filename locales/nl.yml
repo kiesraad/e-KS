@@ -21,7 +21,6 @@ candidate_list:
   add_candidate: Kandidaat toevoegen
   remove_candidate: Uit deze lijst verwijderen
   edit_position: Volgorde op de lijst
-  edit_personal_details: Persoonlijke gegevens
   search_existing_person: Zoek bestaande persoon
   search_placeholder: Zoek op naam, voorletters of woonplaats
   fields:
@@ -68,6 +67,10 @@ person:
     back_to_list: Terug naar personen
     manage: Beheer personen
   created_at: Aangemaakt op
+  personal_information: Persoonlijke gegevens
+  address: Adres
+  authorized_person: Kandidaatgemachtigde
+  personal_details: Persoonlijke gegevens
   fields:
     bsn: Burgerservicenummer (BSN)
     country: Land

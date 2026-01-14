@@ -2,7 +2,8 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate, candidate_lists::structs::CandidateListDetail,
+    AppError, Context, DbConnection, HtmlTemplate,
+    candidate_lists::structs::{CandidateListDetail, MAX_CANDIDATES},
     filters, t,
 };
 
@@ -20,14 +21,12 @@ pub(crate) async fn view_candidate_list(
     context: Context,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    // TODO: determine max_candidates from political group configuration
-    let max_candidates = 50;
     let details = load_candidate_list(&mut conn, &id, context.locale).await?;
 
     Ok(HtmlTemplate(
         CandidateListViewTemplate {
             details,
-            max_candidates,
+            max_candidates: MAX_CANDIDATES,
         },
         context,
     ))

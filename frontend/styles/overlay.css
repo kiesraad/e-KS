@@ -1,5 +1,4 @@
 body.overlay-open {
-    /* correct position relative top on overlay element */
     padding-bottom: calc(2 * var(--space-lg));
 
     & > header, & > main{
@@ -13,7 +12,7 @@ body.overlay-open {
         top: 10rem;
     }
 
-    footer {
+    & > footer {
         display: none;
     }
 }
@@ -85,7 +84,7 @@ body.overlay-open {
             justify-content: stretch;
 
             & > div {
-                padding: var(--space-md);
+                padding: var(--space-lg);
                 
                 &:nth-child(2) {
                     flex: 1;
