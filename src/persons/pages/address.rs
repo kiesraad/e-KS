@@ -63,7 +63,8 @@ pub(crate) async fn update_person_address(
             context,
         )
         .into_response()),
-        Ok(person) => {
+        Ok(mut person) => {
+            person.normalize_address();
             persons::repository::update_person(&mut conn, &person).await?;
 
             // Redirect to the persons list after updating, sorted by updated, so the updated person is visible at the top

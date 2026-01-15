@@ -79,4 +79,22 @@ impl Person {
             })
             .unwrap_or(&["", ""])
     }
+
+    /// Make sure a person has either a Dutch address or an international address, but not both
+    pub fn normalize_address(&mut self) {
+        if self.is_dutch.is_none_or(|d| d) {
+            // remove international address
+            self.address_line_1 = None;
+            self.address_line_2 = None;
+            self.custom_region = None;
+            self.custom_country = None;
+        } else {
+            // remove Dutch address
+            self.postal_code = None;
+            self.house_number = None;
+            self.house_number_addition = None;
+            self.street_name = None;
+            self.locality = None;
+        }
+    }
 }
