@@ -90,7 +90,7 @@ person:
     street_name: Street name
     address_line_1: Address line 1
     address_line_2: Address line 2
-    custom_region: Region or city
+    custom_region: Region, province, or state
     custom_country: Country
   form:
     create:

@@ -90,7 +90,7 @@ person:
     street_name: Straatnaam
     address_line_1: Adresregel 1
     address_line_2: Adresregel 2
-    custom_region: Plaatsnaam
+    custom_region: Regio, provincie, of staat
     custom_country: Landnaam
   form:
     create:
