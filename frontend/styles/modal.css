@@ -11,9 +11,11 @@
   background-color: var(--base-white);
   padding: 2.5rem;
   border-radius: 5px;
+  border: none;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   max-width: 90%;
   width: 40rem;
+  position: relative;
 
   /* Show scrollbar if the modal is higher than the viewport */
   max-height: calc(100% - 2rem);
@@ -21,30 +23,21 @@
 
   .close-modal {
     position: absolute;
-    top: 1.5rem;
-    right: 1.5rem;
+    top: 0;
+    right: 0;
     background-color: transparent;
     background-image: url("../icons/cross.svg");
     background-repeat: no-repeat;
-    background-size: contain;
-    width: 2rem;
-    height: 2rem;
+    background-size: 2rem;
+    background-position: center;
+    width: 6rem;
+    height: 6rem;
     border: none;
     cursor: pointer;
     outline: none;
 
     span {
       display: none;
-    }
-  }
-
-  table {
-    tr {
-      td {
-        height: auto;
-        padding-top: 1rem;
-        padding-bottom: 1rem;
-      }
     }
   }
 }

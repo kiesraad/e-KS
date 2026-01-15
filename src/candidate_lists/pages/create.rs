@@ -6,10 +6,15 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{self, structs::CandidateListForm},
+    AppError, AppState, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
+    HtmlTemplate, Locale,
+    candidate_lists::{
+        self,
+        structs::{CandidateListForm, CandidateListSummary},
+    },
     filters,
     form::{FormData, Validate},
+    persons::{self, structs::Person},
     t,
 };
 
@@ -18,7 +23,11 @@ use super::{CandidateList, CandidateListsNewPath};
 #[derive(Template)]
 #[template(path = "candidate_lists/create.html")]
 struct CandidateListCreateTemplate {
+    candidate_lists: Vec<CandidateListSummary>,
+    election: ElectionConfig,
+    total_persons: i64,
     form: FormData<CandidateListForm>,
+    locale: Locale,
     electoral_districts: &'static [ElectoralDistrict],
 }
 
@@ -29,6 +38,11 @@ pub(crate) async fn new_candidate_list_form(
     DbConnection(mut conn): DbConnection,
     State(app_state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
+    let candidate_lists =
+        candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+    let total_persons = persons::repository::count_persons(&mut conn).await?;
+    let election = app_state.config().election;
+
     let electoral_districts = app_state.config().get_districts();
 
     let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
@@ -42,9 +56,14 @@ pub(crate) async fn new_candidate_list_form(
         },
         &csrf_tokens,
     );
+
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
+            candidate_lists,
+            election,
+            total_persons,
             form,
+            locale: context.locale,
             electoral_districts,
         },
         context,
@@ -74,14 +93,25 @@ pub(crate) async fn create_candidate_list(
     let electoral_districts = app_state.config().election.electoral_districts();
 
     match form.validate(None, &csrf_tokens) {
-        Err(form_data) => Ok(HtmlTemplate(
-            CandidateListCreateTemplate {
-                form: form_data,
-                electoral_districts,
-            },
-            context,
-        )
-        .into_response()),
+        Err(form_data) => {
+            let candidate_lists =
+                candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+            let total_persons = persons::repository::count_persons(&mut conn).await?;
+            let election = app_state.config().election;
+
+            Ok(HtmlTemplate(
+                CandidateListCreateTemplate {
+                    candidate_lists,
+                    election,
+                    total_persons,
+                    form: form_data,
+                    electoral_districts,
+                    locale: context.locale,
+                },
+                context,
+            )
+            .into_response())
+        }
         Ok(candidate_list) => {
             let candidate_list =
                 candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list)

@@ -24,6 +24,8 @@ candidate_list:
     add_candidate: Kandidaat toevoegen
     edit_details: Lijstgegevens bewerken
   add_candidate: Kandidaat toevoegen
+  no_candidates: Geen kandidaten op deze lijst
+  total_candidates: 'Kandidaten op deze lijst: {}'
   remove_candidate: Uit deze lijst verwijderen
   edit_position: Volgorde op de lijst
   search_existing_person: Zoek bestaande persoon
@@ -52,7 +54,7 @@ candidate_list:
   not_found: Kandidatenlijst {} niet gevonden.
   empty: Geen kandidatenlijsten gevonden.
   title: Kandidatenlijsten
-  title_single: Lijststel
+  title_single: Kandidatenlijst
   candidate_count: '<strong>{}</strong> / {} kandidaten'
   view:
     empty: Deze kandidatenlijst heeft nog geen kandidaten.

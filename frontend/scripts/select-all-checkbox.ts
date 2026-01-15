@@ -1,11 +1,11 @@
 window.addEventListener("load", () => {
   document
-    .querySelectorAll("div.select-all-checkbox > input[type='checkbox']")
+    .querySelectorAll(".select-all-checkbox > input")
     .forEach((element) => {
       const selectAllCheckbox = element as HTMLInputElement;
       const listId = selectAllCheckbox.getAttribute("for-checklist");
       const checkList: NodeListOf<HTMLInputElement> = document.querySelectorAll(
-        `div[id=${listId}] > div.checkbox > input[type=checkbox]`,
+        `#${listId} input[type=checkbox]`,
       );
 
       // determine initial state onload
@@ -16,6 +16,7 @@ window.addEventListener("load", () => {
         checkList.forEach((checkbox) => {
           checkbox.checked = selectAllCheckbox.checked;
         });
+        determine_select_all_state(selectAllCheckbox, checkList);
       });
 
       // add event listeners for all checkboxes in the checklist to update the select-all checkbox
@@ -31,14 +32,19 @@ const determine_select_all_state = (
   selectAllCheckbox: HTMLInputElement,
   checkList: NodeListOf<HTMLInputElement>,
 ) => {
-  // FIXME: indeterminate state doesn't render yet (it is however correctly set)
-  selectAllCheckbox.indeterminate = false;
   if (Array.from(checkList).every((cb) => cb.checked)) {
     selectAllCheckbox.checked = true;
+    selectAllCheckbox.indeterminate = false;
   } else if (Array.from(checkList).every((cb) => !cb.checked)) {
     selectAllCheckbox.checked = false;
+    selectAllCheckbox.indeterminate = false;
   } else {
-    // some are checked, some aren't => indeterminate
+    selectAllCheckbox.checked = false;
     selectAllCheckbox.indeterminate = true;
   }
+
+  selectAllCheckbox.classList.toggle(
+    "indeterminate",
+    selectAllCheckbox.indeterminate,
+  );
 };

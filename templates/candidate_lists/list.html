@@ -10,7 +10,7 @@
     <div class="card card-persons">
       <h3>{{ t!("person.all")|trans }}</h3>
       <p class="statistic">
-        {{ t!("person.total")|trans|fill(total_persons) }}
+        {{ t!("person.total")|trans|fill(total_persons.to_string()) }}
       </p>
       <a href="{{ Person::list_path() }}">
         {{ t!("person.actions.manage")|trans }}
@@ -24,6 +24,13 @@
       <p class="statistic truncated">
         {{ t!("common.electoral_districts")|trans }}:
         {{ candidate_list.list.display_districts(election, locale) }}
+      </p>
+      <p class="statistic">
+        {% if candidate_list.person_count == 0 %}
+          {{ t!("candidate_list.no_candidates")|trans }}
+        {% else %}
+          {{ t!("candidate_list.total_candidates")|trans|fill(candidate_list.person_count.to_string()) }}
+        {% endif %}
       </p>
       <a href="{{ candidate_list.list.view_path() }}">
         {{ t!("candidate_list.actions.manage")|trans }}

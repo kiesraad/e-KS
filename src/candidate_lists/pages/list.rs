@@ -16,7 +16,7 @@ use crate::{
 struct CandidateListIndexTemplate {
     candidate_lists: Vec<CandidateListSummary>,
     election: ElectionConfig,
-    total_persons: String,
+    total_persons: i64,
     locale: Locale,
 }
 
@@ -36,7 +36,7 @@ pub(crate) async fn list_candidate_lists(
             candidate_lists,
             election,
             locale: context.locale,
-            total_persons: total_persons.to_string(),
+            total_persons,
         },
         context,
     ))

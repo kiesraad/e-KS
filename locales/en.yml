@@ -21,6 +21,8 @@ candidate_list:
     edit_list_details: Edit the list details here
     select_all_districts: Select all electoral districts
     delete_list: Delete candidate list
+  no_candidates: No candidates on this list
+  total_candidates: 'Candidates on this list: {}'
   add_candidate: Add candidate
   remove_candidate: Remove candidate
   edit_position: Position on the list

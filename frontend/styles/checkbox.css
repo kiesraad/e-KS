@@ -3,20 +3,20 @@
   border: none;
   margin: 0;
   padding: var(--space-lg) 0;
-  max-width: 40rem;
+  max-width: 50rem;
   display: flex;
   flex-direction: column;
   gap: var(--space-md);
 
   &.grid {
-    --checklist-column-min-width: 16rem;
+    --checklist-column-min-width: 25rem;
     display: grid;
     grid-template-columns: repeat(
         auto-fit,
         minmax(var(--checklist-column-min-width), 1fr)
       );
     align-items: start;
-    gap: var(--space-md) var(--space-lg);
+    gap: var(--space-md) 0;
   }
 
   legend {
@@ -70,7 +70,8 @@
     }
 
     /* Checked input styling */
-    &:checked {
+    &:checked,
+    &.indeterminate {
       background-color: var(--checkbox-radio-color-bg-default-checked);
       &:active {
         background-color: var(--checkbox-radio-color-bg-active-checked);
@@ -90,7 +91,8 @@
     }
 
     /* Checked icon styling */
-    &:checked::before {
+    &:checked::before,
+    &.indeterminate::before {
       content: "";
       position: absolute;
       inset: 0;
@@ -111,7 +113,7 @@
     }
 
     /* Set checkbox indeterminate icon */
-    &[type="checkbox"].indeterminate:checked::before {
+    &[type="checkbox"].indeterminate::before {
       mask-image: url("../icons/minus.svg");
     }
 

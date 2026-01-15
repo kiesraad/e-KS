@@ -28,11 +28,10 @@
   p {
     font-size: var(--font-size-md);
     color: var(--gray-600);
-    margin-bottom: var(--space-lg);
+    margin-bottom: var(--space-md);
   }
 
   .statistic {
-    font-style: italic;
     font-size: var(--font-size-md);
     overflow: hidden;
   }

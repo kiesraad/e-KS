@@ -1,45 +1,62 @@
-{% extends "layout.html" %}
+{% extends "candidate_lists/list.html" %}
 
-{% block page_title %}{{ t!("candidate_list.form.update.title")|trans }}{% endblock %}
-{% block candidate_lists_nav_class %}active{% endblock %}
+{% block body_class %}overlay-open{% endblock %}
 
-{% block content %}
-<section>
-  <nav class="mt-lg">
-    <button class="button tertiary-destructive open-modal" type="button">
-      {{ t!("candidate_list.actions.delete_list")|trans }}
+{% block overlay %}
+<div class="overlay-backdrop"></div>
+<form method="post" action="{{ candidate_list.update_path() }}" class="overlay">
+  <header>
+    <h2>
+      {{ t!("candidate_list.form.update.title")|trans }}
+    </h2>
+    <a href="{{ CandidateList::list_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+      <span>
+        {{ t!("action.close")|trans }}
+      </span>
+    </a>
+  </header>
+  <div class="overlay-content steps">
+    <div class="steps-nav">
+      <ul>
+        <li>
+          <a href="{{ candidate_list.update_path() }}">
+            {{ t!("candidate_list.fields.electoral_districts")|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="form">
+      {% include "candidate_lists/inner_form.html" %}
+      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
+        {{ t!("candidate_list.actions.delete_list")|trans }}
+      </button>
+    </div>
+  </div>
+  <footer>
+    <button type="submit" class="button">
+      {{ t!("action.save")|trans }}
     </button>
-  </nav>
+  </footer>
+</form>
 
-  <dialog class="modal">
-    <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
-      <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-      <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
-        <span>
-          {{ t!("action.close")|trans }}
-        </span>
-      </button>
-      <p class="mt-lg mb-lg">{{ t!("candidate_list.form.delete_warning_text")|trans }}</p>
-      <button type="submit" class="button primary-destructive">
-        {{ t!("action.delete")|trans }}
-      </button>
-      <button type="submit" class="button secondary close">
-        {{ t!("action.cancel")|trans }}
-      </button>
-    </form>
-  </dialog>
-
-  <form method="post" action="{{ candidate_list.update_path() }}" class="form">
-    {% include "candidate_lists/inner_form.html" %}
-    <p class="form-field actions">
-      <button type="submit" class="button">
-        {{ t!("action.edit")|trans }}
-      </button>
-      <a href="{{ CandidateList::list_path() }}" class="button secondary">
-        {{ t!("action.cancel")|trans }}
-      </a>
-    </p>
-
+<dialog class="modal">
+  <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+    <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
+      <span>
+        {{ t!("action.close")|trans }}
+      </span>
+    </button>
+    <h3>
+      {{ t!("candidate_list.actions.delete_list")|trans }}
+    </h3>
+    <p class="mt-lg mb-lg">{{ t!("candidate_list.form.delete_warning_text")|trans }}</p>
+    <button type="submit" class="button primary-destructive">
+      {{ t!("action.delete")|trans }}
+    </button>
+    <button type="submit" class="button secondary close">
+      {{ t!("action.cancel")|trans }}
+    </button>
   </form>
-</section>
+</dialog>
 {% endblock %}
