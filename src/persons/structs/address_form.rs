@@ -2,9 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use validate::Validate;
 
-use crate::{CsrfToken, form::*};
-
-use super::Person;
+use crate::{CsrfToken, form::*, persons::Person};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person", build = "AddressForm::build_address")]

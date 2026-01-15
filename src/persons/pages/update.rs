@@ -9,14 +9,11 @@ use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
-        self,
-        pages::person_not_found,
-        structs::{Person, PersonForm},
+        self, Person, PersonForm,
+        pages::{EditPersonPath, person_not_found},
     },
     t,
 };
-
-use super::EditPersonPath;
 
 #[derive(Template)]
 #[template(path = "persons/update.html")]
@@ -25,7 +22,7 @@ struct PersonUpdateTemplate {
     form: FormData<PersonForm>,
 }
 
-pub(crate) async fn edit_person_form(
+pub async fn edit_person_form(
     EditPersonPath { id }: EditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -44,7 +41,7 @@ pub(crate) async fn edit_person_form(
     ))
 }
 
-pub(crate) async fn update_person(
+pub async fn update_person(
     EditPersonPath { id }: EditPersonPath,
     context: Context,
     State(app_state): State<AppState>,

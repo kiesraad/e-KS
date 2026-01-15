@@ -25,7 +25,7 @@ struct PersonCreateTemplate {
     max_candidates: usize,
 }
 
-pub(crate) async fn new_person_candidate_list(
+pub async fn new_person_candidate_list(
     CreateCandidatePath { candidate_list }: CreateCandidatePath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -45,7 +45,7 @@ pub(crate) async fn new_person_candidate_list(
     .into_response())
 }
 
-pub(crate) async fn create_person_candidate_list(
+pub async fn create_person_candidate_list(
     CreateCandidatePath { candidate_list }: CreateCandidatePath,
     context: Context,
     State(app_state): State<AppState>,

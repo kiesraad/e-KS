@@ -6,10 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     AppError, AppState, Locale,
-    candidate_lists::{
-        self,
-        structs::{CandidateList, FullCandidateList},
-    },
+    candidate_lists::{self, CandidateList, FullCandidateList},
     t,
 };
 
@@ -22,46 +19,46 @@ mod view;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists", rejection(AppError))]
-pub(crate) struct CandidateListsPath;
+pub struct CandidateListsPath;
 
 #[derive(TypedPath)]
 #[typed_path("/candidate-lists/new", rejection(AppError))]
-pub(crate) struct CandidateListNewPath;
+pub struct CandidateListNewPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}", rejection(AppError))]
-pub(crate) struct ViewCandidateListPath {
-    pub(crate) id: Uuid,
+pub struct ViewCandidateListPath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
-pub(crate) struct CandidateListsEditPath {
-    pub(crate) id: Uuid,
+pub struct CandidateListsEditPath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/delete", rejection(AppError))]
-pub(crate) struct CandidateListsDeletePath {
-    pub(crate) id: Uuid,
+pub struct CandidateListsDeletePath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
-pub(crate) struct CandidateListReorderPath {
-    pub(crate) id: Uuid,
+pub struct CandidateListReorderPath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
-pub(crate) struct AddCandidatePath {
-    pub(crate) id: Uuid,
+pub struct AddCandidatePath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
-pub(crate) struct CreateCandidatePath {
-    pub(crate) candidate_list: Uuid,
+pub struct CreateCandidatePath {
+    pub candidate_list: Uuid,
 }
 
 impl CandidateList {
@@ -115,11 +112,11 @@ pub fn router() -> Router<AppState> {
         .typed_post(reorder::reorder_candidate_list)
 }
 
-pub(crate) fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
+pub fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
     AppError::NotFound(t!("candidate_list.not_found", &locale, id))
 }
 
-pub(super) async fn load_candidate_list(
+pub async fn load_candidate_list(
     conn: &mut PgConnection,
     id: &Uuid,
     locale: Locale,

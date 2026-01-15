@@ -8,14 +8,9 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self,
-        structs::{Person, PersonForm},
-    },
+    persons::{self, Person, PersonForm, pages::PersonsNewPath},
     t,
 };
-
-use super::PersonsNewPath;
 
 #[derive(Template)]
 #[template(path = "persons/create.html")]
@@ -23,7 +18,7 @@ struct PersonCreateTemplate {
     form: FormData<PersonForm>,
 }
 
-pub(crate) async fn new_person_form(
+pub async fn new_person_form(
     _: PersonsNewPath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -37,7 +32,7 @@ pub(crate) async fn new_person_form(
     .into_response())
 }
 
-pub(crate) async fn create_person(
+pub async fn create_person(
     _: PersonsNewPath,
     context: Context,
     State(app_state): State<AppState>,

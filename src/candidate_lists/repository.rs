@@ -12,7 +12,7 @@ pub struct ListIdAndCount {
     pub person_count: i64,
 }
 
-pub(crate) async fn list_candidate_list_with_count(
+pub async fn list_candidate_list_with_count(
     conn: &mut PgConnection,
 ) -> Result<Vec<CandidateListSummary>, sqlx::Error> {
     let counts = sqlx::query_as!(
@@ -46,7 +46,7 @@ pub(crate) async fn list_candidate_list_with_count(
         .collect::<Vec<_>>())
 }
 
-pub(crate) async fn list_candidate_list(
+pub async fn list_candidate_list(
     conn: &mut PgConnection,
 ) -> Result<Vec<CandidateList>, sqlx::Error> {
     sqlx::query_as!(
@@ -61,7 +61,7 @@ pub(crate) async fn list_candidate_list(
         .await
 }
 
-pub(crate) async fn get_candidate_list(
+pub async fn get_candidate_list(
     conn: &mut PgConnection,
     list_id: &Uuid,
 ) -> Result<Option<CandidateList>, sqlx::Error> {
@@ -78,7 +78,7 @@ pub(crate) async fn get_candidate_list(
     .await
 }
 
-pub(super) async fn get_full_candidate_list(
+pub async fn get_full_candidate_list(
     conn: &mut PgConnection,
     list_id: &Uuid,
 ) -> Result<Option<FullCandidateList>, sqlx::Error> {
@@ -154,7 +154,7 @@ pub(super) async fn get_full_candidate_list(
 }
 
 /// retrieves a vector of all the electoral districts that have been used in one or more candidate lists
-pub(crate) async fn get_used_districts(
+pub async fn get_used_districts(
     conn: &mut PgConnection,
 ) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
     let districts = sqlx::query!(
@@ -172,7 +172,7 @@ pub(crate) async fn get_used_districts(
     Ok(districts)
 }
 
-pub(crate) async fn create_candidate_list(
+pub async fn create_candidate_list(
     conn: &mut PgConnection,
     candidate_list: &CandidateList,
 ) -> Result<CandidateList, sqlx::Error> {
@@ -196,7 +196,7 @@ pub(crate) async fn create_candidate_list(
     .await
 }
 
-pub(crate) async fn update_candidate_list_order(
+pub async fn update_candidate_list_order(
     conn: &mut PgConnection,
     list_id: &Uuid,
     person_ids: &[Uuid],
@@ -237,7 +237,7 @@ pub(crate) async fn update_candidate_list_order(
         .ok_or(sqlx::Error::RowNotFound)
 }
 
-pub(crate) async fn update_candidate_list(
+pub async fn update_candidate_list(
     conn: &mut PgConnection,
     updated_candidate_list: &CandidateList,
 ) -> Result<CandidateList, sqlx::Error> {
@@ -262,7 +262,7 @@ pub(crate) async fn update_candidate_list(
     .await
 }
 
-pub(crate) async fn remove_candidate_list(
+pub async fn remove_candidate_list(
     conn: &mut PgConnection,
     list_id: Uuid,
 ) -> Result<(), sqlx::Error> {

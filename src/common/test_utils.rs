@@ -8,7 +8,7 @@ use crate::{
     persons::{AddressForm, Gender, Person, PersonForm},
 };
 
-pub(crate) async fn response_body_string(response: axum::response::Response) -> String {
+pub async fn response_body_string(response: axum::response::Response) -> String {
     let bytes = response
         .into_body()
         .collect()
@@ -18,7 +18,7 @@ pub(crate) async fn response_body_string(response: axum::response::Response) -> 
     String::from_utf8(bytes.to_vec()).expect("utf-8 body")
 }
 
-pub(crate) fn sample_candidate_list(id: Uuid) -> CandidateList {
+pub fn sample_candidate_list(id: Uuid) -> CandidateList {
     CandidateList {
         id,
         electoral_districts: vec![ElectoralDistrict::UT],
@@ -27,7 +27,7 @@ pub(crate) fn sample_candidate_list(id: Uuid) -> CandidateList {
     }
 }
 
-pub(crate) fn sample_person(id: Uuid) -> Person {
+pub fn sample_person(id: Uuid) -> Person {
     Person {
         id,
         gender: Some(Gender::Female),
@@ -52,7 +52,7 @@ pub(crate) fn sample_person(id: Uuid) -> Person {
     }
 }
 
-pub(crate) fn sample_person_with_last_name(id: Uuid, last_name: &str) -> Person {
+pub fn sample_person_with_last_name(id: Uuid, last_name: &str) -> Person {
     let sample = sample_person(id);
 
     Person {
@@ -61,7 +61,7 @@ pub(crate) fn sample_person_with_last_name(id: Uuid, last_name: &str) -> Person 
     }
 }
 
-pub(crate) fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
+pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
     PersonForm {
         gender: "male".to_string(),
         last_name: "Jansen".to_string(),
@@ -74,7 +74,7 @@ pub(crate) fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
     }
 }
 
-pub(crate) fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
+pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
     AddressForm {
         locality: "Juinen".to_string(),
         postal_code: "1234 AB".to_string(),

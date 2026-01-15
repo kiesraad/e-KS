@@ -9,16 +9,13 @@ use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
     HtmlTemplate, Locale,
     candidate_lists::{
-        self,
-        structs::{CandidateListForm, CandidateListSummary},
+        self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
     filters,
     form::{FormData, Validate},
     persons::{self, Person},
     t,
 };
-
-use super::{CandidateList, CandidateListNewPath};
 
 #[derive(Template)]
 #[template(path = "candidate_lists/create.html")]
@@ -31,7 +28,7 @@ struct CandidateListCreateTemplate {
     electoral_districts: &'static [ElectoralDistrict],
 }
 
-pub(crate) async fn new_candidate_list_form(
+pub async fn new_candidate_list_form(
     _: CandidateListNewPath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -82,7 +79,7 @@ fn determine_available_districts(
         .collect()
 }
 
-pub(crate) async fn create_candidate_list(
+pub async fn create_candidate_list(
     _: CandidateListNewPath,
     context: Context,
     State(app_state): State<AppState>,

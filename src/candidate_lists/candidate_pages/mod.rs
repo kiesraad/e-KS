@@ -17,16 +17,16 @@ mod update;
     "/candidate-lists/{candidate_list}/reorder/{person}",
     rejection(AppError)
 )]
-pub(crate) struct EditCandidatePositionPath {
-    pub(crate) candidate_list: Uuid,
-    pub(crate) person: Uuid,
+pub struct EditCandidatePositionPath {
+    pub candidate_list: Uuid,
+    pub person: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
-pub(crate) struct CandidateListEditPersonPath {
-    pub(crate) candidate_list: Uuid,
-    pub(crate) person: Uuid,
+pub struct CandidateListEditPersonPath {
+    pub candidate_list: Uuid,
+    pub person: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -34,9 +34,9 @@ pub(crate) struct CandidateListEditPersonPath {
     "/candidate-lists/{candidate_list}/address/{person}",
     rejection(AppError)
 )]
-pub(crate) struct CandidateListEditAddressPath {
-    pub(crate) candidate_list: Uuid,
-    pub(crate) person: Uuid,
+pub struct CandidateListEditAddressPath {
+    pub candidate_list: Uuid,
+    pub person: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -44,9 +44,9 @@ pub(crate) struct CandidateListEditAddressPath {
     "/candidate-lists/{candidate_list}/delete/{person}",
     rejection(AppError)
 )]
-pub(crate) struct CandidateListDeletePersonPath {
-    pub(crate) candidate_list: Uuid,
-    pub(crate) person: Uuid,
+pub struct CandidateListDeletePersonPath {
+    pub candidate_list: Uuid,
+    pub person: Uuid,
 }
 
 impl Candidate {

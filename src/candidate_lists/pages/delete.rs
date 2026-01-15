@@ -7,14 +7,13 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection,
     candidate_lists::{
-        self,
+        self, CandidateList,
         pages::{CandidateListsDeletePath, candidate_list_not_found},
-        structs::CandidateList,
     },
     form::{EmptyForm, Validate},
 };
 
-pub(crate) async fn delete_candidate_list(
+pub async fn delete_candidate_list(
     CandidateListsDeletePath { id }: CandidateListsDeletePath,
     context: Context,
     _: State<AppState>,

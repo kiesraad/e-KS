@@ -8,9 +8,8 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        candidate_pages::CandidateListEditPersonPath,
-        pages::load_candidate_list,
-        structs::{Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES},
+        Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
+        candidate_pages::CandidateListEditPersonPath, pages::load_candidate_list,
     },
     filters,
     form::{FormData, Validate},
@@ -27,7 +26,7 @@ struct PersonUpdateTemplate {
     max_candidates: usize,
 }
 
-pub(crate) async fn edit_person_form(
+pub async fn edit_person_form(
     CandidateListEditPersonPath {
         candidate_list,
         person,
@@ -50,7 +49,7 @@ pub(crate) async fn edit_person_form(
     ))
 }
 
-pub(crate) async fn update_person(
+pub async fn update_person(
     CandidateListEditPersonPath {
         candidate_list,
         person,

@@ -12,7 +12,7 @@ pub struct PageLink {
 ///
 /// Always includes the first and last page, the current page, and up to two neighbours on each
 /// side. Large gaps are represented as `None`, allowing templates to render ellipses.
-pub(crate) fn build_links(page: u32, total_pages: u32) -> Vec<PageLink> {
+pub fn build_links(page: u32, total_pages: u32) -> Vec<PageLink> {
     if total_pages == 0 {
         return Vec::new();
     }

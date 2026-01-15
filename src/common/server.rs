@@ -6,14 +6,13 @@ use tokio::{net::TcpListener, signal};
 
 use crate::{AppError, AppState};
 
-pub async fn serve(router: Router<AppState>, state: AppState) -> Result<(), AppError> {
+pub async fn serve(
+    router: Router<AppState>,
+    state: AppState,
+    listener: TcpListener,
+) -> Result<(), AppError> {
     let app = router.with_state(state);
-    let addr = "0.0.0.0:3000";
-
-    // Create a `TcpListener` using tokio.
-    let listener = TcpListener::bind(addr)
-        .await
-        .map_err(AppError::ServerError)?;
+    let addr = listener.local_addr().map_err(AppError::ServerError)?;
 
     tracing::info!("Starting server on {addr}");
 

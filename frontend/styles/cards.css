@@ -22,18 +22,23 @@
   h3 {
     font-size: var(--font-size-lg);
     color: var(--gray-800);
-    margin-bottom: var(--space-sm);
+    margin-bottom: var(--space-md);
   }
 
   p {
     font-size: var(--font-size-md);
     color: var(--gray-600);
-    margin-bottom: var(--space-md);
   }
 
   .statistic {
+    font-style: italic;
     font-size: var(--font-size-md);
     overflow: hidden;
+
+    & + .statistic {
+      margin-top: var(--space-xs);
+      margin-bottom: var(--space-md);
+    }
   }
 
   a {

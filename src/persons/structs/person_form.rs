@@ -1,13 +1,15 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use uuid::Uuid;
+use validate::Validate;
 
-use crate::{constants::DEFAULT_DATE_FORMAT, form::*};
-use validate::Validate as ValidateDerive;
+use crate::{
+    constants::DEFAULT_DATE_FORMAT,
+    form::*,
+    persons::{Gender, Person},
+};
 
-use super::{Gender, Person};
-
-#[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person", build = "PersonForm::build_person")]
 #[serde(default)]
 pub struct PersonForm {

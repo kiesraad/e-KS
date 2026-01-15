@@ -18,28 +18,28 @@ mod update;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons", rejection(AppError))]
-pub(crate) struct PersonsPath;
+pub struct PersonsPath;
 
 #[derive(TypedPath)]
 #[typed_path("/persons/new", rejection(AppError))]
-pub(crate) struct PersonsNewPath;
+pub struct PersonsNewPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/edit", rejection(AppError))]
-pub(crate) struct EditPersonPath {
-    pub(crate) id: Uuid,
+pub struct EditPersonPath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/delete", rejection(AppError))]
-pub(crate) struct DeletePersonPath {
-    pub(crate) id: Uuid,
+pub struct DeletePersonPath {
+    pub id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/address", rejection(AppError))]
-pub(crate) struct EditPersonAddressPath {
-    pub(crate) id: Uuid,
+pub struct EditPersonAddressPath {
+    pub id: Uuid,
 }
 
 impl Person {

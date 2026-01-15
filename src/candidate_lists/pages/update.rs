@@ -9,9 +9,8 @@ use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
     HtmlTemplate, Locale,
     candidate_lists::{
-        self,
+        self, CandidateList, CandidateListForm, CandidateListSummary,
         pages::{CandidateListsEditPath, candidate_list_not_found},
-        structs::{CandidateList, CandidateListForm, CandidateListSummary},
     },
     filters,
     form::{FormData, Validate},
@@ -31,7 +30,7 @@ struct CandidateListUpdateTemplate {
     electoral_districts: &'static [ElectoralDistrict],
 }
 
-pub(crate) async fn edit_candidate_list(
+pub async fn edit_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -66,7 +65,7 @@ pub(crate) async fn edit_candidate_list(
     .into_response())
 }
 
-pub(crate) async fn update_candidate_list(
+pub async fn update_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     State(app_state): State<AppState>,

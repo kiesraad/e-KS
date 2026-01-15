@@ -8,9 +8,7 @@ use axum::{
 use serde::Serialize;
 use tracing::error;
 
-use crate::{Context, HtmlTemplate, filters, t};
-
-use super::app_error::AppError;
+use crate::{AppError, Context, HtmlTemplate, filters, t};
 
 /// Variants of error responses that can be sent to the client
 #[derive(Serialize)]

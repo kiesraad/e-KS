@@ -5,8 +5,18 @@ use crate::{
     AppError, Config,
     candidate_lists::{self, CandidateList},
     pagination::SortDirection,
-    persons::{self, PersonSort},
+    persons::{self, Person, PersonSort},
 };
+
+const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
+
+fn collect_person_ids(persons: Vec<Person>) -> Vec<uuid::Uuid> {
+    persons
+        .into_iter()
+        .map(|person| person.id)
+        .take(FIXTURE_CANDIDATE_LIST_SIZE)
+        .collect()
+}
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let config = Config::from_env()?;
@@ -22,11 +32,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     )
     .await?;
 
-    let person_ids = persons
-        .into_iter()
-        .map(|person| person.id)
-        .take(55)
-        .collect::<Vec<_>>();
+    let person_ids = collect_person_ids(persons);
 
     let candidate_list = CandidateList {
         id: uuid::Uuid::new_v4(),
@@ -43,4 +49,27 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         .await?;
 
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use sqlx::PgPool;
+
+    use super::*;
+
+    #[sqlx::test]
+    async fn test_load(pool: PgPool) {
+        crate::fixtures::persons::load(&mut pool.acquire().await.unwrap())
+            .await
+            .unwrap();
+        let mut conn = pool.acquire().await.unwrap();
+        load(&mut conn).await.unwrap();
+
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn)
+            .await
+            .unwrap();
+
+        assert_eq!(lists.len(), 1);
+        assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE as i64);
+    }
 }

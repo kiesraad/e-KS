@@ -4,14 +4,9 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate, filters,
     pagination::{Pagination, PaginationInfo},
-    persons::{
-        self,
-        structs::{Person, PersonSort},
-    },
+    persons::{self, Person, PersonSort, pages::PersonsPath},
     t,
 };
-
-use super::PersonsPath;
 
 #[derive(Template)]
 #[template(path = "persons/list.html")]
@@ -20,7 +15,7 @@ struct PersonListTemplate {
     pagination: PaginationInfo<PersonSort>,
 }
 
-pub(crate) async fn list_persons(
+pub async fn list_persons(
     _: PersonsPath,
     context: Context,
     pagination: Pagination<PersonSort>,

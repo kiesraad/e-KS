@@ -48,7 +48,7 @@ impl AppState {
     }
 
     #[cfg(test)]
-    pub(crate) fn new_for_tests(pool: PgPool) -> Self {
+    pub fn new_for_tests(pool: PgPool) -> Self {
         let config = Config {
             database_url: "postgres://test".to_string(),
             election: ElectionConfig::EK2027,

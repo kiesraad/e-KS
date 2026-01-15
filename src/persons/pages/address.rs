@@ -10,9 +10,8 @@ use crate::{
     form::{FormData, Validate},
     pagination::{Pagination, SortDirection},
     persons::{
-        self,
+        self, AddressForm, Person, PersonSort,
         pages::{EditPersonAddressPath, person_not_found},
-        structs::{AddressForm, Person, PersonSort},
     },
     t,
 };
@@ -24,7 +23,7 @@ struct PersonAddressUpdateTemplate {
     form: FormData<AddressForm>,
 }
 
-pub(crate) async fn edit_person_address(
+pub async fn edit_person_address(
     EditPersonAddressPath { id }: EditPersonAddressPath,
     context: Context,
     csrf_tokens: CsrfTokens,
@@ -43,7 +42,7 @@ pub(crate) async fn edit_person_address(
     ))
 }
 
-pub(crate) async fn update_person_address(
+pub async fn update_person_address(
     EditPersonAddressPath { id }: EditPersonAddressPath,
     context: Context,
     State(app_state): State<AppState>,

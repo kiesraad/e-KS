@@ -44,6 +44,10 @@ pub async fn wait_for_postgres() -> Result<()> {
 
         if matches!(attempt, Ok(Ok(status)) if status.success()) {
             println!("✅ PostgreSQL is up!");
+
+            // small delay to ensure connecting from outside docker works
+            sleep(Duration::from_millis(500)).await;
+
             return Ok(());
         }
 

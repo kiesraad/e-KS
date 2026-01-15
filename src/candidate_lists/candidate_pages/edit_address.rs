@@ -26,7 +26,7 @@ struct PersonAddressUpdateTemplate {
     max_candidates: usize,
 }
 
-pub(crate) async fn edit_person_address(
+pub async fn edit_person_address(
     CandidateListEditAddressPath {
         candidate_list,
         person,
@@ -51,7 +51,7 @@ pub(crate) async fn edit_person_address(
     ))
 }
 
-pub(crate) async fn update_person_address(
+pub async fn update_person_address(
     CandidateListEditAddressPath {
         candidate_list,
         person,

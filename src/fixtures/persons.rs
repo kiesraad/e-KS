@@ -78,3 +78,29 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
 
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use sqlx::PgPool;
+
+    use crate::{pagination::SortDirection, persons::PersonSort};
+
+    use super::*;
+
+    #[sqlx::test]
+    async fn test_load(pool: PgPool) {
+        let mut conn = pool.acquire().await.unwrap();
+        load(&mut conn).await.unwrap();
+        let persons = crate::persons::repository::list_persons(
+            &mut conn,
+            50,
+            0,
+            &PersonSort::LastName,
+            &SortDirection::Asc,
+        )
+        .await;
+
+        assert!(persons.is_ok());
+        assert_eq!(persons.unwrap().len(), 50);
+    }
+}

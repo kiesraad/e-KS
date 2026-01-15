@@ -5,9 +5,9 @@
   <header>
     <nav>
       <ul>
-        <li><a href="/" class="{% block overview_nav_class %}{% endblock %}">{{ t!("common.general_information")|trans }}</a></li>
-        <li><a href="{{ crate::candidate_lists::CandidateList::list_path() }}" class="{% block candidate_lists_nav_class %}{% endblock %}">{{ t!("candidate_list.title")|trans }}</a></li>
-        <li><a href="/">{{ t!("common.submit")|trans }}</a></li>
+        <li><a href="/">{{ t!("common.general_information")|trans }}</a></li>
+        <li><a href="{{ crate::candidate_lists::CandidateList::list_path() }}">{{ t!("candidate_list.title")|trans }}</a></li>
+        <li><a href="#submit">{{ t!("common.submit")|trans }}</a></li>
       </ul>
       <ul>
         <li class="user-info">

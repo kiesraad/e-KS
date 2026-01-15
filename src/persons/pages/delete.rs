@@ -2,12 +2,10 @@ use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, DbConnection,
-    persons::{self, structs::Person},
+    persons::{self, Person, pages::DeletePersonPath},
 };
 
-use super::DeletePersonPath;
-
-pub(crate) async fn delete_person(
+pub async fn delete_person(
     DeletePersonPath { id }: DeletePersonPath,
     DbConnection(mut conn): DbConnection,
 ) -> Result<Response, AppError> {

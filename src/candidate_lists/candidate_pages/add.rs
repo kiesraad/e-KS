@@ -42,11 +42,11 @@ pub async fn add_existing_person(
 }
 
 #[derive(Deserialize)]
-pub(crate) struct AddPersonForm {
+pub struct AddPersonForm {
     pub person_id: Uuid,
 }
 
-pub(crate) async fn add_person_to_candidate_list(
+pub async fn add_person_to_candidate_list(
     AddCandidatePath { id }: AddCandidatePath,
     context: Context,
     DbConnection(mut conn): DbConnection,

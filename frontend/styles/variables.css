@@ -30,6 +30,7 @@
   --font-size-xl: 1.5rem;
 
   /* SPACING */
+  --space-xs: 0.25rem;
   --space-sm: 0.5rem;
   --space-md: 1rem;
   --space-ml: 1.5rem;

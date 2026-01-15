@@ -1,6 +1,8 @@
 use serde::Serialize;
 
-use super::{PageLink, Pagination, SortDirection, links::build_links, params::MAX_PER_PAGE};
+use crate::pagination::{
+    PageLink, Pagination, SortDirection, links::build_links, params::MAX_PER_PAGE,
+};
 
 /// Pagination metadata consumed by templates and components.
 #[derive(Clone, Debug, Serialize)]
@@ -90,7 +92,7 @@ where
     }
 }
 
-pub(crate) fn to_info<S>(pagination: super::Pagination<S>, total_items: u64) -> PaginationInfo<S>
+pub fn to_info<S>(pagination: Pagination<S>, total_items: u64) -> PaginationInfo<S>
 where
     S: Serialize + Copy + PartialEq + Default,
 {

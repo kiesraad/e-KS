@@ -3,9 +3,7 @@ use serde::Serialize;
 use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
-use crate::{constants::DEFAULT_DATE_TIME_FORMAT, t};
-
-use super::Gender;
+use crate::{constants::DEFAULT_DATE_TIME_FORMAT, persons::Gender, t};
 
 #[derive(Default, Debug, Serialize, Clone, sqlx::FromRow)]
 pub struct Person {

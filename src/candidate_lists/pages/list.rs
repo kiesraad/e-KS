@@ -1,11 +1,9 @@
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
-use super::{CandidateList, CandidateListsPath};
-
 use crate::{
     AppError, AppState, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
-    candidate_lists::{self, structs::CandidateListSummary},
+    candidate_lists::{self, CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters,
     persons::{self, Person},
     t,
@@ -20,7 +18,7 @@ struct CandidateListIndexTemplate {
     locale: Locale,
 }
 
-pub(crate) async fn list_candidate_lists(
+pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
     State(app_state): State<AppState>,

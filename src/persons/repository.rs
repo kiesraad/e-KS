@@ -6,7 +6,7 @@ use crate::{
     persons::{Gender, Person, PersonSort},
 };
 
-pub(crate) async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
+pub async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
     let record = sqlx::query!(
         r#"
         SELECT COUNT(*) as "count!"
@@ -19,7 +19,7 @@ pub(crate) async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::
     Ok(record.count)
 }
 
-pub(crate) async fn list_persons_not_on_candidate_list(
+pub async fn list_persons_not_on_candidate_list(
     conn: &mut PgConnection,
     candidate_list_id: &Uuid,
 ) -> Result<Vec<Person>, sqlx::Error> {
@@ -63,7 +63,7 @@ pub(crate) async fn list_persons_not_on_candidate_list(
     Ok(persons)
 }
 
-pub(crate) async fn list_persons(
+pub async fn list_persons(
     conn: &mut PgConnection,
     limit: i64,
     offset: i64,
@@ -125,7 +125,7 @@ pub(crate) async fn list_persons(
     Ok(persons)
 }
 
-pub(crate) async fn get_person(
+pub async fn get_person(
     conn: &mut PgConnection,
     person_id: &Uuid,
 ) -> Result<Option<Person>, sqlx::Error> {
@@ -164,7 +164,7 @@ pub(crate) async fn get_person(
     Ok(person)
 }
 
-pub(crate) async fn create_person(
+pub async fn create_person(
     conn: &mut PgConnection,
     new_person: &Person,
 ) -> Result<Person, sqlx::Error> {
@@ -241,7 +241,7 @@ pub(crate) async fn create_person(
     .await
 }
 
-pub(crate) async fn update_person(
+pub async fn update_person(
     conn: &mut PgConnection,
     updated_person: &Person,
 ) -> Result<Person, sqlx::Error> {
@@ -316,10 +316,7 @@ pub(crate) async fn update_person(
     Ok(person)
 }
 
-pub(crate) async fn remove_person(
-    conn: &mut PgConnection,
-    person_id: &Uuid,
-) -> Result<(), sqlx::Error> {
+pub async fn remove_person(conn: &mut PgConnection, person_id: &Uuid) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM persons

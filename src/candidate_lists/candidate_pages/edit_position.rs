@@ -5,13 +5,9 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        self,
-        candidate_pages::EditCandidatePositionPath,
-        pages::load_candidate_list,
-        structs::{
-            Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
-            CandidatePositionForm, FullCandidateList, MAX_CANDIDATES,
-        },
+        self, Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
+        CandidatePositionForm, FullCandidateList, MAX_CANDIDATES,
+        candidate_pages::EditCandidatePositionPath, pages::load_candidate_list,
     },
     filters,
     form::{FormData, Validate},
