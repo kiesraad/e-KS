@@ -24,6 +24,9 @@
           <h3>{{ t!("person.personal_information")|trans }}</h3>
         </legend>
         {% include "persons/form.html" %}
+        <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
+          {{ t!("person.actions.delete")|trans }}
+        </button>
       </fieldset>
     </div>
   </div>
@@ -33,4 +36,27 @@
     </button>
   </footer>
 </form>
+
+<dialog class="modal">
+  <form method="post" action="{{ full_list.list.delete_person_path(candidate.person.id) }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+    <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
+      <span>
+        {{ t!("action.close")|trans }}
+      </span>
+    </button>
+    <h3>
+      {{ t!("person.actions.delete")|trans }}
+    </h3>
+    <p class="mt-lg mb-lg">{{ t!("person.form.delete_warning_text")|trans }}</p>
+    <button type="submit" class="button primary-destructive">
+      {{ t!("action.delete")|trans }}
+    </button>
+    <button type="submit" class="button secondary close">
+      {{ t!("action.cancel")|trans }}
+    </button>
+  </form>
+</dialog>
 {% endblock %}
+
+

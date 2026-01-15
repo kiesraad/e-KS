@@ -17,6 +17,7 @@ mod address;
 mod create;
 mod create_person;
 mod delete;
+mod delete_person;
 mod edit_position;
 mod list;
 mod reorder;
@@ -95,6 +96,16 @@ pub(crate) struct CandidateListEditAddressPath {
     pub(crate) person: Uuid,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/candidate-lists/{candidate_list}/delete/{person}",
+    rejection(AppError)
+)]
+pub(crate) struct CandidateListDeletePersonPath {
+    pub(crate) candidate_list: Uuid,
+    pub(crate) person: Uuid,
+}
+
 impl CandidateList {
     pub fn list_path() -> String {
         CandidateListsPath {}.to_uri().to_string()
@@ -164,6 +175,15 @@ impl CandidateList {
         .to_uri()
         .to_string()
     }
+
+    pub fn delete_person_path(&self, person_id: &Uuid) -> String {
+        CandidateListDeletePersonPath {
+            candidate_list: self.id,
+            person: *person_id,
+        }
+        .to_uri()
+        .to_string()
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -189,6 +209,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(address::update_person_address)
         .typed_get(update_person::edit_person_form)
         .typed_post(update_person::update_person)
+        .typed_post(delete_person::delete_person)
 }
 
 pub(crate) fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {

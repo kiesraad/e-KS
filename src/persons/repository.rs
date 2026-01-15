@@ -316,7 +316,7 @@ pub(crate) async fn update_person(
     Ok(person)
 }
 
-pub(super) async fn remove_person(
+pub(crate) async fn remove_person(
     conn: &mut PgConnection,
     person_id: &Uuid,
 ) -> Result<(), sqlx::Error> {

@@ -9,9 +9,9 @@ use crate::{
     candidate_lists::{
         self,
         pages::{CandidateListsDeletePath, candidate_list_not_found},
-        structs::{CandidateList, CandidateListDeleteForm},
+        structs::CandidateList,
     },
-    form::Validate,
+    form::{EmptyForm, Validate},
 };
 
 pub(crate) async fn delete_candidate_list(
@@ -20,7 +20,7 @@ pub(crate) async fn delete_candidate_list(
     _: State<AppState>,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    form: Form<CandidateListDeleteForm>,
+    form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate(None, &csrf_tokens) {
         Err(_) => {
@@ -76,7 +76,7 @@ mod tests {
             State(app_state),
             csrf_tokens,
             DbConnection(conn),
-            Form(CandidateListDeleteForm { csrf_token }),
+            Form(EmptyForm { csrf_token }),
         )
         .await
         .unwrap();
@@ -124,7 +124,7 @@ mod tests {
             State(app_state),
             csrf_tokens,
             DbConnection(conn),
-            Form(CandidateListDeleteForm { csrf_token }),
+            Form(EmptyForm { csrf_token }),
         )
         .await
         .unwrap();

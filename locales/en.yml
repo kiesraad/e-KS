@@ -73,6 +73,7 @@ person:
     add: Add person
     back_to_list: Back to persons
     manage: Manage persons
+    delete: Delete person
   created_at: Created at
   personal_information: Personal information
   address: Address
@@ -104,6 +105,7 @@ person:
       title: Add person
     edit:
       title: Edit person
+    delete_warning_text: Are you sure you want to delete this person?
   list:
     empty: No persons found.
   not_found: Person {} not found.

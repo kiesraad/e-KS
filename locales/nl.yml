@@ -75,6 +75,7 @@ person:
     add: Persoon toevoegen
     back_to_list: Terug naar personen
     manage: Beheer personen
+    delete: Persoon verwijderen
   created_at: Aangemaakt op
   personal_information: Persoonlijke gegevens
   address: Adres
@@ -106,6 +107,7 @@ person:
       title: Persoon toevoegen
     edit:
       title: Persoon bewerken
+    delete_warning_text: Weet je zeker dat je deze persoon wilt verwijderen?
   list:
     empty: Geen personen gevonden.
   not_found: Persoon {} niet gevonden.

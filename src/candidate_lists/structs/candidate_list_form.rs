@@ -59,35 +59,6 @@ impl WithCsrfToken for CandidateListForm {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
-#[validate(target = "()", build = "CandidateListDeleteForm::post_validate")]
-#[serde(default)]
-pub struct CandidateListDeleteForm {
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
-}
-
-impl CandidateListDeleteForm {
-    fn post_validate(_: CandidateListDeleteFormValidated, _: Option<&()>) {
-        // do nothing, we only need to validate the token
-        // but since we're deleting, we don't need  to construct anything.
-    }
-}
-
-impl From<TokenValue> for CandidateListDeleteForm {
-    fn from(csrf_token: TokenValue) -> Self {
-        CandidateListDeleteForm { csrf_token }
-    }
-}
-
-impl WithCsrfToken for CandidateListDeleteForm {
-    fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
-        CandidateListDeleteForm {
-            csrf_token: csrf_token.value,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
