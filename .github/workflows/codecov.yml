@@ -56,30 +56,42 @@ jobs:
       - name: Setup project
         run: bin/init.sh
 
-      - name: Run tests with coverage
-        run: cargo llvm-cov nextest --branch --profile ci
+#      - name: Run tests with coverage
+#        run: cargo llvm-cov nextest --branch --profile ci
 
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          name: Nextest Results
-          files: target/nextest/ci/junit.xml
-          disable_search: true
-          fail_ci_if_error: true
-
-      - name: Create code coverage report
-        run: cargo llvm-cov report --codecov --output-path ./target/llvm-cov-target/codecov.json
+      - name: cargo test
+        run: cargo llvm-cov --lcov --output-path lcov.info
+        env:
+          RUST_BACKTRACE: 1
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
+          files: lcov.info
+          fail_ci_if_error: false
           token: ${{ secrets.CODECOV_TOKEN }}
-          name: Nextest Coverage
-          files: target/llvm-cov-target/codecov.json
-          disable_search: true
-          fail_ci_if_error: true
+
+#      - name: Upload test results to Codecov
+#        if: ${{ !cancelled() }}
+#        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          name: Nextest Results
+#          files: target/nextest/ci/junit.xml
+#          disable_search: true
+#          fail_ci_if_error: true
+
+#      - name: Create code coverage report
+#        run: cargo llvm-cov report --codecov --output-path ./target/llvm-cov-target/codecov.json
+#
+#      - name: Upload coverage to Codecov
+#        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
+#        with:
+#          token: ${{ secrets.CODECOV_TOKEN }}
+#          name: Nextest Coverage
+#          files: target/llvm-cov-target/codecov.json
+#          disable_search: true
+#          fail_ci_if_error: true
           
       - name: Report disk space
         run: df -h
