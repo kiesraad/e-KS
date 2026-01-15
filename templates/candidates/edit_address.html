@@ -4,7 +4,7 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ full_list.list.edit_candidate_position_path(candidate.person.id) }}" class="overlay">
+<form method="post" action="{{ candidate.edit_address_path() }}" class="overlay">
   <header>
     <h2>
       <span class="position-badge">{{ candidate.position }}</span>
@@ -17,8 +17,15 @@
     </a>
   </header>
   <div class="overlay-content steps">
-    {% include "candidate_lists/candidate_edit_steps.html" %}
-    {% include "candidate_lists/position_form.html" %}
+    {% include "candidates/edit_steps.html" %}
+    <div class="form">
+      <fieldset>
+        <legend>
+          <h3>{{ t!("person.address")|trans }}</h3>
+        </legend>
+        {% include "persons/address_form.html" %}
+      </fieldset>
+    </div>
   </div>
   <footer>
     <button type="submit" class="button" name="action" value="move">

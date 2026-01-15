@@ -4,10 +4,11 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ full_list.list.new_person_path() }}" class="overlay">
+<form method="post" action="{{ candidate.edit_position_path() }}" class="overlay">
   <header>
     <h2>
-      {{ t!("person.actions.add")|trans }}
+      <span class="position-badge">{{ candidate.position }}</span>
+      {{ candidate.person.display_name() }}
     </h2>
     <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
       <span>
@@ -16,18 +17,11 @@
     </a>
   </header>
   <div class="overlay-content steps">
-    {% include "candidate_lists/candidate_create_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ t!("person.personal_information")|trans }}</h3>
-        </legend>
-        {% include "persons/form.html" %}
-      </fieldset>
-    </div>
+    {% include "candidates/edit_steps.html" %}
+    {% include "candidates/position_form.html" %}
   </div>
   <footer>
-    <button type="submit" class="button">
+    <button type="submit" class="button" name="action" value="move">
       {{ t!("action.save")|trans }}
     </button>
   </footer>

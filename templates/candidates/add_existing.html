@@ -15,7 +15,7 @@
       </span>
     </a>
   </header>
-  <form method="post" action="{{ full_list.list.add_person_path() }}" class="form overlay-content">
+  <form method="post" action="{{ full_list.list.add_candidate_path() }}" class="form overlay-content">
     {% if persons.is_empty() %}
     <p>{{ t!("person.view.empty")|trans }}</p>
     {% else %}
@@ -23,7 +23,7 @@
         <label for="search">{{ t!("candidate_list.search_existing_person")|trans }}</label>
         <input type="text" name="search" placeholder="{{ t!("candidate_list.search_placeholder")|trans }}" class="form-control w-full" id="search" autofocus />
       </p>
-      {% include "candidate_lists/add_person_table.html" %}
+      {% include "candidates/add_table.html" %}
     {% endif %}
   </form>
 </div>

@@ -18,7 +18,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/address.html")]
+#[template(path = "candidates/edit_address.html")]
 struct PersonAddressUpdateTemplate {
     candidate: Candidate,
     form: FormData<AddressForm>,

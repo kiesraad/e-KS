@@ -26,7 +26,7 @@ pub(crate) struct CandidateListsPath;
 
 #[derive(TypedPath)]
 #[typed_path("/candidate-lists/new", rejection(AppError))]
-pub(crate) struct CandidateListsNewPath;
+pub(crate) struct CandidateListNewPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}", rejection(AppError))]
@@ -47,15 +47,21 @@ pub(crate) struct CandidateListsDeletePath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/add-person", rejection(AppError))]
-pub(crate) struct CandidateListAddPersonPath {
+#[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
+pub(crate) struct CandidateListReorderPath {
     pub(crate) id: Uuid,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
-pub(crate) struct CandidateListReorderPath {
+#[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
+pub(crate) struct AddCandidatePath {
     pub(crate) id: Uuid,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
+pub(crate) struct CreateCandidatePath {
+    pub(crate) candidate_list: Uuid,
 }
 
 impl CandidateList {
@@ -64,7 +70,7 @@ impl CandidateList {
     }
 
     pub fn new_path() -> String {
-        CandidateListsNewPath {}.to_string()
+        CandidateListNewPath {}.to_string()
     }
 
     pub fn update_path(&self) -> String {
@@ -75,16 +81,23 @@ impl CandidateList {
         CandidateListsDeletePath { id: self.id }.to_string()
     }
 
-    pub fn add_person_path(&self) -> String {
-        CandidateListAddPersonPath { id: self.id }.to_string()
-    }
-
     pub fn view_path(&self) -> String {
         ViewCandidateListPath { id: self.id }.to_string()
     }
 
     pub fn reorder_path(&self) -> String {
         CandidateListReorderPath { id: self.id }.to_string()
+    }
+
+    pub fn add_candidate_path(&self) -> String {
+        AddCandidatePath { id: self.id }.to_string()
+    }
+
+    pub fn new_candidate_path(&self) -> String {
+        CreateCandidatePath {
+            candidate_list: self.id,
+        }
+        .to_string()
     }
 }
 

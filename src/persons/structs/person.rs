@@ -7,7 +7,7 @@ use crate::{constants::DEFAULT_DATE_TIME_FORMAT, t};
 
 use super::Gender;
 
-#[derive(Debug, Serialize, Clone, sqlx::FromRow)]
+#[derive(Default, Debug, Serialize, Clone, sqlx::FromRow)]
 pub struct Person {
     pub id: Uuid,
     pub last_name: String,

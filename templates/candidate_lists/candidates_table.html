@@ -29,7 +29,7 @@
         {% endif %}
       </td>
       <td>
-        <a href="{{ full_list.list.edit_candidate_position_path(&candidate.person.id) }}">
+        <a href="{{ candidate.edit_position_path() }}">
           <span>{{ t!("action.edit")|trans }}</span>
         </a>
       </td>

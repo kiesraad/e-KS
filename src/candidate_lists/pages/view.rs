@@ -67,7 +67,7 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("Jansen"));
-        assert!(body.contains(&list.add_person_path()));
+        assert!(body.contains(&list.add_candidate_path()));
 
         Ok(())
     }

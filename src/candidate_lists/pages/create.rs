@@ -18,7 +18,7 @@ use crate::{
     t,
 };
 
-use super::{CandidateList, CandidateListsNewPath};
+use super::{CandidateList, CandidateListNewPath};
 
 #[derive(Template)]
 #[template(path = "candidate_lists/create.html")]
@@ -32,7 +32,7 @@ struct CandidateListCreateTemplate {
 }
 
 pub(crate) async fn new_candidate_list_form(
-    _: CandidateListsNewPath,
+    _: CandidateListNewPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
@@ -83,7 +83,7 @@ fn determine_available_districts(
 }
 
 pub(crate) async fn create_candidate_list(
-    _: CandidateListsNewPath,
+    _: CandidateListNewPath,
     context: Context,
     State(app_state): State<AppState>,
     csrf_tokens: CsrfTokens,
@@ -144,7 +144,7 @@ mod test {
         let app_state = AppState::new_for_tests(pool.clone());
 
         let response = new_candidate_list_form(
-            CandidateListsNewPath {},
+            CandidateListNewPath {},
             Context::new(Locale::En),
             CsrfTokens::default(),
             DbConnection(pool.acquire().await?),
@@ -173,7 +173,7 @@ mod test {
         };
 
         let response = create_candidate_list(
-            CandidateListsNewPath {},
+            CandidateListNewPath {},
             Context::new(Locale::En),
             State(app_state),
             csrf_tokens,
@@ -211,7 +211,7 @@ mod test {
         };
 
         let response = create_candidate_list(
-            CandidateListsNewPath {},
+            CandidateListNewPath {},
             Context::new(Locale::En),
             State(app_state),
             csrf_tokens,

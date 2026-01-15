@@ -19,7 +19,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/edit_position.html")]
+#[template(path = "candidates/edit_position.html")]
 struct EditCandidatePositionTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
@@ -165,6 +165,11 @@ mod tests {
         let list_id = Uuid::new_v4();
         let list = sample_candidate_list(list_id);
         let person = sample_person(Uuid::new_v4());
+        let candidate = Candidate {
+            person: person.clone(),
+            position: 1,
+            list_id,
+        };
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -187,7 +192,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&list.edit_candidate_position_path(&person.id)));
+        assert!(body.contains(&candidate.edit_position_path()));
         assert!(body.contains("Jansen"));
 
         Ok(())

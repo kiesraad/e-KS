@@ -123,6 +123,7 @@ pub(super) async fn get_full_candidate_list(
     .await?
     .into_iter()
     .map(|row| Candidate {
+        list_id: list.id,
         position: row.position,
         person: Person {
             id: row.id,
@@ -311,6 +312,34 @@ async fn insert_candidates(
     .await?;
 
     Ok(())
+}
+
+pub async fn get_candidate(
+    executor: &mut PgConnection,
+    list_id: &Uuid,
+    person_id: &Uuid,
+) -> Result<Candidate, sqlx::Error> {
+    let person = crate::persons::repository::get_person(executor, person_id)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)?;
+
+    let record = sqlx::query!(
+        r#"
+        SELECT position
+        FROM candidate_lists_persons
+        WHERE candidate_list_id = $1 AND person_id = $2
+        "#,
+        list_id,
+        person_id,
+    )
+    .fetch_one(&mut *executor)
+    .await?;
+
+    Ok(Candidate {
+        list_id: *list_id,
+        position: record.position,
+        person,
+    })
 }
 
 #[cfg(test)]

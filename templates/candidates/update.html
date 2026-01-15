@@ -4,7 +4,7 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ full_list.list.edit_person_path(candidate.person.id) }}" class="overlay">
+<form method="post" action="{{ candidate.edit_path() }}" class="overlay">
   <header>
     <h2>
       <span class="position-badge">{{ candidate.position }}</span>
@@ -17,7 +17,7 @@
     </a>
   </header>
   <div class="overlay-content steps">
-    {% include "candidate_lists/candidate_edit_steps.html" %}
+    {% include "candidates/edit_steps.html" %}
     <div class="form">
       <fieldset>
         <legend>
@@ -38,7 +38,7 @@
 </form>
 
 <dialog class="modal">
-  <form method="post" action="{{ full_list.list.delete_person_path(candidate.person.id) }}" class="form">
+  <form method="post" action="{{ candidate.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
       <span>
