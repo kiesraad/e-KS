@@ -26,8 +26,6 @@ jobs:
     steps:
       - name: Checkout
         uses: actions/checkout@v6.0.1
-        with:
-          fetch-depth: 0
 
       # Branch coverage requires Rust nightly: https://github.com/taiki-e/cargo-llvm-cov/issues/8
       - name: Setup Rust Nightly
@@ -66,18 +64,19 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           name: Nextest Results
           files: target/nextest/ci/junit.xml
+          report_type: test_results
           disable_search: true
           fail_ci_if_error: true
 
       - name: Create code coverage report
-        run: cargo llvm-cov report --codecov --output-path ./target/llvm-cov-target/codecov.json
+        run: cargo llvm-cov report --cobertura --output-path ./target/llvm-cov-target/codecov.xml
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           name: Nextest Coverage
-          files: target/llvm-cov-target/codecov.json
+          files: target/llvm-cov-target/codecov.xml
           disable_search: true
           fail_ci_if_error: true
           
