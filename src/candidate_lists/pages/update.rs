@@ -25,7 +25,7 @@ struct CandidateListUpdateTemplate {
     electoral_districts: &'static [ElectoralDistrict],
 }
 
-pub(crate) async fn edit_candidate_list_form(
+pub(crate) async fn edit_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,

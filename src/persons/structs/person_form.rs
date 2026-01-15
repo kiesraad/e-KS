@@ -55,7 +55,7 @@ impl From<Person> for PersonForm {
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
             bsn: person.bsn.unwrap_or_default(),
-            csrf_token: String::new(),
+            csrf_token: Default::default(),
         }
     }
 }

@@ -30,7 +30,7 @@ pub struct AddressForm {
     #[validate(parse = "bool")]
     pub is_dutch: String,
     #[validate(csrf)]
-    pub csrf_token: String,
+    pub csrf_token: TokenValue,
 }
 
 impl From<Person> for AddressForm {
@@ -50,7 +50,7 @@ impl From<Person> for AddressForm {
                 .as_ref()
                 .map(bool::to_string)
                 .unwrap_or("true".to_owned()),
-            csrf_token: String::new(),
+            csrf_token: Default::default(),
         }
     }
 }
@@ -58,7 +58,7 @@ impl From<Person> for AddressForm {
 impl WithCsrfToken for AddressForm {
     fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
         AddressForm {
-            csrf_token: csrf_token.value.to_string(),
+            csrf_token: csrf_token.value,
             ..self
         }
     }

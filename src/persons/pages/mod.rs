@@ -95,7 +95,7 @@ mod tests {
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue,
-        pagination::{Pagination, SortDirection},
+        pagination::Pagination,
         persons::{
             repository,
             structs::{Gender, Person, PersonForm},
@@ -137,12 +137,7 @@ mod tests {
             initials: "M.B.".to_string(),
             date_of_birth: "01-02-1990".to_string(),
             bsn: "".to_string(),
-            // locality: "Utrecht".to_string(),
-            // postal_code: "1234 AB".to_string(),
-            // house_number: "10".to_string(),
-            // house_number_addition: "A".to_string(),
-            // street_name: "Stationsstraat".to_string(),
-            csrf_token: csrf_token.to_string(),
+            csrf_token: csrf_token.clone(),
         }
     }
 

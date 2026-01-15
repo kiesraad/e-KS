@@ -15,12 +15,12 @@ mod add_person;
 mod address;
 mod create;
 mod create_person;
-mod edit_position;
 mod delete;
+mod edit_position;
 mod list;
 mod reorder;
-mod update_person;
 mod update;
+mod update_person;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
@@ -30,6 +30,12 @@ pub(crate) struct CandidateListsPath;
 #[derive(TypedPath)]
 #[typed_path("/candidate-lists/new", rejection(AppError))]
 pub(crate) struct CandidateListsNewPath;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{id}", rejection(AppError))]
+pub(crate) struct ViewCandidateListPath {
+    pub(crate) id: Uuid,
+}
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
@@ -44,13 +50,7 @@ pub(crate) struct CandidateListsDeletePath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}", rejection(AppError))]
-pub(crate) struct ViewCandidateListPath {
-    pub(crate) id: Uuid,
-}
-
-#[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
+#[typed_path("/candidate-lists/{id}/add-person", rejection(AppError))]
 pub(crate) struct CandidateListAddPersonPath {
     pub(crate) id: Uuid,
 }
@@ -72,7 +72,7 @@ pub(crate) struct EditCandidatePositionPath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
+#[typed_path("/candidate-lists/{candidate_list}/new-person", rejection(AppError))]
 pub(crate) struct CandidateListNewPersonPath {
     pub(crate) candidate_list: Uuid,
 }
@@ -177,13 +177,12 @@ pub fn router() -> Router<AppState> {
         .typed_post(create::create_candidate_list)
         // manage single list
         .typed_get(view::view_candidate_list)
-        .typed_get(update::edit_candidate_list_form)
+        .typed_get(update::edit_candidate_list)
         .typed_post(update::update_candidate_list)
         .typed_post(delete::delete_candidate_list)
-        .typed_post(add_person::add_person_to_candidate_list)
-        .typed_post(reorder::reorder_candidate_list)
         .typed_get(add_person::add_existing_person)
         .typed_post(add_person::add_person_to_candidate_list)
+        .typed_post(reorder::reorder_candidate_list)
         // manage person / candidate
         .typed_get(edit_position::edit_candidate_position)
         .typed_post(edit_position::update_candidate_position)

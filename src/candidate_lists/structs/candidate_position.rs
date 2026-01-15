@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 use strum::{Display, EnumString};
 
-use crate::form::WithCsrfToken;
+use crate::form::{TokenValue, WithCsrfToken};
 use validate::Validate;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Display, EnumString)]
@@ -28,7 +28,7 @@ pub struct PositionForm {
     #[validate(parse = "CandidatePositionAction")]
     pub action: String,
     #[validate(csrf)]
-    pub csrf_token: String,
+    pub csrf_token: TokenValue,
 }
 
 impl WithCsrfToken for PositionForm {
@@ -61,7 +61,7 @@ impl From<CandidatePosition> for PositionForm {
         PositionForm {
             position: position.position.to_string(),
             action: position.action.to_string(),
-            csrf_token: String::new(),
+            csrf_token: Default::default(),
         }
     }
 }

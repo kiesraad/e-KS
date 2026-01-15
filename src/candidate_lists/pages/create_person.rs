@@ -73,7 +73,8 @@ pub(crate) async fn create_person_candidate_list(
             let mut person_ids: Vec<Uuid> =
                 details.candidates.iter().map(|c| c.person.id).collect();
             person_ids.push(person.id);
-            repository::update_candidate_list_order(&mut conn, &candidate_list, &person_ids).await?;
+            repository::update_candidate_list_order(&mut conn, &candidate_list, &person_ids)
+                .await?;
 
             Ok(Redirect::to(&details.list.edit_person_address_path(&person.id)).into_response())
         }

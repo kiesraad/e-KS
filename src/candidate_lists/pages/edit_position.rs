@@ -107,7 +107,8 @@ pub async fn update_candidate_position(
             let moved = person_ids.remove(current_index);
 
             if position_form.action == CandidatePositionAction::Remove {
-                repository::update_candidate_list_order(&mut conn, &candidate_list, &person_ids).await?;
+                repository::update_candidate_list_order(&mut conn, &candidate_list, &person_ids)
+                    .await?;
             } else if position_form.action == CandidatePositionAction::Move {
                 let target_index = position_form
                     .position
@@ -116,8 +117,12 @@ pub async fn update_candidate_position(
 
                 if current_index != target_index {
                     person_ids.insert(target_index, moved);
-                    repository::update_candidate_list_order(&mut conn, &candidate_list, &person_ids)
-                        .await?;
+                    repository::update_candidate_list_order(
+                        &mut conn,
+                        &candidate_list,
+                        &person_ids,
+                    )
+                    .await?;
                 }
             }
 
