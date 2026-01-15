@@ -3,9 +3,9 @@ use http_body_util::BodyExt;
 use uuid::Uuid;
 
 use crate::{
-    ElectoralDistrict,
+    ElectoralDistrict, TokenValue,
     candidate_lists::structs::CandidateList,
-    persons::structs::{Gender, Person},
+    persons::structs::{AddressForm, Gender, Person, PersonForm},
 };
 
 pub(crate) async fn response_body_string(response: axum::response::Response) -> String {
@@ -34,7 +34,7 @@ pub(crate) fn sample_person(id: Uuid) -> Person {
         last_name: "Jansen".to_string(),
         last_name_prefix: None,
         first_name: Some("Henk".to_string()),
-        initials: "H.H.".to_string(),
+        initials: "H.A.H.A.".to_string(),
         date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
         bsn: None,
         locality: Some("Juinen".to_string()),
@@ -58,5 +58,34 @@ pub(crate) fn sample_person_with_last_name(id: Uuid, last_name: &str) -> Person 
     Person {
         last_name: last_name.to_string(),
         ..sample
+    }
+}
+
+pub(crate) fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
+    PersonForm {
+        gender: "male".to_string(),
+        last_name: "Jansen".to_string(),
+        last_name_prefix: "".to_string(),
+        first_name: "Henk".to_string(),
+        initials: "H.A.H.A.".to_string(),
+        date_of_birth: "01-02-1990".to_string(),
+        bsn: "".to_string(),
+        csrf_token: csrf_token.clone(),
+    }
+}
+
+pub(crate) fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
+    AddressForm {
+        locality: "Juinen".to_string(),
+        postal_code: "1234 AB".to_string(),
+        house_number: "10".to_string(),
+        house_number_addition: "A".to_string(),
+        street_name: "Stationsstraat".to_string(),
+        custom_country: "".to_string(),
+        custom_region: "".to_string(),
+        address_line_1: "".to_string(),
+        address_line_2: "".to_string(),
+        is_dutch: "true".to_string(),
+        csrf_token: csrf_token.clone(),
     }
 }

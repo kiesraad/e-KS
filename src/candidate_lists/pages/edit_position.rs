@@ -145,7 +145,11 @@ mod tests {
         },
     };
 
-    fn sample_form(csrf_token: &TokenValue, position: usize, action: &str) -> PositionForm {
+    fn sample_position_form(
+        csrf_token: &TokenValue,
+        position: usize,
+        action: &str,
+    ) -> PositionForm {
         PositionForm {
             position: position.to_string(),
             action: action.to_string(),
@@ -206,7 +210,7 @@ mod tests {
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
-        let form = sample_form(&csrf_token, 2, "move");
+        let form = sample_position_form(&csrf_token, 2, "move");
 
         let response = update_candidate_position(
             EditCandidatePositionPath {

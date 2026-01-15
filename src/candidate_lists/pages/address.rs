@@ -96,25 +96,12 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists, persons,
-        test_utils::{response_body_string, sample_candidate_list, sample_person_with_last_name},
+        AppState, Context, CsrfTokens, DbConnection, Locale, candidate_lists, persons,
+        test_utils::{
+            response_body_string, sample_address_form, sample_candidate_list,
+            sample_person_with_last_name,
+        },
     };
-
-    fn sample_form(csrf_token: &TokenValue) -> AddressForm {
-        AddressForm {
-            locality: "Juinen".to_string(),
-            postal_code: "1234 AB".to_string(),
-            house_number: "10".to_string(),
-            house_number_addition: "A".to_string(),
-            street_name: "Stationsstraat".to_string(),
-            custom_country: "".to_string(),
-            custom_region: "".to_string(),
-            address_line_1: "".to_string(),
-            address_line_2: "".to_string(),
-            is_dutch: "true".to_string(),
-            csrf_token: csrf_token.clone(),
-        }
-    }
 
     #[sqlx::test]
     async fn edit_person_address_renders_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
@@ -162,7 +149,7 @@ mod tests {
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let mut form = sample_form(&csrf_token);
+        let mut form = sample_address_form(&csrf_token);
         form.locality = "Rotterdam".to_string();
 
         let response = update_person_address(
@@ -212,7 +199,7 @@ mod tests {
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let mut form = sample_form(&csrf_token);
+        let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
         let response = update_person_address(

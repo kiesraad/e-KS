@@ -69,22 +69,9 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, persons,
-        test_utils::response_body_string,
+        AppState, Context, CsrfTokens, DbConnection, Locale, persons,
+        test_utils::{response_body_string, sample_person_form},
     };
-
-    fn sample_form(csrf_token: &TokenValue) -> PersonForm {
-        PersonForm {
-            gender: "female".to_string(),
-            last_name: "Jansen".to_string(),
-            last_name_prefix: "".to_string(),
-            first_name: "Henk".to_string(),
-            initials: "H.H.".to_string(),
-            date_of_birth: "01-02-1990".to_string(),
-            bsn: "".to_string(),
-            csrf_token: csrf_token.clone(),
-        }
-    }
 
     #[tokio::test]
     async fn new_person_form_renders_csrf_field() {
@@ -108,7 +95,7 @@ mod tests {
         let app_state = AppState::new_for_tests(pool.clone());
         let context = Context::new(Locale::En);
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let form = sample_form(&csrf_token);
+        let form = sample_person_form(&csrf_token);
 
         let response = create_person(
             PersonsNewPath {},
@@ -141,7 +128,7 @@ mod tests {
         let app_state = AppState::new_for_tests(pool.clone());
         let context = Context::new(Locale::En);
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let mut form = sample_form(&csrf_token);
+        let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
         let response = create_person(

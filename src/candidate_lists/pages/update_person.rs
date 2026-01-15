@@ -95,22 +95,11 @@ mod tests {
     use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists,
-        test_utils::{response_body_string, sample_candidate_list, sample_person},
+        AppState, Context, CsrfTokens, DbConnection, Locale, candidate_lists,
+        test_utils::{
+            response_body_string, sample_candidate_list, sample_person, sample_person_form,
+        },
     };
-
-    fn sample_form(csrf_token: &TokenValue) -> PersonForm {
-        PersonForm {
-            gender: "female".to_string(),
-            last_name: "Jansen".to_string(),
-            last_name_prefix: "".to_string(),
-            first_name: "Henk".to_string(),
-            initials: "H.H.".to_string(),
-            date_of_birth: "01-02-1990".to_string(),
-            bsn: "".to_string(),
-            csrf_token: csrf_token.clone(),
-        }
-    }
 
     #[sqlx::test]
     async fn edit_person_form_renders_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
@@ -158,7 +147,7 @@ mod tests {
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let mut form = sample_form(&csrf_token);
+        let mut form = sample_person_form(&csrf_token);
         form.last_name = "Updated".to_string();
 
         let response = update_person(
@@ -206,7 +195,7 @@ mod tests {
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
-        let mut form = sample_form(&csrf_token);
+        let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
         let response = update_person(
