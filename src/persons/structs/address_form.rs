@@ -67,7 +67,6 @@ impl WithCsrfToken for AddressForm {
 impl AddressForm {
     fn build_address(validated: AddressFormValidated, current: Option<&Person>) -> Person {
         if let Some(current_person) = current {
-            // TODO: only save the values based on is_dutch
             Person {
                 locality: validated.locality,
                 postal_code: validated.postal_code,
