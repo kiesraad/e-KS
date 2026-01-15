@@ -170,7 +170,7 @@ pub(crate) async fn get_used_districts(
     .await?
     .electoral_districts
     // if None is returned, there are no lists, so there are no used districts (empty set)
-    .unwrap_or_default(); // TODO DOO don't forget unit test without lists
+    .unwrap_or_default();
     Ok(districts)
 }
 
@@ -318,6 +318,8 @@ async fn insert_candidates(
 
 #[cfg(test)]
 mod tests {
+    use std::collections::BTreeSet;
+
     use super::*;
     use chrono::{NaiveDate, Utc};
     use sqlx::PgPool;
@@ -331,6 +333,19 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
+    }
+
+    async fn insert_list(
+        conn: &mut PgConnection,
+        electoral_districts: Vec<ElectoralDistrict>,
+    ) -> Result<CandidateList, sqlx::Error> {
+        let list = CandidateList {
+            id: Uuid::new_v4(),
+            electoral_districts,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        };
+        create_candidate_list(conn, &list).await
     }
 
     fn sample_person(id: Uuid, last_name: &str) -> Person {
@@ -366,9 +381,9 @@ mod tests {
         create_candidate_list(&mut conn, &list).await?;
 
         let lists = list_candidate_list_with_count(&mut conn).await?;
-        assert_eq!(lists.len(), 1);
-        assert_eq!(lists[0].list.id, list.id);
-        assert_eq!(lists[0].person_count, 0);
+        assert_eq!(1, lists.len());
+        assert_eq!(list.id, lists[0].list.id);
+        assert_eq!(0, lists[0].person_count);
 
         Ok(())
     }
@@ -389,9 +404,9 @@ mod tests {
         let detail = get_candidate_list_details(&mut conn, &list_id)
             .await?
             .expect("candidate list");
-        assert_eq!(detail.candidates.len(), 2);
-        assert_eq!(detail.candidates[0].person.id, person_a.id);
-        assert_eq!(detail.candidates[1].person.id, person_b.id);
+        assert_eq!(2, detail.candidates.len());
+        assert_eq!(person_a.id, detail.candidates[0].person.id);
+        assert_eq!(person_b.id, detail.candidates[1].person.id);
 
         Ok(())
     }
@@ -403,6 +418,108 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, sqlx::Error::RowNotFound));
+
+        Ok(())
+    }
+    #[sqlx::test]
+    async fn test_get_used_districts(pool: PgPool) -> Result<(), sqlx::Error> {
+        // setup
+        let mut conn = pool.acquire().await?;
+        let expected = BTreeSet::from([
+            ElectoralDistrict::UT,
+            ElectoralDistrict::DR,
+            ElectoralDistrict::OV,
+        ]);
+
+        insert_list(
+            &mut conn,
+            vec![ElectoralDistrict::UT, ElectoralDistrict::DR],
+        )
+        .await?;
+        insert_list(&mut conn, vec![ElectoralDistrict::OV]).await?;
+        insert_list(&mut conn, vec![]).await?;
+
+        // test
+        let result: BTreeSet<ElectoralDistrict> =
+            get_used_districts(&mut conn).await?.into_iter().collect();
+
+        // verify
+        assert_eq!(expected, result);
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_used_districts_no_lists(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let result = get_used_districts(&mut conn).await?;
+
+        assert_eq!(Vec::<ElectoralDistrict>::new(), result);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_used_districts_double_districts(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let expected = BTreeSet::from([
+            ElectoralDistrict::UT,
+            ElectoralDistrict::DR,
+            ElectoralDistrict::OV,
+        ]);
+
+        // setup
+        insert_list(
+            &mut conn,
+            vec![ElectoralDistrict::UT, ElectoralDistrict::DR],
+        )
+        .await?;
+        insert_list(
+            &mut conn,
+            vec![ElectoralDistrict::UT, ElectoralDistrict::OV],
+        )
+        .await?;
+
+        // test
+        let result: BTreeSet<ElectoralDistrict> =
+            get_used_districts(&mut conn).await?.into_iter().collect();
+
+        // verify
+        assert_eq!(expected, result);
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn test_remove_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        // setup
+        let mut conn = pool.acquire().await?;
+        let list_a = sample_list(Uuid::new_v4());
+        let person_a = sample_person(Uuid::new_v4(), "Alpha");
+        let list_b = sample_list(Uuid::new_v4());
+        let person_b = sample_person(Uuid::new_v4(), "Beta");
+
+        create_candidate_list(&mut conn, &list_a).await?;
+        persons_repository::create_person(&mut conn, &person_a).await?;
+        update_candidate_list_order(&mut conn, &list_a.id, &[person_a.id]).await?;
+
+        create_candidate_list(&mut conn, &list_b).await?;
+        persons_repository::create_person(&mut conn, &person_b).await?;
+        update_candidate_list_order(&mut conn, &list_b.id, &[person_b.id]).await?;
+
+        // test
+        remove_candidate_list(&mut conn, list_a.id).await?;
+
+        // verify
+        let lists = list_candidate_list_with_count(&mut conn).await?;
+        let list_b_from_db = get_candidate_list_details(&mut conn, &list_b.id)
+            .await?
+            .unwrap();
+        // one list remains
+        assert_eq!(1, lists.len());
+        // the correct list got deleted
+        assert_eq!(list_b.id, lists[0].list.id);
+        // and only persons got removed associated with the deleted list
+        assert_eq!(1, lists[0].person_count);
+        assert_eq!(person_b.id, list_b_from_db.candidates[0].person.id);
 
         Ok(())
     }

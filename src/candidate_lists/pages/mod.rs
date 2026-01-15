@@ -511,6 +511,54 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn delete_candidate_invalid_form_renders_template(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let mut conn = pool.acquire().await.unwrap();
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = TokenValue("invalid".to_string());
+        let candidate_list = CandidateList {
+            id: Uuid::new_v4(),
+            electoral_districts: vec![ElectoralDistrict::UT],
+            created_at: DateTime::default(),
+            updated_at: DateTime::default(),
+        };
+        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+
+        let response = delete::delete_candidate_list(
+            CandidateListsDeletePath {
+                id: candidate_list.id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(conn),
+            Form(CandidateListDeleteForm { csrf_token }),
+        )
+        .await
+        .unwrap();
+
+        // verify redirect
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+
+        assert_eq!(location, candidate_list.update_path());
+
+        // verify deletion didn't go through (i.e. still 1 list in database left)
+        let mut conn = pool.acquire().await?;
+        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        assert_eq!(lists.len(), 1);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list = sample_candidate_list(Uuid::new_v4());
         let mut conn = pool.acquire().await?;

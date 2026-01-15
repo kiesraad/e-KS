@@ -63,6 +63,7 @@ impl WithCsrfToken for CandidateListForm {
 #[validate(target = "()", build = "CandidateListDeleteForm::post_validate")]
 #[serde(default)]
 pub struct CandidateListDeleteForm {
+    // TODO DOO: add unit tests
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
