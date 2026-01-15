@@ -5,7 +5,7 @@ use crate::{
     AppError, Context, DbConnection, HtmlTemplate, filters,
     pagination::{Pagination, PaginationInfo},
     persons::{
-        repository,
+        self,
         structs::{Person, PersonSort},
     },
     t,
@@ -26,10 +26,10 @@ pub(crate) async fn list_persons(
     pagination: Pagination<PersonSort>,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let total_items = repository::count_persons(&mut conn).await?.max(0) as u64;
+    let total_items = persons::repository::count_persons(&mut conn).await?.max(0) as u64;
     let pagination = pagination.set_total(total_items);
 
-    let persons = repository::list_persons(
+    let persons = persons::repository::list_persons(
         &mut conn,
         pagination.limit(),
         pagination.offset(),

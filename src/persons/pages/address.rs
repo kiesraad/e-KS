@@ -10,8 +10,8 @@ use crate::{
     form::{FormData, Validate},
     pagination::{Pagination, SortDirection},
     persons::{
+        self,
         pages::{EditPersonAddressPath, person_not_found},
-        repository,
         structs::{AddressForm, Person, PersonSort},
     },
     t,
@@ -30,7 +30,7 @@ pub(crate) async fn edit_person_address_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let person = repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, &id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
@@ -50,7 +50,7 @@ pub(crate) async fn update_person_address(
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let person = repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, &id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
@@ -64,7 +64,7 @@ pub(crate) async fn update_person_address(
         )
         .into_response()),
         Ok(person) => {
-            repository::update_person(&mut conn, &person).await?;
+            persons::repository::update_person(&mut conn, &person).await?;
 
             // Redirect to the persons list after updating, sorted by updated, so the updated person is visible at the top
             let pagination = Pagination {

@@ -13,14 +13,17 @@ pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
             .split('.')
             .filter(|part| !part.is_empty())
             .collect();
-        for part in parts {
+
+        for part in &parts {
             let chars: Vec<char> = part.chars().collect();
             if chars.len() != 1 || !chars[0].is_ascii_uppercase() {
                 return Err(ValidationError::InvalidValue);
             }
         }
 
-        Ok(initials.to_string())
+        let result = parts.join(".") + ".";
+
+        Ok(result)
     }
 }
 

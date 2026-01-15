@@ -32,7 +32,7 @@ window.addEventListener("load", () => {
       if (i > position + 1 || i < position - 3) {
         row.style.display = "none";
       } else {
-        row.style.display = "";
+        row.style.display = "table-row";
         const cell = row.querySelector(".position-badge");
         if (cell) {
           cell.textContent = (i + 1).toString();

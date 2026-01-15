@@ -9,8 +9,8 @@ use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
+        self,
         pages::person_not_found,
-        repository,
         structs::{Person, PersonForm},
     },
     t,
@@ -31,7 +31,7 @@ pub(crate) async fn edit_person_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let person = repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, &id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
@@ -51,7 +51,7 @@ pub(crate) async fn update_person(
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let person = repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, &id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
@@ -65,7 +65,7 @@ pub(crate) async fn update_person(
         )
         .into_response()),
         Ok(person) => {
-            repository::update_person(&mut conn, &person).await?;
+            persons::repository::update_person(&mut conn, &person).await?;
 
             // Redirect to the address edit page
             Ok(Redirect::to(&person.edit_address_path()).into_response())

@@ -1,6 +1,7 @@
 #position-preview-container {
   height: 15rem;
   position: relative;
+  margin-top: var(--space-md);
 
   &.fade-top::before,
   &.fade-bottom::after {
@@ -28,6 +29,10 @@
 }
 
 #position-preview {
+  tr {
+    display: none;
+  }
+
   tr:not(.current) {
     .position-badge {
       background-color: transparent;

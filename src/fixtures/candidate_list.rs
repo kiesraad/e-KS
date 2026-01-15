@@ -3,17 +3,17 @@ use sqlx::PgConnection;
 
 use crate::{
     AppError, Config,
-    candidate_lists::{repository as candidate_list_repository, structs::CandidateList},
+    candidate_lists::{self, structs::CandidateList},
     pagination::SortDirection,
-    persons::{repository as persons_repository, structs::PersonSort},
+    persons::{self, structs::PersonSort},
 };
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let config = Config::from_env()?;
-    let total_persons = persons_repository::count_persons(conn).await?;
+    let total_persons = persons::repository::count_persons(conn).await?;
     let electoral_districts = config.get_districts().to_vec();
 
-    let persons = persons_repository::list_persons(
+    let persons = persons::repository::list_persons(
         conn,
         total_persons,
         0,
@@ -36,15 +36,11 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     };
 
     let candidate_list =
-        candidate_list_repository::create_candidate_list(conn, &candidate_list).await?;
+        candidate_lists::repository::create_candidate_list(conn, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    let _ = candidate_list_repository::update_candidate_list_order(
-        conn,
-        &candidate_list.id,
-        &person_ids,
-    )
-    .await?;
+    candidate_lists::repository::update_candidate_list_order(conn, &candidate_list.id, &person_ids)
+        .await?;
 
     Ok(())
 }

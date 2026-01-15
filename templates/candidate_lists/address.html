@@ -4,13 +4,13 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ details.list.edit_person_address_path(candidate.person.id) }}" class="overlay">
+<form method="post" action="{{ full_list.list.edit_person_address_path(candidate.person.id) }}" class="overlay">
   <header>
     <h2>
       <span class="position-badge">{{ candidate.position }}</span>
       {{ candidate.person.display_name() }}
     </h2>
-    <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
       <span>
         {{ t!("action.close")|trans }}
       </span>

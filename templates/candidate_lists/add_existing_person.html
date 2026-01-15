@@ -9,13 +9,13 @@
     <h2>
       {{ t!("candidate_list.add_candidate")|trans }}
     </h2>
-    <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
       <span>
         {{ t!("action.close")|trans }}
       </span>
     </a>
   </header>
-  <form method="post" action="{{ details.list.add_person_path() }}" class="form overlay-content">
+  <form method="post" action="{{ full_list.list.add_person_path() }}" class="form overlay-content">
     {% if persons.is_empty() %}
     <p>{{ t!("person.view.empty")|trans }}</p>
     {% else %}

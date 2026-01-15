@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 use uuid::Uuid;
 
-use crate::{ElectionConfig, ElectoralDistrict, Locale, persons::structs::Person, t};
+use crate::{AppError, ElectionConfig, ElectoralDistrict, Locale, persons::structs::Person, t};
 
 /// Maximum number of persons allowed on a candidate list.
 pub const MAX_CANDIDATES: usize = 50;
@@ -29,7 +29,7 @@ pub struct CandidateListEntry {
 }
 
 #[derive(Debug, Clone, Serialize)]
-pub struct CandidateListDetail {
+pub struct FullCandidateList {
     pub list: CandidateList,
     pub candidates: Vec<CandidateListEntry>,
 }
@@ -50,11 +50,29 @@ impl CandidateList {
     }
 }
 
-impl CandidateListDetail {
-    pub fn index(&self, person_id: &Uuid) -> Option<usize> {
+impl FullCandidateList {
+    pub fn get_index(&self, person_id: &Uuid) -> Option<usize> {
         self.candidates
             .iter()
             .position(|c| &c.person.id == person_id)
+    }
+
+    pub fn get_candidate(
+        &self,
+        person_id: &Uuid,
+        locale: Locale,
+    ) -> Result<CandidateListEntry, AppError> {
+        self.candidates
+            .iter()
+            .find(|c| &c.person.id == person_id)
+            .cloned()
+            .ok_or_else(|| {
+                AppError::NotFound(t!("person.not_found_in_candidate_list", &locale).to_string())
+            })
+    }
+
+    pub fn get_ids(&self) -> Vec<Uuid> {
+        self.candidates.iter().map(|c| c.person.id).collect()
     }
 }
 

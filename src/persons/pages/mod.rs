@@ -97,7 +97,7 @@ mod tests {
         AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue,
         pagination::Pagination,
         persons::{
-            repository,
+            self,
             structs::{Gender, Person, PersonForm},
         },
         test_utils::response_body_string,
@@ -185,7 +185,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let count = repository::count_persons(&mut conn).await?;
+        let count = persons::repository::count_persons(&mut conn).await?;
         assert_eq!(count, 1);
 
         Ok(())
@@ -222,7 +222,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let response = list::list_persons(
             PersonsPath {},
@@ -247,7 +247,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let response = update::edit_person_form(
             EditPersonPath { id },
@@ -272,7 +272,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
@@ -299,7 +299,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let updated = repository::get_person(&mut conn, &id)
+        let updated = persons::repository::get_person(&mut conn, &id)
             .await?
             .expect("updated person");
         assert_eq!(updated.last_name, "Updated");
@@ -313,7 +313,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
@@ -343,7 +343,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let response =
             delete::delete_person(DeletePersonPath { id }, DbConnection(pool.acquire().await?))
@@ -360,7 +360,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let found = repository::get_person(&mut conn, &id).await?;
+        let found = persons::repository::get_person(&mut conn, &id).await?;
         assert!(found.is_none());
 
         Ok(())

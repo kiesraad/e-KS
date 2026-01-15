@@ -9,6 +9,7 @@
       color: var(--text-color-header);
       font-weight: bold;
       gap: 0.5rem;
+      white-space: nowrap;
 
       &.required::after {
         display: inline-block;
@@ -50,10 +51,15 @@
       display: flex;
       gap: var(--space-xl);
       margin-bottom: var(--space-lg);
-      align-items: end;
+      align-items: start;
 
       .form-field {
         flex: 1;
+      }
+
+      /* hide form variants until js is active */
+      &[data-variant] {
+        display: none;
       }
     }
   }

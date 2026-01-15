@@ -4,12 +4,13 @@ use serde::Deserialize;
 use sqlx::PgConnection;
 use uuid::Uuid;
 
-use crate::{AppError, AppState, Locale, t};
-
-use super::{
-    repository,
-    structs::{CandidateList, CandidateListDetail},
+use crate::{
+    AppError, AppState, Locale,
+    candidate_lists::{self},
+    t,
 };
+
+use super::structs::{CandidateList, FullCandidateList};
 
 mod add_person;
 mod address;
@@ -198,8 +199,8 @@ pub(super) async fn load_candidate_list(
     conn: &mut PgConnection,
     id: &Uuid,
     locale: Locale,
-) -> Result<CandidateListDetail, AppError> {
-    repository::get_candidate_list_details(conn, id)
+) -> Result<FullCandidateList, AppError> {
+    candidate_lists::repository::get_full_candidate_list(conn, id)
         .await?
         .ok_or_else(|| candidate_list_not_found(*id, locale))
 }
@@ -222,7 +223,7 @@ mod tests {
         AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
         candidate_lists::structs::{CandidateListDeleteForm, CandidateListForm},
         persons::{
-            repository as persons_repository,
+            self,
             structs::{Gender, Person},
         },
         test_utils::response_body_string,
@@ -315,7 +316,7 @@ mod tests {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
         assert_eq!(location, lists[0].list.view_path());
 
@@ -364,7 +365,7 @@ mod tests {
             created_at: creation_date,
             updated_at: creation_date,
         };
-        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::DR],
@@ -394,7 +395,7 @@ mod tests {
 
         // verify updated candidate list object in database
         let mut conn = pool.acquire().await?;
-        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
@@ -428,7 +429,7 @@ mod tests {
             created_at: creation_date,
             updated_at: creation_date,
         };
-        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::DR],
@@ -452,7 +453,7 @@ mod tests {
         assert!(body.contains("Edit candidate list"));
 
         let mut conn = pool.acquire().await?;
-        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
@@ -475,7 +476,7 @@ mod tests {
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let response = delete::delete_candidate_list(
             CandidateListsDeletePath {
@@ -503,7 +504,7 @@ mod tests {
 
         // verify deletion (i.e. no lists in database left)
         let mut conn = pool.acquire().await?;
-        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 0);
 
         Ok(())
@@ -523,7 +524,7 @@ mod tests {
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let response = delete::delete_candidate_list(
             CandidateListsDeletePath {
@@ -551,7 +552,7 @@ mod tests {
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
         let mut conn = pool.acquire().await?;
-        let lists = repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
 
         Ok(())
@@ -561,7 +562,7 @@ mod tests {
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list = sample_candidate_list(Uuid::new_v4());
         let mut conn = pool.acquire().await?;
-        repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
 
         let response = list::list_candidate_lists(
             CandidateListsPath {},
@@ -587,8 +588,8 @@ mod tests {
         let person = sample_person(Uuid::new_v4(), "Doe");
 
         let mut conn = pool.acquire().await?;
-        repository::create_candidate_list(&mut conn, &list).await?;
-        persons_repository::create_person(&mut conn, &person).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let response = add_person::add_existing_person(
             CandidateListAddPersonPath { id: list_id },
@@ -616,8 +617,8 @@ mod tests {
         let person = sample_person(Uuid::new_v4(), "Roe");
 
         let mut conn = pool.acquire().await?;
-        repository::create_candidate_list(&mut conn, &list).await?;
-        persons_repository::create_person(&mut conn, &person).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
 
         let response = add_person::add_person_to_candidate_list(
             CandidateListAddPersonPath { id: list_id },
@@ -640,11 +641,12 @@ mod tests {
         assert_eq!(location, list.edit_person_address_path(&person.id));
 
         let mut conn = pool.acquire().await?;
-        let detail = repository::get_candidate_list_details(&mut conn, &list_id)
-            .await?
-            .expect("candidate list");
-        assert_eq!(detail.candidates.len(), 1);
-        assert_eq!(detail.candidates[0].person.id, person.id);
+        let full_list =
+            candidate_lists::pages::load_candidate_list(&mut conn, &list_id, Locale::En)
+                .await
+                .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 1);
+        assert_eq!(full_list.candidates[0].person.id, person.id);
 
         Ok(())
     }
@@ -657,11 +659,15 @@ mod tests {
         let person_b = sample_person(Uuid::new_v4(), "Beta");
 
         let mut conn = pool.acquire().await?;
-        repository::create_candidate_list(&mut conn, &list).await?;
-        persons_repository::create_person(&mut conn, &person_a).await?;
-        persons_repository::create_person(&mut conn, &person_b).await?;
-        repository::update_candidate_list_order(&mut conn, &list_id, &[person_a.id, person_b.id])
-            .await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
+        candidate_lists::repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[person_a.id, person_b.id],
+        )
+        .await?;
 
         let response = reorder::reorder_candidate_list(
             CandidateListReorderPath { id: list_id },
@@ -678,12 +684,13 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
         let mut conn = pool.acquire().await?;
-        let detail = repository::get_candidate_list_details(&mut conn, &list_id)
-            .await?
-            .expect("candidate list");
-        assert_eq!(detail.candidates.len(), 2);
-        assert_eq!(detail.candidates[0].person.id, person_b.id);
-        assert_eq!(detail.candidates[1].person.id, person_a.id);
+        let full_list =
+            candidate_lists::pages::load_candidate_list(&mut conn, &list_id, Locale::En)
+                .await
+                .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 2);
+        assert_eq!(full_list.candidates[0].person.id, person_b.id);
+        assert_eq!(full_list.candidates[1].person.id, person_a.id);
 
         Ok(())
     }

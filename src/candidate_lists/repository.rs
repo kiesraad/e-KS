@@ -6,9 +6,7 @@ use crate::{
     persons::structs::{Gender, Person},
 };
 
-use super::structs::{
-    CandidateList, CandidateListDetail, CandidateListEntry, CandidateListSummary,
-};
+use super::structs::{CandidateList, CandidateListEntry, CandidateListSummary, FullCandidateList};
 
 pub struct ListIdAndCount {
     pub id: Uuid,
@@ -81,10 +79,10 @@ pub(crate) async fn get_candidate_list(
     .await
 }
 
-pub(super) async fn get_candidate_list_details(
+pub(super) async fn get_full_candidate_list(
     conn: &mut PgConnection,
     list_id: &Uuid,
-) -> Result<Option<CandidateListDetail>, sqlx::Error> {
+) -> Result<Option<FullCandidateList>, sqlx::Error> {
     let list = get_candidate_list(conn, list_id).await?;
 
     let Some(list) = list else {
@@ -152,7 +150,7 @@ pub(super) async fn get_candidate_list_details(
     })
     .collect();
 
-    Ok(Some(CandidateListDetail { list, candidates }))
+    Ok(Some(FullCandidateList { list, candidates }))
 }
 
 /// retrieves a vector of all the electoral districts that have been used in one or more candidate lists
@@ -202,7 +200,7 @@ pub(crate) async fn update_candidate_list_order(
     conn: &mut PgConnection,
     list_id: &Uuid,
     person_ids: &[Uuid],
-) -> Result<CandidateListDetail, sqlx::Error> {
+) -> Result<FullCandidateList, sqlx::Error> {
     let mut tx = conn.begin().await?;
 
     let updated = sqlx::query!(
@@ -234,7 +232,7 @@ pub(crate) async fn update_candidate_list_order(
 
     tx.commit().await?;
 
-    get_candidate_list_details(conn, list_id)
+    get_full_candidate_list(conn, list_id)
         .await?
         .ok_or(sqlx::Error::RowNotFound)
 }
@@ -324,7 +322,7 @@ mod tests {
     use chrono::{NaiveDate, Utc};
     use sqlx::PgPool;
 
-    use crate::persons::repository as persons_repository;
+    use crate::persons;
 
     fn sample_list(id: Uuid) -> CandidateList {
         CandidateList {
@@ -397,11 +395,11 @@ mod tests {
 
         let mut conn = pool.acquire().await?;
         create_candidate_list(&mut conn, &list).await?;
-        persons_repository::create_person(&mut conn, &person_a).await?;
-        persons_repository::create_person(&mut conn, &person_b).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
         update_candidate_list_order(&mut conn, &list_id, &[person_a.id, person_b.id]).await?;
 
-        let detail = get_candidate_list_details(&mut conn, &list_id)
+        let detail = get_full_candidate_list(&mut conn, &list_id)
             .await?
             .expect("candidate list");
         assert_eq!(2, detail.candidates.len());
@@ -498,11 +496,11 @@ mod tests {
         let person_b = sample_person(Uuid::new_v4(), "Beta");
 
         create_candidate_list(&mut conn, &list_a).await?;
-        persons_repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
         update_candidate_list_order(&mut conn, &list_a.id, &[person_a.id]).await?;
 
         create_candidate_list(&mut conn, &list_b).await?;
-        persons_repository::create_person(&mut conn, &person_b).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
         update_candidate_list_order(&mut conn, &list_b.id, &[person_b.id]).await?;
 
         // test
@@ -510,7 +508,7 @@ mod tests {
 
         // verify
         let lists = list_candidate_list_with_count(&mut conn).await?;
-        let list_b_from_db = get_candidate_list_details(&mut conn, &list_b.id)
+        let list_b_from_db = get_full_candidate_list(&mut conn, &list_b.id)
             .await?
             .unwrap();
         // one list remains

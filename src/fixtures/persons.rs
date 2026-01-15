@@ -9,7 +9,7 @@ use crate::{
     AppError,
     constants::DEFAULT_DATE_FORMAT,
     persons::{
-        repository,
+        self,
         structs::{Gender, Person},
     },
 };
@@ -76,7 +76,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         })?;
 
         let person = record.into_person()?;
-        repository::create_person(conn, &person).await?;
+        persons::repository::create_person(conn, &person).await?;
     }
 
     Ok(())

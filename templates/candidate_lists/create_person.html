@@ -4,12 +4,12 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ details.list.new_person_path() }}" class="overlay">
+<form method="post" action="{{ full_list.list.new_person_path() }}" class="overlay">
   <header>
     <h2>
       {{ t!("person.actions.add")|trans }}
     </h2>
-    <a href="{{ details.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
       <span>
         {{ t!("action.close")|trans }}
       </span>

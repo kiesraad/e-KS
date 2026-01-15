@@ -1,13 +1,13 @@
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
-use super::{CandidateList, CandidateListsPath, repository};
+use super::{CandidateList, CandidateListsPath};
 
 use crate::{
     AppError, AppState, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
-    candidate_lists::structs::CandidateListSummary,
+    candidate_lists::{self, structs::CandidateListSummary},
     filters,
-    persons::{repository as person_repository, structs::Person},
+    persons::{self, structs::Person},
     t,
 };
 
@@ -26,8 +26,9 @@ pub(crate) async fn list_candidate_lists(
     State(app_state): State<AppState>,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = repository::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = person_repository::count_persons(&mut conn).await?;
+    let candidate_lists =
+        candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+    let total_persons = persons::repository::count_persons(&mut conn).await?;
     let election = app_state.config().election;
 
     Ok(HtmlTemplate(

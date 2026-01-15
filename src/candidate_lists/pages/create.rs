@@ -7,13 +7,13 @@ use axum_extra::extract::Form;
 
 use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::structs::CandidateListForm,
+    candidate_lists::{self, structs::CandidateListForm},
     filters,
     form::{FormData, Validate},
     t,
 };
 
-use super::{CandidateList, CandidateListsNewPath, repository};
+use super::{CandidateList, CandidateListsNewPath};
 
 #[derive(Template)]
 #[template(path = "candidate_lists/create.html")]
@@ -31,7 +31,7 @@ pub(crate) async fn new_candidate_list_form(
 ) -> Result<impl IntoResponse, AppError> {
     let electoral_districts = app_state.config().get_districts();
 
-    let used_districts = repository::get_used_districts(&mut conn).await?;
+    let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
     let available_districts: Vec<ElectoralDistrict> =
         determine_available_districts(electoral_districts, used_districts);
 
@@ -84,7 +84,8 @@ pub(crate) async fn create_candidate_list(
         .into_response()),
         Ok(candidate_list) => {
             let candidate_list =
-                repository::create_candidate_list(&mut conn, &candidate_list).await?;
+                candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list)
+                    .await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }

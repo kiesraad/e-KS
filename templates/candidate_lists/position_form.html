@@ -14,7 +14,7 @@
     <div id="position-preview-container">
       <table class="table" id="position-preview">
         <tbody>
-          {% for c in details.candidates %}
+          {% for c in full_list.candidates %}
           <tr class="{% if c.person.id == candidate.person.id %}current{% endif %}">
             <td>
               <span class="position-badge">{{ c.position }}</span>

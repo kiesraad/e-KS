@@ -2,7 +2,7 @@ use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{AppError, Context, DbConnection, candidate_lists::repository};
+use crate::{AppError, Context, DbConnection, candidate_lists};
 
 use super::{CandidateListReorderPath, load_candidate_list};
 
@@ -18,7 +18,8 @@ pub(crate) async fn reorder_candidate_list(
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
     load_candidate_list(&mut conn, &id, context.locale).await?;
-    repository::update_candidate_list_order(&mut conn, &id, &payload.person_ids).await?;
+    candidate_lists::repository::update_candidate_list_order(&mut conn, &id, &payload.person_ids)
+        .await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

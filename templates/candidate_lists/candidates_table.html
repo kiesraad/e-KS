@@ -1,16 +1,16 @@
-<table class="sortable" id="candidate-table" data-sortable-update-url="{{ details.list.reorder_path() }}" data-max="{{ max_candidates }}">
+<table class="sortable" id="candidate-table" data-sortable-update-url="{{ full_list.list.reorder_path() }}" data-max="{{ max_candidates }}">
   <thead>
     <tr>
       <th scope="col" colspan="2">{{ t!("candidate_list.fields.position")|trans }}</th>
       <th scope="col">{{ t!("person.fields.name")|trans }}</th>
       <th scope="col">{{ t!("person.fields.locality")|trans }}</th>
       <th scope="col">
-        {{ t!("candidate_list.candidate_count")|trans|fill(details.candidates.len().to_string())|fill(max_candidates.to_string())|safe }}
+        {{ t!("candidate_list.candidate_count")|trans|fill(full_list.candidates.len().to_string())|fill(max_candidates.to_string())|safe }}
       </th>
     </tr>
   </thead>
   <tbody>
-    {% for candidate in details.candidates %}
+    {% for candidate in full_list.candidates %}
     <tr class="clickable" data-id="{{ candidate.person.id }}">
       <td class="drag-handle"></td>
       <td>
@@ -29,7 +29,7 @@
         {% endif %}
       </td>
       <td>
-        <a href="{{ details.list.edit_candidate_position_path(&candidate.person.id) }}">
+        <a href="{{ full_list.list.edit_candidate_position_path(&candidate.person.id) }}">
           <span>{{ t!("action.edit")|trans }}</span>
         </a>
       </td>
@@ -37,7 +37,7 @@
     {% endfor %}
   </tbody>
 </table>
-{% if details.candidates.len() > max_candidates %}
+{% if full_list.candidates.len() > max_candidates %}
 <p class="note-warning mt-md">
   {{ t!("candidate_list.view.max_candidates_exceeded")|trans|fill(max_candidates.to_string()) }}
 </p>

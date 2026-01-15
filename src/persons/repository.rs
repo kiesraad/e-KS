@@ -341,7 +341,7 @@ mod tests {
 
     use crate::{
         ElectoralDistrict,
-        candidate_lists::{repository as candidate_lists_repository, structs::CandidateList},
+        candidate_lists::{self, structs::CandidateList},
         pagination::SortDirection,
         persons::structs::PersonSort,
     };
@@ -451,10 +451,10 @@ mod tests {
         let person_b = sample_person(Uuid::new_v4(), "Beta");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists_repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         create_person(&mut conn, &person_a).await?;
         create_person(&mut conn, &person_b).await?;
-        candidate_lists_repository::update_candidate_list_order(
+        candidate_lists::repository::update_candidate_list_order(
             &mut conn,
             &list_id,
             &[person_a.id],

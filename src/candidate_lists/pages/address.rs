@@ -9,11 +9,11 @@ use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         pages::{CandidateListEditAddressPath, load_candidate_list},
-        structs::{CandidateList, CandidateListDetail, CandidateListEntry, MAX_CANDIDATES},
+        structs::{CandidateList, CandidateListEntry, FullCandidateList, MAX_CANDIDATES},
     },
     filters,
     form::{FormData, Validate},
-    persons::{repository, structs::AddressForm},
+    persons::{self, structs::AddressForm},
     t,
 };
 
@@ -22,7 +22,7 @@ use crate::{
 struct PersonAddressUpdateTemplate {
     candidate: CandidateListEntry,
     form: FormData<AddressForm>,
-    details: CandidateListDetail,
+    full_list: FullCandidateList,
     max_candidates: usize,
 }
 
@@ -35,22 +35,16 @@ pub(crate) async fn edit_person_address_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let details: CandidateListDetail =
+    let full_list: FullCandidateList =
         load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-
-    let candidate = details
-        .candidates
-        .iter()
-        .find(|c| c.person.id == person)
-        .ok_or_else(|| AppError::NotFound("Person not found in candidate list".to_string()))?;
-
+    let candidate = full_list.get_candidate(&person, context.locale)?;
     let form = FormData::new_with_data(AddressForm::from(candidate.person.clone()), &csrf_tokens);
 
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             form,
             candidate: candidate.clone(),
-            details,
+            full_list,
             max_candidates: MAX_CANDIDATES,
         },
         context,
@@ -67,29 +61,24 @@ pub(crate) async fn update_person_address(
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let details = load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-
-    let candidate = details
-        .candidates
-        .iter()
-        .find(|c| c.person.id == person)
-        .ok_or_else(|| AppError::NotFound("Person not found in candidate list".to_string()))?;
+    let full_list = load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+    let candidate = full_list.get_candidate(&person, context.locale)?;
 
     match form.validate(Some(&candidate.person), app_state.csrf_tokens()) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
-                candidate: candidate.clone(),
+                candidate,
                 form: form_data,
-                details,
+                full_list,
                 max_candidates: MAX_CANDIDATES,
             },
             context,
         )
         .into_response()),
         Ok(person) => {
-            repository::update_person(&mut conn, &person).await?;
+            persons::repository::update_person(&mut conn, &person).await?;
 
-            Ok(Redirect::to(&details.list.view_path()).into_response())
+            Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
     }
 }

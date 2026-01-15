@@ -103,10 +103,11 @@ person:
     create:
       title: Add person
     edit:
-      title: Edit person ʻ{}ʼ
+      title: Edit person '{}'
   list:
     empty: No persons found.
   not_found: Person {} not found.
+  not_found_in_candidate_list: Person not found in candidate list.
   title: Persons
   updated_at: Updated at
   all: All persons

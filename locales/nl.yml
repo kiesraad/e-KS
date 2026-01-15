@@ -105,10 +105,11 @@ person:
     create:
       title: Persoon toevoegen
     edit:
-      title: Persoon bewerken ʻ{}ʼ
+      title: Persoon bewerken '{}'
   list:
     empty: Geen personen gevonden.
   not_found: Persoon {} niet gevonden.
+  not_found_in_candidate_list: Persoon niet gevonden in kandidatenlijst.
   title: Personen
   updated_at: Laatst bijgewerkt op
   all: Alle personen

@@ -9,7 +9,7 @@ use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
-        repository,
+        self,
         structs::{Person, PersonForm},
     },
     t,
@@ -49,7 +49,7 @@ pub(crate) async fn create_person(
             Ok(HtmlTemplate(PersonCreateTemplate { form: form_data }, context).into_response())
         }
         Ok(person) => {
-            repository::create_person(&mut conn, &person).await?;
+            persons::repository::create_person(&mut conn, &person).await?;
 
             // Redirect to the address edit page
             Ok(Redirect::to(&person.edit_address_path()).into_response())
