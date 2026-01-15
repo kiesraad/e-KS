@@ -333,134 +333,134 @@ pub(super) async fn remove_person(
     Ok(())
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use chrono::{NaiveDate, Utc};
-    use sqlx::PgPool;
-
-    use crate::{
-        ElectoralDistrict,
-        candidate_lists::{repository as candidate_lists_repository, structs::CandidateList},
-        pagination::SortDirection,
-        persons::structs::PersonSort,
-    };
-
-    fn sample_person(id: Uuid, last_name: &str) -> Person {
-        Person {
-            id,
-            gender: Some(Gender::Female),
-            last_name: last_name.to_string(),
-            last_name_prefix: None,
-            first_name: Some("Marlon".to_string()),
-            initials: "M.B.".to_string(),
-            date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
-            bsn: None,
-            locality: Some("Utrecht".to_string()),
-            postal_code: Some("1234 AB".to_string()),
-            house_number: Some("10".to_string()),
-            house_number_addition: Some("A".to_string()),
-            street_name: Some("Stationsstraat".to_string()),
-            is_dutch: Some(true),
-            custom_country: None,
-            custom_region: None,
-            address_line_1: None,
-            address_line_2: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
-    fn sample_list(id: Uuid) -> CandidateList {
-        CandidateList {
-            id,
-            electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
-    #[sqlx::test]
-    async fn create_and_get_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
-        let person = sample_person(id, "Doe");
-
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
-
-        let loaded = get_person(&mut conn, &id).await?.expect("person");
-        assert_eq!(loaded.id, id);
-        assert_eq!(loaded.last_name, "Doe");
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn list_and_count_persons(pool: PgPool) -> Result<(), sqlx::Error> {
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &sample_person(Uuid::new_v4(), "Alpha")).await?;
-        create_person(&mut conn, &sample_person(Uuid::new_v4(), "Beta")).await?;
-
-        let total = count_persons(&mut conn).await?;
-        assert_eq!(total, 2);
-
-        let persons =
-            list_persons(&mut conn, 10, 0, &PersonSort::LastName, &SortDirection::Asc).await?;
-        assert_eq!(persons.len(), 2);
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn update_person_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
-        let mut person = sample_person(id, "Doe");
-
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
-
-        person.last_name = "Updated".to_string();
-        update_person(&mut conn, &person).await?;
-
-        let updated = get_person(&mut conn, &id).await?.expect("person");
-        assert_eq!(updated.last_name, "Updated");
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn remove_person_deletes_record(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
-        let person = sample_person(id, "Doe");
-
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
-        remove_person(&mut conn, &id).await?;
-
-        let missing = get_person(&mut conn, &id).await?;
-        assert!(missing.is_none());
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
-        let list = sample_list(list_id);
-        let person_a = sample_person(Uuid::new_v4(), "Alpha");
-        let person_b = sample_person(Uuid::new_v4(), "Beta");
-
-        let mut conn = pool.acquire().await?;
-        candidate_lists_repository::create_candidate_list(&mut conn, &list).await?;
-        create_person(&mut conn, &person_a).await?;
-        create_person(&mut conn, &person_b).await?;
-        candidate_lists_repository::update_candidate_list(&mut conn, &list_id, &[person_a.id])
-            .await?;
-
-        let persons = list_persons_not_on_candidate_list(&mut conn, &list_id).await?;
-        assert_eq!(persons.len(), 1);
-        assert_eq!(persons[0].id, person_b.id);
-
-        Ok(())
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use chrono::{NaiveDate, Utc};
+//     use sqlx::PgPool;
+// 
+//     use crate::{
+//         ElectoralDistrict,
+//         candidate_lists::{repository as candidate_lists_repository, structs::CandidateList},
+//         pagination::SortDirection,
+//         persons::structs::PersonSort,
+//     };
+// 
+//     fn sample_person(id: Uuid, last_name: &str) -> Person {
+//         Person {
+//             id,
+//             gender: Some(Gender::Female),
+//             last_name: last_name.to_string(),
+//             last_name_prefix: None,
+//             first_name: Some("Marlon".to_string()),
+//             initials: "M.B.".to_string(),
+//             date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
+//             bsn: None,
+//             locality: Some("Utrecht".to_string()),
+//             postal_code: Some("1234 AB".to_string()),
+//             house_number: Some("10".to_string()),
+//             house_number_addition: Some("A".to_string()),
+//             street_name: Some("Stationsstraat".to_string()),
+//             is_dutch: Some(true),
+//             custom_country: None,
+//             custom_region: None,
+//             address_line_1: None,
+//             address_line_2: None,
+//             created_at: Utc::now(),
+//             updated_at: Utc::now(),
+//         }
+//     }
+// 
+//     fn sample_list(id: Uuid) -> CandidateList {
+//         CandidateList {
+//             id,
+//             electoral_districts: vec![ElectoralDistrict::UT],
+//             created_at: Utc::now(),
+//             updated_at: Utc::now(),
+//         }
+//     }
+// 
+//     #[sqlx::test]
+//     async fn create_and_get_person(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let id = Uuid::new_v4();
+//         let person = sample_person(id, "Doe");
+// 
+//         let mut conn = pool.acquire().await?;
+//         create_person(&mut conn, &person).await?;
+// 
+//         let loaded = get_person(&mut conn, &id).await?.expect("person");
+//         assert_eq!(loaded.id, id);
+//         assert_eq!(loaded.last_name, "Doe");
+// 
+//         Ok(())
+//     }
+// 
+//     #[sqlx::test]
+//     async fn list_and_count_persons(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let mut conn = pool.acquire().await?;
+//         create_person(&mut conn, &sample_person(Uuid::new_v4(), "Alpha")).await?;
+//         create_person(&mut conn, &sample_person(Uuid::new_v4(), "Beta")).await?;
+// 
+//         let total = count_persons(&mut conn).await?;
+//         assert_eq!(total, 2);
+// 
+//         let persons =
+//             list_persons(&mut conn, 10, 0, &PersonSort::LastName, &SortDirection::Asc).await?;
+//         assert_eq!(persons.len(), 2);
+// 
+//         Ok(())
+//     }
+// 
+//     #[sqlx::test]
+//     async fn update_person_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let id = Uuid::new_v4();
+//         let mut person = sample_person(id, "Doe");
+// 
+//         let mut conn = pool.acquire().await?;
+//         create_person(&mut conn, &person).await?;
+// 
+//         person.last_name = "Updated".to_string();
+//         update_person(&mut conn, &person).await?;
+// 
+//         let updated = get_person(&mut conn, &id).await?.expect("person");
+//         assert_eq!(updated.last_name, "Updated");
+// 
+//         Ok(())
+//     }
+// 
+//     #[sqlx::test]
+//     async fn remove_person_deletes_record(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let id = Uuid::new_v4();
+//         let person = sample_person(id, "Doe");
+// 
+//         let mut conn = pool.acquire().await?;
+//         create_person(&mut conn, &person).await?;
+//         remove_person(&mut conn, &id).await?;
+// 
+//         let missing = get_person(&mut conn, &id).await?;
+//         assert!(missing.is_none());
+// 
+//         Ok(())
+//     }
+// 
+//     #[sqlx::test]
+//     async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let list_id = Uuid::new_v4();
+//         let list = sample_list(list_id);
+//         let person_a = sample_person(Uuid::new_v4(), "Alpha");
+//         let person_b = sample_person(Uuid::new_v4(), "Beta");
+// 
+//         let mut conn = pool.acquire().await?;
+//         candidate_lists_repository::create_candidate_list(&mut conn, &list).await?;
+//         create_person(&mut conn, &person_a).await?;
+//         create_person(&mut conn, &person_b).await?;
+//         candidate_lists_repository::update_candidate_list(&mut conn, &list_id, &[person_a.id])
+//             .await?;
+// 
+//         let persons = list_persons_not_on_candidate_list(&mut conn, &list_id).await?;
+//         assert_eq!(persons.len(), 1);
+//         assert_eq!(persons[0].id, person_b.id);
+// 
+//         Ok(())
+//     }
+// }

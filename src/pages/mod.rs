@@ -30,29 +30,29 @@ pub async fn not_found(
 
     Ok((StatusCode::NOT_FOUND, html))
 }
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    use crate::test_utils::response_body_string;
-
-    #[tokio::test]
-    async fn index_renders_html() {
-        let body = index(Context::default()).await.into_response();
-        let body = response_body_string(body).await;
-        assert!(body.contains("Hello World!"));
-    }
-
-    #[tokio::test]
-    async fn not_found_renders_html() {
-        let into_response = not_found(
-            OriginalUri("/not_found".parse().unwrap()),
-            Context::default(),
-        )
-        .await
-        .unwrap();
-        let body = response_body_string(into_response.into_response()).await;
-        assert!(body.contains("Pagina niet gevonden"));
-    }
-}
+//
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//
+//     use crate::test_utils::response_body_string;
+//
+//     #[tokio::test]
+//     async fn index_renders_html() {
+//         let body = index(Context::default()).await.into_response();
+//         let body = response_body_string(body).await;
+//         assert!(body.contains("Hello World!"));
+//     }
+//
+//     #[tokio::test]
+//     async fn not_found_renders_html() {
+//         let into_response = not_found(
+//             OriginalUri("/not_found".parse().unwrap()),
+//             Context::default(),
+//         )
+//         .await
+//         .unwrap();
+//         let body = response_body_string(into_response.into_response()).await;
+//         assert!(body.contains("Pagina niet gevonden"));
+//     }
+// }

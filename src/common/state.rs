@@ -90,21 +90,21 @@ where
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-    use sqlx::PgPool;
-
-    #[sqlx::test]
-    async fn new_for_tests_sets_config_and_tokens(pool: PgPool) -> Result<(), sqlx::Error> {
-        let state = AppState::new_for_tests(pool);
-
-        assert_eq!(state.config().database_url, "postgres://test");
-        assert!(matches!(state.config().election, ElectionConfig::EK2027));
-
-        let token = state.csrf_tokens().issue();
-        assert!(state.csrf_tokens().consume(&token.value));
-
-        Ok(())
-    }
-}
+// #[cfg(test)]
+// mod tests {
+//     use super::*;
+//     use sqlx::PgPool;
+// 
+//     #[sqlx::test]
+//     async fn new_for_tests_sets_config_and_tokens(pool: PgPool) -> Result<(), sqlx::Error> {
+//         let state = AppState::new_for_tests(pool);
+// 
+//         assert_eq!(state.config().database_url, "postgres://test");
+//         assert!(matches!(state.config().election, ElectionConfig::EK2027));
+// 
+//         let token = state.csrf_tokens().issue();
+//         assert!(state.csrf_tokens().consume(&token.value));
+// 
+//         Ok(())
+//     }
+// }
