@@ -199,4 +199,98 @@ mod tests {
 
         Ok(())
     }
+
+    #[sqlx::test]
+    async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = Uuid::new_v4();
+        let person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+
+        // Update with Dutch address (but all form fields filled)
+        update_person_address(
+            EditPersonAddressPath { id },
+            Context::new(Locale::En),
+            State(app_state.clone()),
+            DbConnection(pool.acquire().await?),
+            Form(AddressForm {
+                locality: "Juinen".to_string(),
+                postal_code: "1234 AB".to_string(),
+                house_number: "10".to_string(),
+                house_number_addition: "A".to_string(),
+                street_name: "Stationsstraat".to_string(),
+                custom_country: "Netherlands".to_string(),
+                custom_region: "Noord Holland".to_string(),
+                address_line_1: "Stationsstraat 10A".to_string(),
+                address_line_2: "1234AB Juinen".to_string(),
+                is_dutch: "true".to_string(),
+                csrf_token: app_state.csrf_tokens().issue().value,
+            }),
+        )
+        .await
+        .unwrap();
+
+        // The international address should be removed because `is_dutch` is true
+        let mut conn = pool.acquire().await?;
+        let updated = persons::repository::get_person(&mut conn, &id)
+            .await?
+            .expect("updated person");
+        assert_eq!(updated.is_dutch, Some(true));
+        assert_eq!(updated.locality, Some("Juinen".to_string()));
+        assert_eq!(updated.postal_code, Some("1234 AB".to_string()));
+        assert_eq!(updated.house_number, Some("10".to_string()));
+        assert_eq!(updated.house_number_addition, Some("A".to_string()));
+        assert_eq!(updated.street_name, Some("Stationsstraat".to_string()));
+        assert_eq!(updated.custom_country, None);
+        assert_eq!(updated.custom_region, None);
+        assert_eq!(updated.address_line_1, None);
+        assert_eq!(updated.address_line_2, None);
+
+        // Update with non-Dutch address (but all form fields filled)
+        update_person_address(
+            EditPersonAddressPath { id },
+            Context::new(Locale::En),
+            State(app_state.clone()),
+            DbConnection(pool.acquire().await?),
+            Form(AddressForm {
+                locality: "Juinen".to_string(),
+                postal_code: "1234 AB".to_string(),
+                house_number: "10".to_string(),
+                house_number_addition: "A".to_string(),
+                street_name: "Stationsstraat".to_string(),
+                custom_country: "Netherlands".to_string(),
+                custom_region: "Noord Holland".to_string(),
+                address_line_1: "Stationsstraat 10A".to_string(),
+                address_line_2: "1234AB Juinen".to_string(),
+                is_dutch: "false".to_string(),
+                csrf_token: app_state.csrf_tokens().issue().value,
+            }),
+        )
+        .await
+        .unwrap();
+
+        // The Dutch address should be removed because `is_dutch` is false
+        let mut conn = pool.acquire().await?;
+        let updated = persons::repository::get_person(&mut conn, &id)
+            .await?
+            .expect("updated person");
+        assert_eq!(updated.is_dutch, Some(false));
+        assert_eq!(updated.locality, None);
+        assert_eq!(updated.postal_code, None);
+        assert_eq!(updated.house_number, None);
+        assert_eq!(updated.house_number_addition, None);
+        assert_eq!(updated.street_name, None);
+        assert_eq!(updated.custom_country, Some("Netherlands".to_string()));
+        assert_eq!(updated.custom_region, Some("Noord Holland".to_string()));
+        assert_eq!(
+            updated.address_line_1,
+            Some("Stationsstraat 10A".to_string())
+        );
+        assert_eq!(updated.address_line_2, Some("1234AB Juinen".to_string()));
+
+        Ok(())
+    }
 }
