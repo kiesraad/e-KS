@@ -1,7 +1,7 @@
 window.addEventListener("load", () => {
   const search = document.getElementById("search") as HTMLInputElement | null;
   const table = document.getElementById(
-    "add-person-table",
+    "add-candidate-table",
   ) as HTMLTableElement | null;
 
   if (!search || !table) {

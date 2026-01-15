@@ -27,6 +27,14 @@
     &.form-field-sm {
       max-width: 12rem;
     }
+
+    &.form-field-full {
+      max-width: 100%;
+
+      input {
+        max-width: 100%;
+      }
+    }
   }
 
   fieldset {

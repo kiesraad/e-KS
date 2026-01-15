@@ -48,9 +48,9 @@ pub struct ErrorResponse {
 
 #[derive(Template, Clone)]
 #[template(path = "error.html")]
-struct ErrorTemplate {
-    status_code: StatusCode,
-    title: String,
+pub struct ErrorTemplate {
+    pub status_code: StatusCode,
+    pub title: String,
     message: String,
 }
 
@@ -80,7 +80,7 @@ pub async fn render_error_pages(context: Context, request: Request, next: Next) 
         None => response,
         Some(error_template) => (
             error_template.status_code,
-            HtmlTemplate(error_template.clone(), context),
+            HtmlTemplate(error_template, context),
         )
             .into_response(),
     }

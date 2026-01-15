@@ -106,7 +106,7 @@
   }
 }
 
-#add-person-table {
+#add-candidate-table {
   tr:nth-child(even) td {
     background-color: var(--gray-100);
   }
