@@ -8,14 +8,13 @@ use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
         self,
+        pages::{CandidateListAddPersonPath, load_candidate_list},
         structs::{CandidateList, FullCandidateList, MAX_CANDIDATES},
     },
     filters,
     persons::{self, structs::Person},
     t,
 };
-
-use super::{CandidateListAddPersonPath, load_candidate_list};
 
 #[derive(Template)]
 #[template(path = "candidate_lists/add_existing_person.html")]

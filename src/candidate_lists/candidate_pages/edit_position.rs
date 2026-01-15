@@ -6,7 +6,8 @@ use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         self,
-        pages::{EditCandidatePositionPath, load_candidate_list},
+        candidate_pages::EditCandidatePositionPath,
+        pages::load_candidate_list,
         structs::{
             CandidateList, CandidateListEntry, CandidatePosition, CandidatePositionAction,
             FullCandidateList, MAX_CANDIDATES, PositionForm,
@@ -229,7 +230,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         let mut conn = pool.acquire().await?;
-        let full_list = super::super::load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

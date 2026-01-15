@@ -12,7 +12,8 @@ pub fn create() -> Router<AppState> {
     let router = Router::new()
         .route("/", get(pages::index))
         .merge(persons::router())
-        .merge(candidate_lists::router());
+        .merge(candidate_lists::router())
+        .merge(candidate_lists::candidate_router());
 
     #[cfg(feature = "dev-features")]
     let bag_service_url =

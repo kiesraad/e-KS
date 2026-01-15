@@ -8,7 +8,7 @@ use crate::{
     AppError, AppState, Context, CsrfTokens, DbConnection,
     candidate_lists::{
         self,
-        pages::{CandidateListDeletePersonPath, CandidateListEditPersonPath},
+        candidate_pages::{CandidateListDeletePersonPath, CandidateListEditPersonPath},
         structs::CandidateList,
     },
     form::{EmptyForm, Validate},

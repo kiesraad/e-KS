@@ -8,7 +8,8 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        pages::{CandidateListEditAddressPath, load_candidate_list},
+        candidate_pages::CandidateListEditAddressPath,
+        pages::load_candidate_list,
         structs::{CandidateList, CandidateListEntry, FullCandidateList, MAX_CANDIDATES},
     },
     filters,
