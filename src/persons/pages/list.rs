@@ -46,3 +46,43 @@ pub(crate) async fn list_persons(
         context,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{http::StatusCode, response::IntoResponse};
+    use sqlx::PgPool;
+    use uuid::Uuid;
+
+    use crate::{
+        Context, DbConnection, Locale,
+        pagination::Pagination,
+        persons,
+        test_utils::{response_body_string, sample_person},
+    };
+
+    #[sqlx::test]
+    async fn list_persons_shows_created_person(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = Uuid::new_v4();
+        let person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+
+        let response = list_persons(
+            PersonsPath {},
+            Context::new(Locale::En),
+            Pagination::default(),
+            DbConnection(pool.acquire().await?),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Jansen"));
+
+        Ok(())
+    }
+}

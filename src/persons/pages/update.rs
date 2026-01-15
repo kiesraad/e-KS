@@ -72,3 +72,130 @@ pub(crate) async fn update_person(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        extract::State,
+        http::{StatusCode, header},
+        response::IntoResponse,
+    };
+    use axum_extra::extract::Form;
+    use sqlx::PgPool;
+    use uuid::Uuid;
+
+    use crate::{
+        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, persons,
+        test_utils::{response_body_string, sample_person},
+    };
+
+    fn sample_form(csrf_token: &TokenValue) -> PersonForm {
+        PersonForm {
+            gender: "female".to_string(),
+            last_name: "Jansen".to_string(),
+            last_name_prefix: "".to_string(),
+            first_name: "Henk".to_string(),
+            initials: "H.H.".to_string(),
+            date_of_birth: "01-02-1990".to_string(),
+            bsn: "".to_string(),
+            csrf_token: csrf_token.clone(),
+        }
+    }
+
+    #[sqlx::test]
+    async fn edit_person_form_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = Uuid::new_v4();
+        let person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+
+        let response = edit_person_form(
+            EditPersonPath { id },
+            Context::new(Locale::En),
+            CsrfTokens::default(),
+            DbConnection(pool.acquire().await?),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Jansen"));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = Uuid::new_v4();
+        let person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_token = app_state.csrf_tokens().issue().value;
+        let mut form = sample_form(&csrf_token);
+        form.last_name = "Updated".to_string();
+
+        let response = update_person(
+            EditPersonPath { id },
+            Context::new(Locale::En),
+            State(app_state),
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert!(location.ends_with("/address"));
+
+        let mut conn = pool.acquire().await?;
+        let updated = persons::repository::get_person(&mut conn, &id)
+            .await?
+            .expect("updated person");
+        assert_eq!(updated.last_name, "Updated");
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = Uuid::new_v4();
+        let person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_token = app_state.csrf_tokens().issue().value;
+        let mut form = sample_form(&csrf_token);
+        form.last_name = " ".to_string();
+
+        let response = update_person(
+            EditPersonPath { id },
+            Context::new(Locale::En),
+            State(app_state),
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+}

@@ -82,3 +82,139 @@ pub(crate) async fn create_person_candidate_list(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        extract::State,
+        http::{StatusCode, header},
+        response::IntoResponse,
+    };
+    use axum_extra::extract::Form;
+    use sqlx::PgPool;
+    use uuid::Uuid;
+
+    use crate::{
+        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists,
+        test_utils::{response_body_string, sample_candidate_list},
+    };
+
+    fn sample_form(csrf_token: &TokenValue) -> PersonForm {
+        PersonForm {
+            gender: "female".to_string(),
+            last_name: "Jansen".to_string(),
+            last_name_prefix: "".to_string(),
+            first_name: "Henk".to_string(),
+            initials: "H.H.".to_string(),
+            date_of_birth: "01-02-1990".to_string(),
+            bsn: "".to_string(),
+            csrf_token: csrf_token.clone(),
+        }
+    }
+
+    #[sqlx::test]
+    async fn new_person_candidate_list_renders_form(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+
+        let response = new_person_candidate_list(
+            CandidateListNewPersonPath {
+                candidate_list: list_id,
+            },
+            Context::new(Locale::En),
+            CsrfTokens::default(),
+            DbConnection(pool.acquire().await?),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&list.new_person_path()));
+        assert!(body.contains("name=\"csrf_token\""));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn create_person_candidate_list_persists_and_redirects(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_token = app_state.csrf_tokens().issue().value;
+        let form = sample_form(&csrf_token);
+
+        let response = create_person_candidate_list(
+            CandidateListNewPersonPath {
+                candidate_list: list_id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+
+        let mut conn = pool.acquire().await?;
+        let full_list = super::super::load_candidate_list(&mut conn, &list_id, Locale::En)
+            .await
+            .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 1);
+        let candidate_id = full_list.candidates[0].person.id;
+        assert_eq!(location, list.edit_person_address_path(&candidate_id));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn create_person_candidate_list_invalid_form_renders_template(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_token = app_state.csrf_tokens().issue().value;
+        let mut form = sample_form(&csrf_token);
+        form.last_name = " ".to_string();
+
+        let response = create_person_candidate_list(
+            CandidateListNewPersonPath {
+                candidate_list: list_id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+}

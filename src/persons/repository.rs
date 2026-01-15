@@ -336,61 +336,26 @@ pub(super) async fn remove_person(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use chrono::{NaiveDate, Utc};
     use sqlx::PgPool;
 
     use crate::{
-        ElectoralDistrict,
-        candidate_lists::{self, structs::CandidateList},
+        candidate_lists,
         pagination::SortDirection,
         persons::structs::PersonSort,
+        test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
-
-    fn sample_person(id: Uuid, last_name: &str) -> Person {
-        Person {
-            id,
-            gender: Some(Gender::Female),
-            last_name: last_name.to_string(),
-            last_name_prefix: None,
-            first_name: Some("Marlon".to_string()),
-            initials: "M.B.".to_string(),
-            date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
-            bsn: None,
-            locality: Some("Utrecht".to_string()),
-            postal_code: Some("1234 AB".to_string()),
-            house_number: Some("10".to_string()),
-            house_number_addition: Some("A".to_string()),
-            street_name: Some("Stationsstraat".to_string()),
-            is_dutch: Some(true),
-            custom_country: None,
-            custom_region: None,
-            address_line_1: None,
-            address_line_2: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
-
-    fn sample_list(id: Uuid) -> CandidateList {
-        CandidateList {
-            id,
-            electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
-        }
-    }
 
     #[sqlx::test]
     async fn create_and_get_person(pool: PgPool) -> Result<(), sqlx::Error> {
         let id = Uuid::new_v4();
-        let person = sample_person(id, "Doe");
+        let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
 
         let loaded = get_person(&mut conn, &id).await?.expect("person");
         assert_eq!(loaded.id, id);
-        assert_eq!(loaded.last_name, "Doe");
+        assert_eq!(loaded.last_name, "Jansen");
 
         Ok(())
     }
@@ -398,8 +363,16 @@ mod tests {
     #[sqlx::test]
     async fn list_and_count_persons(pool: PgPool) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &sample_person(Uuid::new_v4(), "Alpha")).await?;
-        create_person(&mut conn, &sample_person(Uuid::new_v4(), "Beta")).await?;
+        create_person(
+            &mut conn,
+            &sample_person_with_last_name(Uuid::new_v4(), "Jansen"),
+        )
+        .await?;
+        create_person(
+            &mut conn,
+            &sample_person_with_last_name(Uuid::new_v4(), "Bakker"),
+        )
+        .await?;
 
         let total = count_persons(&mut conn).await?;
         assert_eq!(total, 2);
@@ -414,7 +387,7 @@ mod tests {
     #[sqlx::test]
     async fn update_person_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
         let id = Uuid::new_v4();
-        let mut person = sample_person(id, "Doe");
+        let mut person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
@@ -431,7 +404,7 @@ mod tests {
     #[sqlx::test]
     async fn remove_person_deletes_record(pool: PgPool) -> Result<(), sqlx::Error> {
         let id = Uuid::new_v4();
-        let person = sample_person(id, "Doe");
+        let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
@@ -446,9 +419,9 @@ mod tests {
     #[sqlx::test]
     async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list_id = Uuid::new_v4();
-        let list = sample_list(list_id);
-        let person_a = sample_person(Uuid::new_v4(), "Alpha");
-        let person_b = sample_person(Uuid::new_v4(), "Beta");
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;

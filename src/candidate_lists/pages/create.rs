@@ -92,11 +92,111 @@ pub(crate) async fn create_candidate_list(
 }
 
 #[cfg(test)]
-mod tests {
-
+mod test {
     use std::collections::BTreeSet;
 
-    use crate::{ElectoralDistrict, candidate_lists::pages::create::determine_available_districts};
+    use super::*;
+    use axum::{
+        extract::State,
+        http::{StatusCode, header},
+        response::IntoResponse,
+    };
+    use axum_extra::extract::Form;
+    use sqlx::PgPool;
+
+    use crate::{
+        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists,
+        test_utils::response_body_string,
+    };
+
+    #[sqlx::test]
+    async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+
+        let response = new_candidate_list_form(
+            CandidateListsNewPath {},
+            Context::new(Locale::En),
+            CsrfTokens::default(),
+            DbConnection(pool.acquire().await?),
+            State(app_state),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(StatusCode::OK, response.status());
+        let body = response_body_string(response).await;
+        assert!(body.contains("name=\"csrf_token\""));
+        assert!(body.contains("action=\"/candidate-lists/new\""));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn create_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
+        let form = CandidateListForm {
+            electoral_districts: vec![ElectoralDistrict::UT],
+            csrf_token,
+        };
+
+        let response = create_candidate_list(
+            CandidateListsNewPath {},
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+
+        let mut conn = pool.acquire().await?;
+        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+        assert_eq!(lists.len(), 1);
+        assert_eq!(location, lists[0].list.view_path());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn create_candidate_list_invalid_form_renders_template(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_tokens = CsrfTokens::default();
+        let form = CandidateListForm {
+            electoral_districts: vec![ElectoralDistrict::UT],
+            csrf_token: TokenValue("invalid".to_string()),
+        };
+
+        let response = create_candidate_list(
+            CandidateListsNewPath {},
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens,
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(StatusCode::OK, response.status());
+        let body = response_body_string(response).await;
+        assert!(body.contains("Create candidate list"));
+
+        Ok(())
+    }
 
     #[test]
     fn test_determine_available_districts() {

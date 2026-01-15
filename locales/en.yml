@@ -103,7 +103,7 @@ person:
     create:
       title: Add person
     edit:
-      title: Edit person '{}'
+      title: Edit person
   list:
     empty: No persons found.
   not_found: Person {} not found.
