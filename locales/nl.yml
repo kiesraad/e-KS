@@ -21,8 +21,6 @@ candidate_list:
     edit_list_details: Pas hier de lijstgegevens aan
     select_all_districts: Selecteer alle kieskringen
     delete_list: Kandidatenlijst verwijderen
-    add_candidate: Kandidaat toevoegen
-    edit_details: Lijstgegevens bewerken
   add_candidate: Kandidaat toevoegen
   remove_candidate: Uit deze lijst verwijderen
   edit_position: Volgorde op de lijst
