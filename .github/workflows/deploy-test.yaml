@@ -59,10 +59,10 @@ jobs:
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup esbuild
-        run: bin/init.sh esbuild
+        run: bin/init esbuild
 
       - name: Build e-ks
-        run: ./bin/build.sh
+        run: ./bin/build
 
       - name: Build fixtures
         run: cargo build --release --bin fixtures --features fixtures,dev-features

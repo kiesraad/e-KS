@@ -7,7 +7,7 @@ use crate::{
     AppError, AppState, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
     candidate_lists::{self, structs::CandidateListSummary},
     filters,
-    persons::{self, structs::Person},
+    persons::{self, Person},
     t,
 };
 

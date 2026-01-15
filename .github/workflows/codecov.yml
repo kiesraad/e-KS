@@ -52,7 +52,7 @@ jobs:
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
-        run: bin/init.sh
+        run: bin/init
 
       - name: Run tests with coverage
         run: cargo llvm-cov nextest --branch --profile ci

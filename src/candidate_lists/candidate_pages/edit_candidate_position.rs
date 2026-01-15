@@ -9,8 +9,8 @@ use crate::{
         candidate_pages::EditCandidatePositionPath,
         pages::load_candidate_list,
         structs::{
-            CandidateList, CandidateListEntry, CandidatePosition, CandidatePositionAction,
-            FullCandidateList, MAX_CANDIDATES, PositionForm,
+            Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
+            CandidatePositionForm, FullCandidateList, MAX_CANDIDATES,
         },
     },
     filters,
@@ -22,8 +22,8 @@ use crate::{
 #[template(path = "candidate_lists/edit_position.html")]
 struct EditCandidatePositionTemplate {
     full_list: FullCandidateList,
-    candidate: CandidateListEntry,
-    form: FormData<PositionForm>,
+    candidate: Candidate,
+    form: FormData<CandidatePositionForm>,
     max_candidates: usize,
 }
 
@@ -45,8 +45,10 @@ pub async fn edit_candidate_position(
         action: CandidatePositionAction::Move,
     };
 
-    let form =
-        FormData::new_with_data(PositionForm::from(candidate_position.clone()), &csrf_tokens);
+    let form = FormData::new_with_data(
+        CandidatePositionForm::from(candidate_position.clone()),
+        &csrf_tokens,
+    );
 
     // Implementation for editing candidate position goes here
     Ok(HtmlTemplate(
@@ -68,7 +70,7 @@ pub async fn update_candidate_position(
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    Form(form): Form<PositionForm>,
+    Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let full_list: FullCandidateList =
         load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
@@ -150,8 +152,8 @@ mod tests {
         csrf_token: &TokenValue,
         position: usize,
         action: &str,
-    ) -> PositionForm {
-        PositionForm {
+    ) -> CandidatePositionForm {
+        CandidatePositionForm {
             position: position.to_string(),
             action: action.to_string(),
             csrf_token: csrf_token.clone(),

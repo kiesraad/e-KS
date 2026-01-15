@@ -4,8 +4,8 @@ use uuid::Uuid;
 
 use crate::{
     ElectoralDistrict, TokenValue,
-    candidate_lists::structs::CandidateList,
-    persons::structs::{AddressForm, Gender, Person, PersonForm},
+    candidate_lists::CandidateList,
+    persons::{AddressForm, Gender, Person, PersonForm},
 };
 
 pub(crate) async fn response_body_string(response: axum::response::Response) -> String {

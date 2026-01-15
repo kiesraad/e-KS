@@ -3,7 +3,7 @@ use uuid::Uuid;
 
 use crate::{
     pagination::SortDirection,
-    persons::structs::{Gender, Person, PersonSort},
+    persons::{Gender, Person, PersonSort},
 };
 
 pub(crate) async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
@@ -341,7 +341,7 @@ mod tests {
     use crate::{
         candidate_lists,
         pagination::SortDirection,
-        persons::structs::PersonSort,
+        persons::PersonSort,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
 

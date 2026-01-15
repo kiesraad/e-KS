@@ -1,5 +1,6 @@
 mod pages;
 pub mod repository;
-pub mod structs;
+mod structs;
 
 pub use pages::router;
+pub use structs::*;

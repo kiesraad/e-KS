@@ -20,9 +20,9 @@ pub struct CandidatePosition {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "CandidatePosition", build = "PositionForm::build")]
+#[validate(target = "CandidatePosition", build = "CandidatePositionForm::build")]
 #[serde(default)]
-pub struct PositionForm {
+pub struct CandidatePositionForm {
     #[validate(parse = "usize")]
     pub position: String,
     #[validate(parse = "CandidatePositionAction")]
@@ -31,18 +31,18 @@ pub struct PositionForm {
     pub csrf_token: TokenValue,
 }
 
-impl WithCsrfToken for PositionForm {
+impl WithCsrfToken for CandidatePositionForm {
     fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
-        PositionForm {
+        CandidatePositionForm {
             csrf_token: csrf_token.value,
             ..self
         }
     }
 }
 
-impl PositionForm {
+impl CandidatePositionForm {
     fn build(
-        validated: PositionFormValidated,
+        validated: CandidatePositionFormValidated,
         current: Option<&CandidatePosition>,
     ) -> CandidatePosition {
         if let Some(_current) = current {
@@ -56,9 +56,9 @@ impl PositionForm {
     }
 }
 
-impl From<CandidatePosition> for PositionForm {
+impl From<CandidatePosition> for CandidatePositionForm {
     fn from(position: CandidatePosition) -> Self {
-        PositionForm {
+        CandidatePositionForm {
             position: position.position.to_string(),
             action: position.action.to_string(),
             csrf_token: Default::default(),

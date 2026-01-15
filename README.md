@@ -34,7 +34,7 @@ Een overzicht van de voorgestelde technische afwegingen staat in [deze presentat
 2) Build and download development tools:
 
 ```bash
-bin/init.sh
+bin/init
 ```
 
 3) Start the development environment (postgres, esbuild, cargo watch, etc.):
@@ -50,9 +50,9 @@ bin/dev
 - `bin/setup`: download tools, setup database, run migrations, etc.
 - `bin/dev`: start development environment (postgres, esbuild, cargo watch, etc.)
 - `bin/test`: run backend and frontend tests
-- `bin/init.sh`: build and download development tools
-- `bin/check.sh`: run linters and formatters
-- `bin/build.sh`: build backend and frontend for production
+- `bin/init`: build and download development tools
+- `bin/check`: run linters and formatters
+- `bin/build`: build backend and frontend for production
 
 ## Playwright tests
 

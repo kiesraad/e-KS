@@ -10,11 +10,11 @@ use crate::{
     candidate_lists::{
         candidate_pages::CandidateListEditPersonPath,
         pages::load_candidate_list,
-        structs::{CandidateList, CandidateListEntry, FullCandidateList, MAX_CANDIDATES},
+        structs::{Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES},
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, structs::PersonForm},
+    persons::{self, PersonForm},
     t,
 };
 
@@ -22,7 +22,7 @@ use crate::{
 #[template(path = "candidate_lists/update_person.html")]
 struct PersonUpdateTemplate {
     full_list: FullCandidateList,
-    candidate: CandidateListEntry,
+    candidate: Candidate,
     form: FormData<PersonForm>,
     max_candidates: usize,
 }

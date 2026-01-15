@@ -1,9 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-use crate::{
-    ElectoralDistrict, TokenValue, candidate_lists::structs::CandidateList, form::WithCsrfToken,
-};
+use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList, form::WithCsrfToken};
 use validate::Validate as ValidateDerive;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]

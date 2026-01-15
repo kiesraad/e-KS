@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
-    candidate_lists::structs::{FullCandidateList, MAX_CANDIDATES},
+    candidate_lists::{FullCandidateList, MAX_CANDIDATES},
     filters, t,
 };
 

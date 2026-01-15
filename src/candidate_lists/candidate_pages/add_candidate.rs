@@ -7,12 +7,11 @@ use uuid::Uuid;
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
-        self,
+        self, CandidateList, FullCandidateList, MAX_CANDIDATES,
         pages::{CandidateListAddPersonPath, load_candidate_list},
-        structs::{CandidateList, FullCandidateList, MAX_CANDIDATES},
     },
     filters,
-    persons::{self, structs::Person},
+    persons::{self, Person},
     t,
 };
 

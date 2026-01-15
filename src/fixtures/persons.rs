@@ -8,10 +8,7 @@ use sqlx::PgConnection;
 use crate::{
     AppError,
     constants::DEFAULT_DATE_FORMAT,
-    persons::{
-        self,
-        structs::{Gender, Person},
-    },
+    persons::{self, Gender, Person},
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");

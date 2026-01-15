@@ -8,20 +8,19 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        candidate_pages::CandidateListEditAddressPath,
-        pages::load_candidate_list,
-        structs::{CandidateList, CandidateListEntry, FullCandidateList, MAX_CANDIDATES},
+        Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
+        candidate_pages::CandidateListEditAddressPath, pages::load_candidate_list,
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, structs::AddressForm},
+    persons::{self, AddressForm},
     t,
 };
 
 #[derive(Template)]
 #[template(path = "candidate_lists/address.html")]
 struct PersonAddressUpdateTemplate {
-    candidate: CandidateListEntry,
+    candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
     max_candidates: usize,

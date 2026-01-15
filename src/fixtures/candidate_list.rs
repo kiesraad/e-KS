@@ -3,9 +3,9 @@ use sqlx::PgConnection;
 
 use crate::{
     AppError, Config,
-    candidate_lists::{self, structs::CandidateList},
+    candidate_lists::{self, CandidateList},
     pagination::SortDirection,
-    persons::{self, structs::PersonSort},
+    persons::{self, PersonSort},
 };
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {

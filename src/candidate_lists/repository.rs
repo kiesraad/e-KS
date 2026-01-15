@@ -3,10 +3,9 @@ use uuid::Uuid;
 
 use crate::{
     ElectoralDistrict,
-    persons::structs::{Gender, Person},
+    candidate_lists::{Candidate, CandidateList, CandidateListSummary, FullCandidateList},
+    persons::{Gender, Person},
 };
-
-use super::structs::{CandidateList, CandidateListEntry, CandidateListSummary, FullCandidateList};
 
 pub struct ListIdAndCount {
     pub id: Uuid,
@@ -123,7 +122,7 @@ pub(super) async fn get_full_candidate_list(
     .fetch_all(&mut *conn)
     .await?
     .into_iter()
-    .map(|row| CandidateListEntry {
+    .map(|row| Candidate {
         position: row.position,
         person: Person {
             id: row.id,

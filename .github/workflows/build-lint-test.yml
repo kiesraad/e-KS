@@ -85,7 +85,7 @@ jobs:
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
-        run: bin/init.sh
+        run: bin/init
 
       - name: Lint Typescript using Biome
         run: ./bin/biome check --error-on-warnings ./frontend/scripts
@@ -143,10 +143,10 @@ jobs:
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
 
       - name: Setup project
-        run: bin/init.sh
+        run: bin/init
 
       - name: Run playwright tests
-        run: bin/test.sh
+        run: bin/test
 
   audit-dependencies:
     name: Audit dependencies

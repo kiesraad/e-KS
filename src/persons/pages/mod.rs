@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     AppError, AppState, Locale,
     pagination::Pagination,
-    persons::structs::{Person, PersonSort},
+    persons::{Person, PersonSort},
     t,
 };
 
