@@ -153,4 +153,55 @@ mod tests {
 
         Ok(())
     }
+
+    #[sqlx::test]
+    async fn add_person_to_candidate_list_redirects_when_person_not_on_list(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let existing_person = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let new_person = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &existing_person).await?;
+        persons::repository::create_person(&mut conn, &new_person).await?;
+        candidate_lists::repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[existing_person.id],
+        )
+        .await?;
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { id: list_id },
+            Context::new(Locale::En),
+            DbConnection(pool.acquire().await?),
+            Form(AddPersonForm {
+                person_id: new_person.id,
+            }),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert_eq!(location, list.view_path());
+
+        let mut conn = pool.acquire().await?;
+        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+            .await
+            .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 2);
+        assert_eq!(full_list.candidates[0].person.id, existing_person.id);
+        assert_eq!(full_list.candidates[1].person.id, new_person.id);
+
+        Ok(())
+    }
 }

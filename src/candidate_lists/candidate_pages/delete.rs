@@ -62,3 +62,83 @@ pub async fn delete_person(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        extract::State,
+        http::{StatusCode, header},
+    };
+    use axum_extra::extract::Form;
+    use sqlx::PgPool;
+    use uuid::Uuid;
+
+    use crate::{
+        AppState, Context, CsrfTokens, DbConnection, Locale,
+        candidate_lists::{self, CandidateList},
+        persons,
+        test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
+    };
+
+    #[sqlx::test]
+    async fn delete_person_removes_from_list_and_redirects(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(Uuid::new_v4());
+        let other_person = sample_person_with_last_name(Uuid::new_v4(), "Other");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+        persons::repository::create_person(&mut conn, &other_person).await?;
+        candidate_lists::repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[person.id, other_person.id],
+        )
+        .await?;
+
+        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
+
+        let response = delete_person(
+            CandidateListDeletePersonPath {
+                candidate_list: list_id,
+                person: person.id,
+            },
+            Context::new(Locale::En),
+            State(app_state),
+            csrf_tokens.clone(),
+            DbConnection(pool.acquire().await?),
+            Form(EmptyForm::from(csrf_token)),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert_eq!(location, CandidateList::list_path());
+
+        let mut conn = pool.acquire().await?;
+        let updated_list =
+            candidate_lists::repository::get_full_candidate_list(&mut conn, &list_id)
+                .await?
+                .expect("candidate list");
+        assert_eq!(updated_list.candidates.len(), 1);
+        assert_eq!(updated_list.candidates[0].person.id, other_person.id);
+
+        let removed = persons::repository::get_person(&mut conn, &person.id).await?;
+        assert!(removed.is_none());
+
+        Ok(())
+    }
+}

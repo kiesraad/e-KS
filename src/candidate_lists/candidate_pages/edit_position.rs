@@ -242,4 +242,106 @@ mod tests {
 
         Ok(())
     }
+
+    #[sqlx::test]
+    async fn update_candidate_position_removes_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
+        candidate_lists::repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[person_a.id, person_b.id],
+        )
+        .await?;
+
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
+        let form = sample_position_form(&csrf_token, 1, "remove");
+
+        let response = update_candidate_position(
+            EditCandidatePositionPath {
+                candidate_list: list_id,
+                person: person_a.id,
+            },
+            Context::new(Locale::En),
+            csrf_tokens,
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let mut conn = pool.acquire().await?;
+        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+            .await
+            .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 1);
+        assert_eq!(full_list.candidates[0].person.id, person_b.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_candidate_position_invalid_csrf_renders_template(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let list_id = Uuid::new_v4();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
+        candidate_lists::repository::update_candidate_list_order(
+            &mut conn,
+            &list_id,
+            &[person_a.id, person_b.id],
+        )
+        .await?;
+
+        let csrf_tokens = CsrfTokens::default();
+        let other_tokens = CsrfTokens::default();
+        let csrf_token = other_tokens.issue().value;
+        let form = sample_position_form(&csrf_token, 2, "move");
+
+        let response = update_candidate_position(
+            EditCandidatePositionPath {
+                candidate_list: list_id,
+                person: person_a.id,
+            },
+            Context::new(Locale::En),
+            csrf_tokens,
+            DbConnection(pool.acquire().await?),
+            Form(form),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("The CSRF token is invalid."));
+
+        let mut conn = pool.acquire().await?;
+        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+            .await
+            .expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 2);
+        assert_eq!(full_list.candidates[0].person.id, person_a.id);
+        assert_eq!(full_list.candidates[1].person.id, person_b.id);
+
+        Ok(())
+    }
 }

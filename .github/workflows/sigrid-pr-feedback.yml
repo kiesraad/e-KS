@@ -16,16 +16,17 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+
       - name: Sigrid CI
         uses: Software-Improvement-Group/sigridci@98ee452f1860e1290f147316f57fe025ad2b5126 # main
         with:
           customer: kiesraad
           system: e-ks
           convert: rust
+          exclude: deploy,playwright,validate,frontend/styles
         env:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
+
       - name: "Sigrid PR feedback"
         uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2
         if: always()

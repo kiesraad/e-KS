@@ -1,6 +1,6 @@
 gender,last_name,last_name_prefix,first_name,initials,date_of_birth,locality,postal_code,house_number,house_number_addition,street_name
-x,Groen,,River,R.V.,31-07-1992,Zaandam,1234AB,10,,Stationsstraat
-,Bos,,Noor,N.O.,18-04-1992,Zwolle,1234AB,10,,Stationsstraat
+x,Groen,,River,R.V.,31-07-1992,Zaandam,1234AB,10,A,Stationsstraat
+,Bos,,Noor,N.O.,18-04-1992,Zwolle,1234AB,10,B,Stationsstraat
 female,Brons,,Amber,A.M.,11-07-1994,Heerenveen,1234AB,10,,Stationsstraat
 female,Dijkstra,,Eva,E.A.,15-05-1990,Emmen,1234AB,10,,Stationsstraat
 male,Tanaka,,Kenji,K.T.,02-02-1990,Arnhem,1234AB,10,,Stationsstraat

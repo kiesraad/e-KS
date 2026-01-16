@@ -121,8 +121,39 @@ mod tests {
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
-        candidate_lists, test_utils::response_body_string,
+        candidate_lists,
+        test_utils::{response_body_string, sample_candidate_list},
     };
+
+    #[sqlx::test]
+    async fn edit_candidate_list_renders_existing_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let app_state = AppState::new_for_tests(pool.clone());
+        let candidate_list = sample_candidate_list(Uuid::new_v4());
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
+
+        let response = edit_candidate_list(
+            CandidateListsEditPath {
+                id: candidate_list.id,
+            },
+            Context::new(Locale::En),
+            CsrfTokens::default(),
+            DbConnection(pool.acquire().await?),
+            State(app_state),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Edit candidate list"));
+        assert!(body.contains(&candidate_list.update_path()));
+        assert!(body.contains("electoral_district_UT"));
+        assert!(body.contains("checked"));
+
+        Ok(())
+    }
 
     #[sqlx::test]
     async fn update_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {

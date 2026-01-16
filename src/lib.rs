@@ -1,13 +1,13 @@
+/// Application specific modules
+mod candidate_lists;
 /// Generic modules
 mod common;
 mod error;
 mod form;
 mod pages;
 mod pagination;
-
-/// Application specific modules
-mod candidate_lists;
 mod persons;
+pub mod router;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
@@ -19,7 +19,7 @@ pub use common::{
     election::{ElectionConfig, ElectoralDistrict},
     filters, locale,
     locale::Locale,
-    logging, router, server,
+    logging, server,
     state::{AppState, DbConnection},
     templates::HtmlTemplate,
     translate,

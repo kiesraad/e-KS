@@ -39,7 +39,7 @@ pub fn create() -> Router<AppState> {
     );
 
     #[cfg(feature = "livereload")]
-    let router = router.merge(super::livereload::livereload_router());
+    let router = router.merge(crate::common::livereload::livereload_router());
 
     #[cfg(feature = "memory-serve")]
     let router = router.nest(

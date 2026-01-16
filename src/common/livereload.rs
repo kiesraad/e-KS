@@ -45,3 +45,91 @@ async fn poll_handler() -> StatusCode {
 
     StatusCode::OK
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        body::Body,
+        http::{
+            Request, StatusCode,
+            header::{CONTENT_LENGTH, CONTENT_TYPE},
+        },
+    };
+    use std::time::Duration;
+    use tower::ServiceExt;
+
+    use crate::test_utils::response_body_string;
+
+    #[tokio::test]
+    async fn poll_js_serves_script_with_headers() {
+        let app = livereload_router::<()>();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/livereload/poll.js")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let headers = response.headers().clone();
+        let body = response_body_string(response).await;
+
+        let content_type = headers
+            .get(CONTENT_TYPE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_type, "text/javascript");
+
+        let content_length = headers
+            .get(CONTENT_LENGTH)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert_eq!(content_length, body.len().to_string());
+        assert!(!body.is_empty());
+    }
+
+    #[tokio::test]
+    async fn healthy_returns_ok() {
+        let app = livereload_router::<()>();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/livereload/healthy")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test(start_paused = true)]
+    async fn poll_returns_ok_after_delay() {
+        let app = livereload_router::<()>();
+
+        let response_task = tokio::spawn(async move {
+            app.oneshot(
+                Request::builder()
+                    .uri("/livereload/poll")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response")
+        });
+
+        tokio::task::yield_now().await;
+        tokio::time::advance(Duration::from_secs(30)).await;
+
+        let response = response_task.await.expect("join");
+        assert_eq!(response.status(), StatusCode::OK);
+    }
+}

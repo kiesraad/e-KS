@@ -15,8 +15,7 @@ jobs:
     steps:
       - name: Check out repository
         uses: actions/checkout@v5
-        with:
-          fetch-depth: 0
+
       - name: Sigrid CI
         uses: Software-Improvement-Group/sigridci@98ee452f1860e1290f147316f57fe025ad2b5126 # main
         with:
@@ -24,5 +23,6 @@ jobs:
           system: e-ks
           convert: rust
           publishonly: true
+          exclude: deploy,playwright,validate,frontend/styles
         env:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
