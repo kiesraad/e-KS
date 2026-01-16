@@ -1,6 +1,3 @@
-codecov:
-  notify:
-    after_n_builds: 2
 comment:
     require_bundle_changes: True
     bundle_change_threshold: "50Kb"

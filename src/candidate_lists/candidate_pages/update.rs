@@ -76,8 +76,7 @@ pub async fn update_person(
         Ok(person) => {
             persons::repository::update_person(&mut conn, &person).await?;
 
-            // Redirect to the address edit page
-            Ok(Redirect::to(&candidate.edit_path()).into_response())
+            Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
     }
 }
@@ -145,9 +144,6 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
             .await?;
 
-        let candidate =
-            candidate_lists::repository::get_candidate(&mut conn, &list.id, &person.id).await?;
-
         let app_state = AppState::new_for_tests(pool.clone());
         let csrf_token = app_state.csrf_tokens().issue().value;
         let mut form = sample_person_form(&csrf_token);
@@ -173,7 +169,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, candidate.edit_path());
+        assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
         let updated = persons::repository::get_person(&mut conn, &person.id)

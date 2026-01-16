@@ -38,6 +38,18 @@ spec:
     - matches:
         - path:
             type: PathPrefix
+            value: /lookup
+        - path:
+            type: PathPrefix
+            value: /suggest
+
+      backendRefs:
+        - name: bag-lookup
+          port: 80
+
+    - matches:
+        - path:
+            type: PathPrefix
             value: /
 
       filters:
