@@ -1,0 +1,28 @@
+name: Sigrid Publish
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  sigridci:
+    if: github.repository == 'kiesraad/e-ks'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v5
+        with:
+          fetch-depth: 0
+      - name: Sigrid CI
+        uses: Software-Improvement-Group/sigridci@98ee452f1860e1290f147316f57fe025ad2b5126 # main
+        with:
+          customer: kiesraad
+          system: e-ks
+          convert: rust
+          publishonly: true
+        env:
+          SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
