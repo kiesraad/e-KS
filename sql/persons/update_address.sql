@@ -1,0 +1,35 @@
+UPDATE persons
+SET
+    locality = $1,
+    postal_code = $2,
+    house_number = $3,
+    house_number_addition = $4,
+    street_name = $5,
+    is_dutch = $6,
+    custom_country = $7,
+    custom_region = $8,
+    address_line_1 = $9,
+    address_line_2 = $10,
+    updated_at = NOW()
+WHERE id = $11
+RETURNING
+    id,
+    gender as "gender?: Gender",
+    last_name,
+    last_name_prefix,
+    first_name,
+    initials,
+    date_of_birth,
+    bsn,
+    locality,
+    postal_code,
+    house_number,
+    house_number_addition,
+    street_name,
+    is_dutch,
+    custom_country,
+    custom_region,
+    address_line_1,
+    address_line_2,
+    created_at,
+    updated_at

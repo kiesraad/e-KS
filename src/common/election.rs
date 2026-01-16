@@ -126,6 +126,12 @@ mod tests {
     use super::*;
 
     #[test]
+    fn election_titles_are_correct() {
+        assert!(ElectionConfig::EK2027.title().len() > 20);
+        assert!(ElectionConfig::EK2027.short_title().len() > 10);
+    }
+
+    #[test]
     fn electoral_districts_include_expected_code() {
         let districts = ElectoralDistrict::ek2027();
         assert!(districts.contains(&ElectoralDistrict::UT));

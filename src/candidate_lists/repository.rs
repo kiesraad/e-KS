@@ -50,15 +50,15 @@ pub async fn list_candidate_list(
     conn: &mut PgConnection,
 ) -> Result<Vec<CandidateList>, sqlx::Error> {
     sqlx::query_as!(
-            CandidateList,
-            r#"
+        CandidateList,
+        r#"
             SELECT id, electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", created_at, updated_at
             FROM candidate_lists
             ORDER BY created_at ASC
             "#,
-        )
-        .fetch_all(conn)
-        .await
+    )
+    .fetch_all(conn)
+    .await
 }
 
 pub async fn get_candidate_list(
@@ -88,67 +88,37 @@ pub async fn get_full_candidate_list(
         return Ok(None);
     };
 
-    let candidates = sqlx::query!(
-        r#"
-        SELECT
-            clp.position,
-            p.id as "id!",
-            p.gender as "gender?: Gender",
-            p.last_name as "last_name!",
-            p.last_name_prefix,
-            p.first_name,
-            p.initials as "initials!",
-            p.date_of_birth,
-            p.bsn,
-            p.locality as "locality",
-            p.postal_code as "postal_code",
-            p.house_number as "house_number",
-            p.house_number_addition,
-            p.street_name as "street_name",
-            p.is_dutch,
-            p.custom_country,
-            p.custom_region,
-            p.address_line_1,
-            p.address_line_2,
-            p.created_at as "created_at!",
-            p.updated_at as "updated_at!"
-        FROM candidate_lists_persons clp
-        JOIN persons p ON p.id = clp.person_id
-        WHERE clp.candidate_list_id = $1
-        ORDER BY clp.position ASC
-        "#,
-        list.id
-    )
-    .fetch_all(&mut *conn)
-    .await?
-    .into_iter()
-    .map(|row| Candidate {
-        list_id: list.id,
-        position: row.position,
-        person: Person {
-            id: row.id,
-            gender: row.gender,
-            last_name: row.last_name,
-            last_name_prefix: row.last_name_prefix,
-            first_name: row.first_name,
-            initials: row.initials,
-            date_of_birth: row.date_of_birth,
-            bsn: row.bsn,
-            locality: row.locality,
-            postal_code: row.postal_code,
-            house_number: row.house_number,
-            house_number_addition: row.house_number_addition,
-            street_name: row.street_name,
-            is_dutch: row.is_dutch,
-            custom_country: row.custom_country,
-            custom_region: row.custom_region,
-            address_line_1: row.address_line_1,
-            address_line_2: row.address_line_2,
-            created_at: row.created_at,
-            updated_at: row.updated_at,
-        },
-    })
-    .collect();
+    let candidates = sqlx::query_file!("sql/candidate_lists/list_candidates_for_list.sql", list.id)
+        .fetch_all(&mut *conn)
+        .await?
+        .into_iter()
+        .map(|row| Candidate {
+            list_id: list.id,
+            position: row.position,
+            person: Person {
+                id: row.id,
+                gender: row.gender,
+                last_name: row.last_name,
+                last_name_prefix: row.last_name_prefix,
+                first_name: row.first_name,
+                initials: row.initials,
+                date_of_birth: row.date_of_birth,
+                bsn: row.bsn,
+                locality: row.locality,
+                postal_code: row.postal_code,
+                house_number: row.house_number,
+                house_number_addition: row.house_number_addition,
+                street_name: row.street_name,
+                is_dutch: row.is_dutch,
+                custom_country: row.custom_country,
+                custom_region: row.custom_region,
+                address_line_1: row.address_line_1,
+                address_line_2: row.address_line_2,
+                created_at: row.created_at,
+                updated_at: row.updated_at,
+            },
+        })
+        .collect();
 
     Ok(Some(FullCandidateList { list, candidates }))
 }

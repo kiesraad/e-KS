@@ -17,24 +17,24 @@ pub(super) fn build_links(page: u32, total_pages: u32) -> Vec<PageLink> {
         return Vec::new();
     }
 
-    let mut pages = BTreeSet::new();
-    pages.insert(1);
-    pages.insert(total_pages);
+    let mut page_numbers = BTreeSet::new();
+    page_numbers.insert(1);
+    page_numbers.insert(total_pages);
 
     for offset in 0..=2 {
         if page > offset {
-            pages.insert(page - offset);
+            page_numbers.insert(page - offset);
         }
         let next = page + offset;
         if next <= total_pages {
-            pages.insert(next);
+            page_numbers.insert(next);
         }
     }
 
     let mut links = Vec::new();
     let mut previous = None;
 
-    for number in pages {
+    for number in page_numbers {
         if let Some(prev) = previous
             && number > prev + 1
         {

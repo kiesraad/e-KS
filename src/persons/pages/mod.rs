@@ -3,12 +3,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use uuid::Uuid;
 
-use crate::{
-    AppError, AppState, Locale,
-    pagination::Pagination,
-    persons::{Person, PersonSort},
-    t,
-};
+use crate::{AppError, AppState, Locale, persons::Person, t};
 
 mod address;
 mod create;
@@ -45,10 +40,6 @@ pub struct EditPersonAddressPath {
 impl Person {
     pub fn list_path() -> String {
         PersonsPath {}.to_uri().to_string()
-    }
-
-    pub fn list_path_with_pagination(pagination: &Pagination<PersonSort>) -> String {
-        format!("{}{}", PersonsPath {}.to_uri(), pagination.as_query())
     }
 
     pub fn new_path() -> String {

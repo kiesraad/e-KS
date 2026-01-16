@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE persons\n        SET\n            gender = $1,\n            last_name = $2,\n            last_name_prefix = $3,\n            first_name = $4,\n            initials = $5,\n            date_of_birth = $6,\n            bsn = $7,\n            locality = $8,\n            postal_code = $9,\n            house_number = $10,\n            house_number_addition = $11,\n            street_name = $12,\n            is_dutch = $13,\n            custom_country = $14,\n            custom_region = $15,\n            address_line_1 = $16,\n            address_line_2 = $17,\n            updated_at = NOW()\n        WHERE id = $18\n        RETURNING\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        ",
+  "query": "INSERT INTO persons (\n    id,\n    gender,\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
@@ -117,6 +117,7 @@
     ],
     "parameters": {
       "Left": [
+        "Uuid",
         {
           "Custom": {
             "name": "gender",
@@ -145,7 +146,8 @@
         "Varchar",
         "Varchar",
         "Varchar",
-        "Uuid"
+        "Timestamptz",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -171,5 +173,5 @@
       false
     ]
   },
-  "hash": "ddc3b417e21c170c238d1ca30b6dcef6b32560d565d223d113e087f0b474b604"
+  "hash": "cb24bbae1b85d0a23d5ad1be6d33385fe2a7f32243e17538910557ec136e0aff"
 }
