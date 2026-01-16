@@ -76,7 +76,7 @@ pub async fn update_person_address(
         )
         .into_response()),
         Ok(person) => {
-            persons::repository::update_person(&mut conn, &person).await?;
+            persons::repository::update_address(&mut conn, &person).await?;
 
             Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }

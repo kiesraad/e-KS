@@ -93,7 +93,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::PgPool;
+    use axum::http::Request;
+    use sqlx::{Connection, PgPool};
 
     #[sqlx::test]
     async fn new_for_tests_sets_config_and_tokens(pool: PgPool) -> Result<(), sqlx::Error> {
@@ -103,6 +104,39 @@ mod tests {
         assert!(matches!(state.config().election, ElectionConfig::EK2027));
 
         let token = state.csrf_tokens().issue();
+        assert!(state.csrf_tokens().consume(&token.value));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn db_connection_from_request_parts_acquires_connection(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let state = AppState::new_for_tests(pool);
+        let (mut parts, _) = Request::new(()).into_parts();
+
+        let DbConnection(mut conn) = DbConnection::from_request_parts(&mut parts, &state)
+            .await
+            .expect("db connection");
+
+        assert!(conn.ping().await.is_ok());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn csrf_tokens_from_request_parts_share_state_store(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let state = AppState::new_for_tests(pool);
+        let (mut parts, _) = Request::new(()).into_parts();
+
+        let tokens = CsrfTokens::from_request_parts(&mut parts, &state)
+            .await
+            .expect("csrf tokens");
+
+        let token = tokens.issue();
         assert!(state.csrf_tokens().consume(&token.value));
 
         Ok(())

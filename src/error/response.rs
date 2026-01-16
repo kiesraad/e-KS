@@ -124,6 +124,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
+            AppError::MultipartError(e) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {e}"),
+            },
             AppError::FormRejection(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),

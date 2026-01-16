@@ -23,44 +23,13 @@ pub async fn list_persons_not_on_candidate_list(
     conn: &mut PgConnection,
     candidate_list_id: &Uuid,
 ) -> Result<Vec<Person>, sqlx::Error> {
-    let persons = sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        FROM persons
-        WHERE id NOT IN (
-            SELECT person_id
-            FROM candidate_lists_persons
-            WHERE candidate_list_id = $1
-        )
-        ORDER BY last_name asc, initials asc
-        "#,
+        "sql/persons/list_persons_not_on_candidate_list.sql",
         candidate_list_id,
     )
     .fetch_all(conn)
-    .await?;
-
-    Ok(persons)
+    .await
 }
 
 pub async fn list_persons(
@@ -70,96 +39,32 @@ pub async fn list_persons(
     sort_field: &PersonSort,
     sort_direction: &SortDirection,
 ) -> Result<Vec<Person>, sqlx::Error> {
-    let persons = sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            address_line_1,
-            address_line_2,
-            is_dutch,
-            custom_country,
-            custom_region,
-            created_at,
-            updated_at
-        FROM persons
-        ORDER BY
-            CASE WHEN $3 = 'last_name' AND $4 = 'asc' THEN last_name END ASC,
-            CASE WHEN $3 = 'last_name' AND $4 = 'desc' THEN last_name END DESC,
-            CASE WHEN $3 = 'first_name' AND $4 = 'asc' THEN first_name END ASC,
-            CASE WHEN $3 = 'first_name' AND $4 = 'desc' THEN first_name END DESC,
-            CASE WHEN $3 = 'initials' AND $4 = 'asc' THEN initials END ASC,
-            CASE WHEN $3 = 'initials' AND $4 = 'desc' THEN initials END DESC,
-            CASE WHEN $3 = 'gender' AND $4 = 'asc' THEN gender END ASC,
-            CASE WHEN $3 = 'gender' AND $4 = 'desc' THEN gender END DESC,
-            CASE WHEN $3 = 'locality' AND $4 = 'asc' THEN locality END ASC,
-            CASE WHEN $3 = 'locality' AND $4 = 'desc' THEN locality END DESC,
-            CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,
-            CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,
-            CASE WHEN $3 = 'updated_at' AND $4 = 'asc' THEN updated_at END ASC,
-            CASE WHEN $3 = 'updated_at' AND $4 = 'desc' THEN updated_at END DESC,
-            id DESC
-        LIMIT $1
-        OFFSET $2
-        "#,
+        "sql/persons/list_persons.sql",
         limit,
         offset,
         sort_field.as_ref(),
         sort_direction.as_ref(),
     )
     .fetch_all(conn)
-    .await?;
+    .await
+}
 
-    Ok(persons)
+#[cfg(feature = "fixtures")]
+pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sqlx::Error> {
+    sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
+        .fetch_all(conn)
+        .await
 }
 
 pub async fn get_person(
     conn: &mut PgConnection,
     person_id: &Uuid,
 ) -> Result<Option<Person>, sqlx::Error> {
-    let person = sqlx::query_as!(
-        Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        FROM persons
-        WHERE id = $1
-        "#,
-        person_id,
-    )
-    .fetch_optional(conn)
-    .await?;
+    let person = sqlx::query_file_as!(Person, "sql/persons/get_person_by_id.sql", person_id,)
+        .fetch_optional(conn)
+        .await?;
 
     Ok(person)
 }
@@ -168,54 +73,9 @@ pub async fn create_person(
     conn: &mut PgConnection,
     new_person: &Person,
 ) -> Result<Person, sqlx::Error> {
-    sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        INSERT INTO persons (
-            id,
-            gender,
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-        RETURNING
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        "#,
+        "sql/persons/insert_person.sql",
         new_person.id,
         new_person.gender as Option<Gender>,
         new_person.last_name,
@@ -245,52 +105,9 @@ pub async fn update_person(
     conn: &mut PgConnection,
     updated_person: &Person,
 ) -> Result<Person, sqlx::Error> {
-    let person = sqlx::query_as!(
+    let person = sqlx::query_file_as!(
         Person,
-        r#"
-        UPDATE persons
-        SET
-            gender = $1,
-            last_name = $2,
-            last_name_prefix = $3,
-            first_name = $4,
-            initials = $5,
-            date_of_birth = $6,
-            bsn = $7,
-            locality = $8,
-            postal_code = $9,
-            house_number = $10,
-            house_number_addition = $11,
-            street_name = $12,
-            is_dutch = $13,
-            custom_country = $14,
-            custom_region = $15,
-            address_line_1 = $16,
-            address_line_2 = $17,
-            updated_at = NOW()
-        WHERE id = $18
-        RETURNING
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        "#,
+        "sql/persons/update_person.sql",
         updated_person.gender as Option<Gender>,
         updated_person.last_name,
         updated_person.last_name_prefix,
@@ -298,6 +115,21 @@ pub async fn update_person(
         updated_person.initials,
         updated_person.date_of_birth,
         updated_person.bsn,
+        updated_person.id,
+    )
+    .fetch_one(conn)
+    .await?;
+
+    Ok(person)
+}
+
+pub async fn update_address(
+    conn: &mut PgConnection,
+    updated_person: &Person,
+) -> Result<Person, sqlx::Error> {
+    let person = sqlx::query_file_as!(
+        Person,
+        "sql/persons/update_address.sql",
         updated_person.locality,
         updated_person.postal_code,
         updated_person.house_number,

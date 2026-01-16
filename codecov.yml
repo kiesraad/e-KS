@@ -1,6 +1,5 @@
 comment:
-    require_bundle_changes: True
-    bundle_change_threshold: "50Kb"
+  require_changes: true
 coverage:
   status:
     project:

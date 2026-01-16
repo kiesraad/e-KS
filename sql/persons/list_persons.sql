@@ -1,0 +1,40 @@
+SELECT
+    id,
+    gender as "gender?: Gender",
+    last_name,
+    last_name_prefix,
+    first_name,
+    initials,
+    date_of_birth,
+    bsn,
+    locality,
+    postal_code,
+    house_number,
+    house_number_addition,
+    street_name,
+    address_line_1,
+    address_line_2,
+    is_dutch,
+    custom_country,
+    custom_region,
+    created_at,
+    updated_at
+FROM persons
+ORDER BY
+    CASE WHEN $3 = 'last_name' AND $4 = 'asc' THEN last_name END ASC,
+    CASE WHEN $3 = 'last_name' AND $4 = 'desc' THEN last_name END DESC,
+    CASE WHEN $3 = 'first_name' AND $4 = 'asc' THEN first_name END ASC,
+    CASE WHEN $3 = 'first_name' AND $4 = 'desc' THEN first_name END DESC,
+    CASE WHEN $3 = 'initials' AND $4 = 'asc' THEN initials END ASC,
+    CASE WHEN $3 = 'initials' AND $4 = 'desc' THEN initials END DESC,
+    CASE WHEN $3 = 'gender' AND $4 = 'asc' THEN gender END ASC,
+    CASE WHEN $3 = 'gender' AND $4 = 'desc' THEN gender END DESC,
+    CASE WHEN $3 = 'locality' AND $4 = 'asc' THEN locality END ASC,
+    CASE WHEN $3 = 'locality' AND $4 = 'desc' THEN locality END DESC,
+    CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,
+    CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,
+    CASE WHEN $3 = 'updated_at' AND $4 = 'asc' THEN updated_at END ASC,
+    CASE WHEN $3 = 'updated_at' AND $4 = 'desc' THEN updated_at END DESC,
+    id DESC
+LIMIT $1
+OFFSET $2

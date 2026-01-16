@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        FROM persons\n        WHERE id NOT IN (\n            SELECT person_id\n            FROM candidate_lists_persons\n            WHERE candidate_list_id = $1\n        )\n        ORDER BY last_name asc, initials asc\n        ",
+  "query": "UPDATE persons\nSET\n    locality = $1,\n    postal_code = $2,\n    house_number = $3,\n    house_number_addition = $4,\n    street_name = $5,\n    is_dutch = $6,\n    custom_country = $7,\n    custom_region = $8,\n    address_line_1 = $9,\n    address_line_2 = $10,\n    updated_at = NOW()\nWHERE id = $11\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
@@ -117,6 +117,16 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Bool",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
         "Uuid"
       ]
     },
@@ -143,5 +153,5 @@
       false
     ]
   },
-  "hash": "754a7ddf307f0bcf5b0135e22b36e465175fe8bca93317b4ef4d3d0b3c37fdfb"
+  "hash": "630ce4cfe456d7ebd07ca4586326330b312b26bf89814ba0e679df79ba3c3732"
 }

@@ -1,0 +1,153 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "SELECT\n    clp.position,\n    p.id as \"id!\",\n    p.gender as \"gender?: Gender\",\n    p.last_name as \"last_name!\",\n    p.last_name_prefix,\n    p.first_name,\n    p.initials as \"initials!\",\n    p.date_of_birth,\n    p.bsn,\n    p.locality as \"locality\",\n    p.postal_code as \"postal_code\",\n    p.house_number as \"house_number\",\n    p.house_number_addition,\n    p.street_name as \"street_name\",\n    p.is_dutch,\n    p.custom_country,\n    p.custom_region,\n    p.address_line_1,\n    p.address_line_2,\n    p.created_at as \"created_at!\",\n    p.updated_at as \"updated_at!\"\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "position",
+        "type_info": "Int4"
+      },
+      {
+        "ordinal": 1,
+        "name": "id!",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "gender?: Gender",
+        "type_info": {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female",
+                "x"
+              ]
+            }
+          }
+        }
+      },
+      {
+        "ordinal": 3,
+        "name": "last_name!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "first_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "initials!",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "date_of_birth",
+        "type_info": "Date"
+      },
+      {
+        "ordinal": 8,
+        "name": "bsn",
+        "type_info": "Bpchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 10,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 11,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 12,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 13,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 14,
+        "name": "is_dutch",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 15,
+        "name": "custom_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "custom_region",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "address_line_1",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
+        "name": "address_line_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 19,
+        "name": "created_at!",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 20,
+        "name": "updated_at!",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "00e1900b475b8e48e5d6680b6eaadff94a8169c10a28900a6ac1082e23b90acc"
+}

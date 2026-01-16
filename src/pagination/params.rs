@@ -5,10 +5,7 @@ use axum::{
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use strum::AsRefStr;
 
-use crate::pagination::{self, PaginationInfo};
-
-/// Maximum permitted page size to avoid expensive queries.
-pub const MAX_PER_PAGE: u32 = 500;
+use super::{PaginationInfo, info};
 
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, Default, PartialEq, AsRefStr)]
 #[strum(serialize_all = "lowercase")]
@@ -109,7 +106,7 @@ where
     /// values. This clamps the current page within valid bounds and prepares the metadata we need
     /// for database queries and template rendering.
     pub fn set_total(self, total_items: u64) -> PaginationInfo<S> {
-        pagination::info::to_info(self, total_items)
+        info::to_info(self, total_items)
     }
 
     pub fn as_query(&self) -> String {

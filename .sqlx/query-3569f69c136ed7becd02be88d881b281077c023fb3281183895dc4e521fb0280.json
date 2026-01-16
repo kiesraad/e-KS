@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT\n            id,\n            gender as \"gender?: Gender\",\n            last_name,\n            last_name_prefix,\n            first_name,\n            initials,\n            date_of_birth,\n            bsn,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            is_dutch,\n            custom_country,\n            custom_region,\n            address_line_1,\n            address_line_2,\n            created_at,\n            updated_at\n        FROM persons\n        WHERE id = $1\n        ",
+  "query": "SELECT\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    address_line_1,\n    address_line_2,\n    is_dutch,\n    custom_country,\n    custom_region,\n    created_at,\n    updated_at\nFROM persons\nORDER BY last_name asc, initials asc\n",
   "describe": {
     "columns": [
       {
@@ -81,27 +81,27 @@
       },
       {
         "ordinal": 13,
-        "name": "is_dutch",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 14,
-        "name": "custom_country",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 15,
-        "name": "custom_region",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 16,
         "name": "address_line_1",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 14,
         "name": "address_line_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "is_dutch",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "custom_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "custom_region",
         "type_info": "Varchar"
       },
       {
@@ -116,9 +116,7 @@
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
@@ -143,5 +141,5 @@
       false
     ]
   },
-  "hash": "6367271163411e0cdda98c142e145a21ea0973ed051efd8e2a3ee68c900faf8e"
+  "hash": "3569f69c136ed7becd02be88d881b281077c023fb3281183895dc4e521fb0280"
 }

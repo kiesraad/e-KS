@@ -8,9 +8,8 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    pagination::{Pagination, SortDirection},
     persons::{
-        self, AddressForm, Person, PersonSort,
+        self, AddressForm, Person,
         pages::{EditPersonAddressPath, person_not_found},
     },
     t,
@@ -64,16 +63,9 @@ pub async fn update_person_address(
         .into_response()),
         Ok(mut person) => {
             person.normalize_address();
-            persons::repository::update_person(&mut conn, &person).await?;
+            persons::repository::update_address(&mut conn, &person).await?;
 
-            // Redirect to the persons list after updating, sorted by updated, so the updated person is visible at the top
-            let pagination = Pagination {
-                sort: PersonSort::UpdatedAt,
-                order: SortDirection::Desc,
-                ..Default::default()
-            };
-
-            Ok(Redirect::to(&Person::list_path_with_pagination(&pagination)).into_response())
+            Ok(Redirect::to(&Person::list_path()).into_response())
         }
     }
 }
@@ -150,12 +142,7 @@ mod tests {
             .to_str()
             .expect("location header value");
 
-        let pagination = Pagination {
-            sort: PersonSort::UpdatedAt,
-            order: SortDirection::Desc,
-            ..Default::default()
-        };
-        assert_eq!(location, Person::list_path_with_pagination(&pagination));
+        assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
         let updated = persons::repository::get_person(&mut conn, &id)

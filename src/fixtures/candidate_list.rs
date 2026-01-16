@@ -4,8 +4,7 @@ use sqlx::PgConnection;
 use crate::{
     AppError, Config,
     candidate_lists::{self, CandidateList},
-    pagination::SortDirection,
-    persons::{self, Person, PersonSort},
+    persons::{self, Person},
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
@@ -20,17 +19,9 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<uuid::Uuid> {
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let config = Config::from_env()?;
-    let total_persons = persons::repository::count_persons(conn).await?;
     let electoral_districts = config.get_districts().to_vec();
 
-    let persons = persons::repository::list_persons(
-        conn,
-        total_persons,
-        0,
-        &PersonSort::LastName,
-        &SortDirection::Asc,
-    )
-    .await?;
+    let persons = persons::repository::list_all_persons(conn).await?;
 
     let person_ids = collect_person_ids(persons);
 

@@ -23,7 +23,7 @@ jobs:
           customer: kiesraad
           system: e-ks
           convert: rust
-          exclude: deploy,playwright,validate,frontend/styles
+          exclude: deploy,playwright,validate,frontend/styles,src/fixtures
         env:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
 
