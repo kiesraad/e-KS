@@ -4,6 +4,10 @@
 {% block candidate_lists_nav_class %}active{% endblock %}
 {% block main_class %}pt-sm{% endblock %}
 
+{% block page_sub_title %}
+  <span class="subtitle">{{ t!("common.electoral_districts")|trans }}: {{ full_list.list|display_districts }}</span>
+{% endblock %}
+
 {% block header_action %}
   <a href="{{ CandidateList::list_path() }}" class="button secondary">
     {{ t!("candidate_list.actions.back_to_list")|trans }}
@@ -14,6 +18,12 @@
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
+        <p>{{ t!("candidate_list.actions.edit_list_details")|trans }}:</p>
+        <a href="{{ full_list.list.update_path() }}" class="button secondary icon-edit">
+          {{ t!("candidate_list.actions.edit")|trans }}
+        </a>
+      </div>
+      <div>
         <p>{{ t!("candidate_list.actions.add_candidates")|trans }}:</p>
         <div class="buttons">
           <a href="{{ full_list.list.add_candidate_path() }}" class="button secondary icon-plus open-modal" type="button">
@@ -23,12 +33,6 @@
             {{ t!("candidate_list.actions.add_new")|trans }}
           </a>
         </div>
-      </div>
-      <div>
-        <p>{{ t!("candidate_list.actions.edit_list_details")|trans }}:</p>
-        <a href="{{ full_list.list.update_path() }}" class="button secondary icon-edit">
-          {{ t!("candidate_list.actions.edit")|trans }}
-        </a>
       </div>
     </div>
   </nav>

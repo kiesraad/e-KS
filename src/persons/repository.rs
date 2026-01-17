@@ -249,6 +249,42 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn update_address_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = PersonId::new();
+        let mut person = sample_person(id);
+
+        let mut conn = pool.acquire().await?;
+        create_person(&mut conn, &person).await?;
+
+        person.locality = Some("Nieuwegein".to_string());
+        person.postal_code = Some("9999 ZZ".to_string());
+        person.house_number = Some("99".to_string());
+        person.house_number_addition = None;
+        person.street_name = Some("Nieuweweg".to_string());
+        person.is_dutch = Some(false);
+        person.custom_country = Some("Belgie".to_string());
+        person.custom_region = Some("Vlaanderen".to_string());
+        person.address_line_1 = Some("Rue 1".to_string());
+        person.address_line_2 = None;
+
+        update_address(&mut conn, &person).await?;
+
+        let updated = get_person(&mut conn, id).await?.expect("person");
+        assert_eq!(updated.locality, Some("Nieuwegein".to_string()));
+        assert_eq!(updated.postal_code, Some("9999 ZZ".to_string()));
+        assert_eq!(updated.house_number, Some("99".to_string()));
+        assert_eq!(updated.house_number_addition, None);
+        assert_eq!(updated.street_name, Some("Nieuweweg".to_string()));
+        assert_eq!(updated.is_dutch, Some(false));
+        assert_eq!(updated.custom_country, Some("Belgie".to_string()));
+        assert_eq!(updated.custom_region, Some("Vlaanderen".to_string()));
+        assert_eq!(updated.address_line_1, Some("Rue 1".to_string()));
+        assert_eq!(updated.address_line_2, None);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
     async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
@@ -269,6 +305,27 @@ mod tests {
         let persons = list_persons_not_on_candidate_list(&mut conn, list_id).await?;
         assert_eq!(persons.len(), 1);
         assert_eq!(persons[0].id, person_b.id);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "fixtures")]
+    #[sqlx::test]
+    async fn list_all_persons_returns_all(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        create_person(
+            &mut conn,
+            &sample_person_with_last_name(PersonId::new(), "Jansen"),
+        )
+        .await?;
+        create_person(
+            &mut conn,
+            &sample_person_with_last_name(PersonId::new(), "Bakker"),
+        )
+        .await?;
+
+        let persons = list_all_persons(&mut conn).await?;
+        assert_eq!(persons.len(), 2);
 
         Ok(())
     }

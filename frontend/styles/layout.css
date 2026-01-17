@@ -59,10 +59,22 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 7rem;
-    line-height: 7rem;
-    padding: var(--space-md) var(--space-xxl);
+    min-height: 8rem;
+    padding: 0 var(--space-xxl);
     margin: 0;
+
+    div:first-child {
+      flex: 1;
+    }
+
+    .subtitle {
+      display: block;
+      font-size: var(--font-size-md);
+      margin-top: var(--space-sm);
+      color: var(--color-help-text);
+      max-width: 80%;
+      line-height: 1.4;
+    }
 
     a {
       max-height: 3rem;

@@ -21,7 +21,7 @@
     {% for candidate_list in candidate_lists %}
     <div class="card card-list">
       <h3>{{ t!("candidate_list.title_single")|trans }}</h3>
-      <p class="statistic truncated">
+      <p class="statistic">
         {{ t!("common.electoral_districts")|trans }}:
         {{ candidate_list.list|display_districts }}
       </p>

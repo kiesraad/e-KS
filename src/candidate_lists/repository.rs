@@ -411,7 +411,7 @@ mod tests {
     use std::collections::BTreeSet;
 
     use super::*;
-    use chrono::Utc;
+    use chrono::{Duration, Utc};
     use sqlx::PgPool;
 
     use crate::{
@@ -448,6 +448,51 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn list_candidate_list_orders_by_created_at(pool: PgPool) -> Result<(), sqlx::Error> {
+        let earlier = Utc::now() - Duration::days(1);
+        let later = Utc::now();
+        let list_early = CandidateList {
+            id: CandidateListId::new(),
+            electoral_districts: vec![ElectoralDistrict::UT],
+            created_at: earlier,
+            updated_at: earlier,
+        };
+        let list_late = CandidateList {
+            id: CandidateListId::new(),
+            electoral_districts: vec![ElectoralDistrict::OV],
+            created_at: later,
+            updated_at: later,
+        };
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list_late).await?;
+        create_candidate_list(&mut conn, &list_early).await?;
+
+        let lists = list_candidate_list(&mut conn).await?;
+        assert_eq!(lists.len(), 2);
+        assert_eq!(lists[0].id, list_early.id);
+        assert_eq!(lists[1].id, list_late.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_candidate_list_returns_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list = sample_candidate_list(CandidateListId::new());
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list).await?;
+
+        let loaded = get_candidate_list(&mut conn, list.id)
+            .await?
+            .expect("candidate list");
+
+        assert_eq!(loaded.id, list.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
     async fn get_candidate_list_includes_candidates(pool: PgPool) -> Result<(), sqlx::Error> {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
@@ -466,6 +511,103 @@ mod tests {
         assert_eq!(2, detail.candidates.len());
         assert_eq!(person_a.id, detail.candidates[0].person.id);
         assert_eq!(person_b.id, detail.candidates[1].person.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn append_candidate_to_list_assigns_positions(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
+
+        append_candidate_to_list(&mut conn, list_id, person_a.id).await?;
+        append_candidate_to_list(&mut conn, list_id, person_b.id).await?;
+
+        let detail = get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
+        assert_eq!(detail.candidates.len(), 2);
+        assert_eq!(detail.candidates[0].person.id, person_a.id);
+        assert_eq!(detail.candidates[0].position, 1);
+        assert_eq!(detail.candidates[1].person.id, person_b.id);
+        assert_eq!(detail.candidates[1].position, 2);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn remove_candidate_removes_from_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person_a).await?;
+        persons::repository::create_person(&mut conn, &person_b).await?;
+        append_candidate_to_list(&mut conn, list_id, person_a.id).await?;
+        append_candidate_to_list(&mut conn, list_id, person_b.id).await?;
+
+        remove_candidate(&mut conn, list_id, person_a.id).await?;
+
+        let detail = get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        assert_eq!(detail.candidates.len(), 1);
+        assert_eq!(detail.candidates[0].person.id, person_b.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_candidate_list_updates_districts(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list = sample_candidate_list(CandidateListId::new());
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list).await?;
+
+        let updated = update_candidate_list(
+            &mut conn,
+            CandidateList {
+                electoral_districts: vec![ElectoralDistrict::DR, ElectoralDistrict::OV],
+                ..list.clone()
+            },
+        )
+        .await?;
+
+        assert_eq!(updated.id, list.id);
+        assert_eq!(
+            updated.electoral_districts,
+            vec![ElectoralDistrict::DR, ElectoralDistrict::OV]
+        );
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_candidate_returns_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person_with_last_name(PersonId::new(), "Jansen");
+
+        let mut conn = pool.acquire().await?;
+        create_candidate_list(&mut conn, &list).await?;
+        persons::repository::create_person(&mut conn, &person).await?;
+        append_candidate_to_list(&mut conn, list_id, person.id).await?;
+
+        let candidate = get_candidate(&mut conn, list_id, person.id).await?;
+        assert_eq!(candidate.list_id, list_id);
+        assert_eq!(candidate.position, 1);
+        assert_eq!(candidate.person.id, person.id);
 
         Ok(())
     }

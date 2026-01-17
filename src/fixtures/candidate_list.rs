@@ -1,9 +1,10 @@
 use chrono::Utc;
 use sqlx::PgConnection;
+use uuid::Uuid;
 
 use crate::{
     AppError, ElectionConfig,
-    candidate_lists::{self, CandidateList, CandidateListId},
+    candidate_lists::{self, CandidateList},
     persons::{self, Person, PersonId},
 };
 
@@ -19,13 +20,15 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
-
     let persons = persons::repository::list_all_persons(conn).await?;
-
     let person_ids = collect_person_ids(persons);
+    let uuid = Uuid::new_v5(
+        &Uuid::NAMESPACE_OID,
+        b"the_one_and_only_fixture_candidate_list",
+    );
 
     let candidate_list = CandidateList {
-        id: CandidateListId::new(),
+        id: uuid.into(),
         electoral_districts,
         created_at: Utc::now(),
         updated_at: Utc::now(),
