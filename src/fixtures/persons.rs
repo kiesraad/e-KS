@@ -4,11 +4,12 @@ use chrono::{NaiveDate, Utc};
 use csv::{ReaderBuilder, Trim};
 use serde::Deserialize;
 use sqlx::PgConnection;
+use uuid::Uuid;
 
 use crate::{
     AppError,
     constants::DEFAULT_DATE_FORMAT,
-    persons::{self, Gender, Person, PersonId},
+    persons::{self, Gender, Person},
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");
@@ -30,8 +31,11 @@ struct PersonRecord {
 
 impl PersonRecord {
     fn into_person(self) -> Result<Person, AppError> {
+        let id = format!("{}{}", self.last_name, self.initials);
+        let uuid = Uuid::new_v5(&Uuid::NAMESPACE_OID, id.as_bytes());
+
         Ok(Person {
-            id: PersonId::new(),
+            id: uuid.into(),
             gender: self.gender.and_then(|s| Gender::from_str(&s).ok()),
             last_name: self.last_name,
             last_name_prefix: self.last_name_prefix,

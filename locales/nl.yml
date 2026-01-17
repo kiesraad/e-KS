@@ -79,7 +79,7 @@ person:
   created_at: Aangemaakt op
   personal_information: Persoonlijke gegevens
   address: Adres
-  authorized_person: Kandidaatgemachtigde
+  authorized_person: Gemachtigde van kandidaat
   personal_details: Persoonlijke gegevens
   fields:
     bsn: Burgerservicenummer (BSN)

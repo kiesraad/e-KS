@@ -18,7 +18,10 @@
       </ul>
     </nav>
     <div class="header-content">
-      <h1>{% block page_title %}{{ t!("common.title")|trans }}{% endblock %}</h1>
+      <div>
+        <h1>{% block page_title %}{{ t!("common.title")|trans }}{% endblock %}</h1>
+        {% block page_sub_title %}{% endblock %}
+      </div>
       {% block header_action %}{% endblock %}
     </div>
   </header>
