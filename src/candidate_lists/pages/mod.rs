@@ -6,7 +6,7 @@ use sqlx::PgConnection;
 use crate::{
     AppError, AppState, Locale,
     candidate_lists::{self, CandidateList, CandidateListId, FullCandidateList},
-    t,
+    impl_from_field, t,
 };
 
 mod create;
@@ -30,11 +30,15 @@ pub struct ViewCandidateListPath {
     pub id: CandidateListId,
 }
 
+impl_from_field!(ViewCandidateListPath => id: CandidateListId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
 pub struct CandidateListsEditPath {
     pub id: CandidateListId,
 }
+
+impl_from_field!(CandidateListsEditPath => id: CandidateListId);
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/delete", rejection(AppError))]
@@ -42,11 +46,15 @@ pub struct CandidateListsDeletePath {
     pub id: CandidateListId,
 }
 
+impl_from_field!(CandidateListsDeletePath => id: CandidateListId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
 pub struct CandidateListReorderPath {
     pub id: CandidateListId,
 }
+
+impl_from_field!(CandidateListReorderPath => id: CandidateListId);
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
@@ -54,11 +62,15 @@ pub struct AddCandidatePath {
     pub id: CandidateListId,
 }
 
+impl_from_field!(AddCandidatePath => id: CandidateListId);
+
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
+#[typed_path("/candidate-lists/{id}/new", rejection(AppError))]
 pub struct CreateCandidatePath {
-    pub candidate_list: CandidateListId,
+    pub id: CandidateListId,
 }
+
+impl_from_field!(CreateCandidatePath => id: CandidateListId);
 
 impl CandidateList {
     pub fn list_path() -> String {
@@ -90,10 +102,7 @@ impl CandidateList {
     }
 
     pub fn new_candidate_path(&self) -> String {
-        CreateCandidatePath {
-            candidate_list: self.id,
-        }
-        .to_string()
+        CreateCandidatePath { id: self.id }.to_string()
     }
 }
 
@@ -112,7 +121,7 @@ pub fn router() -> Router<AppState> {
 }
 
 pub fn candidate_list_not_found(id: CandidateListId, locale: Locale) -> AppError {
-    AppError::NotFound(t!("candidate_list.not_found", &locale, id))
+    AppError::NotFound(t!("candidate_list.not_found", locale, id))
 }
 
 pub async fn load_candidate_list(

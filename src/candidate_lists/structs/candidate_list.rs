@@ -65,7 +65,7 @@ impl FullCandidateList {
             .find(|c| &c.person.id == person_id)
             .cloned()
             .ok_or_else(|| {
-                AppError::NotFound(t!("person.not_found_in_candidate_list", &locale).to_string())
+                AppError::NotFound(t!("person.not_found_in_candidate_list", locale).to_string())
             })
     }
 

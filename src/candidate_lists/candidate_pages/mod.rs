@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppState,
     candidate_lists::{Candidate, CandidateListId},
+    impl_from_field,
     persons::PersonId,
 };
 
@@ -25,12 +26,18 @@ pub struct EditCandidatePositionPath {
     pub person: PersonId,
 }
 
+impl_from_field!(EditCandidatePositionPath => candidate_list: CandidateListId);
+impl_from_field!(EditCandidatePositionPath => person: PersonId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
 pub struct CandidateListEditPersonPath {
     pub candidate_list: CandidateListId,
     pub person: PersonId,
 }
+
+impl_from_field!(CandidateListEditPersonPath => candidate_list: CandidateListId);
+impl_from_field!(CandidateListEditPersonPath => person: PersonId);
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
@@ -42,6 +49,9 @@ pub struct CandidateListEditAddressPath {
     pub person: PersonId,
 }
 
+impl_from_field!(CandidateListEditAddressPath => candidate_list: CandidateListId);
+impl_from_field!(CandidateListEditAddressPath => person: PersonId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
     "/candidate-lists/{candidate_list}/delete/{person}",
@@ -51,6 +61,9 @@ pub struct CandidateListDeletePersonPath {
     pub candidate_list: CandidateListId,
     pub person: PersonId,
 }
+
+impl_from_field!(CandidateListDeletePersonPath => candidate_list: CandidateListId);
+impl_from_field!(CandidateListDeletePersonPath => person: PersonId);
 
 impl Candidate {
     pub fn edit_position_path(&self) -> String {

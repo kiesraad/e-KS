@@ -36,7 +36,7 @@ impl<T: WithCsrfToken> FormData<T> {
         &self.errors
     }
 
-    pub fn error(&self, name: &str, locale: &Locale) -> Vec<String> {
+    pub fn error(&self, name: &str, locale: Locale) -> Vec<String> {
         self.errors
             .iter()
             .filter(|(field_name, _)| field_name == name)
@@ -70,7 +70,7 @@ mod tests {
             ],
         );
 
-        let messages = form.error("name", &Locale::En);
+        let messages = form.error("name", Locale::En);
         assert_eq!(messages, vec!["This field must not be empty.".to_string()]);
     }
 }

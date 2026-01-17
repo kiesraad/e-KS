@@ -60,7 +60,7 @@ pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sq
 
 pub async fn get_person(
     conn: &mut PgConnection,
-    person_id: &PersonId,
+    person_id: PersonId,
 ) -> Result<Option<Person>, sqlx::Error> {
     let person = sqlx::query_file_as!(Person, "sql/persons/get_person_by_id.sql", person_id.uuid())
         .fetch_optional(conn)
@@ -150,7 +150,7 @@ pub async fn update_address(
 
 pub async fn remove_person(
     conn: &mut PgConnection,
-    person_id: &PersonId,
+    person_id: PersonId,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -185,7 +185,7 @@ mod tests {
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
 
-        let loaded = get_person(&mut conn, &id).await?.expect("person");
+        let loaded = get_person(&mut conn, id).await?.expect("person");
         assert_eq!(loaded.id, id);
         assert_eq!(loaded.last_name, "Jansen");
 
@@ -227,7 +227,7 @@ mod tests {
         person.last_name = "Updated".to_string();
         update_person(&mut conn, &person).await?;
 
-        let updated = get_person(&mut conn, &id).await?.expect("person");
+        let updated = get_person(&mut conn, id).await?.expect("person");
         assert_eq!(updated.last_name, "Updated");
 
         Ok(())
@@ -240,9 +240,9 @@ mod tests {
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
-        remove_person(&mut conn, &id).await?;
+        remove_person(&mut conn, id).await?;
 
-        let missing = get_person(&mut conn, &id).await?;
+        let missing = get_person(&mut conn, id).await?;
         assert!(missing.is_none());
 
         Ok(())

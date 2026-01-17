@@ -1,12 +1,9 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
+    AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
         candidate_pages::CandidateListEditAddressPath, pages::load_candidate_list,
@@ -57,14 +54,14 @@ pub async fn update_person_address(
         person,
     }: CandidateListEditAddressPath,
     context: Context,
-    State(app_state): State<AppState>,
+    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
     let full_list = load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let candidate = full_list.get_candidate(&person, context.locale)?;
 
-    match form.validate(Some(&candidate.person), app_state.csrf_tokens()) {
+    match form.validate_update(&candidate.person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 candidate,
@@ -87,7 +84,6 @@ pub async fn update_person_address(
 mod tests {
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -95,7 +91,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
+        Context, CsrfTokens, DbConnection, Locale,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -148,8 +144,8 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.locality = "Rotterdam".to_string();
 
@@ -159,7 +155,7 @@ mod tests {
                 person: person.id,
             },
             Context::new(Locale::En),
-            State(app_state),
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -176,7 +172,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &person.id)
+        let updated = persons::repository::get_person(&mut conn, person.id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Rotterdam".to_string()));
@@ -198,8 +194,8 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
@@ -209,7 +205,7 @@ mod tests {
                 person: person.id,
             },
             Context::new(Locale::En),
-            State(app_state),
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )

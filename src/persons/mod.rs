@@ -1,3 +1,4 @@
+mod extractors;
 mod pages;
 pub mod repository;
 mod structs;

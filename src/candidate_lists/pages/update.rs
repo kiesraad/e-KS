@@ -1,12 +1,9 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
+    AppError, Config, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
     HtmlTemplate, Locale,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary,
@@ -35,12 +32,12 @@ pub async fn edit_candidate_list(
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    State(app_state): State<AppState>,
+    config: Config,
 ) -> Result<Response, AppError> {
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = app_state.config().election;
+    let election = config.election;
     let electoral_districts = election.electoral_districts();
 
     let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
@@ -68,15 +65,15 @@ pub async fn edit_candidate_list(
 pub async fn update_candidate_list(
     CandidateListsEditPath { id }: CandidateListsEditPath,
     context: Context,
-    State(app_state): State<AppState>,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
+    config: Config,
     form: Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = app_state.config().election;
+    let election = config.election;
 
     let electoral_districts = election.electoral_districts();
 
@@ -84,7 +81,7 @@ pub async fn update_candidate_list(
         .await?
         .ok_or(candidate_list_not_found(id, context.locale))?;
 
-    match form.validate(Some(&candidate_list), &csrf_tokens) {
+    match form.validate_update(&candidate_list, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 candidate_lists,
@@ -110,23 +107,20 @@ pub async fn update_candidate_list(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        extract::State,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::extract::Form;
     use chrono::DateTime;
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
+        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
 
     #[sqlx::test]
     async fn edit_candidate_list_renders_existing_list(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
+        let config = Config::new_test();
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         let mut conn = pool.acquire().await?;
@@ -139,7 +133,7 @@ mod tests {
             Context::new(Locale::En),
             CsrfTokens::default(),
             DbConnection(pool.acquire().await?),
-            State(app_state),
+            config,
         )
         .await
         .unwrap();
@@ -156,7 +150,7 @@ mod tests {
 
     #[sqlx::test]
     async fn update_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
+        let config = Config::new_test();
         let mut conn = pool.acquire().await.unwrap();
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -178,9 +172,9 @@ mod tests {
                 id: candidate_list.id,
             },
             Context::new(Locale::En),
-            State(app_state),
             csrf_tokens,
             DbConnection(conn),
+            config,
             Form(form),
         )
         .await
@@ -221,7 +215,7 @@ mod tests {
     async fn update_candidate_list_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
+        let config = Config::new_test();
         let mut conn = pool.acquire().await.unwrap();
         let csrf_tokens = CsrfTokens::default();
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
@@ -242,9 +236,9 @@ mod tests {
                 id: candidate_list.id,
             },
             Context::new(Locale::En),
-            State(app_state),
             csrf_tokens,
             DbConnection(conn),
+            config,
             Form(form),
         )
         .await

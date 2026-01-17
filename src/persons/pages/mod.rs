@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppState, Locale,
+    AppError, AppState, Locale, impl_from_field,
     persons::{Person, PersonId},
     t,
 };
@@ -27,17 +27,23 @@ pub struct EditPersonPath {
     pub id: PersonId,
 }
 
+impl_from_field!(EditPersonPath => id: PersonId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/delete", rejection(AppError))]
 pub struct DeletePersonPath {
     pub id: PersonId,
 }
 
+impl_from_field!(DeletePersonPath => id: PersonId);
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/address", rejection(AppError))]
 pub struct EditPersonAddressPath {
     pub id: PersonId,
 }
+
+impl_from_field!(EditPersonAddressPath => id: PersonId);
 
 impl Person {
     pub fn list_path() -> String {
@@ -70,5 +76,5 @@ pub fn router() -> Router<AppState> {
 }
 
 pub fn person_not_found(id: PersonId, locale: Locale) -> AppError {
-    AppError::NotFound(t!("person.not_found", &locale, id))
+    AppError::NotFound(t!("person.not_found", locale, id))
 }

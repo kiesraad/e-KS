@@ -77,7 +77,7 @@ mod tests {
             csrf_token,
         };
 
-        let list = form.validate(None, &tokens).unwrap();
+        let list = form.validate_create(&tokens).unwrap();
         assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
     }
 
@@ -89,7 +89,7 @@ mod tests {
             csrf_token: TokenValue("invalid".to_string()),
         };
 
-        let Err(data) = form.validate(None, &tokens) else {
+        let Err(data) = form.validate_create(&tokens) else {
             panic!("expected validation errors");
         };
 

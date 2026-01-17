@@ -13,7 +13,7 @@ pub fn display<'a>(value: &'a Option<String>, _: &dyn askama::Values) -> askama:
 
 #[askama::filter_fn]
 pub fn trans(key: &[&'static str], values: &dyn askama::Values) -> askama::Result<&'static str> {
-    let locale: &Locale = askama::get_value(values, "locale")?;
+    let locale: Locale = *askama::get_value(values, "locale")?;
 
     Ok(key[locale.as_usize()])
 }
@@ -33,7 +33,7 @@ pub fn error<T: WithCsrfToken>(
     values: &dyn askama::Values,
     name: &str,
 ) -> askama::Result<Vec<String>> {
-    let locale: &Locale = askama::get_value(values, "locale")?;
+    let locale: Locale = *askama::get_value(values, "locale")?;
 
     Ok(form.error(name, locale))
 }

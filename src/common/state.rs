@@ -1,8 +1,6 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, database pool, and CSRF tokens for handlers.
 
-use std::sync::Arc;
-
 use axum::{
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
@@ -17,7 +15,7 @@ pub struct DbConnection(pub PoolConnection<Postgres>);
 
 #[derive(FromRef, Clone)]
 pub struct AppState {
-    config: Arc<Config>,
+    config: Config,
     pool: sqlx::PgPool,
     csrf_tokens: CsrfTokens,
 }
@@ -25,37 +23,32 @@ pub struct AppState {
 impl AppState {
     pub fn new() -> Result<Self, AppError> {
         let config = Config::from_env()?;
-        let pool = PgPool::connect_lazy(&config.database_url)?;
+        let pool = PgPool::connect_lazy(config.database_url)?;
         let csrf_tokens = CsrfTokens::default();
 
         Ok(Self {
-            config: Arc::new(config),
+            config,
             pool,
             csrf_tokens,
         })
     }
 
-    pub fn pool(&self) -> &PgPool {
-        &self.pool
+    pub fn pool(&self) -> PgPool {
+        self.pool.clone()
     }
 
-    pub fn csrf_tokens(&self) -> &CsrfTokens {
-        &self.csrf_tokens
+    pub fn csrf_tokens(&self) -> CsrfTokens {
+        self.csrf_tokens.clone()
     }
 
-    pub fn config(&self) -> &Config {
-        &self.config
+    pub fn config(&self) -> Config {
+        self.config
     }
 
     #[cfg(test)]
     pub fn new_for_tests(pool: PgPool) -> Self {
-        let config = Config {
-            database_url: "postgres://test".to_string(),
-            election: ElectionConfig::EK2027,
-        };
-
         Self {
-            config: Arc::new(config),
+            config: Config::new_test(),
             pool,
             csrf_tokens: CsrfTokens::default(),
         }
@@ -90,6 +83,20 @@ where
     }
 }
 
+impl<S> FromRequestParts<S> for Config
+where
+    S: Send + Sync,
+    AppState: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(_: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
+        let app_state = AppState::from_ref(state);
+
+        Ok(app_state.config)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -99,8 +106,9 @@ mod tests {
     #[sqlx::test]
     async fn new_for_tests_sets_config_and_tokens(pool: PgPool) -> Result<(), sqlx::Error> {
         let state = AppState::new_for_tests(pool);
+        let config = Config::new_test();
 
-        assert_eq!(state.config().database_url, "postgres://test");
+        assert_eq!(state.config().database_url, config.database_url);
         assert!(matches!(state.config().election, ElectionConfig::EK2027));
 
         let token = state.csrf_tokens().issue();

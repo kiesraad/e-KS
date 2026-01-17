@@ -5,9 +5,11 @@ use std::env;
 
 use crate::{AppError, ElectionConfig, ElectoralDistrict};
 
-#[derive(Debug)]
+const DEFAULT_DATABASE_URL: &str = "postgres://eks@localhost/eks";
+
+#[derive(Debug, Clone, Copy)]
 pub struct Config {
-    pub database_url: String,
+    pub database_url: &'static str,
     pub election: ElectionConfig,
 }
 
@@ -32,13 +34,21 @@ impl Config {
         F: Fn(&'static str, &'static str) -> Result<String, AppError>,
     {
         Ok(Self {
-            database_url: get("DATABASE_URL", "postgres://eks@localhost/eks")?,
+            database_url: Box::leak(get("DATABASE_URL", DEFAULT_DATABASE_URL)?.into_boxed_str()),
             election: ElectionConfig::EK2027,
         })
     }
 
     pub fn get_districts(&self) -> &'static [ElectoralDistrict] {
         self.election.electoral_districts()
+    }
+
+    #[cfg(test)]
+    pub fn new_test() -> Self {
+        Self {
+            database_url: DEFAULT_DATABASE_URL,
+            election: ElectionConfig::EK2027,
+        }
     }
 }
 
