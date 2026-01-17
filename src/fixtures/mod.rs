@@ -5,7 +5,7 @@ use crate::AppError;
 mod candidate_list;
 mod persons;
 
-pub async fn load(pool: PgPool) -> Result<(), AppError> {
+pub async fn load(pool: &PgPool) -> Result<(), AppError> {
     let mut conn = pool.acquire().await?;
 
     clear_database(&mut conn).await?;
@@ -35,7 +35,7 @@ mod tests {
 
     #[sqlx::test]
     async fn test_load_all_fixtures(pool: PgPool) {
-        load(pool.clone()).await.unwrap();
+        load(&pool).await.unwrap();
         let mut conn = pool.acquire().await.unwrap();
         let persons = crate::persons::repository::list_persons(
             &mut conn,

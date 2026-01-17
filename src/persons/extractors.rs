@@ -43,3 +43,82 @@ where
         Ok(person)
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode, header},
+        middleware,
+        routing::get,
+    };
+    use sqlx::PgPool;
+    use tower::ServiceExt;
+
+    use crate::{
+        AppState, Locale, persons, render_error_pages, t,
+        test_utils::{response_body_string, sample_person},
+    };
+
+    #[sqlx::test]
+    async fn person_extractor_loads_person(pool: PgPool) {
+        let person = sample_person(PersonId::new());
+        let mut conn = pool.acquire().await.unwrap();
+        persons::repository::create_person(&mut conn, &person)
+            .await
+            .unwrap();
+
+        let app = Router::new()
+            .route(
+                "/persons/{person_id}",
+                get(|person: Person| async { person.last_name }),
+            )
+            .with_state(AppState::new_for_tests(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/persons/{}", person.id))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Jansen"));
+    }
+
+    #[sqlx::test]
+    async fn person_extractor_returns_not_found(pool: PgPool) {
+        let person_id = PersonId::new();
+
+        let app = Router::new()
+            .route(
+                "/persons/{person_id}",
+                get(|person: Person| async { person.last_name }),
+            )
+            .layer(middleware::from_fn(render_error_pages))
+            .with_state(AppState::new_for_tests(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/persons/{}", person_id))
+                    .header(header::ACCEPT_LANGUAGE, "en")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response_body_string(response).await;
+
+        let expected = t!("person.not_found", Locale::En, person_id);
+        assert!(body.contains(&expected));
+    }
+}

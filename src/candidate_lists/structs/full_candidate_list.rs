@@ -31,8 +31,6 @@ impl FullCandidateList {
     }
 
     pub fn update_position(&mut self, id: PersonId, position: usize) {
-        dbg!("updating position", self.get_ids());
-
         let Some(current_index) = self.get_index(id) else {
             return;
         };
@@ -44,8 +42,5 @@ impl FullCandidateList {
 
         moved.position = position;
         self.candidates.insert(target_index, moved);
-
-        dbg!("moved candidate to position", current_index, target_index);
-        dbg!("finished update position", self.get_ids());
     }
 }
