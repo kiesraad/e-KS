@@ -2,10 +2,10 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection,
+    AppError, CsrfTokens, DbConnection,
     candidate_lists::{
-        self, CandidateList,
-        candidate_pages::{CandidateListDeletePersonPath, CandidateListEditPersonPath},
+        self, Candidate, CandidateList, FullCandidateList,
+        candidate_pages::CandidateListDeletePersonPath,
     },
     form::{EmptyForm, Validate},
     persons,
@@ -13,41 +13,27 @@ use crate::{
 
 pub async fn delete_person(
     CandidateListDeletePersonPath {
-        candidate_list,
-        person,
+        candidate_list: _,
+        person: _,
     }: CandidateListDeletePersonPath,
-    context: Context,
     csrf_tokens: CsrfTokens,
+    full_list: FullCandidateList,
+    candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
         Err(_) => {
             // csrf token is invalid => back to edit view
-            Ok(Redirect::to(
-                &CandidateListEditPersonPath {
-                    candidate_list,
-                    person,
-                }
-                .to_string(),
-            )
-            .into_response())
+            Ok(Redirect::to(&candidate.edit_path()).into_response())
         }
         Ok(_) => {
-            let full_list = candidate_lists::pages::load_candidate_list(
-                &mut conn,
-                candidate_list,
-                context.locale,
-            )
-            .await?;
-            let candidate = full_list.get_candidate(&person, context.locale)?;
-
             // remove person from list
             let mut updates_ids = full_list.get_ids();
             updates_ids.retain(|id| id != &candidate.person.id);
             candidate_lists::repository::update_candidate_list_order(
                 &mut conn,
-                candidate_list,
+                candidate.list_id,
                 &updates_ids,
             )
             .await?;
@@ -67,7 +53,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale,
+        CsrfTokens, DbConnection,
         candidate_lists::{self, CandidateList, CandidateListId},
         persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -93,6 +79,12 @@ mod tests {
         )
         .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
 
@@ -101,8 +93,9 @@ mod tests {
                 candidate_list: list_id,
                 person: person.id,
             },
-            Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(EmptyForm::from(csrf_token)),
         )

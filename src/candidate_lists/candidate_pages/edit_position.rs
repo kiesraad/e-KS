@@ -7,7 +7,7 @@ use crate::{
     candidate_lists::{
         self, Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
         CandidatePositionForm, FullCandidateList, MAX_CANDIDATES,
-        candidate_pages::EditCandidatePositionPath, pages::load_candidate_list,
+        candidate_pages::EditCandidatePositionPath,
     },
     filters,
     form::{FormData, Validate},
@@ -25,17 +25,14 @@ struct EditCandidatePositionTemplate {
 
 pub async fn edit_candidate_position(
     EditCandidatePositionPath {
-        candidate_list,
-        person,
+        candidate_list: _,
+        person: _,
     }: EditCandidatePositionPath,
     context: Context,
     csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
+    candidate: Candidate,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, candidate_list, context.locale).await?;
-    let candidate = full_list.get_candidate(&person, context.locale)?;
-
     let candidate_position = CandidatePosition {
         position: candidate.position as usize,
         action: CandidatePositionAction::Move,
@@ -60,25 +57,23 @@ pub async fn edit_candidate_position(
 
 pub async fn update_candidate_position(
     EditCandidatePositionPath {
-        candidate_list,
-        person,
+        candidate_list: _,
+        person: _,
     }: EditCandidatePositionPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    full_list: FullCandidateList,
+    candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let mut person_ids = full_list.get_ids();
 
-    let Some(current_index) = full_list.get_index(&person) else {
+    let Some(current_index) = full_list.get_index(&candidate.person.id) else {
         return Err(AppError::NotFound(
             "Person not found in candidate list".to_string(),
         ));
     };
-
-    let candidate = full_list.get_candidate(&person, context.locale)?;
 
     let candidate_position = CandidatePosition {
         position: candidate.position as usize,
@@ -102,7 +97,7 @@ pub async fn update_candidate_position(
             if position_form.action == CandidatePositionAction::Remove {
                 candidate_lists::repository::update_candidate_list_order(
                     &mut conn,
-                    candidate_list,
+                    candidate.list_id,
                     &person_ids,
                 )
                 .await?;
@@ -116,7 +111,7 @@ pub async fn update_candidate_position(
                     person_ids.insert(target_index, moved);
                     candidate_lists::repository::update_candidate_list_order(
                         &mut conn,
-                        candidate_list,
+                        candidate.list_id,
                         &person_ids,
                     )
                     .await?;
@@ -162,17 +157,18 @@ mod tests {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
-        let candidate = Candidate {
-            person: person.clone(),
-            position: 1,
-            list_id,
-        };
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
+
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
 
         let response = edit_candidate_position(
             EditCandidatePositionPath {
@@ -181,7 +177,8 @@ mod tests {
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            full_list,
+            candidate.clone(),
         )
         .await
         .unwrap()
@@ -213,6 +210,12 @@ mod tests {
         )
         .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person_a.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 2, "move");
@@ -224,6 +227,8 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -234,8 +239,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
         assert_eq!(full_list.candidates[0].person.id, person_b.id);
@@ -262,6 +267,12 @@ mod tests {
         )
         .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person_a.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 1, "remove");
@@ -273,6 +284,8 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -283,8 +296,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         assert_eq!(full_list.candidates[0].person.id, person_b.id);
@@ -312,6 +325,12 @@ mod tests {
         )
         .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person_a.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let other_tokens = CsrfTokens::default();
         let csrf_token = other_tokens.issue().value;
@@ -324,6 +343,8 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -336,8 +357,8 @@ mod tests {
         assert!(body.contains("The CSRF token is invalid."));
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
         assert_eq!(full_list.candidates[0].person.id, person_a.id);

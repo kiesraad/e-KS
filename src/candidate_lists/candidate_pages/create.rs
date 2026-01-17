@@ -5,8 +5,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        self, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        pages::{CreateCandidatePath, load_candidate_list},
+        self, CandidateList, FullCandidateList, MAX_CANDIDATES, pages::CreateCandidatePath,
     },
     filters,
     form::{FormData, Validate},
@@ -23,13 +22,11 @@ struct PersonCreateTemplate {
 }
 
 pub async fn new_person_candidate_list(
-    CreateCandidatePath { id }: CreateCandidatePath,
+    CreateCandidatePath { .. }: CreateCandidatePath,
     context: Context,
     csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList = load_candidate_list(&mut conn, id, context.locale).await?;
-
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
@@ -42,14 +39,13 @@ pub async fn new_person_candidate_list(
 }
 
 pub async fn create_person_candidate_list(
-    CreateCandidatePath { id }: CreateCandidatePath,
+    CreateCandidatePath { .. }: CreateCandidatePath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list: FullCandidateList = load_candidate_list(&mut conn, id, context.locale).await?;
-
     match form.validate_create(&csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
@@ -65,11 +61,16 @@ pub async fn create_person_candidate_list(
 
             let mut person_ids = full_list.get_ids();
             person_ids.push(person.id);
-            candidate_lists::repository::update_candidate_list_order(&mut conn, id, &person_ids)
-                .await?;
+            candidate_lists::repository::update_candidate_list_order(
+                &mut conn,
+                full_list.list.id,
+                &person_ids,
+            )
+            .await?;
 
             let candidate =
-                candidate_lists::repository::get_candidate(&mut conn, id, person.id).await?;
+                candidate_lists::repository::get_candidate(&mut conn, full_list.list.id, person.id)
+                    .await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
         }
@@ -100,11 +101,15 @@ mod tests {
 
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = new_person_candidate_list(
             CreateCandidatePath { id: list_id },
             Context::new(Locale::En),
             CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            full_list,
         )
         .await
         .unwrap()
@@ -131,10 +136,15 @@ mod tests {
         let csrf_token = csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = create_person_candidate_list(
             CreateCandidatePath { id: list_id },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -150,8 +160,8 @@ mod tests {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
@@ -174,10 +184,15 @@ mod tests {
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = create_person_candidate_list(
             CreateCandidatePath { id: list_id },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
