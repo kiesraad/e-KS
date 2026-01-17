@@ -1,12 +1,9 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
+    AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
         self, Person, PersonForm,
@@ -28,7 +25,7 @@ pub async fn edit_person_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let person = persons::repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
@@ -44,15 +41,15 @@ pub async fn edit_person_form(
 pub async fn update_person(
     EditPersonPath { id }: EditPersonPath,
     context: Context,
-    State(app_state): State<AppState>,
+    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let person = persons::repository::get_person(&mut conn, &id)
+    let person = persons::repository::get_person(&mut conn, id)
         .await?
         .ok_or(person_not_found(id, context.locale))?;
 
-    match form.validate(Some(&person), app_state.csrf_tokens()) {
+    match form.validate_update(&person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
@@ -74,7 +71,6 @@ pub async fn update_person(
 mod tests {
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -82,7 +78,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
+        Context, CsrfTokens, DbConnection, Locale,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -120,15 +116,15 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = "Updated".to_string();
 
         let response = update_person(
             EditPersonPath { id },
             Context::new(Locale::En),
-            State(app_state),
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -145,7 +141,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &id)
+        let updated = persons::repository::get_person(&mut conn, id)
             .await?
             .expect("updated person");
         assert_eq!(updated.last_name, "Updated");
@@ -161,15 +157,15 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
         let response = update_person(
             EditPersonPath { id },
             Context::new(Locale::En),
-            State(app_state),
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )

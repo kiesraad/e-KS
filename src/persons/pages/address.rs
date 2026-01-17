@@ -1,17 +1,11 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
+    AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self, AddressForm, Person,
-        pages::{EditPersonAddressPath, person_not_found},
-    },
+    persons::{self, AddressForm, Person, pages::EditPersonAddressPath},
     t,
 };
 
@@ -23,15 +17,11 @@ struct PersonAddressUpdateTemplate {
 }
 
 pub async fn edit_person_address(
-    EditPersonAddressPath { id }: EditPersonAddressPath,
+    _: EditPersonAddressPath,
     context: Context,
+    person: Person,
     csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let person = persons::repository::get_person(&mut conn, &id)
-        .await?
-        .ok_or(person_not_found(id, context.locale))?;
-
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             form: FormData::new_with_data(AddressForm::from(person.clone()), &csrf_tokens),
@@ -42,17 +32,14 @@ pub async fn edit_person_address(
 }
 
 pub async fn update_person_address(
-    EditPersonAddressPath { id }: EditPersonAddressPath,
+    _: EditPersonAddressPath,
     context: Context,
-    State(app_state): State<AppState>,
+    person: Person,
+    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let person = persons::repository::get_person(&mut conn, &id)
-        .await?
-        .ok_or(person_not_found(id, context.locale))?;
-
-    match form.validate(Some(&person), app_state.csrf_tokens()) {
+    match form.validate_update(&person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
@@ -74,7 +61,6 @@ pub async fn update_person_address(
 mod tests {
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -82,7 +68,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
+        Context, CsrfTokens, DbConnection, Locale,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
@@ -98,8 +84,8 @@ mod tests {
         let response = edit_person_address(
             EditPersonAddressPath { id },
             Context::new(Locale::En),
+            person,
             CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
         )
         .await
         .unwrap()
@@ -120,14 +106,15 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
 
         let response = update_person_address(
             EditPersonAddressPath { id },
             Context::new(Locale::En),
-            State(app_state),
+            person,
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -145,7 +132,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &id)
+        let updated = persons::repository::get_person(&mut conn, id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));
@@ -163,15 +150,16 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let csrf_tokens = CsrfTokens::default();
+        let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
         let response = update_person_address(
             EditPersonAddressPath { id },
             Context::new(Locale::En),
-            State(app_state),
+            person,
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -194,13 +182,14 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
+        let csrf_tokens = CsrfTokens::default();
 
         // Update with Dutch address (but all form fields filled)
         update_person_address(
             EditPersonAddressPath { id },
             Context::new(Locale::En),
-            State(app_state.clone()),
+            person.clone(),
+            csrf_tokens.clone(),
             DbConnection(pool.acquire().await?),
             Form(AddressForm {
                 locality: "Juinen".to_string(),
@@ -213,7 +202,7 @@ mod tests {
                 address_line_1: "Stationsstraat 10A".to_string(),
                 address_line_2: "1234AB Juinen".to_string(),
                 is_dutch: "true".to_string(),
-                csrf_token: app_state.csrf_tokens().issue().value,
+                csrf_token: csrf_tokens.issue().value,
             }),
         )
         .await
@@ -221,7 +210,7 @@ mod tests {
 
         // The international address should be removed because `is_dutch` is true
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &id)
+        let updated = persons::repository::get_person(&mut conn, id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(true));
@@ -239,7 +228,8 @@ mod tests {
         update_person_address(
             EditPersonAddressPath { id },
             Context::new(Locale::En),
-            State(app_state.clone()),
+            updated.clone(),
+            csrf_tokens.clone(),
             DbConnection(pool.acquire().await?),
             Form(AddressForm {
                 locality: "Juinen".to_string(),
@@ -252,7 +242,7 @@ mod tests {
                 address_line_1: "Stationsstraat 10A".to_string(),
                 address_line_2: "1234AB Juinen".to_string(),
                 is_dutch: "false".to_string(),
-                csrf_token: app_state.csrf_tokens().issue().value,
+                csrf_token: csrf_tokens.issue().value,
             }),
         )
         .await
@@ -260,7 +250,7 @@ mod tests {
 
         // The Dutch address should be removed because `is_dutch` is false
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &id)
+        let updated = persons::repository::get_person(&mut conn, id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(false));

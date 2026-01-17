@@ -1,12 +1,12 @@
-use sqlx::PgConnection;
+use sqlx::{PgConnection, PgPool};
 
-use crate::{AppError, AppState};
+use crate::AppError;
 
 mod candidate_list;
 mod persons;
 
-pub async fn load(state: &AppState) -> Result<(), AppError> {
-    let mut conn = state.pool().acquire().await?;
+pub async fn load(pool: PgPool) -> Result<(), AppError> {
+    let mut conn = pool.acquire().await?;
 
     clear_database(&mut conn).await?;
     persons::load(&mut conn).await?;
@@ -30,13 +30,12 @@ async fn clear_database(conn: &mut PgConnection) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AppState, fixtures::load};
+    use crate::fixtures::load;
     use sqlx::PgPool;
 
     #[sqlx::test]
     async fn test_load_all_fixtures(pool: PgPool) {
-        let app_state = AppState::new_for_tests(pool.clone());
-        load(&app_state).await.unwrap();
+        load(pool.clone()).await.unwrap();
         let mut conn = pool.acquire().await.unwrap();
         let persons = crate::persons::repository::list_persons(
             &mut conn,

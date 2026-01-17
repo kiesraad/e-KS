@@ -166,7 +166,7 @@ mod tests {
             csrf_token: tokens.issue().value,
         };
 
-        let updated = form.validate(Some(&current), &tokens).unwrap();
+        let updated = form.validate_update(&current, &tokens).unwrap();
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.gender, Some(Gender::Male));
@@ -200,7 +200,7 @@ mod tests {
             csrf_token: tokens.issue().value,
         };
 
-        let Err(data) = form.validate(None, &tokens) else {
+        let Err(data) = form.validate_create(&tokens) else {
             panic!("expected validation errors");
         };
 

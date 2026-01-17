@@ -17,12 +17,12 @@ pub enum ValidationError {
 
 impl std::fmt::Display for ValidationError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{}", self.message(&Locale::default()))
+        write!(f, "{}", self.message(Locale::default()))
     }
 }
 
 impl ValidationError {
-    pub fn message(&self, locale: &Locale) -> String {
+    pub fn message(&self, locale: Locale) -> String {
         match self {
             ValidationError::InvalidValue => t!("validation.invalid_value", locale),
             ValidationError::InvalidEmail => t!("validation.invalid_email", locale),
@@ -49,11 +49,11 @@ mod tests {
     #[test]
     fn formats_messages_in_english() {
         assert_eq!(
-            ValidationError::InvalidCsrfToken.message(&Locale::En),
+            ValidationError::InvalidCsrfToken.message(Locale::En),
             "The CSRF token is invalid."
         );
         assert_eq!(
-            ValidationError::ValueTooShort(2, 5).message(&Locale::En),
+            ValidationError::ValueTooShort(2, 5).message(Locale::En),
             "The value is too short (2 characters), minimum 5 characters required."
         );
     }

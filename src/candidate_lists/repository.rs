@@ -293,7 +293,7 @@ pub async fn get_candidate(
     list_id: CandidateListId,
     person_id: PersonId,
 ) -> Result<Candidate, sqlx::Error> {
-    let person = crate::persons::repository::get_person(executor, &person_id)
+    let person = crate::persons::repository::get_person(executor, person_id)
         .await?
         .ok_or(sqlx::Error::RowNotFound)?;
 

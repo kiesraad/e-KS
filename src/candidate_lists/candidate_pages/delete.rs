@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection,
+    AppError, Context, CsrfTokens, DbConnection,
     candidate_lists::{
         self, CandidateList,
         candidate_pages::{CandidateListDeletePersonPath, CandidateListEditPersonPath},
@@ -20,12 +17,11 @@ pub async fn delete_person(
         person,
     }: CandidateListDeletePersonPath,
     context: Context,
-    _: State<AppState>,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate(None, &csrf_tokens) {
+    match form.validate_create(&csrf_tokens) {
         Err(_) => {
             // csrf token is invalid => back to edit view
             Ok(Redirect::to(
@@ -56,7 +52,7 @@ pub async fn delete_person(
             )
             .await?;
 
-            persons::repository::remove_person(&mut conn, &candidate.person.id).await?;
+            persons::repository::remove_person(&mut conn, candidate.person.id).await?;
 
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
@@ -66,15 +62,12 @@ pub async fn delete_person(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        extract::State,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::extract::Form;
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
+        Context, CsrfTokens, DbConnection, Locale,
         candidate_lists::{self, CandidateList, CandidateListId},
         persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -100,7 +93,6 @@ mod tests {
         )
         .await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
 
@@ -110,8 +102,7 @@ mod tests {
                 person: person.id,
             },
             Context::new(Locale::En),
-            State(app_state),
-            csrf_tokens.clone(),
+            csrf_tokens,
             DbConnection(pool.acquire().await?),
             Form(EmptyForm::from(csrf_token)),
         )
@@ -134,7 +125,7 @@ mod tests {
         assert_eq!(updated_list.candidates.len(), 1);
         assert_eq!(updated_list.candidates[0].person.id, other_person.id);
 
-        let removed = persons::repository::get_person(&mut conn, &person.id).await?;
+        let removed = persons::repository::get_person(&mut conn, person.id).await?;
         assert!(removed.is_none());
 
         Ok(())

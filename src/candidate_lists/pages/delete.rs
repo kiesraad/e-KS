@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection,
+    AppError, Context, CsrfTokens, DbConnection,
     candidate_lists::{
         self, CandidateList,
         pages::{CandidateListsDeletePath, candidate_list_not_found},
@@ -16,12 +13,11 @@ use crate::{
 pub async fn delete_candidate_list(
     CandidateListsDeletePath { id }: CandidateListsDeletePath,
     context: Context,
-    _: State<AppState>,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate(None, &csrf_tokens) {
+    match form.validate_create(&csrf_tokens) {
         Err(_) => {
             // csrf token is invalid => back to edit view
             let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
@@ -39,22 +35,18 @@ pub async fn delete_candidate_list(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        extract::State,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::extract::Form;
     use chrono::DateTime;
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
+        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
         candidate_lists::{self, CandidateListId},
     };
 
     #[sqlx::test]
     async fn delete_candidate_list_and_redirect(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
         let mut conn = pool.acquire().await.unwrap();
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -71,7 +63,6 @@ mod tests {
                 id: candidate_list.id,
             },
             Context::new(Locale::En),
-            State(app_state),
             csrf_tokens,
             DbConnection(conn),
             Form(EmptyForm { csrf_token }),
@@ -102,7 +93,6 @@ mod tests {
     async fn delete_candidate_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
         let mut conn = pool.acquire().await.unwrap();
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = TokenValue("invalid".to_string());
@@ -119,7 +109,6 @@ mod tests {
                 id: candidate_list.id,
             },
             Context::new(Locale::En),
-            State(app_state),
             csrf_tokens,
             DbConnection(conn),
             Form(EmptyForm { csrf_token }),
