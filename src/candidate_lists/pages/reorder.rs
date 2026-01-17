@@ -12,7 +12,7 @@ pub struct CandidateListReorderPayload {
 }
 
 pub async fn reorder_candidate_list(
-    CandidateListReorderPath { .. }: CandidateListReorderPath,
+    _: CandidateListReorderPath,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     Json(payload): Json<CandidateListReorderPayload>,
@@ -58,7 +58,7 @@ mod tests {
         .await?;
 
         let response = reorder_candidate_list(
-            CandidateListReorderPath { id: list_id },
+            CandidateListReorderPath { list_id },
             list.clone(),
             DbConnection(pool.acquire().await?),
             Json(CandidateListReorderPayload {

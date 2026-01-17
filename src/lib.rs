@@ -3,6 +3,7 @@ mod candidate_lists;
 /// Generic modules
 mod common;
 mod error;
+pub mod filters;
 mod form;
 mod pages;
 mod pagination;
@@ -17,7 +18,7 @@ pub use common::{
     constants,
     context::Context,
     election::{ElectionConfig, ElectoralDistrict},
-    filters, locale,
+    locale,
     locale::Locale,
     logging, new_type, server,
     state::{AppState, DbConnection},

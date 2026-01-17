@@ -19,7 +19,7 @@ struct PersonCreateTemplate {
 }
 
 pub async fn new_person_candidate_list(
-    CreateCandidatePath { .. }: CreateCandidatePath,
+    _: CreateCandidatePath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -35,7 +35,7 @@ pub async fn new_person_candidate_list(
 }
 
 pub async fn create_person_candidate_list(
-    CreateCandidatePath { .. }: CreateCandidatePath,
+    _: CreateCandidatePath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -99,7 +99,7 @@ mod tests {
             .expect("candidate list");
 
         let response = new_person_candidate_list(
-            CreateCandidatePath { id: list_id },
+            CreateCandidatePath { list_id },
             Context::new(Locale::En),
             CsrfTokens::default(),
             full_list,
@@ -134,7 +134,7 @@ mod tests {
             .expect("candidate list");
 
         let response = create_person_candidate_list(
-            CreateCandidatePath { id: list_id },
+            CreateCandidatePath { list_id },
             Context::new(Locale::En),
             csrf_tokens,
             full_list,
@@ -182,7 +182,7 @@ mod tests {
             .expect("candidate list");
 
         let response = create_person_candidate_list(
-            CreateCandidatePath { id: list_id },
+            CreateCandidatePath { list_id },
             Context::new(Locale::En),
             csrf_tokens,
             full_list,

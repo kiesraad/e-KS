@@ -2,8 +2,10 @@
 //! Used keep formatting logic out of templates.
 
 use crate::{
-    Locale,
+    ElectionConfig, Locale,
+    candidate_lists::CandidateList,
     form::{FormData, WithCsrfToken},
+    t,
 };
 
 #[askama::filter_fn]
@@ -36,6 +38,28 @@ pub fn error<T: WithCsrfToken>(
     let locale: Locale = *askama::get_value(values, "locale")?;
 
     Ok(form.error(name, locale))
+}
+
+#[askama::filter_fn]
+pub fn display_districts(
+    list: &CandidateList,
+    values: &dyn askama::Values,
+) -> askama::Result<String> {
+    let locale: Locale = *askama::get_value(values, "locale")?;
+    let election: ElectionConfig = *askama::get_value(values, "election")?;
+
+    if !list.electoral_districts.is_empty()
+        && list.electoral_districts.len() == election.electoral_districts().len()
+    {
+        Ok(t!("candidate_list.districts.all", locale).to_string())
+    } else {
+        Ok(list
+            .electoral_districts
+            .iter()
+            .map(|d| d.title())
+            .collect::<Vec<_>>()
+            .join(", "))
+    }
 }
 
 /// Returns a cache buster string based on the current git commit hash (set during build on github).

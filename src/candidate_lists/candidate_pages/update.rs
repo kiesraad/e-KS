@@ -22,10 +22,7 @@ struct PersonUpdateTemplate {
 }
 
 pub async fn edit_person_form(
-    CandidateListEditPersonPath {
-        candidate_list: _,
-        person: _,
-    }: CandidateListEditPersonPath,
+    _: CandidateListEditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -42,10 +39,7 @@ pub async fn edit_person_form(
 }
 
 pub async fn update_person(
-    CandidateListEditPersonPath {
-        candidate_list: _,
-        person: _,
-    }: CandidateListEditPersonPath,
+    _: CandidateListEditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -110,8 +104,8 @@ mod tests {
 
         let response = edit_person_form(
             CandidateListEditPersonPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
@@ -154,8 +148,8 @@ mod tests {
 
         let response = update_person(
             CandidateListEditPersonPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
             Context::new(Locale::En),
             csrf_tokens,
@@ -210,8 +204,8 @@ mod tests {
 
         let response = update_person(
             CandidateListEditPersonPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
             Context::new(Locale::En),
             csrf_tokens,

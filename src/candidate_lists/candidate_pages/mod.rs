@@ -5,7 +5,6 @@ use serde::Deserialize;
 use crate::{
     AppError, AppState,
     candidate_lists::{Candidate, CandidateListId},
-    impl_from_field,
     persons::PersonId,
 };
 
@@ -17,83 +16,62 @@ mod edit_position;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/reorder/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/reorder/{person_id}", rejection(AppError))]
 pub struct EditCandidatePositionPath {
-    pub candidate_list: CandidateListId,
-    pub person: PersonId,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
-impl_from_field!(EditCandidatePositionPath => candidate_list: CandidateListId);
-impl_from_field!(EditCandidatePositionPath => person: PersonId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/edit/{person_id}", rejection(AppError))]
 pub struct CandidateListEditPersonPath {
-    pub candidate_list: CandidateListId,
-    pub person: PersonId,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
-impl_from_field!(CandidateListEditPersonPath => candidate_list: CandidateListId);
-impl_from_field!(CandidateListEditPersonPath => person: PersonId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/address/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/address/{person_id}", rejection(AppError))]
 pub struct CandidateListEditAddressPath {
-    pub candidate_list: CandidateListId,
-    pub person: PersonId,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
-
-impl_from_field!(CandidateListEditAddressPath => candidate_list: CandidateListId);
-impl_from_field!(CandidateListEditAddressPath => person: PersonId);
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/delete/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/delete/{person_id}", rejection(AppError))]
 pub struct CandidateListDeletePersonPath {
-    pub candidate_list: CandidateListId,
-    pub person: PersonId,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
-
-impl_from_field!(CandidateListDeletePersonPath => candidate_list: CandidateListId);
-impl_from_field!(CandidateListDeletePersonPath => person: PersonId);
 
 impl Candidate {
     pub fn edit_position_path(&self) -> String {
         EditCandidatePositionPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn edit_path(&self) -> String {
         CandidateListEditPersonPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn edit_address_path(&self) -> String {
         CandidateListEditAddressPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn delete_path(&self) -> String {
         CandidateListDeletePersonPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }

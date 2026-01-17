@@ -43,7 +43,6 @@ pub async fn create_person(
         Ok(person) => {
             persons::repository::create_person(&mut conn, &person).await?;
 
-            // Redirect to the address edit page
             Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
     }

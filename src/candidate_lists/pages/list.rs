@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
+    AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{self, CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters, persons,
     persons::Person,
@@ -13,9 +13,7 @@ use crate::{
 #[template(path = "candidate_lists/list.html")]
 struct CandidateListIndexTemplate {
     candidate_lists: Vec<CandidateListSummary>,
-    election: ElectionConfig,
     total_persons: i64,
-    locale: Locale,
 }
 
 pub async fn list_candidate_lists(
@@ -26,13 +24,10 @@ pub async fn list_candidate_lists(
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = context.election;
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
             candidate_lists,
-            election,
-            locale: context.locale,
             total_persons,
         },
         context,

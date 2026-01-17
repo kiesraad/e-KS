@@ -75,14 +75,14 @@ mod tests {
 
     #[sqlx::test]
     async fn edit_person_address_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id: PersonId = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
         let response = edit_person_address(
-            EditPersonAddressPath { id },
+            EditPersonAddressPath { person_id },
             Context::new(Locale::En),
             person,
             CsrfTokens::default(),
@@ -100,8 +100,8 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_address_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
@@ -111,7 +111,7 @@ mod tests {
         let form = sample_address_form(&csrf_token);
 
         let response = update_person_address(
-            EditPersonAddressPath { id },
+            EditPersonAddressPath { person_id },
             Context::new(Locale::En),
             person,
             csrf_tokens,
@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, id)
+        let updated = persons::repository::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));
@@ -144,8 +144,8 @@ mod tests {
     async fn update_person_address_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
@@ -156,7 +156,7 @@ mod tests {
         form.postal_code = "a".to_string();
 
         let response = update_person_address(
-            EditPersonAddressPath { id },
+            EditPersonAddressPath { person_id },
             Context::new(Locale::En),
             person,
             csrf_tokens,
@@ -176,8 +176,8 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
@@ -186,7 +186,7 @@ mod tests {
 
         // Update with Dutch address (but all form fields filled)
         update_person_address(
-            EditPersonAddressPath { id },
+            EditPersonAddressPath { person_id },
             Context::new(Locale::En),
             person.clone(),
             csrf_tokens.clone(),
@@ -210,7 +210,7 @@ mod tests {
 
         // The international address should be removed because `is_dutch` is true
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, id)
+        let updated = persons::repository::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(true));
@@ -226,7 +226,7 @@ mod tests {
 
         // Update with non-Dutch address (but all form fields filled)
         update_person_address(
-            EditPersonAddressPath { id },
+            EditPersonAddressPath { person_id },
             Context::new(Locale::En),
             updated.clone(),
             csrf_tokens.clone(),
@@ -250,7 +250,7 @@ mod tests {
 
         // The Dutch address should be removed because `is_dutch` is false
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, id)
+        let updated = persons::repository::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(false));

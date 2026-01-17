@@ -23,7 +23,7 @@
       <h3>{{ t!("candidate_list.title_single")|trans }}</h3>
       <p class="statistic truncated">
         {{ t!("common.electoral_districts")|trans }}:
-        {{ candidate_list.list.display_districts(election, locale) }}
+        {{ candidate_list.list|display_districts }}
       </p>
       <p class="statistic">
         {% if candidate_list.person_count == 0 %}

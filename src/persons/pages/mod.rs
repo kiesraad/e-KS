@@ -1,7 +1,6 @@
 use crate::{
-    AppError, AppState, Locale, impl_from_field,
+    AppError, AppState,
     persons::{Person, PersonId},
-    t,
 };
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
@@ -22,28 +21,22 @@ pub struct PersonsPath;
 pub struct PersonsNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/edit", rejection(AppError))]
+#[typed_path("/persons/{person_id}/edit", rejection(AppError))]
 pub struct EditPersonPath {
-    pub id: PersonId,
+    pub person_id: PersonId,
 }
 
-impl_from_field!(EditPersonPath => id: PersonId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/delete", rejection(AppError))]
+#[typed_path("/persons/{person_id}/delete", rejection(AppError))]
 pub struct DeletePersonPath {
-    pub id: PersonId,
+    pub person_id: PersonId,
 }
-
-impl_from_field!(DeletePersonPath => id: PersonId);
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/address", rejection(AppError))]
+#[typed_path("/persons/{person_id}/address", rejection(AppError))]
 pub struct EditPersonAddressPath {
-    pub id: PersonId,
+    pub person_id: PersonId,
 }
-
-impl_from_field!(EditPersonAddressPath => id: PersonId);
 
 impl Person {
     pub fn list_path() -> String {
@@ -55,11 +48,13 @@ impl Person {
     }
 
     pub fn edit_path(&self) -> String {
-        EditPersonPath { id: self.id }.to_uri().to_string()
+        EditPersonPath { person_id: self.id }.to_uri().to_string()
     }
 
     pub fn edit_address_path(&self) -> String {
-        EditPersonAddressPath { id: self.id }.to_uri().to_string()
+        EditPersonAddressPath { person_id: self.id }
+            .to_uri()
+            .to_string()
     }
 }
 
@@ -73,8 +68,4 @@ pub fn router() -> Router<AppState> {
         .typed_get(address::edit_person_address)
         .typed_post(address::update_person_address)
         .typed_post(delete::delete_person)
-}
-
-pub fn person_not_found(id: PersonId, locale: Locale) -> AppError {
-    AppError::NotFound(t!("person.not_found", locale, id))
 }

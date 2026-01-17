@@ -5,7 +5,6 @@ use serde::Deserialize;
 use crate::{
     AppError, AppState,
     candidate_lists::{CandidateList, CandidateListId},
-    impl_from_field,
 };
 
 mod create;
@@ -24,52 +23,40 @@ pub struct CandidateListsPath;
 pub struct CandidateListNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}", rejection(AppError))]
 pub struct ViewCandidateListPath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
 
-impl_from_field!(ViewCandidateListPath => id: CandidateListId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/edit", rejection(AppError))]
 pub struct CandidateListsEditPath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
 
-impl_from_field!(CandidateListsEditPath => id: CandidateListId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/delete", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/delete", rejection(AppError))]
 pub struct CandidateListsDeletePath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
 
-impl_from_field!(CandidateListsDeletePath => id: CandidateListId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/reorder", rejection(AppError))]
 pub struct CandidateListReorderPath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
 
-impl_from_field!(CandidateListReorderPath => id: CandidateListId);
-
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/add", rejection(AppError))]
 pub struct AddCandidatePath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
-
-impl_from_field!(AddCandidatePath => id: CandidateListId);
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{id}/new", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/new", rejection(AppError))]
 pub struct CreateCandidatePath {
-    pub id: CandidateListId,
+    pub list_id: CandidateListId,
 }
-
-impl_from_field!(CreateCandidatePath => id: CandidateListId);
 
 impl CandidateList {
     pub fn list_path() -> String {
@@ -81,27 +68,27 @@ impl CandidateList {
     }
 
     pub fn update_path(&self) -> String {
-        CandidateListsEditPath { id: self.id }.to_string()
+        CandidateListsEditPath { list_id: self.id }.to_string()
     }
 
     pub fn delete_path(&self) -> String {
-        CandidateListsDeletePath { id: self.id }.to_string()
+        CandidateListsDeletePath { list_id: self.id }.to_string()
     }
 
     pub fn view_path(&self) -> String {
-        ViewCandidateListPath { id: self.id }.to_string()
+        ViewCandidateListPath { list_id: self.id }.to_string()
     }
 
     pub fn reorder_path(&self) -> String {
-        CandidateListReorderPath { id: self.id }.to_string()
+        CandidateListReorderPath { list_id: self.id }.to_string()
     }
 
     pub fn add_candidate_path(&self) -> String {
-        AddCandidatePath { id: self.id }.to_string()
+        AddCandidatePath { list_id: self.id }.to_string()
     }
 
     pub fn new_candidate_path(&self) -> String {
-        CreateCandidatePath { id: self.id }.to_string()
+        CreateCandidatePath { list_id: self.id }.to_string()
     }
 }
 
