@@ -3,8 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict, HtmlTemplate,
-    Locale,
+    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListsEditPath,
     },
@@ -18,16 +17,13 @@ use crate::{
 #[template(path = "candidate_lists/update.html")]
 struct CandidateListUpdateTemplate {
     candidate_lists: Vec<CandidateListSummary>,
-    election: ElectionConfig,
     total_persons: i64,
-    locale: Locale,
     form: FormData<CandidateListForm>,
     candidate_list: CandidateList,
-    electoral_districts: &'static [ElectoralDistrict],
 }
 
 pub async fn edit_candidate_list(
-    CandidateListsEditPath { .. }: CandidateListsEditPath,
+    _: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
@@ -36,8 +32,6 @@ pub async fn edit_candidate_list(
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = context.election;
-    let electoral_districts = election.electoral_districts();
 
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
@@ -46,11 +40,8 @@ pub async fn edit_candidate_list(
                 &csrf_tokens,
             ),
             candidate_lists,
-            election,
             total_persons,
-            locale: context.locale,
             candidate_list,
-            electoral_districts,
         },
         context,
     )
@@ -58,7 +49,7 @@ pub async fn edit_candidate_list(
 }
 
 pub async fn update_candidate_list(
-    CandidateListsEditPath { .. }: CandidateListsEditPath,
+    _: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
@@ -68,20 +59,14 @@ pub async fn update_candidate_list(
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = context.election;
-
-    let electoral_districts = election.electoral_districts();
 
     match form.validate_update(&candidate_list, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 candidate_lists,
-                election,
                 total_persons,
-                locale: context.locale,
                 form: form_data,
                 candidate_list,
-                electoral_districts,
             },
             context,
         )
@@ -118,7 +103,7 @@ mod tests {
 
         let response = edit_candidate_list(
             CandidateListsEditPath {
-                id: candidate_list.id,
+                list_id: candidate_list.id,
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
@@ -158,7 +143,7 @@ mod tests {
         };
         let response = update_candidate_list(
             CandidateListsEditPath {
-                id: candidate_list.id,
+                list_id: candidate_list.id,
             },
             Context::new(Locale::En),
             csrf_tokens,
@@ -221,7 +206,7 @@ mod tests {
         };
         let response = update_candidate_list(
             CandidateListsEditPath {
-                id: candidate_list.id,
+                list_id: candidate_list.id,
             },
             Context::new(Locale::En),
             csrf_tokens,

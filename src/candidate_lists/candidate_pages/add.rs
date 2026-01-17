@@ -19,7 +19,7 @@ struct AddExistingPersonTemplate {
 }
 
 pub async fn add_existing_person(
-    AddCandidatePath { .. }: AddCandidatePath,
+    _: AddCandidatePath,
     context: Context,
     full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
@@ -39,7 +39,7 @@ pub struct AddPersonForm {
 }
 
 pub async fn add_person_to_candidate_list(
-    AddCandidatePath { .. }: AddCandidatePath,
+    _: AddCandidatePath,
     full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
     Form(form): Form<AddPersonForm>,
@@ -96,7 +96,7 @@ mod tests {
             .expect("candidate list");
 
         let response = add_existing_person(
-            AddCandidatePath { id: list_id },
+            AddCandidatePath { list_id },
             Context::new(Locale::En),
             full_list,
             DbConnection(pool.acquire().await?),
@@ -130,7 +130,7 @@ mod tests {
             .expect("candidate list");
 
         let response = add_person_to_candidate_list(
-            AddCandidatePath { id: list_id },
+            AddCandidatePath { list_id },
             full_list,
             DbConnection(pool.acquire().await?),
             Form(AddPersonForm {
@@ -184,7 +184,7 @@ mod tests {
             .expect("candidate list");
 
         let response = add_person_to_candidate_list(
-            AddCandidatePath { id: list_id },
+            AddCandidatePath { list_id },
             full_list,
             DbConnection(pool.acquire().await?),
             Form(AddPersonForm {

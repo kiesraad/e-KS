@@ -22,10 +22,7 @@ struct EditCandidatePositionTemplate {
 }
 
 pub async fn edit_candidate_position(
-    EditCandidatePositionPath {
-        candidate_list: _,
-        person: _,
-    }: EditCandidatePositionPath,
+    _: EditCandidatePositionPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -53,10 +50,7 @@ pub async fn edit_candidate_position(
 }
 
 pub async fn update_candidate_position(
-    EditCandidatePositionPath {
-        candidate_list: _,
-        person: _,
-    }: EditCandidatePositionPath,
+    _: EditCandidatePositionPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
@@ -157,8 +151,8 @@ mod tests {
 
         let response = edit_candidate_position(
             EditCandidatePositionPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
@@ -207,8 +201,8 @@ mod tests {
 
         let response = update_candidate_position(
             EditCandidatePositionPath {
-                candidate_list: list_id,
-                person: person_a.id,
+                list_id,
+                person_id: person_a.id,
             },
             Context::new(Locale::En),
             csrf_tokens,
@@ -264,8 +258,8 @@ mod tests {
 
         let response = update_candidate_position(
             EditCandidatePositionPath {
-                candidate_list: list_id,
-                person: person_a.id,
+                list_id,
+                person_id: person_a.id,
             },
             Context::new(Locale::En),
             csrf_tokens,
@@ -323,8 +317,8 @@ mod tests {
 
         let response = update_candidate_position(
             EditCandidatePositionPath {
-                candidate_list: list_id,
-                person: person_a.id,
+                list_id,
+                person_id: person_a.id,
             },
             Context::new(Locale::En),
             csrf_tokens,

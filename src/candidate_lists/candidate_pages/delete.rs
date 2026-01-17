@@ -11,10 +11,7 @@ use crate::{
 };
 
 pub async fn delete_person(
-    CandidateListDeletePersonPath {
-        candidate_list: _,
-        person: _,
-    }: CandidateListDeletePersonPath,
+    _: CandidateListDeletePersonPath,
     csrf_tokens: CsrfTokens,
     candidate: Candidate,
     DbConnection(mut conn): DbConnection,
@@ -78,8 +75,8 @@ mod tests {
 
         let response = delete_person(
             CandidateListDeletePersonPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
             csrf_tokens,
             candidate,

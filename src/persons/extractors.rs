@@ -1,4 +1,5 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
+use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::{
@@ -6,6 +7,12 @@ use crate::{
     persons::{self, Person, PersonId},
     t,
 };
+
+#[derive(Deserialize)]
+struct PersonPathParams {
+    #[serde(alias = "person_id")]
+    person_id: PersonId,
+}
 
 impl<S> FromRequestParts<S> for Person
 where
@@ -22,7 +29,8 @@ where
         let context = Context::from_request_parts(parts, state)
             .await
             .unwrap_or_default();
-        let Path(person_id) = Path::<PersonId>::from_request_parts(parts, state).await?;
+        let Path(PersonPathParams { person_id }) =
+            Path::<PersonPathParams>::from_request_parts(parts, state).await?;
 
         let person = persons::repository::get_person(&mut conn, person_id)
             .await?

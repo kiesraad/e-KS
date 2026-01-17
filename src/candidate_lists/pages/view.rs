@@ -14,7 +14,7 @@ struct CandidateListViewTemplate {
 }
 
 pub async fn view_candidate_list(
-    ViewCandidateListPath { .. }: ViewCandidateListPath,
+    _: ViewCandidateListPath,
     context: Context,
     full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
@@ -54,7 +54,7 @@ mod tests {
             .expect("candidate list");
 
         let response = view_candidate_list(
-            ViewCandidateListPath { id: list_id },
+            ViewCandidateListPath { list_id },
             Context::new(Locale::En),
             full_list,
         )

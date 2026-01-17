@@ -8,17 +8,14 @@ use crate::{
 };
 
 pub async fn delete_candidate_list(
-    CandidateListsDeletePath { .. }: CandidateListsDeletePath,
+    _: CandidateListsDeletePath,
     csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
-        Err(_) => {
-            // csrf token is invalid => back to edit view
-            Ok(Redirect::to(&candidate_list.update_path()).into_response())
-        }
+        Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
         Ok(_) => {
             candidate_lists::repository::remove_candidate_list(&mut conn, candidate_list.id)
                 .await?;
@@ -55,7 +52,7 @@ mod tests {
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
-                id: candidate_list.id,
+                list_id: candidate_list.id,
             },
             csrf_tokens,
             candidate_list.clone(),
@@ -101,7 +98,7 @@ mod tests {
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
-                id: candidate_list.id,
+                list_id: candidate_list.id,
             },
             csrf_tokens,
             candidate_list.clone(),

@@ -120,6 +120,17 @@ impl ElectionConfig {
             Self::EK2027 => ElectoralDistrict::ek2027(),
         }
     }
+
+    pub fn available_districts(
+        &self,
+        used_districts: Vec<ElectoralDistrict>,
+    ) -> Vec<ElectoralDistrict> {
+        self.electoral_districts()
+            .iter()
+            .filter(|d| !used_districts.contains(d))
+            .cloned()
+            .collect()
+    }
 }
 
 #[cfg(test)]

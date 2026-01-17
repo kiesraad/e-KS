@@ -3,8 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict, HtmlTemplate,
-    Locale,
+    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
@@ -19,11 +18,8 @@ use crate::{
 #[template(path = "candidate_lists/create.html")]
 struct CandidateListCreateTemplate {
     candidate_lists: Vec<CandidateListSummary>,
-    election: ElectionConfig,
     total_persons: i64,
     form: FormData<CandidateListForm>,
-    locale: Locale,
-    electoral_districts: &'static [ElectoralDistrict],
 }
 
 pub async fn new_candidate_list_form(
@@ -35,13 +31,8 @@ pub async fn new_candidate_list_form(
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-
-    let election = context.election;
-    let electoral_districts = context.election.electoral_districts();
-
     let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
-    let available_districts: Vec<ElectoralDistrict> =
-        determine_available_districts(electoral_districts, used_districts);
+    let available_districts = context.election.available_districts(used_districts);
 
     let form = FormData::new_with_data(
         CandidateListForm {
@@ -54,26 +45,12 @@ pub async fn new_candidate_list_form(
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
             candidate_lists,
-            election,
             total_persons,
             form,
-            locale: context.locale,
-            electoral_districts,
         },
         context,
     )
     .into_response())
-}
-
-fn determine_available_districts(
-    electoral_districts: &[ElectoralDistrict],
-    used_districts: Vec<ElectoralDistrict>,
-) -> Vec<ElectoralDistrict> {
-    electoral_districts
-        .iter()
-        .filter(|d| !used_districts.contains(d))
-        .cloned()
-        .collect()
 }
 
 pub async fn create_candidate_list(
@@ -83,23 +60,17 @@ pub async fn create_candidate_list(
     DbConnection(mut conn): DbConnection,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let electoral_districts = context.election.electoral_districts();
-
     match form.validate_create(&csrf_tokens) {
         Err(form_data) => {
             let candidate_lists =
                 candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
             let total_persons = persons::repository::count_persons(&mut conn).await?;
-            let election = context.election;
 
             Ok(HtmlTemplate(
                 CandidateListCreateTemplate {
                     candidate_lists,
-                    election,
                     total_persons,
                     form: form_data,
-                    electoral_districts,
-                    locale: context.locale,
                 },
                 context,
             )
@@ -127,7 +98,7 @@ mod test {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists,
+        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue, candidate_lists,
         test_utils::response_body_string,
     };
 
@@ -215,39 +186,49 @@ mod test {
 
     #[test]
     fn test_determine_available_districts() {
-        // setup
-        let all_districts = vec![
-            ElectoralDistrict::DR,
-            ElectoralDistrict::FR,
-            ElectoralDistrict::UT,
-            ElectoralDistrict::OV,
-        ];
+        let election = ElectionConfig::EK2027;
+        let all_districts = election.electoral_districts().to_vec();
 
         let none_used = vec![];
         let all_used = all_districts.clone();
-        let some_used = vec![ElectoralDistrict::DR, ElectoralDistrict::FR];
+        let some_used = vec![
+            ElectoralDistrict::DR,
+            ElectoralDistrict::FL,
+            ElectoralDistrict::FR,
+            ElectoralDistrict::GE,
+            ElectoralDistrict::GR,
+            ElectoralDistrict::LI,
+            ElectoralDistrict::NB,
+            ElectoralDistrict::NH,
+        ];
 
-        // test
         // use sets so we don't need to worry about ordering of the vector
-        let none_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, none_used)
-                .into_iter()
-                .collect();
+        let none_used_result: BTreeSet<ElectoralDistrict> = election
+            .available_districts(none_used)
+            .into_iter()
+            .collect();
         let all_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, all_used)
-                .into_iter()
-                .collect();
-        let some_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, some_used)
-                .into_iter()
-                .collect();
+            election.available_districts(all_used).into_iter().collect();
+        let some_used_result: BTreeSet<ElectoralDistrict> = election
+            .available_districts(some_used)
+            .into_iter()
+            .collect();
 
         // validation
         let all_district_set: BTreeSet<ElectoralDistrict> = all_districts.into_iter().collect();
         assert_eq!(all_district_set, none_used_result);
         assert_eq!(BTreeSet::new(), all_used_result);
         assert_eq!(
-            BTreeSet::from([ElectoralDistrict::UT, ElectoralDistrict::OV]),
+            BTreeSet::from([
+                ElectoralDistrict::OV,
+                ElectoralDistrict::UT,
+                ElectoralDistrict::ZE,
+                ElectoralDistrict::ZH,
+                ElectoralDistrict::BO,
+                ElectoralDistrict::SE,
+                ElectoralDistrict::SA,
+                ElectoralDistrict::KN,
+            ]),
             some_used_result
         );
     }

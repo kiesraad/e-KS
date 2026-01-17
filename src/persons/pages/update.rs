@@ -5,10 +5,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self, Person, PersonForm,
-        pages::{EditPersonPath, person_not_found},
-    },
+    persons::{self, Person, PersonForm, pages::EditPersonPath},
     t,
 };
 
@@ -20,15 +17,11 @@ struct PersonUpdateTemplate {
 }
 
 pub async fn edit_person_form(
-    EditPersonPath { id }: EditPersonPath,
+    _: EditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    person: Person,
 ) -> AppResponse<impl IntoResponse> {
-    let person = persons::repository::get_person(&mut conn, id)
-        .await?
-        .ok_or(person_not_found(id, context.locale))?;
-
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(person.clone()), &csrf_tokens),
@@ -39,16 +32,13 @@ pub async fn edit_person_form(
 }
 
 pub async fn update_person(
-    EditPersonPath { id }: EditPersonPath,
+    _: EditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
+    person: Person,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let person = persons::repository::get_person(&mut conn, id)
-        .await?
-        .ok_or(person_not_found(id, context.locale))?;
-
     match form.validate_update(&person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
@@ -61,7 +51,6 @@ pub async fn update_person(
         Ok(person) => {
             persons::repository::update_person(&mut conn, &person).await?;
 
-            // Redirect to the address edit page
             Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
     }
@@ -85,17 +74,17 @@ mod tests {
 
     #[sqlx::test]
     async fn edit_person_form_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
         let response = edit_person_form(
-            EditPersonPath { id },
+            EditPersonPath { person_id },
             Context::new(Locale::En),
             CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            person,
         )
         .await
         .unwrap()
@@ -110,8 +99,8 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
@@ -122,10 +111,11 @@ mod tests {
         form.last_name = "Updated".to_string();
 
         let response = update_person(
-            EditPersonPath { id },
+            EditPersonPath { person_id },
             Context::new(Locale::En),
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            person,
             Form(form),
         )
         .await
@@ -141,7 +131,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, id)
+        let updated = persons::repository::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.last_name, "Updated");
@@ -151,8 +141,8 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
@@ -163,10 +153,11 @@ mod tests {
         form.last_name = " ".to_string();
 
         let response = update_person(
-            EditPersonPath { id },
+            EditPersonPath { person_id },
             Context::new(Locale::En),
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            person,
             Form(form),
         )
         .await

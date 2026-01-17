@@ -6,10 +6,10 @@ use crate::{
 };
 
 pub async fn delete_person(
-    DeletePersonPath { id }: DeletePersonPath,
+    DeletePersonPath { person_id }: DeletePersonPath,
     DbConnection(mut conn): DbConnection,
 ) -> Result<Response, AppError> {
-    persons::repository::remove_person(&mut conn, id).await?;
+    persons::repository::remove_person(&mut conn, person_id).await?;
 
     Ok(Redirect::to(&Person::list_path()).into_response())
 }
@@ -27,15 +27,18 @@ mod tests {
 
     #[sqlx::test]
     async fn delete_person_removes_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = PersonId::new();
-        let person = sample_person(id);
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
-        let response = delete_person(DeletePersonPath { id }, DbConnection(pool.acquire().await?))
-            .await
-            .unwrap();
+        let response = delete_person(
+            DeletePersonPath { person_id },
+            DbConnection(pool.acquire().await?),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), axum::http::StatusCode::SEE_OTHER);
         let location = response
@@ -47,7 +50,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let found = persons::repository::get_person(&mut conn, id).await?;
+        let found = persons::repository::get_person(&mut conn, person_id).await?;
         assert!(found.is_none());
 
         Ok(())
