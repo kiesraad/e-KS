@@ -98,7 +98,7 @@ pub async fn get_full_candidate_list(
     .into_iter()
     .map(|row| Candidate {
         list_id: list.id,
-        position: row.position,
+        position: row.position as usize,
         person: Person {
             id: row.id,
             gender: row.gender,
@@ -211,6 +211,96 @@ pub async fn update_candidate_list_order(
         .ok_or(sqlx::Error::RowNotFound)
 }
 
+pub async fn append_candidate_to_list(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+    person_id: PersonId,
+) -> Result<(), sqlx::Error> {
+    let mut tx = conn.begin().await?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = NOW()
+        WHERE id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let position_record = sqlx::query!(
+        r#"
+        SELECT COALESCE(MAX(position), 0) AS max_position
+        FROM candidate_lists_persons
+        WHERE candidate_list_id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let new_position = position_record.max_position.unwrap_or(0) + 1;
+
+    sqlx::query!(
+        r#"
+        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position)
+        VALUES ($1, $2, $3)
+        "#,
+        list_id.uuid(),
+        person_id.uuid(),
+        new_position,
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+pub async fn remove_candidate(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+    person_id: PersonId,
+) -> Result<(), sqlx::Error> {
+    let mut tx = conn.begin().await?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = NOW()
+        WHERE id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists_persons
+        WHERE candidate_list_id = $1 AND person_id = $2
+        "#,
+        list_id.uuid(),
+        person_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
 pub async fn update_candidate_list(
     conn: &mut PgConnection,
     updated_candidate_list: CandidateList,
@@ -311,7 +401,7 @@ pub async fn get_candidate(
 
     Ok(Candidate {
         list_id,
-        position: record.position,
+        position: record.position as usize,
         person,
     })
 }

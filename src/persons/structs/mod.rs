@@ -9,3 +9,7 @@ pub use gender::Gender;
 pub use person::{Person, PersonId};
 pub use person_form::PersonForm;
 pub use person_sort::PersonSort;
+
+pub trait PersonIdPath {
+    fn person_id(&self) -> PersonId;
+}

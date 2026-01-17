@@ -3,9 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, Context, HtmlTemplate,
-    candidate_lists::{
-        CandidateList, FullCandidateList, MAX_CANDIDATES, pages::ViewCandidateListPath,
-    },
+    candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
     filters, t,
 };
 
@@ -13,7 +11,6 @@ use crate::{
 #[template(path = "candidate_lists/view.html")]
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
-    max_candidates: usize,
 }
 
 pub async fn view_candidate_list(
@@ -22,10 +19,7 @@ pub async fn view_candidate_list(
     full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
-        CandidateListViewTemplate {
-            full_list,
-            max_candidates: MAX_CANDIDATES,
-        },
+        CandidateListViewTemplate { full_list },
         context,
     ))
 }

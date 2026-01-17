@@ -1,16 +1,19 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
+use serde::de::DeserializeOwned;
 use sqlx::PgPool;
 
 use crate::{
     AppError, Context,
     candidate_lists::{self, Candidate, CandidateList, CandidateListId, FullCandidateList},
+    persons::PersonId,
     t,
 };
 
-impl<S> FromRequestParts<S> for CandidateList
+impl<S, P> FromRequestParts<S> for CandidateList
 where
     S: Send + Sync,
     PgPool: FromRef<S>,
+    P: DeserializeOwned + Into<CandidateListId> + Clone + Send + Sync,
 {
     type Rejection = AppError;
 
@@ -22,7 +25,8 @@ where
         let context = Context::from_request_parts(parts, state)
             .await
             .unwrap_or_default();
-        let Path(list_id) = Path::<CandidateListId>::from_request_parts(parts, state).await?;
+        let Path(path) = Path::<P>::from_request_parts(parts, state).await?;
+        let list_id: CandidateListId = path.clone().into();
 
         let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, list_id)
             .await?
@@ -80,9 +84,8 @@ where
         let context = Context::from_request_parts(parts, state)
             .await
             .unwrap_or_default();
-        let Path(list_id) = Path::<CandidateListId>::from_request_parts(parts, state).await?;
-        let Path(person_id) =
-            Path::<crate::persons::PersonId>::from_request_parts(parts, state).await?;
+        let Path((list_id, person_id)) =
+            Path::<(CandidateListId, PersonId)>::from_request_parts(parts, state).await?;
 
         let candidate = candidate_lists::repository::get_candidate(&mut conn, list_id, person_id)
             .await

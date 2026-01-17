@@ -2,13 +2,7 @@ use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 
-use crate::{
-    ElectionConfig, ElectoralDistrict, Locale, candidate_lists::Candidate, id_newtype,
-    persons::PersonId, t,
-};
-
-/// Maximum number of persons allowed on a candidate list.
-pub const MAX_CANDIDATES: usize = 50;
+use crate::{ElectionConfig, ElectoralDistrict, Locale, id_newtype, t};
 
 id_newtype!(pub struct CandidateListId);
 
@@ -26,12 +20,6 @@ pub struct CandidateListSummary {
     pub person_count: i64,
 }
 
-#[derive(Debug, Clone, Serialize)]
-pub struct FullCandidateList {
-    pub list: CandidateList,
-    pub candidates: Vec<Candidate>,
-}
-
 impl CandidateList {
     pub fn display_districts(&self, election: &ElectionConfig, locale: &Locale) -> String {
         if !self.electoral_districts.is_empty()
@@ -45,18 +33,6 @@ impl CandidateList {
                 .collect::<Vec<_>>()
                 .join(", ")
         }
-    }
-}
-
-impl FullCandidateList {
-    pub fn get_index(&self, person_id: &PersonId) -> Option<usize> {
-        self.candidates
-            .iter()
-            .position(|c| &c.person.id == person_id)
-    }
-
-    pub fn get_ids(&self) -> Vec<PersonId> {
-        self.candidates.iter().map(|c| c.person.id).collect()
     }
 }
 

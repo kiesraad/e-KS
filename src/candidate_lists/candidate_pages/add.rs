@@ -5,9 +5,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
-    candidate_lists::{
-        self, CandidateList, FullCandidateList, MAX_CANDIDATES, pages::AddCandidatePath,
-    },
+    candidate_lists::{self, CandidateList, FullCandidateList, pages::AddCandidatePath},
     filters,
     persons::{self, Person, PersonId},
     t,
@@ -18,7 +16,6 @@ use crate::{
 struct AddExistingPersonTemplate {
     full_list: FullCandidateList,
     persons: Vec<Person>,
-    max_candidates: usize,
 }
 
 pub async fn add_existing_person(
@@ -28,15 +25,10 @@ pub async fn add_existing_person(
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let persons =
-        persons::repository::list_persons_not_on_candidate_list(&mut conn, full_list.list.id)
-            .await?;
+        persons::repository::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
 
     Ok(HtmlTemplate(
-        AddExistingPersonTemplate {
-            full_list,
-            persons,
-            max_candidates: MAX_CANDIDATES,
-        },
+        AddExistingPersonTemplate { full_list, persons },
         context,
     ))
 }
@@ -53,17 +45,16 @@ pub async fn add_person_to_candidate_list(
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let redirect = Redirect::to(&full_list.list.view_path()).into_response();
+    let person = persons::repository::get_person(&mut conn, form.person_id).await?;
 
-    if full_list.get_index(&form.person_id).is_some() {
+    if full_list.contains(form.person_id) || person.is_none() {
         return Ok(redirect);
     }
 
-    let mut person_ids = full_list.get_ids();
-    person_ids.push(form.person_id);
-    candidate_lists::repository::update_candidate_list_order(
+    candidate_lists::repository::append_candidate_to_list(
         &mut conn,
-        full_list.list.id,
-        &person_ids,
+        full_list.id(),
+        form.person_id,
     )
     .await?;
 

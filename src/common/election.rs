@@ -96,8 +96,9 @@ impl ElectoralDistrict {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub enum ElectionConfig {
+    #[default]
     EK2027,
 }
 
