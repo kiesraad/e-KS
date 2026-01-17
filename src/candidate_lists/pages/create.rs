@@ -3,14 +3,15 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Config, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
-    HtmlTemplate, Locale,
+    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict, HtmlTemplate,
+    Locale,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, Person},
+    persons,
+    persons::Person,
     t,
 };
 
@@ -30,14 +31,13 @@ pub async fn new_candidate_list_form(
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    config: Config,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
 
-    let election = config.election;
-    let electoral_districts = config.get_districts();
+    let election = context.election;
+    let electoral_districts = context.election.electoral_districts();
 
     let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
     let available_districts: Vec<ElectoralDistrict> =
@@ -81,17 +81,16 @@ pub async fn create_candidate_list(
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    config: Config,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let electoral_districts = config.election.electoral_districts();
+    let electoral_districts = context.election.electoral_districts();
 
     match form.validate_create(&csrf_tokens) {
         Err(form_data) => {
             let candidate_lists =
                 candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
             let total_persons = persons::repository::count_persons(&mut conn).await?;
-            let election = config.election;
+            let election = context.election;
 
             Ok(HtmlTemplate(
                 CandidateListCreateTemplate {
@@ -134,14 +133,11 @@ mod test {
 
     #[sqlx::test]
     async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
-        let config = Config::from_env().unwrap();
-
         let response = new_candidate_list_form(
             CandidateListNewPath {},
             Context::new(Locale::En),
             CsrfTokens::default(),
             DbConnection(pool.acquire().await?),
-            config,
         )
         .await
         .unwrap()
@@ -157,7 +153,6 @@ mod test {
 
     #[sqlx::test]
     async fn create_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let config = Config::new_test();
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = CandidateListForm {
@@ -170,7 +165,6 @@ mod test {
             Context::new(Locale::En),
             csrf_tokens,
             DbConnection(pool.acquire().await?),
-            config,
             Form(form),
         )
         .await
@@ -196,7 +190,6 @@ mod test {
     async fn create_candidate_list_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let config = Config::new_test();
         let csrf_tokens = CsrfTokens::default();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
@@ -208,7 +201,6 @@ mod test {
             Context::new(Locale::En),
             csrf_tokens,
             DbConnection(pool.acquire().await?),
-            config,
             Form(form),
         )
         .await

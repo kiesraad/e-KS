@@ -1,0 +1,15 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        DELETE FROM candidate_lists_persons\n        WHERE candidate_list_id = $1 AND person_id = $2\n        ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "5893c70de2e93b3aa569da0d9d523ce884d36ec9e2438b519ab7c9bcf7312e58"
+}

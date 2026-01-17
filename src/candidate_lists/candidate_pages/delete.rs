@@ -4,8 +4,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, CsrfTokens, DbConnection,
     candidate_lists::{
-        self, Candidate, CandidateList, FullCandidateList,
-        candidate_pages::CandidateListDeletePersonPath,
+        self, Candidate, CandidateList, candidate_pages::CandidateListDeletePersonPath,
     },
     form::{EmptyForm, Validate},
     persons,
@@ -17,24 +16,17 @@ pub async fn delete_person(
         person: _,
     }: CandidateListDeletePersonPath,
     csrf_tokens: CsrfTokens,
-    full_list: FullCandidateList,
     candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
-        Err(_) => {
-            // csrf token is invalid => back to edit view
-            Ok(Redirect::to(&candidate.edit_path()).into_response())
-        }
+        Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
         Ok(_) => {
-            // remove person from list
-            let mut updates_ids = full_list.get_ids();
-            updates_ids.retain(|id| id != &candidate.person.id);
-            candidate_lists::repository::update_candidate_list_order(
+            candidate_lists::repository::remove_candidate(
                 &mut conn,
                 candidate.list_id,
-                &updates_ids,
+                candidate.person.id,
             )
             .await?;
 
@@ -78,10 +70,6 @@ mod tests {
             &[person.id, other_person.id],
         )
         .await?;
-
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
-            .await?
-            .expect("candidate list");
         let candidate =
             candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
 
@@ -94,7 +82,6 @@ mod tests {
                 person: person.id,
             },
             csrf_tokens,
-            full_list,
             candidate,
             DbConnection(pool.acquire().await?),
             Form(EmptyForm::from(csrf_token)),

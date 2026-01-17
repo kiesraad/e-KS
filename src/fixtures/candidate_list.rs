@@ -2,7 +2,7 @@ use chrono::Utc;
 use sqlx::PgConnection;
 
 use crate::{
-    AppError, Config,
+    AppError, ElectionConfig,
     candidate_lists::{self, CandidateList, CandidateListId},
     persons::{self, Person, PersonId},
 };
@@ -18,8 +18,7 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
 }
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
-    let config = Config::from_env()?;
-    let electoral_districts = config.get_districts().to_vec();
+    let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
 
     let persons = persons::repository::list_all_persons(conn).await?;
 

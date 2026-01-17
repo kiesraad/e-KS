@@ -37,7 +37,7 @@
     {% endfor %}
   </tbody>
 </table>
-{% if full_list.candidates.len() > max_candidates %}
+{% if full_list.candidates.len() > **max_candidates %}
 <p class="note-warning mt-md">
   {{ t!("candidate_list.view.max_candidates_exceeded")|trans|fill(max_candidates.to_string()) }}
 </p>

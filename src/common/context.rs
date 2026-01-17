@@ -5,16 +5,22 @@ use std::convert::Infallible;
 
 use axum::{extract::FromRequestParts, http::request::Parts};
 
-use crate::Locale;
+use crate::{ElectionConfig, Locale};
 
 #[derive(Default, Clone, Copy, Debug)]
 pub struct Context {
     pub locale: Locale,
+    pub election: ElectionConfig,
+    pub max_candidates: usize,
 }
 
 impl Context {
     pub fn new(locale: Locale) -> Self {
-        Self { locale }
+        Self {
+            locale,
+            election: ElectionConfig::EK2027,
+            max_candidates: 50,
+        }
     }
 
     pub fn livereload_enabled() -> bool {
@@ -26,6 +32,8 @@ impl askama::Values for Context {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.locale as &dyn std::any::Any),
+            "election" => Some(&self.election as &dyn std::any::Any),
+            "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             _ => None,
         }
     }

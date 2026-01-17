@@ -5,8 +5,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
-        Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        candidate_pages::CandidateListEditAddressPath,
+        Candidate, CandidateList, FullCandidateList, candidate_pages::CandidateListEditAddressPath,
     },
     filters,
     form::{FormData, Validate},
@@ -20,7 +19,6 @@ struct PersonAddressUpdateTemplate {
     candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
-    max_candidates: usize,
 }
 
 pub async fn edit_person_address(
@@ -40,7 +38,6 @@ pub async fn edit_person_address(
             form,
             candidate: candidate.clone(),
             full_list,
-            max_candidates: MAX_CANDIDATES,
         },
         context,
     ))
@@ -64,7 +61,6 @@ pub async fn update_person_address(
                 candidate,
                 form: form_data,
                 full_list,
-                max_candidates: MAX_CANDIDATES,
             },
             context,
         )

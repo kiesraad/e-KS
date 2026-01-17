@@ -2,10 +2,10 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Config, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
+    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate, Locale,
     candidate_lists::{self, CandidateList, CandidateListSummary, pages::CandidateListsPath},
-    filters,
-    persons::{self, Person},
+    filters, persons,
+    persons::Person,
     t,
 };
 
@@ -22,12 +22,11 @@ pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
     DbConnection(mut conn): DbConnection,
-    config: Config,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists =
         candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = config.election;
+    let election = context.election;
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
@@ -54,7 +53,6 @@ mod tests {
 
     #[sqlx::test]
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
-        let config = Config::new_test();
         let list = sample_candidate_list(CandidateListId::new());
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -63,7 +61,6 @@ mod tests {
             CandidateListsPath {},
             Context::new(Locale::En),
             DbConnection(pool.acquire().await?),
-            config,
         )
         .await
         .unwrap()

@@ -7,8 +7,6 @@ use axum::{
 };
 use sqlx::{PgPool, Postgres, pool::PoolConnection};
 
-#[cfg(test)]
-use crate::ElectionConfig;
 use crate::{AppError, Config, CsrfTokens};
 
 pub struct DbConnection(pub PoolConnection<Postgres>);
@@ -109,7 +107,6 @@ mod tests {
         let config = Config::new_test();
 
         assert_eq!(state.config().database_url, config.database_url);
-        assert!(matches!(state.config().election, ElectionConfig::EK2027));
 
         let token = state.csrf_tokens().issue();
         assert!(state.csrf_tokens().consume(&token.value));

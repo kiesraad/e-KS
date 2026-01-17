@@ -6,8 +6,7 @@ use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         self, Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
-        CandidatePositionForm, FullCandidateList, MAX_CANDIDATES,
-        candidate_pages::EditCandidatePositionPath,
+        CandidatePositionForm, FullCandidateList, candidate_pages::EditCandidatePositionPath,
     },
     filters,
     form::{FormData, Validate},
@@ -20,7 +19,6 @@ struct EditCandidatePositionTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<CandidatePositionForm>,
-    max_candidates: usize,
 }
 
 pub async fn edit_candidate_position(
@@ -34,7 +32,7 @@ pub async fn edit_candidate_position(
     candidate: Candidate,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
-        position: candidate.position as usize,
+        position: candidate.position,
         action: CandidatePositionAction::Move,
     };
 
@@ -49,7 +47,6 @@ pub async fn edit_candidate_position(
             candidate: candidate.clone(),
             full_list,
             form,
-            max_candidates: MAX_CANDIDATES,
         },
         context,
     ))
@@ -67,16 +64,8 @@ pub async fn update_candidate_position(
     DbConnection(mut conn): DbConnection,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
-    let mut person_ids = full_list.get_ids();
-
-    let Some(current_index) = full_list.get_index(&candidate.person.id) else {
-        return Err(AppError::NotFound(
-            "Person not found in candidate list".to_string(),
-        ));
-    };
-
     let candidate_position = CandidatePosition {
-        position: candidate.position as usize,
+        position: candidate.position,
         action: CandidatePositionAction::Move,
     };
 
@@ -86,39 +75,35 @@ pub async fn update_candidate_position(
                 candidate,
                 full_list,
                 form: form_data,
-                max_candidates: MAX_CANDIDATES,
             },
             context,
         )
         .into_response()),
         Ok(position_form) => {
-            let moved = person_ids.remove(current_index);
+            let redirect = Redirect::to(&full_list.list.view_path()).into_response();
 
-            if position_form.action == CandidatePositionAction::Remove {
-                candidate_lists::repository::update_candidate_list_order(
-                    &mut conn,
-                    candidate.list_id,
-                    &person_ids,
-                )
-                .await?;
-            } else if position_form.action == CandidatePositionAction::Move {
-                let target_index = position_form
-                    .position
-                    .saturating_sub(1)
-                    .min(person_ids.len());
-
-                if current_index != target_index {
-                    person_ids.insert(target_index, moved);
+            match position_form.action {
+                CandidatePositionAction::Remove => {
+                    candidate_lists::repository::remove_candidate(
+                        &mut conn,
+                        candidate.list_id,
+                        candidate.person.id,
+                    )
+                    .await?;
+                }
+                CandidatePositionAction::Move => {
+                    let mut full_list = full_list;
+                    full_list.update_position(candidate.person.id, position_form.position);
                     candidate_lists::repository::update_candidate_list_order(
                         &mut conn,
                         candidate.list_id,
-                        &person_ids,
+                        &full_list.get_ids(),
                     )
                     .await?;
                 }
             }
 
-            Ok(Redirect::to(&full_list.list.view_path()).into_response())
+            Ok(redirect)
         }
     }
 }

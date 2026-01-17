@@ -4,9 +4,7 @@ use axum_extra::extract::Form;
 
 use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
-    candidate_lists::{
-        self, CandidateList, FullCandidateList, MAX_CANDIDATES, pages::CreateCandidatePath,
-    },
+    candidate_lists::{self, CandidateList, FullCandidateList, pages::CreateCandidatePath},
     filters,
     form::{FormData, Validate},
     persons::{self, PersonForm},
@@ -18,7 +16,6 @@ use crate::{
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonForm>,
-    max_candidates: usize,
 }
 
 pub async fn new_person_candidate_list(
@@ -31,7 +28,6 @@ pub async fn new_person_candidate_list(
         PersonCreateTemplate {
             full_list,
             form: FormData::new(&csrf_tokens),
-            max_candidates: MAX_CANDIDATES,
         },
         context,
     )
@@ -51,7 +47,6 @@ pub async fn create_person_candidate_list(
             PersonCreateTemplate {
                 full_list,
                 form: form_data,
-                max_candidates: MAX_CANDIDATES,
             },
             context,
         )
@@ -59,17 +54,15 @@ pub async fn create_person_candidate_list(
         Ok(person) => {
             let person = persons::repository::create_person(&mut conn, &person).await?;
 
-            let mut person_ids = full_list.get_ids();
-            person_ids.push(person.id);
-            candidate_lists::repository::update_candidate_list_order(
+            candidate_lists::repository::append_candidate_to_list(
                 &mut conn,
-                full_list.list.id,
-                &person_ids,
+                full_list.id(),
+                person.id,
             )
             .await?;
 
             let candidate =
-                candidate_lists::repository::get_candidate(&mut conn, full_list.list.id, person.id)
+                candidate_lists::repository::get_candidate(&mut conn, full_list.id(), person.id)
                     .await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
