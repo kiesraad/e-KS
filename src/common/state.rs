@@ -13,9 +13,9 @@ pub struct DbConnection(pub PoolConnection<Postgres>);
 
 #[derive(FromRef, Clone)]
 pub struct AppState {
-    config: Config,
-    pool: sqlx::PgPool,
-    csrf_tokens: CsrfTokens,
+    pub pool: sqlx::PgPool,
+    pub config: Config,
+    pub csrf_tokens: CsrfTokens,
 }
 
 impl AppState {
@@ -29,18 +29,6 @@ impl AppState {
             pool,
             csrf_tokens,
         })
-    }
-
-    pub fn pool(&self) -> PgPool {
-        self.pool.clone()
-    }
-
-    pub fn csrf_tokens(&self) -> CsrfTokens {
-        self.csrf_tokens.clone()
-    }
-
-    pub fn config(&self) -> Config {
-        self.config
     }
 
     #[cfg(test)]
@@ -106,10 +94,10 @@ mod tests {
         let state = AppState::new_for_tests(pool);
         let config = Config::new_test();
 
-        assert_eq!(state.config().database_url, config.database_url);
+        assert_eq!(state.config.database_url, config.database_url);
 
-        let token = state.csrf_tokens().issue();
-        assert!(state.csrf_tokens().consume(&token.value));
+        let token = state.csrf_tokens.issue();
+        assert!(state.csrf_tokens.consume(&token.value));
 
         Ok(())
     }
@@ -142,7 +130,23 @@ mod tests {
             .expect("csrf tokens");
 
         let token = tokens.issue();
-        assert!(state.csrf_tokens().consume(&token.value));
+        assert!(state.csrf_tokens.consume(&token.value));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn config_from_request_parts_matches_state_config(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let state = AppState::new_for_tests(pool);
+        let (mut parts, _) = Request::new(()).into_parts();
+
+        let config = Config::from_request_parts(&mut parts, &state)
+            .await
+            .expect("config");
+
+        assert_eq!(config.database_url, state.config.database_url);
 
         Ok(())
     }
