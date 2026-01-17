@@ -43,7 +43,7 @@ pub async fn edit_candidate_list(
     let election = app_state.config().election;
     let electoral_districts = election.electoral_districts();
 
-    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, &id)
+    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
         .await?
         .ok_or(candidate_list_not_found(id, context.locale))?;
 
@@ -80,7 +80,7 @@ pub async fn update_candidate_list(
 
     let electoral_districts = election.electoral_districts();
 
-    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, &id)
+    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
         .await?
         .ok_or(candidate_list_not_found(id, context.locale))?;
 
@@ -100,7 +100,7 @@ pub async fn update_candidate_list(
         .into_response()),
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::repository::update_candidate_list(&mut conn, &candidate_list)
+                candidate_lists::repository::update_candidate_list(&mut conn, candidate_list)
                     .await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
@@ -117,18 +117,17 @@ mod tests {
     use axum_extra::extract::Form;
     use chrono::DateTime;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
-        candidate_lists,
+        candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
 
     #[sqlx::test]
     async fn edit_candidate_list_renders_existing_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let app_state = AppState::new_for_tests(pool.clone());
-        let candidate_list = sample_candidate_list(Uuid::new_v4());
+        let candidate_list = sample_candidate_list(CandidateListId::new());
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
@@ -163,7 +162,7 @@ mod tests {
         let csrf_token = csrf_tokens.issue().value;
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
         let candidate_list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
             created_at: creation_date,
             updated_at: creation_date,
@@ -227,7 +226,7 @@ mod tests {
         let csrf_tokens = CsrfTokens::default();
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
         let candidate_list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
             created_at: creation_date,
             updated_at: creation_date,

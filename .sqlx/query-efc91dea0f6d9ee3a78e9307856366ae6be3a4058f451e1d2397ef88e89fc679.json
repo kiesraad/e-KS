@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    clp.position,\n    p.id as \"id!\",\n    p.gender as \"gender?: Gender\",\n    p.last_name as \"last_name!\",\n    p.last_name_prefix,\n    p.first_name,\n    p.initials as \"initials!\",\n    p.date_of_birth,\n    p.bsn,\n    p.locality as \"locality\",\n    p.postal_code as \"postal_code\",\n    p.house_number as \"house_number\",\n    p.house_number_addition,\n    p.street_name as \"street_name\",\n    p.is_dutch,\n    p.custom_country,\n    p.custom_region,\n    p.address_line_1,\n    p.address_line_2,\n    p.created_at as \"created_at!\",\n    p.updated_at as \"updated_at!\"\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
+  "query": "SELECT\n    clp.position,\n    p.id as \"id!: PersonId\",\n    p.gender as \"gender?: Gender\",\n    p.last_name as \"last_name!\",\n    p.last_name_prefix,\n    p.first_name,\n    p.initials as \"initials!\",\n    p.date_of_birth,\n    p.bsn,\n    p.locality as \"locality\",\n    p.postal_code as \"postal_code\",\n    p.house_number as \"house_number\",\n    p.house_number_addition,\n    p.street_name as \"street_name\",\n    p.is_dutch,\n    p.custom_country,\n    p.custom_region,\n    p.address_line_1,\n    p.address_line_2,\n    p.created_at as \"created_at!\",\n    p.updated_at as \"updated_at!\"\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "id!",
+        "name": "id!: PersonId",
         "type_info": "Uuid"
       },
       {
@@ -149,5 +149,5 @@
       false
     ]
   },
-  "hash": "00e1900b475b8e48e5d6680b6eaadff94a8169c10a28900a6ac1082e23b90acc"
+  "hash": "efc91dea0f6d9ee3a78e9307856366ae6be3a4058f451e1d2397ef88e89fc679"
 }

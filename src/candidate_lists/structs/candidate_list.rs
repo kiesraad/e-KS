@@ -1,16 +1,20 @@
 use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
-use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig, ElectoralDistrict, Locale, candidate_lists::Candidate, t};
+use crate::{
+    AppError, ElectionConfig, ElectoralDistrict, Locale, candidate_lists::Candidate, id_newtype,
+    persons::PersonId, t,
+};
 
 /// Maximum number of persons allowed on a candidate list.
 pub const MAX_CANDIDATES: usize = 50;
 
+id_newtype!(pub struct CandidateListId);
+
 #[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type, PartialEq, Eq)]
 pub struct CandidateList {
-    pub id: Uuid,
+    pub id: CandidateListId,
     pub electoral_districts: Vec<ElectoralDistrict>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
@@ -45,13 +49,17 @@ impl CandidateList {
 }
 
 impl FullCandidateList {
-    pub fn get_index(&self, person_id: &Uuid) -> Option<usize> {
+    pub fn get_index(&self, person_id: &PersonId) -> Option<usize> {
         self.candidates
             .iter()
             .position(|c| &c.person.id == person_id)
     }
 
-    pub fn get_candidate(&self, person_id: &Uuid, locale: Locale) -> Result<Candidate, AppError> {
+    pub fn get_candidate(
+        &self,
+        person_id: &PersonId,
+        locale: Locale,
+    ) -> Result<Candidate, AppError> {
         self.candidates
             .iter()
             .find(|c| &c.person.id == person_id)
@@ -61,21 +69,19 @@ impl FullCandidateList {
             })
     }
 
-    pub fn get_ids(&self) -> Vec<Uuid> {
+    pub fn get_ids(&self) -> Vec<PersonId> {
         self.candidates.iter().map(|c| c.person.id).collect()
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use uuid::Uuid;
-
     use super::*;
 
     #[test]
     fn display_districts_returns_all_for_full_set() {
         let list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: ElectionConfig::EK2027.electoral_districts().to_vec(),
             created_at: Utc::now(),
             updated_at: Utc::now(),
@@ -90,7 +96,7 @@ mod tests {
     #[test]
     fn display_districts_returns_titles_for_subset() {
         let list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::DR],
             created_at: Utc::now(),
             updated_at: Utc::now(),

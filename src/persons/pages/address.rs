@@ -80,16 +80,16 @@ mod tests {
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, persons,
+        AppState, Context, CsrfTokens, DbConnection, Locale,
+        persons::{self, PersonId},
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
 
     #[sqlx::test]
     async fn edit_person_address_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
@@ -114,7 +114,7 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_address_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
@@ -157,7 +157,7 @@ mod tests {
     async fn update_person_address_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
@@ -188,7 +188,7 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;

@@ -35,7 +35,7 @@ pub async fn edit_person_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> AppResponse<impl IntoResponse> {
-    let full_list = load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+    let full_list = load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let candidate = full_list.get_candidate(&person, context.locale)?;
 
     Ok(HtmlTemplate(
@@ -59,7 +59,7 @@ pub async fn update_person(
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list = load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+    let full_list = load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let candidate = full_list.get_candidate(&person, context.locale)?;
 
     match form.validate(Some(&candidate.person), app_state.csrf_tokens()) {
@@ -91,10 +91,11 @@ mod tests {
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, candidate_lists,
+        AppState, Context, CsrfTokens, DbConnection, Locale,
+        candidate_lists::{self, CandidateListId},
+        persons::PersonId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_person, sample_person_form,
         },
@@ -102,14 +103,14 @@ mod tests {
 
     #[sqlx::test]
     async fn edit_person_form_renders_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
+        let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
+        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
         let response = edit_person_form(
@@ -134,14 +135,14 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
+        let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
+        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
         let app_state = AppState::new_for_tests(pool.clone());
@@ -182,14 +183,14 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
+        let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
+        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
         let app_state = AppState::new_for_tests(pool.clone());

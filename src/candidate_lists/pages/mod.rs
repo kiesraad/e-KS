@@ -2,11 +2,10 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 use sqlx::PgConnection;
-use uuid::Uuid;
 
 use crate::{
     AppError, AppState, Locale,
-    candidate_lists::{self, CandidateList, FullCandidateList},
+    candidate_lists::{self, CandidateList, CandidateListId, FullCandidateList},
     t,
 };
 
@@ -28,37 +27,37 @@ pub struct CandidateListNewPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}", rejection(AppError))]
 pub struct ViewCandidateListPath {
-    pub id: Uuid,
+    pub id: CandidateListId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/edit", rejection(AppError))]
 pub struct CandidateListsEditPath {
-    pub id: Uuid,
+    pub id: CandidateListId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/delete", rejection(AppError))]
 pub struct CandidateListsDeletePath {
-    pub id: Uuid,
+    pub id: CandidateListId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/reorder", rejection(AppError))]
 pub struct CandidateListReorderPath {
-    pub id: Uuid,
+    pub id: CandidateListId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{id}/add", rejection(AppError))]
 pub struct AddCandidatePath {
-    pub id: Uuid,
+    pub id: CandidateListId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{candidate_list}/new", rejection(AppError))]
 pub struct CreateCandidatePath {
-    pub candidate_list: Uuid,
+    pub candidate_list: CandidateListId,
 }
 
 impl CandidateList {
@@ -112,16 +111,16 @@ pub fn router() -> Router<AppState> {
         .typed_post(reorder::reorder_candidate_list)
 }
 
-pub fn candidate_list_not_found(id: Uuid, locale: Locale) -> AppError {
+pub fn candidate_list_not_found(id: CandidateListId, locale: Locale) -> AppError {
     AppError::NotFound(t!("candidate_list.not_found", &locale, id))
 }
 
 pub async fn load_candidate_list(
     conn: &mut PgConnection,
-    id: &Uuid,
+    id: CandidateListId,
     locale: Locale,
 ) -> Result<FullCandidateList, AppError> {
     candidate_lists::repository::get_full_candidate_list(conn, id)
         .await?
-        .ok_or_else(|| candidate_list_not_found(*id, locale))
+        .ok_or_else(|| candidate_list_not_found(id, locale))
 }

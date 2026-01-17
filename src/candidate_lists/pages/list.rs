@@ -45,16 +45,16 @@ mod tests {
     use super::*;
     use axum::{extract::State, http::StatusCode, response::IntoResponse};
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, DbConnection, Locale, candidate_lists,
+        AppState, Context, DbConnection, Locale,
+        candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
 
     #[sqlx::test]
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list = sample_candidate_list(Uuid::new_v4());
+        let list = sample_candidate_list(CandidateListId::new());
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
 

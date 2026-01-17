@@ -47,18 +47,17 @@ mod tests {
     use super::*;
     use axum::{http::StatusCode, response::IntoResponse};
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
         Context, DbConnection, Locale,
         pagination::Pagination,
-        persons,
+        persons::{self, PersonId},
         test_utils::{response_body_string, sample_person},
     };
 
     #[sqlx::test]
     async fn list_persons_shows_created_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;

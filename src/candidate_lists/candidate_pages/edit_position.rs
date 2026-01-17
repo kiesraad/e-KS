@@ -33,7 +33,7 @@ pub async fn edit_candidate_position(
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+        load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let candidate = full_list.get_candidate(&person, context.locale)?;
 
     let candidate_position = CandidatePosition {
@@ -69,7 +69,7 @@ pub async fn update_candidate_position(
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
+        load_candidate_list(&mut conn, candidate_list, context.locale).await?;
     let mut person_ids = full_list.get_ids();
 
     let Some(current_index) = full_list.get_index(&person) else {
@@ -102,7 +102,7 @@ pub async fn update_candidate_position(
             if position_form.action == CandidatePositionAction::Remove {
                 candidate_lists::repository::update_candidate_list_order(
                     &mut conn,
-                    &candidate_list,
+                    candidate_list,
                     &person_ids,
                 )
                 .await?;
@@ -116,7 +116,7 @@ pub async fn update_candidate_position(
                     person_ids.insert(target_index, moved);
                     candidate_lists::repository::update_candidate_list_order(
                         &mut conn,
-                        &candidate_list,
+                        candidate_list,
                         &person_ids,
                     )
                     .await?;
@@ -134,10 +134,11 @@ mod tests {
     use axum::{http::StatusCode, response::IntoResponse};
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists, persons,
+        Context, CsrfTokens, DbConnection, Locale, TokenValue,
+        candidate_lists::{self, CandidateListId},
+        persons::{self, PersonId},
         test_utils::{
             response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,
@@ -158,9 +159,9 @@ mod tests {
 
     #[sqlx::test]
     async fn edit_candidate_position_renders_form(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
+        let person = sample_person(PersonId::new());
         let candidate = Candidate {
             person: person.clone(),
             position: 1,
@@ -170,7 +171,7 @@ mod tests {
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
+        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
         let response = edit_candidate_position(
@@ -196,10 +197,10 @@ mod tests {
 
     #[sqlx::test]
     async fn update_candidate_position_moves_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
-        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -207,7 +208,7 @@ mod tests {
         persons::repository::create_person(&mut conn, &person_b).await?;
         candidate_lists::repository::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[person_a.id, person_b.id],
         )
         .await?;
@@ -233,7 +234,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
@@ -245,10 +246,10 @@ mod tests {
 
     #[sqlx::test]
     async fn update_candidate_position_removes_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
-        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -256,7 +257,7 @@ mod tests {
         persons::repository::create_person(&mut conn, &person_b).await?;
         candidate_lists::repository::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[person_a.id, person_b.id],
         )
         .await?;
@@ -282,7 +283,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -295,10 +296,10 @@ mod tests {
     async fn update_candidate_position_invalid_csrf_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
-        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -306,7 +307,7 @@ mod tests {
         persons::repository::create_person(&mut conn, &person_b).await?;
         candidate_lists::repository::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[person_a.id, person_b.id],
         )
         .await?;
@@ -335,7 +336,7 @@ mod tests {
         assert!(body.contains("The CSRF token is invalid."));
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

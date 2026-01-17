@@ -1,9 +1,11 @@
+use crate::{
+    AppError, AppState, Locale,
+    persons::{Person, PersonId},
+    t,
+};
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use uuid::Uuid;
-
-use crate::{AppError, AppState, Locale, persons::Person, t};
 
 mod address;
 mod create;
@@ -22,19 +24,19 @@ pub struct PersonsNewPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/edit", rejection(AppError))]
 pub struct EditPersonPath {
-    pub id: Uuid,
+    pub id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/delete", rejection(AppError))]
 pub struct DeletePersonPath {
-    pub id: Uuid,
+    pub id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons/{id}/address", rejection(AppError))]
 pub struct EditPersonAddressPath {
-    pub id: Uuid,
+    pub id: PersonId,
 }
 
 impl Person {
@@ -67,6 +69,6 @@ pub fn router() -> Router<AppState> {
         .typed_post(delete::delete_person)
 }
 
-pub fn person_not_found(id: Uuid, locale: Locale) -> AppError {
+pub fn person_not_found(id: PersonId, locale: Locale) -> AppError {
     AppError::NotFound(t!("person.not_found", &locale, id))
 }

@@ -3,13 +3,13 @@ use sqlx::PgConnection;
 
 use crate::{
     AppError, Config,
-    candidate_lists::{self, CandidateList},
-    persons::{self, Person},
+    candidate_lists::{self, CandidateList, CandidateListId},
+    persons::{self, Person, PersonId},
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
 
-fn collect_person_ids(persons: Vec<Person>) -> Vec<uuid::Uuid> {
+fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
     persons
         .into_iter()
         .map(|person| person.id)
@@ -26,7 +26,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let person_ids = collect_person_ids(persons);
 
     let candidate_list = CandidateList {
-        id: uuid::Uuid::new_v4(),
+        id: CandidateListId::new(),
         electoral_districts,
         created_at: Utc::now(),
         updated_at: Utc::now(),
@@ -36,7 +36,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         candidate_lists::repository::create_candidate_list(conn, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    candidate_lists::repository::update_candidate_list_order(conn, &candidate_list.id, &person_ids)
+    candidate_lists::repository::update_candidate_list_order(conn, candidate_list.id, &person_ids)
         .await?;
 
     Ok(())

@@ -1,12 +1,11 @@
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
-use uuid::Uuid;
 use validate::Validate;
 
 use crate::{
     constants::DEFAULT_DATE_FORMAT,
     form::*,
-    persons::{Gender, Person},
+    persons::{Gender, Person, structs::person::PersonId},
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -86,7 +85,7 @@ impl PersonForm {
             }
         } else {
             Person {
-                id: Uuid::new_v4(),
+                id: PersonId::new(),
                 gender: validated.gender,
                 last_name: validated.last_name,
                 last_name_prefix: validated.last_name_prefix,
@@ -128,7 +127,7 @@ mod tests {
             .single()
             .unwrap();
         Person {
-            id: Uuid::nil(),
+            id: PersonId::new(),
             gender: Some(Gender::Female),
             last_name: "Klaas Smit".to_string(),
             last_name_prefix: None,

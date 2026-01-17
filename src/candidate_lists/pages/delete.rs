@@ -24,7 +24,7 @@ pub async fn delete_candidate_list(
     match form.validate(None, &csrf_tokens) {
         Err(_) => {
             // csrf token is invalid => back to edit view
-            let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, &id)
+            let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
                 .await?
                 .ok_or(candidate_list_not_found(id, context.locale))?;
             Ok(Redirect::to(&candidate_list.update_path()).into_response())
@@ -46,11 +46,10 @@ mod tests {
     use axum_extra::extract::Form;
     use chrono::DateTime;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
-        candidate_lists,
+        candidate_lists::{self, CandidateListId},
     };
 
     #[sqlx::test]
@@ -60,7 +59,7 @@ mod tests {
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let candidate_list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
@@ -108,7 +107,7 @@ mod tests {
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = TokenValue("invalid".to_string());
         let candidate_list = CandidateList {
-            id: Uuid::new_v4(),
+            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
