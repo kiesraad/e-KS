@@ -17,7 +17,7 @@ pub async fn delete_candidate_list(
     match form.validate_create(&csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
         Ok(_) => {
-            candidate_lists::repository::remove_candidate_list(&mut conn, candidate_list.id)
+            candidate_lists::remove_candidate_list(&mut conn, candidate_list.id)
                 .await?;
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
@@ -48,7 +48,7 @@ mod tests {
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
@@ -75,7 +75,7 @@ mod tests {
 
         // verify deletion (i.e. no lists in database left)
         let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 0);
 
         Ok(())
@@ -94,7 +94,7 @@ mod tests {
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
@@ -121,7 +121,7 @@ mod tests {
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
         let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
 
         Ok(())

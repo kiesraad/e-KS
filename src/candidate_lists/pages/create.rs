@@ -29,9 +29,9 @@ pub async fn new_candidate_list_form(
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists =
-        candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
+        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let total_persons = persons::count_persons(&mut conn).await?;
+    let used_districts = candidate_lists::get_used_districts(&mut conn).await?;
     let available_districts = context.election.available_districts(used_districts);
 
     let form = FormData::new_with_data(
@@ -63,8 +63,8 @@ pub async fn create_candidate_list(
     match form.validate_create(&csrf_tokens) {
         Err(form_data) => {
             let candidate_lists =
-                candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
-            let total_persons = persons::repository::count_persons(&mut conn).await?;
+                candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+            let total_persons = persons::count_persons(&mut conn).await?;
 
             Ok(HtmlTemplate(
                 CandidateListCreateTemplate {
@@ -78,7 +78,7 @@ pub async fn create_candidate_list(
         }
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list)
+                candidate_lists::create_candidate_list(&mut conn, &candidate_list)
                     .await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
@@ -150,7 +150,7 @@ mod test {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
         assert_eq!(location, lists[0].list.view_path());
 

@@ -17,7 +17,7 @@ pub async fn reorder_candidate_list(
     DbConnection(mut conn): DbConnection,
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    candidate_lists::repository::update_candidate_list_order(
+    candidate_lists::update_candidate_list_order(
         &mut conn,
         candidate_list.id,
         &payload.person_ids,
@@ -47,10 +47,10 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person_a).await?;
-        persons::repository::create_person(&mut conn, &person_b).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person_a).await?;
+        persons::create_person(&mut conn, &person_b).await?;
+        candidate_lists::update_candidate_list_order(
             &mut conn,
             list_id,
             &[person_a.id, person_b.id],
@@ -72,7 +72,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NO_CONTENT);
 
         let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

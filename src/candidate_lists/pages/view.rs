@@ -44,12 +44,12 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 

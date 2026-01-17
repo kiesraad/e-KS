@@ -22,8 +22,8 @@ pub async fn list_candidate_lists(
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists =
-        candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = persons::repository::count_persons(&mut conn).await?;
+        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let total_persons = persons::count_persons(&mut conn).await?;
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
@@ -50,7 +50,7 @@ mod tests {
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list = sample_candidate_list(CandidateListId::new());
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
         let response = list_candidate_lists(
             CandidateListsPath {},

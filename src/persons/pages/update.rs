@@ -49,7 +49,7 @@ pub async fn update_person(
         )
         .into_response()),
         Ok(person) => {
-            persons::repository::update_person(&mut conn, &person).await?;
+            persons::update_person(&mut conn, &person).await?;
 
             Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
@@ -78,7 +78,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let response = edit_person_form(
             EditPersonPath { person_id },
@@ -103,7 +103,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -131,7 +131,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.last_name, "Updated");
@@ -145,7 +145,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;

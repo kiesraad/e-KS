@@ -1,7 +1,8 @@
 mod extractors;
 mod pages;
-pub mod repository;
+mod repository;
 mod structs;
 
 pub use pages::router;
 pub use structs::*;
+pub use repository::*;

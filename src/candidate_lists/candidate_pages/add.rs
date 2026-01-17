@@ -25,7 +25,7 @@ pub async fn add_existing_person(
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let persons =
-        persons::repository::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
+        persons::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate { full_list, persons },
@@ -45,13 +45,13 @@ pub async fn add_person_to_candidate_list(
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let redirect = Redirect::to(&full_list.list.view_path()).into_response();
-    let person = persons::repository::get_person(&mut conn, form.person_id).await?;
+    let person = persons::get_person(&mut conn, form.person_id).await?;
 
     if full_list.contains(form.person_id) || person.is_none() {
         return Ok(redirect);
     }
 
-    candidate_lists::repository::append_candidate_to_list(
+    candidate_lists::append_candidate_to_list(
         &mut conn,
         full_list.id(),
         form.person_id,
@@ -88,10 +88,10 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 
@@ -122,10 +122,10 @@ mod tests {
         let person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 
@@ -150,7 +150,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -169,17 +169,17 @@ mod tests {
         let new_person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &existing_person).await?;
-        persons::repository::create_person(&mut conn, &new_person).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &existing_person).await?;
+        persons::create_person(&mut conn, &new_person).await?;
+        candidate_lists::update_candidate_list_order(
             &mut conn,
             list_id,
             &[existing_person.id],
         )
         .await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 
@@ -204,7 +204,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

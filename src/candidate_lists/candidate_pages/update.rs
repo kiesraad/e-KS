@@ -58,7 +58,7 @@ pub async fn update_person(
         )
         .into_response()),
         Ok(person) => {
-            persons::repository::update_person(&mut conn, &person).await?;
+            persons::update_person(&mut conn, &person).await?;
 
             Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
@@ -91,16 +91,16 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         let candidate =
-            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+            candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let response = edit_person_form(
             CandidateListEditPersonPath {
@@ -130,16 +130,16 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         let candidate =
-            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+            candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -171,7 +171,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, person.id)
+        let updated = persons::get_person(&mut conn, person.id)
             .await?
             .expect("updated person");
         assert_eq!(updated.last_name, "Updated");
@@ -186,16 +186,16 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         let candidate =
-            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+            candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;

@@ -20,7 +20,7 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
-    let persons = persons::repository::list_all_persons(conn).await?;
+    let persons = persons::list_all_persons(conn).await?;
     let person_ids = collect_person_ids(persons);
     let uuid = Uuid::new_v5(
         &Uuid::NAMESPACE_OID,
@@ -35,10 +35,10 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
     };
 
     let candidate_list =
-        candidate_lists::repository::create_candidate_list(conn, &candidate_list).await?;
+        candidate_lists::create_candidate_list(conn, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    candidate_lists::repository::update_candidate_list_order(conn, candidate_list.id, &person_ids)
+    candidate_lists::update_candidate_list_order(conn, candidate_list.id, &person_ids)
         .await?;
 
     Ok(())
@@ -58,7 +58,7 @@ mod tests {
         let mut conn = pool.acquire().await.unwrap();
         load(&mut conn).await.unwrap();
 
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn)
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn)
             .await
             .unwrap();
 

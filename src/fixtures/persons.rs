@@ -77,7 +77,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         })?;
 
         let person = record.into_person()?;
-        persons::repository::create_person(conn, &person).await?;
+        persons::create_person(conn, &person).await?;
     }
 
     Ok(())
@@ -95,7 +95,7 @@ mod tests {
     async fn test_load(pool: PgPool) {
         let mut conn = pool.acquire().await.unwrap();
         load(&mut conn).await.unwrap();
-        let persons = crate::persons::repository::list_persons(
+        let persons = crate::persons::list_persons(
             &mut conn,
             50,
             0,

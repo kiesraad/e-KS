@@ -41,7 +41,7 @@ where
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-        let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, list_id)
+        let candidate_list = candidate_lists::get_candidate_list(&mut conn, list_id)
             .await?
             .ok_or(AppError::NotFound(t!(
                 "candidate_list.not_found",
@@ -71,7 +71,7 @@ where
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .ok_or(AppError::NotFound(t!(
                 "candidate_list.not_found",
@@ -101,7 +101,7 @@ where
         let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
             Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
 
-        let candidate = candidate_lists::repository::get_candidate(&mut conn, list_id, person_id)
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_id)
             .await
             .map_err(|err| match err {
                 sqlx::Error::RowNotFound => AppError::NotFound(
@@ -137,7 +137,7 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
 
         let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::repository::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
 
@@ -199,13 +199,13 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::repository::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::repository::create_person(&mut conn, &person)
+        persons::create_person(&mut conn, &person)
             .await
             .unwrap();
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await
             .unwrap();
 
@@ -275,13 +275,13 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::repository::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::repository::create_person(&mut conn, &person)
+        persons::create_person(&mut conn, &person)
             .await
             .unwrap();
-        candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await
             .unwrap();
 
@@ -314,10 +314,10 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::repository::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::repository::create_person(&mut conn, &person)
+        persons::create_person(&mut conn, &person)
             .await
             .unwrap();
 

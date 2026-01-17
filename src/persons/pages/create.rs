@@ -41,7 +41,7 @@ pub async fn create_person(
             Ok(HtmlTemplate(PersonCreateTemplate { form: form_data }, context).into_response())
         }
         Ok(person) => {
-            persons::repository::create_person(&mut conn, &person).await?;
+            persons::create_person(&mut conn, &person).await?;
 
             Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
@@ -107,7 +107,7 @@ mod tests {
         assert!(location.ends_with("/address"));
 
         let mut conn = pool.acquire().await?;
-        let count = persons::repository::count_persons(&mut conn).await?;
+        let count = persons::count_persons(&mut conn).await?;
         assert_eq!(count, 1);
 
         Ok(())
