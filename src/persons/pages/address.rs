@@ -50,7 +50,7 @@ pub async fn update_person_address(
         .into_response()),
         Ok(mut person) => {
             person.normalize_address();
-            persons::repository::update_address(&mut conn, &person).await?;
+            persons::update_address(&mut conn, &person).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -79,7 +79,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let response = edit_person_address(
             EditPersonAddressPath { person_id },
@@ -104,7 +104,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -132,7 +132,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));
@@ -148,7 +148,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -180,7 +180,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let csrf_tokens = CsrfTokens::default();
 
@@ -210,7 +210,7 @@ mod tests {
 
         // The international address should be removed because `is_dutch` is true
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(true));
@@ -250,7 +250,7 @@ mod tests {
 
         // The Dutch address should be removed because `is_dutch` is false
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&mut conn, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.is_dutch, Some(false));

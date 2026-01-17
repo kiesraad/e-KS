@@ -9,7 +9,7 @@ pub async fn delete_person(
     DeletePersonPath { person_id }: DeletePersonPath,
     DbConnection(mut conn): DbConnection,
 ) -> Result<Response, AppError> {
-    persons::repository::remove_person(&mut conn, person_id).await?;
+    persons::remove_person(&mut conn, person_id).await?;
 
     Ok(Redirect::to(&Person::list_path()).into_response())
 }
@@ -31,7 +31,7 @@ mod tests {
         let person = sample_person(person_id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let response = delete_person(
             DeletePersonPath { person_id },
@@ -50,7 +50,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let mut conn = pool.acquire().await?;
-        let found = persons::repository::get_person(&mut conn, person_id).await?;
+        let found = persons::get_person(&mut conn, person_id).await?;
         assert!(found.is_none());
 
         Ok(())

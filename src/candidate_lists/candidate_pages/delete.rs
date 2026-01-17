@@ -20,14 +20,14 @@ pub async fn delete_person(
     match form.validate_create(&csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
         Ok(_) => {
-            candidate_lists::repository::remove_candidate(
+            candidate_lists::remove_candidate(
                 &mut conn,
                 candidate.list_id,
                 candidate.person.id,
             )
             .await?;
 
-            persons::repository::remove_person(&mut conn, candidate.person.id).await?;
+            persons::remove_person(&mut conn, candidate.person.id).await?;
 
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
@@ -58,17 +58,17 @@ mod tests {
         let other_person = sample_person_with_last_name(PersonId::new(), "Other");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        persons::repository::create_person(&mut conn, &other_person).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &other_person).await?;
+        candidate_lists::update_candidate_list_order(
             &mut conn,
             list_id,
             &[person.id, other_person.id],
         )
         .await?;
         let candidate =
-            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+            candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
@@ -96,13 +96,13 @@ mod tests {
         assert_eq!(location, CandidateList::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let updated_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);
         assert_eq!(updated_list.candidates[0].person.id, other_person.id);
 
-        let removed = persons::repository::get_person(&mut conn, person.id).await?;
+        let removed = persons::get_person(&mut conn, person.id).await?;
         assert!(removed.is_none());
 
         Ok(())

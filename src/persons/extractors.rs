@@ -32,7 +32,7 @@ where
         let Path(PersonPathParams { person_id }) =
             Path::<PersonPathParams>::from_request_parts(parts, state).await?;
 
-        let person = persons::repository::get_person(&mut conn, person_id)
+        let person = persons::get_person(&mut conn, person_id)
             .await?
             .ok_or(AppError::NotFound(t!(
                 "person.not_found",
@@ -66,7 +66,7 @@ mod tests {
     async fn person_extractor_loads_person(pool: PgPool) {
         let person = sample_person(PersonId::new());
         let mut conn = pool.acquire().await.unwrap();
-        persons::repository::create_person(&mut conn, &person)
+        persons::create_person(&mut conn, &person)
             .await
             .unwrap();
 

@@ -21,10 +21,10 @@ pub async fn list_persons(
     pagination: Pagination<PersonSort>,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let total_items = persons::repository::count_persons(&mut conn).await?.max(0) as u64;
+    let total_items = persons::count_persons(&mut conn).await?.max(0) as u64;
     let pagination = pagination.set_total(total_items);
 
-    let persons = persons::repository::list_persons(
+    let persons = persons::list_persons(
         &mut conn,
         pagination.limit(),
         pagination.offset(),
@@ -61,7 +61,7 @@ mod tests {
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let response = list_persons(
             PersonsPath {},

@@ -51,13 +51,6 @@ pub async fn list_persons(
     .await
 }
 
-#[cfg(feature = "fixtures")]
-pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sqlx::Error> {
-    sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
-        .fetch_all(conn)
-        .await
-}
-
 pub async fn get_person(
     conn: &mut PgConnection,
     person_id: PersonId,
@@ -163,6 +156,13 @@ pub async fn remove_person(
     .await?;
 
     Ok(())
+}
+
+#[cfg(feature = "fixtures")]
+pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sqlx::Error> {
+    sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
+        .fetch_all(conn)
+        .await
 }
 
 #[cfg(test)]
@@ -292,10 +292,10 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
         create_person(&mut conn, &person_a).await?;
         create_person(&mut conn, &person_b).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::update_candidate_list_order(
             &mut conn,
             list_id,
             &[person_a.id],

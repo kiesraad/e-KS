@@ -52,9 +52,9 @@ pub async fn create_person_candidate_list(
         )
         .into_response()),
         Ok(person) => {
-            let person = persons::repository::create_person(&mut conn, &person).await?;
+            let person = persons::create_person(&mut conn, &person).await?;
 
-            candidate_lists::repository::append_candidate_to_list(
+            candidate_lists::append_candidate_to_list(
                 &mut conn,
                 full_list.id(),
                 person.id,
@@ -62,7 +62,7 @@ pub async fn create_person_candidate_list(
             .await?;
 
             let candidate =
-                candidate_lists::repository::get_candidate(&mut conn, full_list.id(), person.id)
+                candidate_lists::get_candidate(&mut conn, full_list.id(), person.id)
                     .await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
@@ -92,9 +92,9 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
 
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 
@@ -123,13 +123,13 @@ mod tests {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 
@@ -153,7 +153,7 @@ mod tests {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -170,14 +170,14 @@ mod tests {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
-        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
             .expect("candidate list");
 

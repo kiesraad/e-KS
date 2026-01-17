@@ -37,7 +37,7 @@ mod tests {
     async fn test_load_all_fixtures(pool: PgPool) {
         load(&pool).await.unwrap();
         let mut conn = pool.acquire().await.unwrap();
-        let persons = crate::persons::repository::list_persons(
+        let persons = crate::persons::list_persons(
             &mut conn,
             50,
             0,

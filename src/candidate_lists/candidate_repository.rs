@@ -1,0 +1,393 @@
+use sqlx::{Connection, PgConnection};
+
+use crate::{
+    candidate_lists::{
+        self, Candidate, CandidateListId, FullCandidateList
+    },
+    persons::{Gender, Person, PersonId},
+};
+
+pub async fn get_full_candidate_list(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+) -> Result<Option<FullCandidateList>, sqlx::Error> {
+    let list = candidate_lists::get_candidate_list(conn, list_id).await?;
+
+    let Some(list) = list else {
+        return Ok(None);
+    };
+
+    let candidates = sqlx::query_file!(
+        "sql/candidate_lists/list_candidates_for_list.sql",
+        list.id.uuid()
+    )
+    .fetch_all(&mut *conn)
+    .await?
+    .into_iter()
+    .map(|row| Candidate {
+        list_id: list.id,
+        position: row.position as usize,
+        person: Person {
+            id: row.id,
+            gender: row.gender,
+            last_name: row.last_name,
+            last_name_prefix: row.last_name_prefix,
+            first_name: row.first_name,
+            initials: row.initials,
+            date_of_birth: row.date_of_birth,
+            bsn: row.bsn,
+            locality: row.locality,
+            postal_code: row.postal_code,
+            house_number: row.house_number,
+            house_number_addition: row.house_number_addition,
+            street_name: row.street_name,
+            is_dutch: row.is_dutch,
+            custom_country: row.custom_country,
+            custom_region: row.custom_region,
+            address_line_1: row.address_line_1,
+            address_line_2: row.address_line_2,
+            created_at: row.created_at,
+            updated_at: row.updated_at,
+        },
+    })
+    .collect();
+
+    Ok(Some(FullCandidateList { list, candidates }))
+}
+
+pub async fn update_candidate_list_order(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+    person_ids: &[PersonId],
+) -> Result<FullCandidateList, sqlx::Error> {
+    let mut tx = conn.begin().await?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = NOW()
+        WHERE id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists_persons
+        WHERE candidate_list_id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    insert_candidates(&mut tx, list_id, person_ids).await?;
+
+    tx.commit().await?;
+
+    get_full_candidate_list(conn, list_id)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)
+}
+
+pub async fn append_candidate_to_list(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+    person_id: PersonId,
+) -> Result<(), sqlx::Error> {
+    let mut tx = conn.begin().await?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = NOW()
+        WHERE id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    let position_record = sqlx::query!(
+        r#"
+        SELECT COALESCE(MAX(position), 0) AS max_position
+        FROM candidate_lists_persons
+        WHERE candidate_list_id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .fetch_one(&mut *tx)
+    .await?;
+
+    let new_position = position_record.max_position.unwrap_or(0) + 1;
+
+    sqlx::query!(
+        r#"
+        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position)
+        VALUES ($1, $2, $3)
+        "#,
+        list_id.uuid(),
+        person_id.uuid(),
+        new_position,
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+pub async fn remove_candidate(
+    conn: &mut PgConnection,
+    list_id: CandidateListId,
+    person_id: PersonId,
+) -> Result<(), sqlx::Error> {
+    let mut tx = conn.begin().await?;
+
+    let updated = sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = NOW()
+        WHERE id = $1
+        "#,
+        list_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if updated.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists_persons
+        WHERE candidate_list_id = $1 AND person_id = $2
+        "#,
+        list_id.uuid(),
+        person_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+pub async fn get_candidate(
+    executor: &mut PgConnection,
+    list_id: CandidateListId,
+    person_id: PersonId,
+) -> Result<Candidate, sqlx::Error> {
+    let person = crate::persons::get_person(executor, person_id)
+        .await?
+        .ok_or(sqlx::Error::RowNotFound)?;
+
+    let record = sqlx::query!(
+        r#"
+        SELECT position
+        FROM candidate_lists_persons
+        WHERE candidate_list_id = $1 AND person_id = $2
+        "#,
+        list_id.uuid(),
+        person_id.uuid(),
+    )
+    .fetch_one(&mut *executor)
+    .await?;
+
+    Ok(Candidate {
+        list_id,
+        position: record.position as usize,
+        person,
+    })
+}
+
+async fn insert_candidates(
+    executor: &mut PgConnection,
+    list_id: CandidateListId,
+    person_ids: &[PersonId],
+) -> Result<(), sqlx::Error> {
+    let positions: Vec<i32> = (1..=person_ids.len() as i32).collect();
+
+    sqlx::query!(
+        r#"
+        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position)
+        SELECT $1, person_id, position
+        FROM UNNEST($2::uuid[], $3::int[]) AS t(person_id, position)
+        "#,
+        list_id.uuid(),
+        &person_ids.iter().map(|p| p.uuid()).collect::<Vec<_>>(),
+        &positions,
+    )
+    .execute(&mut *executor)
+    .await?;
+
+    Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::PgPool;
+
+    use crate::{
+        candidate_lists, persons, test_utils::{sample_candidate_list, sample_person_with_last_name}
+    };
+
+    #[sqlx::test]
+    async fn get_candidate_list_includes_candidates(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person_a).await?;
+        persons::create_person(&mut conn, &person_b).await?;
+        update_candidate_list_order(&mut conn, list_id, &[person_a.id, person_b.id]).await?;
+
+        let detail = get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        assert_eq!(2, detail.candidates.len());
+        assert_eq!(person_a.id, detail.candidates[0].person.id);
+        assert_eq!(person_b.id, detail.candidates[1].person.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_candidate_list_order_returns_row_not_found(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let err = update_candidate_list_order(&mut conn, CandidateListId::new(), &[])
+            .await
+            .unwrap_err();
+        assert!(matches!(err, sqlx::Error::RowNotFound));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_full_candidate_list_returns_none_for_missing_list(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let missing = get_full_candidate_list(&mut conn, CandidateListId::new()).await?;
+        assert!(missing.is_none());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn test_append_candidate_to_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person_a).await?;
+        persons::create_person(&mut conn, &person_b).await?;
+
+        append_candidate_to_list(&mut conn, list_id, person_a.id).await?;
+        append_candidate_to_list(&mut conn, list_id, person_b.id).await?;
+
+        let detail = get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
+        assert_eq!(detail.candidates.len(), 2);
+        assert_eq!(detail.candidates[0].person.id, person_a.id);
+        assert_eq!(detail.candidates[0].position, 1);
+        assert_eq!(detail.candidates[1].person.id, person_b.id);
+        assert_eq!(detail.candidates[1].position, 2);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn append_candidate_to_list_returns_row_not_found(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let err = append_candidate_to_list(
+            &mut conn,
+            CandidateListId::new(),
+            PersonId::new(),
+        )
+        .await
+        .unwrap_err();
+        assert!(matches!(err, sqlx::Error::RowNotFound));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn remove_candidate_removes_from_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person_a).await?;
+        persons::create_person(&mut conn, &person_b).await?;
+        append_candidate_to_list(&mut conn, list_id, person_a.id).await?;
+        append_candidate_to_list(&mut conn, list_id, person_b.id).await?;
+
+        remove_candidate(&mut conn, list_id, person_a.id).await?;
+
+        let detail = get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        assert_eq!(detail.candidates.len(), 1);
+        assert_eq!(detail.candidates[0].person.id, person_b.id);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn remove_candidate_returns_row_not_found(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        let err = remove_candidate(&mut conn, CandidateListId::new(), PersonId::new())
+            .await
+            .unwrap_err();
+        assert!(matches!(err, sqlx::Error::RowNotFound));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_candidate_returns_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person_with_last_name(PersonId::new(), "Jansen");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        append_candidate_to_list(&mut conn, list_id, person.id).await?;
+
+        let candidate = get_candidate(&mut conn, list_id, person.id).await?;
+        assert_eq!(candidate.list_id, list_id);
+        assert_eq!(candidate.position, 1);
+        assert_eq!(candidate.person.id, person.id);
+
+        Ok(())
+    }
+}
