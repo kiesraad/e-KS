@@ -10,8 +10,7 @@
       <legend>
         <h2>{{ t!("person.form.edit.title")|trans|fill(person.display_name()) }}</h2>
       </legend>
-      {% include "persons/address_form.html" %}
-
+      {% include "persons/components/address_form.html" %}
       <p class="form-field actions">
         <button type="submit" class="button">
           {{ t!("action.save")|trans }}

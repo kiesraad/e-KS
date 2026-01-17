@@ -17,8 +17,7 @@ pub async fn delete_candidate_list(
     match form.validate_create(&csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
         Ok(_) => {
-            candidate_lists::remove_candidate_list(&mut conn, candidate_list.id)
-                .await?;
+            candidate_lists::remove_candidate_list(&mut conn, candidate_list.id).await?;
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
     }

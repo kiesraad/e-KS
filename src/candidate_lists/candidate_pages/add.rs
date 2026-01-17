@@ -24,8 +24,7 @@ pub async fn add_existing_person(
     full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let persons =
-        persons::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
+    let persons = persons::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate { full_list, persons },
@@ -51,12 +50,7 @@ pub async fn add_person_to_candidate_list(
         return Ok(redirect);
     }
 
-    candidate_lists::append_candidate_to_list(
-        &mut conn,
-        full_list.id(),
-        form.person_id,
-    )
-    .await?;
+    candidate_lists::append_candidate_to_list(&mut conn, full_list.id(), form.person_id).await?;
 
     Ok(redirect)
 }
@@ -172,12 +166,8 @@ mod tests {
         candidate_lists::create_candidate_list(&mut conn, &list).await?;
         persons::create_person(&mut conn, &existing_person).await?;
         persons::create_person(&mut conn, &new_person).await?;
-        candidate_lists::update_candidate_list_order(
-            &mut conn,
-            list_id,
-            &[existing_person.id],
-        )
-        .await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[existing_person.id])
+            .await?;
 
         let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?

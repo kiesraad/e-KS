@@ -202,9 +202,7 @@ mod tests {
         candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person)
-            .await
-            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
         candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await
             .unwrap();
@@ -278,9 +276,7 @@ mod tests {
         candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person)
-            .await
-            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
         candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await
             .unwrap();
@@ -317,9 +313,7 @@ mod tests {
         candidate_lists::create_candidate_list(&mut conn, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person)
-            .await
-            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
 
         let app = Router::new()
             .route(

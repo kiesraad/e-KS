@@ -29,8 +29,7 @@ pub async fn edit_candidate_list(
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
 ) -> Result<Response, AppError> {
-    let candidate_lists =
-        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
 
     Ok(HtmlTemplate(
@@ -56,8 +55,7 @@ pub async fn update_candidate_list(
     DbConnection(mut conn): DbConnection,
     form: Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let candidate_lists =
-        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
 
     match form.validate_update(&candidate_list, &csrf_tokens) {
@@ -73,8 +71,7 @@ pub async fn update_candidate_list(
         .into_response()),
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::update_candidate_list(&mut conn, candidate_list)
-                    .await?;
+                candidate_lists::update_candidate_list(&mut conn, candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }

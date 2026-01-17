@@ -34,12 +34,10 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         updated_at: Utc::now(),
     };
 
-    let candidate_list =
-        candidate_lists::create_candidate_list(conn, &candidate_list).await?;
+    let candidate_list = candidate_lists::create_candidate_list(conn, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    candidate_lists::update_candidate_list_order(conn, candidate_list.id, &person_ids)
-        .await?;
+    candidate_lists::update_candidate_list_order(conn, candidate_list.id, &person_ids).await?;
 
     Ok(())
 }

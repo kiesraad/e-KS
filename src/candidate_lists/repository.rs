@@ -2,9 +2,7 @@ use sqlx::PgConnection;
 
 use crate::{
     ElectoralDistrict,
-    candidate_lists::{
-        CandidateList, CandidateListId, CandidateListSummary,
-    },
+    candidate_lists::{CandidateList, CandidateListId, CandidateListSummary},
 };
 
 pub struct ListIdAndCount {
@@ -184,7 +182,9 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        candidate_lists, persons::{self, PersonId}, test_utils::{sample_candidate_list, sample_person_with_last_name}
+        candidate_lists,
+        persons::{self, PersonId},
+        test_utils::{sample_candidate_list, sample_person_with_last_name},
     };
 
     async fn insert_list(

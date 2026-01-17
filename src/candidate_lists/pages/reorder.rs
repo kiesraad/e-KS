@@ -17,12 +17,8 @@ pub async fn reorder_candidate_list(
     DbConnection(mut conn): DbConnection,
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    candidate_lists::update_candidate_list_order(
-        &mut conn,
-        candidate_list.id,
-        &payload.person_ids,
-    )
-    .await?;
+    candidate_lists::update_candidate_list_order(&mut conn, candidate_list.id, &payload.person_ids)
+        .await?;
 
     Ok(StatusCode::NO_CONTENT)
 }

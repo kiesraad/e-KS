@@ -1,9 +1,7 @@
 use sqlx::{Connection, PgConnection};
 
 use crate::{
-    candidate_lists::{
-        self, Candidate, CandidateListId, FullCandidateList
-    },
+    candidate_lists::{self, Candidate, CandidateListId, FullCandidateList},
     persons::{Gender, Person, PersonId},
 };
 
@@ -243,7 +241,8 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        candidate_lists, persons, test_utils::{sample_candidate_list, sample_person_with_last_name}
+        candidate_lists, persons,
+        test_utils::{sample_candidate_list, sample_person_with_last_name},
     };
 
     #[sqlx::test]
@@ -270,7 +269,9 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn update_candidate_list_order_returns_row_not_found(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_candidate_list_order_returns_row_not_found(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await?;
         let err = update_candidate_list_order(&mut conn, CandidateListId::new(), &[])
             .await
@@ -324,13 +325,9 @@ mod tests {
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await?;
-        let err = append_candidate_to_list(
-            &mut conn,
-            CandidateListId::new(),
-            PersonId::new(),
-        )
-        .await
-        .unwrap_err();
+        let err = append_candidate_to_list(&mut conn, CandidateListId::new(), PersonId::new())
+            .await
+            .unwrap_err();
         assert!(matches!(err, sqlx::Error::RowNotFound));
 
         Ok(())

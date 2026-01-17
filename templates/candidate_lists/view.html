@@ -42,7 +42,7 @@
     <p>{{ t!("candidate_list.view.empty")|trans }}</p>
   {% else %}
     {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
-      {% include "candidate_lists/candidates_table.html" %}
+      {% include "candidate_lists/components/candidates_table.html" %}
     {% endif %}
   {% endif %}
   </section>

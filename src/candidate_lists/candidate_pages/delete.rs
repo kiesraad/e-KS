@@ -20,12 +20,8 @@ pub async fn delete_person(
     match form.validate_create(&csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
         Ok(_) => {
-            candidate_lists::remove_candidate(
-                &mut conn,
-                candidate.list_id,
-                candidate.person.id,
-            )
-            .await?;
+            candidate_lists::remove_candidate(&mut conn, candidate.list_id, candidate.person.id)
+                .await?;
 
             persons::remove_person(&mut conn, candidate.person.id).await?;
 
@@ -67,8 +63,7 @@ mod tests {
             &[person.id, other_person.id],
         )
         .await?;
-        let candidate =
-            candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;

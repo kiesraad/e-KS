@@ -66,9 +66,7 @@ mod tests {
     async fn person_extractor_loads_person(pool: PgPool) {
         let person = sample_person(PersonId::new());
         let mut conn = pool.acquire().await.unwrap();
-        persons::create_person(&mut conn, &person)
-            .await
-            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
 
         let app = Router::new()
             .route(

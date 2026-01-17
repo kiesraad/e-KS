@@ -28,8 +28,7 @@ pub async fn new_candidate_list_form(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists =
-        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
     let used_districts = candidate_lists::get_used_districts(&mut conn).await?;
     let available_districts = context.election.available_districts(used_districts);
@@ -78,8 +77,7 @@ pub async fn create_candidate_list(
         }
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::create_candidate_list(&mut conn, &candidate_list)
-                    .await?;
+                candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }

@@ -54,16 +54,10 @@ pub async fn create_person_candidate_list(
         Ok(person) => {
             let person = persons::create_person(&mut conn, &person).await?;
 
-            candidate_lists::append_candidate_to_list(
-                &mut conn,
-                full_list.id(),
-                person.id,
-            )
-            .await?;
+            candidate_lists::append_candidate_to_list(&mut conn, full_list.id(), person.id).await?;
 
             let candidate =
-                candidate_lists::get_candidate(&mut conn, full_list.id(), person.id)
-                    .await?;
+                candidate_lists::get_candidate(&mut conn, full_list.id(), person.id).await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
         }

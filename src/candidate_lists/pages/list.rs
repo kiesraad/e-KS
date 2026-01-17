@@ -21,8 +21,7 @@ pub async fn list_candidate_lists(
     context: Context,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists =
-        candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
 
     Ok(HtmlTemplate(
