@@ -1,11 +1,10 @@
 use chrono::{NaiveDate, Utc};
 use http_body_util::BodyExt;
-use uuid::Uuid;
 
 use crate::{
     ElectoralDistrict, TokenValue,
-    candidate_lists::CandidateList,
-    persons::{AddressForm, Gender, Person, PersonForm},
+    candidate_lists::{CandidateList, CandidateListId},
+    persons::{AddressForm, Gender, Person, PersonForm, PersonId},
 };
 
 pub async fn response_body_string(response: axum::response::Response) -> String {
@@ -18,7 +17,7 @@ pub async fn response_body_string(response: axum::response::Response) -> String 
     String::from_utf8(bytes.to_vec()).expect("utf-8 body")
 }
 
-pub fn sample_candidate_list(id: Uuid) -> CandidateList {
+pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,
         electoral_districts: vec![ElectoralDistrict::UT],
@@ -27,7 +26,7 @@ pub fn sample_candidate_list(id: Uuid) -> CandidateList {
     }
 }
 
-pub fn sample_person(id: Uuid) -> Person {
+pub fn sample_person(id: PersonId) -> Person {
     Person {
         id,
         gender: Some(Gender::Female),
@@ -52,7 +51,7 @@ pub fn sample_person(id: Uuid) -> Person {
     }
 }
 
-pub fn sample_person_with_last_name(id: Uuid, last_name: &str) -> Person {
+pub fn sample_person_with_last_name(id: PersonId, last_name: &str) -> Person {
     let sample = sample_person(id);
 
     Person {

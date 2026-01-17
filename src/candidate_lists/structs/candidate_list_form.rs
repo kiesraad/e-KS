@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList, form::WithCsrfToken};
+use crate::{
+    ElectoralDistrict, TokenValue,
+    candidate_lists::{CandidateList, CandidateListId},
+    form::WithCsrfToken,
+};
 use validate::Validate as ValidateDerive;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
@@ -30,7 +33,7 @@ impl CandidateListForm {
             }
         } else {
             CandidateList {
-                id: Uuid::new_v4(),
+                id: CandidateListId::new(),
                 electoral_districts: validated.electoral_districts,
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),

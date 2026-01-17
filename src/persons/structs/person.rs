@@ -1,13 +1,14 @@
 use chrono::{DateTime, NaiveDate};
 use serde::Serialize;
 use sqlx::types::chrono::Utc;
-use uuid::Uuid;
 
-use crate::{constants::DEFAULT_DATE_TIME_FORMAT, persons::Gender, t};
+use crate::{constants::DEFAULT_DATE_TIME_FORMAT, id_newtype, persons::Gender, t};
+
+id_newtype!(pub struct PersonId);
 
 #[derive(Default, Debug, Serialize, Clone, sqlx::FromRow)]
 pub struct Person {
-    pub id: Uuid,
+    pub id: PersonId,
     pub last_name: String,
     pub last_name_prefix: Option<String>,
     pub initials: String,

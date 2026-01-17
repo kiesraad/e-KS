@@ -5,6 +5,7 @@ pub mod election;
 pub mod filters;
 pub mod locale;
 pub mod logging;
+pub mod new_type;
 pub mod server;
 pub mod state;
 pub mod templates;

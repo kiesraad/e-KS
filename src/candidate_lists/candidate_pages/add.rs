@@ -1,9 +1,3 @@
-use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
-use axum_extra::extract::Form;
-use serde::Deserialize;
-use uuid::Uuid;
-
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
@@ -11,9 +5,13 @@ use crate::{
         pages::{AddCandidatePath, load_candidate_list},
     },
     filters,
-    persons::{self, Person},
+    persons::{self, Person, PersonId},
     t,
 };
+use askama::Template;
+use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::extract::Form;
+use serde::Deserialize;
 
 #[derive(Template)]
 #[template(path = "candidates/add_existing.html")]
@@ -28,8 +26,8 @@ pub async fn add_existing_person(
     context: Context,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList = load_candidate_list(&mut conn, &id, context.locale).await?;
-    let persons = persons::repository::list_persons_not_on_candidate_list(&mut conn, &id).await?;
+    let full_list: FullCandidateList = load_candidate_list(&mut conn, id, context.locale).await?;
+    let persons = persons::repository::list_persons_not_on_candidate_list(&mut conn, id).await?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate {
@@ -43,7 +41,7 @@ pub async fn add_existing_person(
 
 #[derive(Deserialize)]
 pub struct AddPersonForm {
-    pub person_id: Uuid,
+    pub person_id: PersonId,
 }
 
 pub async fn add_person_to_candidate_list(
@@ -52,7 +50,7 @@ pub async fn add_person_to_candidate_list(
     DbConnection(mut conn): DbConnection,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list = load_candidate_list(&mut conn, &id, context.locale).await?;
+    let full_list = load_candidate_list(&mut conn, id, context.locale).await?;
     let redirect = Redirect::to(&full_list.list.view_path()).into_response();
 
     if full_list.get_index(&form.person_id).is_some() {
@@ -61,7 +59,7 @@ pub async fn add_person_to_candidate_list(
 
     let mut person_ids = full_list.get_ids();
     person_ids.push(form.person_id);
-    candidate_lists::repository::update_candidate_list_order(&mut conn, &id, &person_ids).await?;
+    candidate_lists::repository::update_candidate_list_order(&mut conn, id, &person_ids).await?;
 
     Ok(redirect)
 }
@@ -75,10 +73,11 @@ mod tests {
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        Context, DbConnection, Locale, candidate_lists, persons,
+        Context, DbConnection, Locale,
+        candidate_lists::{self, CandidateListId},
+        persons::{self, PersonId},
         test_utils::{
             response_body_string, sample_candidate_list, sample_person,
             sample_person_with_last_name,
@@ -87,9 +86,9 @@ mod tests {
 
     #[sqlx::test]
     async fn view_candidate_list_renders_persons(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
+        let person = sample_person(PersonId::new());
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -116,9 +115,9 @@ mod tests {
     async fn add_person_to_candidate_list_adds_and_redirects(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+        let person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -145,7 +144,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -158,10 +157,10 @@ mod tests {
     async fn add_person_to_candidate_list_redirects_when_person_not_on_list(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let existing_person = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
-        let new_person = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+        let existing_person = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let new_person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -169,7 +168,7 @@ mod tests {
         persons::repository::create_person(&mut conn, &new_person).await?;
         candidate_lists::repository::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[existing_person.id],
         )
         .await?;
@@ -195,7 +194,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
+        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
             .await
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

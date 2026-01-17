@@ -1,9 +1,12 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use uuid::Uuid;
 
-use crate::{AppError, AppState, candidate_lists::Candidate};
+use crate::{
+    AppError, AppState,
+    candidate_lists::{Candidate, CandidateListId},
+    persons::PersonId,
+};
 
 mod add;
 mod create;
@@ -18,15 +21,15 @@ mod update;
     rejection(AppError)
 )]
 pub struct EditCandidatePositionPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub candidate_list: CandidateListId,
+    pub person: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
 pub struct CandidateListEditPersonPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub candidate_list: CandidateListId,
+    pub person: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -35,8 +38,8 @@ pub struct CandidateListEditPersonPath {
     rejection(AppError)
 )]
 pub struct CandidateListEditAddressPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub candidate_list: CandidateListId,
+    pub person: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -45,8 +48,8 @@ pub struct CandidateListEditAddressPath {
     rejection(AppError)
 )]
 pub struct CandidateListDeletePersonPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub candidate_list: CandidateListId,
+    pub person: PersonId,
 }
 
 impl Candidate {

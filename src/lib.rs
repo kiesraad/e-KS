@@ -19,7 +19,7 @@ pub use common::{
     election::{ElectionConfig, ElectoralDistrict},
     filters, locale,
     locale::Locale,
-    logging, server,
+    logging, new_type, server,
     state::{AppState, DbConnection},
     templates::HtmlTemplate,
     translate,

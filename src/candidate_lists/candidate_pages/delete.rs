@@ -40,7 +40,7 @@ pub async fn delete_person(
         Ok(_) => {
             let full_list = candidate_lists::pages::load_candidate_list(
                 &mut conn,
-                &candidate_list,
+                candidate_list,
                 context.locale,
             )
             .await?;
@@ -51,7 +51,7 @@ pub async fn delete_person(
             updates_ids.retain(|id| id != &candidate.person.id);
             candidate_lists::repository::update_candidate_list_order(
                 &mut conn,
-                &candidate_list,
+                candidate_list,
                 &updates_ids,
             )
             .await?;
@@ -72,12 +72,11 @@ mod tests {
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
         AppState, Context, CsrfTokens, DbConnection, Locale,
-        candidate_lists::{self, CandidateList},
-        persons,
+        candidate_lists::{self, CandidateList, CandidateListId},
+        persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
 
@@ -85,10 +84,10 @@ mod tests {
     async fn delete_person_removes_from_list_and_redirects(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
-        let other_person = sample_person_with_last_name(Uuid::new_v4(), "Other");
+        let person = sample_person(PersonId::new());
+        let other_person = sample_person_with_last_name(PersonId::new(), "Other");
 
         let mut conn = pool.acquire().await?;
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
@@ -96,7 +95,7 @@ mod tests {
         persons::repository::create_person(&mut conn, &other_person).await?;
         candidate_lists::repository::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[person.id, other_person.id],
         )
         .await?;
@@ -129,10 +128,9 @@ mod tests {
         assert_eq!(location, CandidateList::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated_list =
-            candidate_lists::repository::get_full_candidate_list(&mut conn, &list_id)
-                .await?
-                .expect("candidate list");
+        let updated_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);
         assert_eq!(updated_list.candidates[0].person.id, other_person.id);
 

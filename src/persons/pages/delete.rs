@@ -18,13 +18,16 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
-    use crate::{DbConnection, persons, test_utils::sample_person};
+    use crate::{
+        DbConnection,
+        persons::{self, PersonId},
+        test_utils::sample_person,
+    };
 
     #[sqlx::test]
     async fn delete_person_removes_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;

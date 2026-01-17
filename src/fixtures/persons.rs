@@ -8,7 +8,7 @@ use sqlx::PgConnection;
 use crate::{
     AppError,
     constants::DEFAULT_DATE_FORMAT,
-    persons::{self, Gender, Person},
+    persons::{self, Gender, Person, PersonId},
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");
@@ -31,7 +31,7 @@ struct PersonRecord {
 impl PersonRecord {
     fn into_person(self) -> Result<Person, AppError> {
         Ok(Person {
-            id: uuid::Uuid::new_v4(),
+            id: PersonId::new(),
             gender: self.gender.and_then(|s| Gender::from_str(&s).ok()),
             last_name: self.last_name,
             last_name_prefix: self.last_name_prefix,
