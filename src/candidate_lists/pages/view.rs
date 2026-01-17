@@ -2,10 +2,9 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate,
+    AppError, Context, HtmlTemplate,
     candidate_lists::{
-        CandidateList, FullCandidateList, MAX_CANDIDATES,
-        pages::{ViewCandidateListPath, load_candidate_list},
+        CandidateList, FullCandidateList, MAX_CANDIDATES, pages::ViewCandidateListPath,
     },
     filters, t,
 };
@@ -18,12 +17,10 @@ struct CandidateListViewTemplate {
 }
 
 pub async fn view_candidate_list(
-    ViewCandidateListPath { id }: ViewCandidateListPath,
+    ViewCandidateListPath { .. }: ViewCandidateListPath,
     context: Context,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list = load_candidate_list(&mut conn, id, context.locale).await?;
-
     Ok(HtmlTemplate(
         CandidateListViewTemplate {
             full_list,
@@ -40,7 +37,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, Locale,
+        Context, Locale,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -58,10 +55,14 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = view_candidate_list(
             ViewCandidateListPath { id: list_id },
             Context::new(Locale::En),
-            DbConnection(pool.acquire().await?),
+            full_list,
         )
         .await
         .unwrap()

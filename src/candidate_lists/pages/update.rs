@@ -6,12 +6,12 @@ use crate::{
     AppError, Config, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
     HtmlTemplate, Locale,
     candidate_lists::{
-        self, CandidateList, CandidateListForm, CandidateListSummary,
-        pages::{CandidateListsEditPath, candidate_list_not_found},
+        self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListsEditPath,
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, Person},
+    persons,
+    persons::Person,
     t,
 };
 
@@ -28,9 +28,10 @@ struct CandidateListUpdateTemplate {
 }
 
 pub async fn edit_candidate_list(
-    CandidateListsEditPath { id }: CandidateListsEditPath,
+    CandidateListsEditPath { .. }: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     config: Config,
 ) -> Result<Response, AppError> {
@@ -39,10 +40,6 @@ pub async fn edit_candidate_list(
     let total_persons = persons::repository::count_persons(&mut conn).await?;
     let election = config.election;
     let electoral_districts = election.electoral_districts();
-
-    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
-        .await?
-        .ok_or(candidate_list_not_found(id, context.locale))?;
 
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
@@ -63,9 +60,10 @@ pub async fn edit_candidate_list(
 }
 
 pub async fn update_candidate_list(
-    CandidateListsEditPath { id }: CandidateListsEditPath,
+    CandidateListsEditPath { .. }: CandidateListsEditPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     config: Config,
     form: Form<CandidateListForm>,
@@ -76,10 +74,6 @@ pub async fn update_candidate_list(
     let election = config.election;
 
     let electoral_districts = election.electoral_districts();
-
-    let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
-        .await?
-        .ok_or(candidate_list_not_found(id, context.locale))?;
 
     match form.validate_update(&candidate_list, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -132,6 +126,7 @@ mod tests {
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
+            candidate_list.clone(),
             DbConnection(pool.acquire().await?),
             config,
         )
@@ -173,6 +168,7 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            candidate_list.clone(),
             DbConnection(conn),
             config,
             Form(form),
@@ -237,6 +233,7 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            candidate_list.clone(),
             DbConnection(conn),
             config,
             Form(form),

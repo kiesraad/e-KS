@@ -1,4 +1,5 @@
 mod candidate_pages;
+mod extractors;
 mod pages;
 mod structs;
 

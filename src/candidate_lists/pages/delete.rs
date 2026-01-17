@@ -2,31 +2,26 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection,
-    candidate_lists::{
-        self, CandidateList,
-        pages::{CandidateListsDeletePath, candidate_list_not_found},
-    },
+    AppError, CsrfTokens, DbConnection,
+    candidate_lists::{self, CandidateList, pages::CandidateListsDeletePath},
     form::{EmptyForm, Validate},
 };
 
 pub async fn delete_candidate_list(
-    CandidateListsDeletePath { id }: CandidateListsDeletePath,
-    context: Context,
+    CandidateListsDeletePath { .. }: CandidateListsDeletePath,
     csrf_tokens: CsrfTokens,
+    candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
         Err(_) => {
             // csrf token is invalid => back to edit view
-            let candidate_list = candidate_lists::repository::get_candidate_list(&mut conn, id)
-                .await?
-                .ok_or(candidate_list_not_found(id, context.locale))?;
             Ok(Redirect::to(&candidate_list.update_path()).into_response())
         }
         Ok(_) => {
-            candidate_lists::repository::remove_candidate_list(&mut conn, id).await?;
+            candidate_lists::repository::remove_candidate_list(&mut conn, candidate_list.id)
+                .await?;
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
     }
@@ -41,7 +36,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
+        CsrfTokens, DbConnection, ElectoralDistrict, TokenValue,
         candidate_lists::{self, CandidateListId},
     };
 
@@ -62,8 +57,8 @@ mod tests {
             CandidateListsDeletePath {
                 id: candidate_list.id,
             },
-            Context::new(Locale::En),
             csrf_tokens,
+            candidate_list.clone(),
             DbConnection(conn),
             Form(EmptyForm { csrf_token }),
         )
@@ -108,8 +103,8 @@ mod tests {
             CandidateListsDeletePath {
                 id: candidate_list.id,
             },
-            Context::new(Locale::En),
             csrf_tokens,
+            candidate_list.clone(),
             DbConnection(conn),
             Form(EmptyForm { csrf_token }),
         )

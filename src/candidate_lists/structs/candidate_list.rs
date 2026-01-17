@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 
 use crate::{
-    AppError, ElectionConfig, ElectoralDistrict, Locale, candidate_lists::Candidate, id_newtype,
+    ElectionConfig, ElectoralDistrict, Locale, candidate_lists::Candidate, id_newtype,
     persons::PersonId, t,
 };
 
@@ -53,20 +53,6 @@ impl FullCandidateList {
         self.candidates
             .iter()
             .position(|c| &c.person.id == person_id)
-    }
-
-    pub fn get_candidate(
-        &self,
-        person_id: &PersonId,
-        locale: Locale,
-    ) -> Result<Candidate, AppError> {
-        self.candidates
-            .iter()
-            .find(|c| &c.person.id == person_id)
-            .cloned()
-            .ok_or_else(|| {
-                AppError::NotFound(t!("person.not_found_in_candidate_list", locale).to_string())
-            })
     }
 
     pub fn get_ids(&self) -> Vec<PersonId> {

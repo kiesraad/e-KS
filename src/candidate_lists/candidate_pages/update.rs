@@ -6,7 +6,7 @@ use crate::{
     AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate,
     candidate_lists::{
         Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        candidate_pages::CandidateListEditPersonPath, pages::load_candidate_list,
+        candidate_pages::CandidateListEditPersonPath,
     },
     filters,
     form::{FormData, Validate},
@@ -25,16 +25,14 @@ struct PersonUpdateTemplate {
 
 pub async fn edit_person_form(
     CandidateListEditPersonPath {
-        candidate_list,
-        person,
+        candidate_list: _,
+        person: _,
     }: CandidateListEditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
+    candidate: Candidate,
 ) -> AppResponse<impl IntoResponse> {
-    let full_list = load_candidate_list(&mut conn, candidate_list, context.locale).await?;
-    let candidate = full_list.get_candidate(&person, context.locale)?;
-
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(candidate.person.clone()), &csrf_tokens),
@@ -48,17 +46,16 @@ pub async fn edit_person_form(
 
 pub async fn update_person(
     CandidateListEditPersonPath {
-        candidate_list,
-        person,
+        candidate_list: _,
+        person: _,
     }: CandidateListEditPersonPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    full_list: FullCandidateList,
+    candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list = load_candidate_list(&mut conn, candidate_list, context.locale).await?;
-    let candidate = full_list.get_candidate(&person, context.locale)?;
-
     match form.validate_update(&candidate.person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
@@ -109,6 +106,12 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+
         let response = edit_person_form(
             CandidateListEditPersonPath {
                 candidate_list: list_id,
@@ -116,7 +119,8 @@ mod tests {
             },
             Context::new(Locale::En),
             CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            full_list,
+            candidate,
         )
         .await
         .unwrap()
@@ -141,6 +145,12 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
@@ -153,6 +163,8 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -189,6 +201,12 @@ mod tests {
         candidate_lists::repository::update_candidate_list_order(&mut conn, list_id, &[person.id])
             .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate =
+            candidate_lists::repository::get_candidate(&mut conn, list_id, person.id).await?;
+
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
@@ -201,6 +219,8 @@ mod tests {
             },
             Context::new(Locale::En),
             csrf_tokens,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )

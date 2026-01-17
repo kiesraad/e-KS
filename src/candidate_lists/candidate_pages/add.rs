@@ -1,17 +1,17 @@
+use askama::Template;
+use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::extract::Form;
+use serde::Deserialize;
+
 use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
-        self, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        pages::{AddCandidatePath, load_candidate_list},
+        self, CandidateList, FullCandidateList, MAX_CANDIDATES, pages::AddCandidatePath,
     },
     filters,
     persons::{self, Person, PersonId},
     t,
 };
-use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
-use axum_extra::extract::Form;
-use serde::Deserialize;
 
 #[derive(Template)]
 #[template(path = "candidates/add_existing.html")]
@@ -22,12 +22,14 @@ struct AddExistingPersonTemplate {
 }
 
 pub async fn add_existing_person(
-    AddCandidatePath { id }: AddCandidatePath,
+    AddCandidatePath { .. }: AddCandidatePath,
     context: Context,
+    full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList = load_candidate_list(&mut conn, id, context.locale).await?;
-    let persons = persons::repository::list_persons_not_on_candidate_list(&mut conn, id).await?;
+    let persons =
+        persons::repository::list_persons_not_on_candidate_list(&mut conn, full_list.list.id)
+            .await?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate {
@@ -45,12 +47,11 @@ pub struct AddPersonForm {
 }
 
 pub async fn add_person_to_candidate_list(
-    AddCandidatePath { id }: AddCandidatePath,
-    context: Context,
+    AddCandidatePath { .. }: AddCandidatePath,
+    full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list = load_candidate_list(&mut conn, id, context.locale).await?;
     let redirect = Redirect::to(&full_list.list.view_path()).into_response();
 
     if full_list.get_index(&form.person_id).is_some() {
@@ -59,7 +60,12 @@ pub async fn add_person_to_candidate_list(
 
     let mut person_ids = full_list.get_ids();
     person_ids.push(form.person_id);
-    candidate_lists::repository::update_candidate_list_order(&mut conn, id, &person_ids).await?;
+    candidate_lists::repository::update_candidate_list_order(
+        &mut conn,
+        full_list.list.id,
+        &person_ids,
+    )
+    .await?;
 
     Ok(redirect)
 }
@@ -94,9 +100,14 @@ mod tests {
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = add_existing_person(
             AddCandidatePath { id: list_id },
             Context::new(Locale::En),
+            full_list,
             DbConnection(pool.acquire().await?),
         )
         .await
@@ -123,9 +134,13 @@ mod tests {
         candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
         persons::repository::create_person(&mut conn, &person).await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = add_person_to_candidate_list(
             AddCandidatePath { id: list_id },
-            Context::new(Locale::En),
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(AddPersonForm {
                 person_id: person.id,
@@ -144,8 +159,8 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         assert_eq!(full_list.candidates[0].person.id, person.id);
@@ -173,9 +188,13 @@ mod tests {
         )
         .await?;
 
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = add_person_to_candidate_list(
             AddCandidatePath { id: list_id },
-            Context::new(Locale::En),
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(AddPersonForm {
                 person_id: new_person.id,
@@ -194,8 +213,8 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::repository::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
         assert_eq!(full_list.candidates[0].person.id, existing_person.id);

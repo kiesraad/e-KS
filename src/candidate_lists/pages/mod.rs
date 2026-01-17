@@ -1,12 +1,11 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use sqlx::PgConnection;
 
 use crate::{
-    AppError, AppState, Locale,
-    candidate_lists::{self, CandidateList, CandidateListId, FullCandidateList},
-    impl_from_field, t,
+    AppError, AppState,
+    candidate_lists::{CandidateList, CandidateListId},
+    impl_from_field,
 };
 
 mod create;
@@ -118,18 +117,4 @@ pub fn router() -> Router<AppState> {
         .typed_post(update::update_candidate_list)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
-}
-
-pub fn candidate_list_not_found(id: CandidateListId, locale: Locale) -> AppError {
-    AppError::NotFound(t!("candidate_list.not_found", locale, id))
-}
-
-pub async fn load_candidate_list(
-    conn: &mut PgConnection,
-    id: CandidateListId,
-    locale: Locale,
-) -> Result<FullCandidateList, AppError> {
-    candidate_lists::repository::get_full_candidate_list(conn, id)
-        .await?
-        .ok_or_else(|| candidate_list_not_found(id, locale))
 }
