@@ -1,5 +1,5 @@
-//! Askama template filters for among others, display, translation, and validation errors.
-//! Used keep formatting logic out of templates.
+//! Askama template filters for, among others, display, translation, and validation errors.
+//! Used to keep the formatting logic out of the templates.
 
 use crate::{
     ElectionConfig, Locale,

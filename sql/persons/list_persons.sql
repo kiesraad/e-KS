@@ -1,6 +1,6 @@
 SELECT
     id,
-    gender as "gender?: Gender",
+    gender as "gender: Gender",
     last_name,
     last_name_prefix,
     first_name,

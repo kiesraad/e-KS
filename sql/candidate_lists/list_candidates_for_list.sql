@@ -1,6 +1,6 @@
 SELECT
     clp.position,
-    p.id as "id!: PersonId",
+    p.id as "id: PersonId",
     p.gender as "gender: Gender",
     p.last_name,
     p.last_name_prefix,

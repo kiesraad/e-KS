@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    address_line_1,\n    address_line_2,\n    is_dutch,\n    custom_country,\n    custom_region,\n    created_at,\n    updated_at\nFROM persons\nORDER BY last_name asc, initials asc\n",
+  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    address_line_1,\n    address_line_2,\n    is_dutch,\n    custom_country,\n    custom_region,\n    created_at,\n    updated_at\nFROM persons\nORDER BY last_name asc, initials asc\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "gender?: Gender",
+        "name": "gender: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -141,5 +141,5 @@
       false
     ]
   },
-  "hash": "3569f69c136ed7becd02be88d881b281077c023fb3281183895dc4e521fb0280"
+  "hash": "adf360f2a06f51ff77ea3dcdfb4043a4047ea0ad87e533e941d07204dd86c2e0"
 }

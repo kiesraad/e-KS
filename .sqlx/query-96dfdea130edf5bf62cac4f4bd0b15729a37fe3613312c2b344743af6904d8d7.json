@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\nFROM persons\nWHERE id = $1\n",
+  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    address_line_1,\n    address_line_2,\n    is_dutch,\n    custom_country,\n    custom_region,\n    created_at,\n    updated_at\nFROM persons\nORDER BY\n    CASE WHEN $3 = 'last_name' AND $4 = 'asc' THEN last_name END ASC,\n    CASE WHEN $3 = 'last_name' AND $4 = 'desc' THEN last_name END DESC,\n    CASE WHEN $3 = 'first_name' AND $4 = 'asc' THEN first_name END ASC,\n    CASE WHEN $3 = 'first_name' AND $4 = 'desc' THEN first_name END DESC,\n    CASE WHEN $3 = 'initials' AND $4 = 'asc' THEN initials END ASC,\n    CASE WHEN $3 = 'initials' AND $4 = 'desc' THEN initials END DESC,\n    CASE WHEN $3 = 'gender' AND $4 = 'asc' THEN gender END ASC,\n    CASE WHEN $3 = 'gender' AND $4 = 'desc' THEN gender END DESC,\n    CASE WHEN $3 = 'locality' AND $4 = 'asc' THEN locality END ASC,\n    CASE WHEN $3 = 'locality' AND $4 = 'desc' THEN locality END DESC,\n    CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,\n    CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,\n    CASE WHEN $3 = 'updated_at' AND $4 = 'asc' THEN updated_at END ASC,\n    CASE WHEN $3 = 'updated_at' AND $4 = 'desc' THEN updated_at END DESC,\n    id DESC\nLIMIT $1\nOFFSET $2\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "gender?: Gender",
+        "name": "gender: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -81,27 +81,27 @@
       },
       {
         "ordinal": 13,
-        "name": "is_dutch",
-        "type_info": "Bool"
-      },
-      {
-        "ordinal": 14,
-        "name": "custom_country",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 15,
-        "name": "custom_region",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 16,
         "name": "address_line_1",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 14,
         "name": "address_line_2",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 15,
+        "name": "is_dutch",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 16,
+        "name": "custom_country",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "custom_region",
         "type_info": "Varchar"
       },
       {
@@ -117,7 +117,10 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid"
+        "Int8",
+        "Int8",
+        "Text",
+        "Text"
       ]
     },
     "nullable": [
@@ -143,5 +146,5 @@
       false
     ]
   },
-  "hash": "37d6581f499a2f1b4fc896273e6a40a0a8a01be468864da3646b9d901b583682"
+  "hash": "96dfdea130edf5bf62cac4f4bd0b15729a37fe3613312c2b344743af6904d8d7"
 }

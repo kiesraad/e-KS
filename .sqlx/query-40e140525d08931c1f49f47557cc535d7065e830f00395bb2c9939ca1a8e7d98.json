@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO persons (\n    id,\n    gender,\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n",
+  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\nFROM persons\nWHERE id NOT IN (\n    SELECT person_id\n    FROM candidate_lists_persons\n    WHERE candidate_list_id = $1\n)\nORDER BY last_name asc, initials asc\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "gender?: Gender",
+        "name": "gender: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -117,37 +117,7 @@
     ],
     "parameters": {
       "Left": [
-        "Uuid",
-        {
-          "Custom": {
-            "name": "gender",
-            "kind": {
-              "Enum": [
-                "male",
-                "female",
-                "x"
-              ]
-            }
-          }
-        },
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Date",
-        "Bpchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Bool",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Timestamptz",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -173,5 +143,5 @@
       false
     ]
   },
-  "hash": "cb24bbae1b85d0a23d5ad1be6d33385fe2a7f32243e17538910557ec136e0aff"
+  "hash": "40e140525d08931c1f49f47557cc535d7065e830f00395bb2c9939ca1a8e7d98"
 }

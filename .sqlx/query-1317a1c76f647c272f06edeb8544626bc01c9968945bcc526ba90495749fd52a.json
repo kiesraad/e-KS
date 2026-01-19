@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    clp.position,\n    p.id as \"id!: PersonId\",\n    p.gender as \"gender: Gender\",\n    p.last_name,\n    p.last_name_prefix,\n    p.first_name,\n    p.initials,\n    p.date_of_birth,\n    p.bsn,\n    p.locality,\n    p.postal_code,\n    p.house_number,\n    p.house_number_addition,\n    p.street_name,\n    p.is_dutch,\n    p.custom_country,\n    p.custom_region,\n    p.address_line_1,\n    p.address_line_2,\n    p.created_at,\n    p.updated_at\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
+  "query": "SELECT\n    clp.position,\n    p.id as \"id: PersonId\",\n    p.gender as \"gender: Gender\",\n    p.last_name,\n    p.last_name_prefix,\n    p.first_name,\n    p.initials,\n    p.date_of_birth,\n    p.bsn,\n    p.locality,\n    p.postal_code,\n    p.house_number,\n    p.house_number_addition,\n    p.street_name,\n    p.is_dutch,\n    p.custom_country,\n    p.custom_region,\n    p.address_line_1,\n    p.address_line_2,\n    p.created_at,\n    p.updated_at\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "id!: PersonId",
+        "name": "id: PersonId",
         "type_info": "Uuid"
       },
       {
@@ -149,5 +149,5 @@
       false
     ]
   },
-  "hash": "a53f118aa210e1b61fe53b68149b924df8de9ef7a7543683a14ae1c3da448f67"
+  "hash": "1317a1c76f647c272f06edeb8544626bc01c9968945bcc526ba90495749fd52a"
 }
