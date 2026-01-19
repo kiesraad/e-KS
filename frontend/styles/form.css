@@ -151,3 +151,30 @@
   align-items: flex-start;
   resize: none;
 }
+
+.form .obfuscate {
+  position: relative;
+  width: 100%;
+
+  &::after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 2px;
+    right: 2px;
+    bottom: 2px;
+    left: 2px;
+    backdrop-filter: blur(5px) opacity(1);
+    transition: backdrop-filter 0.3s ease-in-out;
+    user-select: none;
+    pointer-events: none;
+  }
+
+  &:focus-within,
+  &:focus,
+  &:hover {
+    &::after {
+      backdrop-filter: blur(0) opacity(0);
+    }
+  }
+}

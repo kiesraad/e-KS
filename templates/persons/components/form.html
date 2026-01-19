@@ -53,11 +53,13 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field">
+  <div class="form-field">
     <label for="bsn">{{ t!("person.fields.bsn")|trans }}</label>
-    <input type="text" name="bsn" id="bsn" value="{{ form.data.bsn }}" />
+    <div class="obfuscate">
+      <input type="text" name="bsn" id="bsn" value="{{ form.data.bsn }}" />
+    </div>
     {% for error in form|error("bsn") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
-  </p>
+  </div>
 </div>
