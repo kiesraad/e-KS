@@ -1,25 +1,25 @@
 SELECT
     clp.position,
     p.id as "id!: PersonId",
-    p.gender as "gender?: Gender",
-    p.last_name as "last_name!",
+    p.gender as "gender: Gender",
+    p.last_name,
     p.last_name_prefix,
     p.first_name,
-    p.initials as "initials!",
+    p.initials,
     p.date_of_birth,
     p.bsn,
-    p.locality as "locality",
-    p.postal_code as "postal_code",
-    p.house_number as "house_number",
+    p.locality,
+    p.postal_code,
+    p.house_number,
     p.house_number_addition,
-    p.street_name as "street_name",
+    p.street_name,
     p.is_dutch,
     p.custom_country,
     p.custom_region,
     p.address_line_1,
     p.address_line_2,
-    p.created_at as "created_at!",
-    p.updated_at as "updated_at!"
+    p.created_at,
+    p.updated_at
 FROM candidate_lists_persons clp
 JOIN persons p ON p.id = clp.person_id
 WHERE clp.candidate_list_id = $1
