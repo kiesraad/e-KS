@@ -14,10 +14,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@98ee452f1860e1290f147316f57fe025ad2b5126 # main
+        uses: Software-Improvement-Group/sigridci@399234b7999c04d51d124545b94e73694d3264e9 # main
         with:
           customer: kiesraad
           system: e-ks

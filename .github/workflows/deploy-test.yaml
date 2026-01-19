@@ -80,7 +80,7 @@ jobs:
     runs-on: ubuntu-24.04
     needs: rust
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6.0.1
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@v3
@@ -136,7 +136,7 @@ jobs:
       name: staging
     needs: [ build-docker, rust ]
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6.0.1
       - name: Install Helm
         run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
       - name: Create kubeconfig file
