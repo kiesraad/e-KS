@@ -10,7 +10,7 @@ jobs:
     name: Check every file has a newline at the end
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
       - name: Check newline
         shell: bash
         run: ./bin/check_newline
