@@ -43,19 +43,21 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 
 ## Rollen / partijen / entiteiten
 
-| Nederlands                                               | Afkorting | Engels                                       | Opmerkingen |
-|----------------------------------------------------------|-----------|----------------------------------------------|-------------|
-| politieke partij                                         |           | political party                              |             |
-| politieke groepering                                     |           | political group                              |             |
-| lijst                                                    |           | list                                         |             |
-| blanco lijst                                             |           | unnamed list                                 |             |
-| gemeente                                                 |           | municipality                                 |             |
-| kieskring                                                |           | electoral district                           |             |
-| kandidatenlijst                                          |           | list of candidates                           |             |
-| kandidaat                                                |           | candidate                                    |             |
-| centraal stembureau                                      | CSB       | central electoral committee                  |             |
-| college van burgemeester en wethouders                   | B&W       | municipal executive of mayor and aldermen    |             |
-| ministerie van Binnenlandse Zaken en Koninkrijksrelaties | BZK       | ministry for Interior and Kingdom Relations  |             |
+| Nederlands                                               | Afkorting | Engels                                      | Opmerkingen |
+|----------------------------------------------------------|-----------|---------------------------------------------|-------------|
+| politieke partij                                         |           | political party                             |             |
+| politieke groepering                                     |           | political group                             |             |
+| lijst                                                    |           | list                                        |             |
+| blanco lijst                                             |           | unnamed list                                |             |
+| gemeente                                                 |           | municipality                                |             |
+| kieskring                                                |           | electoral district                          |             |
+| kandidatenlijst                                          |           | list of candidates                          |             |
+| kandidaat                                                |           | candidate                                   |             |
+| lijst inleveraar                                         |           | submitter of the list                       |             |
+| vervangende lijst inleveraars                            |           | substitute submitter of the list            |             |
+| centraal stembureau                                      | CSB       | central electoral committee                 |             |
+| college van burgemeester en wethouders                   | B&W       | municipal executive of mayor and aldermen   |             |
+| ministerie van Binnenlandse Zaken en Koninkrijksrelaties | BZK       | ministry for Interior and Kingdom Relations |             |
 
 ## Kandidaatstelling
 
