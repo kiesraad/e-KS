@@ -1,0 +1,137 @@
+use axum::extract::{FromRef, FromRequestParts, Path};
+use sqlx::PgPool;
+
+use crate::{
+    AppError, Context,
+    candidate_lists::{self, Candidate},
+    t,
+};
+
+use super::CandidateListAndPersonPathParams;
+
+impl<S> FromRequestParts<S> for Candidate
+where
+    S: Send + Sync,
+    PgPool: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let mut conn = PgPool::from_ref(state).acquire().await?;
+        let context = Context::from_request_parts(parts, state)
+            .await
+            .unwrap_or_default();
+        let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
+            Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
+
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_id)
+            .await
+            .map_err(|err| match err {
+                sqlx::Error::RowNotFound => AppError::NotFound(
+                    t!("person.not_found_in_candidate_list", context.locale).to_string(),
+                ),
+                _ => err.into(),
+            })?;
+
+        Ok(candidate)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode, header},
+        middleware,
+        routing::get,
+    };
+    use sqlx::PgPool;
+    use tower::ServiceExt;
+
+    use crate::{
+        AppState, Locale,
+        candidate_lists::{self, CandidateListId},
+        persons::{self, PersonId},
+        render_error_pages, t,
+        test_utils::{response_body_string, sample_candidate_list, sample_person},
+    };
+
+    #[sqlx::test]
+    async fn candidate_extractor_loads_candidate(pool: PgPool) {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(PersonId::new());
+
+        let mut conn = pool.acquire().await.unwrap();
+        candidate_lists::create_candidate_list(&mut conn, &list)
+            .await
+            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
+            .await
+            .unwrap();
+
+        let app = Router::new()
+            .route(
+                "/candidate-lists/{list_id}/persons/{person_id}",
+                get(|candidate: Candidate| async move { candidate.person.last_name.clone() }),
+            )
+            .with_state(AppState::new_for_tests(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Jansen"));
+    }
+
+    #[sqlx::test]
+    async fn candidate_extractor_returns_not_found(pool: PgPool) {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(PersonId::new());
+
+        let mut conn = pool.acquire().await.unwrap();
+        candidate_lists::create_candidate_list(&mut conn, &list)
+            .await
+            .unwrap();
+        persons::create_person(&mut conn, &person).await.unwrap();
+
+        let app = Router::new()
+            .route(
+                "/candidate-lists/{list_id}/persons/{person_id}",
+                get(|candidate: Candidate| async move { candidate.person.last_name.clone() }),
+            )
+            .layer(middleware::from_fn(render_error_pages))
+            .with_state(AppState::new_for_tests(pool));
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
+                    .header(header::ACCEPT_LANGUAGE, "en")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        let body = response_body_string(response).await;
+        let expected = t!("person.not_found_in_candidate_list", Locale::En).to_string();
+        assert!(body.contains(&expected));
+    }
+}
