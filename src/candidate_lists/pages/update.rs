@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, HtmlTemplate,
+    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListsEditPath,
     },
@@ -25,7 +25,6 @@ struct CandidateListUpdateTemplate {
 pub async fn edit_candidate_list(
     _: CandidateListsEditPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
 ) -> Result<Response, AppError> {
@@ -36,7 +35,7 @@ pub async fn edit_candidate_list(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
                 CandidateListForm::from(candidate_list.clone()),
-                &csrf_tokens,
+                &context.csrf_tokens,
             ),
             candidate_lists,
             total_persons,
@@ -50,7 +49,6 @@ pub async fn edit_candidate_list(
 pub async fn update_candidate_list(
     _: CandidateListsEditPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<CandidateListForm>,
@@ -58,7 +56,7 @@ pub async fn update_candidate_list(
     let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
 
-    match form.validate_update(&candidate_list, &csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 candidate_lists,
@@ -86,7 +84,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue,
+        Context, DbConnection, ElectoralDistrict, TokenValue,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -102,8 +100,7 @@ mod tests {
             CandidateListsEditPath {
                 list_id: candidate_list.id,
             },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             candidate_list.clone(),
             DbConnection(pool.acquire().await?),
         )
@@ -123,8 +120,8 @@ mod tests {
     #[sqlx::test]
     async fn update_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await.unwrap();
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
         let candidate_list = CandidateList {
             id: CandidateListId::new(),
@@ -142,8 +139,7 @@ mod tests {
             CandidateListsEditPath {
                 list_id: candidate_list.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             candidate_list.clone(),
             DbConnection(conn),
             Form(form),
@@ -187,7 +183,6 @@ mod tests {
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
         let mut conn = pool.acquire().await.unwrap();
-        let csrf_tokens = CsrfTokens::default();
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
         let candidate_list = CandidateList {
             id: CandidateListId::new(),
@@ -205,8 +200,7 @@ mod tests {
             CandidateListsEditPath {
                 list_id: candidate_list.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            Context::new_test(),
             candidate_list.clone(),
             DbConnection(conn),
             Form(form),

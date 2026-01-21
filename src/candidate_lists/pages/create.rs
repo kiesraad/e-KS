@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, ElectionConfig, HtmlTemplate,
+    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
@@ -25,7 +25,6 @@ struct CandidateListCreateTemplate {
 pub async fn new_candidate_list_form(
     _: CandidateListNewPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
@@ -36,9 +35,9 @@ pub async fn new_candidate_list_form(
     let form = FormData::new_with_data(
         CandidateListForm {
             electoral_districts: available_districts,
-            csrf_token: csrf_tokens.issue().value,
+            csrf_token: context.csrf_tokens.issue().value,
         },
-        &csrf_tokens,
+        &context.csrf_tokens,
     );
 
     Ok(HtmlTemplate(
@@ -55,11 +54,10 @@ pub async fn new_candidate_list_form(
 pub async fn create_candidate_list(
     _: CandidateListNewPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => {
             let candidate_lists =
                 candidate_lists::list_candidate_list_with_count(&mut conn).await?;
@@ -96,7 +94,7 @@ mod test {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, ElectoralDistrict, Locale, TokenValue, candidate_lists,
+        Context, DbConnection, ElectoralDistrict, TokenValue, candidate_lists,
         test_utils::response_body_string,
     };
 
@@ -104,8 +102,7 @@ mod test {
     async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
         let response = new_candidate_list_form(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             DbConnection(pool.acquire().await?),
         )
         .await
@@ -122,8 +119,8 @@ mod test {
 
     #[sqlx::test]
     async fn create_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             csrf_token,
@@ -131,8 +128,7 @@ mod test {
 
         let response = create_candidate_list(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -159,7 +155,6 @@ mod test {
     async fn create_candidate_list_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let csrf_tokens = CsrfTokens::default();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             csrf_token: TokenValue("invalid".to_string()),
@@ -167,8 +162,7 @@ mod test {
 
         let response = create_candidate_list(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            csrf_tokens,
+            Context::new_test(),
             DbConnection(pool.acquire().await?),
             Form(form),
         )

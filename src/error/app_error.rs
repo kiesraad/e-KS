@@ -118,7 +118,7 @@ impl From<QueryRejection> for AppError {
 mod tests {
     use super::*;
     use crate::{
-        Context, ErrorResponse, HtmlTemplate, Locale, error::response::ErrorTemplate,
+        Context, ErrorResponse, HtmlTemplate, error::response::ErrorTemplate,
         form::ValidationError, test_utils,
     };
     use axum::{
@@ -219,7 +219,7 @@ mod tests {
             let response = error_response.into_response();
             let error_template = response.extensions().get::<ErrorTemplate>().unwrap();
             let content = error_template.title.clone();
-            let context = Context::new(Locale::En);
+            let context = Context::new_test();
             let html_response = (
                 error_template.status_code,
                 HtmlTemplate(error_template, context),

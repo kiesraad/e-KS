@@ -47,7 +47,8 @@ async fn run(listener: TcpListener) -> Result<(), AppError> {
     }
 
     // Start the server
-    server::serve(router::create(), state, listener).await?;
+    let router = router::create(state.clone()).with_state(state.clone());
+    server::serve(router, listener).await?;
 
     Ok(())
 }

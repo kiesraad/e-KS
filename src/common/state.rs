@@ -58,28 +58,28 @@ where
 impl<S> FromRequestParts<S> for CsrfTokens
 where
     S: Send + Sync,
-    AppState: FromRef<S>,
+    CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
 
     async fn from_request_parts(_: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let app_state = AppState::from_ref(state);
+        let csrf_tokens = CsrfTokens::from_ref(state);
 
-        Ok(app_state.csrf_tokens.clone())
+        Ok(csrf_tokens)
     }
 }
 
 impl<S> FromRequestParts<S> for Config
 where
     S: Send + Sync,
-    AppState: FromRef<S>,
+    Config: FromRef<S>,
 {
     type Rejection = AppError;
 
     async fn from_request_parts(_: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let app_state = AppState::from_ref(state);
+        let config = Config::from_ref(state);
 
-        Ok(app_state.config)
+        Ok(config)
     }
 }
 

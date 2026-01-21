@@ -40,7 +40,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, Locale,
+        Context, DbConnection,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -53,7 +53,7 @@ mod tests {
 
         let response = list_candidate_lists(
             CandidateListsPath {},
-            Context::new(Locale::En),
+            Context::new_test(),
             DbConnection(pool.acquire().await?),
         )
         .await

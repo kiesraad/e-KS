@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate,
+    AppError, AppResponse, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
         Candidate, CandidateList, FullCandidateList, candidate_pages::CandidateListEditAddressPath,
     },
@@ -24,11 +24,13 @@ struct PersonAddressUpdateTemplate {
 pub async fn edit_person_address(
     _: CandidateListEditAddressPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
     candidate: Candidate,
 ) -> AppResponse<impl IntoResponse> {
-    let form = FormData::new_with_data(AddressForm::from(candidate.person.clone()), &csrf_tokens);
+    let form = FormData::new_with_data(
+        AddressForm::from(candidate.person.clone()),
+        &context.csrf_tokens,
+    );
 
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
@@ -43,13 +45,12 @@ pub async fn edit_person_address(
 pub async fn update_person_address(
     _: CandidateListEditAddressPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
     candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &csrf_tokens) {
+    match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 candidate,
@@ -78,7 +79,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale,
+        Context, DbConnection,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -108,8 +109,7 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             full_list,
             candidate,
         )
@@ -140,8 +140,8 @@ mod tests {
             .expect("candidate list");
         let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.locality = "Rotterdam".to_string();
 
@@ -150,8 +150,7 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             candidate,
             DbConnection(pool.acquire().await?),
@@ -196,8 +195,8 @@ mod tests {
             .expect("candidate list");
         let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
@@ -206,8 +205,7 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             candidate,
             DbConnection(pool.acquire().await?),

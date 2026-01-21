@@ -2,7 +2,7 @@ use axum::extract::{FromRef, FromRequestParts, Path};
 use sqlx::PgPool;
 
 use crate::{
-    AppError, Context,
+    AppError, Context, CsrfTokens,
     candidate_lists::{self, FullCandidateList},
     t,
 };
@@ -11,8 +11,9 @@ use super::CandidateListPathParams;
 
 impl<S> FromRequestParts<S> for FullCandidateList
 where
-    S: Send + Sync,
+    S: Clone + Send + Sync + 'static,
     PgPool: FromRef<S>,
+    CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -107,6 +108,7 @@ mod tests {
 
     #[sqlx::test]
     async fn full_candidate_list_extractor_returns_not_found(pool: PgPool) {
+        let state = AppState::new_for_tests(pool);
         let list_id = CandidateListId::new();
 
         let app = Router::new()
@@ -114,8 +116,11 @@ mod tests {
                 "/candidate-lists/{list_id}/full",
                 get(|full_list: FullCandidateList| async move { full_list.list.id.to_string() }),
             )
-            .layer(middleware::from_fn(render_error_pages))
-            .with_state(AppState::new_for_tests(pool));
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                render_error_pages,
+            ))
+            .with_state(state);
 
         let response = app
             .oneshot(

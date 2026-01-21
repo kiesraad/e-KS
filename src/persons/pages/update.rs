@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
+    AppError, AppResponse, Context, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::EditPersonPath},
     t,
@@ -20,13 +20,12 @@ struct PersonUpdateTemplate {
 pub async fn edit_person_form(
     _: EditPersonPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     person: Person,
     person_pagination: PersonPagination,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
-            form: FormData::new_with_data(PersonForm::from(person.clone()), &csrf_tokens),
+            form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
             person,
             person_pagination,
         },
@@ -37,13 +36,12 @@ pub async fn edit_person_form(
 pub async fn update_person(
     _: EditPersonPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     person: Person,
     person_pagination: PersonPagination,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &csrf_tokens) {
+    match form.validate_update(&person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
@@ -72,7 +70,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale,
+        Context, DbConnection,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -87,8 +85,7 @@ mod tests {
 
         let response = edit_person_form(
             EditPersonPath { person_id },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             person,
             PersonPagination::empty(),
         )
@@ -111,15 +108,14 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::create_person(&mut conn, &person).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = "Updated".to_string();
 
         let response = update_person(
             EditPersonPath { person_id },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             DbConnection(pool.acquire().await?),
             person,
             PersonPagination::empty(),
@@ -154,15 +150,14 @@ mod tests {
         let mut conn = pool.acquire().await?;
         persons::create_person(&mut conn, &person).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
         let response = update_person(
             EditPersonPath { person_id },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             DbConnection(pool.acquire().await?),
             person,
             PersonPagination::empty(),

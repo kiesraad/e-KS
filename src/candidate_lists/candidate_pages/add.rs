@@ -66,7 +66,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, Locale,
+        Context, DbConnection,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -91,7 +91,7 @@ mod tests {
 
         let response = add_existing_person(
             AddCandidatePath { list_id },
-            Context::new(Locale::En),
+            Context::new_test(),
             full_list,
             DbConnection(pool.acquire().await?),
         )

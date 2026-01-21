@@ -31,7 +31,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, Locale,
+        Context,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -54,7 +54,7 @@ mod tests {
 
         let response = view_candidate_list(
             ViewCandidateListPath { list_id },
-            Context::new(Locale::En),
+            Context::new_test(),
             full_list,
         )
         .await

@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
+    AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{self, CandidateList, FullCandidateList, pages::CreateCandidatePath},
     filters,
     form::{FormData, Validate},
@@ -21,13 +21,12 @@ struct PersonCreateTemplate {
 pub async fn new_person_candidate_list(
     _: CreateCandidatePath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&csrf_tokens),
+            form: FormData::new(&context.csrf_tokens),
         },
         context,
     )
@@ -37,12 +36,11 @@ pub async fn new_person_candidate_list(
 pub async fn create_person_candidate_list(
     _: CreateCandidatePath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
@@ -75,7 +73,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale,
+        Context, DbConnection,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
@@ -94,8 +92,7 @@ mod tests {
 
         let response = new_person_candidate_list(
             CreateCandidatePath { list_id },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             full_list,
         )
         .await
@@ -119,8 +116,8 @@ mod tests {
         let mut conn = pool.acquire().await?;
         candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
@@ -129,8 +126,7 @@ mod tests {
 
         let response = create_person_candidate_list(
             CreateCandidatePath { list_id },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             DbConnection(pool.acquire().await?),
             Form(form),
@@ -166,8 +162,8 @@ mod tests {
         let mut conn = pool.acquire().await?;
         candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
@@ -177,8 +173,7 @@ mod tests {
 
         let response = create_person_candidate_list(
             CreateCandidatePath { list_id },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             DbConnection(pool.acquire().await?),
             Form(form),

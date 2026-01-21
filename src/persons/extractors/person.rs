@@ -3,7 +3,7 @@ use serde::Deserialize;
 use sqlx::PgPool;
 
 use crate::{
-    AppError, Context,
+    AppError, Context, CsrfTokens,
     persons::{self, Person, PersonId},
     t,
 };
@@ -16,8 +16,9 @@ struct PersonPathParams {
 
 impl<S> FromRequestParts<S> for Person
 where
-    S: Send + Sync,
+    S: Clone + Send + Sync + 'static,
     PgPool: FromRef<S>,
+    CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -99,7 +100,10 @@ mod tests {
                 "/persons/{person_id}",
                 get(|person: Person| async { person.last_name }),
             )
-            .layer(middleware::from_fn(render_error_pages))
+            .layer(middleware::from_fn_with_state(
+                AppState::new_for_tests(pool.clone()),
+                render_error_pages,
+            ))
             .with_state(AppState::new_for_tests(pool));
 
         let response = app

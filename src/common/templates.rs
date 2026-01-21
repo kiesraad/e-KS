@@ -23,7 +23,6 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Locale;
 
     use askama::Template;
     use axum::http::StatusCode;
@@ -41,7 +40,7 @@ mod tests {
 
     #[test]
     fn html_template_returns_500_when_render_fails() {
-        let context = Context::new(Locale::En);
+        let context = Context::new_test();
         let response = HtmlTemplate(MyTemplate, context).into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);

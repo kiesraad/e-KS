@@ -31,7 +31,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, Locale,
+        Context,
         pagination::Pagination,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_person},
@@ -47,7 +47,7 @@ mod tests {
 
         let response = list_persons(
             PersonsPath {},
-            Context::new(Locale::En),
+            Context::new_test(),
             PersonPagination {
                 persons: vec![person],
                 pagination: Pagination::default().set_total(1),

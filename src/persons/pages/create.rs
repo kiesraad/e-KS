@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
+    AppError, Context, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::PersonsNewPath},
     t,
@@ -19,12 +19,11 @@ struct PersonCreateTemplate {
 pub async fn new_person_form(
     _: PersonsNewPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     person_pagination: PersonPagination,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
-            form: FormData::new(&csrf_tokens),
+            form: FormData::new(&context.csrf_tokens),
             person_pagination,
         },
         context,
@@ -35,12 +34,11 @@ pub async fn new_person_form(
 pub async fn create_person(
     _: PersonsNewPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     person_pagination: PersonPagination,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 form: form_data,
@@ -68,24 +66,18 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale, persons,
+        Context, DbConnection, persons,
         test_utils::{response_body_string, sample_person_form},
     };
 
     #[tokio::test]
     async fn new_person_form_renders_csrf_field() {
-        let context = Context::new(Locale::En);
-        let csrf_tokens = CsrfTokens::default();
+        let context = Context::new_test();
 
-        let response = new_person_form(
-            PersonsNewPath {},
-            context,
-            csrf_tokens,
-            PersonPagination::empty(),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response = new_person_form(PersonsNewPath {}, context, PersonPagination::empty())
+            .await
+            .unwrap()
+            .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
 
@@ -96,15 +88,13 @@ mod tests {
 
     #[sqlx::test]
     async fn create_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new(Locale::En);
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let response = create_person(
             PersonsNewPath {},
             context,
-            csrf_tokens,
             DbConnection(pool.acquire().await?),
             PersonPagination::empty(),
             Form(form),
@@ -130,16 +120,14 @@ mod tests {
 
     #[sqlx::test]
     async fn create_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new(Locale::En);
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
         let response = create_person(
             PersonsNewPath {},
             context,
-            csrf_tokens,
             DbConnection(pool.acquire().await?),
             PersonPagination::empty(),
             Form(form),

@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Redirect};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, Context, CsrfTokens, DbConnection, HtmlTemplate,
+    AppError, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
         self, Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
         CandidatePositionForm, FullCandidateList, candidate_pages::EditCandidatePositionPath,
@@ -24,7 +24,6 @@ struct EditCandidatePositionTemplate {
 pub async fn edit_candidate_position(
     _: EditCandidatePositionPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
     candidate: Candidate,
 ) -> Result<impl IntoResponse, AppError> {
@@ -35,7 +34,7 @@ pub async fn edit_candidate_position(
 
     let form = FormData::new_with_data(
         CandidatePositionForm::from(candidate_position.clone()),
-        &csrf_tokens,
+        &context.csrf_tokens,
     );
 
     // Implementation for editing candidate position goes here
@@ -52,7 +51,6 @@ pub async fn edit_candidate_position(
 pub async fn update_candidate_position(
     _: EditCandidatePositionPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     full_list: FullCandidateList,
     candidate: Candidate,
     DbConnection(mut conn): DbConnection,
@@ -63,7 +61,7 @@ pub async fn update_candidate_position(
         action: CandidatePositionAction::Move,
     };
 
-    match form.validate_update(&candidate_position, &csrf_tokens) {
+    match form.validate_update(&candidate_position, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             EditCandidatePositionTemplate {
                 candidate,
@@ -110,7 +108,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, CsrfTokens, DbConnection, Locale, TokenValue,
+        Context, DbConnection, TokenValue,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -152,8 +150,7 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             full_list,
             candidate.clone(),
         )
@@ -192,8 +189,8 @@ mod tests {
             .expect("candidate list");
         let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 2, "move");
 
         let response = update_candidate_position(
@@ -201,8 +198,7 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             candidate,
             DbConnection(pool.acquire().await?),
@@ -248,8 +244,8 @@ mod tests {
             .expect("candidate list");
         let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 1, "remove");
 
         let response = update_candidate_position(
@@ -257,8 +253,7 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             candidate,
             DbConnection(pool.acquire().await?),
@@ -305,9 +300,8 @@ mod tests {
             .expect("candidate list");
         let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let other_tokens = CsrfTokens::default();
-        let csrf_token = other_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = TokenValue("invalid".to_string());
         let form = sample_position_form(&csrf_token, 2, "move");
 
         let response = update_candidate_position(
@@ -315,8 +309,7 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            Context::new(Locale::En),
-            csrf_tokens,
+            context,
             full_list,
             candidate,
             DbConnection(pool.acquire().await?),
