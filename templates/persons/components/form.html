@@ -28,9 +28,11 @@
     <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
     {% for error in form|error("first_name") %}
     <span class="error">{{ error }}</span>
+    {% else %}
+    <span class="hint">{{ t!("person.hints.first_name")|trans }}</span>
     {% endfor %}
   </p>
-  <p class="form-field form-field-sm">
+  <p class="form-field">
     <label for="gender">{{ t!("person.fields.gender")|trans }}</label>
     <select name="gender" id="gender">
       <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
@@ -41,6 +43,8 @@
     </select>
     {% for error in form|error("gender") %}
     <span class="error">{{ error }}</span>
+    {% else %}
+    <span class="hint">{{ t!("person.hints.gender")|trans }}</span>
     {% endfor %}
   </p>
 </div>
@@ -62,4 +66,20 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </div>
+</div>
+<div class="form-row">
+  <p class="form-field">
+    <label for="place_of_residence">{{ t!("person.fields.place_of_residence")|trans }}</label>
+    <input type="text" name="place_of_residence" id="place_of_residence" value="{{ form.data.place_of_residence }}" />
+    {% for error in form|error("place_of_residence") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field">
+    <label for="country_of_residence">{{ t!("person.fields.country_of_residence")|trans }}</label>
+    <input type="text" name="country_of_residence" id="country_of_residence" value="{{ form.data.country_of_residence }}" />
+    {% for error in form|error("country_of_residence") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
 </div>

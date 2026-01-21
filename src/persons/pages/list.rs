@@ -2,42 +2,24 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate, filters,
-    pagination::{Pagination, PaginationInfo},
-    persons::{self, Person, PersonSort, pages::PersonsPath},
+    AppError, Context, HtmlTemplate, filters,
+    persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
     t,
 };
 
 #[derive(Template)]
 #[template(path = "persons/list.html")]
 struct PersonListTemplate {
-    persons: Vec<Person>,
-    pagination: PaginationInfo<PersonSort>,
+    person_pagination: PersonPagination,
 }
 
 pub async fn list_persons(
     _: PersonsPath,
     context: Context,
-    pagination: Pagination<PersonSort>,
-    DbConnection(mut conn): DbConnection,
+    person_pagination: PersonPagination,
 ) -> Result<impl IntoResponse, AppError> {
-    let total_items = persons::count_persons(&mut conn).await?.max(0) as u64;
-    let pagination = pagination.set_total(total_items);
-
-    let persons = persons::list_persons(
-        &mut conn,
-        pagination.limit(),
-        pagination.offset(),
-        pagination.sort(),
-        pagination.direction(),
-    )
-    .await?;
-
     Ok(HtmlTemplate(
-        PersonListTemplate {
-            persons,
-            pagination,
-        },
+        PersonListTemplate { person_pagination },
         context,
     ))
 }
@@ -49,7 +31,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, Locale,
+        Context, Locale,
         pagination::Pagination,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_person},
@@ -66,8 +48,10 @@ mod tests {
         let response = list_persons(
             PersonsPath {},
             Context::new(Locale::En),
-            Pagination::default(),
-            DbConnection(pool.acquire().await?),
+            PersonPagination {
+                persons: vec![person],
+                pagination: Pagination::default().set_total(1),
+            },
         )
         .await
         .unwrap()

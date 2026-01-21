@@ -5,7 +5,9 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{self, AddressForm, Person, pages::EditPersonAddressPath},
+    persons::{
+        self, AddressForm, Person, PersonPagination, PersonSort, pages::EditPersonAddressPath,
+    },
     t,
 };
 
@@ -14,6 +16,7 @@ use crate::{
 struct PersonAddressUpdateTemplate {
     person: Person,
     form: FormData<AddressForm>,
+    person_pagination: PersonPagination,
 }
 
 pub async fn edit_person_address(
@@ -21,11 +24,13 @@ pub async fn edit_person_address(
     context: Context,
     person: Person,
     csrf_tokens: CsrfTokens,
+    person_pagination: PersonPagination,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             form: FormData::new_with_data(AddressForm::from(person.clone()), &csrf_tokens),
             person,
+            person_pagination,
         },
         context,
     ))
@@ -37,6 +42,7 @@ pub async fn update_person_address(
     person: Person,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
+    person_pagination: PersonPagination,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &csrf_tokens) {
@@ -44,12 +50,12 @@ pub async fn update_person_address(
             PersonAddressUpdateTemplate {
                 person,
                 form: form_data,
+                person_pagination,
             },
             context,
         )
         .into_response()),
-        Ok(mut person) => {
-            person.normalize_address();
+        Ok(person) => {
             persons::update_address(&mut conn, &person).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
@@ -86,6 +92,7 @@ mod tests {
             Context::new(Locale::En),
             person,
             CsrfTokens::default(),
+            PersonPagination::empty(),
         )
         .await
         .unwrap()
@@ -116,6 +123,7 @@ mod tests {
             person,
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            PersonPagination::empty(),
             Form(form),
         )
         .await
@@ -161,6 +169,7 @@ mod tests {
             person,
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            PersonPagination::empty(),
             Form(form),
         )
         .await
@@ -170,102 +179,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("The value is too short"));
-
-        Ok(())
-    }
-
-    #[sqlx::test]
-    async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), sqlx::Error> {
-        let person_id = PersonId::new();
-        let person = sample_person(person_id);
-
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
-
-        let csrf_tokens = CsrfTokens::default();
-
-        // Update with Dutch address (but all form fields filled)
-        update_person_address(
-            EditPersonAddressPath { person_id },
-            Context::new(Locale::En),
-            person.clone(),
-            csrf_tokens.clone(),
-            DbConnection(pool.acquire().await?),
-            Form(AddressForm {
-                locality: "Juinen".to_string(),
-                postal_code: "1234 AB".to_string(),
-                house_number: "10".to_string(),
-                house_number_addition: "A".to_string(),
-                street_name: "Stationsstraat".to_string(),
-                custom_country: "Netherlands".to_string(),
-                custom_region: "Noord Holland".to_string(),
-                address_line_1: "Stationsstraat 10A".to_string(),
-                address_line_2: "1234AB Juinen".to_string(),
-                is_dutch: "true".to_string(),
-                csrf_token: csrf_tokens.issue().value,
-            }),
-        )
-        .await
-        .unwrap();
-
-        // The international address should be removed because `is_dutch` is true
-        let mut conn = pool.acquire().await?;
-        let updated = persons::get_person(&mut conn, person_id)
-            .await?
-            .expect("updated person");
-        assert_eq!(updated.is_dutch, Some(true));
-        assert_eq!(updated.locality, Some("Juinen".to_string()));
-        assert_eq!(updated.postal_code, Some("1234 AB".to_string()));
-        assert_eq!(updated.house_number, Some("10".to_string()));
-        assert_eq!(updated.house_number_addition, Some("A".to_string()));
-        assert_eq!(updated.street_name, Some("Stationsstraat".to_string()));
-        assert_eq!(updated.custom_country, None);
-        assert_eq!(updated.custom_region, None);
-        assert_eq!(updated.address_line_1, None);
-        assert_eq!(updated.address_line_2, None);
-
-        // Update with non-Dutch address (but all form fields filled)
-        update_person_address(
-            EditPersonAddressPath { person_id },
-            Context::new(Locale::En),
-            updated.clone(),
-            csrf_tokens.clone(),
-            DbConnection(pool.acquire().await?),
-            Form(AddressForm {
-                locality: "Juinen".to_string(),
-                postal_code: "1234 AB".to_string(),
-                house_number: "10".to_string(),
-                house_number_addition: "A".to_string(),
-                street_name: "Stationsstraat".to_string(),
-                custom_country: "Netherlands".to_string(),
-                custom_region: "Noord Holland".to_string(),
-                address_line_1: "Stationsstraat 10A".to_string(),
-                address_line_2: "1234AB Juinen".to_string(),
-                is_dutch: "false".to_string(),
-                csrf_token: csrf_tokens.issue().value,
-            }),
-        )
-        .await
-        .unwrap();
-
-        // The Dutch address should be removed because `is_dutch` is false
-        let mut conn = pool.acquire().await?;
-        let updated = persons::get_person(&mut conn, person_id)
-            .await?
-            .expect("updated person");
-        assert_eq!(updated.is_dutch, Some(false));
-        assert_eq!(updated.locality, None);
-        assert_eq!(updated.postal_code, None);
-        assert_eq!(updated.house_number, None);
-        assert_eq!(updated.house_number_addition, None);
-        assert_eq!(updated.street_name, None);
-        assert_eq!(updated.custom_country, Some("Netherlands".to_string()));
-        assert_eq!(updated.custom_region, Some("Noord Holland".to_string()));
-        assert_eq!(
-            updated.address_line_1,
-            Some("Stationsstraat 10A".to_string())
-        );
-        assert_eq!(updated.address_line_2, Some("1234AB Juinen".to_string()));
 
         Ok(())
     }

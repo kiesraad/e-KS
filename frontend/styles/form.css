@@ -86,6 +86,7 @@
   }
 
   span.hint {
+    font-size: var(--font-size-sm);
     color: var(--color-help-text);
     font-weight: normal;
     margin-top: 0.5rem;

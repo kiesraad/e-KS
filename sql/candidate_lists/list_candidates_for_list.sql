@@ -8,16 +8,13 @@ SELECT
     p.initials,
     p.date_of_birth,
     p.bsn,
+    p.place_of_residence,
+    p.country_of_residence,
     p.locality,
     p.postal_code,
     p.house_number,
     p.house_number_addition,
     p.street_name,
-    p.is_dutch,
-    p.custom_country,
-    p.custom_region,
-    p.address_line_1,
-    p.address_line_2,
     p.created_at,
     p.updated_at
 FROM candidate_lists_persons clp

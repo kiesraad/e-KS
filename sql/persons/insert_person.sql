@@ -7,20 +7,17 @@ INSERT INTO persons (
     initials,
     date_of_birth,
     bsn,
+    place_of_residence,
+    country_of_residence,
     locality,
     postal_code,
     house_number,
     house_number_addition,
     street_name,
-    is_dutch,
-    custom_country,
-    custom_region,
-    address_line_1,
-    address_line_2,
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
+VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
 RETURNING
     id,
     gender as "gender: Gender",
@@ -30,15 +27,12 @@ RETURNING
     initials,
     date_of_birth,
     bsn,
+    place_of_residence,
+    country_of_residence,
     locality,
     postal_code,
     house_number,
     house_number_addition,
     street_name,
-    is_dutch,
-    custom_country,
-    custom_region,
-    address_line_1,
-    address_line_2,
     created_at,
     updated_at

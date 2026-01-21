@@ -5,7 +5,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{self, Person, PersonForm, pages::PersonsNewPath},
+    persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::PersonsNewPath},
     t,
 };
 
@@ -13,16 +13,19 @@ use crate::{
 #[template(path = "persons/create.html")]
 struct PersonCreateTemplate {
     form: FormData<PersonForm>,
+    person_pagination: PersonPagination,
 }
 
 pub async fn new_person_form(
     _: PersonsNewPath,
     context: Context,
     csrf_tokens: CsrfTokens,
+    person_pagination: PersonPagination,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             form: FormData::new(&csrf_tokens),
+            person_pagination,
         },
         context,
     )
@@ -34,12 +37,18 @@ pub async fn create_person(
     context: Context,
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
+    person_pagination: PersonPagination,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
-        Err(form_data) => {
-            Ok(HtmlTemplate(PersonCreateTemplate { form: form_data }, context).into_response())
-        }
+        Err(form_data) => Ok(HtmlTemplate(
+            PersonCreateTemplate {
+                form: form_data,
+                person_pagination,
+            },
+            context,
+        )
+        .into_response()),
         Ok(person) => {
             persons::create_person(&mut conn, &person).await?;
 
@@ -68,10 +77,15 @@ mod tests {
         let context = Context::new(Locale::En);
         let csrf_tokens = CsrfTokens::default();
 
-        let response = new_person_form(PersonsNewPath {}, context, csrf_tokens)
-            .await
-            .unwrap()
-            .into_response();
+        let response = new_person_form(
+            PersonsNewPath {},
+            context,
+            csrf_tokens,
+            PersonPagination::empty(),
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
 
@@ -92,6 +106,7 @@ mod tests {
             context,
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            PersonPagination::empty(),
             Form(form),
         )
         .await
@@ -126,6 +141,7 @@ mod tests {
             context,
             csrf_tokens,
             DbConnection(pool.acquire().await?),
+            PersonPagination::empty(),
             Form(form),
         )
         .await

@@ -1,6 +1,6 @@
 use axum::extract::{
     multipart::{MultipartError, MultipartRejection},
-    rejection::{FormRejection, JsonRejection, PathRejection},
+    rejection::{FormRejection, JsonRejection, PathRejection, QueryRejection},
 };
 use std::fmt::{Display, Formatter};
 
@@ -27,6 +27,7 @@ pub enum AppError {
     ValidationError(FieldErrors),
     JsonRejection(JsonRejection),
     PathRejection(PathRejection),
+    QueryRejection(QueryRejection),
 
     // Application level errors
     MissingEnvVar(&'static str),
@@ -50,6 +51,7 @@ impl Display for AppError {
             AppError::PathRejection(err) => write!(f, "Path error: {err}"),
             AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
+            AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
         }
@@ -103,6 +105,12 @@ impl From<JsonRejection> for AppError {
 impl From<PathRejection> for AppError {
     fn from(err: PathRejection) -> Self {
         AppError::PathRejection(err)
+    }
+}
+
+impl From<QueryRejection> for AppError {
+    fn from(err: QueryRejection) -> Self {
+        AppError::QueryRejection(err)
     }
 }
 

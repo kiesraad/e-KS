@@ -4,7 +4,8 @@ use sqlx::PgPool;
 
 use crate::{
     AppError, Context,
-    persons::{self, Person, PersonId},
+    pagination::Pagination,
+    persons::{self, Person, PersonId, PersonPagination, PersonSort},
     t,
 };
 
@@ -41,6 +42,40 @@ where
             )))?;
 
         Ok(person)
+    }
+}
+
+impl<S> FromRequestParts<S> for PersonPagination
+where
+    S: Send + Sync,
+    PgPool: FromRef<S>,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(
+        parts: &mut axum::http::request::Parts,
+        state: &S,
+    ) -> Result<Self, Self::Rejection> {
+        let mut conn = PgPool::from_ref(state).acquire().await?;
+        let pagination: Pagination<PersonSort> =
+            Pagination::from_request_parts(parts, state).await?;
+
+        let total_items = persons::count_persons(&mut conn).await?.max(0) as u64;
+        let pagination = pagination.set_total(total_items);
+
+        let persons = persons::list_persons(
+            &mut conn,
+            pagination.limit(),
+            pagination.offset(),
+            pagination.sort(),
+            pagination.direction(),
+        )
+        .await?;
+
+        Ok(PersonPagination {
+            persons,
+            pagination,
+        })
     }
 }
 

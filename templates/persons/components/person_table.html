@@ -1,3 +1,4 @@
+{% set pagination = person_pagination.pagination %}
 <table>
   <thead>
     <tr>
@@ -35,7 +36,7 @@
     </tr>
   </thead>
   <tbody>
-    {% for person in persons %}
+    {% for person in person_pagination.persons %}
     <tr class="clickable">
       <td>{{ person.last_name_with_prefix_appended() }}</td>
       <td>{{ person.initials }}</td>

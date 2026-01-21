@@ -5,7 +5,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, Context, CsrfTokens, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{self, Person, PersonForm, pages::EditPersonPath},
+    persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::EditPersonPath},
     t,
 };
 
@@ -13,6 +13,7 @@ use crate::{
 #[template(path = "persons/update.html")]
 struct PersonUpdateTemplate {
     person: Person,
+    person_pagination: PersonPagination,
     form: FormData<PersonForm>,
 }
 
@@ -21,11 +22,13 @@ pub async fn edit_person_form(
     context: Context,
     csrf_tokens: CsrfTokens,
     person: Person,
+    person_pagination: PersonPagination,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(person.clone()), &csrf_tokens),
             person,
+            person_pagination,
         },
         context,
     ))
@@ -37,12 +40,14 @@ pub async fn update_person(
     csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     person: Person,
+    person_pagination: PersonPagination,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
+                person_pagination,
                 form: form_data,
             },
             context,
@@ -85,6 +90,7 @@ mod tests {
             Context::new(Locale::En),
             CsrfTokens::default(),
             person,
+            PersonPagination::empty(),
         )
         .await
         .unwrap()
@@ -116,6 +122,7 @@ mod tests {
             csrf_tokens,
             DbConnection(pool.acquire().await?),
             person,
+            PersonPagination::empty(),
             Form(form),
         )
         .await
@@ -158,6 +165,7 @@ mod tests {
             csrf_tokens,
             DbConnection(pool.acquire().await?),
             person,
+            PersonPagination::empty(),
             Form(form),
         )
         .await

@@ -79,10 +79,16 @@ person:
   created_at: Created at
   personal_information: Personal information
   address: Address
+  correspondence_address: Correspondence address
   authorized_person: Authorized person
   personal_details: Personal details
+  hints:
+    first_name: Optional. Only fill in if this should be displayed on the candidate list.
+    gender: Optional. Only fill in if this should be displayed on the candidate list.
   fields:
     bsn: Social security number (BSN)
+    place_of_residence: Place of residence
+    country_of_residence: Country of residence
     country: Country
     date_of_birth: Date of birth
     elsewhere: Elsewhere

@@ -1,26 +1,32 @@
-{% extends "layout.html" %}
+{% extends "persons/components/overlay.html" %}
 
-{% block page_title %}{{ t!("person.form.create.title")|trans }}
-{% endblock %}
-{% block persons_nav_class %}active{% endblock %}
+{% block overlay_title %}{{ t!("person.form.create.title")|trans }}{% endblock %}
+{% block overlay_start %}<form method="post" action="{{ Person::new_path() }}" class="overlay">{% endblock %}
+{% block overlay_end %}</form>{% endblock %}
 
-{% block content %}
-<section>
-  <form method="post" action="{{ Person::new_path() }}" class="form">
+{% block overlay_content %}
+<div class="overlay-content steps">
+  <div class="steps-nav">
+    <ul>
+      <li>
+        <a href="{{ Person::new_path() }}" class="active">
+          {{ t!("person.personal_details")|trans }}
+        </a>
+      </li>
+      <li>
+        <a class="disabled" disabled>
+          {{ t!("person.correspondence_address")|trans }}
+        </a>
+      </li>
+    </ul>
+  </div>
+  <div class="form">
     <fieldset>
       <legend>
         <h2>{{ t!("person.form.create.title")|trans }}</h2>
       </legend>
       {% include "persons/components/form.html" %}
-      <p class="form-field actions">
-        <button type="submit" class="button">
-          {{ t!("action.next")|trans }}
-        </button>
-        <a href="{{ Person::list_path() }}" class="button secondary">
-          {{ t!("action.cancel")|trans }}
-        </a>
-      </p>
     </fieldset>
-  </form>
-</section>
+  </div>
+</div>
 {% endblock %}

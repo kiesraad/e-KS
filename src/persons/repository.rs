@@ -77,16 +77,13 @@ pub async fn create_person(
         new_person.initials,
         new_person.date_of_birth,
         new_person.bsn,
+        new_person.place_of_residence,
+        new_person.country_of_residence,
         new_person.locality,
         new_person.postal_code,
         new_person.house_number,
         new_person.house_number_addition,
         new_person.street_name,
-        new_person.is_dutch,
-        new_person.custom_country,
-        new_person.custom_region,
-        new_person.address_line_1,
-        new_person.address_line_2,
         new_person.created_at,
         new_person.updated_at,
     )
@@ -108,6 +105,8 @@ pub async fn update_person(
         updated_person.initials,
         updated_person.date_of_birth,
         updated_person.bsn,
+        updated_person.place_of_residence,
+        updated_person.country_of_residence,
         updated_person.id.uuid(),
     )
     .fetch_one(conn)
@@ -128,11 +127,6 @@ pub async fn update_address(
         updated_person.house_number,
         updated_person.house_number_addition,
         updated_person.street_name,
-        updated_person.is_dutch,
-        updated_person.custom_country,
-        updated_person.custom_region,
-        updated_person.address_line_1,
-        updated_person.address_line_2,
         updated_person.id.uuid(),
     )
     .fetch_one(conn)
@@ -261,11 +255,6 @@ mod tests {
         person.house_number = Some("99".to_string());
         person.house_number_addition = None;
         person.street_name = Some("Nieuweweg".to_string());
-        person.is_dutch = Some(false);
-        person.custom_country = Some("Belgie".to_string());
-        person.custom_region = Some("Vlaanderen".to_string());
-        person.address_line_1 = Some("Rue 1".to_string());
-        person.address_line_2 = None;
 
         update_address(&mut conn, &person).await?;
 
@@ -275,11 +264,6 @@ mod tests {
         assert_eq!(updated.house_number, Some("99".to_string()));
         assert_eq!(updated.house_number_addition, None);
         assert_eq!(updated.street_name, Some("Nieuweweg".to_string()));
-        assert_eq!(updated.is_dutch, Some(false));
-        assert_eq!(updated.custom_country, Some("Belgie".to_string()));
-        assert_eq!(updated.custom_region, Some("Vlaanderen".to_string()));
-        assert_eq!(updated.address_line_1, Some("Rue 1".to_string()));
-        assert_eq!(updated.address_line_2, None);
 
         Ok(())
     }

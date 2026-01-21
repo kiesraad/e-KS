@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE persons\nSET\n    gender = $1,\n    last_name = $2,\n    last_name_prefix = $3,\n    first_name = $4,\n    initials = $5,\n    date_of_birth = $6,\n    bsn = $7,\n    updated_at = NOW()\nWHERE id = $8\nRETURNING\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n",
+  "query": "UPDATE persons\nSET\n    locality = $1,\n    postal_code = $2,\n    house_number = $3,\n    house_number_addition = $4,\n    street_name = $5,\n    updated_at = NOW()\nWHERE id = $6\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "gender: Gender",
+        "name": "gender?: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -56,85 +56,57 @@
       },
       {
         "ordinal": 8,
-        "name": "locality",
+        "name": "place_of_residence",
         "type_info": "Varchar"
       },
       {
         "ordinal": 9,
-        "name": "postal_code",
+        "name": "country_of_residence",
         "type_info": "Varchar"
       },
       {
         "ordinal": 10,
-        "name": "house_number",
+        "name": "locality",
         "type_info": "Varchar"
       },
       {
         "ordinal": 11,
-        "name": "house_number_addition",
+        "name": "postal_code",
         "type_info": "Varchar"
       },
       {
         "ordinal": 12,
-        "name": "street_name",
+        "name": "house_number",
         "type_info": "Varchar"
       },
       {
         "ordinal": 13,
-        "name": "is_dutch",
-        "type_info": "Bool"
+        "name": "house_number_addition",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 14,
-        "name": "custom_country",
+        "name": "street_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 15,
-        "name": "custom_region",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 16,
-        "name": "address_line_1",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 17,
-        "name": "address_line_2",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        {
-          "Custom": {
-            "name": "gender",
-            "kind": {
-              "Enum": [
-                "male",
-                "female",
-                "x"
-              ]
-            }
-          }
-        },
         "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
-        "Date",
-        "Bpchar",
+        "Varchar",
         "Uuid"
       ]
     },
@@ -154,12 +126,9 @@
       true,
       true,
       true,
-      true,
-      true,
-      true,
       false,
       false
     ]
   },
-  "hash": "5a97ce47f61df58e9f2bb05718f5de4418475ab49497e3801b30271a60092bd2"
+  "hash": "3a681ef5389073f48bf9e73da57e7e9e068f74f06d12bac9f53352f723aa3eed"
 }

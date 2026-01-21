@@ -7,14 +7,16 @@
     </li>
     <li>
       <a href="{{ candidate.edit_address_path() }}">
-        {{ t!("person.address")|trans }}
+        {{ t!("person.correspondence_address")|trans }}
       </a>
     </li>
+    {% if !candidate.person.is_dutch() %}
     <li>
       <a href="#">
         {{ t!("person.authorized_person")|trans }}
       </a>
     </li>
+    {% endif %}
     <li>
       <a href="{{ candidate.edit_position_path() }}">
         {{ t!("candidate_list.edit_position")|trans }}

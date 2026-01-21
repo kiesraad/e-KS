@@ -10,5 +10,4 @@ use strum::{Display, EnumString};
 pub enum Gender {
     Male,
     Female,
-    X,
 }

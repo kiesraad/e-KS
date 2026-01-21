@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "INSERT INTO persons (\n    id,\n    gender,\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n)\nVALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)\nRETURNING\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    is_dutch,\n    custom_country,\n    custom_region,\n    address_line_1,\n    address_line_2,\n    created_at,\n    updated_at\n",
+  "query": "UPDATE persons\nSET\n    gender = $1,\n    last_name = $2,\n    last_name_prefix = $3,\n    first_name = $4,\n    initials = $5,\n    date_of_birth = $6,\n    bsn = $7,\n    place_of_residence = $8,\n    country_of_residence = $9,\n    updated_at = NOW()\nWHERE id = $10\nRETURNING\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
@@ -56,68 +56,52 @@
       },
       {
         "ordinal": 8,
-        "name": "locality",
+        "name": "place_of_residence",
         "type_info": "Varchar"
       },
       {
         "ordinal": 9,
-        "name": "postal_code",
+        "name": "country_of_residence",
         "type_info": "Varchar"
       },
       {
         "ordinal": 10,
-        "name": "house_number",
+        "name": "locality",
         "type_info": "Varchar"
       },
       {
         "ordinal": 11,
-        "name": "house_number_addition",
+        "name": "postal_code",
         "type_info": "Varchar"
       },
       {
         "ordinal": 12,
-        "name": "street_name",
+        "name": "house_number",
         "type_info": "Varchar"
       },
       {
         "ordinal": 13,
-        "name": "is_dutch",
-        "type_info": "Bool"
+        "name": "house_number_addition",
+        "type_info": "Varchar"
       },
       {
         "ordinal": 14,
-        "name": "custom_country",
+        "name": "street_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 15,
-        "name": "custom_region",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 16,
-        "name": "address_line_1",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 17,
-        "name": "address_line_2",
-        "type_info": "Varchar"
-      },
-      {
-        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 16,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Uuid",
         {
           "Custom": {
             "name": "gender",
@@ -138,16 +122,7 @@
         "Bpchar",
         "Varchar",
         "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Bool",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Varchar",
-        "Timestamptz",
-        "Timestamptz"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -166,12 +141,9 @@
       true,
       true,
       true,
-      true,
-      true,
-      true,
       false,
       false
     ]
   },
-  "hash": "cfc16da382ef1381beea0fbd60f62baa654daeaed82a8214e75dfc0ce2c62aa8"
+  "hash": "f5e8cbb1be037437618c2db1a028b0b1800d17d07cd928426fadb288da7ef132"
 }

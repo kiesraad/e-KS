@@ -1,31 +1,18 @@
-{% extends "layout.html" %}
+{% extends "persons/components/overlay.html" %}
 
-{% block page_title %}{{ t!("person.form.edit.title")|trans|fill(person.display_name()) }}{% endblock %}
-{% block persons_nav_class %}active{% endblock %}
+{% block overlay_start %}<form method="post" action="{{ person.edit_path() }}" class="overlay">{% endblock %}
+{% block overlay_end %}</form>{% endblock %}
 
-{% block content %}
-<section>
-  <form method="post" action="{{ person.edit_path() }}" class="form">
-    <fieldset>
-      <legend>
-        <h2>{{ t!("person.form.edit.title")|trans|fill(person.display_name()) }}</h2>
-      </legend>
-      <dl>
-        <dt>{{ t!("person.created_at")|trans }}:</dt>
-        <dd>{{ person.created() }}</dd>
-        <dt>{{ t!("person.updated_at")|trans }}:</dt>
-        <dd>{{ person.updated() }}</dd>
-      </dl>
-      {% include "persons/components/form.html" %}
-      <p class="form-field actions">
-        <button type="submit" class="button">
-          {{ t!("action.next")|trans }}
-        </button>
-        <a href="{{ Person::list_path() }}" class="button secondary">
-          {{ t!("action.cancel")|trans }}
-        </a>
-      </p>
-    </fieldset>
-  </form>
-</section>
+{% block overlay_content %}
+  <div class="overlay-content steps">
+    {% include "persons/components/edit_steps.html" %}
+    <div class="form">
+      <fieldset>
+        <legend>
+          <h3>{{ t!("person.personal_details")|trans }}</h3>
+        </legend>
+        {% include "persons/components/form.html" %}
+      </fieldset>
+    </div>
+  </div>
 {% endblock %}

@@ -7,8 +7,10 @@ SET
     initials = $5,
     date_of_birth = $6,
     bsn = $7,
+    place_of_residence = $8,
+    country_of_residence = $9,
     updated_at = NOW()
-WHERE id = $8
+WHERE id = $10
 RETURNING
     id,
     gender as "gender: Gender",
@@ -18,15 +20,12 @@ RETURNING
     initials,
     date_of_birth,
     bsn,
+    place_of_residence,
+    country_of_residence,
     locality,
     postal_code,
     house_number,
     house_number_addition,
     street_name,
-    is_dutch,
-    custom_country,
-    custom_region,
-    address_line_1,
-    address_line_2,
     created_at,
     updated_at

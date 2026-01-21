@@ -36,16 +36,13 @@ pub fn sample_person(id: PersonId) -> Person {
         initials: "H.A.H.A.".to_string(),
         date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
         bsn: None,
+        place_of_residence: Some("Juinen".to_string()),
+        country_of_residence: Some("Netherlands".to_string()),
         locality: Some("Juinen".to_string()),
         postal_code: Some("1234 AB".to_string()),
         house_number: Some("10".to_string()),
         house_number_addition: Some("A".to_string()),
         street_name: Some("Stationsstraat".to_string()),
-        is_dutch: Some(true),
-        custom_country: None,
-        custom_region: None,
-        address_line_1: None,
-        address_line_2: None,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     }
@@ -69,6 +66,8 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
         initials: "H.A.H.A.".to_string(),
         date_of_birth: "01-02-1990".to_string(),
         bsn: "".to_string(),
+        place_of_residence: "Juinen".to_string(),
+        country_of_residence: "Netherlands".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }
@@ -80,11 +79,6 @@ pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
         house_number: "10".to_string(),
         house_number_addition: "A".to_string(),
         street_name: "Stationsstraat".to_string(),
-        custom_country: "".to_string(),
-        custom_region: "".to_string(),
-        address_line_1: "".to_string(),
-        address_line_2: "".to_string(),
-        is_dutch: "true".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }

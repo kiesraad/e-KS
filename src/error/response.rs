@@ -144,6 +144,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
+            AppError::QueryRejection(e) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {e}"),
+            },
             AppError::InternalServerError
             | AppError::MissingEnvVar(_)
             | AppError::ConfigLoadError(_)
