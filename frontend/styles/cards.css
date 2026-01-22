@@ -1,7 +1,4 @@
 .cards {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-lg);
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: var(--space-lg);
