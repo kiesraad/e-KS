@@ -47,7 +47,7 @@ impl WithCsrfToken for AddressForm {
 }
 
 impl AddressForm {
-    fn build_address(validated: AddressFormValidated, current: Option<&Person>) -> Person {
+    fn build_address(validated: AddressFormValidated, current: Option<Person>) -> Person {
         if let Some(current_person) = current {
             Person {
                 locality: validated.locality,
@@ -55,7 +55,7 @@ impl AddressForm {
                 house_number: validated.house_number,
                 house_number_addition: validated.house_number_addition,
                 street_name: validated.street_name,
-                ..current_person.clone()
+                ..current_person
             }
         } else {
             panic!("Can't update the address of a non-existent person!");

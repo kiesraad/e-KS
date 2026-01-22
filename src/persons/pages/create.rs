@@ -40,7 +40,7 @@ pub async fn create_person(
     context: Context,
     DbConnection(mut conn): DbConnection,
     person_pagination: PersonPagination,
-    form: Form<PersonForm>,
+    Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(

@@ -47,9 +47,9 @@ pub async fn update_person_address(
     full_list: FullCandidateList,
     candidate: Candidate,
     DbConnection(mut conn): DbConnection,
-    form: Form<AddressForm>,
+    Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &context.csrf_tokens) {
+    match form.validate_update(candidate.person.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 candidate,

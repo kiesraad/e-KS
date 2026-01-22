@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        UPDATE candidate_lists\n        SET\n            electoral_districts = $1,\n            updated_at = NOW()\n        WHERE id = $2\n        RETURNING\n            id,\n            electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\",\n            created_at,\n            updated_at\n        ",
+  "query": "\n        UPDATE candidate_lists\n        SET\n            electoral_districts = $1,\n            updated_at = $3\n        WHERE id = $2\n        RETURNING\n            id,\n            electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\",\n            created_at,\n            updated_at\n        ",
   "describe": {
     "columns": [
       {
@@ -89,7 +89,8 @@
             }
           }
         },
-        "Uuid"
+        "Uuid",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -99,5 +100,5 @@
       false
     ]
   },
-  "hash": "82482cebbfb1047222dba457d02090821b6da469f8123a8b954968f096e42d3f"
+  "hash": "970fb3278270a4d365a5001f27d45e42af8808e60f4af6b84ad45adf83e9c78e"
 }

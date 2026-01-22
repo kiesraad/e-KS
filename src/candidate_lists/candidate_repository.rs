@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sqlx::{Connection, PgConnection};
 
 use crate::{
@@ -128,12 +129,14 @@ pub async fn append_candidate_to_list(
 
     sqlx::query!(
         r#"
-        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position)
-        VALUES ($1, $2, $3)
+        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position, created_at, updated_at)
+        VALUES ($1, $2, $3, $4, $5)
         "#,
         list_id.uuid(),
         person_id.uuid(),
         new_position,
+        Utc::now(),
+        Utc::now()
     )
     .execute(&mut *tx)
     .await?;
@@ -153,10 +156,11 @@ pub async fn remove_candidate(
     let updated = sqlx::query!(
         r#"
         UPDATE candidate_lists
-        SET updated_at = NOW()
+        SET updated_at = $2
         WHERE id = $1
         "#,
         list_id.uuid(),
+        Utc::now()
     )
     .execute(&mut *tx)
     .await?;
@@ -218,13 +222,15 @@ async fn insert_candidates(
 
     sqlx::query!(
         r#"
-        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position)
-        SELECT $1, person_id, position
+        INSERT INTO candidate_lists_persons (candidate_list_id, person_id, position, created_at, updated_at)
+        SELECT $1, person_id, position, $4, $5
         FROM UNNEST($2::uuid[], $3::int[]) AS t(person_id, position)
         "#,
         list_id.uuid(),
         &person_ids.iter().map(|p| p.uuid()).collect::<Vec<_>>(),
         &positions,
+        Utc::now(),
+        Utc::now()
     )
     .execute(&mut *executor)
     .await?;

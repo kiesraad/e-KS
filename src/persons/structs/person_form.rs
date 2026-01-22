@@ -83,7 +83,7 @@ impl WithCsrfToken for PersonForm {
 }
 
 impl PersonForm {
-    fn build_person(validated: PersonFormValidated, current: Option<&Person>) -> Person {
+    fn build_person(validated: PersonFormValidated, current: Option<Person>) -> Person {
         if let Some(current_person) = current {
             Person {
                 gender: validated.gender,
@@ -95,7 +95,7 @@ impl PersonForm {
                 bsn: validated.bsn,
                 place_of_residence: validated.place_of_residence,
                 country_of_residence: validated.country_of_residence,
-                ..current_person.clone()
+                ..current_person
             }
         } else {
             Person {
@@ -176,7 +176,7 @@ mod tests {
             csrf_token: tokens.issue().value,
         };
 
-        let updated = form.validate_update(&current, &tokens).unwrap();
+        let updated = form.validate_update(current.clone(), &tokens).unwrap();
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.gender, Some(Gender::Male));

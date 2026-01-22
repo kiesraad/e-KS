@@ -14,7 +14,6 @@ kubectl apply -f https://raw.githubusercontent.com/traefik/traefik/v3.6/docs/con
 # Install traefik
 helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik -n ingress --create-namespace -f traefik-values.yaml
 
-kubectl create secret generic --type='kubernetes.io/basic-auth' --from-literal=username=eks --from-literal=password=topsecret -n ingress http-basic-auth
 kubectl apply -f traefik-middleware.yaml
 ```
 

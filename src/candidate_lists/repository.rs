@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sqlx::PgConnection;
 
 use crate::{
@@ -112,8 +113,8 @@ pub async fn create_candidate_list(
         "#,
         candidate_list.id.uuid(),
         &candidate_list.electoral_districts as &[ElectoralDistrict],
-        candidate_list.created_at,
-        candidate_list.updated_at,
+        Utc::now(),
+        Utc::now(),
     )
     .fetch_one(conn)
     .await
@@ -121,7 +122,7 @@ pub async fn create_candidate_list(
 
 pub async fn update_candidate_list(
     conn: &mut PgConnection,
-    updated_candidate_list: CandidateList,
+    updated_candidate_list: &CandidateList,
 ) -> Result<CandidateList, sqlx::Error> {
     sqlx::query_as!(
         CandidateList,
@@ -129,7 +130,7 @@ pub async fn update_candidate_list(
         UPDATE candidate_lists
         SET
             electoral_districts = $1,
-            updated_at = NOW()
+            updated_at = $3
         WHERE id = $2
         RETURNING
             id,
@@ -138,7 +139,8 @@ pub async fn update_candidate_list(
             updated_at
         "#,
         &updated_candidate_list.electoral_districts as &[ElectoralDistrict],
-        updated_candidate_list.id.uuid()
+        updated_candidate_list.id.uuid(),
+        Utc::now(),
     )
     .fetch_one(conn)
     .await
@@ -175,6 +177,7 @@ pub async fn remove_candidate_list(
 
 #[cfg(test)]
 mod tests {
+    use core::time;
     use std::collections::BTreeSet;
 
     use super::*;
@@ -217,24 +220,23 @@ mod tests {
 
     #[sqlx::test]
     async fn list_candidate_list_orders_by_created_at(pool: PgPool) -> Result<(), sqlx::Error> {
-        let earlier = Utc::now() - Duration::days(1);
-        let later = Utc::now();
         let list_early = CandidateList {
             id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: earlier,
-            updated_at: earlier,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         };
         let list_late = CandidateList {
             id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::OV],
-            created_at: later,
-            updated_at: later,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         };
 
         let mut conn = pool.acquire().await?;
-        create_candidate_list(&mut conn, &list_late).await?;
         create_candidate_list(&mut conn, &list_early).await?;
+        tokio::time::sleep(time::Duration::from_millis(10)).await;
+        create_candidate_list(&mut conn, &list_late).await?;
 
         let lists = list_candidate_list(&mut conn).await?;
         assert_eq!(lists.len(), 2);
@@ -269,7 +271,7 @@ mod tests {
 
         let updated = update_candidate_list(
             &mut conn,
-            CandidateList {
+            &CandidateList {
                 electoral_districts: vec![ElectoralDistrict::DR, ElectoralDistrict::OV],
                 ..list.clone()
             },

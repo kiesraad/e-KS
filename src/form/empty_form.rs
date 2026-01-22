@@ -12,7 +12,7 @@ pub struct EmptyForm {
 }
 
 impl EmptyForm {
-    fn post_validate(_: EmptyFormValidated, _: Option<&()>) {
+    fn post_validate(_: EmptyFormValidated, _: Option<()>) {
         // do nothing, we only need to validate the token
     }
 }

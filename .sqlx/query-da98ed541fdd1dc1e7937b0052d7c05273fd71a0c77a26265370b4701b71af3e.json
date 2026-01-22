@@ -17,8 +17,7 @@
             "kind": {
               "Enum": [
                 "male",
-                "female",
-                "x"
+                "female"
               ]
             }
           }
@@ -109,8 +108,7 @@
             "kind": {
               "Enum": [
                 "male",
-                "female",
-                "x"
+                "female"
               ]
             }
           }

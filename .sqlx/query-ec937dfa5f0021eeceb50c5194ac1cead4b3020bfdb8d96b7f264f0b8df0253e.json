@@ -1,0 +1,93 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO list_submitters (id,\n                                     political_group_id,\n                                     last_name,\n                                     last_name_prefix,\n                                     initials,\n                                     locality,\n                                     postal_code,\n                                     house_number,\n                                     house_number_addition,\n                                     street_name,\n                                     created_at,\n                                     updated_at)\n        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)\n        RETURNING\n            id,\n            last_name,\n            last_name_prefix,\n            initials,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "ec937dfa5f0021eeceb50c5194ac1cead4b3020bfdb8d96b7f264f0b8df0253e"
+}

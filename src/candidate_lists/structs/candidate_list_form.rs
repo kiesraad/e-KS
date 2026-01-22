@@ -22,14 +22,12 @@ pub struct CandidateListForm {
 impl CandidateListForm {
     fn build_candidate_list(
         validated: CandidateListFormValidated,
-        current: Option<&CandidateList>,
+        current: Option<CandidateList>,
     ) -> CandidateList {
         if let Some(current) = current {
             CandidateList {
-                id: current.id,
                 electoral_districts: validated.electoral_districts,
-                created_at: current.created_at,
-                updated_at: chrono::Utc::now(),
+                ..current
             }
         } else {
             CandidateList {

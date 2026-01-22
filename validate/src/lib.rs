@@ -120,8 +120,8 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
 
         impl crate::form::Validate<#target> for #struct_name {
             fn validate(
-                &self,
-                current: Option<&#target>,
+                self,
+                current: Option<#target>,
                 csrf_tokens: &crate::form::CsrfTokens,
             ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
@@ -131,7 +131,7 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
                 if !errors.is_empty() {
                     tracing::debug!("Validation errors: {errors:?}");
                     return Err(crate::form::FormData::new_with_errors(
-                        self.clone(),
+                        self,
                         csrf_tokens,
                         errors,
                     ));

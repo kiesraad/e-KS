@@ -1,0 +1,64 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        INSERT INTO political_groups (id, authorised_agent_id, list_submitter_id, legal_name, display_name, created_at, updated_at)\n        VALUES ($1, $2, $3, $4, $5, $6, $7)\n        RETURNING id,\n            authorised_agent_id AS \"authorised_agent_id:AuthorisedAgentId\",\n            list_submitter_id AS \"list_submitter_id:ListSubmitterId\",\n            legal_name,\n            display_name,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "authorised_agent_id:AuthorisedAgentId",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 2,
+        "name": "list_submitter_id:ListSubmitterId",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
+        "name": "legal_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 6,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": [
+      false,
+      true,
+      true,
+      false,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "c8ec97265cc5475de2c00de221d0bcaad14226b3bd3c037568a17fec97756cf3"
+}

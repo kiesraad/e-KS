@@ -1,3 +1,4 @@
+use chrono::Utc;
 use sqlx::PgConnection;
 
 use crate::{
@@ -84,8 +85,8 @@ pub async fn create_person(
         new_person.house_number,
         new_person.house_number_addition,
         new_person.street_name,
-        new_person.created_at,
-        new_person.updated_at,
+        Utc::now(),
+        Utc::now(),
     )
     .fetch_one(conn)
     .await

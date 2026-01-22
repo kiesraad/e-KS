@@ -12,7 +12,7 @@ pub async fn delete_candidate_list(
     csrf_tokens: CsrfTokens,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
-    form: Form<EmptyForm>,
+    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),

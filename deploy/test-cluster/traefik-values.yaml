@@ -11,6 +11,7 @@ providers:
 service:
   annotations:
     service.beta.kubernetes.io/scw-loadbalancer-type: lb-s
+    service.beta.kubernetes.io/scw-loadbalancer-ip-ids: "38b5541f-b877-47b7-a0bb-813710b71722,05c10868-dc25-4111-80ae-dc80890605ce"
 
 gateway:
   name: "traefik"

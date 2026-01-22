@@ -1,3 +1,5 @@
+extern crate core;
+
 /// Application specific modules
 mod candidate_lists;
 /// Generic modules
@@ -14,6 +16,7 @@ mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
+mod political_group;
 
 pub use common::{
     config::Config,

@@ -43,9 +43,9 @@ pub async fn update_person(
     DbConnection(mut conn): DbConnection,
     person: Person,
     person_pagination: PersonPagination,
-    form: Form<PersonForm>,
+    Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.csrf_tokens) {
+    match form.validate_update(person.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,

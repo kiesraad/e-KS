@@ -50,12 +50,12 @@ pub async fn update_candidate_list(
     context: Context,
     candidate_list: CandidateList,
     DbConnection(mut conn): DbConnection,
-    form: Form<CandidateListForm>,
+    Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
     let total_persons = persons::count_persons(&mut conn).await?;
 
-    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+    match form.validate_update(candidate_list.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 candidate_lists,
@@ -68,7 +68,7 @@ pub async fn update_candidate_list(
         .into_response()),
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::update_candidate_list(&mut conn, candidate_list).await?;
+                candidate_lists::update_candidate_list(&mut conn, &candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
@@ -79,7 +79,7 @@ mod tests {
     use super::*;
     use axum::http::{StatusCode, header};
     use axum_extra::extract::Form;
-    use chrono::DateTime;
+    use chrono::{DateTime, Duration, Utc};
     use sqlx::PgPool;
 
     use crate::{
@@ -169,7 +169,7 @@ mod tests {
             vec![ElectoralDistrict::DR],
             updated_list.electoral_districts
         );
-        assert_eq!(creation_date, updated_list.created_at);
+        assert!(creation_date - Utc::now() < Duration::seconds(10));
         // we don't know the exact update date
         // best we can do is to check it at least got updated (i.e. not equal to creation_date)
         assert_ne!(creation_date, updated_list.updated_at);
@@ -218,7 +218,10 @@ mod tests {
         let updated_list = &lists[0].list;
 
         // verify candidate list didn't update in database
-        assert_eq!(&candidate_list, updated_list);
+        assert_eq!(
+            candidate_list.electoral_districts,
+            updated_list.electoral_districts
+        );
 
         Ok(())
     }

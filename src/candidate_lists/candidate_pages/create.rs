@@ -39,7 +39,7 @@ pub async fn create_person_candidate_list(
     context: Context,
     full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
-    form: Form<PersonForm>,
+    Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(

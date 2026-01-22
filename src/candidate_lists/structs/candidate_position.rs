@@ -43,7 +43,7 @@ impl WithCsrfToken for CandidatePositionForm {
 impl CandidatePositionForm {
     fn build(
         validated: CandidatePositionFormValidated,
-        current: Option<&CandidatePosition>,
+        current: Option<CandidatePosition>,
     ) -> CandidatePosition {
         if let Some(_current) = current {
             CandidatePosition {

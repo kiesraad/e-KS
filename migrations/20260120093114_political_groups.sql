@@ -1,20 +1,20 @@
 CREATE TABLE political_groups
 (
-    id           UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    legal_name   VARCHAR                                            NOT NULL,
-    display_name VARCHAR                                            NOT NULL,
-    created_at   timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at   timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    id           UUID PRIMARY KEY,
+    legal_name   VARCHAR                  NOT NULL,
+    display_name VARCHAR                  NOT NULL,
+    created_at   timestamp with time zone NOT NULL,
+    updated_at   timestamp with time zone NOT NULL
 );
 
 CREATE TABLE authorised_agents
 (
-    id                    UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    political_group_id    UUID REFERENCES political_groups (id) ON DELETE CASCADE,
+    id                    UUID PRIMARY KEY,
+    political_group_id    UUID                     NOT NULL REFERENCES political_groups (id) ON DELETE CASCADE,
 
-    last_name             VARCHAR                                            NOT NULL,
+    last_name             VARCHAR                  NOT NULL,
     last_name_prefix      VARCHAR,
-    initials              VARCHAR                                            NOT NULL,
+    initials              VARCHAR                  NOT NULL,
 
     locality              VARCHAR,
     postal_code           VARCHAR,
@@ -22,29 +22,29 @@ CREATE TABLE authorised_agents
     house_number_addition VARCHAR,
     street_name           VARCHAR,
 
-    created_at            timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at            timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at            timestamp with time zone NOT NULL,
+    updated_at            timestamp with time zone NOT NULL
 );
 
 
 CREATE TABLE list_submitters
 (
-    id                    UUID PRIMARY KEY         DEFAULT gen_random_uuid(),
-    political_group_id    UUID REFERENCES political_groups (id) ON DELETE CASCADE,
+    id                    UUID PRIMARY KEY,
+    political_group_id    UUID                     NOT NULL REFERENCES political_groups (id) ON DELETE CASCADE,
 
-    last_name             VARCHAR                                            NOT NULL,
+    last_name             VARCHAR                  NOT NULL,
     last_name_prefix      VARCHAR,
-    initials              VARCHAR                                            NOT NULL,
+    initials              VARCHAR                  NOT NULL,
 
     -- postal address (must be Dutch)
-    locality              VARCHAR,
-    postal_code           VARCHAR,
-    house_number          VARCHAR,
+    locality              VARCHAR NOT NULL,
+    postal_code           VARCHAR NOT NULL,
+    house_number          VARCHAR NOT NULL,
     house_number_addition VARCHAR,
-    street_name           VARCHAR,
+    street_name           VARCHAR NOT NULL,
 
-    created_at            timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL,
-    updated_at            timestamp with time zone DEFAULT CURRENT_TIMESTAMP NOT NULL
+    created_at            timestamp with time zone NOT NULL,
+    updated_at            timestamp with time zone NOT NULL
 );
 
 ALTER TABLE political_groups
