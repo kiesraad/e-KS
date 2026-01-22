@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export const setupPositionPreview = () => {
   const container = document.getElementById("position-preview-container");
   const preview = document.getElementById("position-preview");
   const input = document.getElementById("position");
@@ -49,4 +49,8 @@ window.addEventListener("load", () => {
 
   input.addEventListener("input", updatePreview);
   updatePreview();
-});
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("load", setupPositionPreview);
+}

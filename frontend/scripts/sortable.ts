@@ -677,13 +677,13 @@ function reorderList(updateUrl: string, person_ids: string[]) {
     });
 }
 
-window.addEventListener("load", () => {
+export const setupSortable = () => {
   const table: HTMLTableElement | null =
     document.querySelector("table.sortable");
   const tbody = table?.querySelector("tbody");
 
   if (!table || !tbody) {
-    return;
+    return null;
   }
 
   const updateUrl = table.dataset.sortableUpdateUrl;
@@ -697,4 +697,12 @@ window.addEventListener("load", () => {
       reorderList(updateUrl, order);
     });
   }
-});
+
+  return sortable;
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("load", () => {
+    setupSortable();
+  });
+}

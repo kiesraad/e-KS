@@ -1,5 +1,5 @@
 FROM ubuntu:24.04 AS final-base
-RUN apt-get update && apt-get install adduser -y && apt-get upgrade -y && apt-get clean
+RUN apt-get update && apt-get --no-install-recommends install -y adduser && apt-get upgrade -y && apt-get clean
 
 # create a non root user to run the binary
 ARG user=nonroot
