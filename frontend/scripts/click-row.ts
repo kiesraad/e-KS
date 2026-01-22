@@ -1,5 +1,5 @@
 /// Make table rows clickable
-window.addEventListener("load", () => {
+export const setupClickRow = () => {
   document.querySelectorAll("tr.clickable").forEach((row) => {
     row.addEventListener("click", (event) => {
       // skip if the click originated a cell with class drag-handle
@@ -13,4 +13,8 @@ window.addEventListener("load", () => {
       }
     });
   });
-});
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("load", setupClickRow);
+}

@@ -1,5 +1,5 @@
 /// Make table rows clickable
-window.addEventListener("load", () => {
+export const setupClickCard = () => {
   document.querySelectorAll(".card.card-clickable").forEach((card) => {
     card.addEventListener("click", () => {
       const link = card.querySelector("a,button");
@@ -8,4 +8,8 @@ window.addEventListener("load", () => {
       }
     });
   });
-});
+};
+
+if (typeof window !== "undefined") {
+  window.addEventListener("load", setupClickCard);
+}
