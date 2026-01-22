@@ -126,6 +126,7 @@ person:
     empty: No details available for this person.
     title: Person details
 validation:
+  starts_with_last_name_prefix: Please put the prefix in the correct field.
   invalid_bsn: Invalid BSN.
   invalid_csrf_token: The CSRF token is invalid.
   invalid_email: Invalid email address.

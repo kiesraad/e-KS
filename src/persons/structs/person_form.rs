@@ -15,7 +15,11 @@ use crate::{
 pub struct PersonForm {
     #[validate(parse = "Gender", optional)]
     pub gender: String,
-    #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        with = "validate_no_last_name_prefix()"
+    )]
     pub last_name: String,
     #[validate(with = "validate_last_name_prefix()", optional)]
     pub last_name_prefix: String,
@@ -198,7 +202,7 @@ mod tests {
         let tokens = CsrfTokens::default();
         let form = PersonForm {
             gender: "invalid".to_string(),
-            last_name: "X".to_string(),
+            last_name: "de Bakker".to_string(),
             last_name_prefix: "Boris".to_string(),
             first_name: " B ".to_string(),
             initials: "jd".to_string(),
@@ -220,7 +224,7 @@ mod tests {
         );
         assert!(data.errors().contains(&(
             "last_name".to_string(),
-            ValidationError::ValueTooShort(1, 2)
+            ValidationError::StartsWithLastNamePrefix
         )));
         assert!(data.errors().contains(&(
             "last_name_prefix".to_string(),

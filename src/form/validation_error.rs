@@ -13,6 +13,7 @@ pub enum ValidationError {
     ValueTooLong(ActualLength, MaxLength),
     ValueTooShort(ActualLength, MinLength),
     InvalidChecksum,
+    StartsWithLastNamePrefix,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -37,6 +38,9 @@ impl ValidationError {
             }
             ValidationError::InvalidCsrfToken => t!("validation.invalid_csrf_token", locale),
             ValidationError::InvalidChecksum => t!("validation.invalid_bsn", locale),
+            ValidationError::StartsWithLastNamePrefix => {
+                t!("validation.starts_with_last_name_prefix", locale)
+            }
         }
         .to_string()
     }

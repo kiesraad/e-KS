@@ -126,6 +126,7 @@ person:
     empty: Geen personen gevonden.
     title: Persoon
 validation:
+  starts_with_last_name_prefix: Zet het voorvoegsel in het juiste veld.
   invalid_bsn: Ongeldig BSN.
   invalid_csrf_token: De CSRF-token is ongeldig.
   invalid_email: Ongeldig e-mailadres.

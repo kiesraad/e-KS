@@ -13,6 +13,20 @@ pub fn validate_last_name_prefix() -> impl Fn(&str) -> Result<String, Validation
     }
 }
 
+pub fn validate_no_last_name_prefix() -> impl Fn(&str) -> Result<String, ValidationError> {
+    move |value: &str| {
+        let trimmed_value = value.trim();
+
+        if let Some((prefix, _)) = trimmed_value.split_once(' ')
+            && LAST_NAME_PREFIXES.contains(&prefix)
+        {
+            return Err(ValidationError::StartsWithLastNamePrefix);
+        }
+
+        Ok(trimmed_value.to_string())
+    }
+}
+
 /// All prefixes from Table 36 of the [RvIG](https://publicaties.rvig.nl/landelijke-tabellen-32-tm-61)
 ///
 /// (last updated: 27 november 2015)
