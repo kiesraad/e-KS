@@ -31,8 +31,7 @@ pub async fn new_person_form(
             countries: &COUNTRY_CODES,
         },
         context,
-    )
-    .into_response())
+    ))
 }
 
 pub async fn create_person(

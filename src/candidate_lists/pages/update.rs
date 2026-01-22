@@ -128,7 +128,8 @@ mod tests {
             created_at: creation_date,
             updated_at: creation_date,
         };
-        candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
+        let candidate_list =
+            candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
 
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::DR],
@@ -169,10 +170,10 @@ mod tests {
             vec![ElectoralDistrict::DR],
             updated_list.electoral_districts
         );
-        assert!(creation_date - Utc::now() < Duration::seconds(10));
+        assert!((candidate_list.created_at - Utc::now()).abs() < Duration::seconds(10));
         // we don't know the exact update date
         // best we can do is to check it at least got updated (i.e. not equal to creation_date)
-        assert_ne!(creation_date, updated_list.updated_at);
+        assert_ne!(candidate_list.created_at, updated_list.updated_at);
 
         Ok(())
     }

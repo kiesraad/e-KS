@@ -1,5 +1,4 @@
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
 use strum::{Display, EnumString};
 
 use crate::form::{TokenValue, WithCsrfToken};

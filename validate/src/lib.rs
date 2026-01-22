@@ -334,7 +334,7 @@ fn build_field_validation(
                         if self.#ident.is_empty() {
                             Some(None)
                         } else {
-                            match #ty::from_str(value) {
+                            match <#ty as ::std::str::FromStr>::from_str(value) {
                                 Ok(value) => Some(Some(value)),
                                 Err(_) => {
                                     errors.push((
@@ -356,7 +356,7 @@ fn build_field_validation(
                             ));
                             None
                         } else {
-                            match #ty::from_str(value) {
+                            match <#ty as ::std::str::FromStr>::from_str(value) {
                                 Ok(value) => Some(value),
                                 Err(_) => {
                                     errors.push((

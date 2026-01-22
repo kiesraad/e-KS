@@ -19,6 +19,13 @@ macro_rules! id_newtype {
             fn from(v: uuid::Uuid) -> Self { Self(v) }
         }
 
+        impl std::str::FromStr for $name {
+            type Err = uuid::Error;
+            fn from_str(s: &str) -> Result<Self, Self::Err> {
+                Ok(Self(uuid::Uuid::parse_str(s)?))
+            }
+        }
+
         impl From<$name> for uuid::Uuid {
             fn from(v: $name) -> Self { v.0 }
         }
