@@ -17,11 +17,7 @@ pub struct PersonForm {
     pub gender: String,
     #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
     pub last_name: String,
-    #[validate(
-        with = "validate_length(1, 255)",
-        with = "validate_teletex_chars()",
-        optional
-    )]
+    #[validate(with = "validate_last_name_prefix()", optional)]
     pub last_name_prefix: String,
     #[validate(
         with = "validate_length(2, 255)",
@@ -176,6 +172,7 @@ mod tests {
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.gender, Some(Gender::Male));
         assert_eq!(updated.last_name, "Klaas Smit");
+        assert_eq!(updated.last_name_prefix, Some("van de".to_string()));
         assert_eq!(updated.first_name, Some("Evert".to_string()));
         assert_eq!(updated.initials, "E.D.");
         assert_eq!(
@@ -202,7 +199,7 @@ mod tests {
         let form = PersonForm {
             gender: "invalid".to_string(),
             last_name: "X".to_string(),
-            last_name_prefix: "".to_string(),
+            last_name_prefix: "Boris".to_string(),
             first_name: " B ".to_string(),
             initials: "jd".to_string(),
             date_of_birth: "2020/01/01".to_string(),
@@ -216,7 +213,7 @@ mod tests {
             panic!("expected validation errors");
         };
 
-        assert_eq!(data.errors().len(), 7);
+        assert_eq!(data.errors().len(), 8);
         assert!(
             data.errors()
                 .contains(&("gender".to_string(), ValidationError::InvalidValue))
@@ -224,6 +221,10 @@ mod tests {
         assert!(data.errors().contains(&(
             "last_name".to_string(),
             ValidationError::ValueTooShort(1, 2)
+        )));
+        assert!(data.errors().contains(&(
+            "last_name_prefix".to_string(),
+            ValidationError::InvalidValue
         )));
         assert!(data.errors().contains(&(
             "first_name".to_string(),
