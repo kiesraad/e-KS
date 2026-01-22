@@ -13,6 +13,13 @@
     </p>
     <div id="position-preview-container">
       <table class="table" id="position-preview">
+        <thead>
+          <tr>
+            <th>{{ t!("candidate_list.fields.position")|trans }}</th>
+            <th>{{ t!("person.fields.name")|trans }}</th>
+            <th>{{ t!("person.fields.locality")|trans }}</th>
+          </tr>
+        </thead>
         <tbody>
           {% for c in full_list.candidates %}
           <tr class="{% if c.person.id == candidate.person.id %}current{% endif %}">

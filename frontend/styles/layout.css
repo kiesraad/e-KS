@@ -104,3 +104,17 @@ footer {
   line-height: 1.25rem;
   display: flex;
 }
+
+.pagination {
+  margin-top: var(--space-md);
+  display: flex;
+  justify-content: center;
+  gap: var(--space-sm);
+  align-items: center;
+
+  span,
+  a {
+    min-width: 3rem;
+    text-align: center;
+  }
+}

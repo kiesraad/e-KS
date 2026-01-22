@@ -9,7 +9,7 @@
   </p>
   <p class="form-field form-field-sm">
     <label for="last_name_prefix">{{ t!("person.fields.last_name_prefix")|trans }}</label>
-    <input type="text" name="last_name_prefix" id="last_name" value="{{ form.data.last_name_prefix }}" />
+    <input type="text" name="last_name_prefix" id="last_name_prefix" value="{{ form.data.last_name_prefix }}" />
     {% for error in form|error("last_name_prefix") %}
     <span class="error">{{ error }}</span>
     {% endfor %}

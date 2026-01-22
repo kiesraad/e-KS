@@ -7,7 +7,10 @@ window.addEventListener("load", () => {
     return;
   }
 
-  const originalPosition = parseInt((input as HTMLInputElement).value, 10);
+  const originalPosition = Number.parseInt(
+    (input as HTMLInputElement).value,
+    10,
+  );
   const tbody = preview.querySelector("tbody");
   const current = preview.querySelector("tr.current");
 
@@ -15,14 +18,14 @@ window.addEventListener("load", () => {
     return;
   }
 
-  const rows = preview.getElementsByTagName("tr");
+  const rows = tbody.getElementsByTagName("tr");
   const total = rows.length;
 
   const updatePreview = () => {
-    let position = parseInt((input as HTMLInputElement).value, 10);
+    let position = Number.parseInt((input as HTMLInputElement).value, 10);
     position = Math.min(Math.max(1, position), total) || originalPosition;
 
-    tbody.removeChild(current);
+    current.remove();
     tbody.insertBefore(current, rows[position - 1]);
 
     // update position numbers

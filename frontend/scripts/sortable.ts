@@ -238,8 +238,11 @@ class SortableTable {
    */
   public attachHandleEvents() {
     this.handles.forEach((handle) => {
-      // FIXME: what if closest() returns null?
-      const row = handle.closest("tr") as HTMLTableRowElement;
+      const row: HTMLTableRowElement | null = handle.closest("tr");
+
+      if (!row) {
+        return;
+      }
 
       handle.addEventListener("mousedown", (event) => {
         event.preventDefault();
@@ -358,6 +361,10 @@ class SortableTable {
    * Touch move handler forwarding to shared pointer logic.
    */
   private handleTouchMove(event: TouchEvent) {
+    if (!this.drag) {
+      return;
+    }
+
     const touch = this.drag?.getActiveTouch(event.changedTouches);
     if (!touch) {
       return;
@@ -371,6 +378,10 @@ class SortableTable {
    * Mouse up handler that finalizes the drag.
    */
   private handleMouseUp(event: MouseEvent) {
+    if (!this.drag) {
+      return;
+    }
+
     event.preventDefault();
     this.finishDrag();
   }
@@ -650,6 +661,22 @@ class SortableTable {
   }
 }
 
+function reorderList(updateUrl: string, person_ids: string[]) {
+  void fetch(updateUrl, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ person_ids }),
+  })
+    .then((response) => {
+      if (!response.ok) {
+        console.error("Failed to update candidate order", response.status);
+      }
+    })
+    .catch((error) => {
+      console.error("Failed to update candidate order", error);
+    });
+}
+
 window.addEventListener("load", () => {
   const table: HTMLTableElement | null =
     document.querySelector("table.sortable");
@@ -667,19 +694,7 @@ window.addEventListener("load", () => {
 
   if (updateUrl) {
     sortable.setOnChange((order: string[]) => {
-      void fetch(updateUrl, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ person_ids: order }),
-      })
-        .then((response) => {
-          if (!response.ok) {
-            console.error("Failed to update candidate order", response.status);
-          }
-        })
-        .catch((error) => {
-          console.error("Failed to update candidate order", error);
-        });
+      reorderList(updateUrl, order);
     });
   }
 });

@@ -41,4 +41,4 @@ spec:
                 secretKeyRef:
                   key: pgpassword
                   name: helm-hook-secrets
-{{ end}}
+{{ end }}

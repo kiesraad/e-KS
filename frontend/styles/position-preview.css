@@ -29,6 +29,10 @@
 }
 
 #position-preview {
+  thead {
+    display: none;
+  }
+
   tr {
     display: none;
   }
