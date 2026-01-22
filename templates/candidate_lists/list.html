@@ -3,46 +3,59 @@
 {% block page_title %}{{ t!("candidate_list.title")|trans }}{% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
 
+{% block header_action %}
+  <a href="{{ CandidateList::new_path() }}" class="button secondary icon-plus">
+    {{ t!("candidate_list.actions.add")|trans }}
+  </a>
+{% endblock %}
+
 {% block content %}
 <section>
   <div class="cards">
     {# manage persons card #}
-    <div class="card card-persons">
+    <div class="card card-persons card-clickable">
       <h3>{{ t!("person.all")|trans }}</h3>
       <p class="statistic">
         {{ t!("person.total")|trans|fill(total_persons.to_string()) }}
       </p>
       <a href="{{ Person::list_path() }}">
-        {{ t!("person.actions.manage")|trans }}
+        <span>{{ t!("person.actions.manage")|trans }}</span>
       </a>
     </div>
 
-    {# candidate lists cards #}
-    {% for candidate_list in candidate_lists %}
-    <div class="card card-list">
-      <h3>{{ t!("candidate_list.title_single")|trans }}</h3>
-      <p class="statistic">
-        {{ t!("common.electoral_districts")|trans }}:
-        {{ candidate_list.list|display_districts }}
-      </p>
-      <p class="statistic">
-        {% if candidate_list.person_count == 0 %}
-          {{ t!("candidate_list.no_candidates")|trans }}
-        {% else %}
-          {{ t!("candidate_list.total_candidates")|trans|fill(candidate_list.person_count.to_string()) }}
+    <div class="cards-right">
+      {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
+        {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+          {% for candidate_list in candidate_lists %}
+          <div class="card card-list card-clickable">
+            <h3>{{ candidate_list.list|list_name }}</h3>
+            <h5>{{ t!("common.electoral_districts")|trans }}:</h5>
+            {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() %}
+              <p>{{ t!("candidate_list.districts.all")|trans }}</p>
+            {% else %}
+              <ul>
+                {% for district in candidate_list.list.electoral_districts %}
+                <li><span>{{ district.title() }}</span></li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+            <p class="statistic">
+              {{ t!("candidate_list.candidate_count")|trans|fill(candidate_list.person_count.to_string())|fill(max_candidates.to_string())|safe }}
+            </p>
+            <a href="{{ candidate_list.list.view_path() }}">
+              <span>{{ t!("candidate_list.actions.manage")|trans }}</span>
+            </a>
+          </div>
+          {% endfor %}
         {% endif %}
-      </p>
-      <a href="{{ candidate_list.list.view_path() }}">
-        {{ t!("candidate_list.actions.manage")|trans }}
-      </a>
-    </div>
-    {% endfor %}
+      {% endif %}
 
-    {# add new candidate list card #}
-    <div class="card card-add-list">
-      <a href="{{ CandidateList::new_path() }}" class="button secondary icon-plus">
-        {{ t!("candidate_list.actions.add")|trans }}
-      </a>
+      {# add new candidate list card #}
+      <div class="card card-add-list">
+        <a href="{{ CandidateList::new_path() }}" class="button secondary icon-plus">
+          {{ t!("candidate_list.actions.add")|trans }}
+        </a>
+      </div>
     </div>
   </div>
 </section>

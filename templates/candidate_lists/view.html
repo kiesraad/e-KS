@@ -1,11 +1,13 @@
 {% extends "layout.html" %}
 
-{% block page_title %}{{ t!("candidate_list.title_single")|trans }}{% endblock %}
+{% block page_title %}{{ full_list.list|list_name }}{% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
 {% block main_class %}pt-sm{% endblock %}
 
 {% block page_sub_title %}
-  <span class="subtitle">{{ t!("common.electoral_districts")|trans }}: {{ full_list.list|display_districts }}</span>
+  {% if full_list.list.electoral_districts.len() > 2 %}
+    <span class="subtitle">{{ t!("common.electoral_districts")|trans }}: {{ full_list.list|display_districts }}</span>
+  {% endif %}
 {% endblock %}
 
 {% block header_action %}

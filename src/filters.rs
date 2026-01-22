@@ -62,6 +62,22 @@ pub fn display_districts(
     }
 }
 
+#[askama::filter_fn]
+pub fn list_name(list: &CandidateList, values: &dyn askama::Values) -> askama::Result<String> {
+    let locale: Locale = *askama::get_value(values, "locale")?;
+
+    if list.electoral_districts.len() < 3 {
+        Ok(list
+            .electoral_districts
+            .iter()
+            .map(|d| d.title())
+            .collect::<Vec<_>>()
+            .join(", "))
+    } else {
+        Ok(t!("candidate_list.title_single", locale).to_string())
+    }
+}
+
 /// Returns a cache buster string based on the current git commit hash (set during build on github).
 pub fn cache_buster() -> &'static str {
     option_env!("GITHUB_SHA").unwrap_or("development")

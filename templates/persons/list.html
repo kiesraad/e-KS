@@ -4,19 +4,6 @@
 {% block persons_nav_class %}active{% endblock %}
 
 {% block content %}
-<nav class="sticky-nav">
-  <div class="sticky-nav-bar">
-    <div></div>
-    <div>
-      <div class="buttons">
-        <a href="{{ Person::new_path() }}" class="button secondary icon-plus" type="button">
-          {{ t!("person.actions.add")|trans }}
-        </a>
-      </div>
-    </div>
-  </div>
-</nav>
-
 {% if person_pagination.persons.is_empty() %}
 <section>
   <p>{{ t!("person.list.empty")|trans }}</p>

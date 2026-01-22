@@ -23,7 +23,6 @@ candidate_list:
     delete_list: Kandidatenlijst verwijderen
   add_candidate: Kandidaat toevoegen
   no_candidates: Geen kandidaten op deze lijst
-  total_candidates: 'Kandidaten op deze lijst: {}'
   remove_candidate: Uit deze lijst verwijderen
   edit_position: Volgorde op de lijst
   search_existing_person: Zoek bestaande persoon
