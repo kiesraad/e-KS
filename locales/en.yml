@@ -27,7 +27,7 @@ candidate_list:
   remove_candidate: Remove candidate
   edit_position: Position on the list
   search_existing_person: Search existing person
-  search_placeholder: Search by name, initials or localitty
+  search_placeholder: Search by name, initials or locality
   edit_details: Edit list details
   fields:
     created_at: Created at

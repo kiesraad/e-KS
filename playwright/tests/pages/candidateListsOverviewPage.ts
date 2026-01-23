@@ -15,4 +15,12 @@ export class CandidateListsOverviewPage {
     async addList() {
         await this.page.getByRole('link', { name: 'Add list' }).click();
     }
+
+    async manageList() {
+        await this.page.getByRole('link', { name: 'Manage list' }).first().click();
+    }
+
+    async managePersons() {
+        await this.page.getByRole('link', { name: 'Manage persons' }).click();
+    }
 }

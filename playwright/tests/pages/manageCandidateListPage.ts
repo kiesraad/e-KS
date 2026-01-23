@@ -28,4 +28,20 @@ export class ManageCandidateListPage {
             await this.page.getByRole('button', {name: 'Save'}).click(); 
         }      
     }
+
+    async removeDistricts(districts: string[]) {
+        await this.page.getByRole('link', { name: 'List details' }).click();
+        for(var district of districts) {
+            await this.page.getByRole('checkbox', { name: district }).uncheck();
+        }
+        await this.page.getByRole('button', { name: 'Save' }).click();
+    }
+    
+    async addDistricts(districts: string[]) {
+        await this.page.getByRole('link', { name: 'List details' }).click();
+        for(var district of districts) {
+            await this.page.getByRole('checkbox', { name: district }).check();
+        }
+        await this.page.getByRole('button', { name: 'Save' }).click();
+    }
 }

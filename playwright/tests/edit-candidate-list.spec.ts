@@ -1,27 +1,22 @@
 import { test, expect } from '@playwright/test';
+import { CandidateListsOverviewPage } from './pages/candidateListsOverviewPage';
+import { ManageCandidateListPage } from './pages/manageCandidateListPage';
 
 test('edit candidate list', async ({ page }) => {
-  await page.goto('/');
+  var candidateListsOverviewPage = new CandidateListsOverviewPage(page);
+  await candidateListsOverviewPage.open();
+  await candidateListsOverviewPage.manageList();
+  
+  var manageCandidateListPage = new ManageCandidateListPage(page);
+  await manageCandidateListPage.removeDistricts(['Drenthe', 'Friesland', 'Groningen']);
 
-  await page.getByRole('link', { name: 'Candidate lists' }).click();
-  await expect(page.getByRole('heading', { name: 'Candidate lists' })).toBeVisible();
-
-  await page.getByRole('link', { name: 'Manage list' }).first().click();
-  await expect(page.getByRole('heading', { name: 'Candidate list' })).toBeVisible();
-
-  await page.getByRole('link', { name: 'List details' }).click();
-  await expect(page.getByRole('heading', { name: 'Edit candidate list' })).toBeVisible();
-
-  // edit list: deselect some electoral districts
-  await page.getByRole('checkbox', { name: 'Drenthe' }).uncheck();
-  await page.getByRole('checkbox', { name: 'Friesland' }).uncheck();
-  await page.getByRole('checkbox', { name: 'Groningen' }).uncheck();
-  await page.getByRole('button', { name: 'Save' }).click();
-  await expect(page.getByRole('heading', { name: 'Candidate list' })).toBeVisible();
-
-  await page.getByRole('link', { name: 'Candidate lists' }).click();
-  await expect(page.getByRole('heading', { name: 'Candidate lists' })).toBeVisible();
-
-  // Deselected electoral districts are no longer shown
+  await candidateListsOverviewPage.open();
   await expect(page.getByText('Electoral districts: Flevoland, Gelderland, Limburg, Noord-Brabant, Noord-')).toBeVisible();
+  
+  await candidateListsOverviewPage.manageList();
+  await manageCandidateListPage.addDistricts(['Drenthe', 'Friesland', 'Groningen']);
+
+  await candidateListsOverviewPage.open();
+  await expect(page.getByText('Electoral districts: All')).toBeVisible();
+
 });
