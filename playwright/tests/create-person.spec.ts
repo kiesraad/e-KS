@@ -17,27 +17,16 @@ test('test', async ({ page }) => {
 
   // create new person
   await page.getByRole('link', { name: 'New' }).click();
-  await page.getByRole('textbox', { name: 'Initials *' }).click();
   await page.getByRole('textbox', { name: 'Initials *' }).fill('H.A.H.A');
-  await page.getByRole('textbox', { name: 'Initials *' }).press('Tab');
-
-  await page.locator('input[name="last_name"]').fill('Jansen');
-  await page.locator('input[name="last_name"]').press('Tab');
-
+  await page.getByLabel('Last name' ).fill('Jansen');
+//  await page.locator('input[name="last_name"]').fill('Jansen');
   await page.getByRole('textbox', { name: 'First name' }).fill('Henk');
-  await page.getByRole('textbox', { name: 'First name' }).press('Tab');
-
   await page.getByLabel('Gender').selectOption('male');
-  await page.getByLabel('Gender').press('Tab');
-
   await page.getByRole('textbox', { name: 'Date of birth' }).fill('01-01-1970');
   await page.getByRole('button', { name: 'Save' }).click();
 
   // add address details
-  await page.getByRole('textbox', { name: 'Postal code' }).click();
   await page.getByRole('textbox', { name: 'Postal code' }).fill('6512EX');
-  await page.getByRole('textbox', { name: 'Postal code' }).press('Tab');
-
   await page.getByRole('textbox', { name: 'House number', exact: true }).fill('26');
   await page.getByRole('textbox', { name: 'House number', exact: true }).press('Tab');
 
