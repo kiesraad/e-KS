@@ -8,7 +8,9 @@ mod form;
 mod pages;
 mod pagination;
 mod persons;
+mod political_groups;
 pub mod router;
+mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;

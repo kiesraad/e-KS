@@ -5,9 +5,26 @@
   <header>
     <nav>
       <ul>
-        <li><a href="/">{{ t!("common.general_information")|trans }}</a></li>
-        <li><a href="{{ crate::candidate_lists::CandidateList::list_path() }}">{{ t!("candidate_list.title")|trans }}</a></li>
-        <li><a href="#submit">{{ t!("common.submit")|trans }}</a></li>
+        <li>
+          <a href="/" class="home">
+            <span>{{ t!("common.home")|trans }}</span>
+          </a>
+        </li>
+        <li>
+          <a href="{{ crate::political_groups::PoliticalGroupPath{}.to_string() }}">
+            {{ t!("common.general_information")|trans }}
+          </a>
+        </li>
+        <li>
+          <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
+            {{ t!("candidate_list.title")|trans }}
+          </a>
+        </li>
+        <li>
+          <a href="{{ crate::submit::SubmitPath{}.to_string() }}">
+            {{ t!("common.submit")|trans }}
+          </a>
+        </li>
       </ul>
       <ul>
         <li class="user-info">

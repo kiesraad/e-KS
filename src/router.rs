@@ -6,12 +6,16 @@ use axum::{Router, middleware, routing::get};
 #[cfg(feature = "http-logging")]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
-use crate::{AppState, candidate_lists, pages, persons, render_error_pages};
+use crate::{
+    AppState, candidate_lists, pages, persons, political_groups, render_error_pages, submit,
+};
 
 pub fn create(state: AppState) -> Router<AppState> {
     let router = Router::new()
         .route("/", get(pages::index))
         .merge(persons::router())
+        .merge(political_groups::router())
+        .merge(submit::router())
         .merge(candidate_lists::router())
         .merge(candidate_lists::candidate_router());
 

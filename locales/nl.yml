@@ -8,6 +8,9 @@ action:
   delete: Verwijderen
   save: Opslaan
   signout: Afmelden
+  manage_data: Beheer gegevens
+  manage_candidate_lists: Beheer kandidatenlijsten
+  review_and_submit: Controleren en inleveren
 candidate_list:
   actions:
     add: Lijst aanmaken
@@ -51,6 +54,7 @@ candidate_list:
   empty: Geen kandidatenlijsten gevonden.
   title: Kandidatenlijsten
   title_single: Kandidatenlijst
+  description: Voeg hier kandidaten toe en maak kandidatenlijst(en) aan.
   candidate_count: '<strong>{}</strong> / {} kandidaten'
   view:
     empty: Deze kandidatenlijst heeft nog geen kandidaten.
@@ -134,7 +138,12 @@ validation:
   value_too_short: De waarde is te kort ({} tekens), minimaal {} tekens vereist.
 common:
   title: Kiesraad - Kandidaat stellen
-  general_information: Algemene gegevens
+  general_information: Lijstgegevens
+  general_information_description: Vul hier de basisgegevens in en de gegevens van de lijstinleveraar.
   electoral_districts: Kieskringen
   submit: Inleveren
+  submit_description: Controleer alle gegevens en dien de kandidatenlijst(en) in bij de Kiesraad.
   version: Versie
+  step1: Stap 1
+  step2: Stap 2
+  step3: Stap 3

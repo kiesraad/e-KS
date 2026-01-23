@@ -1,17 +1,27 @@
-.cards {
+.cards.cards-candidate-lists {
   display: grid;
   grid-template-columns: repeat(12, 1fr);
   gap: var(--space-lg);
+
+  .cards-right {
+    grid-column: span 9;
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    gap: var(--space-lg);
+
+    .card-clickable {
+      min-height: 14rem;
+    }
+  }
 }
 
-.cards-right {
-  grid-column: span 9;
+.cards.cards-home {
   display: grid;
   grid-template-columns: repeat(9, 1fr);
   gap: var(--space-lg);
 
-  .card-clickable {
-    min-height: 14rem;
+  .card {
+    min-height: 20rem;
   }
 }
 
@@ -26,63 +36,23 @@
   min-height: 10rem;
   border: 1px solid var(--gray-200);
   border-radius: var(--space-sm);
-  background-image: url("../icons/list-badge.svg");
+  background-image: url("../icons/badge.svg");
   background-repeat: no-repeat;
   background-position: left var(--space-lg) top var(--space-lg);
-
-  &.card-clickable {
-    cursor: pointer;
-    color: var(--text-color-body);
-    border-color: var(--bg-gray-darkest);
-    background-color: var(--button-color-secondary);
-    position: relative;
-
-    &:hover {
-      background-color: var(--button-color-secondary-hover);
-      border: 1px solid var(--bg-gray-darkest);
-    }
-
-    &:focus,
-    &:focus-visible {
-      outline: none;
-      border-color: var(--border-color-focus);
-      background-color: var(--button-color-secondary-focus);
-      box-shadow: 0 0 0 4px var(--shadow-color-focus);
-    }
-
-    &:active {
-      border-color: var(--border-color-default);
-      background-color: var(--button-color-secondary-active);
-    }
-
-    .statistic {
-      margin-top: auto;
-    }
-
-    a {
-      display: block;
-      margin-top: 0;
-      position: absolute;
-      bottom: var(--space-lg);
-      right: var(--space-lg);
-      width: 1.5rem;
-      height: 1.5rem;
-
-      &:hover {
-        background-color: transparent;
-      }
-
-      span {
-        display: none;
-      }
-    }
-  }
+  text-decoration: none;
 
   h3 {
     font-size: var(--font-size-lg);
     color: var(--gray-800);
     margin-bottom: var(--space-lg);
     margin-left: 3.5rem;
+  }
+
+  h4 {
+    font-size: var(--font-size-xl);
+    color: var(--gray-800);
+    font-weight: 600;
+    margin-top: var(--space-md);
   }
 
   h5 {
@@ -120,32 +90,39 @@
   p {
     font-size: var(--font-size-md);
     color: var(--gray-600);
+    margin-bottom: var(--space-md);
   }
 
   .statistic {
     font-style: italic;
     font-size: var(--font-size-sm);
-    margin-top: auto;
   }
 
-  a {
-    display: block;
-    margin-top: auto;
-    text-decoration: none;
-    color: var(--gray-700);
-    font-size: var(--font-size-md);
-    background: url("../icons/chevronRight.svg") no-repeat right center;
-    background-size: 1.25rem;
-    padding: var(--space-sm);
-    padding-right: var(--space-ml);
+  .instruction {
+    font-style: italic;
+    font-size: var(--font-size-sm);
+    line-height: 1.4;
+    margin-top: var(--space-md);
+    color: var(--gray-600);
+    width: 100%;
+    max-width: 20rem;
+  }
 
-    &:hover {
-      background-color: var(--color-hover);
-    }
+  *:last-child {
+    margin-top: auto;
+    margin-bottom: 0;
+  }
+
+  &.card-locked {
+    background-image: url("../icons/lock-badge.svg");
+  }
+
+  &.card-list {
+    background-image: url("../icons/list-badge.svg");
   }
 
   &.card-persons {
-    border: none;
+    border: 1px solid var(--base-white);
     height: 10rem;
     background-image: url("../icons/politician.svg");
   }
@@ -155,11 +132,49 @@
     justify-content: center;
     background-color: transparent;
     background-image: none;
-    padding-top: var(--space-lg);
+    padding: 0;
 
     a {
-      margin-top: 0;
+      margin: 0;
     }
+  }
+}
+
+a.card {
+  cursor: pointer;
+  color: var(--text-color-body);
+  border-color: var(--bg-gray-darkest);
+  background-color: var(--button-color-secondary);
+  position: relative;
+
+  &::after {
+    content: "";
+    position: absolute;
+    display: inline-block;
+    right: var(--space-lg);
+    bottom: var(--space-lg);
+    width: 1.25rem;
+    height: 1.25rem;
+    background: url("../icons/chevronRight.svg") no-repeat;
+    background-size: 1.25rem;
+  }
+
+  &:hover {
+    background-color: var(--button-color-secondary-hover);
+    border: 1px solid var(--bg-gray-darkest);
+  }
+
+  &:focus,
+  &:focus-visible {
+    outline: none;
+    border-color: var(--border-color-focus);
+    background-color: var(--button-color-secondary-focus);
+    box-shadow: 0 0 0 4px var(--shadow-color-focus);
+  }
+
+  &:active {
+    border-color: var(--border-color-default);
+    background-color: var(--button-color-secondary-active);
   }
 }
 

@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{extract::OriginalUri, http::StatusCode, response::IntoResponse};
 
-use crate::{AppError, Context, HtmlTemplate, filters, t};
+use crate::{AppError, Context, ElectionConfig, HtmlTemplate, filters, t};
 
 #[derive(Template)]
 #[template(path = "index.html")]
@@ -41,7 +41,7 @@ mod tests {
     async fn index_renders_html() {
         let body = index(Context::default()).await.into_response();
         let body = response_body_string(body).await;
-        assert!(body.contains("Hello World!"));
+        assert!(body.contains(ElectionConfig::default().title()));
     }
 
     #[tokio::test]

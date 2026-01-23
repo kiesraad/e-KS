@@ -8,6 +8,9 @@ action:
   delete: Delete
   save: Save
   signout: Sign out
+  manage_data: Manage data
+  manage_candidate_lists: Manage candidate lists
+  review_and_submit: Review and submit
 candidate_list:
   actions:
     add: Add list
@@ -51,6 +54,7 @@ candidate_list:
   empty: No candidate lists found.
   title: Candidate lists
   title_single: Candidate list
+  description: Add candidates here and create candidate list(s).
   candidate_count: '<strong>{}</strong> / {} candidates'
   view:
     empty: This candidate list has no persons yet.
@@ -135,6 +139,11 @@ validation:
 common:
   title: Kiesraad - Kandidaat stellen
   general_information: General Information
+  general_information_description: Provide general information about your political group and contact details.
   electoral_districts: Electoral districts
   submit: Submit
+  submit_description: Review all information and submit the candidate list(s) to the Kiesraad.
   version: Version
+  step1: Step 1
+  step2: Step 2
+  step3: Step 3

@@ -11,23 +11,20 @@
 
 {% block content %}
 <section>
-  <div class="cards">
+  <div class="cards cards-candidate-lists">
     {# manage persons card #}
-    <div class="card card-persons card-clickable">
+    <a href="{{ Person::list_path() }}" class="card card-persons">
       <h3>{{ t!("person.all")|trans }}</h3>
       <p class="statistic">
         {{ t!("person.total")|trans|fill(total_persons.to_string()) }}
       </p>
-      <a href="{{ Person::list_path() }}">
-        <span>{{ t!("person.actions.manage")|trans }}</span>
-      </a>
-    </div>
+    </a>
 
     <div class="cards-right">
       {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
         {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
           {% for candidate_list in candidate_lists %}
-          <div class="card card-list card-clickable">
+          <a href="{{ candidate_list.list.view_path() }}" class="card card-list">
             <h3>{{ candidate_list.list|list_name }}</h3>
             <h5>{{ t!("common.electoral_districts")|trans }}:</h5>
             {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() %}
@@ -42,10 +39,7 @@
             <p class="statistic">
               {{ t!("candidate_list.candidate_count")|trans|fill(candidate_list.person_count.to_string())|fill(max_candidates.to_string())|safe }}
             </p>
-            <a href="{{ candidate_list.list.view_path() }}">
-              <span>{{ t!("candidate_list.actions.manage")|trans }}</span>
-            </a>
-          </div>
+          </a>
           {% endfor %}
         {% endif %}
       {% endif %}
