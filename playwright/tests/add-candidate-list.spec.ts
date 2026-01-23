@@ -2,6 +2,7 @@ import { test, expect } from '@playwright/test';
 import { CandidateListsOverviewPage } from './pages/candidateListsOverviewPage';
 import { SelectElectoralDistrictsPage } from './pages/selectElectoralDistrictsPage';
 import { ManageCandidateListPage } from './pages/manageCandidateListPage';
+import { Candidate } from './models/candidate';
 
 test('add candidate list', async ({ page }) => {
   var candidateListsOverviewPage = new CandidateListsOverviewPage(page);
@@ -14,4 +15,15 @@ test('add candidate list', async ({ page }) => {
   var manageCandidateListPage = new ManageCandidateListPage(page);
   await manageCandidateListPage.addExistingCandidates(['Abdul Rahman, N.A. (Nadia)', 'Ali, F.A. (Fatima)', 'Alvarez, M.A. (Marco)'])
 
+  var candidate: Candidate = {
+    initials: 'A',
+    lastName: 'Berg',
+    firstName: 'Anita',
+    locality: 'Utrecht'
+  }
+    var candidateTwo: Candidate = {
+    initials: 'B',
+    lastName: 'Beer',
+  }
+  await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
 });
