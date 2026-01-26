@@ -27,9 +27,9 @@
         </a>
       </th>
       <th scope="col">
-        <a href="{{ pagination.sort_link(PersonSort::Locality) }}">
-          {{ "person.fields.locality"|trans }}
-          {{ pagination.dir_icon(PersonSort::Locality) }}
+        <a href="{{ pagination.sort_link(PersonSort::PlaceOfResidence) }}">
+          {{ "person.fields.place_of_residence"|trans }}
+          {{ pagination.dir_icon(PersonSort::PlaceOfResidence) }}
         </a>
       </th>
       <th scope="col"></th>
@@ -42,7 +42,7 @@
       <td>{{ person.initials }}</td>
       <td>{{ person.first_name_display() }}</td>
       <td>{{ person.gender_key()|trans }}</td>
-      <td>{{ person.locality|display }}</td>
+      <td>{{ person.place_of_residence|display }}</td>
       <td>
         <a href="{{ person.edit_path() }}">
           <span>{{ "action.edit"|trans }}</span>
