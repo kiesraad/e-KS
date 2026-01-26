@@ -6,13 +6,13 @@
 
 {% block page_sub_title %}
   {% if full_list.list.electoral_districts.len() > 2 %}
-    <span class="subtitle">{{ t!("common.electoral_districts")|trans }}: {{ full_list.list|display_districts }}</span>
+    <span class="subtitle">{{ "common.electoral_districts"|trans }}: {{ full_list.list|display_districts }}</span>
   {% endif %}
 {% endblock %}
 
 {% block header_action %}
   <a href="{{ CandidateList::list_path() }}" class="button secondary">
-    {{ t!("candidate_list.actions.back_to_list")|trans }}
+    {{ "candidate_list.actions.back_to_list"|trans }}
   </a>
 {% endblock %}
 
@@ -20,19 +20,19 @@
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
-        <p>{{ t!("candidate_list.actions.edit_list_details")|trans }}:</p>
+        <p>{{ "candidate_list.actions.edit_list_details"|trans }}:</p>
         <a href="{{ full_list.list.update_path() }}" class="button secondary icon-edit">
-          {{ t!("candidate_list.actions.edit")|trans }}
+          {{ "candidate_list.actions.edit"|trans }}
         </a>
       </div>
       <div>
-        <p>{{ t!("candidate_list.actions.add_candidates")|trans }}:</p>
+        <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>
         <div class="buttons">
           <a href="{{ full_list.list.add_candidate_path() }}" class="button secondary icon-plus open-modal" type="button">
-            {{ t!("candidate_list.actions.add_existing")|trans }}
+            {{ "candidate_list.actions.add_existing"|trans }}
           </a>
           <a href="{{ full_list.list.new_candidate_path() }}" class="button secondary icon-plus open-modal" type="button">
-            {{ t!("candidate_list.actions.add_new")|trans }}
+            {{ "candidate_list.actions.add_new"|trans }}
           </a>
         </div>
       </div>
@@ -41,7 +41,7 @@
 
   <section>
   {% if full_list.candidates.is_empty() %}
-    <p>{{ t!("candidate_list.view.empty")|trans }}</p>
+    <p>{{ "candidate_list.view.empty"|trans }}</p>
   {% else %}
     {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
       {% include "candidate_lists/components/candidates_table.html" %}

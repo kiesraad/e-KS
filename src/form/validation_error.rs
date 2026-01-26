@@ -1,4 +1,4 @@
-use crate::{Locale, t};
+use crate::{Locale, trans};
 
 type ActualLength = usize;
 type MaxLength = usize;
@@ -25,21 +25,21 @@ impl std::fmt::Display for ValidationError {
 impl ValidationError {
     pub fn message(&self, locale: Locale) -> String {
         match self {
-            ValidationError::InvalidValue => t!("validation.invalid_value", locale),
-            ValidationError::InvalidEmail => t!("validation.invalid_email", locale),
+            ValidationError::InvalidValue => trans!("validation.invalid_value", locale),
+            ValidationError::InvalidEmail => trans!("validation.invalid_email", locale),
             ValidationError::ValueShouldNotBeEmpty => {
-                t!("validation.value_should_not_be_empty", locale)
+                trans!("validation.value_should_not_be_empty", locale)
             }
             ValidationError::ValueTooLong(actual, max) => {
-                t!("validation.value_too_long", locale, actual, max)
+                trans!("validation.value_too_long", locale, actual, max)
             }
             ValidationError::ValueTooShort(actual, min) => {
-                t!("validation.value_too_short", locale, actual, min)
+                trans!("validation.value_too_short", locale, actual, min)
             }
-            ValidationError::InvalidCsrfToken => t!("validation.invalid_csrf_token", locale),
-            ValidationError::InvalidChecksum => t!("validation.invalid_bsn", locale),
+            ValidationError::InvalidCsrfToken => trans!("validation.invalid_csrf_token", locale),
+            ValidationError::InvalidChecksum => trans!("validation.invalid_bsn", locale),
             ValidationError::StartsWithLastNamePrefix => {
-                t!("validation.starts_with_last_name_prefix", locale)
+                trans!("validation.starts_with_last_name_prefix", locale)
             }
         }
         .to_string()

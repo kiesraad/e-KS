@@ -1,0 +1,8 @@
+invalid_bsn: Ongeldig BSN.
+invalid_csrf_token: De CSRF-token is ongeldig.
+invalid_email: Ongeldig e-mailadres.
+invalid_value: De opgegeven waarde is ongeldig.
+starts_with_last_name_prefix: Zet het voorvoegsel in het juiste veld.
+value_should_not_be_empty: Dit veld mag niet leeg zijn.
+value_too_long: "De waarde is te lang ({} tekens), maximaal {} tekens toegestaan."
+value_too_short: "De waarde is te kort ({} tekens), minimaal {} tekens vereist."

@@ -1,6 +1,6 @@
 {% extends "layout.html" %}
 
-{% block page_title %}{{ t!("person.title")|trans }}{% endblock %}
+{% block page_title %}{{ "person.title"|trans }}{% endblock %}
 {% block persons_nav_class %}active{% endblock %}
 
 {% block content %}
@@ -10,7 +10,7 @@
     <div>
       <div class="buttons">
         <a href="{{ Person::new_path() }}" class="button secondary icon-plus" type="button">
-          {{ t!("person.actions.add")|trans }}
+          {{ "person.actions.add"|trans }}
         </a>
       </div>
     </div>
@@ -18,7 +18,7 @@
 </nav>
 {% if person_pagination.persons.is_empty() %}
 <section>
-  <p>{{ t!("person.list.empty")|trans }}</p>
+  <p>{{ "person.list.empty"|trans }}</p>
 </section>
 {% else %}
 <section>

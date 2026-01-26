@@ -1,11 +1,11 @@
 <table class="sortable" id="candidate-table" data-sortable-update-url="{{ full_list.list.reorder_path() }}" data-max="{{ max_candidates }}">
   <thead>
     <tr>
-      <th scope="col" colspan="2">{{ t!("candidate_list.fields.position")|trans }}</th>
-      <th scope="col">{{ t!("person.fields.name")|trans }}</th>
-      <th scope="col">{{ t!("person.fields.locality")|trans }}</th>
+      <th scope="col" colspan="2">{{ "candidate_list.fields.position"|trans }}</th>
+      <th scope="col">{{ "person.fields.name"|trans }}</th>
+      <th scope="col">{{ "person.fields.locality"|trans }}</th>
       <th scope="col">
-        {{ t!("candidate_list.candidate_count")|trans|fill(full_list.candidates.len().to_string())|fill(max_candidates.to_string())|safe }}
+        {{ "candidate_list.candidate_count"|trans(&full_list.candidates.len().to_string(), &max_candidates.to_string())|safe }}
       </th>
     </tr>
   </thead>
@@ -30,7 +30,7 @@
       </td>
       <td>
         <a href="{{ candidate.edit_position_path() }}">
-          <span>{{ t!("action.edit")|trans }}</span>
+          <span>{{ "action.edit"|trans }}</span>
         </a>
       </td>
     </tr>
@@ -39,6 +39,6 @@
 </table>
 {% if full_list.candidates.len() > **max_candidates %}
 <p class="note-warning mt-md">
-  {{ t!("candidate_list.view.max_candidates_exceeded")|trans|fill(max_candidates.to_string()) }}
+  {{ "candidate_list.view.max_candidates_exceeded"|trans(&max_candidates.to_string()) }}
 </p>
 {% endif %}

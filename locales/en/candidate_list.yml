@@ -1,0 +1,35 @@
+actions:
+  add: Add list
+  add_candidates: Add candidates to the list
+  add_existing: Existing
+  add_new: New
+  back_to_list: Back
+  delete_list: Delete candidate list
+  edit: List details
+  edit_list_details: Edit the list details here
+  manage: Manage list
+  select_all_districts: Select all electoral districts
+add_candidate: Add candidate
+candidate_count: "<strong>{}</strong> / {} candidates"
+description: Add candidates here and create candidate list(s).
+districts:
+  all: All
+edit_position: Position on the list
+fields:
+  electoral_districts: Electoral districts
+  position: Position
+form:
+  create:
+    title: Create candidate list
+  delete_warning_text: Are you sure you want to delete this candidate list?
+  update:
+    title: Edit candidate list
+not_found: "Candidate {} not found."
+remove_candidate: Remove candidate
+search_existing_person: Search existing person
+search_placeholder: "Search by name, initials or localitty"
+title: Candidate lists
+title_single: Candidate list
+view:
+  empty: This candidate list has no persons yet.
+  max_candidates_exceeded: "The maximum number of candidates ({}) has been exceeded."

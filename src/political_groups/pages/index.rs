@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::response::IntoResponse;
 
-use crate::{Context, HtmlTemplate, filters, political_groups::pages::PoliticalGroupPath, t};
+use crate::{Context, HtmlTemplate, filters, political_groups::pages::PoliticalGroupPath};
 
 #[derive(Template)]
 #[template(path = "political_groups/index.html")]

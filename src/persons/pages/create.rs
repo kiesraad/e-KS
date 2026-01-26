@@ -6,7 +6,6 @@ use crate::{
     AppError, Context, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::PersonsNewPath},
-    t,
 };
 
 #[derive(Template)]

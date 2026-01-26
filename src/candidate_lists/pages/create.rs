@@ -11,7 +11,6 @@ use crate::{
     form::{FormData, Validate},
     persons,
     persons::Person,
-    t,
 };
 
 #[derive(Template)]

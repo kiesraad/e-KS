@@ -1,21 +1,21 @@
 <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
 <div class="form-row">
   <p class="form-field form-field-sm">
-    <label for="initials" class="required">{{ t!("person.fields.initials")|trans }}</label>
+    <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
     <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" required />
     {% for error in form|error("initials") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field form-field-sm">
-    <label for="last_name_prefix">{{ t!("person.fields.last_name_prefix")|trans }}</label>
+    <label for="last_name_prefix">{{ "person.fields.last_name_prefix"|trans }}</label>
     <input type="text" name="last_name_prefix" id="last_name_prefix" value="{{ form.data.last_name_prefix }}" />
     {% for error in form|error("last_name_prefix") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field">
-    <label for="last_name" class="required">{{ t!("person.fields.last_name")|trans }}</label>
+    <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
     <input type="text" name="last_name" id="last_name" value="{{ form.data.last_name }}" required />
     {% for error in form|error("last_name") %}
     <span class="error">{{ error }}</span>
@@ -24,33 +24,31 @@
 </div>
 <div class="form-row">
   <p class="form-field">
-    <label for="first_name">{{ t!("person.fields.first_name")|trans }}</label>
+    <label for="first_name">{{ "person.fields.first_name"|trans }}</label>
     <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
     {% for error in form|error("first_name") %}
     <span class="error">{{ error }}</span>
     {% else %}
-    <span class="hint">{{ t!("person.hints.first_name")|trans }}</span>
+    <span class="hint">{{ "person.hints.first_name"|trans }}</span>
     {% endfor %}
   </p>
   <p class="form-field">
-    <label for="gender">{{ t!("person.fields.gender")|trans }}</label>
+    <label for="gender">{{ "person.fields.gender"|trans }}</label>
     <select name="gender" id="gender">
       <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
-      <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ t!("gender.male")|trans }}</option>
-      <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ t!("gender.female")|trans }}
-      </option>
-      <option value="x" {% if form.data.gender=="x" %}selected{% endif %}>{{ t!("gender.x")|trans }}</option>
+      <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "gender.male"|trans }}</option>
+      <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ "gender.female"|trans }}</option>
     </select>
     {% for error in form|error("gender") %}
     <span class="error">{{ error }}</span>
     {% else %}
-    <span class="hint">{{ t!("person.hints.gender")|trans }}</span>
+    <span class="hint">{{ "person.hints.gender"|trans }}</span>
     {% endfor %}
   </p>
 </div>
 <div class="form-row">
   <p class="form-field form-field-sm">
-    <label for="date_of_birth">{{ t!("person.fields.date_of_birth")|trans }}</label>
+    <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
     <input type="text" name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
       placeholder="dd-mm-jjjj" inputmode="numeric" />
     {% for error in form|error("date_of_birth") %}
@@ -58,7 +56,7 @@
     {% endfor %}
   </p>
   <div class="form-field">
-    <label for="bsn">{{ t!("person.fields.bsn")|trans }}</label>
+    <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <div class="obfuscate">
       <input type="text" name="bsn" id="bsn" value="{{ form.data.bsn }}" />
     </div>
@@ -69,14 +67,14 @@
 </div>
 <div class="form-row">
   <p class="form-field">
-    <label for="place_of_residence">{{ t!("person.fields.place_of_residence")|trans }}</label>
+    <label for="place_of_residence">{{ "person.fields.place_of_residence"|trans }}</label>
     <input type="text" name="place_of_residence" id="place_of_residence" value="{{ form.data.place_of_residence }}" />
     {% for error in form|error("place_of_residence") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field">
-    <label for="country_of_residence">{{ t!("person.fields.country_of_residence")|trans }}</label>
+    <label for="country_of_residence">{{ "person.fields.country_of_residence"|trans }}</label>
     <input type="text" name="country_of_residence" id="country_of_residence" value="{{ form.data.country_of_residence }}" />
     {% for error in form|error("country_of_residence") %}
     <span class="error">{{ error }}</span>

@@ -1,0 +1,35 @@
+actions:
+  add: Lijst aanmaken
+  add_candidates: Voeg kandidaten toe aan de lijst
+  add_existing: Bestaande
+  add_new: Nieuwe
+  back_to_list: Terug
+  delete_list: Kandidatenlijst verwijderen
+  edit: Lijstgegevens
+  edit_list_details: Pas hier de lijstgegevens aan
+  manage: Manage list
+  select_all_districts: Selecteer alle kieskringen
+add_candidate: Kandidaat toevoegen
+candidate_count: "<strong>{}</strong> / {} kandidaten"
+description: Voeg hier kandidaten toe en maak kandidatenlijst(en) aan.
+districts:
+  all: Alle
+edit_position: Volgorde op de lijst
+fields:
+  electoral_districts: Kiesdistricten
+  position: Positie
+form:
+  create:
+    title: Kandidatenlijst aanmaken
+  delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?
+  update:
+    title: Kandidatenlijst aanpassen
+not_found: "Kandidatenlijst {} niet gevonden."
+remove_candidate: Uit deze lijst verwijderen
+search_existing_person: Zoek bestaande persoon
+search_placeholder: "Zoek op naam, voorletters of woonplaats"
+title: Kandidatenlijsten
+title_single: Kandidatenlijst
+view:
+  empty: Deze kandidatenlijst heeft nog geen kandidaten.
+  max_candidates_exceeded: "De lijst mag maximaal uit {} kandidaten bestaan."

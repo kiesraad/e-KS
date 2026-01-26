@@ -8,7 +8,6 @@ use crate::{
     filters,
     form::{FormData, Validate},
     persons::{self, PersonForm},
-    t,
 };
 
 #[derive(Template)]

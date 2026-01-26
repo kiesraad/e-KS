@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, CsrfTokens,
     candidate_lists::{self, Candidate},
-    t,
+    trans,
 };
 
 use super::CandidateListAndPersonPathParams;
@@ -32,7 +32,7 @@ where
             .await
             .map_err(|err| match err {
                 sqlx::Error::RowNotFound => AppError::NotFound(
-                    t!("person.not_found_in_candidate_list", context.locale).to_string(),
+                    trans!("person.not_found_in_candidate_list", context.locale).to_string(),
                 ),
                 _ => err.into(),
             })?;
@@ -58,7 +58,7 @@ mod tests {
         AppState, Locale,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
-        render_error_pages, t,
+        render_error_pages,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -136,7 +136,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
-        let expected = t!("person.not_found_in_candidate_list", Locale::En).to_string();
+        let expected = trans!("person.not_found_in_candidate_list", Locale::En).to_string();
         assert!(body.contains(&expected));
     }
 }

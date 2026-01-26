@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{extract::OriginalUri, http::StatusCode, response::IntoResponse};
 
-use crate::{AppError, Context, ElectionConfig, HtmlTemplate, filters, t};
+use crate::{AppError, Context, ElectionConfig, HtmlTemplate, filters};
 
 #[derive(Template)]
 #[template(path = "index.html")]

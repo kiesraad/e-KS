@@ -1,9 +1,9 @@
 {% extends "layout.html" %}
 
-{% block page_title %}{{ t!("not_found.title")|trans }}{% endblock %}
+{% block page_title %}{{ "not_found.title"|trans }}{% endblock %}
 
 {% block content %}
   <h2><pre>{{ path }}</pre></h2>
-  <p>{{ t!("not_found.message")|trans }}</p>
-  <p><a href="/">{{ t!("not_found.back_to_overview")|trans }}</a></p>
+  <p>{{ "not_found.message"|trans }}</p>
+  <p><a href="/">{{ "not_found.back_to_overview"|trans }}</a></p>
 {% endblock %}

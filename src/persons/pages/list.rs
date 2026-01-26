@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
-    t,
 };
 
 #[derive(Template)]

@@ -5,7 +5,7 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, CsrfTokens,
     persons::{self, Person, PersonId},
-    t,
+    trans,
 };
 
 #[derive(Deserialize)]
@@ -35,7 +35,7 @@ where
 
         let person = persons::get_person(&mut conn, person_id)
             .await?
-            .ok_or(AppError::NotFound(t!(
+            .ok_or(AppError::NotFound(trans!(
                 "person.not_found",
                 context.locale,
                 person_id
@@ -59,7 +59,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale, persons, render_error_pages, t,
+        AppState, Locale, persons, render_error_pages,
         test_utils::{response_body_string, sample_person},
     };
 
@@ -120,7 +120,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
 
-        let expected = t!("person.not_found", Locale::En, person_id);
+        let expected = trans!("person.not_found", Locale::En, person_id);
         assert!(body.contains(&expected));
     }
 }

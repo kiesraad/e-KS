@@ -10,7 +10,6 @@ use crate::{
     },
     filters,
     form::{FormData, Validate},
-    t,
 };
 
 #[derive(Template)]

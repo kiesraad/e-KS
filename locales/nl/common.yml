@@ -1,0 +1,9 @@
+electoral_districts: Kieskringen
+general_information: Lijstgegevens
+general_information_description: Vul hier de basisgegevens in en de gegevens van de lijstinleveraar.
+home: Start
+step: "Stap {}"
+submit: Inleveren
+submit_description: Controleer alle gegevens en dien de kandidatenlijst(en) in bij de Kiesraad.
+title: Kiesraad - Kandidaat stellen
+version: Versie

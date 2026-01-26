@@ -2,8 +2,8 @@
   <thead>
     <tr>
       <th scope="col"></th>
-      <th scope="col">{{ t!("person.fields.name")|trans }}</th>
-      <th scope="col">{{ t!("person.fields.initials")|trans }}</th>
+      <th scope="col">{{ "person.fields.name"|trans }}</th>
+      <th scope="col">{{ "person.fields.initials"|trans }}</th>
       <th scope="col"></th>
     </tr>
   </thead>
@@ -25,7 +25,7 @@
       </td>
       <td>
         <button type="submit" name="person_id" value="{{ person.id }}">
-          <span>{{ t!("action.add")|trans }}</span>
+          <span>{{ "action.add"|trans }}</span>
         </button>
       </td>
     </tr>

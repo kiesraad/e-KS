@@ -1,0 +1,39 @@
+actions:
+  add: Persoon toevoegen
+  delete: Persoon verwijderen
+all: Alle personen
+authorized_person: Gemachtigde van kandidaat
+correspondence_address: Correspondentieadres
+fields:
+  bsn: Burgerservicenummer (BSN)
+  country_of_residence: Land
+  date_of_birth: Geboortedatum
+  first_name: Roepnaam
+  gender: Geslacht
+  house_number: Huisnummer
+  house_number_addition: Huisnummer toevoeging
+  initials: Voorletters
+  last_name: Achternaam
+  last_name_prefix: Voorvoegsel
+  locality: Woonplaats
+  name: Naam
+  place_of_residence: Woonplaats
+  postal_code: Postcode
+  street_name: Straatnaam
+form:
+  create:
+    title: Persoon toevoegen
+  delete_warning_text: Weet je zeker dat je deze persoon wilt verwijderen?
+hints:
+  first_name: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
+  gender: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
+list:
+  empty: Geen personen gevonden.
+not_found: "Persoon {} niet gevonden."
+not_found_in_candidate_list: Persoon niet gevonden in kandidatenlijst.
+personal_details: Persoonlijke gegevens
+personal_information: Persoonlijke gegevens
+title: Personen
+total: "{} personen in totaal"
+view:
+  empty: Geen personen gevonden.

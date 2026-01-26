@@ -8,7 +8,6 @@ use crate::{
     candidate_lists::{self, CandidateList, FullCandidateList, pages::AddCandidatePath},
     filters,
     persons::{self, Person, PersonId},
-    t,
 };
 
 #[derive(Template)]

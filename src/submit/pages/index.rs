@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::response::IntoResponse;
 
-use crate::{Context, HtmlTemplate, filters, submit::pages::SubmitPath, t};
+use crate::{Context, HtmlTemplate, filters, submit::pages::SubmitPath};
 
 #[derive(Template)]
 #[template(path = "submit/index.html")]

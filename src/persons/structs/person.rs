@@ -2,7 +2,7 @@ use chrono::{DateTime, NaiveDate};
 use serde::Serialize;
 use sqlx::types::chrono::Utc;
 
-use crate::{id_newtype, persons::Gender, t};
+use crate::{id_newtype, persons::Gender};
 
 id_newtype!(pub struct PersonId);
 
@@ -67,13 +67,13 @@ impl Person {
         }
     }
 
-    pub fn gender_key(&self) -> &[&'static str] {
+    pub fn gender_key(&self) -> &'static str {
         self.gender
             .map(|g| match g {
-                Gender::Male => t!("gender.male"),
-                Gender::Female => t!("gender.female"),
+                Gender::Male => "gender.male",
+                Gender::Female => "gender.female",
             })
-            .unwrap_or(&["", ""])
+            .unwrap_or("")
     }
 }
 
@@ -153,12 +153,12 @@ mod tests {
     #[test]
     fn gender_key_returns_translations_or_empty_keys() {
         let mut person = base_person();
-        assert_eq!(person.gender_key(), &["", ""]);
+        assert_eq!(person.gender_key(), "");
 
         person.gender = Some(Gender::Male);
-        assert_eq!(person.gender_key(), t!("gender.male"));
+        assert_eq!(person.gender_key(), "gender.male");
 
         person.gender = Some(Gender::Female);
-        assert_eq!(person.gender_key(), t!("gender.female"));
+        assert_eq!(person.gender_key(), "gender.female");
     }
 }

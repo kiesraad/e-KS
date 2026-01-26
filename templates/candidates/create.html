@@ -5,7 +5,7 @@
 {% endblock %}
 {% block overlay_end %}</form>{% endblock %}
 
-{% block overlay_title %}{{ t!("person.actions.add")|trans }}{% endblock %}
+{% block overlay_title %}{{ "person.actions.add"|trans }}{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -13,7 +13,7 @@
     <div class="form">
       <fieldset>
         <legend>
-          <h3>{{ t!("person.personal_information")|trans }}</h3>
+          <h3>{{ "person.personal_information"|trans }}</h3>
         </legend>
         {% include "persons/components/form.html" %}
       </fieldset>

@@ -6,7 +6,6 @@ use crate::{
     candidate_lists::{self, CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters, persons,
     persons::Person,
-    t,
 };
 
 #[derive(Template)]
