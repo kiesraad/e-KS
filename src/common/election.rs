@@ -96,8 +96,9 @@ impl ElectoralDistrict {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Default, Debug, Clone, Copy)]
 pub enum ElectionConfig {
+    #[default]
     EK2027,
 }
 
@@ -119,11 +120,28 @@ impl ElectionConfig {
             Self::EK2027 => ElectoralDistrict::ek2027(),
         }
     }
+
+    pub fn available_districts(
+        &self,
+        used_districts: Vec<ElectoralDistrict>,
+    ) -> Vec<ElectoralDistrict> {
+        self.electoral_districts()
+            .iter()
+            .filter(|d| !used_districts.contains(d))
+            .cloned()
+            .collect()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn election_titles_are_correct() {
+        assert!(ElectionConfig::EK2027.title().len() > 20);
+        assert!(ElectionConfig::EK2027.short_title().len() > 10);
+    }
 
     #[test]
     fn electoral_districts_include_expected_code() {

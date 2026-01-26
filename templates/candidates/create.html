@@ -1,35 +1,22 @@
-{% extends "candidate_lists/view.html" %}
+{% extends "candidates/components/overlay.html" %}
 
-{% block body_class %}overlay-open{% endblock %}
-
-{% block overlay %}
-<div class="overlay-backdrop"></div>
+{% block overlay_start %}
 <form method="post" action="{{ full_list.list.new_candidate_path() }}" class="overlay">
-  <header>
-    <h2>
-      {{ t!("person.actions.add")|trans }}
-    </h2>
-    <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
-      <span>
-        {{ t!("action.close")|trans }}
-      </span>
-    </a>
-  </header>
+{% endblock %}
+{% block overlay_end %}</form>{% endblock %}
+
+{% block overlay_title %}{{ t!("person.actions.add")|trans }}{% endblock %}
+
+{% block overlay_content %}
   <div class="overlay-content steps">
-    {% include "candidates/create_steps.html" %}
+    {% include "candidates/components/create_steps.html" %}
     <div class="form">
       <fieldset>
         <legend>
           <h3>{{ t!("person.personal_information")|trans }}</h3>
         </legend>
-        {% include "persons/form.html" %}
+        {% include "persons/components/form.html" %}
       </fieldset>
     </div>
   </div>
-  <footer>
-    <button type="submit" class="button">
-      {{ t!("action.save")|trans }}
-    </button>
-  </footer>
-</form>
 {% endblock %}

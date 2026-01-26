@@ -6,7 +6,7 @@ tools:
     version: "2.3.10"
     base_url: "https://github.com/biomejs/biome/releases/download/@biomejs/biome@"
   - name: bag-service
-    version: "0.3.1"
+    version: "0.3.2"
     base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
 commands:
   docker_compose_rm:

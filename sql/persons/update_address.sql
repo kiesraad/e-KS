@@ -1,0 +1,27 @@
+UPDATE persons
+SET
+    locality = $1,
+    postal_code = $2,
+    house_number = $3,
+    house_number_addition = $4,
+    street_name = $5,
+    updated_at = NOW()
+WHERE id = $6
+RETURNING
+    id,
+    gender as "gender?: Gender",
+    last_name,
+    last_name_prefix,
+    first_name,
+    initials,
+    date_of_birth,
+    bsn,
+    place_of_residence,
+    country_of_residence,
+    locality,
+    postal_code,
+    house_number,
+    house_number_addition,
+    street_name,
+    created_at,
+    updated_at

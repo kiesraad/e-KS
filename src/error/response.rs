@@ -124,6 +124,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
+            AppError::MultipartError(e) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {e}"),
+            },
             AppError::FormRejection(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
@@ -137,6 +141,10 @@ impl ErrorResponse {
                 message: format!("Validation error: {errors:?}"),
             },
             AppError::JsonRejection(e) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {e}"),
+            },
+            AppError::QueryRejection(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
@@ -156,7 +164,7 @@ impl ErrorResponse {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{form::ValidationError, test_utils::response_body_string};
+    use crate::{AppState, form::ValidationError, test_utils::response_body_string};
     use axum::{
         Router,
         body::Body,
@@ -164,16 +172,18 @@ mod tests {
         middleware,
         routing::get,
     };
+    use sqlx::PgPool;
     use tower::ServiceExt;
 
-    #[tokio::test]
-    async fn not_found_renders_template_with_message() {
+    #[sqlx::test]
+    async fn not_found_renders_template_with_message(pool: PgPool) {
+        let state = AppState::new_for_tests(pool);
         let app = Router::new()
             .route(
                 "/",
                 get(|| async { AppError::NotFound("missing".to_string()) }),
             )
-            .layer(middleware::from_fn(render_error_pages));
+            .layer(middleware::from_fn_with_state(state, render_error_pages));
 
         let response = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
@@ -186,8 +196,9 @@ mod tests {
         assert!(body.contains("missing"));
     }
 
-    #[tokio::test]
-    async fn validation_error_maps_to_bad_request() {
+    #[sqlx::test]
+    async fn validation_error_maps_to_bad_request(pool: PgPool) {
+        let state = AppState::new_for_tests(pool);
         let app = Router::new()
             .route(
                 "/",
@@ -196,7 +207,7 @@ mod tests {
                     AppError::ValidationError(errors)
                 }),
             )
-            .layer(middleware::from_fn(render_error_pages));
+            .layer(middleware::from_fn_with_state(state, render_error_pages));
         let response = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await
@@ -207,14 +218,15 @@ mod tests {
         assert!(body.contains("Validation error"));
     }
 
-    #[tokio::test]
-    async fn database_error_maps_to_internal_server_error() {
+    #[sqlx::test]
+    async fn database_error_maps_to_internal_server_error(pool: PgPool) {
+        let state = AppState::new_for_tests(pool);
         let app = Router::new()
             .route(
                 "/",
                 get(|| async { AppError::DatabaseError(sqlx::Error::RowNotFound) }),
             )
-            .layer(middleware::from_fn(render_error_pages));
+            .layer(middleware::from_fn_with_state(state, render_error_pages));
         let response = app
             .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
             .await

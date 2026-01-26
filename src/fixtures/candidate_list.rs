@@ -1,16 +1,16 @@
 use chrono::Utc;
 use sqlx::PgConnection;
+use uuid::Uuid;
 
 use crate::{
-    AppError, Config,
+    AppError, ElectionConfig,
     candidate_lists::{self, CandidateList},
-    pagination::SortDirection,
-    persons::{self, Person, PersonSort},
+    persons::{self, Person, PersonId},
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
 
-fn collect_person_ids(persons: Vec<Person>) -> Vec<uuid::Uuid> {
+fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
     persons
         .into_iter()
         .map(|person| person.id)
@@ -19,34 +19,25 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<uuid::Uuid> {
 }
 
 pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
-    let config = Config::from_env()?;
-    let total_persons = persons::repository::count_persons(conn).await?;
-    let electoral_districts = config.get_districts().to_vec();
-
-    let persons = persons::repository::list_persons(
-        conn,
-        total_persons,
-        0,
-        &PersonSort::LastName,
-        &SortDirection::Asc,
-    )
-    .await?;
-
+    let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
+    let persons = persons::list_all_persons(conn).await?;
     let person_ids = collect_person_ids(persons);
+    let uuid = Uuid::new_v5(
+        &Uuid::NAMESPACE_OID,
+        b"the_one_and_only_fixture_candidate_list",
+    );
 
     let candidate_list = CandidateList {
-        id: uuid::Uuid::new_v4(),
+        id: uuid.into(),
         electoral_districts,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };
 
-    let candidate_list =
-        candidate_lists::repository::create_candidate_list(conn, &candidate_list).await?;
+    let candidate_list = candidate_lists::create_candidate_list(conn, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    candidate_lists::repository::update_candidate_list_order(conn, &candidate_list.id, &person_ids)
-        .await?;
+    candidate_lists::update_candidate_list_order(conn, candidate_list.id, &person_ids).await?;
 
     Ok(())
 }
@@ -65,7 +56,7 @@ mod tests {
         let mut conn = pool.acquire().await.unwrap();
         load(&mut conn).await.unwrap();
 
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn)
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn)
             .await
             .unwrap();
 

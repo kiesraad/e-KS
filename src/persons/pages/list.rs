@@ -2,42 +2,24 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate, filters,
-    pagination::{Pagination, PaginationInfo},
-    persons::{self, Person, PersonSort, pages::PersonsPath},
+    AppError, Context, HtmlTemplate, filters,
+    persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
     t,
 };
 
 #[derive(Template)]
 #[template(path = "persons/list.html")]
 struct PersonListTemplate {
-    persons: Vec<Person>,
-    pagination: PaginationInfo<PersonSort>,
+    person_pagination: PersonPagination,
 }
 
 pub async fn list_persons(
     _: PersonsPath,
     context: Context,
-    pagination: Pagination<PersonSort>,
-    DbConnection(mut conn): DbConnection,
+    person_pagination: PersonPagination,
 ) -> Result<impl IntoResponse, AppError> {
-    let total_items = persons::repository::count_persons(&mut conn).await?.max(0) as u64;
-    let pagination = pagination.set_total(total_items);
-
-    let persons = persons::repository::list_persons(
-        &mut conn,
-        pagination.limit(),
-        pagination.offset(),
-        pagination.sort(),
-        pagination.direction(),
-    )
-    .await?;
-
     Ok(HtmlTemplate(
-        PersonListTemplate {
-            persons,
-            pagination,
-        },
+        PersonListTemplate { person_pagination },
         context,
     ))
 }
@@ -47,28 +29,29 @@ mod tests {
     use super::*;
     use axum::{http::StatusCode, response::IntoResponse};
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        Context, DbConnection, Locale,
+        Context,
         pagination::Pagination,
-        persons,
+        persons::{self, PersonId},
         test_utils::{response_body_string, sample_person},
     };
 
     #[sqlx::test]
     async fn list_persons_shows_created_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        persons::repository::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &person).await?;
 
         let response = list_persons(
             PersonsPath {},
-            Context::new(Locale::En),
-            Pagination::default(),
-            DbConnection(pool.acquire().await?),
+            Context::new_test(),
+            PersonPagination {
+                persons: vec![person],
+                pagination: Pagination::default().set_total(1),
+            },
         )
         .await
         .unwrap()

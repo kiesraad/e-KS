@@ -8,6 +8,9 @@ action:
   delete: Verwijderen
   save: Opslaan
   signout: Afmelden
+  manage_data: Beheer gegevens
+  manage_candidate_lists: Beheer kandidatenlijsten
+  review_and_submit: Controleren en inleveren
 candidate_list:
   actions:
     add: Lijst aanmaken
@@ -22,8 +25,6 @@ candidate_list:
     select_all_districts: Selecteer alle kieskringen
     delete_list: Kandidatenlijst verwijderen
   add_candidate: Kandidaat toevoegen
-  no_candidates: Geen kandidaten op deze lijst
-  total_candidates: 'Kandidaten op deze lijst: {}'
   remove_candidate: Uit deze lijst verwijderen
   edit_position: Volgorde op de lijst
   search_existing_person: Zoek bestaande persoon
@@ -53,6 +54,7 @@ candidate_list:
   empty: Geen kandidatenlijsten gevonden.
   title: Kandidatenlijsten
   title_single: Kandidatenlijst
+  description: Voeg hier kandidaten toe en maak kandidatenlijst(en) aan.
   candidate_count: '<strong>{}</strong> / {} kandidaten'
   view:
     empty: Deze kandidatenlijst heeft nog geen kandidaten.
@@ -79,10 +81,16 @@ person:
   created_at: Aangemaakt op
   personal_information: Persoonlijke gegevens
   address: Adres
-  authorized_person: Kandidaatgemachtigde
+  correspondence_address: Correspondentieadres
+  authorized_person: Gemachtigde van kandidaat
   personal_details: Persoonlijke gegevens
+  hints:
+    first_name: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
+    gender: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
   fields:
     bsn: Burgerservicenummer (BSN)
+    place_of_residence: Woonplaats
+    country_of_residence: Land
     country: Land
     date_of_birth: Geboortedatum
     elsewhere: Een ander land
@@ -120,6 +128,7 @@ person:
     empty: Geen personen gevonden.
     title: Persoon
 validation:
+  starts_with_last_name_prefix: Zet het voorvoegsel in het juiste veld.
   invalid_bsn: Ongeldig BSN.
   invalid_csrf_token: De CSRF-token is ongeldig.
   invalid_email: Ongeldig e-mailadres.
@@ -129,7 +138,13 @@ validation:
   value_too_short: De waarde is te kort ({} tekens), minimaal {} tekens vereist.
 common:
   title: Kiesraad - Kandidaat stellen
-  general_information: Algemene gegevens
+  general_information: Lijstgegevens
+  general_information_description: Vul hier de basisgegevens in en de gegevens van de lijstinleveraar.
   electoral_districts: Kieskringen
   submit: Inleveren
+  submit_description: Controleer alle gegevens en dien de kandidatenlijst(en) in bij de Kiesraad.
   version: Versie
+  step1: Stap 1
+  step2: Stap 2
+  step3: Stap 3
+  home: Startpagina

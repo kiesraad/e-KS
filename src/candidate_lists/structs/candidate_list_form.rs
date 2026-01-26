@@ -1,7 +1,10 @@
 use serde::{Deserialize, Serialize};
-use uuid::Uuid;
 
-use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList, form::WithCsrfToken};
+use crate::{
+    ElectoralDistrict, TokenValue,
+    candidate_lists::{CandidateList, CandidateListId},
+    form::WithCsrfToken,
+};
 use validate::Validate as ValidateDerive;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
@@ -30,7 +33,7 @@ impl CandidateListForm {
             }
         } else {
             CandidateList {
-                id: Uuid::new_v4(),
+                id: CandidateListId::new(),
                 electoral_districts: validated.electoral_districts,
                 created_at: chrono::Utc::now(),
                 updated_at: chrono::Utc::now(),
@@ -74,7 +77,7 @@ mod tests {
             csrf_token,
         };
 
-        let list = form.validate(None, &tokens).unwrap();
+        let list = form.validate_create(&tokens).unwrap();
         assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
     }
 
@@ -86,7 +89,7 @@ mod tests {
             csrf_token: TokenValue("invalid".to_string()),
         };
 
-        let Err(data) = form.validate(None, &tokens) else {
+        let Err(data) = form.validate_create(&tokens) else {
             panic!("expected validation errors");
         };
 

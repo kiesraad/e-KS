@@ -17,4 +17,12 @@ where
     Self: Sized,
 {
     fn validate(&self, current: Option<&T>, csrf_tokens: &CsrfTokens) -> Result<T, FormData<Self>>;
+
+    fn validate_update(&self, current: &T, csrf_tokens: &CsrfTokens) -> Result<T, FormData<Self>> {
+        self.validate(Some(current), csrf_tokens)
+    }
+
+    fn validate_create(&self, csrf_tokens: &CsrfTokens) -> Result<T, FormData<Self>> {
+        self.validate(None, csrf_tokens)
+    }
 }

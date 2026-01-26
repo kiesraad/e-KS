@@ -1,6 +1,6 @@
-import { test, expect } from '@playwright/test';
+import { expect, test } from "@playwright/test";
 
-test('homepage loads', async ({ page }) => {
-  await page.goto('/');
-  await expect(page).toHaveTitle('Kiesraad - Kandidaatstelling');
+test("homepage loads", async ({ page }) => {
+  await page.goto("/");
+  await expect(page).toHaveTitle("Kiesraad - Kandidaatstelling");
 });

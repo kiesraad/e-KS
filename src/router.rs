@@ -6,12 +6,16 @@ use axum::{Router, middleware, routing::get};
 #[cfg(feature = "http-logging")]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
-use crate::{AppState, candidate_lists, pages, persons, render_error_pages};
+use crate::{
+    AppState, candidate_lists, pages, persons, political_groups, render_error_pages, submit,
+};
 
-pub fn create() -> Router<AppState> {
+pub fn create(state: AppState) -> Router<AppState> {
     let router = Router::new()
         .route("/", get(pages::index))
         .merge(persons::router())
+        .merge(political_groups::router())
+        .merge(submit::router())
         .merge(candidate_lists::router())
         .merge(candidate_lists::candidate_router());
 
@@ -54,7 +58,10 @@ pub fn create() -> Router<AppState> {
     );
 
     router
-        .layer(middleware::from_fn(render_error_pages))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            render_error_pages,
+        ))
         .fallback(get(pages::not_found))
 }
 
@@ -72,12 +79,11 @@ mod tests {
 
     #[sqlx::test]
     async fn index_route_renders_index(pool: PgPool) {
-        let app = create().with_state(AppState::new_for_tests(pool));
+        let state = AppState::new_for_tests(pool.clone());
+        let app: Router = create(state.clone()).with_state(state);
 
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .expect("response");
+        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -86,17 +92,14 @@ mod tests {
 
     #[sqlx::test]
     async fn fallback_route_renders_not_found(pool: PgPool) {
-        let app = create().with_state(AppState::new_for_tests(pool));
+        let state = AppState::new_for_tests(pool.clone());
+        let app: Router = create(state.clone()).with_state(state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/missing")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let request = Request::builder()
+            .uri("/missing")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;

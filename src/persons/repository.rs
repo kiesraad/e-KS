@@ -1,9 +1,9 @@
 use sqlx::PgConnection;
-use uuid::Uuid;
 
 use crate::{
+    candidate_lists::CandidateListId,
     pagination::SortDirection,
-    persons::{Gender, Person, PersonSort},
+    persons::{Gender, Person, PersonId, PersonSort},
 };
 
 pub async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
@@ -21,46 +21,15 @@ pub async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> 
 
 pub async fn list_persons_not_on_candidate_list(
     conn: &mut PgConnection,
-    candidate_list_id: &Uuid,
+    candidate_list_id: CandidateListId,
 ) -> Result<Vec<Person>, sqlx::Error> {
-    let persons = sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        FROM persons
-        WHERE id NOT IN (
-            SELECT person_id
-            FROM candidate_lists_persons
-            WHERE candidate_list_id = $1
-        )
-        ORDER BY last_name asc, initials asc
-        "#,
-        candidate_list_id,
+        "sql/persons/list_persons_not_on_candidate_list.sql",
+        candidate_list_id.uuid(),
     )
     .fetch_all(conn)
-    .await?;
-
-    Ok(persons)
+    .await
 }
 
 pub async fn list_persons(
@@ -70,96 +39,25 @@ pub async fn list_persons(
     sort_field: &PersonSort,
     sort_direction: &SortDirection,
 ) -> Result<Vec<Person>, sqlx::Error> {
-    let persons = sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            address_line_1,
-            address_line_2,
-            is_dutch,
-            custom_country,
-            custom_region,
-            created_at,
-            updated_at
-        FROM persons
-        ORDER BY
-            CASE WHEN $3 = 'last_name' AND $4 = 'asc' THEN last_name END ASC,
-            CASE WHEN $3 = 'last_name' AND $4 = 'desc' THEN last_name END DESC,
-            CASE WHEN $3 = 'first_name' AND $4 = 'asc' THEN first_name END ASC,
-            CASE WHEN $3 = 'first_name' AND $4 = 'desc' THEN first_name END DESC,
-            CASE WHEN $3 = 'initials' AND $4 = 'asc' THEN initials END ASC,
-            CASE WHEN $3 = 'initials' AND $4 = 'desc' THEN initials END DESC,
-            CASE WHEN $3 = 'gender' AND $4 = 'asc' THEN gender END ASC,
-            CASE WHEN $3 = 'gender' AND $4 = 'desc' THEN gender END DESC,
-            CASE WHEN $3 = 'locality' AND $4 = 'asc' THEN locality END ASC,
-            CASE WHEN $3 = 'locality' AND $4 = 'desc' THEN locality END DESC,
-            CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,
-            CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,
-            CASE WHEN $3 = 'updated_at' AND $4 = 'asc' THEN updated_at END ASC,
-            CASE WHEN $3 = 'updated_at' AND $4 = 'desc' THEN updated_at END DESC,
-            id DESC
-        LIMIT $1
-        OFFSET $2
-        "#,
+        "sql/persons/list_persons.sql",
         limit,
         offset,
         sort_field.as_ref(),
         sort_direction.as_ref(),
     )
     .fetch_all(conn)
-    .await?;
-
-    Ok(persons)
+    .await
 }
 
 pub async fn get_person(
     conn: &mut PgConnection,
-    person_id: &Uuid,
+    person_id: PersonId,
 ) -> Result<Option<Person>, sqlx::Error> {
-    let person = sqlx::query_as!(
-        Person,
-        r#"
-        SELECT
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        FROM persons
-        WHERE id = $1
-        "#,
-        person_id,
-    )
-    .fetch_optional(conn)
-    .await?;
+    let person = sqlx::query_file_as!(Person, "sql/persons/get_person_by_id.sql", person_id.uuid())
+        .fetch_optional(conn)
+        .await?;
 
     Ok(person)
 }
@@ -168,55 +66,10 @@ pub async fn create_person(
     conn: &mut PgConnection,
     new_person: &Person,
 ) -> Result<Person, sqlx::Error> {
-    sqlx::query_as!(
+    sqlx::query_file_as!(
         Person,
-        r#"
-        INSERT INTO persons (
-            id,
-            gender,
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20)
-        RETURNING
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        "#,
-        new_person.id,
+        "sql/persons/insert_person.sql",
+        new_person.id.uuid(),
         new_person.gender as Option<Gender>,
         new_person.last_name,
         new_person.last_name_prefix,
@@ -224,16 +77,13 @@ pub async fn create_person(
         new_person.initials,
         new_person.date_of_birth,
         new_person.bsn,
+        new_person.place_of_residence,
+        new_person.country_of_residence,
         new_person.locality,
         new_person.postal_code,
         new_person.house_number,
         new_person.house_number_addition,
         new_person.street_name,
-        new_person.is_dutch,
-        new_person.custom_country,
-        new_person.custom_region,
-        new_person.address_line_1,
-        new_person.address_line_2,
         new_person.created_at,
         new_person.updated_at,
     )
@@ -245,52 +95,9 @@ pub async fn update_person(
     conn: &mut PgConnection,
     updated_person: &Person,
 ) -> Result<Person, sqlx::Error> {
-    let person = sqlx::query_as!(
+    let person = sqlx::query_file_as!(
         Person,
-        r#"
-        UPDATE persons
-        SET
-            gender = $1,
-            last_name = $2,
-            last_name_prefix = $3,
-            first_name = $4,
-            initials = $5,
-            date_of_birth = $6,
-            bsn = $7,
-            locality = $8,
-            postal_code = $9,
-            house_number = $10,
-            house_number_addition = $11,
-            street_name = $12,
-            is_dutch = $13,
-            custom_country = $14,
-            custom_region = $15,
-            address_line_1 = $16,
-            address_line_2 = $17,
-            updated_at = NOW()
-        WHERE id = $18
-        RETURNING
-            id,
-            gender as "gender?: Gender",
-            last_name,
-            last_name_prefix,
-            first_name,
-            initials,
-            date_of_birth,
-            bsn,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
-            is_dutch,
-            custom_country,
-            custom_region,
-            address_line_1,
-            address_line_2,
-            created_at,
-            updated_at
-        "#,
+        "sql/persons/update_person.sql",
         updated_person.gender as Option<Gender>,
         updated_person.last_name,
         updated_person.last_name_prefix,
@@ -298,17 +105,9 @@ pub async fn update_person(
         updated_person.initials,
         updated_person.date_of_birth,
         updated_person.bsn,
-        updated_person.locality,
-        updated_person.postal_code,
-        updated_person.house_number,
-        updated_person.house_number_addition,
-        updated_person.street_name,
-        updated_person.is_dutch,
-        updated_person.custom_country,
-        updated_person.custom_region,
-        updated_person.address_line_1,
-        updated_person.address_line_2,
-        updated_person.id,
+        updated_person.place_of_residence,
+        updated_person.country_of_residence,
+        updated_person.id.uuid(),
     )
     .fetch_one(conn)
     .await?;
@@ -316,18 +115,48 @@ pub async fn update_person(
     Ok(person)
 }
 
-pub async fn remove_person(conn: &mut PgConnection, person_id: &Uuid) -> Result<(), sqlx::Error> {
+pub async fn update_address(
+    conn: &mut PgConnection,
+    updated_person: &Person,
+) -> Result<Person, sqlx::Error> {
+    let person = sqlx::query_file_as!(
+        Person,
+        "sql/persons/update_address.sql",
+        updated_person.locality,
+        updated_person.postal_code,
+        updated_person.house_number,
+        updated_person.house_number_addition,
+        updated_person.street_name,
+        updated_person.id.uuid(),
+    )
+    .fetch_one(conn)
+    .await?;
+
+    Ok(person)
+}
+
+pub async fn remove_person(
+    conn: &mut PgConnection,
+    person_id: PersonId,
+) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM persons
         WHERE id = $1
         "#,
-        person_id,
+        person_id.uuid(),
     )
     .execute(conn)
     .await?;
 
     Ok(())
+}
+
+#[cfg(feature = "fixtures")]
+pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sqlx::Error> {
+    sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
+        .fetch_all(conn)
+        .await
 }
 
 #[cfg(test)]
@@ -344,13 +173,13 @@ mod tests {
 
     #[sqlx::test]
     async fn create_and_get_person(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
 
-        let loaded = get_person(&mut conn, &id).await?.expect("person");
+        let loaded = get_person(&mut conn, id).await?.expect("person");
         assert_eq!(loaded.id, id);
         assert_eq!(loaded.last_name, "Jansen");
 
@@ -362,12 +191,12 @@ mod tests {
         let mut conn = pool.acquire().await?;
         create_person(
             &mut conn,
-            &sample_person_with_last_name(Uuid::new_v4(), "Jansen"),
+            &sample_person_with_last_name(PersonId::new(), "Jansen"),
         )
         .await?;
         create_person(
             &mut conn,
-            &sample_person_with_last_name(Uuid::new_v4(), "Bakker"),
+            &sample_person_with_last_name(PersonId::new(), "Bakker"),
         )
         .await?;
 
@@ -383,7 +212,7 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let mut person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
@@ -392,7 +221,7 @@ mod tests {
         person.last_name = "Updated".to_string();
         update_person(&mut conn, &person).await?;
 
-        let updated = get_person(&mut conn, &id).await?.expect("person");
+        let updated = get_person(&mut conn, id).await?.expect("person");
         assert_eq!(updated.last_name, "Updated");
 
         Ok(())
@@ -400,40 +229,82 @@ mod tests {
 
     #[sqlx::test]
     async fn remove_person_deletes_record(pool: PgPool) -> Result<(), sqlx::Error> {
-        let id = Uuid::new_v4();
+        let id = PersonId::new();
         let person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
         create_person(&mut conn, &person).await?;
-        remove_person(&mut conn, &id).await?;
+        remove_person(&mut conn, id).await?;
 
-        let missing = get_person(&mut conn, &id).await?;
+        let missing = get_person(&mut conn, id).await?;
         assert!(missing.is_none());
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
-        let list = sample_candidate_list(list_id);
-        let person_a = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
-        let person_b = sample_person_with_last_name(Uuid::new_v4(), "Bakker");
+    async fn update_address_overwrites_fields(pool: PgPool) -> Result<(), sqlx::Error> {
+        let id = PersonId::new();
+        let mut person = sample_person(id);
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        create_person(&mut conn, &person).await?;
+
+        person.locality = Some("Nieuwegein".to_string());
+        person.postal_code = Some("9999 ZZ".to_string());
+        person.house_number = Some("99".to_string());
+        person.house_number_addition = None;
+        person.street_name = Some("Nieuweweg".to_string());
+
+        update_address(&mut conn, &person).await?;
+
+        let updated = get_person(&mut conn, id).await?.expect("person");
+        assert_eq!(updated.locality, Some("Nieuwegein".to_string()));
+        assert_eq!(updated.postal_code, Some("9999 ZZ".to_string()));
+        assert_eq!(updated.house_number, Some("99".to_string()));
+        assert_eq!(updated.house_number_addition, None);
+        assert_eq!(updated.street_name, Some("Nieuweweg".to_string()));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn excludes_persons_on_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
         create_person(&mut conn, &person_a).await?;
         create_person(&mut conn, &person_b).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person_a.id]).await?;
+
+        let persons = list_persons_not_on_candidate_list(&mut conn, list_id).await?;
+        assert_eq!(persons.len(), 1);
+        assert_eq!(persons[0].id, person_b.id);
+
+        Ok(())
+    }
+
+    #[cfg(feature = "fixtures")]
+    #[sqlx::test]
+    async fn list_all_persons_returns_all(pool: PgPool) -> Result<(), sqlx::Error> {
+        let mut conn = pool.acquire().await?;
+        create_person(
             &mut conn,
-            &list_id,
-            &[person_a.id],
+            &sample_person_with_last_name(PersonId::new(), "Jansen"),
+        )
+        .await?;
+        create_person(
+            &mut conn,
+            &sample_person_with_last_name(PersonId::new(), "Bakker"),
         )
         .await?;
 
-        let persons = list_persons_not_on_candidate_list(&mut conn, &list_id).await?;
-        assert_eq!(persons.len(), 1);
-        assert_eq!(persons[0].id, person_b.id);
+        let persons = list_all_persons(&mut conn).await?;
+        assert_eq!(persons.len(), 2);
 
         Ok(())
     }

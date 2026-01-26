@@ -3,11 +3,14 @@ mod candidate_lists;
 /// Generic modules
 mod common;
 mod error;
+pub mod filters;
 mod form;
 mod pages;
 mod pagination;
 mod persons;
+mod political_groups;
 pub mod router;
+mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
@@ -17,9 +20,9 @@ pub use common::{
     constants,
     context::Context,
     election::{ElectionConfig, ElectoralDistrict},
-    filters, locale,
+    locale,
     locale::Locale,
-    logging, server,
+    logging, new_type, server,
     state::{AppState, DbConnection},
     templates::HtmlTemplate,
     translate,

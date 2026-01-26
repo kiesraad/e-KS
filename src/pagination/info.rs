@@ -1,8 +1,6 @@
 use serde::Serialize;
 
-use crate::pagination::{
-    PageLink, Pagination, SortDirection, links::build_links, params::MAX_PER_PAGE,
-};
+use super::{MAX_PER_PAGE, PageLink, Pagination, SortDirection, links::build_links};
 
 /// Pagination metadata consumed by templates and components.
 #[derive(Clone, Debug, Serialize)]

@@ -16,11 +16,12 @@ env:
 
 jobs:
   changes:
+    name: Detect changes
     runs-on: ubuntu-24.04
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
         with:
           fetch-depth: '0'
       - name: Filter changes for non-Markdown files
@@ -38,7 +39,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
       - name: Setup Rust
         shell: bash
@@ -60,7 +61,7 @@ jobs:
       SQLX_OFFLINE: "true"
       RUSTDOCFLAGS: "-D warnings"
     steps:
-      - uses: actions/checkout@v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
       - name: Install musl
         run: sudo apt-get update && sudo apt-get install -y musl-tools
@@ -79,7 +80,7 @@ jobs:
           shared-key: eks
 
       - name: Tools cache
-        uses: actions/cache@v5
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
@@ -88,10 +89,10 @@ jobs:
         run: bin/init
 
       - name: Lint Typescript using Biome
-        run: ./bin/biome check --error-on-warnings ./frontend/scripts
+        run: ./bin/biome ci --error-on-warnings ./frontend/scripts
 
       - name: Lint CSS using Biome
-        run: ./bin/biome check --error-on-warnings ./frontend/styles
+        run: ./bin/biome ci --error-on-warnings ./frontend/styles
 
       - name: Check Clippy with all features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings
@@ -109,7 +110,7 @@ jobs:
         run: cargo --locked build --target=x86_64-unknown-linux-musl
 
       - name: Upload build artifact
-        uses: actions/upload-artifact@v6
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: e-ks-core
           path: target/x86_64-unknown-linux-musl/debug/e-ks-core
@@ -124,7 +125,7 @@ jobs:
       CARGO_TERM_COLOR: always
       PLAYWRIGHT_BROWSERS_PATH: .cache/playwright
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
       - name: Setup Rust
         shell: bash
@@ -137,7 +138,7 @@ jobs:
           shared-key: eks
 
       - name: Tools cache
-        uses: actions/cache@v5
+        uses: actions/cache@8b402f58fbc84540c8b491a91e594a4576fec3d7 # v5
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
@@ -154,8 +155,8 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
-      - uses: EmbarkStudios/cargo-deny-action@76cd80eb775d7bbbd2d80292136d74d39e1b4918
+      - uses: EmbarkStudios/cargo-deny-action@3fd3802e88374d3fe9159b834c7714ec57d6c979
         with:
           arguments: --workspace --all-features

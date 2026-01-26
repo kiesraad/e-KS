@@ -4,20 +4,15 @@
 use axum::Router;
 use tokio::{net::TcpListener, signal};
 
-use crate::{AppError, AppState};
+use crate::AppError;
 
-pub async fn serve(
-    router: Router<AppState>,
-    state: AppState,
-    listener: TcpListener,
-) -> Result<(), AppError> {
-    let app = router.with_state(state);
+pub async fn serve(router: Router, listener: TcpListener) -> Result<(), AppError> {
     let addr = listener.local_addr().map_err(AppError::ServerError)?;
 
     tracing::info!("Starting server on {addr}");
 
     // Run the server with graceful shutdown
-    axum::serve(listener, app)
+    axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal())
         .await
         .map_err(AppError::ServerError)?;

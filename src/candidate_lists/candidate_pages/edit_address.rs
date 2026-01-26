@@ -1,15 +1,11 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
+    AppError, AppResponse, Context, DbConnection, HtmlTemplate,
     candidate_lists::{
-        Candidate, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        candidate_pages::CandidateListEditAddressPath, pages::load_candidate_list,
+        Candidate, CandidateList, FullCandidateList, candidate_pages::CandidateListEditAddressPath,
     },
     filters,
     form::{FormData, Validate},
@@ -23,60 +19,49 @@ struct PersonAddressUpdateTemplate {
     candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
-    max_candidates: usize,
 }
 
 pub async fn edit_person_address(
-    CandidateListEditAddressPath {
-        candidate_list,
-        person,
-    }: CandidateListEditAddressPath,
+    _: CandidateListEditAddressPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
+    candidate: Candidate,
 ) -> AppResponse<impl IntoResponse> {
-    let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-    let candidate = full_list.get_candidate(&person, context.locale)?;
-    let form = FormData::new_with_data(AddressForm::from(candidate.person.clone()), &csrf_tokens);
+    let form = FormData::new_with_data(
+        AddressForm::from(candidate.person.clone()),
+        &context.csrf_tokens,
+    );
 
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             form,
             candidate: candidate.clone(),
             full_list,
-            max_candidates: MAX_CANDIDATES,
         },
         context,
     ))
 }
 
 pub async fn update_person_address(
-    CandidateListEditAddressPath {
-        candidate_list,
-        person,
-    }: CandidateListEditAddressPath,
+    _: CandidateListEditAddressPath,
     context: Context,
-    State(app_state): State<AppState>,
+    full_list: FullCandidateList,
+    candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let full_list = load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-    let candidate = full_list.get_candidate(&person, context.locale)?;
-
-    match form.validate(Some(&candidate.person), app_state.csrf_tokens()) {
+    match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 candidate,
                 form: form_data,
                 full_list,
-                max_candidates: MAX_CANDIDATES,
             },
             context,
         )
         .into_response()),
         Ok(person) => {
-            persons::repository::update_person(&mut conn, &person).await?;
+            persons::update_address(&mut conn, &person).await?;
 
             Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
@@ -87,16 +72,16 @@ pub async fn update_person_address(
 mod tests {
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, candidate_lists, persons,
+        Context, DbConnection,
+        candidate_lists::{self, CandidateListId},
+        persons::{self, PersonId},
         test_utils::{
             response_body_string, sample_address_form, sample_candidate_list,
             sample_person_with_last_name,
@@ -105,24 +90,28 @@ mod tests {
 
     #[sqlx::test]
     async fn edit_person_address_renders_candidate(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
-            .await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id]).await?;
+
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
         let response = edit_person_address(
             CandidateListEditAddressPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            Context::new_test(),
+            full_list,
+            candidate,
         )
         .await
         .unwrap()
@@ -137,28 +126,33 @@ mod tests {
 
     #[sqlx::test]
     async fn update_person_address_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
-            .await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id]).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
+
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.locality = "Rotterdam".to_string();
 
         let response = update_person_address(
             CandidateListEditAddressPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
-            Context::new(Locale::En),
-            State(app_state),
+            context,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -175,7 +169,7 @@ mod tests {
         assert_eq!(location, list.view_path());
 
         let mut conn = pool.acquire().await?;
-        let updated = persons::repository::get_person(&mut conn, &person.id)
+        let updated = persons::get_person(&mut conn, person.id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Rotterdam".to_string()));
@@ -187,28 +181,33 @@ mod tests {
     async fn update_person_address_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person_with_last_name(Uuid::new_v4(), "Jansen");
+        let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        candidate_lists::repository::update_candidate_list_order(&mut conn, &list_id, &[person.id])
-            .await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id]).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
+
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
         let response = update_person_address(
             CandidateListEditAddressPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
-            Context::new(Locale::En),
-            State(app_state),
+            context,
+            full_list,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(form),
         )

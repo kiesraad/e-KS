@@ -37,17 +37,18 @@ async fn run(listener: TcpListener) -> Result<(), AppError> {
         if std::env::var("LOAD_FIXTURES").is_ok() {
             // Run database migrations
             sqlx::migrate!()
-                .run(state.pool())
+                .run(&state.pool)
                 .await
                 .expect("Failed to run migrations");
 
             // Load fixtures
-            eks::fixtures::load(&state).await?;
+            eks::fixtures::load(&state.pool).await?;
         }
     }
 
     // Start the server
-    server::serve(router::create(), state, listener).await?;
+    let router = router::create(state.clone()).with_state(state.clone());
+    server::serve(router, listener).await?;
 
     Ok(())
 }

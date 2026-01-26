@@ -8,7 +8,7 @@
 - (doorlopend) Deployment architectuur Standaard Platform 
 - (sprint 1) Kandidatenlijst opstellen per kieskring 
 - (sprint 2) Algemene lijstgegevens verwerken 
-- (sprint 3) Personen beheren (adresboek) 
+- (sprint 3) e-KS wordt klaar gemaakt voor de eerste gebruikerstest
 - (sprint 4) Kandidatenlijst uitprinten, instemmingsverklaring uitprinten 
 - (sprint 5) Machtingsverklaring uitprinten
 - (sprint 6) Verkiezingsconfiguratie maken (naam, kieskringen, datums, etc.)

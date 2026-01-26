@@ -1,14 +1,10 @@
+use crate::{
+    AppError, AppState,
+    persons::{Person, PersonId},
+};
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use uuid::Uuid;
-
-use crate::{
-    AppError, AppState, Locale,
-    pagination::Pagination,
-    persons::{Person, PersonSort},
-    t,
-};
 
 mod address;
 mod create;
@@ -25,21 +21,21 @@ pub struct PersonsPath;
 pub struct PersonsNewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/edit", rejection(AppError))]
+#[typed_path("/persons/{person_id}/edit", rejection(AppError))]
 pub struct EditPersonPath {
-    pub id: Uuid,
+    pub person_id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/delete", rejection(AppError))]
+#[typed_path("/persons/{person_id}/delete", rejection(AppError))]
 pub struct DeletePersonPath {
-    pub id: Uuid,
+    pub person_id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{id}/address", rejection(AppError))]
+#[typed_path("/persons/{person_id}/address", rejection(AppError))]
 pub struct EditPersonAddressPath {
-    pub id: Uuid,
+    pub person_id: PersonId,
 }
 
 impl Person {
@@ -47,20 +43,18 @@ impl Person {
         PersonsPath {}.to_uri().to_string()
     }
 
-    pub fn list_path_with_pagination(pagination: &Pagination<PersonSort>) -> String {
-        format!("{}{}", PersonsPath {}.to_uri(), pagination.as_query())
-    }
-
     pub fn new_path() -> String {
         PersonsNewPath {}.to_uri().to_string()
     }
 
     pub fn edit_path(&self) -> String {
-        EditPersonPath { id: self.id }.to_uri().to_string()
+        EditPersonPath { person_id: self.id }.to_uri().to_string()
     }
 
     pub fn edit_address_path(&self) -> String {
-        EditPersonAddressPath { id: self.id }.to_uri().to_string()
+        EditPersonAddressPath { person_id: self.id }
+            .to_uri()
+            .to_string()
     }
 }
 
@@ -74,8 +68,4 @@ pub fn router() -> Router<AppState> {
         .typed_get(address::edit_person_address)
         .typed_post(address::update_person_address)
         .typed_post(delete::delete_person)
-}
-
-pub fn person_not_found(id: Uuid, locale: Locale) -> AppError {
-    AppError::NotFound(t!("person.not_found", &locale, id))
 }

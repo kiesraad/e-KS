@@ -4,6 +4,7 @@ use chrono::{NaiveDate, Utc};
 use csv::{ReaderBuilder, Trim};
 use serde::Deserialize;
 use sqlx::PgConnection;
+use uuid::Uuid;
 
 use crate::{
     AppError,
@@ -30,8 +31,11 @@ struct PersonRecord {
 
 impl PersonRecord {
     fn into_person(self) -> Result<Person, AppError> {
+        let id = format!("{}{}", self.last_name, self.initials);
+        let uuid = Uuid::new_v5(&Uuid::NAMESPACE_OID, id.as_bytes());
+
         Ok(Person {
-            id: uuid::Uuid::new_v4(),
+            id: uuid.into(),
             gender: self.gender.and_then(|s| Gender::from_str(&s).ok()),
             last_name: self.last_name,
             last_name_prefix: self.last_name_prefix,
@@ -41,6 +45,8 @@ impl PersonRecord {
             initials: self.initials,
             date_of_birth: NaiveDate::parse_from_str(&self.date_of_birth, DEFAULT_DATE_FORMAT).ok(),
             bsn: None,
+            place_of_residence: Some(self.locality.clone()),
+            country_of_residence: Some("Nederland".to_string()),
             locality: Some(self.locality),
             postal_code: Some(self.postal_code),
             house_number: Some(self.house_number),
@@ -48,11 +54,6 @@ impl PersonRecord {
                 .house_number_addition
                 .and_then(|n| if n.is_empty() { None } else { Some(n) }),
             street_name: Some(self.street_name),
-            is_dutch: Some(true),
-            custom_country: None,
-            custom_region: None,
-            address_line_1: None,
-            address_line_2: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })
@@ -73,7 +74,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         })?;
 
         let person = record.into_person()?;
-        persons::repository::create_person(conn, &person).await?;
+        persons::create_person(conn, &person).await?;
     }
 
     Ok(())
@@ -91,7 +92,7 @@ mod tests {
     async fn test_load(pool: PgPool) {
         let mut conn = pool.acquire().await.unwrap();
         load(&mut conn).await.unwrap();
-        let persons = crate::persons::repository::list_persons(
+        let persons = crate::persons::list_persons(
             &mut conn,
             50,
             0,

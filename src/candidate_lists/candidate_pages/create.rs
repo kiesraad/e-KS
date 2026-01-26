@@ -1,16 +1,10 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection, HtmlTemplate,
-    candidate_lists::{
-        self, CandidateList, FullCandidateList, MAX_CANDIDATES,
-        pages::{CreateCandidatePath, load_candidate_list},
-    },
+    AppError, Context, DbConnection, HtmlTemplate,
+    candidate_lists::{self, CandidateList, FullCandidateList, pages::CreateCandidatePath},
     filters,
     form::{FormData, Validate},
     persons::{self, PersonForm},
@@ -22,23 +16,17 @@ use crate::{
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonForm>,
-    max_candidates: usize,
 }
 
 pub async fn new_person_candidate_list(
-    CreateCandidatePath { candidate_list }: CreateCandidatePath,
+    _: CreateCandidatePath,
     context: Context,
-    csrf_tokens: CsrfTokens,
-    DbConnection(mut conn): DbConnection,
+    full_list: FullCandidateList,
 ) -> Result<impl IntoResponse, AppError> {
-    let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&csrf_tokens),
-            max_candidates: MAX_CANDIDATES,
+            form: FormData::new(&context.csrf_tokens),
         },
         context,
     )
@@ -46,40 +34,28 @@ pub async fn new_person_candidate_list(
 }
 
 pub async fn create_person_candidate_list(
-    CreateCandidatePath { candidate_list }: CreateCandidatePath,
+    _: CreateCandidatePath,
     context: Context,
-    State(app_state): State<AppState>,
+    full_list: FullCandidateList,
     DbConnection(mut conn): DbConnection,
     form: Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let full_list: FullCandidateList =
-        load_candidate_list(&mut conn, &candidate_list, context.locale).await?;
-
-    match form.validate(None, app_state.csrf_tokens()) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
                 form: form_data,
-                max_candidates: MAX_CANDIDATES,
             },
             context,
         )
         .into_response()),
         Ok(person) => {
-            let person = persons::repository::create_person(&mut conn, &person).await?;
+            let person = persons::create_person(&mut conn, &person).await?;
 
-            let mut person_ids = full_list.get_ids();
-            person_ids.push(person.id);
-            candidate_lists::repository::update_candidate_list_order(
-                &mut conn,
-                &candidate_list,
-                &person_ids,
-            )
-            .await?;
+            candidate_lists::append_candidate_to_list(&mut conn, full_list.id(), person.id).await?;
 
             let candidate =
-                candidate_lists::repository::get_candidate(&mut conn, &candidate_list, &person.id)
-                    .await?;
+                candidate_lists::get_candidate(&mut conn, full_list.id(), person.id).await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
         }
@@ -90,34 +66,34 @@ pub async fn create_person_candidate_list(
 mod tests {
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, candidate_lists,
+        Context, DbConnection,
+        candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
 
     #[sqlx::test]
     async fn new_person_candidate_list_renders_form(pool: PgPool) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
 
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
 
         let response = new_person_candidate_list(
-            CreateCandidatePath {
-                candidate_list: list_id,
-            },
-            Context::new(Locale::En),
-            CsrfTokens::default(),
-            DbConnection(pool.acquire().await?),
+            CreateCandidatePath { list_id },
+            Context::new_test(),
+            full_list,
         )
         .await
         .unwrap()
@@ -135,21 +111,23 @@ mod tests {
     async fn create_person_candidate_list_persists_and_redirects(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = create_person_candidate_list(
-            CreateCandidatePath {
-                candidate_list: list_id,
-            },
-            Context::new(Locale::En),
-            State(app_state),
+            CreateCandidatePath { list_id },
+            context,
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -165,8 +143,8 @@ mod tests {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let full_list = load_candidate_list(&mut conn, &list_id, Locale::En)
-            .await
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
@@ -179,22 +157,24 @@ mod tests {
     async fn create_person_candidate_list_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_token = app_state.csrf_tokens().issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
+        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
+
         let response = create_person_candidate_list(
-            CreateCandidatePath {
-                candidate_list: list_id,
-            },
-            Context::new(Locale::En),
-            State(app_state),
+            CreateCandidatePath { list_id },
+            context,
+            full_list,
             DbConnection(pool.acquire().await?),
             Form(form),
         )

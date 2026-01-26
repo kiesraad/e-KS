@@ -8,6 +8,9 @@ action:
   delete: Delete
   save: Save
   signout: Sign out
+  manage_data: Manage data
+  manage_candidate_lists: Manage candidate lists
+  review_and_submit: Review and submit
 candidate_list:
   actions:
     add: Add list
@@ -21,8 +24,6 @@ candidate_list:
     edit_list_details: Edit the list details here
     select_all_districts: Select all electoral districts
     delete_list: Delete candidate list
-  no_candidates: No candidates on this list
-  total_candidates: 'Candidates on this list: {}'
   add_candidate: Add candidate
   remove_candidate: Remove candidate
   edit_position: Position on the list
@@ -53,6 +54,7 @@ candidate_list:
   empty: No candidate lists found.
   title: Candidate lists
   title_single: Candidate list
+  description: Add candidates here and create candidate list(s).
   candidate_count: '<strong>{}</strong> / {} candidates'
   view:
     empty: This candidate list has no persons yet.
@@ -79,10 +81,16 @@ person:
   created_at: Created at
   personal_information: Personal information
   address: Address
+  correspondence_address: Correspondence address
   authorized_person: Authorized person
   personal_details: Personal details
+  hints:
+    first_name: Optional. Only fill in if this should be displayed on the candidate list.
+    gender: Optional. Only fill in if this should be displayed on the candidate list.
   fields:
     bsn: Social security number (BSN)
+    place_of_residence: Place of residence
+    country_of_residence: Country of residence
     country: Country
     date_of_birth: Date of birth
     elsewhere: Elsewhere
@@ -120,6 +128,7 @@ person:
     empty: No details available for this person.
     title: Person details
 validation:
+  starts_with_last_name_prefix: Please put the prefix in the correct field.
   invalid_bsn: Invalid BSN.
   invalid_csrf_token: The CSRF token is invalid.
   invalid_email: Invalid email address.
@@ -130,6 +139,12 @@ validation:
 common:
   title: Kiesraad - Kandidaat stellen
   general_information: General Information
+  general_information_description: Provide general information about your political group and contact details.
   electoral_districts: Electoral districts
   submit: Submit
+  submit_description: Review all information and submit the candidate list(s) to the Kiesraad.
   version: Version
+  step1: Step 1
+  step2: Step 2
+  step3: Step 3
+  home: Home

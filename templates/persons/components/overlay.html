@@ -1,0 +1,30 @@
+{% extends "persons/list.html" %}
+
+{% block body_class %}overlay-open{% endblock %}
+
+{% block overlay %}
+<div class="overlay-backdrop"></div>
+{% block overlay_start %}<div class="overlay">{% endblock %}
+  <header>
+    <h2>
+      {% block overlay_title %}
+        <span class="person-badge"></span>
+        {{ person.display_name() }}
+      {% endblock %}
+    </h2>
+    <a href="{% block close_path %}{{ Person::list_path() }}{% endblock %}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+      <span>
+        {{ t!("action.close")|trans }}
+      </span>
+    </a>
+  </header>
+  {% block overlay_content %}{% endblock %}
+  {% block overlay_footer %}
+  <footer>
+    <button type="submit" class="button" name="action" value="move">
+      {{ t!("action.save")|trans }}
+    </button>
+  </footer>
+  {% endblock %}
+{% block overlay_end %}</div>{% endblock %}
+{% endblock %}

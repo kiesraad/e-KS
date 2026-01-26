@@ -1,30 +1,28 @@
 use chrono::{DateTime, NaiveDate};
 use serde::Serialize;
 use sqlx::types::chrono::Utc;
-use uuid::Uuid;
 
-use crate::{constants::DEFAULT_DATE_TIME_FORMAT, persons::Gender, t};
+use crate::{id_newtype, persons::Gender, t};
+
+id_newtype!(pub struct PersonId);
 
 #[derive(Default, Debug, Serialize, Clone, sqlx::FromRow)]
 pub struct Person {
-    pub id: Uuid,
+    pub id: PersonId,
     pub last_name: String,
     pub last_name_prefix: Option<String>,
     pub initials: String,
     pub first_name: Option<String>,
+    pub bsn: Option<String>,
+    pub place_of_residence: Option<String>,
+    pub country_of_residence: Option<String>,
     pub gender: Option<Gender>,
     pub date_of_birth: Option<NaiveDate>,
-    pub bsn: Option<String>,
     pub locality: Option<String>,
     pub postal_code: Option<String>,
     pub house_number: Option<String>,
     pub house_number_addition: Option<String>,
     pub street_name: Option<String>,
-    pub is_dutch: Option<bool>,
-    pub custom_country: Option<String>,
-    pub custom_region: Option<String>,
-    pub address_line_1: Option<String>,
-    pub address_line_2: Option<String>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -56,16 +54,17 @@ impl Person {
         }
     }
 
-    pub fn created(&self) -> String {
-        self.created_at.format(DEFAULT_DATE_TIME_FORMAT).to_string()
-    }
-
-    pub fn updated(&self) -> String {
-        self.updated_at.format(DEFAULT_DATE_TIME_FORMAT).to_string()
-    }
-
     pub fn first_name_display(&self) -> String {
         self.first_name.clone().unwrap_or_default()
+    }
+
+    pub fn is_dutch(&self) -> bool {
+        match &self.country_of_residence {
+            Some(country) => {
+                country.to_lowercase() == "netherlands" || country.to_lowercase() == "nederland"
+            }
+            None => true, // Assume Dutch if no country is set
+        }
     }
 
     pub fn gender_key(&self) -> &[&'static str] {
@@ -73,26 +72,93 @@ impl Person {
             .map(|g| match g {
                 Gender::Male => t!("gender.male"),
                 Gender::Female => t!("gender.female"),
-                Gender::X => t!("gender.x"),
             })
             .unwrap_or(&["", ""])
     }
+}
 
-    /// Make sure a person has either a Dutch address or an international address, but not both
-    pub fn normalize_address(&mut self) {
-        if self.is_dutch.is_none_or(|d| d) {
-            // remove international address
-            self.address_line_1 = None;
-            self.address_line_2 = None;
-            self.custom_region = None;
-            self.custom_country = None;
-        } else {
-            // remove Dutch address
-            self.postal_code = None;
-            self.house_number = None;
-            self.house_number_addition = None;
-            self.street_name = None;
-            self.locality = None;
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use sqlx::types::chrono::Utc;
+
+    fn base_person() -> Person {
+        Person {
+            id: PersonId::new(),
+            last_name: "Dijk".to_string(),
+            last_name_prefix: None,
+            initials: "A.B.".to_string(),
+            first_name: None,
+            bsn: None,
+            place_of_residence: None,
+            country_of_residence: None,
+            gender: None,
+            date_of_birth: None,
+            locality: None,
+            postal_code: None,
+            house_number: None,
+            house_number_addition: None,
+            street_name: None,
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
         }
+    }
+
+    #[test]
+    fn last_name_formats_with_optional_prefix() {
+        let mut person = base_person();
+        assert_eq!(person.last_name_with_prefix(), "Dijk");
+        assert_eq!(person.last_name_with_prefix_appended(), "Dijk");
+
+        person.last_name_prefix = Some("van".to_string());
+        assert_eq!(person.last_name_with_prefix(), "van Dijk");
+        assert_eq!(person.last_name_with_prefix_appended(), "Dijk, van");
+    }
+
+    #[test]
+    fn display_name_prefers_first_name_over_initials() {
+        let mut person = base_person();
+        person.last_name_prefix = Some("van".to_string());
+        person.first_name = Some("Anne".to_string());
+        assert_eq!(person.display_name(), "Anne van Dijk");
+
+        person.first_name = None;
+        assert_eq!(person.display_name(), "A.B. van Dijk");
+    }
+
+    #[test]
+    fn first_name_display_falls_back_to_empty_string() {
+        let mut person = base_person();
+        assert_eq!(person.first_name_display(), "");
+
+        person.first_name = Some("Henk".to_string());
+        assert_eq!(person.first_name_display(), "Henk");
+    }
+
+    #[test]
+    fn is_dutch_defaults_to_true_and_accepts_variants() {
+        let mut person = base_person();
+        assert!(person.is_dutch());
+
+        person.country_of_residence = Some("NETHERLANDS".to_string());
+        assert!(person.is_dutch());
+
+        person.country_of_residence = Some("nederland".to_string());
+        assert!(person.is_dutch());
+
+        person.country_of_residence = Some("Belgium".to_string());
+        assert!(!person.is_dutch());
+    }
+
+    #[test]
+    fn gender_key_returns_translations_or_empty_keys() {
+        let mut person = base_person();
+        assert_eq!(person.gender_key(), &["", ""]);
+
+        person.gender = Some(Gender::Male);
+        assert_eq!(person.gender_key(), t!("gender.male"));
+
+        person.gender = Some(Gender::Female);
+        assert_eq!(person.gender_key(), t!("gender.female"));
     }
 }

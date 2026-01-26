@@ -1,6 +1,6 @@
 use axum::extract::{
-    multipart::MultipartError,
-    rejection::{FormRejection, JsonRejection, PathRejection},
+    multipart::{MultipartError, MultipartRejection},
+    rejection::{FormRejection, JsonRejection, PathRejection, QueryRejection},
 };
 use std::fmt::{Display, Formatter};
 
@@ -20,11 +20,14 @@ pub enum AppError {
     NotFound(String),
     DatabaseError(sqlx::Error),
     TemplateError(askama::Error),
-    MultipartFormError(MultipartError),
     FormRejection(FormRejection),
+    // Axum error types
+    MultipartFormError(MultipartError),
+    MultipartError(MultipartRejection),
     ValidationError(FieldErrors),
     JsonRejection(JsonRejection),
     PathRejection(PathRejection),
+    QueryRejection(QueryRejection),
 
     // Application level errors
     MissingEnvVar(&'static str),
@@ -43,10 +46,12 @@ impl Display for AppError {
             AppError::ConfigLoadError(err) => write!(f, "Configuration load error: {err}"),
             AppError::ServerError(err) => write!(f, "Server error: {err}"),
             AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
+            AppError::MultipartError(err) => write!(f, "Multipart error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::PathRejection(err) => write!(f, "Path error: {err}"),
             AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
+            AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
         }
@@ -79,6 +84,12 @@ impl From<MultipartError> for AppError {
     }
 }
 
+impl From<MultipartRejection> for AppError {
+    fn from(err: MultipartRejection) -> Self {
+        AppError::MultipartError(err)
+    }
+}
+
 impl From<FormRejection> for AppError {
     fn from(err: FormRejection) -> Self {
         AppError::FormRejection(err)
@@ -97,17 +108,25 @@ impl From<PathRejection> for AppError {
     }
 }
 
+impl From<QueryRejection> for AppError {
+    fn from(err: QueryRejection) -> Self {
+        AppError::QueryRejection(err)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        Context, ErrorResponse, HtmlTemplate, Locale, error::response::ErrorTemplate,
+        Context, ErrorResponse, HtmlTemplate, error::response::ErrorTemplate,
         form::ValidationError, test_utils,
     };
     use axum::{
         body::Body,
-        extract::{FromRequest, Multipart},
-        http::{Request, header::CONTENT_TYPE},
+        extract::{
+            FromRequest, Multipart, Path, Request,
+            rejection::{InvalidFormContentType, JsonRejection, MissingJsonContentType},
+        },
         response::IntoResponse,
     };
 
@@ -132,35 +151,59 @@ mod tests {
         assert!(err.to_string().contains("Database error"));
     }
 
-    async fn sample_multipart_error() -> MultipartError {
-        let boundary = "test-boundary";
-        let body = format!("--{boundary}\r\n");
-        let request = Request::builder()
-            .header(
-                CONTENT_TYPE,
-                format!("multipart/form-data; boundary={boundary}"),
-            )
-            .body(Body::from(body))
-            .expect("request");
-        let mut multipart = Multipart::from_request(request, &())
-            .await
-            .expect("multipart");
+    fn get_multipart_error_request() -> Request<Body> {
+        let body = "--boundary\r\n\
+                Content-Disposition: form-data; name=\"fiel";
 
-        multipart.next_field().await.expect_err("multipart error")
+        Request::builder()
+            .method("POST")
+            .uri("/upload")
+            .header("Content-Type", "multipart/form-data; boundary=boundary")
+            .body(Body::from(body))
+            .unwrap()
+    }
+
+    fn get_multipart_rejection_request() -> Request<Body> {
+        Request::builder()
+            .method("POST")
+            .uri("/upload")
+            .body(Body::from("not multipart"))
+            .unwrap()
     }
 
     #[tokio::test]
     async fn app_error_variants_convert_to_error_response() {
-        let multipart_error = sample_multipart_error().await;
+        let form_rejection: FormRejection = InvalidFormContentType::default().into();
+        let json_rejection: JsonRejection = MissingJsonContentType::default().into();
+        let multipart_rejection = Multipart::from_request(get_multipart_rejection_request(), &())
+            .await
+            .unwrap_err();
+        let mut multipart_form_result = Multipart::from_request(get_multipart_error_request(), &())
+            .await
+            .unwrap();
+        let multipart_error = multipart_form_result.next_field().await.unwrap_err();
+        let path_rejection = Path::<i32>::from_request(
+            Request::builder()
+                .uri("/not-a-number")
+                .body(Body::empty())
+                .unwrap(),
+            &(),
+        )
+        .await
+        .unwrap_err();
 
         let errors = vec![
             AppError::Unauthorized,
             AppError::InternalServerError,
             AppError::GenericNotFound,
             AppError::NotFound("missing".to_string()),
-            AppError::DatabaseError(sqlx::Error::RowNotFound),
-            AppError::TemplateError(askama::Error::Fmt),
-            AppError::MultipartFormError(multipart_error),
+            AppError::from(sqlx::Error::RowNotFound),
+            AppError::from(askama::Error::Fmt),
+            AppError::from(multipart_rejection),
+            AppError::from(multipart_error),
+            AppError::from(form_rejection),
+            AppError::from(json_rejection),
+            AppError::from(path_rejection),
             AppError::ValidationError(vec![("name".to_string(), ValidationError::InvalidValue)]),
             AppError::MissingEnvVar("DATABASE_URL"),
             AppError::ConfigLoadError("bad".to_string()),
@@ -168,11 +211,15 @@ mod tests {
         ];
 
         for error in errors {
+            let message = error.to_string();
+
+            assert!(!message.is_empty());
+
             let error_response = ErrorResponse::from(error);
             let response = error_response.into_response();
             let error_template = response.extensions().get::<ErrorTemplate>().unwrap();
             let content = error_template.title.clone();
-            let context = Context::new(Locale::En);
+            let context = Context::new_test();
             let html_response = (
                 error_template.status_code,
                 HtmlTemplate(error_template, context),

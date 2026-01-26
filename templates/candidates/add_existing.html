@@ -1,20 +1,8 @@
-{% extends "candidate_lists/view.html" %}
+{% extends "candidates/components/overlay.html" %}
 
-{% block body_class %}overlay-open{% endblock %}
+{% block overlay_title %}{{ t!("candidate_list.add_candidate")|trans }}]{% endblock %}
 
-{% block overlay %}
-<div class="overlay-backdrop"></div>
-<div class="overlay">
-  <header>
-    <h2>
-      {{ t!("candidate_list.add_candidate")|trans }}
-    </h2>
-    <a href="{{ full_list.list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
-      <span>
-        {{ t!("action.close")|trans }}
-      </span>
-    </a>
-  </header>
+{% block overlay_content %}
   <form method="post" action="{{ full_list.list.add_candidate_path() }}" class="form overlay-content">
     {% if persons.is_empty() %}
     <p>{{ t!("person.view.empty")|trans }}</p>
@@ -23,8 +11,9 @@
         <label for="search">{{ t!("candidate_list.search_existing_person")|trans }}</label>
         <input type="text" name="search" placeholder="{{ t!("candidate_list.search_placeholder")|trans }}" class="form-control w-full" id="search" autofocus />
       </p>
-      {% include "candidates/add_table.html" %}
+      {% include "candidates/components/add_table.html" %}
     {% endif %}
   </form>
-</div>
 {% endblock %}
+
+{% block overlay_footer %}{% endblock %}

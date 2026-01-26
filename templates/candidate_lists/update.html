@@ -9,7 +9,7 @@
     <h2>
       {{ t!("candidate_list.form.update.title")|trans }}
     </h2>
-    <a href="{{ CandidateList::list_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
       <span>
         {{ t!("action.close")|trans }}
       </span>
@@ -26,7 +26,7 @@
       </ul>
     </div>
     <div class="form">
-      {% include "candidate_lists/form.html" %}
+      {% include "candidate_lists/components/form.html" %}
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
         {{ t!("candidate_list.actions.delete_list")|trans }}
       </button>

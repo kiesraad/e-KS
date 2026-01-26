@@ -18,7 +18,9 @@ cargo test --all-features
 
 # typescript
 ./bin/biome format --fix ./frontend
-./bin/biome check --error-on-warnings ./frontend 
+./bin/biome format --fix ./playwright/tests
+./bin/biome check --error-on-warnings ./frontend
+./bin/biome check --error-on-warnings ./playwright/tests
 
 # generic
 ./bin/check_newline

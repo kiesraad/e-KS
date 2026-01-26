@@ -1,19 +1,16 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection, ElectionConfig, ElectoralDistrict,
-    HtmlTemplate, Locale,
+    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, Person},
+    persons,
+    persons::Person,
     t,
 };
 
@@ -21,89 +18,56 @@ use crate::{
 #[template(path = "candidate_lists/create.html")]
 struct CandidateListCreateTemplate {
     candidate_lists: Vec<CandidateListSummary>,
-    election: ElectionConfig,
     total_persons: i64,
     form: FormData<CandidateListForm>,
-    locale: Locale,
-    electoral_districts: &'static [ElectoralDistrict],
 }
 
 pub async fn new_candidate_list_form(
     _: CandidateListNewPath,
     context: Context,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
-    State(app_state): State<AppState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists =
-        candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = persons::repository::count_persons(&mut conn).await?;
-    let election = app_state.config().election;
-
-    let electoral_districts = app_state.config().get_districts();
-
-    let used_districts = candidate_lists::repository::get_used_districts(&mut conn).await?;
-    let available_districts: Vec<ElectoralDistrict> =
-        determine_available_districts(electoral_districts, used_districts);
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+    let total_persons = persons::count_persons(&mut conn).await?;
+    let used_districts = candidate_lists::get_used_districts(&mut conn).await?;
+    let available_districts = context.election.available_districts(used_districts);
 
     let form = FormData::new_with_data(
         CandidateListForm {
             electoral_districts: available_districts,
-            csrf_token: csrf_tokens.issue().value,
+            csrf_token: context.csrf_tokens.issue().value,
         },
-        &csrf_tokens,
+        &context.csrf_tokens,
     );
 
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
             candidate_lists,
-            election,
             total_persons,
             form,
-            locale: context.locale,
-            electoral_districts,
         },
         context,
     )
     .into_response())
 }
 
-fn determine_available_districts(
-    electoral_districts: &[ElectoralDistrict],
-    used_districts: Vec<ElectoralDistrict>,
-) -> Vec<ElectoralDistrict> {
-    electoral_districts
-        .iter()
-        .filter(|d| !used_districts.contains(d))
-        .cloned()
-        .collect()
-}
-
 pub async fn create_candidate_list(
     _: CandidateListNewPath,
     context: Context,
-    State(app_state): State<AppState>,
-    csrf_tokens: CsrfTokens,
     DbConnection(mut conn): DbConnection,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let electoral_districts = app_state.config().election.electoral_districts();
-
-    match form.validate(None, &csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => {
             let candidate_lists =
-                candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
-            let total_persons = persons::repository::count_persons(&mut conn).await?;
-            let election = app_state.config().election;
+                candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+            let total_persons = persons::count_persons(&mut conn).await?;
 
             Ok(HtmlTemplate(
                 CandidateListCreateTemplate {
                     candidate_lists,
-                    election,
                     total_persons,
                     form: form_data,
-                    electoral_districts,
-                    locale: context.locale,
                 },
                 context,
             )
@@ -111,8 +75,7 @@ pub async fn create_candidate_list(
         }
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::repository::create_candidate_list(&mut conn, &candidate_list)
-                    .await?;
+                candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
@@ -124,7 +87,6 @@ mod test {
 
     use super::*;
     use axum::{
-        extract::State,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -132,20 +94,16 @@ mod test {
     use sqlx::PgPool;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale, TokenValue, candidate_lists,
+        Context, DbConnection, ElectoralDistrict, TokenValue, candidate_lists,
         test_utils::response_body_string,
     };
 
     #[sqlx::test]
     async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
-
         let response = new_candidate_list_form(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            CsrfTokens::default(),
+            Context::new_test(),
             DbConnection(pool.acquire().await?),
-            State(app_state),
         )
         .await
         .unwrap()
@@ -161,9 +119,8 @@ mod test {
 
     #[sqlx::test]
     async fn create_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test();
+        let csrf_token = context.csrf_tokens.issue().value;
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             csrf_token,
@@ -171,9 +128,7 @@ mod test {
 
         let response = create_candidate_list(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            State(app_state),
-            csrf_tokens,
+            context,
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -189,7 +144,7 @@ mod test {
             .expect("location header value");
 
         let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::repository::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
         assert_eq!(lists.len(), 1);
         assert_eq!(location, lists[0].list.view_path());
 
@@ -200,8 +155,6 @@ mod test {
     async fn create_candidate_list_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let app_state = AppState::new_for_tests(pool.clone());
-        let csrf_tokens = CsrfTokens::default();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             csrf_token: TokenValue("invalid".to_string()),
@@ -209,9 +162,7 @@ mod test {
 
         let response = create_candidate_list(
             CandidateListNewPath {},
-            Context::new(Locale::En),
-            State(app_state),
-            csrf_tokens,
+            Context::new_test(),
             DbConnection(pool.acquire().await?),
             Form(form),
         )
@@ -227,39 +178,49 @@ mod test {
 
     #[test]
     fn test_determine_available_districts() {
-        // setup
-        let all_districts = vec![
-            ElectoralDistrict::DR,
-            ElectoralDistrict::FR,
-            ElectoralDistrict::UT,
-            ElectoralDistrict::OV,
-        ];
+        let election = ElectionConfig::EK2027;
+        let all_districts = election.electoral_districts().to_vec();
 
         let none_used = vec![];
         let all_used = all_districts.clone();
-        let some_used = vec![ElectoralDistrict::DR, ElectoralDistrict::FR];
+        let some_used = vec![
+            ElectoralDistrict::DR,
+            ElectoralDistrict::FL,
+            ElectoralDistrict::FR,
+            ElectoralDistrict::GE,
+            ElectoralDistrict::GR,
+            ElectoralDistrict::LI,
+            ElectoralDistrict::NB,
+            ElectoralDistrict::NH,
+        ];
 
-        // test
         // use sets so we don't need to worry about ordering of the vector
-        let none_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, none_used)
-                .into_iter()
-                .collect();
+        let none_used_result: BTreeSet<ElectoralDistrict> = election
+            .available_districts(none_used)
+            .into_iter()
+            .collect();
         let all_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, all_used)
-                .into_iter()
-                .collect();
-        let some_used_result: BTreeSet<ElectoralDistrict> =
-            determine_available_districts(&all_districts, some_used)
-                .into_iter()
-                .collect();
+            election.available_districts(all_used).into_iter().collect();
+        let some_used_result: BTreeSet<ElectoralDistrict> = election
+            .available_districts(some_used)
+            .into_iter()
+            .collect();
 
         // validation
         let all_district_set: BTreeSet<ElectoralDistrict> = all_districts.into_iter().collect();
         assert_eq!(all_district_set, none_used_result);
         assert_eq!(BTreeSet::new(), all_used_result);
         assert_eq!(
-            BTreeSet::from([ElectoralDistrict::UT, ElectoralDistrict::OV]),
+            BTreeSet::from([
+                ElectoralDistrict::OV,
+                ElectoralDistrict::UT,
+                ElectoralDistrict::ZE,
+                ElectoralDistrict::ZH,
+                ElectoralDistrict::BO,
+                ElectoralDistrict::SE,
+                ElectoralDistrict::SA,
+                ElectoralDistrict::KN,
+            ]),
             some_used_result
         );
     }

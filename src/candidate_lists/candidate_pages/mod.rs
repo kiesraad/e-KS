@@ -1,9 +1,12 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
-use uuid::Uuid;
 
-use crate::{AppError, AppState, candidate_lists::Candidate};
+use crate::{
+    AppError, AppState,
+    candidate_lists::{Candidate, CandidateListId},
+    persons::PersonId,
+};
 
 mod add;
 mod create;
@@ -13,71 +16,62 @@ mod edit_position;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/reorder/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/reorder/{person_id}", rejection(AppError))]
 pub struct EditCandidatePositionPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{candidate_list}/edit/{person}", rejection(AppError))]
+#[typed_path("/candidate-lists/{list_id}/edit/{person_id}", rejection(AppError))]
 pub struct CandidateListEditPersonPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/address/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/address/{person_id}", rejection(AppError))]
 pub struct CandidateListEditAddressPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{candidate_list}/delete/{person}",
-    rejection(AppError)
-)]
+#[typed_path("/candidate-lists/{list_id}/delete/{person_id}", rejection(AppError))]
 pub struct CandidateListDeletePersonPath {
-    pub candidate_list: Uuid,
-    pub person: Uuid,
+    pub list_id: CandidateListId,
+    pub person_id: PersonId,
 }
 
 impl Candidate {
     pub fn edit_position_path(&self) -> String {
         EditCandidatePositionPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn edit_path(&self) -> String {
         CandidateListEditPersonPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn edit_address_path(&self) -> String {
         CandidateListEditAddressPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }
 
     pub fn delete_path(&self) -> String {
         CandidateListDeletePersonPath {
-            candidate_list: self.list_id,
-            person: self.person.id,
+            list_id: self.list_id,
+            person_id: self.person.id,
         }
         .to_string()
     }

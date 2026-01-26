@@ -1,62 +1,29 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppState, Context, CsrfTokens, DbConnection,
+    AppError, CsrfTokens, DbConnection,
     candidate_lists::{
-        self, CandidateList,
-        candidate_pages::{CandidateListDeletePersonPath, CandidateListEditPersonPath},
+        self, Candidate, CandidateList, candidate_pages::CandidateListDeletePersonPath,
     },
     form::{EmptyForm, Validate},
     persons,
 };
 
 pub async fn delete_person(
-    CandidateListDeletePersonPath {
-        candidate_list,
-        person,
-    }: CandidateListDeletePersonPath,
-    context: Context,
-    _: State<AppState>,
+    _: CandidateListDeletePersonPath,
     csrf_tokens: CsrfTokens,
+    candidate: Candidate,
     DbConnection(mut conn): DbConnection,
     form: Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate(None, &csrf_tokens) {
-        Err(_) => {
-            // csrf token is invalid => back to edit view
-            Ok(Redirect::to(
-                &CandidateListEditPersonPath {
-                    candidate_list,
-                    person,
-                }
-                .to_string(),
-            )
-            .into_response())
-        }
+    match form.validate_create(&csrf_tokens) {
+        Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
         Ok(_) => {
-            let full_list = candidate_lists::pages::load_candidate_list(
-                &mut conn,
-                &candidate_list,
-                context.locale,
-            )
-            .await?;
-            let candidate = full_list.get_candidate(&person, context.locale)?;
+            candidate_lists::remove_candidate(&mut conn, candidate.list_id, candidate.person.id)
+                .await?;
 
-            // remove person from list
-            let mut updates_ids = full_list.get_ids();
-            updates_ids.retain(|id| id != &candidate.person.id);
-            candidate_lists::repository::update_candidate_list_order(
-                &mut conn,
-                &candidate_list,
-                &updates_ids,
-            )
-            .await?;
-
-            persons::repository::remove_person(&mut conn, &candidate.person.id).await?;
+            persons::remove_person(&mut conn, candidate.person.id).await?;
 
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
@@ -66,18 +33,14 @@ pub async fn delete_person(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        extract::State,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::extract::Form;
     use sqlx::PgPool;
-    use uuid::Uuid;
 
     use crate::{
-        AppState, Context, CsrfTokens, DbConnection, Locale,
-        candidate_lists::{self, CandidateList},
-        persons,
+        CsrfTokens, DbConnection,
+        candidate_lists::{self, CandidateList, CandidateListId},
+        persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
 
@@ -85,34 +48,33 @@ mod tests {
     async fn delete_person_removes_from_list_and_redirects(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let list_id = Uuid::new_v4();
+        let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let person = sample_person(Uuid::new_v4());
-        let other_person = sample_person_with_last_name(Uuid::new_v4(), "Other");
+        let person = sample_person(PersonId::new());
+        let other_person = sample_person_with_last_name(PersonId::new(), "Other");
 
         let mut conn = pool.acquire().await?;
-        candidate_lists::repository::create_candidate_list(&mut conn, &list).await?;
-        persons::repository::create_person(&mut conn, &person).await?;
-        persons::repository::create_person(&mut conn, &other_person).await?;
-        candidate_lists::repository::update_candidate_list_order(
+        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&mut conn, &other_person).await?;
+        candidate_lists::update_candidate_list_order(
             &mut conn,
-            &list_id,
+            list_id,
             &[person.id, other_person.id],
         )
         .await?;
+        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
 
-        let app_state = AppState::new_for_tests(pool.clone());
         let csrf_tokens = CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
 
         let response = delete_person(
             CandidateListDeletePersonPath {
-                candidate_list: list_id,
-                person: person.id,
+                list_id,
+                person_id: person.id,
             },
-            Context::new(Locale::En),
-            State(app_state),
-            csrf_tokens.clone(),
+            csrf_tokens,
+            candidate,
             DbConnection(pool.acquire().await?),
             Form(EmptyForm::from(csrf_token)),
         )
@@ -129,14 +91,13 @@ mod tests {
         assert_eq!(location, CandidateList::list_path());
 
         let mut conn = pool.acquire().await?;
-        let updated_list =
-            candidate_lists::repository::get_full_candidate_list(&mut conn, &list_id)
-                .await?
-                .expect("candidate list");
+        let updated_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+            .await?
+            .expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);
         assert_eq!(updated_list.candidates[0].person.id, other_person.id);
 
-        let removed = persons::repository::get_person(&mut conn, &person.id).await?;
+        let removed = persons::get_person(&mut conn, person.id).await?;
         assert!(removed.is_none());
 
         Ok(())
