@@ -67,8 +67,10 @@
 </div>
 <div class="form-row">
   <p class="form-field">
-    <label for="place_of_residence">{{ "person.fields.place_of_residence"|trans }}</label>
-    <input type="text" name="place_of_residence" id="place_of_residence" value="{{ form.data.place_of_residence }}" />
+    <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
+    <input type="text" name="place_of_residence" id="locality" value="{{ form.data.place_of_residence }}"
+      list="locality-suggestions" />
+    <datalist id="locality-suggestions"></datalist>
     {% for error in form|error("place_of_residence") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
