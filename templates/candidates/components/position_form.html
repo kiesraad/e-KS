@@ -5,7 +5,7 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
     <p class="form-field form-field-sm">
-      <label for="position">{{ t!("candidate_list.fields.position")|trans }}</label>
+      <label for="position">{{ "candidate_list.fields.position"|trans }}</label>
       <input type="number" id="position" name="position" min="1" value="{{ form.data.position }}" required>
       {% for error in form|error("position") %}
       <span class="error">{{ error }}</span>
@@ -15,9 +15,9 @@
       <table class="table" id="position-preview">
         <thead>
           <tr>
-            <th>{{ t!("candidate_list.fields.position")|trans }}</th>
-            <th>{{ t!("person.fields.name")|trans }}</th>
-            <th>{{ t!("person.fields.locality")|trans }}</th>
+            <th>{{ "candidate_list.fields.position"|trans }}</th>
+            <th>{{ "person.fields.name"|trans }}</th>
+            <th>{{ "person.fields.locality"|trans }}</th>
           </tr>
         </thead>
         <tbody>
@@ -45,7 +45,7 @@
     </div>
     <p class="mt-xl">
       <button type="submit" class="button tertiary-destructive icon-trash" name="action" value="remove">
-        {{ t!("candidate_list.remove_candidate")|trans }}
+        {{ "candidate_list.remove_candidate"|trans }}
       </button>
     </p>
   </fieldset>

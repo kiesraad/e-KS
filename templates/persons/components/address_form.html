@@ -2,21 +2,21 @@
 
 <div class="form-row">
   <p class="form-field form-field-sm">
-    <label for="postal_code">{{ t!("person.fields.postal_code")|trans }}</label>
+    <label for="postal_code">{{ "person.fields.postal_code"|trans }}</label>
     <input type="text" name="postal_code" id="postal_code" value="{{ form.data.postal_code }}" />
     {% for error in form|error("postal_code") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field form-field-sm">
-    <label for="house_number">{{ t!("person.fields.house_number")|trans }}</label>
+    <label for="house_number">{{ "person.fields.house_number"|trans }}</label>
     <input type="text" name="house_number" id="house_number" value="{{ form.data.house_number }}" />
     {% for error in form|error("house_number") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field form-field-sm">
-    <label for="house_number_addition">{{ t!("person.fields.house_number_addition")|trans }}</label>
+    <label for="house_number_addition">{{ "person.fields.house_number_addition"|trans }}</label>
     <input type="text" name="house_number_addition" id="house_number_addition"
       value="{{ form.data.house_number_addition }}" />
     {% for error in form|error("house_number_addition") %}
@@ -27,14 +27,14 @@
 
 <div class="form-row">
   <p class="form-field">
-    <label for="street_name">{{ t!("person.fields.street_name")|trans }}</label>
+    <label for="street_name">{{ "person.fields.street_name"|trans }}</label>
     <input type="text" name="street_name" id="street_name" value="{{ form.data.street_name }}" />
     {% for error in form|error("street_name") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field">
-    <label for="locality">{{ t!("person.fields.locality")|trans }}</label>
+    <label for="locality">{{ "person.fields.locality"|trans }}</label>
     <input type="text" name="locality" id="locality" value="{{ form.data.locality }}" list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>
     {% for error in form|error("locality") %}

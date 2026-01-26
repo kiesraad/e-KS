@@ -7,11 +7,11 @@
 <form method="post" action="{{ candidate_list.update_path() }}" class="overlay">
   <header>
     <h2>
-      {{ t!("candidate_list.form.update.title")|trans }}
+      {{ "candidate_list.form.update.title"|trans }}
     </h2>
-    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
       <span>
-        {{ t!("action.close")|trans }}
+        {{ "action.close"|trans }}
       </span>
     </a>
   </header>
@@ -20,7 +20,7 @@
       <ul>
         <li>
           <a href="{{ candidate_list.update_path() }}">
-            {{ t!("candidate_list.fields.electoral_districts")|trans }}
+            {{ "candidate_list.fields.electoral_districts"|trans }}
           </a>
         </li>
       </ul>
@@ -28,13 +28,13 @@
     <div class="form">
       {% include "candidate_lists/components/form.html" %}
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ t!("candidate_list.actions.delete_list")|trans }}
+        {{ "candidate_list.actions.delete_list"|trans }}
       </button>
     </div>
   </div>
   <footer>
     <button type="submit" class="button">
-      {{ t!("action.save")|trans }}
+      {{ "action.save"|trans }}
     </button>
   </footer>
 </form>
@@ -42,20 +42,20 @@
 <dialog class="modal">
   <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ t!("action.close")|trans }}">
+    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
       <span>
-        {{ t!("action.close")|trans }}
+        {{ "action.close"|trans }}
       </span>
     </button>
     <h3>
-      {{ t!("candidate_list.actions.delete_list")|trans }}
+      {{ "candidate_list.actions.delete_list"|trans }}
     </h3>
-    <p class="mt-lg mb-lg">{{ t!("candidate_list.form.delete_warning_text")|trans }}</p>
+    <p class="mt-lg mb-lg">{{ "candidate_list.form.delete_warning_text"|trans }}</p>
     <button type="submit" class="button primary-destructive">
-      {{ t!("action.delete")|trans }}
+      {{ "action.delete"|trans }}
     </button>
     <button type="submit" class="button secondary close">
-      {{ t!("action.cancel")|trans }}
+      {{ "action.cancel"|trans }}
     </button>
   </form>
 </dialog>

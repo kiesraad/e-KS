@@ -46,7 +46,7 @@ impl PersonRecord {
             date_of_birth: NaiveDate::parse_from_str(&self.date_of_birth, DEFAULT_DATE_FORMAT).ok(),
             bsn: None,
             place_of_residence: Some(self.locality.clone()),
-            country_of_residence: Some("Nederland".to_string()),
+            country_of_residence: Some("NL".to_string()),
             locality: Some(self.locality),
             postal_code: Some(self.postal_code),
             house_number: Some(self.house_number),

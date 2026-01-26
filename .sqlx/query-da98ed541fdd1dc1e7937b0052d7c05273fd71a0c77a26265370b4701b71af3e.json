@@ -62,7 +62,7 @@
       {
         "ordinal": 9,
         "name": "country_of_residence",
-        "type_info": "Varchar"
+        "type_info": "Bpchar"
       },
       {
         "ordinal": 10,
@@ -122,7 +122,7 @@
         "Date",
         "Bpchar",
         "Varchar",
-        "Varchar",
+        "Bpchar",
         "Varchar",
         "Varchar",
         "Varchar",

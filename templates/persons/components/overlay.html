@@ -12,9 +12,9 @@
         {{ person.display_name() }}
       {% endblock %}
     </h2>
-    <a href="{% block close_path %}{{ Person::list_path() }}{% endblock %}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{% block close_path %}{{ Person::list_path() }}{% endblock %}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
       <span>
-        {{ t!("action.close")|trans }}
+        {{ "action.close"|trans }}
       </span>
     </a>
   </header>
@@ -22,7 +22,7 @@
   {% block overlay_footer %}
   <footer>
     <button type="submit" class="button" name="action" value="move">
-      {{ t!("action.save")|trans }}
+      {{ "action.save"|trans }}
     </button>
   </footer>
   {% endblock %}

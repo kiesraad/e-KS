@@ -8,7 +8,6 @@ use crate::{
     persons::{
         self, AddressForm, Person, PersonPagination, PersonSort, pages::EditPersonAddressPath,
     },
-    t,
 };
 
 #[derive(Template)]

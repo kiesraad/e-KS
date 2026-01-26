@@ -2,24 +2,24 @@
   <ul>
     <li>
       <a href="{{ candidate.edit_path() }}">
-        {{ t!("person.personal_details")|trans }}
+        {{ "person.personal_details"|trans }}
       </a>
     </li>
     <li>
       <a href="{{ candidate.edit_address_path() }}">
-        {{ t!("person.correspondence_address")|trans }}
+        {{ "person.correspondence_address"|trans }}
       </a>
     </li>
     {% if !candidate.person.is_dutch() %}
     <li>
       <a href="#">
-        {{ t!("person.authorized_person")|trans }}
+        {{ "person.authorized_person"|trans }}
       </a>
     </li>
     {% endif %}
     <li>
       <a href="{{ candidate.edit_position_path() }}">
-        {{ t!("candidate_list.edit_position")|trans }}
+        {{ "candidate_list.edit_position"|trans }}
       </a>
     </li>
   </ul>

@@ -4,7 +4,7 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, CsrfTokens,
     candidate_lists::{self, FullCandidateList},
-    t,
+    trans,
 };
 
 use super::CandidateListPathParams;
@@ -30,7 +30,7 @@ where
 
         let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
             .await?
-            .ok_or(AppError::NotFound(t!(
+            .ok_or(AppError::NotFound(trans!(
                 "candidate_list.not_found",
                 context.locale,
                 list_id
@@ -57,7 +57,7 @@ mod tests {
         AppState, Locale,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
-        render_error_pages, t,
+        render_error_pages,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -135,7 +135,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
-        let expected = t!("candidate_list.not_found", Locale::En, list_id);
+        let expected = trans!("candidate_list.not_found", Locale::En, list_id);
         assert!(body.contains(&expected));
     }
 }

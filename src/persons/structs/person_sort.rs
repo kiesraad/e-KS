@@ -10,7 +10,7 @@ pub enum PersonSort {
     FirstName,
     Initials,
     Gender,
-    Locality,
+    PlaceOfResidence,
     CreatedAt,
     UpdatedAt,
 }

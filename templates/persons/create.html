@@ -1,6 +1,6 @@
 {% extends "persons/components/overlay.html" %}
 
-{% block overlay_title %}{{ t!("person.form.create.title")|trans }}{% endblock %}
+{% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
 {% block overlay_start %}<form method="post" action="{{ Person::new_path() }}" class="overlay">{% endblock %}
 {% block overlay_end %}</form>{% endblock %}
 
@@ -10,12 +10,12 @@
     <ul>
       <li>
         <a href="{{ Person::new_path() }}" class="active">
-          {{ t!("person.personal_details")|trans }}
+          {{ "person.personal_details"|trans }}
         </a>
       </li>
       <li>
         <a class="disabled" disabled>
-          {{ t!("person.correspondence_address")|trans }}
+          {{ "person.correspondence_address"|trans }}
         </a>
       </li>
     </ul>
@@ -23,7 +23,7 @@
   <div class="form">
     <fieldset>
       <legend>
-        <h2>{{ t!("person.form.create.title")|trans }}</h2>
+        <h2>{{ "person.form.create.title"|trans }}</h2>
       </legend>
       {% include "persons/components/form.html" %}
     </fieldset>

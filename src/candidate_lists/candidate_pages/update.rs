@@ -9,8 +9,7 @@ use crate::{
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, PersonForm},
-    t,
+    persons::{self, COUNTRY_CODES, PersonForm},
 };
 
 #[derive(Template)]
@@ -19,6 +18,7 @@ struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<PersonForm>,
+    countries: &'static [&'static str],
 }
 
 pub async fn edit_person_form(
@@ -35,6 +35,7 @@ pub async fn edit_person_form(
             ),
             candidate,
             full_list,
+            countries: &COUNTRY_CODES,
         },
         context,
     ))
@@ -54,6 +55,7 @@ pub async fn update_person(
                 candidate,
                 full_list,
                 form: form_data,
+                countries: &COUNTRY_CODES,
             },
             context,
         )

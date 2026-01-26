@@ -7,11 +7,11 @@
 <form method="post" action="{{ CandidateList::new_path() }}" class="overlay">
   <header>
     <h2>
-      {{ t!("candidate_list.form.create.title")|trans }}
+      {{ "candidate_list.form.create.title"|trans }}
     </h2>
-    <a href="{{ CandidateList::list_path() }}" class="close-overlay" aria-label="{{ t!("action.close")|trans }}">
+    <a href="{{ CandidateList::list_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
       <span>
-        {{ t!("action.close")|trans }}
+        {{ "action.close"|trans }}
       </span>
     </a>
   </header>
@@ -20,7 +20,7 @@
       <ul>
         <li>
           <a href="{{ CandidateList::new_path() }}">
-            {{ t!("candidate_list.fields.electoral_districts")|trans }}
+            {{ "candidate_list.fields.electoral_districts"|trans }}
           </a>
         </li>
       </ul>
@@ -31,7 +31,7 @@
   </div>
   <footer>
     <button type="submit" class="button">
-      {{ t!("action.save")|trans }}
+      {{ "action.save"|trans }}
     </button>
   </footer>
 </form>

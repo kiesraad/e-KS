@@ -179,3 +179,21 @@
     }
   }
 }
+
+.form .input-icon {
+  position: relative;
+  display: inline-block;
+
+  .icon {
+    position: absolute;
+    left: 1rem;
+    top: 50%;
+    transform: translateY(-50%);
+    pointer-events: none;
+    font-size: 1rem;
+  }
+
+  input {
+    padding-left: 3rem;
+  }
+}

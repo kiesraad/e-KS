@@ -7,22 +7,22 @@
       <ul>
         <li>
           <a href="/" class="home">
-            <span>{{ t!("common.home")|trans }}</span>
+            <span>{{ "common.home"|trans }}</span>
           </a>
         </li>
         <li>
           <a href="{{ crate::political_groups::PoliticalGroupPath{}.to_string() }}">
-            {{ t!("common.general_information")|trans }}
+            {{ "common.general_information"|trans }}
           </a>
         </li>
         <li>
           <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
-            {{ t!("candidate_list.title")|trans }}
+            {{ "candidate_list.title"|trans }}
           </a>
         </li>
         <li>
           <a href="{{ crate::submit::SubmitPath{}.to_string() }}">
-            {{ t!("common.submit")|trans }}
+            {{ "common.submit"|trans }}
           </a>
         </li>
       </ul>
@@ -31,12 +31,12 @@
           <strong>Evert Klaas Smit</strong>
           <span>(Lijst Hekking)</span>
         </li>
-        <li><a href="/" class="logout">{{ t!("action.signout")|trans }}</a></li>
+        <li><a href="/" class="logout">{{ "action.signout"|trans }}</a></li>
       </ul>
     </nav>
     <div class="header-content">
       <div>
-        <h1>{% block page_title %}{{ t!("common.title")|trans }}{% endblock %}</h1>
+        <h1>{% block page_title %}{{ "common.title"|trans }}{% endblock %}</h1>
         {% block page_sub_title %}{% endblock %}
       </div>
       {% block header_action %}{% endblock %}
@@ -46,7 +46,7 @@
     {% block content %}{% endblock %}
   </main>
   <footer>
-    <span>{{ t!("common.title")|trans }}</span>
-    <span>{{ t!("common.version")|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
+    <span>{{ "common.title"|trans }}</span>
+    <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
   </footer>
 {% endblock %}

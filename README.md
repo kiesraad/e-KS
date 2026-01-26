@@ -53,6 +53,7 @@ bin/dev
 - `bin/init`: build and download development tools
 - `bin/check`: run linters and formatters
 - `bin/build`: build backend and frontend for production
+- `bin/update_locales`: update locale files based on used keys in the codebase
 
 ## Playwright tests
 

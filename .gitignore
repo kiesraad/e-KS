@@ -32,3 +32,4 @@ lcov.info
 /bin/bag-service
 /bin/dev
 /bin/setup
+/bin/update_locales

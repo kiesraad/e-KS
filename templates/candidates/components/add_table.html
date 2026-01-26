@@ -2,8 +2,8 @@
   <thead>
     <tr>
       <th scope="col"></th>
-      <th scope="col">{{ t!("person.fields.name")|trans }}</th>
-      <th scope="col">{{ t!("person.fields.initials")|trans }}</th>
+      <th scope="col">{{ "person.fields.name"|trans }}</th>
+      <th scope="col">{{ "person.fields.place_of_residence"|trans }}</th>
       <th scope="col"></th>
     </tr>
   </thead>
@@ -19,13 +19,13 @@
         {% endif %}
       </td>
       <td>
-        {% if let Some(locality) = person.locality %}
-          {{ locality }}
+        {% if let Some(place_of_residence) = person.place_of_residence %}
+          {{ place_of_residence }}
         {% endif %}
       </td>
       <td>
         <button type="submit" name="person_id" value="{{ person.id }}">
-          <span>{{ t!("action.add")|trans }}</span>
+          <span>{{ "action.add"|trans }}</span>
         </button>
       </td>
     </tr>
