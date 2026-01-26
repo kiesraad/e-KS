@@ -1,4 +1,4 @@
-import { Page } from "@playwright/test";
+import { expect, Page } from "@playwright/test";
 
 export class CandidateListsOverviewPage {
         
@@ -13,14 +13,20 @@ export class CandidateListsOverviewPage {
     }
 
     async addList() {
-        await this.page.getByRole('link', { name: 'Add list' }).click();
+        await this.page.getByRole('main').getByRole('link', { name: 'Add list' }).click();
     }
 
     async manageList() {
-        await this.page.getByRole('link', { name: 'Manage list' }).first().click();
+        await this.page.getByRole('link', { name: 'Candidate list Electoral' }).first().click();
     }
 
     async managePersons() {
-        await this.page.getByRole('link', { name: 'Manage persons' }).click();
+        await this.page.getByRole('heading', { name: 'All persons' }).click();
+    }
+
+    async checkDistricts(districts: string[]) {
+        for(var district of districts) {
+              await expect(this.page.getByRole('listitem', { name: district })).toHaveCount(0);
+        }
     }
 }

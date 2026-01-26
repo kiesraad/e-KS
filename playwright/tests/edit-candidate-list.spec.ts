@@ -11,8 +11,8 @@ test('edit candidate list', async ({ page }) => {
   await manageCandidateListPage.removeDistricts(['Drenthe', 'Friesland', 'Groningen']);
 
   await candidateListsOverviewPage.open();
-  await expect(page.getByText('Electoral districts: Flevoland, Gelderland, Limburg, Noord-Brabant, Noord-')).toBeVisible();
-  
+  await candidateListsOverviewPage.checkDistricts(['Drenthe', 'Friesland', 'Groningen']);
+
   await candidateListsOverviewPage.manageList();
   await manageCandidateListPage.addDistricts(['Drenthe', 'Friesland', 'Groningen']);
 

@@ -22,7 +22,7 @@ export class PersonsPage {
             await this.page.getByLabel('First name').fill(candidate.firstName ?? '');
             await this.page.getByLabel('Gender').selectOption(candidate.gender ?? '');
             await this.page.getByRole('textbox', { name: 'Date of birth' }).fill(candidate.dateOfBirth ?? '');
-            await this.page.getByRole('button', {name: 'Next'}).click();
+            await this.page.getByRole('button', {name: 'Save'}).click();
             await this.page.getByRole('textbox', { name: 'Postal code' }).fill(candidate.postalCode ?? '');
             await this.page.getByRole('textbox', { name: 'House number', exact: true }).fill(candidate.houseNumber ?? '');
             await this.page.getByRole('textbox', { name: 'House number', exact: true }).press('Tab');
@@ -33,4 +33,9 @@ export class PersonsPage {
         }      
     }
 
+    async checkPerson(candidates: Candidate[]) {
+        for(var candidate of candidates) {
+            await expect(this.page.getByRole('cell' ))
+        }
+    }
 }
