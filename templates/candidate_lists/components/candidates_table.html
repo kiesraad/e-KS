@@ -3,7 +3,7 @@
     <tr>
       <th scope="col" colspan="2">{{ "candidate_list.fields.position"|trans }}</th>
       <th scope="col">{{ "person.fields.name"|trans }}</th>
-      <th scope="col">{{ "person.fields.locality"|trans }}</th>
+      <th scope="col">{{ "person.fields.place_of_residence"|trans }}</th>
       <th scope="col">
         {{ "candidate_list.candidate_count"|trans(&full_list.candidates.len().to_string(), &max_candidates.to_string())|safe }}
       </th>
@@ -24,8 +24,8 @@
         {% endif %}
       </td>
       <td>
-        {% if let Some(locality) = candidate.person.locality %}
-          {{ locality }}
+        {% if let Some(place_of_residence) = candidate.person.place_of_residence %}
+          {{ place_of_residence }}
         {% endif %}
       </td>
       <td>

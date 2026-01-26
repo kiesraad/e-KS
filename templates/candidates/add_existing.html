@@ -1,6 +1,6 @@
 {% extends "candidates/components/overlay.html" %}
 
-{% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}]{% endblock %}
+{% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}{% endblock %}
 
 {% block overlay_content %}
   <form method="post" action="{{ full_list.list.add_candidate_path() }}" class="form overlay-content">
