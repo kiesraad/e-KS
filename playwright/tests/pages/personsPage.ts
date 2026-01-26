@@ -13,7 +13,7 @@ export class PersonsPage {
         await this.page.goto('/persons');
     }
 
-    async addPerson(candidates: Candidate[]) {
+    async addPersons(candidates: Candidate[]) {
         for(var candidate of candidates) {
             await this.page.getByRole('link', { name: 'Add person' }).click();
             await this.page.getByLabel('Initials').fill(candidate.initials);
