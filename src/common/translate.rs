@@ -1,5 +1,5 @@
 //! Translation macro definitions backed by generated locale strings.
-//! Used in templates and handlers via the `t!` macro.
+//! Used in rust sources with the `trans!` macro, and in templates with the `|trans` filter.
 include!(concat!(env!("OUT_DIR"), "/locales.rs"));
 
 #[macro_export]
