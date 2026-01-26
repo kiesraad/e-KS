@@ -79,7 +79,7 @@ mod tests {
 
     #[sqlx::test]
     async fn index_route_renders_index(pool: PgPool) {
-        let state = AppState::new_for_tests(pool.clone());
+        let state = AppState::new_for_tests(&pool).await;
         let app: Router = create(state.clone()).with_state(state);
 
         let request = Request::builder().uri("/").body(Body::empty()).unwrap();
@@ -92,7 +92,7 @@ mod tests {
 
     #[sqlx::test]
     async fn fallback_route_renders_not_found(pool: PgPool) {
-        let state = AppState::new_for_tests(pool.clone());
+        let state = AppState::new_for_tests(&pool).await;
         let app: Router = create(state.clone()).with_state(state);
 
         let request = Request::builder()

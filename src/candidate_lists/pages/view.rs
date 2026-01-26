@@ -43,18 +43,17 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person).await?;
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id]).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id]).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
         let response = view_candidate_list(
             ViewCandidateListPath { list_id },
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             full_list,
         )
         .await

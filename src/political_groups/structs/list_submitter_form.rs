@@ -15,25 +15,25 @@ use validate::Validate;
 #[serde(default)]
 pub struct ListSubmitterForm {
     #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
-    last_name: String,
+    pub last_name: String,
     #[validate(
         with = "validate_length(1, 255)",
         with = "validate_teletex_chars()",
         optional
     )]
-    last_name_prefix: String,
+    pub last_name_prefix: String,
     #[validate(with = "validate_initials()")]
-    initials: String,
+    pub initials: String,
     #[validate(with = "validate_length(2, 255)")]
-    locality: String,
+    pub locality: String,
     #[validate(with = "validate_length(2, 16)")]
-    postal_code: String,
+    pub postal_code: String,
     #[validate(with = "validate_length(1, 16)")]
-    house_number: String,
+    pub house_number: String,
     #[validate(with = "validate_length(1, 16)", optional)]
-    house_number_addition: String,
+    pub house_number_addition: String,
     #[validate(with = "validate_length(2, 255)")]
-    street_name: String,
+    pub street_name: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
@@ -78,6 +78,22 @@ impl ListSubmitterForm {
                 created_at: Utc::now(),
                 updated_at: Utc::now(),
             }
+        }
+    }
+}
+
+impl From<ListSubmitter> for ListSubmitterForm {
+    fn from(value: ListSubmitter) -> Self {
+        ListSubmitterForm {
+            last_name: value.last_name,
+            last_name_prefix: value.last_name_prefix.unwrap_or_default(),
+            initials: value.initials,
+            locality: value.locality,
+            postal_code: value.postal_code,
+            house_number: value.house_number,
+            house_number_addition: value.house_number_addition.unwrap_or_default(),
+            street_name: value.street_name,
+            csrf_token: Default::default(),
         }
     }
 }

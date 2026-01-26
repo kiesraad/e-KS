@@ -1,28 +1,29 @@
-use sqlx::{PgConnection, PgPool};
+use sqlx::PgPool;
 
 use crate::AppError;
 
 mod candidate_list;
 mod persons;
+mod political_groups;
 
 pub async fn load(pool: &PgPool) -> Result<(), AppError> {
-    let mut conn = pool.acquire().await?;
-
-    clear_database(&mut conn).await?;
-    persons::load(&mut conn).await?;
-    candidate_list::load(&mut conn).await?;
+    clear_database(pool).await?;
+    persons::load(pool).await?;
+    candidate_list::load(pool).await?;
+    political_groups::load(pool).await?;
 
     Ok(())
 }
 
-async fn clear_database(conn: &mut PgConnection) -> Result<(), AppError> {
+async fn clear_database(db: &PgPool) -> Result<(), AppError> {
     sqlx::query!(
         "
-        TRUNCATE TABLE candidate_lists_persons, candidate_lists, persons
+        TRUNCATE TABLE authorised_agents, list_submitters, political_groups,
+        candidate_lists_persons, candidate_lists, persons
         RESTART IDENTITY CASCADE
         "
     )
-    .execute(conn)
+    .execute(db)
     .await?;
 
     Ok(())
@@ -36,9 +37,8 @@ mod tests {
     #[sqlx::test]
     async fn test_load_all_fixtures(pool: PgPool) {
         load(&pool).await.unwrap();
-        let mut conn = pool.acquire().await.unwrap();
         let persons = crate::persons::list_persons(
-            &mut conn,
+            &pool,
             50,
             0,
             &crate::persons::PersonSort::LastName,

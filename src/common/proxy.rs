@@ -78,7 +78,7 @@ mod tests {
             axum::serve(listener, upstream_router).await.unwrap();
         });
 
-        let app_state = AppState::new_for_tests(pool);
+        let app_state = AppState::new_for_tests(&pool).await;
         let app = Router::new()
             .route("/up", proxy_handler(format!("http://{addr}")))
             .with_state(app_state);

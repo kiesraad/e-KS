@@ -24,7 +24,7 @@ pub use common::{
     locale,
     locale::Locale,
     logging, new_type, server,
-    state::{AppState, DbConnection},
+    state::AppState,
     templates::HtmlTemplate,
     translate,
 };

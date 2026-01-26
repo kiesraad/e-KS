@@ -177,7 +177,7 @@ mod tests {
 
     #[sqlx::test]
     async fn not_found_renders_template_with_message(pool: PgPool) {
-        let state = AppState::new_for_tests(pool);
+        let state = AppState::new_for_tests(&pool).await;
         let app = Router::new()
             .route(
                 "/",
@@ -198,7 +198,7 @@ mod tests {
 
     #[sqlx::test]
     async fn validation_error_maps_to_bad_request(pool: PgPool) {
-        let state = AppState::new_for_tests(pool);
+        let state = AppState::new_for_tests(&pool).await;
         let app = Router::new()
             .route(
                 "/",
@@ -220,7 +220,7 @@ mod tests {
 
     #[sqlx::test]
     async fn database_error_maps_to_internal_server_error(pool: PgPool) {
-        let state = AppState::new_for_tests(pool);
+        let state = AppState::new_for_tests(&pool).await;
         let app = Router::new()
             .route(
                 "/",

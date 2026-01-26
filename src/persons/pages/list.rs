@@ -41,12 +41,11 @@ mod tests {
         let id = PersonId::new();
         let person = sample_person(id);
 
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&pool, &person).await?;
 
         let response = list_persons(
             PersonsPath {},
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             PersonPagination {
                 persons: vec![person],
                 pagination: Pagination::default().set_total(1),

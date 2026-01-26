@@ -1,7 +1,8 @@
+mod extractors;
 mod pages;
 mod repository;
 mod structs;
 
-pub use pages::{PoliticalGroupPath, router};
+pub use pages::router;
 pub use repository::*;
 pub use structs::*;

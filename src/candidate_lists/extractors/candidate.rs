@@ -21,14 +21,12 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let mut conn = PgPool::from_ref(state).acquire().await?;
-        let context = Context::from_request_parts(parts, state)
-            .await
-            .unwrap_or_default();
+        let pool = PgPool::from_ref(state);
+        let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
             Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
 
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_id)
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person_id)
             .await
             .map_err(|err| match err {
                 sqlx::Error::RowNotFound => AppError::NotFound(
@@ -68,21 +66,22 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&pool, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person).await.unwrap();
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        persons::create_person(&pool, &person).await.unwrap();
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id])
             .await
             .unwrap();
+
+        let app_state = AppState::new_for_tests(&pool).await;
 
         let app = Router::new()
             .route(
                 "/candidate-lists/{list_id}/persons/{person_id}",
                 get(|candidate: Candidate| async move { candidate.person.last_name.clone() }),
             )
-            .with_state(AppState::new_for_tests(pool));
+            .with_state(app_state);
 
         let response = app
             .oneshot(
@@ -101,16 +100,15 @@ mod tests {
 
     #[sqlx::test]
     async fn candidate_extractor_returns_not_found(pool: PgPool) {
-        let state = AppState::new_for_tests(pool.clone());
+        let state = AppState::new_for_tests(&pool).await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&pool, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person).await.unwrap();
+        persons::create_person(&pool, &person).await.unwrap();
 
         let app = Router::new()
             .route(

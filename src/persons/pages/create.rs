@@ -1,9 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate, filters,
+    AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
         self, COUNTRY_CODES, Person, PersonForm, PersonPagination, PersonSort,
@@ -37,7 +41,7 @@ pub async fn new_person_form(
 pub async fn create_person(
     _: PersonsNewPath,
     context: Context,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     person_pagination: PersonPagination,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
@@ -52,7 +56,7 @@ pub async fn create_person(
         )
         .into_response()),
         Ok(person) => {
-            persons::create_person(&mut conn, &person).await?;
+            persons::create_person(&pool, &person).await?;
 
             Ok(Redirect::to(&person.edit_address_path()).into_response())
         }
@@ -70,13 +74,13 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, persons,
+        Context, persons,
         test_utils::{response_body_string, sample_person_form},
     };
 
-    #[tokio::test]
-    async fn new_person_form_renders_csrf_field() {
-        let context = Context::new_test();
+    #[sqlx::test]
+    async fn new_person_form_renders_csrf_field(pool: PgPool) {
+        let context = Context::new_test(pool).await;
 
         let response = new_person_form(PersonsNewPath {}, context, PersonPagination::empty())
             .await
@@ -92,14 +96,14 @@ mod tests {
 
     #[sqlx::test]
     async fn create_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let response = create_person(
             PersonsNewPath {},
             context,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             PersonPagination::empty(),
             Form(form),
         )
@@ -115,8 +119,7 @@ mod tests {
             .expect("location header value");
         assert!(location.ends_with("/address"));
 
-        let mut conn = pool.acquire().await?;
-        let count = persons::count_persons(&mut conn).await?;
+        let count = persons::count_persons(&pool).await?;
         assert_eq!(count, 1);
 
         Ok(())
@@ -124,7 +127,7 @@ mod tests {
 
     #[sqlx::test]
     async fn create_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
@@ -132,7 +135,7 @@ mod tests {
         let response = create_person(
             PersonsNewPath {},
             context,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             PersonPagination::empty(),
             Form(form),
         )

@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sqlx::PgConnection;
+use sqlx::PgPool;
 
 use crate::{
     candidate_lists::CandidateListId,
@@ -7,21 +7,21 @@ use crate::{
     persons::{Gender, Person, PersonId, PersonSort},
 };
 
-pub async fn count_persons(conn: &mut PgConnection) -> Result<i64, sqlx::Error> {
+pub async fn count_persons(db: &PgPool) -> Result<i64, sqlx::Error> {
     let record = sqlx::query!(
         r#"
         SELECT COUNT(*) as "count!"
         FROM persons
         "#
     )
-    .fetch_one(conn)
+    .fetch_one(db)
     .await?;
 
     Ok(record.count)
 }
 
 pub async fn list_persons_not_on_candidate_list(
-    conn: &mut PgConnection,
+    db: &PgPool,
     candidate_list_id: CandidateListId,
 ) -> Result<Vec<Person>, sqlx::Error> {
     sqlx::query_file_as!(
@@ -29,12 +29,12 @@ pub async fn list_persons_not_on_candidate_list(
         "sql/persons/list_persons_not_on_candidate_list.sql",
         candidate_list_id.uuid(),
     )
-    .fetch_all(conn)
+    .fetch_all(db)
     .await
 }
 
 pub async fn list_persons(
-    conn: &mut PgConnection,
+    db: &PgPool,
     limit: i64,
     offset: i64,
     sort_field: &PersonSort,
@@ -48,25 +48,19 @@ pub async fn list_persons(
         sort_field.as_ref(),
         sort_direction.as_ref(),
     )
-    .fetch_all(conn)
+    .fetch_all(db)
     .await
 }
 
-pub async fn get_person(
-    conn: &mut PgConnection,
-    person_id: PersonId,
-) -> Result<Option<Person>, sqlx::Error> {
+pub async fn get_person(db: &PgPool, person_id: PersonId) -> Result<Option<Person>, sqlx::Error> {
     let person = sqlx::query_file_as!(Person, "sql/persons/get_person_by_id.sql", person_id.uuid())
-        .fetch_optional(conn)
+        .fetch_optional(db)
         .await?;
 
     Ok(person)
 }
 
-pub async fn create_person(
-    conn: &mut PgConnection,
-    new_person: &Person,
-) -> Result<Person, sqlx::Error> {
+pub async fn create_person(db: &PgPool, new_person: &Person) -> Result<Person, sqlx::Error> {
     sqlx::query_file_as!(
         Person,
         "sql/persons/insert_person.sql",
@@ -88,14 +82,11 @@ pub async fn create_person(
         Utc::now(),
         Utc::now(),
     )
-    .fetch_one(conn)
+    .fetch_one(db)
     .await
 }
 
-pub async fn update_person(
-    conn: &mut PgConnection,
-    updated_person: &Person,
-) -> Result<Person, sqlx::Error> {
+pub async fn update_person(db: &PgPool, updated_person: &Person) -> Result<Person, sqlx::Error> {
     let person = sqlx::query_file_as!(
         Person,
         "sql/persons/update_person.sql",
@@ -110,16 +101,13 @@ pub async fn update_person(
         updated_person.country_of_residence,
         updated_person.id.uuid(),
     )
-    .fetch_one(conn)
+    .fetch_one(db)
     .await?;
 
     Ok(person)
 }
 
-pub async fn update_address(
-    conn: &mut PgConnection,
-    updated_person: &Person,
-) -> Result<Person, sqlx::Error> {
+pub async fn update_address(db: &PgPool, updated_person: &Person) -> Result<Person, sqlx::Error> {
     let person = sqlx::query_file_as!(
         Person,
         "sql/persons/update_address.sql",
@@ -130,16 +118,13 @@ pub async fn update_address(
         updated_person.street_name,
         updated_person.id.uuid(),
     )
-    .fetch_one(conn)
+    .fetch_one(db)
     .await?;
 
     Ok(person)
 }
 
-pub async fn remove_person(
-    conn: &mut PgConnection,
-    person_id: PersonId,
-) -> Result<(), sqlx::Error> {
+pub async fn remove_person(db: &PgPool, person_id: PersonId) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
         DELETE FROM persons
@@ -147,16 +132,16 @@ pub async fn remove_person(
         "#,
         person_id.uuid(),
     )
-    .execute(conn)
+    .execute(db)
     .await?;
 
     Ok(())
 }
 
 #[cfg(feature = "fixtures")]
-pub async fn list_all_persons(conn: &mut PgConnection) -> Result<Vec<Person>, sqlx::Error> {
+pub async fn list_all_persons(db: &PgPool) -> Result<Vec<Person>, sqlx::Error> {
     sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
-        .fetch_all(conn)
+        .fetch_all(db)
         .await
 }
 
@@ -177,10 +162,9 @@ mod tests {
         let id = PersonId::new();
         let person = sample_person(id);
 
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
+        create_person(&pool, &person).await?;
 
-        let loaded = get_person(&mut conn, id).await?.expect("person");
+        let loaded = get_person(&pool, id).await?.expect("person");
         assert_eq!(loaded.id, id);
         assert_eq!(loaded.last_name, "Jansen");
 
@@ -189,23 +173,22 @@ mod tests {
 
     #[sqlx::test]
     async fn list_and_count_persons(pool: PgPool) -> Result<(), sqlx::Error> {
-        let mut conn = pool.acquire().await?;
         create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Jansen"),
         )
         .await?;
         create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Bakker"),
         )
         .await?;
 
-        let total = count_persons(&mut conn).await?;
+        let total = count_persons(&pool).await?;
         assert_eq!(total, 2);
 
         let persons =
-            list_persons(&mut conn, 10, 0, &PersonSort::LastName, &SortDirection::Asc).await?;
+            list_persons(&pool, 10, 0, &PersonSort::LastName, &SortDirection::Asc).await?;
         assert_eq!(persons.len(), 2);
 
         Ok(())
@@ -216,13 +199,12 @@ mod tests {
         let id = PersonId::new();
         let mut person = sample_person(id);
 
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
+        create_person(&pool, &person).await?;
 
         person.last_name = "Updated".to_string();
-        update_person(&mut conn, &person).await?;
+        update_person(&pool, &person).await?;
 
-        let updated = get_person(&mut conn, id).await?.expect("person");
+        let updated = get_person(&pool, id).await?.expect("person");
         assert_eq!(updated.last_name, "Updated");
 
         Ok(())
@@ -233,11 +215,10 @@ mod tests {
         let id = PersonId::new();
         let person = sample_person(id);
 
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
-        remove_person(&mut conn, id).await?;
+        create_person(&pool, &person).await?;
+        remove_person(&pool, id).await?;
 
-        let missing = get_person(&mut conn, id).await?;
+        let missing = get_person(&pool, id).await?;
         assert!(missing.is_none());
 
         Ok(())
@@ -248,8 +229,7 @@ mod tests {
         let id = PersonId::new();
         let mut person = sample_person(id);
 
-        let mut conn = pool.acquire().await?;
-        create_person(&mut conn, &person).await?;
+        create_person(&pool, &person).await?;
 
         person.locality = Some("Nieuwegein".to_string());
         person.postal_code = Some("9999 ZZ".to_string());
@@ -257,9 +237,9 @@ mod tests {
         person.house_number_addition = None;
         person.street_name = Some("Nieuweweg".to_string());
 
-        update_address(&mut conn, &person).await?;
+        update_address(&pool, &person).await?;
 
-        let updated = get_person(&mut conn, id).await?.expect("person");
+        let updated = get_person(&pool, id).await?.expect("person");
         assert_eq!(updated.locality, Some("Nieuwegein".to_string()));
         assert_eq!(updated.postal_code, Some("9999 ZZ".to_string()));
         assert_eq!(updated.house_number, Some("99".to_string()));
@@ -276,13 +256,12 @@ mod tests {
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        create_person(&mut conn, &person_a).await?;
-        create_person(&mut conn, &person_b).await?;
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person_a.id]).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        create_person(&pool, &person_a).await?;
+        create_person(&pool, &person_b).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person_a.id]).await?;
 
-        let persons = list_persons_not_on_candidate_list(&mut conn, list_id).await?;
+        let persons = list_persons_not_on_candidate_list(&pool, list_id).await?;
         assert_eq!(persons.len(), 1);
         assert_eq!(persons[0].id, person_b.id);
 
@@ -292,19 +271,18 @@ mod tests {
     #[cfg(feature = "fixtures")]
     #[sqlx::test]
     async fn list_all_persons_returns_all(pool: PgPool) -> Result<(), sqlx::Error> {
-        let mut conn = pool.acquire().await?;
         create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Jansen"),
         )
         .await?;
         create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Bakker"),
         )
         .await?;
 
-        let persons = list_all_persons(&mut conn).await?;
+        let persons = list_all_persons(&pool).await?;
         assert_eq!(persons.len(), 2);
 
         Ok(())

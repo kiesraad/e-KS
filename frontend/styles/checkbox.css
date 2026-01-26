@@ -47,6 +47,19 @@
 .checkbox {
   display: inline-flex;
 
+  &.radio-card {
+    border: 1px solid var(--gray-300);
+    border-radius: 3px;
+    padding: var(--space-md);
+    display: flex;
+    cursor: pointer;
+    gap: var(--space-md);
+
+    label {
+      flex: 1;
+    }
+  }
+
   /* General checkbox and radio styling */
   input {
     appearance: none;
@@ -166,5 +179,12 @@
     padding-left: 0.5rem;
     cursor: pointer;
     user-select: none;
+
+    .hint {
+      margin-top: var(--space-xs);
+      display: block;
+      font-size: var(--font-size-md);
+      max-width: 32rem;
+    }
   }
 }

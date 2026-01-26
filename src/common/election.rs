@@ -115,6 +115,18 @@ impl ElectionConfig {
         }
     }
 
+    pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
+        match self {
+            Self::EK2027 => {
+                if long_list_allowed {
+                    80
+                } else {
+                    50
+                }
+            }
+        }
+    }
+
     pub fn electoral_districts(&self) -> &'static [ElectoralDistrict] {
         match self {
             Self::EK2027 => ElectoralDistrict::ek2027(),

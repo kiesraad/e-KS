@@ -1,9 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate,
+    AppError, Context, HtmlTemplate,
     candidate_lists::{self, CandidateList, FullCandidateList, pages::CreateCandidatePath},
     filters,
     form::{FormData, Validate},
@@ -38,7 +42,7 @@ pub async fn create_person_candidate_list(
     _: CreateCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -52,12 +56,12 @@ pub async fn create_person_candidate_list(
         )
         .into_response()),
         Ok(person) => {
-            let person = persons::create_person(&mut conn, &person).await?;
+            let person = persons::create_person(&pool, &person).await?;
 
-            candidate_lists::append_candidate_to_list(&mut conn, full_list.id(), person.id).await?;
+            candidate_lists::append_candidate_to_list(&pool, full_list.id(), person.id).await?;
 
             let candidate =
-                candidate_lists::get_candidate(&mut conn, full_list.id(), person.id).await?;
+                candidate_lists::get_candidate(&pool, full_list.id(), person.id).await?;
 
             Ok(Redirect::to(&candidate.edit_address_path()).into_response())
         }
@@ -75,7 +79,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection,
+        Context,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
@@ -84,17 +88,15 @@ mod tests {
     async fn new_person_candidate_list_renders_form(pool: PgPool) -> Result<(), sqlx::Error> {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let mut conn = pool.acquire().await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
 
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
         let response = new_person_candidate_list(
             CreateCandidatePath { list_id },
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             full_list,
         )
         .await
@@ -115,14 +117,13 @@ mod tests {
     ) -> Result<(), sqlx::Error> {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
@@ -130,7 +131,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await
@@ -144,8 +145,7 @@ mod tests {
             .to_str()
             .expect("location header value");
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -161,15 +161,14 @@ mod tests {
     ) -> Result<(), sqlx::Error> {
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
@@ -177,7 +176,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await

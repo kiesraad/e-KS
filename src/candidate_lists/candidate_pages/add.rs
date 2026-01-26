@@ -1,10 +1,14 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
 use serde::Deserialize;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate,
+    AppError, Context, HtmlTemplate,
     candidate_lists::{self, CandidateList, FullCandidateList, pages::AddCandidatePath},
     filters,
     persons::{self, Person, PersonId},
@@ -21,9 +25,9 @@ pub async fn add_existing_person(
     _: AddCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let persons = persons::list_persons_not_on_candidate_list(&mut conn, full_list.id()).await?;
+    let persons = persons::list_persons_not_on_candidate_list(&pool, full_list.id()).await?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate { full_list, persons },
@@ -39,17 +43,17 @@ pub struct AddPersonForm {
 pub async fn add_person_to_candidate_list(
     _: AddCandidatePath,
     full_list: FullCandidateList,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let redirect = Redirect::to(&full_list.list.view_path()).into_response();
-    let person = persons::get_person(&mut conn, form.person_id).await?;
+    let person = persons::get_person(&pool, form.person_id).await?;
 
     if full_list.contains(form.person_id) || person.is_none() {
         return Ok(redirect);
     }
 
-    candidate_lists::append_candidate_to_list(&mut conn, full_list.id(), form.person_id).await?;
+    candidate_lists::append_candidate_to_list(&pool, full_list.id(), form.person_id).await?;
 
     Ok(redirect)
 }
@@ -65,7 +69,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection,
+        Context,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -80,19 +84,18 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
         let response = add_existing_person(
             AddCandidatePath { list_id },
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             full_list,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
         )
         .await
         .unwrap()
@@ -114,18 +117,17 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(AddPersonForm {
                 person_id: person.id,
             }),
@@ -142,8 +144,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, list.view_path());
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -161,21 +162,19 @@ mod tests {
         let existing_person = sample_person_with_last_name(PersonId::new(), "Jansen");
         let new_person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &existing_person).await?;
-        persons::create_person(&mut conn, &new_person).await?;
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[existing_person.id])
-            .await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &existing_person).await?;
+        persons::create_person(&pool, &new_person).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[existing_person.id]).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
 
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(AddPersonForm {
                 person_id: new_person.id,
             }),
@@ -192,8 +191,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, list.view_path());
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

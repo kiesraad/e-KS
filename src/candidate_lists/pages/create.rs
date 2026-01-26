@@ -1,9 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, ElectionConfig, HtmlTemplate,
+    AppError, Context, ElectionConfig, HtmlTemplate,
     candidate_lists::{
         self, CandidateList, CandidateListForm, CandidateListSummary, pages::CandidateListNewPath,
     },
@@ -24,11 +28,11 @@ struct CandidateListCreateTemplate {
 pub async fn new_candidate_list_form(
     _: CandidateListNewPath,
     context: Context,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = persons::count_persons(&mut conn).await?;
-    let used_districts = candidate_lists::get_used_districts(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let total_persons = persons::count_persons(&pool).await?;
+    let used_districts = candidate_lists::get_used_districts(&pool).await?;
     let available_districts = context.election.available_districts(used_districts);
 
     let form = FormData::new_with_data(
@@ -53,14 +57,13 @@ pub async fn new_candidate_list_form(
 pub async fn create_candidate_list(
     _: CandidateListNewPath,
     context: Context,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => {
-            let candidate_lists =
-                candidate_lists::list_candidate_list_with_count(&mut conn).await?;
-            let total_persons = persons::count_persons(&mut conn).await?;
+            let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+            let total_persons = persons::count_persons(&pool).await?;
 
             Ok(HtmlTemplate(
                 CandidateListCreateTemplate {
@@ -74,7 +77,7 @@ pub async fn create_candidate_list(
         }
         Ok(candidate_list) => {
             let candidate_list =
-                candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
+                candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
@@ -93,16 +96,15 @@ mod test {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, ElectoralDistrict, TokenValue, candidate_lists,
-        test_utils::response_body_string,
+        Context, ElectoralDistrict, TokenValue, candidate_lists, test_utils::response_body_string,
     };
 
     #[sqlx::test]
     async fn new_candidate_list_form_renders_csrf_field(pool: PgPool) -> Result<(), sqlx::Error> {
         let response = new_candidate_list_form(
             CandidateListNewPath {},
-            Context::new_test(),
-            DbConnection(pool.acquire().await?),
+            Context::new_test(pool.clone()).await,
+            State(pool.clone()),
         )
         .await
         .unwrap()
@@ -118,7 +120,7 @@ mod test {
 
     #[sqlx::test]
     async fn create_candidate_list_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
@@ -128,7 +130,7 @@ mod test {
         let response = create_candidate_list(
             CandidateListNewPath {},
             context,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await
@@ -142,8 +144,7 @@ mod test {
             .to_str()
             .expect("location header value");
 
-        let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
         assert_eq!(lists.len(), 1);
         assert_eq!(location, lists[0].list.view_path());
 
@@ -161,8 +162,8 @@ mod test {
 
         let response = create_candidate_list(
             CandidateListNewPath {},
-            Context::new_test(),
-            DbConnection(pool.acquire().await?),
+            Context::new_test(pool.clone()).await,
+            State(pool.clone()),
             Form(form),
         )
         .await

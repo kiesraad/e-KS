@@ -26,6 +26,7 @@ mod tests {
 
     use askama::Template;
     use axum::http::StatusCode;
+    use sqlx::PgPool;
 
     mod filters {
         #[askama::filter_fn]
@@ -38,9 +39,9 @@ mod tests {
     #[template(source = "{{ 123|foo }}", ext = "txt")]
     struct MyTemplate;
 
-    #[test]
-    fn html_template_returns_500_when_render_fails() {
-        let context = Context::new_test();
+    #[sqlx::test]
+    async fn html_template_returns_500_when_render_fails(pool: PgPool) {
+        let context = Context::new_test(pool).await;
         let response = HtmlTemplate(MyTemplate, context).into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);

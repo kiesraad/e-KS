@@ -4,6 +4,7 @@
 @import "core.css";
 @import "util.css";
 
+@import "alert.css";
 @import "layout.css";
 @import "table.css";
 @import "button.css";

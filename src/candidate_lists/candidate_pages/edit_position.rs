@@ -1,9 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate,
+    AppError, Context, HtmlTemplate,
     candidate_lists::{
         self, Candidate, CandidateList, CandidatePosition, CandidatePositionAction,
         CandidatePositionForm, FullCandidateList, candidate_pages::EditCandidatePositionPath,
@@ -52,7 +56,7 @@ pub async fn update_candidate_position(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
@@ -76,7 +80,7 @@ pub async fn update_candidate_position(
             match position_form.action {
                 CandidatePositionAction::Remove => {
                     candidate_lists::remove_candidate(
-                        &mut conn,
+                        &pool,
                         candidate.list_id,
                         candidate.person.id,
                     )
@@ -86,7 +90,7 @@ pub async fn update_candidate_position(
                     let mut full_list = full_list;
                     full_list.update_position(candidate.person.id, position_form.position);
                     candidate_lists::update_candidate_list_order(
-                        &mut conn,
+                        &pool,
                         candidate.list_id,
                         &full_list.get_ids(),
                     )
@@ -107,7 +111,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection, TokenValue,
+        Context, TokenValue,
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
@@ -134,22 +138,21 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person).await?;
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id]).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id]).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person.id).await?;
 
         let response = edit_candidate_position(
             EditCandidatePositionPath {
                 list_id,
                 person_id: person.id,
             },
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             full_list,
             candidate.clone(),
         )
@@ -172,23 +175,18 @@ mod tests {
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person_a).await?;
-        persons::create_person(&mut conn, &person_b).await?;
-        candidate_lists::update_candidate_list_order(
-            &mut conn,
-            list_id,
-            &[person_a.id, person_b.id],
-        )
-        .await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person_a).await?;
+        persons::create_person(&pool, &person_b).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person_a.id, person_b.id])
+            .await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person_a.id).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 2, "move");
 
@@ -200,7 +198,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await
@@ -209,8 +207,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
@@ -227,23 +224,18 @@ mod tests {
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person_a).await?;
-        persons::create_person(&mut conn, &person_b).await?;
-        candidate_lists::update_candidate_list_order(
-            &mut conn,
-            list_id,
-            &[person_a.id, person_b.id],
-        )
-        .await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person_a).await?;
+        persons::create_person(&pool, &person_b).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person_a.id, person_b.id])
+            .await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person_a.id).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 1, "remove");
 
@@ -255,7 +247,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await
@@ -264,8 +256,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -283,23 +274,18 @@ mod tests {
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person_a).await?;
-        persons::create_person(&mut conn, &person_b).await?;
-        candidate_lists::update_candidate_list_order(
-            &mut conn,
-            list_id,
-            &[person_a.id, person_b.id],
-        )
-        .await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person_a).await?;
+        persons::create_person(&pool, &person_b).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person_a.id, person_b.id])
+            .await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person_a.id).await?;
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person_a.id).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = TokenValue("invalid".to_string());
         let form = sample_position_form(&csrf_token, 2, "move");
 
@@ -311,7 +297,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             Form(form),
         )
         .await
@@ -322,8 +308,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("The CSRF token is invalid."));
 
-        let mut conn = pool.acquire().await?;
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

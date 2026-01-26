@@ -1,4 +1,9 @@
 .form {
+  h3 {
+    font-size: var(--font-size-xl);
+    margin: var(--space-lg) 0;
+  }
+
   .form-field {
     display: flex;
     flex-direction: column;
@@ -37,6 +42,16 @@
     }
   }
 
+  .form-row {
+    display: flex;
+    gap: var(--space-xl);
+    align-items: start;
+
+    .form-field {
+      flex: 1;
+    }
+  }
+
   fieldset {
     border: none;
     padding: 0;
@@ -46,9 +61,19 @@
     legend {
       display: block;
       font-size: var(--font-size-lg);
-      font-weight: bold;
+      font-weight: 600;
       color: var(--text-color-header);
-      margin-bottom: var(--space-xl);
+      margin-bottom: var(--space-md);
+
+      &.legend-sm {
+        font-size: var(--font-size-md);
+        font-weight: normal;
+      }
+
+      &.legend-md {
+        font-size: var(--font-size-md);
+        font-weight: 600;
+      }
     }
 
     legend + .checklist {
@@ -56,19 +81,7 @@
     }
 
     .form-row {
-      display: flex;
-      gap: var(--space-xl);
       margin-bottom: var(--space-lg);
-      align-items: start;
-
-      .form-field {
-        flex: 1;
-      }
-
-      /* hide form variants until js is active */
-      &[data-variant] {
-        display: none;
-      }
     }
   }
 

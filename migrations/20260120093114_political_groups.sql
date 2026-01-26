@@ -1,10 +1,13 @@
 CREATE TABLE political_groups
 (
-    id           UUID PRIMARY KEY,
-    legal_name   VARCHAR                  NOT NULL,
-    display_name VARCHAR                  NOT NULL,
-    created_at   timestamp with time zone NOT NULL,
-    updated_at   timestamp with time zone NOT NULL
+    id                     UUID PRIMARY KEY,
+    long_list_allowed      BOOLEAN,
+    legal_name             VARCHAR                  NOT NULL,
+    legal_name_confirmed   BOOLEAN,
+    display_name           VARCHAR                  NOT NULL,
+    display_name_confirmed BOOLEAN,
+    created_at             timestamp with time zone NOT NULL,
+    updated_at             timestamp with time zone NOT NULL
 );
 
 CREATE TABLE authorised_agents
@@ -16,11 +19,11 @@ CREATE TABLE authorised_agents
     last_name_prefix      VARCHAR,
     initials              VARCHAR                  NOT NULL,
 
-    locality              VARCHAR,
-    postal_code           VARCHAR,
-    house_number          VARCHAR,
+    locality              VARCHAR                  NOT NULL,
+    postal_code           VARCHAR                  NOT NULL,
+    house_number          VARCHAR                  NOT NULL,
     house_number_addition VARCHAR,
-    street_name           VARCHAR,
+    street_name           VARCHAR                  NOT NULL,
 
     created_at            timestamp with time zone NOT NULL,
     updated_at            timestamp with time zone NOT NULL
@@ -37,11 +40,11 @@ CREATE TABLE list_submitters
     initials              VARCHAR                  NOT NULL,
 
     -- postal address (must be Dutch)
-    locality              VARCHAR NOT NULL,
-    postal_code           VARCHAR NOT NULL,
-    house_number          VARCHAR NOT NULL,
+    locality              VARCHAR                  NOT NULL,
+    postal_code           VARCHAR                  NOT NULL,
+    house_number          VARCHAR                  NOT NULL,
     house_number_addition VARCHAR,
-    street_name           VARCHAR NOT NULL,
+    street_name           VARCHAR                  NOT NULL,
 
     created_at            timestamp with time zone NOT NULL,
     updated_at            timestamp with time zone NOT NULL

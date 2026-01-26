@@ -1,23 +1,27 @@
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, CsrfTokens, DbConnection,
+    AppError, Context,
     candidate_lists::{self, CandidateList, pages::CandidateListsDeletePath},
     form::{EmptyForm, Validate},
 };
 
 pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
-    csrf_tokens: CsrfTokens,
+    context: Context,
     candidate_list: CandidateList,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
         Ok(_) => {
-            candidate_lists::remove_candidate_list(&mut conn, candidate_list.id).await?;
+            candidate_lists::remove_candidate_list(&pool, candidate_list.id).await?;
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
     }
@@ -32,30 +36,29 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        CsrfTokens, DbConnection, ElectoralDistrict, TokenValue,
+        ElectoralDistrict, TokenValue,
         candidate_lists::{self, CandidateListId},
     };
 
     #[sqlx::test]
     async fn delete_candidate_list_and_redirect(pool: PgPool) -> Result<(), sqlx::Error> {
-        let mut conn = pool.acquire().await.unwrap();
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test(pool.clone()).await;
+        let csrf_token = context.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
                 list_id: candidate_list.id,
             },
-            csrf_tokens,
+            context,
             candidate_list.clone(),
-            DbConnection(conn),
+            State(pool.clone()),
             Form(EmptyForm { csrf_token }),
         )
         .await
@@ -73,8 +76,7 @@ mod tests {
         assert_eq!(location, CandidateList::list_path());
 
         // verify deletion (i.e. no lists in database left)
-        let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
         assert_eq!(lists.len(), 0);
 
         Ok(())
@@ -84,8 +86,7 @@ mod tests {
     async fn delete_candidate_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
-        let mut conn = pool.acquire().await.unwrap();
-        let csrf_tokens = CsrfTokens::default();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = TokenValue("invalid".to_string());
         let candidate_list = CandidateList {
             id: CandidateListId::new(),
@@ -93,15 +94,15 @@ mod tests {
             created_at: DateTime::default(),
             updated_at: DateTime::default(),
         };
-        candidate_lists::create_candidate_list(&mut conn, &candidate_list).await?;
+        candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
 
         let response = delete_candidate_list(
             CandidateListsDeletePath {
                 list_id: candidate_list.id,
             },
-            csrf_tokens,
+            context,
             candidate_list.clone(),
-            DbConnection(conn),
+            State(pool.clone()),
             Form(EmptyForm { csrf_token }),
         )
         .await
@@ -119,8 +120,7 @@ mod tests {
         assert_eq!(location, candidate_list.update_path());
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
-        let mut conn = pool.acquire().await?;
-        let lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
+        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
         assert_eq!(lists.len(), 1);
 
         Ok(())

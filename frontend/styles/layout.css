@@ -82,6 +82,10 @@ header {
     padding: 0 var(--space-xxl);
     margin: 0;
 
+    h1 {
+      font-weight: 600;
+    }
+
     div:first-child {
       flex: 1;
     }

@@ -1,0 +1,74 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id,\n               long_list_allowed,\n               legal_name,\n               legal_name_confirmed,\n               display_name,\n               display_name_confirmed,\n               authorised_agent_id AS \"authorised_agent_id:AuthorisedAgentId\",\n               list_submitter_id AS \"list_submitter_id:ListSubmitterId\",\n               created_at,\n               updated_at\n        FROM political_groups\n        ORDER BY created_at ASC\n        LIMIT 1\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "long_list_allowed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 2,
+        "name": "legal_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "legal_name_confirmed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 4,
+        "name": "display_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "display_name_confirmed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 6,
+        "name": "authorised_agent_id:AuthorisedAgentId",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 7,
+        "name": "list_submitter_id:ListSubmitterId",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 8,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 9,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": []
+    },
+    "nullable": [
+      false,
+      true,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "54508ae6acee97b77525c3789130c9ae913c26251cee7b1e97ca149071b48f81"
+}

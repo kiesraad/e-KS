@@ -5,6 +5,10 @@ use crate::{
     ElectoralDistrict, TokenValue,
     candidate_lists::{CandidateList, CandidateListId},
     persons::{AddressForm, Gender, Person, PersonForm, PersonId},
+    political_groups::{
+        AuthorisedAgent, AuthorisedAgentId, ListSubmitter, ListSubmitterForm, ListSubmitterId,
+        PoliticalGroup, PoliticalGroupForm, PoliticalGroupId,
+    },
 };
 
 pub async fn response_body_string(response: axum::response::Response) -> String {
@@ -79,6 +83,82 @@ pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
         house_number: "10".to_string(),
         house_number_addition: "A".to_string(),
         street_name: "Stationsstraat".to_string(),
+        csrf_token: csrf_token.clone(),
+    }
+}
+
+pub fn sample_political_group(id: PoliticalGroupId) -> PoliticalGroup {
+    PoliticalGroup {
+        id,
+        long_list_allowed: Some(false),
+        legal_name: "Kiesraad Demo Partij".to_string(),
+        legal_name_confirmed: Some(true),
+        display_name: "Kiesraad Demo".to_string(),
+        display_name_confirmed: Some(true),
+        authorised_agent_id: None,
+        list_submitter_id: None,
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    }
+}
+
+pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
+    AuthorisedAgent {
+        id,
+        last_name: "Jansen".to_string(),
+        last_name_prefix: Some("de".to_string()),
+        initials: "A.B.".to_string(),
+        locality: "Utrecht".to_string(),
+        postal_code: "3511 AA".to_string(),
+        house_number: "10".to_string(),
+        house_number_addition: Some("A".to_string()),
+        street_name: "Oude Gracht".to_string(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    }
+}
+
+pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
+    ListSubmitter {
+        id,
+        last_name: "Bos".to_string(),
+        last_name_prefix: None,
+        initials: "E.F.".to_string(),
+        locality: "Rotterdam".to_string(),
+        postal_code: "3011 CC".to_string(),
+        house_number: "5".to_string(),
+        house_number_addition: Some("B".to_string()),
+        street_name: "Coolsingel".to_string(),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    }
+}
+
+pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
+    ListSubmitterForm {
+        last_name: "Bos".to_string(),
+        last_name_prefix: "".to_string(),
+        initials: "E.F.".to_string(),
+        locality: "Rotterdam".to_string(),
+        postal_code: "3011 CC".to_string(),
+        house_number: "5".to_string(),
+        house_number_addition: "B".to_string(),
+        street_name: "Coolsingel".to_string(),
+        csrf_token: csrf_token.clone(),
+    }
+}
+
+pub fn sample_political_group_form(
+    csrf_token: &TokenValue,
+    authorised_agent_id: Option<AuthorisedAgentId>,
+) -> PoliticalGroupForm {
+    PoliticalGroupForm {
+        long_list_allowed: "true".to_string(),
+        legal_name_confirmed: "true".to_string(),
+        display_name_confirmed: "true".to_string(),
+        authorised_agent_id: authorised_agent_id
+            .map(|id| id.to_string())
+            .unwrap_or_default(),
         csrf_token: csrf_token.clone(),
     }
 }

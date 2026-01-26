@@ -21,14 +21,12 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let mut conn = PgPool::from_ref(state).acquire().await?;
-        let context = Context::from_request_parts(parts, state)
-            .await
-            .unwrap_or_default();
+        let pool = PgPool::from_ref(state);
+        let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .ok_or(AppError::NotFound(trans!(
                 "candidate_list.not_found",
@@ -67,14 +65,15 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        let mut conn = pool.acquire().await.unwrap();
-        candidate_lists::create_candidate_list(&mut conn, &list)
+        candidate_lists::create_candidate_list(&pool, &list)
             .await
             .unwrap();
-        persons::create_person(&mut conn, &person).await.unwrap();
-        candidate_lists::update_candidate_list_order(&mut conn, list_id, &[person.id])
+        persons::create_person(&pool, &person).await.unwrap();
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id])
             .await
             .unwrap();
+
+        let app_state = AppState::new_for_tests(&pool).await;
 
         let app = Router::new()
             .route(
@@ -89,7 +88,7 @@ mod tests {
                         .clone()
                 }),
             )
-            .with_state(AppState::new_for_tests(pool));
+            .with_state(app_state);
 
         let response = app
             .oneshot(
@@ -108,7 +107,7 @@ mod tests {
 
     #[sqlx::test]
     async fn full_candidate_list_extractor_returns_not_found(pool: PgPool) {
-        let state = AppState::new_for_tests(pool);
+        let state = AppState::new_for_tests(&pool).await;
         let list_id = CandidateListId::new();
 
         let app = Router::new()

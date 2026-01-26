@@ -1,5 +1,5 @@
 use chrono::Utc;
-use sqlx::PgConnection;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -18,9 +18,9 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
         .collect()
 }
 
-pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
+pub async fn load(db: &PgPool) -> Result<(), AppError> {
     let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
-    let persons = persons::list_all_persons(conn).await?;
+    let persons = persons::list_all_persons(db).await?;
     let person_ids = collect_person_ids(persons);
     let uuid = Uuid::new_v5(
         &Uuid::NAMESPACE_OID,
@@ -34,10 +34,10 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         updated_at: Utc::now(),
     };
 
-    let candidate_list = candidate_lists::create_candidate_list(conn, &candidate_list).await?;
+    let candidate_list = candidate_lists::create_candidate_list(db, &candidate_list).await?;
 
     // Persist the ordered set of persons to ensure deterministic candidate positions.
-    candidate_lists::update_candidate_list_order(conn, candidate_list.id, &person_ids).await?;
+    candidate_lists::update_candidate_list_order(db, candidate_list.id, &person_ids).await?;
 
     Ok(())
 }
@@ -50,13 +50,10 @@ mod tests {
 
     #[sqlx::test]
     async fn test_load(pool: PgPool) {
-        crate::fixtures::persons::load(&mut pool.acquire().await.unwrap())
-            .await
-            .unwrap();
-        let mut conn = pool.acquire().await.unwrap();
-        load(&mut conn).await.unwrap();
+        crate::fixtures::persons::load(&pool).await.unwrap();
+        load(&pool).await.unwrap();
 
-        let lists = candidate_lists::list_candidate_list_with_count(&mut conn)
+        let lists = candidate_lists::list_candidate_list_with_count(&pool)
             .await
             .unwrap();
 

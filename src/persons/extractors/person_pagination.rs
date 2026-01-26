@@ -18,15 +18,15 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let mut conn = PgPool::from_ref(state).acquire().await?;
+        let pool = PgPool::from_ref(state);
         let pagination: Pagination<PersonSort> =
             Pagination::from_request_parts(parts, state).await?;
 
-        let total_items = persons::count_persons(&mut conn).await?.max(0) as u64;
+        let total_items = persons::count_persons(&pool).await?.max(0) as u64;
         let pagination = pagination.set_total(total_items);
 
         let persons = persons::list_persons(
-            &mut conn,
+            &pool,
             pagination.limit(),
             pagination.offset(),
             pagination.sort(),
@@ -61,19 +61,19 @@ mod tests {
 
     #[sqlx::test]
     async fn person_pagination_extractor_slices_and_orders(pool: PgPool) {
-        let mut conn = pool.acquire().await.unwrap();
         persons::create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Bakker"),
         )
         .await
         .unwrap();
         persons::create_person(
-            &mut conn,
+            &pool,
             &sample_person_with_last_name(PersonId::new(), "Jansen"),
         )
         .await
         .unwrap();
+        let app_state = AppState::new_for_tests(&pool).await;
 
         let app = Router::new()
             .route(
@@ -87,7 +87,7 @@ mod tests {
                     format!("{}:{}", pagination.pagination.page, last_name)
                 }),
             )
-            .with_state(AppState::new_for_tests(pool));
+            .with_state(app_state);
 
         let response = app
             .oneshot(

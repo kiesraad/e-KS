@@ -26,14 +26,12 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let mut conn = PgPool::from_ref(state).acquire().await?;
-        let context = Context::from_request_parts(parts, state)
-            .await
-            .unwrap_or_default();
+        let pool = PgPool::from_ref(state);
+        let context = Context::from_request_parts(parts, state).await?;
         let Path(PersonPathParams { person_id }) =
             Path::<PersonPathParams>::from_request_parts(parts, state).await?;
 
-        let person = persons::get_person(&mut conn, person_id)
+        let person = persons::get_person(&pool, person_id)
             .await?
             .ok_or(AppError::NotFound(trans!(
                 "person.not_found",
@@ -66,15 +64,16 @@ mod tests {
     #[sqlx::test]
     async fn person_extractor_loads_person(pool: PgPool) {
         let person = sample_person(PersonId::new());
-        let mut conn = pool.acquire().await.unwrap();
-        persons::create_person(&mut conn, &person).await.unwrap();
+        persons::create_person(&pool, &person).await.unwrap();
+
+        let app_state = AppState::new_for_tests(&pool).await;
 
         let app = Router::new()
             .route(
                 "/persons/{person_id}",
                 get(|person: Person| async { person.last_name }),
             )
-            .with_state(AppState::new_for_tests(pool));
+            .with_state(app_state);
 
         let response = app
             .oneshot(
@@ -95,16 +94,18 @@ mod tests {
     async fn person_extractor_returns_not_found(pool: PgPool) {
         let person_id = PersonId::new();
 
+        let app_state = AppState::new_for_tests(&pool).await;
+
         let app = Router::new()
             .route(
                 "/persons/{person_id}",
                 get(|person: Person| async { person.last_name }),
             )
             .layer(middleware::from_fn_with_state(
-                AppState::new_for_tests(pool.clone()),
+                app_state.clone(),
                 render_error_pages,
             ))
-            .with_state(AppState::new_for_tests(pool));
+            .with_state(app_state);
 
         let response = app
             .oneshot(

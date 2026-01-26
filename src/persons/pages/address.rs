@@ -1,9 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, AppResponse, Context, DbConnection, HtmlTemplate, filters,
+    AppError, AppResponse, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
         self, AddressForm, Person, PersonPagination, PersonSort, pages::EditPersonAddressPath,
@@ -38,7 +42,7 @@ pub async fn update_person_address(
     _: EditPersonAddressPath,
     context: Context,
     person: Person,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
     person_pagination: PersonPagination,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
@@ -53,7 +57,7 @@ pub async fn update_person_address(
         )
         .into_response()),
         Ok(person) => {
-            persons::update_address(&mut conn, &person).await?;
+            persons::update_address(&pool, &person).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -71,7 +75,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection,
+        Context,
         persons::{self, PersonId},
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
@@ -81,12 +85,11 @@ mod tests {
         let person_id: PersonId = PersonId::new();
         let person = sample_person(person_id);
 
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&pool, &person).await?;
 
         let response = edit_person_address(
             EditPersonAddressPath { person_id },
-            Context::new_test(),
+            Context::new_test(pool.clone()).await,
             person,
             PersonPagination::empty(),
         )
@@ -106,10 +109,9 @@ mod tests {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&pool, &person).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
 
@@ -117,7 +119,7 @@ mod tests {
             EditPersonAddressPath { person_id },
             context,
             person,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             PersonPagination::empty(),
             Form(form),
         )
@@ -134,8 +136,7 @@ mod tests {
 
         assert_eq!(location, Person::list_path());
 
-        let mut conn = pool.acquire().await?;
-        let updated = persons::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&pool, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));
@@ -150,10 +151,9 @@ mod tests {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&pool, &person).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
@@ -162,7 +162,7 @@ mod tests {
             EditPersonAddressPath { person_id },
             context,
             person,
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             PersonPagination::empty(),
             Form(form),
         )
@@ -182,17 +182,16 @@ mod tests {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        let mut conn = pool.acquire().await?;
-        persons::create_person(&mut conn, &person).await?;
+        persons::create_person(&pool, &person).await?;
 
-        let context = Context::new_test();
+        let context = Context::new_test(pool.clone()).await;
 
         // Update with Dutch address (but all form fields filled)
         update_person_address(
             EditPersonAddressPath { person_id },
             context.clone(),
             person.clone(),
-            DbConnection(pool.acquire().await?),
+            State(pool.clone()),
             PersonPagination::empty(),
             Form(AddressForm {
                 locality: "Juinen".to_string(),
@@ -207,8 +206,7 @@ mod tests {
         .unwrap();
 
         // The international address should be removed because `is_dutch` is true
-        let mut conn = pool.acquire().await?;
-        let updated = persons::get_person(&mut conn, person_id)
+        let updated = persons::get_person(&pool, person_id)
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));

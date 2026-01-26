@@ -1,7 +1,7 @@
 use crate::{
     TokenValue,
     form::*,
-    political_groups::{AuthorisedAgentId, ListSubmitterId, PoliticalGroup, PoliticalGroupId},
+    political_groups::{AuthorisedAgentId, PoliticalGroup, PoliticalGroupId},
 };
 use chrono::Utc;
 use serde::Deserialize;
@@ -12,15 +12,16 @@ use validate::Validate;
     target = "PoliticalGroup",
     build = "PoliticalGroupForm::build_political_group"
 )]
+#[serde(default)]
 pub struct PoliticalGroupForm {
-    #[validate(with = "validate_length(2, 255)")]
-    legal_name: String,
-    #[validate(with = "validate_length(2, 255)")]
-    display_name: String,
+    #[validate(parse = "bool", optional)]
+    pub long_list_allowed: String,
+    #[validate(parse = "bool", optional)]
+    pub legal_name_confirmed: String,
+    #[validate(parse = "bool", optional)]
+    pub display_name_confirmed: String,
     #[validate(parse = "AuthorisedAgentId", optional)]
-    authorised_agent_id: String,
-    #[validate(parse = "ListSubmitterId", optional)]
-    list_submitter_id: String,
+    pub authorised_agent_id: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
@@ -40,18 +41,51 @@ impl PoliticalGroupForm {
         current: Option<PoliticalGroup>,
     ) -> PoliticalGroup {
         if let Some(current) = current {
-            current
+            PoliticalGroup {
+                long_list_allowed: validated.long_list_allowed,
+                legal_name_confirmed: validated.legal_name_confirmed,
+                display_name_confirmed: validated.display_name_confirmed,
+                authorised_agent_id: validated.authorised_agent_id,
+                ..current
+            }
         } else {
             PoliticalGroup {
                 id: PoliticalGroupId::new(),
 
-                legal_name: validated.legal_name,
-                display_name: validated.display_name,
+                long_list_allowed: validated.long_list_allowed,
+                legal_name_confirmed: validated.legal_name_confirmed,
+                display_name_confirmed: validated.display_name_confirmed,
                 authorised_agent_id: validated.authorised_agent_id,
-                list_submitter_id: validated.list_submitter_id,
+                legal_name: String::new(),
+                display_name: String::new(),
+                list_submitter_id: None,
                 created_at: Utc::now(),
                 updated_at: Utc::now(),
             }
+        }
+    }
+}
+
+impl From<PoliticalGroup> for PoliticalGroupForm {
+    fn from(value: PoliticalGroup) -> Self {
+        PoliticalGroupForm {
+            long_list_allowed: value
+                .long_list_allowed
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            legal_name_confirmed: value
+                .legal_name_confirmed
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            display_name_confirmed: value
+                .display_name_confirmed
+                .map(|value| value.to_string())
+                .unwrap_or_default(),
+            authorised_agent_id: value
+                .authorised_agent_id
+                .map(|id| id.to_string())
+                .unwrap_or_default(),
+            csrf_token: Default::default(),
         }
     }
 }

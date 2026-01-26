@@ -1,0 +1,15 @@
+{% extends "layout.html" %}
+
+{% block page_title %}Edit list submitter{% endblock %}
+
+{% block content %}
+<section>
+  <form method="post" action="{{ list_submitter.edit_path() }}" class="form">
+    {% include "political_groups/list_submitter_form.html" %}
+    <div class="form-row">
+      <button type="submit" class="button">{{ "action.save"|trans }}</button>
+      <a href="{{ ListSubmitter::list_path() }}" class="button secondary">{{ "action.cancel"|trans }}</a>
+    </div>
+  </form>
+</section>
+{% endblock %}

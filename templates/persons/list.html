@@ -1,7 +1,12 @@
 {% extends "layout.html" %}
 
 {% block page_title %}{{ "person.title"|trans }}{% endblock %}
-{% block persons_nav_class %}active{% endblock %}
+
+{% block header_action %}
+  <a href="{{ crate::candidate_lists::CandidateList::list_path() }}" class="button secondary">
+    {{ "candidate_list.actions.back_to_list"|trans }}
+  </a>
+{% endblock %}
 
 {% block content %}
 <nav class="sticky-nav">

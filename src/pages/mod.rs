@@ -37,22 +37,22 @@ mod tests {
 
     use crate::test_utils::response_body_string;
 
-    #[tokio::test]
-    async fn index_renders_html() {
-        let body = index(Context::default()).await.into_response();
+    #[sqlx::test]
+    async fn index_renders_html(pool: sqlx::PgPool) {
+        let body = index(Context::new_test(pool).await).await.into_response();
         let body = response_body_string(body).await;
         assert!(body.contains(ElectionConfig::default().title()));
     }
 
-    #[tokio::test]
-    async fn not_found_renders_html() {
+    #[sqlx::test]
+    async fn not_found_renders_html(pool: sqlx::PgPool) {
         let into_response = not_found(
             OriginalUri("/not_found".parse().unwrap()),
-            Context::default(),
+            Context::new_test(pool).await,
         )
         .await
         .unwrap();
         let body = response_body_string(into_response.into_response()).await;
-        assert!(body.contains("Pagina niet gevonden"));
+        assert!(body.contains("The page you are looking for does not exist"));
     }
 }

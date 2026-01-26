@@ -100,7 +100,7 @@
 
   .instruction {
     font-style: italic;
-    font-size: var(--font-size-sm);
+    font-size: var(--font-size-md);
     line-height: 1.4;
     margin-top: var(--space-md);
     color: var(--gray-600);

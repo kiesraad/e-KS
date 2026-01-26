@@ -1,0 +1,11 @@
+.alert {
+  padding: var(--space-md);
+  max-width: 32rem;
+  margin: var(--space-md) 0;
+
+  &.alert-info {
+    background-color: var(--blue-100);
+    border-left: 4px solid var(--blue-600);
+    color: var(--gray-600);
+  }
+}

@@ -1,8 +1,9 @@
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::State, response::IntoResponse};
+use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, DbConnection, HtmlTemplate,
+    AppError, Context, HtmlTemplate,
     candidate_lists::{self, CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters, persons,
     persons::Person,
@@ -18,10 +19,10 @@ struct CandidateListIndexTemplate {
 pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
-    DbConnection(mut conn): DbConnection,
+    State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&mut conn).await?;
-    let total_persons = persons::count_persons(&mut conn).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let total_persons = persons::count_persons(&pool).await?;
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
@@ -39,7 +40,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, DbConnection,
+        Context,
         candidate_lists::{self, CandidateListId},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -47,13 +48,12 @@ mod tests {
     #[sqlx::test]
     async fn list_candidate_lists_shows_created_list(pool: PgPool) -> Result<(), sqlx::Error> {
         let list = sample_candidate_list(CandidateListId::new());
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
 
         let response = list_candidate_lists(
             CandidateListsPath {},
-            Context::new_test(),
-            DbConnection(pool.acquire().await?),
+            Context::new_test(pool.clone()).await,
+            State(pool.clone()),
         )
         .await
         .unwrap()

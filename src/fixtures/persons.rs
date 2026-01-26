@@ -3,7 +3,7 @@ use std::{io, str::FromStr};
 use chrono::{NaiveDate, Utc};
 use csv::{ReaderBuilder, Trim};
 use serde::Deserialize;
-use sqlx::PgConnection;
+use sqlx::PgPool;
 use uuid::Uuid;
 
 use crate::{
@@ -60,7 +60,7 @@ impl PersonRecord {
     }
 }
 
-pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
+pub async fn load(db: &PgPool) -> Result<(), AppError> {
     let mut reader = ReaderBuilder::new()
         .trim(Trim::All)
         .from_reader(PERSONS_CSV.as_bytes());
@@ -74,7 +74,7 @@ pub async fn load(conn: &mut PgConnection) -> Result<(), AppError> {
         })?;
 
         let person = record.into_person()?;
-        persons::create_person(conn, &person).await?;
+        persons::create_person(db, &person).await?;
     }
 
     Ok(())
@@ -90,16 +90,10 @@ mod tests {
 
     #[sqlx::test]
     async fn test_load(pool: PgPool) {
-        let mut conn = pool.acquire().await.unwrap();
-        load(&mut conn).await.unwrap();
-        let persons = crate::persons::list_persons(
-            &mut conn,
-            50,
-            0,
-            &PersonSort::LastName,
-            &SortDirection::Asc,
-        )
-        .await;
+        load(&pool).await.unwrap();
+        let persons =
+            crate::persons::list_persons(&pool, 50, 0, &PersonSort::LastName, &SortDirection::Asc)
+                .await;
 
         assert!(persons.is_ok());
         assert_eq!(persons.unwrap().len(), 50);

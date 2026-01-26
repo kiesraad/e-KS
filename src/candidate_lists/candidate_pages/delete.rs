@@ -1,8 +1,12 @@
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
 use axum_extra::extract::Form;
+use sqlx::PgPool;
 
 use crate::{
-    AppError, CsrfTokens, DbConnection,
+    AppError, Context,
     candidate_lists::{
         self, Candidate, CandidateList, candidate_pages::CandidateListDeletePersonPath,
     },
@@ -12,18 +16,18 @@ use crate::{
 
 pub async fn delete_person(
     _: CandidateListDeletePersonPath,
-    csrf_tokens: CsrfTokens,
     candidate: Candidate,
-    DbConnection(mut conn): DbConnection,
+    context: Context,
+    State(pool): State<PgPool>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
         Ok(_) => {
-            candidate_lists::remove_candidate(&mut conn, candidate.list_id, candidate.person.id)
+            candidate_lists::remove_candidate(&pool, candidate.list_id, candidate.person.id)
                 .await?;
 
-            persons::remove_person(&mut conn, candidate.person.id).await?;
+            persons::remove_person(&pool, candidate.person.id).await?;
 
             Ok(Redirect::to(&CandidateList::list_path()).into_response())
         }
@@ -38,7 +42,6 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        CsrfTokens, DbConnection,
         candidate_lists::{self, CandidateList, CandidateListId},
         persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -53,29 +56,24 @@ mod tests {
         let person = sample_person(PersonId::new());
         let other_person = sample_person_with_last_name(PersonId::new(), "Other");
 
-        let mut conn = pool.acquire().await?;
-        candidate_lists::create_candidate_list(&mut conn, &list).await?;
-        persons::create_person(&mut conn, &person).await?;
-        persons::create_person(&mut conn, &other_person).await?;
-        candidate_lists::update_candidate_list_order(
-            &mut conn,
-            list_id,
-            &[person.id, other_person.id],
-        )
-        .await?;
-        let candidate = candidate_lists::get_candidate(&mut conn, list_id, person.id).await?;
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
+        persons::create_person(&pool, &other_person).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id, other_person.id])
+            .await?;
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person.id).await?;
 
-        let csrf_tokens = CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let context = Context::new_test(pool.clone()).await;
+        let csrf_token = context.csrf_tokens.issue().value;
 
         let response = delete_person(
             CandidateListDeletePersonPath {
                 list_id,
                 person_id: person.id,
             },
-            csrf_tokens,
             candidate,
-            DbConnection(pool.acquire().await?),
+            context,
+            State(pool.clone()),
             Form(EmptyForm::from(csrf_token)),
         )
         .await
@@ -90,14 +88,13 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, CandidateList::list_path());
 
-        let mut conn = pool.acquire().await?;
-        let updated_list = candidate_lists::get_full_candidate_list(&mut conn, list_id)
+        let updated_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?
             .expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);
         assert_eq!(updated_list.candidates[0].person.id, other_person.id);
 
-        let removed = persons::get_person(&mut conn, person.id).await?;
+        let removed = persons::get_person(&pool, person.id).await?;
         assert!(removed.is_none());
 
         Ok(())

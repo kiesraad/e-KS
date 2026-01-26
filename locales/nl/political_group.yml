@@ -1,0 +1,19 @@
+authorised_agent: Gemachtigde van de politieke groepering
+authorised_agent_info: De gemachtigde van de partij is de persoon die bij het centraal stembureau is geregistreerd als gemachtigde of plaatsvervangend gemachtigde voor de aanduiding. Deze persoon machtigt met formulier H3-1 / H3-2 de lijstinleveraar om de naam van de partij boven de kandidatenlijst te plaatsen
+authorised_agent_short: Gemachtigde
+display_name: Geregistreerde aanduiding
+display_name_confirmed: Is de geregistreerde aanduiding correct?
+general_information: Algemeen
+legal_name: Volledige statutaire naam
+legal_name_confirmed: Is de volledige statutaire naam correct?
+list_type: Type lijst aanduiding
+long_list_allowed: Heeft u bij de vorige verkiezing 16 zetels of meer behaald
+no_authorised_agent: Geen van de bovenstaande gemachtigden
+title: Politieke groepering
+type:
+  blank_name: Blanco lijst
+  blank_name_hint: er is geen geregistreerde aanduiding
+  name_combination: Combinatie van meerdere geregistreerde namen
+  name_combination_hint: De partij heeft een samenwerkingsverband met één of meer andere geregistreerde partijen en samen alle kandidaten leveren voor de kandidatenlijst.
+  registered_name: Op zichzelf staande geregistreerde naam
+  registered_name_hint: De partij heeft geen samenwerkingsverband met een andere geregistreerde partij en als één eenduidige partij aan de verkiezingen deelneemt.
