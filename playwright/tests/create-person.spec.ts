@@ -25,7 +25,7 @@ test('create new person', async ({ page }) => {
       initials: 'D',
       lastName: 'Duif',
     }
-    await personsPage.addPersons([candidate]);
+    await personsPage.addPersons([candidate, candidateTwo]);
 
     
 });
