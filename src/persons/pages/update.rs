@@ -5,7 +5,10 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, Context, DbConnection, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{self, Person, PersonForm, PersonPagination, PersonSort, pages::EditPersonPath},
+    persons::{
+        self, COUNTRY_CODES, Person, PersonForm, PersonPagination, PersonSort,
+        pages::EditPersonPath,
+    },
 };
 
 #[derive(Template)]
@@ -14,6 +17,7 @@ struct PersonUpdateTemplate {
     person: Person,
     person_pagination: PersonPagination,
     form: FormData<PersonForm>,
+    countries: &'static [&'static str],
 }
 
 pub async fn edit_person_form(
@@ -27,6 +31,7 @@ pub async fn edit_person_form(
             form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
             person,
             person_pagination,
+            countries: &COUNTRY_CODES,
         },
         context,
     ))
@@ -46,6 +51,7 @@ pub async fn update_person(
                 person,
                 person_pagination,
                 form: form_data,
+                countries: &COUNTRY_CODES,
             },
             context,
         )

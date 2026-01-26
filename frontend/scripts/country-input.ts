@@ -1,10 +1,28 @@
 const COUNTRY_INPUT_SELECTOR = ".country_input";
+const COUNTRY_OPTION_SELECTOR = "#countries option";
 
 function getCountryInputs(): NodeListOf<HTMLInputElement> {
   return document.querySelectorAll(COUNTRY_INPUT_SELECTOR);
 }
 
+function getCountryOptions(): NodeListOf<HTMLOptionElement> {
+  return document.querySelectorAll(COUNTRY_OPTION_SELECTOR);
+}
+
+function countryCodeToFlagEmoji(countryCode: string): string {
+  if (/^[A-Z]{2}$/.test(countryCode)) {
+    const codePoints = [...countryCode].map(
+      (char) => 0x1f1e6 + char.charCodeAt(0) - 65,
+    );
+
+    return String.fromCodePoint(...codePoints);
+  } else {
+    return "🌐";
+  }
+}
+
 window.addEventListener("load", () => {
+  // Make flag icon match country code input
   const countryInputs = getCountryInputs();
   countryInputs.forEach((input) => {
     const textInput = input.querySelector("input");
@@ -16,22 +34,17 @@ window.addEventListener("load", () => {
     }
 
     const setFlagIcon = () => {
-      let flag = "🌐";
-
       textInput.value = textInput.value.toUpperCase();
-
-      if (/^[A-Z]{2}$/.test(textInput.value)) {
-        const codePoints = [...textInput.value].map(
-          (char) => 0x1f1e6 + char.charCodeAt(0) - 65,
-        );
-
-        flag = String.fromCodePoint(...codePoints);
-      }
-
-      flagIcon.textContent = flag;
+      flagIcon.textContent = countryCodeToFlagEmoji(textInput.value);
     };
 
     textInput.addEventListener("input", setFlagIcon);
     setFlagIcon();
+  });
+
+  // Add country flags to options
+  const options = getCountryOptions();
+  options.forEach((option) => {
+    option.innerText = `${countryCodeToFlagEmoji(option.value)} ${option.value}`;
   });
 });

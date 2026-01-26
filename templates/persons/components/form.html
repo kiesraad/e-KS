@@ -78,7 +78,12 @@
     <span class="country_input input-icon">
       <span class="icon">🌐</span>
       <input type="text" name="country_of_residence" id="country_of_residence"
-        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" />
+        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" list="countries" />
+      <datalist id="countries">
+        {% for country in countries %}
+        <option value="{{ country }}" />
+        {% endfor %}
+      </datalist>
     </span>
     {% for error in form|error("country_of_residence") %}
     <span class="error">{{ error }}</span>

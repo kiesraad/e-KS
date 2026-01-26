@@ -7,7 +7,7 @@ use crate::{
     candidate_lists::{self, CandidateList, FullCandidateList, pages::CreateCandidatePath},
     filters,
     form::{FormData, Validate},
-    persons::{self, PersonForm},
+    persons::{self, COUNTRY_CODES, PersonForm},
 };
 
 #[derive(Template)]
@@ -15,6 +15,7 @@ use crate::{
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonForm>,
+    countries: &'static [&'static str],
 }
 
 pub async fn new_person_candidate_list(
@@ -26,6 +27,7 @@ pub async fn new_person_candidate_list(
         PersonCreateTemplate {
             full_list,
             form: FormData::new(&context.csrf_tokens),
+            countries: &COUNTRY_CODES,
         },
         context,
     )
@@ -44,6 +46,7 @@ pub async fn create_person_candidate_list(
             PersonCreateTemplate {
                 full_list,
                 form: form_data,
+                countries: &COUNTRY_CODES,
             },
             context,
         )
