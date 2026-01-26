@@ -7,7 +7,6 @@ actions:
   delete_list: Delete candidate list
   edit: List details
   edit_list_details: Edit the list details here
-  manage: Manage list
   select_all_districts: Select all electoral districts
 add_candidate: Add candidate
 candidate_count: "<strong>{}</strong> / {} candidates"

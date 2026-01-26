@@ -57,8 +57,32 @@ mod tests {
             "The CSRF token is invalid."
         );
         assert_eq!(
+            ValidationError::InvalidValue.message(Locale::En),
+            "The provided value is not valid."
+        );
+        assert_eq!(
+            ValidationError::InvalidEmail.message(Locale::En),
+            "Invalid email address."
+        );
+        assert_eq!(
+            ValidationError::ValueShouldNotBeEmpty.message(Locale::En),
+            "This field must not be empty."
+        );
+        assert_eq!(
+            ValidationError::ValueTooLong(10, 5).message(Locale::En),
+            "The value is too long (10 characters), maximum 5 characters allowed."
+        );
+        assert_eq!(
             ValidationError::ValueTooShort(2, 5).message(Locale::En),
             "The value is too short (2 characters), minimum 5 characters required."
+        );
+        assert_eq!(
+            ValidationError::InvalidChecksum.message(Locale::En),
+            "Invalid BSN."
+        );
+        assert_eq!(
+            ValidationError::StartsWithLastNamePrefix.message(Locale::En),
+            "Please put the prefix in the correct field."
         );
     }
 

@@ -6,7 +6,15 @@
 
 {% block page_sub_title %}
   {% if full_list.list.electoral_districts.len() > 2 %}
-    <span class="subtitle">{{ "common.electoral_districts"|trans }}: {{ full_list.list|display_districts }}</span>
+    {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
+      <span class="subtitle">{{ "common.electoral_districts"|trans }}:
+        {% if full_list.list.contains_all_districts(election) %}
+          {{ "candidate_list.districts.all"|trans }}
+        {% else %}
+          {{ full_list.list.districts() }}
+        {% endif %}
+      </span>
+    {% endif %}
   {% endif %}
 {% endblock %}
 

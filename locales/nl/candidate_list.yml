@@ -7,7 +7,6 @@ actions:
   delete_list: Kandidatenlijst verwijderen
   edit: Lijstgegevens
   edit_list_details: Pas hier de lijstgegevens aan
-  manage: Manage list
   select_all_districts: Selecteer alle kieskringen
 add_candidate: Kandidaat toevoegen
 candidate_count: "<strong>{}</strong> / {} kandidaten"

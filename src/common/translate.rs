@@ -23,33 +23,29 @@ mod tests {
         let used_keys = find_used_keys(std::path::Path::new("./"));
 
         for key in LOCALE_NL.keys() {
-            if !used_keys.contains(&key.to_string()) {
-                panic!(
-                    "Translation key '{key}' (in locales/nl) is not used in any template or source file"
-                );
-            }
+            assert!(
+                used_keys.contains(&key.to_string()),
+                "Translation key '{key}' (in locales/nl) is not used in any template or source file"
+            );
         }
 
         for key in LOCALE_EN.keys() {
-            if !used_keys.contains(&key.to_string()) {
-                panic!(
-                    "Translation key '{key}' (in locales/en) is not used in any template or source file"
-                );
-            }
+            assert!(
+                used_keys.contains(&key.to_string()),
+                "Translation key '{key}' (in locales/en) is not used in any template or source file"
+            );
         }
 
         for key in used_keys {
-            if !LOCALE_NL.contains_key(&key) {
-                panic!(
-                    "Translation key '{key}' is used in a template or source file, but missing in locales/nl"
-                );
-            }
+            assert!(
+                LOCALE_NL.contains_key(&key),
+                "Translation key '{key}' is used in a template or source file, but missing in locales/nl"
+            );
 
-            if !LOCALE_EN.contains_key(&key) {
-                panic!(
-                    "Translation key '{key}' is used in a template or source file, but missing in locales/en"
-                );
-            }
+            assert!(
+                LOCALE_EN.contains_key(&key),
+                "Translation key '{key}' is used in a template or source file, but missing in locales/en"
+            );
         }
     }
 }

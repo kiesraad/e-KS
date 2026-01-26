@@ -1,7 +1,7 @@
 //! Askama template filters for, among others, display, translation, and validation errors.
 //! Used to keep the formatting logic out of the templates.
 use crate::{
-    ElectionConfig, Locale,
+    Locale,
     candidate_lists::CandidateList,
     form::{FormData, WithCsrfToken},
     trans,
@@ -56,38 +56,11 @@ pub fn error<T: WithCsrfToken>(
 }
 
 #[askama::filter_fn]
-pub fn display_districts(
-    list: &CandidateList,
-    values: &dyn askama::Values,
-) -> askama::Result<String> {
-    let locale: Locale = *askama::get_value(values, "locale")?;
-    let election: ElectionConfig = *askama::get_value(values, "election")?;
-
-    if !list.electoral_districts.is_empty()
-        && list.electoral_districts.len() == election.electoral_districts().len()
-    {
-        Ok(trans!("candidate_list.districts.all", locale).to_string())
-    } else {
-        Ok(list
-            .electoral_districts
-            .iter()
-            .map(|d| d.title())
-            .collect::<Vec<_>>()
-            .join(", "))
-    }
-}
-
-#[askama::filter_fn]
 pub fn list_name(list: &CandidateList, values: &dyn askama::Values) -> askama::Result<String> {
     let locale: Locale = *askama::get_value(values, "locale")?;
 
     if list.electoral_districts.len() < 3 {
-        Ok(list
-            .electoral_districts
-            .iter()
-            .map(|d| d.title())
-            .collect::<Vec<_>>()
-            .join(", "))
+        Ok(list.districts())
     } else {
         Ok(trans!("candidate_list.title_single", locale).to_string())
     }
