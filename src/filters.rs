@@ -22,12 +22,20 @@ pub fn trans(
 ) -> askama::Result<String> {
     let locale: Locale = *askama::get_value(values, "locale")?;
 
+    if key.is_empty() {
+        return Ok("".to_string());
+    }
+
     let mut result = match locale {
         crate::locale::Locale::En => crate::translate::LOCALE_EN.get(key),
         crate::locale::Locale::Nl => crate::translate::LOCALE_NL.get(key),
     }
     .map(|s| s.to_string())
-    .ok_or_else(|| askama::Error::Custom(format!("translation key not found: {key}").into()))?;
+    .unwrap_or_else(|| {
+        tracing::warn!("Undefined translation key: [{key}]");
+
+        format!("[{key}]")
+    });
 
     if !param0.is_empty() {
         result = result.replacen("{}", param0, 1);
