@@ -2,7 +2,7 @@ use crate::{
     AppError, Context, DbConnection, HtmlTemplate,
     form::{FormData, Validate},
     political_group,
-    political_group::{pages::PoliticalGroupNewPath, structs::PoliticalGroupForm},
+    political_groups::{pages::PoliticalGroupNewPath, structs::PoliticalGroupForm},
 };
 use askama::Template;
 use axum::{
@@ -39,7 +39,7 @@ pub async fn create_political_group(
             Ok(HtmlTemplate(PoliticalGroupCreateTemplate { form }, context).into_response())
         }
         Ok(political_group) => {
-            political_group::create_political_group(&mut conn, &political_group).await?;
+            political_groups::create_political_group(&mut conn, &political_group).await?;
 
             Ok(Redirect::to("/").into_response())
         }

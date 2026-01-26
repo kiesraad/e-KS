@@ -9,6 +9,10 @@ mod index;
 #[typed_path("/political-group", rejection(AppError))]
 pub struct PoliticalGroupPath;
 
+#[derive(TypedPath)]
+#[typed_path("/political_group/new", rejection(crate::AppError))]
+pub struct PoliticalGroupNewPath;
+
 pub fn router() -> Router<AppState> {
     Router::new().typed_get(index::index)
 }

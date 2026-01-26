@@ -1,7 +1,7 @@
 use crate::{
     TokenValue,
     form::*,
-    political_group::structs::{ListSubmitter, ListSubmitterId},
+    political_groups::{AuthorisedAgent, AuthorisedAgentId},
 };
 use chrono::Utc;
 use serde::Deserialize;
@@ -9,11 +9,11 @@ use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(
-    target = "ListSubmitter",
-    build = "ListSubmitterForm::build_list_submitter"
+    target = "AuthorisedAgent",
+    build = "AuthorisedAgentForm::build_authorised_agent"
 )]
 #[serde(default)]
-pub struct ListSubmitterForm {
+pub struct AuthorisedAgentForm {
     #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
     last_name: String,
     #[validate(
@@ -38,22 +38,22 @@ pub struct ListSubmitterForm {
     pub csrf_token: TokenValue,
 }
 
-impl WithCsrfToken for ListSubmitterForm {
+impl WithCsrfToken for AuthorisedAgentForm {
     fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
-        ListSubmitterForm {
+        AuthorisedAgentForm {
             csrf_token: csrf_token.value,
             ..self
         }
     }
 }
 
-impl ListSubmitterForm {
-    fn build_list_submitter(
-        validated: ListSubmitterFormValidated,
-        current: Option<ListSubmitter>,
-    ) -> ListSubmitter {
+impl AuthorisedAgentForm {
+    fn build_authorised_agent(
+        validated: AuthorisedAgentFormValidated,
+        current: Option<AuthorisedAgent>,
+    ) -> AuthorisedAgent {
         if let Some(current) = current {
-            ListSubmitter {
+            AuthorisedAgent {
                 last_name: validated.last_name,
                 last_name_prefix: validated.last_name_prefix,
                 initials: validated.initials,
@@ -65,8 +65,8 @@ impl ListSubmitterForm {
                 ..current
             }
         } else {
-            ListSubmitter {
-                id: ListSubmitterId::new(),
+            AuthorisedAgent {
+                id: AuthorisedAgentId::new(),
                 last_name: validated.last_name,
                 last_name_prefix: validated.last_name_prefix,
                 initials: validated.initials,

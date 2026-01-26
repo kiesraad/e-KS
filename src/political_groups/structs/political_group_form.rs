@@ -1,9 +1,7 @@
 use crate::{
     TokenValue,
     form::*,
-    political_group::structs::{
-        AuthorisedAgentId, ListSubmitterId, PoliticalGroup, PoliticalGroupId,
-    },
+    political_groups::{AuthorisedAgentId, ListSubmitterId, PoliticalGroup, PoliticalGroupId},
 };
 use chrono::Utc;
 use serde::Deserialize;

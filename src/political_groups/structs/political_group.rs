@@ -1,8 +1,6 @@
 use crate::{
     id_newtype,
-    political_group::structs::{
-        authorized_agent::AuthorisedAgentId, list_submitter::ListSubmitterId,
-    },
+    political_groups::{AuthorisedAgentId, ListSubmitterId},
 };
 use chrono::{DateTime, Utc};
 

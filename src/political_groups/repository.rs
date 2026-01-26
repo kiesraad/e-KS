@@ -1,4 +1,4 @@
-use crate::political_group::structs::{
+use crate::political_groups::{
     AuthorisedAgentId, ListSubmitter, ListSubmitterId, PoliticalGroup, PoliticalGroupId,
 };
 use chrono::Utc;

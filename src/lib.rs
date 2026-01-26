@@ -1,7 +1,8 @@
-extern crate core;
-
 /// Application specific modules
 mod candidate_lists;
+mod persons;
+mod political_groups;
+
 /// Generic modules
 mod common;
 mod error;
@@ -9,14 +10,11 @@ pub mod filters;
 mod form;
 mod pages;
 mod pagination;
-mod persons;
-mod political_groups;
 pub mod router;
 mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
-mod political_group;
 
 pub use common::{
     config::Config,
