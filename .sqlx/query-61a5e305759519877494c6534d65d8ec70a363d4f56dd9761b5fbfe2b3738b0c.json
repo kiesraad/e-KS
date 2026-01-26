@@ -67,7 +67,7 @@
       {
         "ordinal": 10,
         "name": "country_of_residence",
-        "type_info": "Varchar"
+        "type_info": "Bpchar"
       },
       {
         "ordinal": 11,

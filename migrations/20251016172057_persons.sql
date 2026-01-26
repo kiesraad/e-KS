@@ -11,7 +11,7 @@ CREATE TABLE persons (
     -- required personal details
     bsn CHAR(9),
     place_of_residence VARCHAR,
-    country_of_residence VARCHAR,
+    country_of_residence CHAR(2),
     -- personal details
     gender gender,
     date_of_birth DATE,
