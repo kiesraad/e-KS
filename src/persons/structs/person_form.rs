@@ -7,8 +7,9 @@ use crate::{
     CsrfToken, TokenValue,
     constants::DEFAULT_DATE_FORMAT,
     form::{
-        WithCsrfToken, validate_eleven_check, validate_initials, validate_last_name_prefix,
-        validate_length, validate_no_last_name_prefix, validate_teletex_chars,
+        WithCsrfToken, validate_country_code, validate_eleven_check, validate_initials,
+        validate_last_name_prefix, validate_length, validate_no_last_name_prefix,
+        validate_teletex_chars,
     },
     persons::{Gender, Person, structs::person::PersonId},
 };
@@ -46,7 +47,7 @@ pub struct PersonForm {
     pub bsn: String,
     #[validate(with = "validate_length(2, 255)", optional)]
     pub place_of_residence: String,
-    #[validate(with = "validate_length(2, 255)", optional)]
+    #[validate(with = "validate_country_code()", optional)]
     pub country_of_residence: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
