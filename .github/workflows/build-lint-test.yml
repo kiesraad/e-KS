@@ -148,6 +148,13 @@ jobs:
 
       - name: Run playwright tests
         run: bin/test
+      - name: Upload Playwright report
+        uses: actions/upload-artifact@v6
+        if: ${{ !cancelled() }}
+        with:
+          name: playwright-report
+          path: frontend/playwright-report/
+          retention-days: 30
 
   audit-dependencies:
     name: Audit dependencies
