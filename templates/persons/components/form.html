@@ -73,9 +73,13 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field">
+  <p class="form-field form-field-sm">
     <label for="country_of_residence">{{ "person.fields.country_of_residence"|trans }}</label>
-    <input type="text" name="country_of_residence" id="country_of_residence" value="{{ form.data.country_of_residence }}" />
+    <span class="country_input input-icon">
+      <span class="icon">🌐</span>
+      <input type="text" name="country_of_residence" id="country_of_residence"
+        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" />
+    </span>
     {% for error in form|error("country_of_residence") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
