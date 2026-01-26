@@ -37,7 +37,7 @@ pub fn sample_person(id: PersonId) -> Person {
         date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
         bsn: None,
         place_of_residence: Some("Juinen".to_string()),
-        country_of_residence: Some("Netherlands".to_string()),
+        country_of_residence: Some("NL".to_string()),
         locality: Some("Juinen".to_string()),
         postal_code: Some("1234 AB".to_string()),
         house_number: Some("10".to_string()),
@@ -67,7 +67,7 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
         date_of_birth: "01-02-1990".to_string(),
         bsn: "".to_string(),
         place_of_residence: "Juinen".to_string(),
-        country_of_residence: "Netherlands".to_string(),
+        country_of_residence: "NL".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }

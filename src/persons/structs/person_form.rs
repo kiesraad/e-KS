@@ -147,7 +147,7 @@ mod tests {
             date_of_birth: None,
             bsn: None,
             place_of_residence: Some("Waterdam".to_string()),
-            country_of_residence: Some("Netherlands".to_string()),
+            country_of_residence: Some("NL".to_string()),
             locality: Some("Heemdamseburg".to_string()),
             postal_code: Some("1234AB".to_string()),
             house_number: Some("10".to_string()),
@@ -172,7 +172,7 @@ mod tests {
             date_of_birth: "01-02-2020".to_string(),
             bsn: "".to_string(),
             place_of_residence: "Waterdam".to_string(),
-            country_of_residence: "Netherlands".to_string(),
+            country_of_residence: " nl ".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -189,10 +189,7 @@ mod tests {
             Some(NaiveDate::from_ymd_opt(2020, 2, 1).unwrap())
         );
         assert_eq!(updated.place_of_residence, Some("Waterdam".to_string()));
-        assert_eq!(
-            updated.country_of_residence,
-            Some("Netherlands".to_string())
-        );
+        assert_eq!(updated.country_of_residence, Some("NL".to_string()));
         assert_eq!(updated.locality, Some("Heemdamseburg".to_string()));
         assert_eq!(updated.postal_code, Some("1234AB".to_string()));
         assert_eq!(updated.house_number, Some("10".to_string()));
@@ -214,7 +211,7 @@ mod tests {
             date_of_birth: "2020/01/01".to_string(),
             bsn: "".to_string(),
             place_of_residence: "x".to_string(),
-            country_of_residence: "x".to_string(),
+            country_of_residence: "xx".to_string(),
             csrf_token: tokens.issue().value,
         };
 
@@ -253,7 +250,7 @@ mod tests {
         )));
         assert!(data.errors().contains(&(
             "country_of_residence".to_string(),
-            ValidationError::ValueTooShort(1, 2)
+            ValidationError::InvalidValue
         )));
     }
 

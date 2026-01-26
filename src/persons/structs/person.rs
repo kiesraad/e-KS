@@ -60,9 +60,7 @@ impl Person {
 
     pub fn is_dutch(&self) -> bool {
         match &self.country_of_residence {
-            Some(country) => {
-                country.to_lowercase() == "netherlands" || country.to_lowercase() == "nederland"
-            }
+            Some(country) => country == "NL",
             None => true, // Assume Dutch if no country is set
         }
     }
@@ -140,13 +138,10 @@ mod tests {
         let mut person = base_person();
         assert!(person.is_dutch());
 
-        person.country_of_residence = Some("NETHERLANDS".to_string());
+        person.country_of_residence = Some("NL".to_string());
         assert!(person.is_dutch());
 
-        person.country_of_residence = Some("nederland".to_string());
-        assert!(person.is_dutch());
-
-        person.country_of_residence = Some("Belgium".to_string());
+        person.country_of_residence = Some("BE".to_string());
         assert!(!person.is_dutch());
     }
 
