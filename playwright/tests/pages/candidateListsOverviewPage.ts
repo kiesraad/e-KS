@@ -30,7 +30,7 @@ export class CandidateListsOverviewPage {
   }
 
   async checkRemovedDistricts(districts: string[]) {
-    for (var district of districts) {
+    for (const district of districts) {
       await expect(
         this.page.getByRole("listitem", { name: district }),
       ).toHaveCount(0);
