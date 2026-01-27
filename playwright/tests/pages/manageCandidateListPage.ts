@@ -26,6 +26,7 @@ export class ManageCandidateListPage {
             await this.page.getByRole('button', {name: 'Save'}).click();
             await this.page.getByLabel('Locality').fill(candidate.locality ?? '');
             await this.page.getByRole('button', {name: 'Save'}).click(); 
+            await expect(this.page.getByRole('cell', { name: candidate.lastName })).toBeVisible();
         }      
     }
 
@@ -44,4 +45,13 @@ export class ManageCandidateListPage {
         }
         await this.page.getByRole('button', { name: 'Save' }).click();
     }
+
+    async removeList(districts: string[]) {
+        await this.page.getByRole('link', { name: 'List details' }).click();
+        await this.page.getByRole('button', { name: 'Delete candidate list' }).click();
+        await this.page.getByRole('button', { name: 'Delete', exact: true }).click();
+        for(var district of districts) {
+            await expect(this.page.getByRole('listitem', { name: district })).toHaveCount(0);
+    }
+}
 }

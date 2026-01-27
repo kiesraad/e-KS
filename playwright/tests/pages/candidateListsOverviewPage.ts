@@ -24,7 +24,7 @@ export class CandidateListsOverviewPage {
         await this.page.getByRole('heading', { name: 'All persons' }).click();
     }
 
-    async checkDistricts(districts: string[]) {
+    async checkRemovedDistricts(districts: string[]) {
         for(var district of districts) {
               await expect(this.page.getByRole('listitem', { name: district })).toHaveCount(0);
         }

@@ -32,4 +32,10 @@ export class PersonsPage {
             await this.page.getByRole('button', {name: 'Save'}).click(); 
         }      
     }
+
+    async checkPerson(candidates: Candidate[]) {
+        for(var candidate of candidates) {
+            await expect(this.page.getByRole('cell', { name: candidate.lastName }).first()).toBeVisible();
+        }
+    }
 }

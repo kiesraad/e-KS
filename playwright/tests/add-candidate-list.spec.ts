@@ -4,7 +4,7 @@ import { SelectElectoralDistrictsPage } from './pages/selectElectoralDistrictsPa
 import { ManageCandidateListPage } from './pages/manageCandidateListPage';
 import { Candidate } from './models/candidate';
 
-test('add candidate list', async ({ page }) => {
+test('add and delete candidate list', async ({ page }) => {
   var candidateListsOverviewPage = new CandidateListsOverviewPage(page);
   await candidateListsOverviewPage.open();
   await candidateListsOverviewPage.addList();
@@ -26,4 +26,6 @@ test('add candidate list', async ({ page }) => {
     lastName: 'Beer',
   }
   await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
+
+  await manageCandidateListPage.removeList(['Drenthe', 'Groningen', 'Overijssel']);
 });

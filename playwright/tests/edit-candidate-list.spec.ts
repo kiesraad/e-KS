@@ -11,7 +11,7 @@ test('edit candidate list', async ({ page }) => {
   await manageCandidateListPage.removeDistricts(['Drenthe', 'Friesland', 'Groningen']);
 
   await candidateListsOverviewPage.open();
-  await candidateListsOverviewPage.checkDistricts(['Drenthe', 'Friesland', 'Groningen']);
+  await candidateListsOverviewPage.checkRemovedDistricts(['Drenthe', 'Friesland', 'Groningen']);
 
   await candidateListsOverviewPage.manageList();
   await manageCandidateListPage.addDistricts(['Drenthe', 'Friesland', 'Groningen']);
