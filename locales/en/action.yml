@@ -1,4 +1,5 @@
 add: Add
+back: Back
 cancel: Cancel
 close: Close
 delete: Delete
@@ -8,4 +9,3 @@ manage_data: Manage data
 review_and_submit: Review and submit
 save: Save
 signout: Sign out
-back: Back

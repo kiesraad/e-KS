@@ -29,9 +29,9 @@
     grid-column: 1 / -1;
   }
 
-  .error {
+  span.error {
     padding: 0;
-    margin: -0.75rem 0 0 0;
+    margin: -0.25rem 0 0 0;
     font-size: var(--font-size-md);
     color: var(--color-error-darker);
     font-weight: normal;

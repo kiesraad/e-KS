@@ -114,6 +114,13 @@ main {
   nav {
     min-height: var(--space-xxl);
   }
+
+  & > .steps {
+    display: flex;
+    justify-content: stretch;
+    gap: var(--space-lg);
+    margin-bottom: var(--space-xl);
+  }
 }
 
 footer {

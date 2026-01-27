@@ -1,0 +1,159 @@
+<form method="post" action="{{ PoliticalGroup::edit_path() }}" class="form">
+  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+
+  <h3>{{ "political_group.general_information"|trans }}</h3>
+
+  <div class="form-row">
+    <fieldset class="checklist">
+      <legend>{{ "political_group.list_type"|trans }}</legend>
+      <div class="checkbox">
+        <input type="radio" checked id="registered_name" disabled />
+        <label for="registered_name">
+          {{ "political_group.type.registered_name"|trans }}
+          <span class="hint">{{ "political_group.type.registered_name_hint"|trans }}</span>
+        </label>
+      </div>
+      <div class="checkbox">
+        <input type="radio" id="name_combination" disabled />
+        <label for="name_combination">
+          {{ "political_group.type.name_combination"|trans }}
+          <span class="hint">{{ "political_group.type.name_combination_hint"|trans }}</span>
+        </label>
+      </div>
+      <div class="checkbox">
+        <input type="radio" id="blank_name" disabled />
+        <label for="blank_name">
+          {{ "political_group.type.blank_name"|trans }}
+          <span class="hint">{{ "political_group.type.blank_name_hint"|trans }}</span>
+        </label>
+      </div>
+    </fieldset>
+  </div>
+
+  <h3>{{ "political_group.title"|trans }}</h3>
+
+  <div class="form-row">
+    <fieldset class="checklist mt-xl">
+      <legend class="legend-md">{{ "political_group.long_list_allowed"|trans }}</legend>
+      <div class="checklist">
+        <div class="checkbox">
+          <input type="radio" name="long_list_allowed" value="true" {% if form.data.long_list_allowed=="true"
+            %}checked{%endif %} id="long_list_allowed_true" />
+          <label for="long_list_allowed_true">
+            {{ "common.yes_label"|trans }}
+          </label>
+        </div>
+        <div class="checkbox">
+          <input type="radio" name="long_list_allowed" value="false" {% if form.data.long_list_allowed=="false"
+            %}checked{% endif %} id="long_list_allowed_false" />
+          <label for="long_list_allowed_false">
+            {{ "common.no_label"|trans }}
+          </label>
+        </div>
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="form-row mb-md">
+    <div class="form-field">
+      <label for="display_name">{{ "political_group.display_name"|trans }}</label>
+      <input type="text" value="{{ political_group.display_name }}" id="display_name" class="disabled" disabled />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <fieldset class="form-field">
+      <legend class="legend-sm">{{ "political_group.display_name_confirmed"|trans }}</legend>
+      <div class="checklist">
+        <div class="checkbox">
+          <input type="radio" name="display_name_confirmed" value="true" {% if form.data.display_name_confirmed=="true"
+            %}checked{% endif %} id="display_name_confirmed_true" />
+          <label for="display_name_confirmed_true">
+            {{ "common.yes_label"|trans }}
+          </label>
+        </div>
+        <div class="checkbox">
+          <input type="radio" name="display_name_confirmed" value="false" {% if
+            form.data.display_name_confirmed=="false" %}checked{% endif %} id="display_name_confirmed_false" />
+          <label for="display_name_confirmed_false">
+            {{ "common.no_label"|trans }}
+          </label>
+        </div>
+        {% if form.data.display_name_confirmed == "false" %}
+          <span class="error">{{ "political_group.registration_change_required"|trans }}</span>
+        {% endif %}
+      </div>
+    </fieldset>
+  </div>
+
+  <div class="form-row mb-md">
+    <div class="form-field">
+      <label for="legal_name">{{ "political_group.legal_name"|trans }}</label>
+      <input type="text" value="{{ political_group.legal_name }}" id="legal_name" class="disabled" disabled />
+    </div>
+  </div>
+
+  <div class="form-row">
+    <fieldset class="form-field">
+      <legend class="legend-sm">{{ "political_group.legal_name_confirmed"|trans }}</legend>
+      <div class="checklist">
+        <div class="checkbox">
+          <input type="radio" name="legal_name_confirmed" value="true" {% if form.data.legal_name_confirmed=="true"
+            %}checked{% endif %} id="legal_name_confirmed_true" />
+          <label for="legal_name_confirmed_true">
+            {{ "common.yes_label"|trans }}
+          </label>
+        </div>
+        <div class="checkbox">
+          <input type="radio" name="legal_name_confirmed" value="false" {% if form.data.legal_name_confirmed=="false"
+            %}checked{% endif %} id="legal_name_confirmed_false" />
+          <label for="legal_name_confirmed_false">
+            {{ "common.no_label"|trans }}
+          </label>
+        </div>
+        {% if form.data.legal_name_confirmed == "false" %}
+          <span class="error">{{ "political_group.registration_change_required"|trans }}</span>
+        {% endif %}
+      </div>
+    </fieldset>
+  </div>
+
+  <h3>{{ "political_group.authorised_agent"|trans }}</h3>
+
+  <div class="alert alert-info">
+    {{ "political_group.authorised_agent_info"|trans }}
+  </div>
+
+  <fieldset class="form-field">
+    <legend class="legend-sm">{{ "political_group.authorised_agent_short"|trans }}</legend>
+    <div class="checklist">
+      {% for agent in authorised_agents %}
+      {% set agent_id = agent.id.to_string() %}
+      <label for="authorised_agent_id_{{ agent_id }}" class="checkbox radio-card">
+        <input type="radio" name="authorised_agent_id" value="{{ agent_id }}" {% if
+          form.data.authorised_agent_id==agent_id %}checked{% endif %} id="authorised_agent_id_{{ agent_id }}" />
+        <span>
+          <strong>{{ agent.last_name_with_prefix() }}</strong>, {{ agent.initials }}
+          <br />
+          {{ agent.street_name }} {{ agent.house_number }}{{ agent.house_number_addition|display }}
+          <br />
+          {{ agent.postal_code }} {{ agent.locality }}
+        </span>
+      </label>
+      {% endfor %}
+      <label for="authorised_agent_id_none" class="checkbox radio-card">
+        <input type="radio" name="authorised_agent_id" value="" {% if form.data.authorised_agent_id=="" %}checked{%
+          endif %} id="authorised_agent_id_none" />
+        <span>{{ "political_group.no_authorised_agent"|trans }}</span>
+      </label>
+      {% if form.data.authorised_agent_id == "" %}
+        <span class="error">{{ "political_group.registration_change_required"|trans }}</span>
+      {% endif %}
+    </div>
+    {% for error in form|error("authorised_agent_id") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </fieldset>
+
+  <button type="submit" class="button lg">{{ "action.save"|trans }}</button>
+</form>

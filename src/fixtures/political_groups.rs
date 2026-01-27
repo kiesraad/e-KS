@@ -37,8 +37,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
         updated_at: Utc::now(),
     };
 
-    let mut political_group =
-        political_groups::create_political_group(db, &political_group).await?;
+    let political_group = political_groups::create_political_group(db, &political_group).await?;
 
     political_groups::create_authorised_agent(
         db,
@@ -78,9 +77,6 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
     )
     .await?;
 
-    political_group.authorised_agent_id = Some(agent_1_id);
-    political_groups::update_political_group(db, &political_group).await?;
-
     political_groups::create_list_submitter(
         db,
         &political_group.id,
@@ -118,9 +114,6 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
         },
     )
     .await?;
-
-    political_group.list_submitter_id = Some(submitter_1_id);
-    political_groups::update_political_group(db, &political_group).await?;
 
     Ok(())
 }

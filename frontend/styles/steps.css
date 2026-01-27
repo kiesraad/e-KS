@@ -1,6 +1,7 @@
 .steps-nav {
   border-right: 1px solid var(--border-color-default);
   width: 20rem;
+  padding-right: var(--space-lg);
 
   ul {
     padding: 0;

@@ -1,14 +1,17 @@
 authorised_agent: Authorized agent of the political group
 authorised_agent_info: "The authorized agent of the party is the person registered with the central electoral committee as the authorized or deputy authorized person for the designation. This person authorizes the list submitter with form H3-1 / H3-2 to place the party's name above the candidate list."
 authorised_agent_short: Authorized agent
+basic_information: Basic information
 display_name: Registered designation
 display_name_confirmed: Is the registered designation correct?
 general_information: General
 legal_name: Full statutory name
 legal_name_confirmed: Is the full statutory name correct?
+list_submitter_data: List submitter data
 list_type: Type list designation
 long_list_allowed: Did you win 16 seats or more in the previous election
 no_authorised_agent: None of the above authorized agents
+registration_change_required: Change your registration with the central electoral committee
 title: Political group
 type:
   blank_name: Blank list

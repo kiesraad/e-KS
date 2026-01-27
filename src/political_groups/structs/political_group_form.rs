@@ -1,6 +1,6 @@
 use crate::{
     TokenValue,
-    form::*,
+    form::{CsrfToken, WithCsrfToken},
     political_groups::{AuthorisedAgentId, PoliticalGroup, PoliticalGroupId},
 };
 use chrono::Utc;

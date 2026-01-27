@@ -1,4 +1,5 @@
 add: Toevoegen
+back: Terug
 cancel: Annuleren
 close: Sluiten
 delete: Verwijderen
@@ -8,4 +9,3 @@ manage_data: Beheer gegevens
 review_and_submit: Controleren en inleveren
 save: Opslaan
 signout: Afmelden
-back: Terug

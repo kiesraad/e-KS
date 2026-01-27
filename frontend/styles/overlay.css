@@ -84,15 +84,9 @@ body.overlay-open {
       display: flex;
       justify-content: stretch;
 
-      & > div {
-        &:first-child {
-          padding-right: var(--space-lg);
-        }
-
-        &:nth-child(2) {
-          padding-left: var(--space-lg);
-          flex: 1;
-        }
+      & > div:nth-child(2) {
+        padding-left: var(--space-lg);
+        flex: 1;
       }
     }
   }
