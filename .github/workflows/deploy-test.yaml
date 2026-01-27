@@ -33,8 +33,8 @@ jobs:
         run: |
           branch_name_without_prefix=${GITHUB_REF#refs/heads/}
           
-          # Replace all remaining forward slashes '/' with hyphens '-'
-          canonical_branch_name=${branch_name_without_prefix//\//-}
+          # Replace all remaining forward slashes '/' and underscores with hyphens '-'
+          canonical_branch_name=$(echo "$branch_name_without_prefix" | sed 's/[\/_]/-/g')
           
           # Set the output variable
           echo "branch-name=$canonical_branch_name" >> "$GITHUB_OUTPUT"
@@ -68,7 +68,7 @@ jobs:
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: target
-          path: | 
+          path: |
             target/release/eks
             target/release/fixtures
 
