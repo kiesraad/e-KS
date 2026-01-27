@@ -238,6 +238,55 @@ mod tests {
         assert_eq!(1, lists.len());
         assert_eq!(list.id, lists[0].list.id);
         assert_eq!(0, lists[0].person_count);
+        assert_eq!(0, lists[0].duplicate_districts.len());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn get_candidate_list_summaries_with_duplicate_districts(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
+        // setup
+        let list1 = insert_list(&pool, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
+        let list2 = insert_list(&pool, vec![ElectoralDistrict::UT, ElectoralDistrict::GR]).await?;
+
+        let list3 = insert_list(&pool, vec![ElectoralDistrict::OV, ElectoralDistrict::GR]).await?;
+
+        // test
+        let lists = list_candidate_list_summary(&pool).await?;
+
+        // verification
+        assert_eq!(3, lists.len());
+
+        let list_summary1 = lists.iter().find(|list| list.list.id == list1.id).unwrap();
+        let list_summary2 = lists.iter().find(|list| list.list.id == list2.id).unwrap();
+        let list_summary3 = lists.iter().find(|list| list.list.id == list3.id).unwrap();
+
+        // list 1 clashes on UT with list 2
+        assert_eq!(
+            vec![ElectoralDistrict::UT],
+            list_summary1.duplicate_districts
+        );
+
+        // list 2 clashes on UT with list 1 and on GR with list 3
+        assert_eq!(2, list_summary2.duplicate_districts.len());
+        assert!(
+            list_summary2
+                .duplicate_districts
+                .contains(&ElectoralDistrict::UT)
+        );
+        assert!(
+            list_summary2
+                .duplicate_districts
+                .contains(&ElectoralDistrict::GR)
+        );
+
+        // list 3 clashes on GR with list 2
+        assert_eq!(
+            vec![ElectoralDistrict::GR],
+            list_summary3.duplicate_districts
+        );
 
         Ok(())
     }
@@ -365,6 +414,35 @@ mod tests {
     }
 
     #[sqlx::test]
+    async fn get_used_district_with_exclude(pool: PgPool) -> Result<(), sqlx::Error> {
+        let expected = BTreeSet::from([
+            ElectoralDistrict::UT,
+            ElectoralDistrict::DR,
+            ElectoralDistrict::GR,
+            ElectoralDistrict::OV,
+        ]);
+
+        // setup
+        insert_list(&pool, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
+        insert_list(&pool, vec![ElectoralDistrict::GR, ElectoralDistrict::OV]).await?;
+
+        let exclude_id = insert_list(&pool, vec![ElectoralDistrict::GR, ElectoralDistrict::LI])
+            .await?
+            .id;
+
+        // test
+        let result: BTreeSet<ElectoralDistrict> = get_used_districts(&pool, vec![exclude_id])
+            .await?
+            .into_iter()
+            .collect();
+
+        // verify
+        assert_eq!(expected, result);
+
+        Ok(())
+    }
+
+    #[sqlx::test]
     async fn test_remove_candidate_list(pool: PgPool) -> Result<(), sqlx::Error> {
         // setup
         let list_a = sample_candidate_list(CandidateListId::new());
@@ -395,6 +473,8 @@ mod tests {
         // and only persons got removed associated with the deleted list
         assert_eq!(1, lists[0].person_count);
         assert_eq!(person_b.id, list_b_from_db.candidates[0].person.id);
+        // no duplicate districts
+        assert_eq!(0, lists[0].duplicate_districts.len());
 
         Ok(())
     }
