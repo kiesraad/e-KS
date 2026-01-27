@@ -53,7 +53,7 @@ mod tests {
         crate::fixtures::persons::load(&pool).await.unwrap();
         load(&pool).await.unwrap();
 
-        let lists = candidate_lists::list_candidate_list_with_count(&pool)
+        let lists = candidate_lists::list_candidate_list_summary(&pool)
             .await
             .unwrap();
 

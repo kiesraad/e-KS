@@ -18,6 +18,7 @@ pub struct CandidateList {
 pub struct CandidateListSummary {
     pub list: CandidateList,
     pub person_count: i64,
+    pub duplicate_districts: Vec<ElectoralDistrict>,
 }
 
 impl CandidateList {

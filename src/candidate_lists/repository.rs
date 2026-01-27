@@ -1,5 +1,6 @@
 use chrono::Utc;
 use sqlx::PgPool;
+use uuid::Uuid;
 
 use crate::{
     ElectoralDistrict,
@@ -11,7 +12,7 @@ pub struct ListIdAndCount {
     pub person_count: i64,
 }
 
-pub async fn list_candidate_list_with_count(
+pub async fn list_candidate_list_summary(
     db: &PgPool,
 ) -> Result<Vec<CandidateListSummary>, sqlx::Error> {
     let counts = sqlx::query_as!(
@@ -31,18 +32,38 @@ pub async fn list_candidate_list_with_count(
 
     let lists = list_candidate_list(db).await?;
 
-    Ok(lists
-        .into_iter()
-        .map(|list| {
-            let person_count = counts
-                .iter()
-                .find(|c| c.id == list.id)
-                .map(|c| c.person_count)
-                .unwrap_or(0);
+    let mut summaries = vec![];
 
-            CandidateListSummary { list, person_count }
-        })
-        .collect::<Vec<_>>())
+    for list in lists {
+        let person_count = counts
+            .iter()
+            .find(|c| c.id == list.id)
+            .map(|c| c.person_count)
+            .unwrap_or(0);
+        let duplicate_districts = get_duplicate_districts(db, &list).await?;
+
+        summaries.push(CandidateListSummary {
+            list,
+            person_count,
+            duplicate_districts,
+        });
+    }
+
+    Ok(summaries)
+}
+
+async fn get_duplicate_districts(
+    db: &PgPool,
+    list: &CandidateList,
+) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
+    let used_districts = get_used_districts(db, vec![list.id]).await?;
+
+    Ok(list
+        .electoral_districts
+        .clone()
+        .into_iter()
+        .filter(|district| used_districts.contains(district))
+        .collect())
 }
 
 pub async fn list_candidate_list(db: &PgPool) -> Result<Vec<CandidateList>, sqlx::Error> {
@@ -75,14 +96,22 @@ pub async fn get_candidate_list(
     .await
 }
 
-/// retrieves a vector of all the electoral districts that have been used in one or more candidate lists
-pub async fn get_used_districts(db: &PgPool) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
+/// Retrieves a vector of all the electoral districts that have been used in one or more candidate lists.
+/// Optionally, include list ids to exclude in the aggregation
+pub async fn get_used_districts(
+    db: &PgPool,
+    exclude_list_ids: Vec<CandidateListId>,
+) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
+    let ids: Vec<Uuid> = exclude_list_ids.iter().map(|list| list.uuid()).collect();
+
     let districts = sqlx::query!(
         r#"
         SELECT array_agg(DISTINCT e) AS "electoral_districts: Vec<ElectoralDistrict>"
         FROM candidate_lists cl 
-        CROSS JOIN LATERAL unnest(cl.electoral_districts ) AS e;
-        "#
+        CROSS JOIN LATERAL unnest(cl.electoral_districts ) AS e
+        WHERE cl.id != ALL($1);
+        "#,
+        &ids
     )
     .fetch_one(db)
     .await?
@@ -205,7 +234,7 @@ mod tests {
 
         create_candidate_list(&pool, &list).await?;
 
-        let lists = list_candidate_list_with_count(&pool).await?;
+        let lists = list_candidate_list_summary(&pool).await?;
         assert_eq!(1, lists.len());
         assert_eq!(list.id, lists[0].list.id);
         assert_eq!(0, lists[0].person_count);
@@ -293,8 +322,10 @@ mod tests {
         insert_list(&pool, vec![]).await?;
 
         // test
-        let result: BTreeSet<ElectoralDistrict> =
-            get_used_districts(&pool).await?.into_iter().collect();
+        let result: BTreeSet<ElectoralDistrict> = get_used_districts(&pool, vec![])
+            .await?
+            .into_iter()
+            .collect();
 
         // verify
         assert_eq!(expected, result);
@@ -303,7 +334,7 @@ mod tests {
 
     #[sqlx::test]
     async fn get_used_districts_no_lists(pool: PgPool) -> Result<(), sqlx::Error> {
-        let result = get_used_districts(&pool).await?;
+        let result = get_used_districts(&pool, vec![]).await?;
 
         assert_eq!(Vec::<ElectoralDistrict>::new(), result);
 
@@ -323,8 +354,10 @@ mod tests {
         insert_list(&pool, vec![ElectoralDistrict::UT, ElectoralDistrict::OV]).await?;
 
         // test
-        let result: BTreeSet<ElectoralDistrict> =
-            get_used_districts(&pool).await?.into_iter().collect();
+        let result: BTreeSet<ElectoralDistrict> = get_used_districts(&pool, vec![])
+            .await?
+            .into_iter()
+            .collect();
 
         // verify
         assert_eq!(expected, result);
@@ -351,7 +384,7 @@ mod tests {
         remove_candidate_list(&pool, list_a.id).await?;
 
         // verify
-        let lists = list_candidate_list_with_count(&pool).await?;
+        let lists = list_candidate_list_summary(&pool).await?;
         let list_b_from_db = candidate_lists::get_full_candidate_list(&pool, list_b.id)
             .await?
             .unwrap();

@@ -76,7 +76,7 @@ mod tests {
         assert_eq!(location, CandidateList::list_path());
 
         // verify deletion (i.e. no lists in database left)
-        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 0);
 
         Ok(())
@@ -120,7 +120,7 @@ mod tests {
         assert_eq!(location, candidate_list.update_path());
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
-        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 1);
 
         Ok(())

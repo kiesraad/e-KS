@@ -121,6 +121,10 @@
     background-image: url("../icons/list-badge.svg");
   }
 
+  &.card-list-warning {
+    background-image: url("../icons/list-warning-badge.svg");
+  }
+
   &.card-persons {
     border: 1px solid var(--base-white);
     height: 10rem;

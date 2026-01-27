@@ -30,9 +30,9 @@ pub async fn new_candidate_list_form(
     context: Context,
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;
-    let used_districts = candidate_lists::get_used_districts(&pool).await?;
+    let used_districts = candidate_lists::get_used_districts(&pool, vec![]).await?;
     let available_districts = context.election.available_districts(used_districts);
 
     let form = FormData::new_with_data(
@@ -62,7 +62,7 @@ pub async fn create_candidate_list(
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => {
-            let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+            let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
             let total_persons = persons::count_persons(&pool).await?;
 
             Ok(HtmlTemplate(
@@ -144,7 +144,7 @@ mod test {
             .to_str()
             .expect("location header value");
 
-        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 1);
         assert_eq!(location, lists[0].list.view_path());
 

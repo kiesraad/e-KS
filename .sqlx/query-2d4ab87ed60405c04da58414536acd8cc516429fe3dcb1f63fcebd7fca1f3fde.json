@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        SELECT array_agg(DISTINCT e) AS \"electoral_districts: Vec<ElectoralDistrict>\"\n        FROM candidate_lists cl \n        CROSS JOIN LATERAL unnest(cl.electoral_districts ) AS e;\n        ",
+  "query": "\n        SELECT array_agg(DISTINCT e) AS \"electoral_districts: Vec<ElectoralDistrict>\"\n        FROM candidate_lists cl \n        CROSS JOIN LATERAL unnest(cl.electoral_districts ) AS e\n        WHERE cl.id != ALL($1);\n        ",
   "describe": {
     "columns": [
       {
@@ -41,11 +41,13 @@
       }
     ],
     "parameters": {
-      "Left": []
+      "Left": [
+        "UuidArray"
+      ]
     },
     "nullable": [
       null
     ]
   },
-  "hash": "01e0d051bbe8b31211db32707fbb38ce69394d757f4994c25194a7ce975a0201"
+  "hash": "2d4ab87ed60405c04da58414536acd8cc516429fe3dcb1f63fcebd7fca1f3fde"
 }

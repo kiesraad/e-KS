@@ -21,7 +21,7 @@ pub async fn list_candidate_lists(
     context: Context,
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;
 
     Ok(HtmlTemplate(

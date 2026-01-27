@@ -31,7 +31,7 @@ pub async fn edit_candidate_list(
     candidate_list: CandidateList,
     State(pool): State<PgPool>,
 ) -> Result<Response, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;
 
     Ok(HtmlTemplate(
@@ -56,7 +56,7 @@ pub async fn update_candidate_list(
     State(pool): State<PgPool>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;
 
     match form.validate_update(candidate_list.clone(), &context.csrf_tokens) {
@@ -158,7 +158,7 @@ mod tests {
             .expect("location header value");
 
         // verify updated candidate list object in database
-        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
@@ -211,7 +211,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Edit candidate list"));
 
-        let lists = candidate_lists::list_candidate_list_with_count(&pool).await?;
+        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
