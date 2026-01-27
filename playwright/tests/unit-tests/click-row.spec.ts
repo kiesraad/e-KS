@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { setupClickRow } from "../../frontend/scripts/click-row";
+import { setupClickRow } from "../../../frontend/scripts/click-row";
 
 declare global {
   interface Window {

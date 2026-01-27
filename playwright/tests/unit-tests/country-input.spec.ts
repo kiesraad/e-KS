@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { countryCodeToFlagEmoji } from "../../frontend/scripts/country-input";
+import { countryCodeToFlagEmoji } from "../../../frontend/scripts/country-input";
 
 test.describe("country-input", () => {
   test("country code to flag emoji", () => {

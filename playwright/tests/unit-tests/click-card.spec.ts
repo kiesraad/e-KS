@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { setupClickCard } from "../../frontend/scripts/click-card";
+import { setupClickCard } from "../../../frontend/scripts/click-card";
 
 declare global {
   interface Window {
