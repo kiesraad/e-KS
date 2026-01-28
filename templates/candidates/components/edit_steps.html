@@ -5,12 +5,13 @@
         {{ "person.personal_details"|trans }}
       </a>
     </li>
+    {% if candidate.person.is_dutch() %}
     <li>
       <a href="{{ candidate.edit_address_path() }}">
         {{ "person.correspondence_address"|trans }}
       </a>
     </li>
-    {% if !candidate.person.is_dutch() %}
+    {% else %}
     <li>
       <a href="#">
         {{ "person.authorized_person"|trans }}

@@ -11,8 +11,7 @@ use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
     political_groups::{
-        self, ListSubmitter, ListSubmitterForm, PoliticalGroup,
-        pages::list_submitters::ListSubmittersForm,
+        self, ListSubmitter, ListSubmitterForm, PoliticalGroup, PreferredSubmitterForm,
     },
 };
 
@@ -20,7 +19,7 @@ use crate::{
 #[template(path = "political_groups/list_submitter_create.html")]
 struct ListSubmitterCreateTemplate {
     list_submitters: Vec<ListSubmitter>,
-    form: FormData<ListSubmittersForm>,
+    form: FormData<PreferredSubmitterForm>,
     overlay_form: FormData<ListSubmitterForm>,
 }
 
@@ -30,22 +29,13 @@ pub async fn new_list_submitter_form(
     State(pool): State<PgPool>,
     political_group: PoliticalGroup,
 ) -> Result<impl IntoResponse, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
     Ok(HtmlTemplate(
         ListSubmitterCreateTemplate {
             list_submitters,
             overlay_form: FormData::new(&context.csrf_tokens),
-            form: FormData::new_with_data(
-                ListSubmittersForm {
-                    list_submitter_id: political_group
-                        .list_submitter_id
-                        .map(|id| id.to_string())
-                        .unwrap_or_default(),
-                    csrf_token: Default::default(),
-                },
-                &context.csrf_tokens,
-            ),
+            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
         },
         context,
     ))
@@ -58,31 +48,22 @@ pub async fn create_list_submitter(
     State(pool): State<PgPool>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterCreateTemplate {
                 list_submitters,
-                form: FormData::new_with_data(
-                    ListSubmittersForm {
-                        list_submitter_id: political_group
-                            .list_submitter_id
-                            .map(|id| id.to_string())
-                            .unwrap_or_default(),
-                        csrf_token: Default::default(),
-                    },
-                    &context.csrf_tokens,
-                ),
+                form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
                 overlay_form: form_data,
             },
             context,
         )
         .into_response()),
         Ok(list_submitter) => {
-            political_groups::create_list_submitter(&pool, &political_group.id, &list_submitter)
+            political_groups::create_list_submitter(&pool, political_group.id, &list_submitter)
                 .await?;
-
+            // TODO: set success flash message
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
     }
@@ -154,7 +135,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, ListSubmitter::list_path());
 
-        let submitters = political_groups::get_list_submitters(&pool, &group_id).await?;
+        let submitters = political_groups::get_list_submitters(&pool, group_id).await?;
         assert_eq!(submitters.len(), 1);
 
         Ok(())

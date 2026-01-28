@@ -29,14 +29,11 @@ pub async fn edit_political_group(
     State(pool): State<PgPool>,
 ) -> Result<Response, AppError> {
     let authorised_agents =
-        political_groups::get_authorised_agents(&pool, &political_group.id).await?;
+        political_groups::get_authorised_agents(&pool, political_group.id).await?;
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
-            form: FormData::new_with_data(
-                PoliticalGroupForm::from(political_group.clone()),
-                &context.csrf_tokens,
-            ),
+            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
             political_group,
             authorised_agents,
         },
@@ -53,7 +50,7 @@ pub async fn update_political_group(
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
     let authorised_agents =
-        political_groups::get_authorised_agents(&pool, &political_group.id).await?;
+        political_groups::get_authorised_agents(&pool, political_group.id).await?;
 
     match form.validate_update(political_group.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -67,6 +64,7 @@ pub async fn update_political_group(
         .into_response()),
         Ok(political_group) => {
             political_groups::update_political_group(&pool, &political_group).await?;
+
             Ok(Redirect::to(&PoliticalGroup::edit_path()).into_response())
         }
     }
@@ -99,7 +97,7 @@ mod tests {
         let authorised_agent = sample_authorised_agent(agent_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_authorised_agent(&pool, &political_group.id, &authorised_agent)
+        political_groups::create_authorised_agent(&pool, political_group.id, &authorised_agent)
             .await?;
 
         let response = edit_political_group(
@@ -131,7 +129,7 @@ mod tests {
         let authorised_agent = sample_authorised_agent(agent_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_authorised_agent(&pool, &political_group.id, &authorised_agent)
+        political_groups::create_authorised_agent(&pool, political_group.id, &authorised_agent)
             .await?;
 
         let context = Context::new_test(pool.clone()).await;
@@ -178,7 +176,7 @@ mod tests {
         let authorised_agent = sample_authorised_agent(agent_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_authorised_agent(&pool, &political_group.id, &authorised_agent)
+        political_groups::create_authorised_agent(&pool, political_group.id, &authorised_agent)
             .await?;
 
         let context = Context::new_test(pool.clone()).await;

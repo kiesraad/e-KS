@@ -41,7 +41,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
 
     political_groups::create_authorised_agent(
         db,
-        &political_group.id,
+        political_group.id,
         &AuthorisedAgent {
             id: agent_1_id,
             last_name: "Jansen".to_string(),
@@ -60,7 +60,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
 
     political_groups::create_authorised_agent(
         db,
-        &political_group.id,
+        political_group.id,
         &AuthorisedAgent {
             id: agent_2_id,
             last_name: "Visser".to_string(),
@@ -79,7 +79,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
 
     political_groups::create_list_submitter(
         db,
-        &political_group.id,
+        political_group.id,
         &ListSubmitter {
             id: submitter_1_id,
             last_name: "Bos".to_string(),
@@ -98,7 +98,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
 
     political_groups::create_list_submitter(
         db,
-        &political_group.id,
+        political_group.id,
         &ListSubmitter {
             id: submitter_2_id,
             last_name: "Smit".to_string(),
@@ -156,12 +156,12 @@ mod tests {
         let groups = get_political_groups(&mut conn).await.unwrap();
         assert_eq!(groups.len(), 1);
 
-        let list_submitters = political_groups::get_list_submitters(&pool, &groups[0].id)
+        let list_submitters = political_groups::get_list_submitters(&pool, groups[0].id)
             .await
             .unwrap();
         assert_eq!(list_submitters.len(), 2);
 
-        let authorised_count = political_groups::get_authorised_agents(&pool, &groups[0].id)
+        let authorised_count = political_groups::get_authorised_agents(&pool, groups[0].id)
             .await
             .unwrap()
             .len();

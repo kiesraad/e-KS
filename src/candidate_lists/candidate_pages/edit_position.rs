@@ -79,7 +79,7 @@ pub async fn update_candidate_position(
 
             match position_form.action {
                 CandidatePositionAction::Remove => {
-                    candidate_lists::remove_candidate(
+                    candidate_lists::remove_candidate_from_list(
                         &pool,
                         candidate.list_id,
                         candidate.person.id,

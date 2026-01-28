@@ -1,8 +1,8 @@
 use super::ListSubmittersPath;
 use crate::{
-    AppError, Context, CsrfToken, HtmlTemplate, TokenValue, filters,
-    form::{FormData, Validate, WithCsrfToken},
-    political_groups::{self, ListSubmitter, ListSubmitterId, PoliticalGroup},
+    AppError, Context, HtmlTemplate, filters,
+    form::{FormData, Validate},
+    political_groups::{self, ListSubmitter, PoliticalGroup, PreferredSubmitterForm},
 };
 use askama::Template;
 use axum::{
@@ -10,51 +10,13 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use serde::Deserialize;
 use sqlx::PgPool;
-use validate::Validate;
-
-#[derive(Debug, Validate, Default, Deserialize)]
-#[validate(
-    target = "ListSubmitters",
-    build = "ListSubmitters::build_list_submitters"
-)]
-pub struct ListSubmittersForm {
-    #[validate(parse = "ListSubmitterId")]
-    pub list_submitter_id: String,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
-}
-impl WithCsrfToken for ListSubmittersForm {
-    fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
-        Self {
-            csrf_token: csrf_token.value,
-            ..self
-        }
-    }
-}
-
-#[derive(Debug)]
-struct ListSubmitters {
-    list_submitter_id: ListSubmitterId,
-}
-
-impl ListSubmitters {
-    fn build_list_submitters(
-        validated: ListSubmittersFormValidated,
-        _current: Option<ListSubmitters>,
-    ) -> ListSubmitters {
-        Self {
-            list_submitter_id: validated.list_submitter_id,
-        }
-    }
-}
 
 #[derive(Template)]
 #[template(path = "political_groups/list_submitters.html")]
 struct ListSubmittersTemplate {
     list_submitters: Vec<ListSubmitter>,
-    form: FormData<ListSubmittersForm>,
+    form: FormData<PreferredSubmitterForm>,
 }
 
 pub async fn list_submitters(
@@ -63,21 +25,12 @@ pub async fn list_submitters(
     political_group: PoliticalGroup,
     State(pool): State<PgPool>,
 ) -> Result<impl IntoResponse, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
     Ok(HtmlTemplate(
         ListSubmittersTemplate {
             list_submitters,
-            form: FormData::new_with_data(
-                ListSubmittersForm {
-                    list_submitter_id: political_group
-                        .list_submitter_id
-                        .map(|id| id.to_string())
-                        .unwrap_or_default(),
-                    csrf_token: Default::default(),
-                },
-                &context.csrf_tokens,
-            ),
+            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
         },
         context,
     ))
@@ -88,11 +41,11 @@ pub async fn update_list_submitters(
     context: Context,
     political_group: PoliticalGroup,
     State(pool): State<PgPool>,
-    Form(form): Form<ListSubmittersForm>,
+    Form(form): Form<PreferredSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
-    match form.validate(None, &context.csrf_tokens) {
+    match form.validate_update(political_group.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmittersTemplate {
                 form: form_data,
@@ -104,8 +57,8 @@ pub async fn update_list_submitters(
         Ok(form_data) => {
             political_groups::set_default_list_submitter(
                 &pool,
-                &political_group.id,
-                &form_data.list_submitter_id,
+                political_group.id,
+                form_data.list_submitter_id,
             )
             .await?;
 
@@ -134,8 +87,7 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, &political_group.id, &list_submitter)
-            .await?;
+        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
 
         let response = list_submitters(
             ListSubmittersPath {},
@@ -150,6 +102,33 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains(&list_submitter.last_name));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn list_submitters_shows_edit_link(pool: PgPool) -> Result<(), sqlx::Error> {
+        let group_id = PoliticalGroupId::new();
+        let political_group = sample_political_group(group_id);
+        let submitter_id = ListSubmitterId::new();
+        let list_submitter = sample_list_submitter(submitter_id);
+
+        political_groups::create_political_group(&pool, &political_group).await?;
+        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
+
+        let response = list_submitters(
+            ListSubmittersPath {},
+            Context::new_test(pool.clone()).await,
+            political_group,
+            State(pool.clone()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&list_submitter.edit_path()));
 
         Ok(())
     }

@@ -48,15 +48,25 @@
   display: inline-flex;
 
   &.radio-card {
+    width: 32rem;
     border: 1px solid var(--gray-300);
     border-radius: 3px;
     padding: var(--space-md);
     display: flex;
+    align-items: start;
     cursor: pointer;
     gap: var(--space-md);
 
+    input {
+      margin-top: var(--space-xs);
+    }
+
     label {
       flex: 1;
+    }
+
+    .button {
+      margin-left: auto;
     }
   }
 

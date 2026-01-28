@@ -9,7 +9,9 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    political_groups::{self, ListSubmitter, ListSubmitterForm, PoliticalGroup},
+    political_groups::{
+        self, ListSubmitter, ListSubmitterForm, PoliticalGroup, PreferredSubmitterForm,
+    },
 };
 
 use super::ListSubmitterEditPath;
@@ -17,8 +19,10 @@ use super::ListSubmitterEditPath;
 #[derive(Template)]
 #[template(path = "political_groups/list_submitter_update.html")]
 struct ListSubmitterUpdateTemplate {
-    form: FormData<ListSubmitterForm>,
+    list_submitters: Vec<ListSubmitter>,
     list_submitter: ListSubmitter,
+    form: FormData<PreferredSubmitterForm>,
+    overlay_form: FormData<ListSubmitterForm>,
 }
 
 pub async fn edit_list_submitter(
@@ -28,15 +32,18 @@ pub async fn edit_list_submitter(
     State(pool): State<PgPool>,
 ) -> Result<Response, AppError> {
     let list_submitter =
-        political_groups::get_list_submitter(&pool, &political_group.id, &submitter_id).await?;
+        political_groups::get_list_submitter(&pool, political_group.id, &submitter_id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(
-                ListSubmitterForm::from(list_submitter.clone()),
+            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
+            overlay_form: FormData::new_with_data(
+                list_submitter.clone().into(),
                 &context.csrf_tokens,
             ),
             list_submitter,
+            list_submitters,
         },
         context,
     )
@@ -51,19 +58,22 @@ pub async fn update_list_submitter(
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter =
-        political_groups::get_list_submitter(&pool, &political_group.id, &submitter_id).await?;
+        political_groups::get_list_submitter(&pool, political_group.id, &submitter_id).await?;
+    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
     match form.validate_update(list_submitter.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
-                form: form_data,
+                form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
                 list_submitter,
+                overlay_form: form_data,
+                list_submitters,
             },
             context,
         )
         .into_response()),
         Ok(list_submitter) => {
-            political_groups::update_list_submitter(&pool, &political_group.id, &list_submitter)
+            political_groups::update_list_submitter(&pool, political_group.id, &list_submitter)
                 .await?;
 
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
@@ -100,8 +110,7 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, &political_group.id, &list_submitter)
-            .await?;
+        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
 
         let response = edit_list_submitter(
             ListSubmitterEditPath { submitter_id },
@@ -128,8 +137,7 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, &political_group.id, &list_submitter)
-            .await?;
+        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
 
         let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
@@ -155,9 +163,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, ListSubmitter::list_path());
 
-        let mut submitter_id = submitter_id;
-        let updated =
-            political_groups::get_list_submitter(&pool, &group_id, &mut submitter_id).await?;
+        let updated = political_groups::get_list_submitter(&pool, group_id, &submitter_id).await?;
         assert_eq!(updated.last_name, "Updated");
 
         Ok(())
@@ -173,8 +179,7 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
 
         political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, &political_group.id, &list_submitter)
-            .await?;
+        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
 
         let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;

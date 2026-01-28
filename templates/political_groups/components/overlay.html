@@ -12,7 +12,7 @@
         {{ person.display_name() }}
       {% endblock %}
     </h2>
-    <a href="{% block close_path %}{{ ListSubmitter::list_path() }}{% endblock %}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
+    <a href="{{ ListSubmitter::list_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
       <span>
         {{ "action.close"|trans }}
       </span>

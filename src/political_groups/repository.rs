@@ -122,7 +122,7 @@ pub async fn create_political_group(
 
 pub async fn get_list_submitters(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
 ) -> Result<Vec<ListSubmitter>, sqlx::Error> {
     sqlx::query_as!(
         ListSubmitter,
@@ -149,7 +149,7 @@ pub async fn get_list_submitters(
 
 pub async fn get_authorised_agents(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
 ) -> Result<Vec<AuthorisedAgent>, sqlx::Error> {
     sqlx::query_as!(
         AuthorisedAgent,
@@ -177,7 +177,7 @@ pub async fn get_authorised_agents(
 #[cfg(any(test, feature = "fixtures"))]
 pub async fn create_authorised_agent(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
     authorised_agent: &AuthorisedAgent,
 ) -> Result<AuthorisedAgent, sqlx::Error> {
     sqlx::query_as!(
@@ -228,7 +228,7 @@ pub async fn create_authorised_agent(
 
 pub async fn get_list_submitter(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
     submitter_id: &ListSubmitterId,
 ) -> Result<ListSubmitter, sqlx::Error> {
     sqlx::query_as!(
@@ -258,8 +258,8 @@ pub async fn get_list_submitter(
 
 pub async fn set_default_list_submitter(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
-    submitter_id: &ListSubmitterId,
+    political_group_id: PoliticalGroupId,
+    submitter_id: Option<ListSubmitterId>,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(
         r#"
@@ -267,7 +267,7 @@ pub async fn set_default_list_submitter(
         SET list_submitter_id = $1
         WHERE id = $2
         "#,
-        submitter_id.uuid(),
+        submitter_id.map(|id| id.uuid()),
         political_group_id.uuid()
     )
     .execute(db)
@@ -278,7 +278,7 @@ pub async fn set_default_list_submitter(
 
 pub async fn create_list_submitter(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
     list_submitter: &ListSubmitter,
 ) -> Result<ListSubmitter, sqlx::Error> {
     sqlx::query_as!(
@@ -329,7 +329,7 @@ pub async fn create_list_submitter(
 
 pub async fn update_list_submitter(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
     list_submitter: &ListSubmitter,
 ) -> Result<ListSubmitter, sqlx::Error> {
     sqlx::query_as!(
@@ -379,7 +379,7 @@ pub async fn update_list_submitter(
 
 pub async fn remove_list_submitter(
     db: &PgPool,
-    political_group_id: &PoliticalGroupId,
+    political_group_id: PoliticalGroupId,
     list_submitter_id: ListSubmitterId,
 ) -> Result<(), sqlx::Error> {
     sqlx::query!(

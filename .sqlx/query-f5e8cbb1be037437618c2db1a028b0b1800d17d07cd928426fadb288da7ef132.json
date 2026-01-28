@@ -51,7 +51,7 @@
       {
         "ordinal": 7,
         "name": "bsn",
-        "type_info": "Bpchar"
+        "type_info": "Varchar"
       },
       {
         "ordinal": 8,
@@ -61,7 +61,7 @@
       {
         "ordinal": 9,
         "name": "country_of_residence",
-        "type_info": "Bpchar"
+        "type_info": "Varchar"
       },
       {
         "ordinal": 10,
@@ -117,9 +117,9 @@
         "Varchar",
         "Varchar",
         "Date",
-        "Bpchar",
         "Varchar",
-        "Bpchar",
+        "Varchar",
+        "Varchar",
         "Uuid"
       ]
     },

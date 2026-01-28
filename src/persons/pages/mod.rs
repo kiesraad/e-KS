@@ -51,6 +51,10 @@ impl Person {
         EditPersonPath { person_id: self.id }.to_uri().to_string()
     }
 
+    pub fn delete_path(&self) -> String {
+        DeletePersonPath { person_id: self.id }.to_uri().to_string()
+    }
+
     pub fn edit_address_path(&self) -> String {
         EditPersonAddressPath { person_id: self.id }
             .to_uri()

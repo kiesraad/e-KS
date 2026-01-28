@@ -14,79 +14,50 @@
 <div class="steps">
   {% include "political_groups/components/steps.html" %}
   <div>
+    <h2>{{ "political_group.list_submitter_data"|trans }}</h2>
+    <div class="alert alert-info">
+      {{ "political_group.select_default_list_submitter_info"|trans }}
+    </div>
     {% if list_submitters.is_empty() %}
-    <section>
-      <p>No list submitters found.</p>
-    </section>
+      <p>{{ "political_group.no_list_submitters"|trans }}</p>
     {% else %}
-
-    <form method="post" action="{{ ListSubmitter::select_default_path() }}">
-      <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-
-      <fieldset class="form-field">
-        <legend class="legend-sm">{{ "political_group.list_submitter_short"|trans }}</legend>
-        <div class="checklist">
+      <form method="post" action="{{ ListSubmitter::select_default_path() }}" class="form mt-lg">
+        <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+        <fieldset class="form-field">
+          <legend class="legend-sm">{{ "political_group.default_list_submitter"|trans }}</legend>
+          <div class="checklist">
           {% for submitter in list_submitters %}
-          {% set submitter_id = submitter.id.to_string() %}
-          <label for="list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
-            <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
-                   form.data.list_submitter_id==submitter_id %}checked{% endif %}
-                   id="list_submitter_id_{{ submitter_id }}"/>
-            <span>
-          <strong>{{ submitter.last_name_with_prefix() }}</strong>, {{ submitter.initials }}
-          <br/>
-          {{ submitter.street_name }} {{ submitter.house_number }}{{ submitter.house_number_addition|display }}
-          <br/>
-          {{ submitter.postal_code }} {{ submitter.locality }}
-        </span>
-          </label>
+            {% set submitter_id = submitter.id.to_string() %}
+            <label for="list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
+              <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
+                    form.data.list_submitter_id==submitter_id %}checked{% endif %}
+                    id="list_submitter_id_{{ submitter_id }}"/>
+              <span>
+                <strong>{{ submitter.last_name_with_prefix() }}</strong>, {{ submitter.initials }}
+                <br/>
+                {{ submitter.street_name }} {{ submitter.house_number }}{{ submitter.house_number_addition|display }}
+                <br/>
+                {{ submitter.postal_code }} {{ submitter.locality }}
+                <br/>
+              </span>
+              <a href="{{ submitter.edit_path() }}" class="button secondary icon-edit">
+                {{ "action.edit"|trans }}
+              </a>
+            </label>
+            {% endfor %}
+          </div>
+          {% for error in form|error("list_submitter_id") %}
+            <span class="error">{{ error }}</span>
           {% endfor %}
-        </div>
-        {% for error in form|error("list_submitter_id") %}
-        <span class="error">{{ error }}</span>
-        {% endfor %}
-      </fieldset>
-
-      <!--    <section>-->
-      <!--      <table>-->
-      <!--        <thead>-->
-      <!--        <tr>-->
-      <!--          <th scope="col">{{ "person.fields.last_name"|trans }}</th>-->
-      <!--          <th scope="col">{{ "person.fields.initials"|trans }}</th>-->
-      <!--          <th scope="col">{{ "person.fields.locality"|trans }}</th>-->
-      <!--          <th scope="col"></th>-->
-      <!--          <th scope="col"></th>-->
-      <!--        </tr>-->
-      <!--        </thead>-->
-      <!--        <tbody>-->
-      <!--        {% for submitter in list_submitters %}-->
-      <!--        <tr>-->
-      <!--          <td>{{ submitter.last_name_with_prefix() }}</td>-->
-      <!--          <td>{{ submitter.initials }}</td>-->
-      <!--          <td>{{ submitter.locality }}</td>-->
-      <!--          <td>-->
-      <!--            <a href="{{ submitter.edit_path() }}">-->
-      <!--              <span>{{ "action.edit"|trans }}</span>-->
-      <!--            </a>-->
-      <!--          </td>-->
-      <!--          <td>-->
-      <!--            <form method="post" action="{{ submitter.delete_path() }}">-->
-      <!--              <button type="submit" class="button secondary">{{ "action.delete"|trans }}</button>-->
-      <!--            </form>-->
-      <!--          </td>-->
-      <!--        </tr>-->
-      <!--        {% endfor %}-->
-      <!--        </tbody>-->
-      <!--      </table>-->
-      <!--    </section>-->
+        </fieldset>
+        <button type="submit" class="button lg">{{ "action.save"|trans }}</button>
+      </form>
       {% endif %}
-
-      <a href="{{ ListSubmitter::new_path() }}" class="button secondary icon-plus" type="button">
-        Add list submitter
-      </a>
-
-      <button type="submit" class="button lg">{{ "action.save"|trans }}</button>
-    </form>
+      <p class="mt-lg">
+        <a href="{{ ListSubmitter::new_path() }}" class="button secondary icon-plus" type="button">
+          {{ "political_group.add_list_submitter"|trans }}
+        </a>
+      </p>
   </div>
 </div>
 {% endblock %}

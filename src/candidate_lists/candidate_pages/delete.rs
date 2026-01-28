@@ -17,19 +17,22 @@ use crate::{
 pub async fn delete_person(
     _: CandidateListDeletePersonPath,
     candidate: Candidate,
+    candidate_list: CandidateList,
     context: Context,
     State(pool): State<PgPool>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&candidate.edit_path()).into_response()),
+        Err(_) => {
+            // TODO: set error flash message
+            Ok(Redirect::to(&candidate.edit_path()).into_response())
+        }
         Ok(_) => {
-            candidate_lists::remove_candidate(&pool, candidate.list_id, candidate.person.id)
-                .await?;
+            candidate_lists::remove_candidate(&pool, candidate.person.id).await?;
 
             persons::remove_person(&pool, candidate.person.id).await?;
-
-            Ok(Redirect::to(&CandidateList::list_path()).into_response())
+            // TODO: set success flash message
+            Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
 }
@@ -42,7 +45,7 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        candidate_lists::{self, CandidateList, CandidateListId},
+        candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
@@ -72,6 +75,7 @@ mod tests {
                 person_id: person.id,
             },
             candidate,
+            list.clone(),
             context,
             State(pool.clone()),
             Form(EmptyForm::from(csrf_token)),
@@ -86,7 +90,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, CandidateList::list_path());
+        assert_eq!(location, list.view_path());
 
         let updated_list = candidate_lists::get_full_candidate_list(&pool, list_id)
             .await?

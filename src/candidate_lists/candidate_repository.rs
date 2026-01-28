@@ -161,30 +161,63 @@ pub async fn append_candidate_to_list(
     Ok(())
 }
 
-pub async fn remove_candidate(
+pub async fn remove_candidate(db: &PgPool, person_id: PersonId) -> Result<(), sqlx::Error> {
+    let mut tx = db.begin().await?;
+
+    sqlx::query!(
+        r#"
+        UPDATE candidate_lists
+        SET updated_at = $2
+        FROM candidate_lists_persons
+        WHERE candidate_lists.id = candidate_lists_persons.candidate_list_id
+        AND candidate_lists_persons.person_id = $1
+        "#,
+        person_id.uuid(),
+        Utc::now()
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    let deleted = sqlx::query!(
+        r#"
+        DELETE FROM candidate_lists_persons
+        WHERE person_id = $1
+        "#,
+        person_id.uuid(),
+    )
+    .execute(&mut *tx)
+    .await?;
+
+    if deleted.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
+
+    tx.commit().await?;
+
+    Ok(())
+}
+
+pub async fn remove_candidate_from_list(
     db: &PgPool,
     list_id: CandidateListId,
     person_id: PersonId,
 ) -> Result<(), sqlx::Error> {
-    let mut tx = db.begin().await?;
-
     let updated = sqlx::query!(
         r#"
         UPDATE candidate_lists
-        SET updated_at = $2
+        SET updated_at = NOW()
         WHERE id = $1
         "#,
         list_id.uuid(),
-        Utc::now()
     )
-    .execute(&mut *tx)
+    .execute(db)
     .await?;
 
     if updated.rows_affected() == 0 {
         return Err(sqlx::Error::RowNotFound);
     }
 
-    sqlx::query!(
+    let deleted = sqlx::query!(
         r#"
         DELETE FROM candidate_lists_persons
         WHERE candidate_list_id = $1 AND person_id = $2
@@ -192,10 +225,12 @@ pub async fn remove_candidate(
         list_id.uuid(),
         person_id.uuid(),
     )
-    .execute(&mut *tx)
+    .execute(db)
     .await?;
 
-    tx.commit().await?;
+    if deleted.rows_affected() == 0 {
+        return Err(sqlx::Error::RowNotFound);
+    }
 
     Ok(())
 }
@@ -334,7 +369,7 @@ mod tests {
         append_candidate_to_list(&pool, list_id, person_a.id).await?;
         append_candidate_to_list(&pool, list_id, person_b.id).await?;
 
-        remove_candidate(&pool, list_id, person_a.id).await?;
+        remove_candidate(&pool, person_a.id).await?;
 
         let detail = get_full_candidate_list(&pool, list_id)
             .await?
@@ -347,9 +382,7 @@ mod tests {
 
     #[sqlx::test]
     async fn remove_candidate_returns_row_not_found(pool: PgPool) -> Result<(), sqlx::Error> {
-        let err = remove_candidate(&pool, CandidateListId::new(), PersonId::new())
-            .await
-            .unwrap_err();
+        let err = remove_candidate(&pool, PersonId::new()).await.unwrap_err();
         assert!(matches!(err, sqlx::Error::RowNotFound));
 
         Ok(())
