@@ -9,6 +9,10 @@ pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
             return Err(ValidationError::ValueShouldNotBeEmpty);
         }
 
+        if initials.as_bytes().len() > 20 {
+            return Err(ValidationError::ValueTooLong(20, initials.len()));
+        }
+
         let parts: Vec<&str> = initials
             .split('.')
             .filter(|part| !part.is_empty())
