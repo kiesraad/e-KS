@@ -217,7 +217,6 @@ class SortableTable {
   private onChange?: (order: string[]) => void;
 
   private drag: DragSession | null = null;
-  private suppressClick = false;
   private dragStartOrder: string[] | null = null;
   private timeout: number | null = null;
 
@@ -294,19 +293,6 @@ class SortableTable {
     globalThis.addEventListener("touchcancel", (event) =>
       this.handleTouchEnd(event),
     );
-    globalThis.addEventListener(
-      "click",
-      (event) => {
-        if (!this.suppressClick) {
-          return;
-        }
-
-        event.preventDefault();
-        event.stopPropagation();
-        this.suppressClick = false;
-      },
-      true,
-    );
   }
 
   /**
@@ -379,6 +365,7 @@ class SortableTable {
    */
   private handleMouseUp(event: MouseEvent) {
     if (!this.drag) {
+      console.log("No active drag on mouse up");
       return;
     }
 
@@ -407,11 +394,6 @@ class SortableTable {
     }
 
     const drag = this.drag;
-
-    if (drag.isDragging) {
-      this.suppressClick = true;
-    }
-
     const finalOrder = drag.getOrder(this.rows);
 
     const movedUp: HTMLTableRowElement[] = [];

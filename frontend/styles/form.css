@@ -117,6 +117,12 @@
   background: var(--base-white);
 }
 
+.form select {
+  appearance: none;
+  background: url("../icons/select.svg") no-repeat right 1rem center;
+  cursor: pointer;
+}
+
 .form input[type="text"]:hover,
 .form input[type="text"]:focus,
 .form input[type="text"]:focus-visible,
