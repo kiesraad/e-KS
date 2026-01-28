@@ -6,27 +6,46 @@ use axum::{
 use axum_extra::extract::Form;
 use sqlx::PgPool;
 
+use super::ListSubmitterNewPath;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    political_groups::{self, ListSubmitter, ListSubmitterForm, PoliticalGroup},
+    political_groups::{
+        self, ListSubmitter, ListSubmitterForm, PoliticalGroup,
+        pages::list_submitters::ListSubmittersForm,
+    },
 };
-
-use super::ListSubmitterNewPath;
 
 #[derive(Template)]
 #[template(path = "political_groups/list_submitter_create.html")]
 struct ListSubmitterCreateTemplate {
-    form: FormData<ListSubmitterForm>,
+    list_submitters: Vec<ListSubmitter>,
+    form: FormData<ListSubmittersForm>,
+    overlay_form: FormData<ListSubmitterForm>,
 }
 
 pub async fn new_list_submitter_form(
     _: ListSubmitterNewPath,
     context: Context,
+    State(pool): State<PgPool>,
+    political_group: PoliticalGroup,
 ) -> Result<impl IntoResponse, AppError> {
+    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+
     Ok(HtmlTemplate(
         ListSubmitterCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            list_submitters,
+            overlay_form: FormData::new(&context.csrf_tokens),
+            form: FormData::new_with_data(
+                ListSubmittersForm {
+                    list_submitter_id: political_group
+                        .list_submitter_id
+                        .map(|id| id.to_string())
+                        .unwrap_or_default(),
+                    csrf_token: Default::default(),
+                },
+                &context.csrf_tokens,
+            ),
         },
         context,
     ))
@@ -39,9 +58,24 @@ pub async fn create_list_submitter(
     State(pool): State<PgPool>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
+    let list_submitters = political_groups::get_list_submitters(&pool, &political_group.id).await?;
+
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterCreateTemplate { form: form_data },
+            ListSubmitterCreateTemplate {
+                list_submitters,
+                form: FormData::new_with_data(
+                    ListSubmittersForm {
+                        list_submitter_id: political_group
+                            .list_submitter_id
+                            .map(|id| id.to_string())
+                            .unwrap_or_default(),
+                        csrf_token: Default::default(),
+                    },
+                    &context.csrf_tokens,
+                ),
+                overlay_form: form_data,
+            },
             context,
         )
         .into_response()),
@@ -72,12 +106,18 @@ mod tests {
 
     #[sqlx::test]
     async fn new_list_submitter_form_renders_csrf_field(pool: PgPool) {
-        let context = Context::new_test(pool).await;
+        let context = Context::new_test(pool.clone()).await;
+        let group_id = PoliticalGroupId::new();
 
-        let response = new_list_submitter_form(ListSubmitterNewPath {}, context)
-            .await
-            .unwrap()
-            .into_response();
+        let response = new_list_submitter_form(
+            ListSubmitterNewPath {},
+            context,
+            State(pool),
+            sample_political_group(group_id),
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

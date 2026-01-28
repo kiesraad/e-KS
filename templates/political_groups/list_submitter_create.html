@@ -1,15 +1,12 @@
-{% extends "layout.html" %}
+{% extends "political_groups/components/overlay.html" %}
 
-{% block page_title %}Add list submitter{% endblock %}
+{% block overlay_title %}Add list submitter{% endblock %}
 
-{% block content %}
+{% block overlay_content %}
+{% let form = overlay_form %}
 <section>
   <form method="post" action="{{ ListSubmitter::new_path() }}" class="form">
     {% include "political_groups/list_submitter_form.html" %}
-    <div class="form-row">
-      <button type="submit" class="button">{{ "action.save"|trans }}</button>
-      <a href="{{ ListSubmitter::list_path() }}" class="button secondary">{{ "action.cancel"|trans }}</a>
-    </div>
   </form>
 </section>
 {% endblock %}

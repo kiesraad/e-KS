@@ -21,9 +21,9 @@ use validate::Validate;
 )]
 pub struct ListSubmittersForm {
     #[validate(parse = "ListSubmitterId")]
-    list_submitter_id: String,
+    pub list_submitter_id: String,
     #[validate(csrf)]
-    csrf_token: TokenValue,
+    pub csrf_token: TokenValue,
 }
 impl WithCsrfToken for ListSubmittersForm {
     fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
