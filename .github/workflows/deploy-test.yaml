@@ -131,6 +131,9 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       KUBECONFIG: ${{ github.workspace }}/kubeconfig
+      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
+      IMAGE_PULL_SECRET_TOKEN: ${{ secrets.image_pull_secret_token }}
+      PGPASSWORD: ${{ secrets.PGPASSWORD }}
     environment:
       url: https://${{ needs.rust.outputs.branch-name }}.eks-test.nl
       name: staging
@@ -142,7 +145,7 @@ jobs:
         run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
 
       - name: Create kubeconfig file
-        run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
+        run: echo "${KUBECONFIG_CONTENT}" > ${{ github.workspace }}/kubeconfig
 
       - name: Set the current version in the Helm chart
         uses: mikefarah/yq@065b200af9851db0d5132f50bc10b1406ea5c0a8 # v4
@@ -155,7 +158,7 @@ jobs:
           # create new namespace if it does not exist already
           kubectl get namespace ${{ needs.rust.outputs.branch-name }} || {
             kubectl create ns ${{ needs.rust.outputs.branch-name }}
-            kubectl create secret docker-registry regcred --docker-server=https://ghcr.io --docker-username=${{ vars.image_pull_secret_username }} --docker-password=${{ secrets.image_pull_secret_token }} --namespace ${{ needs.rust.outputs.branch-name }}
+            kubectl create secret docker-registry regcred --docker-server=https://ghcr.io --docker-username=${{ vars.image_pull_secret_username }} --docker-password=${IMAGE_PULL_SECRET_TOKEN} --namespace ${{ needs.rust.outputs.branch-name }}
           }
       - name: Install application
         working-directory: deploy
@@ -165,4 +168,4 @@ jobs:
             --set db.setup=true \
             --set db.erase=true \
             --set db.runMigrations=true \
-            --set db.password=${{ secrets.PGPASSWORD }}
+            --set db.password=${PGPASSWORD}

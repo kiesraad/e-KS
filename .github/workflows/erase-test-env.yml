@@ -35,6 +35,7 @@ jobs:
     needs: canonical-name
     env:
       KUBECONFIG: ${{ github.workspace }}/kubeconfig
+      KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
     environment:
       url: https://${{ needs.canonical-name.outputs.branch-name }}.eks-test.nl
       name: staging
@@ -42,7 +43,7 @@ jobs:
       - name: Install Helm
         run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
       - name: Create kubeconfig file
-        run: echo "${{ secrets.KUBECONFIG }}" > ${{ github.workspace }}/kubeconfig
+        run: echo "${KUBECONFIG_CONTENT}" > ${{ github.workspace }}/kubeconfig
       - name: Helm uninstall
         # The branch might have never been deployed
         continue-on-error: true
