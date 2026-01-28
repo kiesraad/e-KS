@@ -229,7 +229,7 @@ pub async fn create_authorised_agent(
 pub async fn get_list_submitter(
     db: &PgPool,
     political_group_id: &PoliticalGroupId,
-    submitter_id: &mut ListSubmitterId,
+    submitter_id: &ListSubmitterId,
 ) -> Result<ListSubmitter, sqlx::Error> {
     sqlx::query_as!(
         ListSubmitter,
@@ -254,6 +254,26 @@ pub async fn get_list_submitter(
     )
     .fetch_one(db)
     .await
+}
+
+pub async fn set_default_list_submitter(
+    db: &PgPool,
+    political_group_id: &PoliticalGroupId,
+    submitter_id: &ListSubmitterId,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        UPDATE political_groups
+        SET list_submitter_id = $1
+        WHERE id = $2
+        "#,
+        submitter_id.uuid(),
+        political_group_id.uuid()
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
 }
 
 pub async fn create_list_submitter(

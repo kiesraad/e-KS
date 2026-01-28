@@ -27,9 +27,8 @@ pub async fn edit_list_submitter(
     political_group: PoliticalGroup,
     State(pool): State<PgPool>,
 ) -> Result<Response, AppError> {
-    let mut submitter_id = submitter_id;
     let list_submitter =
-        political_groups::get_list_submitter(&pool, &political_group.id, &mut submitter_id).await?;
+        political_groups::get_list_submitter(&pool, &political_group.id, &submitter_id).await?;
 
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
@@ -51,9 +50,8 @@ pub async fn update_list_submitter(
     State(pool): State<PgPool>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let mut submitter_id = submitter_id;
     let list_submitter =
-        political_groups::get_list_submitter(&pool, &political_group.id, &mut submitter_id).await?;
+        political_groups::get_list_submitter(&pool, &political_group.id, &submitter_id).await?;
 
     match form.validate_update(list_submitter.clone(), &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(

@@ -8,6 +8,7 @@ general_information: General
 legal_name: Full statutory name
 legal_name_confirmed: Is the full statutory name correct?
 list_submitter_data: List submitter data
+list_submitter_short: List submitter
 list_type: Type list designation
 long_list_allowed: Did you win 16 seats or more in the previous election
 no_authorised_agent: None of the above authorized agents

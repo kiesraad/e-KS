@@ -4,10 +4,6 @@ run-name: 'Deploy "${{ github.ref_name }}" to test environment'
 on:
   workflow_dispatch:
 
-permissions:
-  contents: read
-  packages: write
-
 jobs:
   rust:
     name: Build rust code

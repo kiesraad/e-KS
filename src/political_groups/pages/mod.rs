@@ -65,6 +65,10 @@ impl ListSubmitter {
         .to_string()
     }
 
+    pub fn select_default_path() -> String {
+        ListSubmittersPath {}.to_string()
+    }
+
     pub fn delete_path(&self) -> String {
         ListSubmitterDeletePath {
             submitter_id: self.id,
@@ -78,6 +82,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(update::edit_political_group)
         .typed_post(update::update_political_group)
         .typed_get(list_submitters::list_submitters)
+        .typed_post(list_submitters::update_list_submitters)
         .typed_get(list_submitter_create::new_list_submitter_form)
         .typed_post(list_submitter_create::create_list_submitter)
         .typed_get(list_submitter_update::edit_list_submitter)
