@@ -3,15 +3,12 @@ name: Sigrid PR Feedback
 on:
   pull_request:
 
-permissions:
-  contents: read
-  pull-requests: write
-
 jobs:
   sigridci:
     if: "!github.event.pull_request.head.repo.fork"
     runs-on: ubuntu-latest
     permissions:
+      contents: read
       pull-requests: write
     steps:
       - name: Check out repository

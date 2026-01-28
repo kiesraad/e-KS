@@ -7,9 +7,6 @@ on:
       - closed
   workflow_dispatch:
 
-permissions:
-  deployments: write
-
 jobs:
   canonical-name:
     runs-on: ubuntu-24.04
@@ -54,6 +51,8 @@ jobs:
 
   delete-gh-deployment:
     name: Delete GitHub deployments
+    permissions:
+      deployments: write
     runs-on: ubuntu-24.04
     needs: [ canonical-name, helm-uninstall ]
     steps:

@@ -5,12 +5,14 @@ on:
   workflow_dispatch:
 
 permissions:
-  packages: write
   contents: read
+  packages: write
 
 jobs:
   rust:
     name: Build rust code
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     outputs:
       tag: ${{ steps.create-tag.outputs.tag }}
@@ -77,6 +79,9 @@ jobs:
 
   build-docker:
     name: Build Docker containers
+    permissions:
+      contents: read
+      packages: write
     runs-on: ubuntu-24.04
     needs: rust
     steps:
@@ -128,6 +133,8 @@ jobs:
 
   helm:
     name: Install with Helm
+    permissions:
+      contents: read
     runs-on: ubuntu-24.04
     env:
       KUBECONFIG: ${{ github.workspace }}/kubeconfig
