@@ -46,6 +46,7 @@
 - Verkiezingsbeheer voor politieke partij
 - Meldingen inrichten
 - To do lijst voor politieke partijen
+- Verklaring voorgenomen vestiging (relevant bij Provenciale Staten, Waterschappen (algemeen bestuur) en Gemeenteraad). Zie art. H7.
 
 # Change log
 
