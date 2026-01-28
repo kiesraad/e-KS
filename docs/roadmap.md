@@ -1,4 +1,5 @@
 # Roadmap 
+sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 ---
 ### Januari t/m oktober
 - DigiD inlog/ E-Herkenning inlog /aansluiten TVS 
@@ -50,13 +51,19 @@
 
 # Change log
 
+## 28-01-2026 Iris
+- 'Verklaring voorgenomen vestiging' epic toegevoegd bij "later"
+- Uitleg over sizing toegevoegd
+
+## 07-01-2026 Iris en Marlon
+- Nieuw kopje aangemaakt voor "doorlopende" epics
+- Verwijderd: "e-KS test website" al gedaan tijdens sprint 0 / 1
+- Volgorde van epics / sprints aangepast
+
 ## 10-12-2025 Iris en Marlon
 - CI/CD pipeline opzetten, intiële CI/CD pipeline is klaar, was een dag werk. Er is veel overgenomen van Abacus
 - Inloggen BES eilanden uitzoekissue van maken, we verwachten niet dat het een Epic is
 - Machtingverklaring afgeven, opgenomen in een andere Epic (Algemene lijstgegevens verwerken )
 - Blanco lijsten aanmaken: uitzoek issue van maken
 
-## 07-01-2026 Iris en Marlon
-- Nieuw kopje aangemaakt voor "doorlopende" epics
-- Verwijderd: "e-KS test website" al gedaan tijdens sprint 0 / 1
-- Volgorde van epics / sprints aangepast 
+
