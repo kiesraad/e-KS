@@ -12,22 +12,9 @@
 
 {% block content %}
   <div class="steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ PoliticalGroup::edit_path() }}">
-            {{ "political_group.basic_information"|trans }}
-          </a>
-        </li>
-        <li>
-          <a href="#">
-            {{ "political_group.list_submitter_data"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
+    {% include "political_groups/components/steps.html" %}
     <div>
-      {% include "political_groups/form.html" %}
+      {% include "political_groups/components/form.html" %}
     </div>
   </div>
 {% endblock %}
