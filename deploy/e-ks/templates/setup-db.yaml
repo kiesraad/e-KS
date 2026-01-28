@@ -22,6 +22,7 @@ spec:
       restartPolicy: Never
       imagePullSecrets:
         - name: regcred
+      automountServiceAccountToken: false
       containers:
         - name: setup-db
           image: "ghcr.io/kiesraad/e-ks/db:{{ .Chart.AppVersion }}"
@@ -40,4 +41,11 @@ spec:
                 secretKeyRef:
                   key: pgpassword
                   name: helm-hook-secrets
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "10m"
+              memory: "128Mi"
+              ephemeral-storage: "512Mi"
 {{ end }}

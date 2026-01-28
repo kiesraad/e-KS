@@ -18,9 +18,18 @@ spec:
         app.kubernetes.io/name: bag-lookup
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
     spec:
+      automountServiceAccountToken: false
       containers:
         - name: bag-lookup
           image: "ghcr.io/tweedegolf/bag-address-lookup:0.3.2"
           ports:
             - containerPort: 8080
               name: http
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "10m"
+              memory: "128Mi"
+              ephemeral-storage: "512Mi"
+

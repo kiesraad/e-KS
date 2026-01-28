@@ -22,6 +22,7 @@ spec:
       restartPolicy: Never
       imagePullSecrets:
         - name: regcred
+      automountServiceAccountToken: false
       containers:
         - name: migrate-db
           image: "ghcr.io/kiesraad/e-ks/apply_fixtures:{{ .Chart.AppVersion }}"
@@ -31,4 +32,11 @@ spec:
                 secretKeyRef:
                   key: database_url
                   name: helm-hook-secrets
+          resources:
+            limits:
+              memory: "256Mi"
+            requests:
+              cpu: "10m"
+              memory: "128Mi"
+              ephemeral-storage: "512Mi"
 {{ end }}
