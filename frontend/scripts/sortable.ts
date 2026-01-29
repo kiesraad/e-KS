@@ -644,7 +644,7 @@ class SortableTable {
 }
 
 function reorderList(updateUrl: string, person_ids: string[]) {
-  void fetch(updateUrl, {
+  fetch(updateUrl, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ person_ids }),
@@ -683,8 +683,8 @@ export const setupSortable = () => {
   return sortable;
 };
 
-if (typeof window !== "undefined") {
-  window.addEventListener("load", () => {
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", () => {
     setupSortable();
   });
 }

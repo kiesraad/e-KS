@@ -12,7 +12,7 @@ function getCountryOptions(): NodeListOf<HTMLOptionElement> {
 export const countryCodeToFlagEmoji = (countryCode: string) => {
   if (/^[A-Z]{2}$/.test(countryCode)) {
     const codePoints = [...countryCode].map(
-      (char) => 0x1f1e6 + char.charCodeAt(0) - 65,
+      (char) => 0x1f1e6 + (char.codePointAt(0) || 0) - 65,
     );
 
     return String.fromCodePoint(...codePoints);
@@ -21,8 +21,8 @@ export const countryCodeToFlagEmoji = (countryCode: string) => {
   }
 };
 
-if (typeof window !== "undefined") {
-  window.addEventListener("load", () => {
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", () => {
     // Make flag icon match country code input
     const countryInputs = getCountryInputs();
     countryInputs.forEach((input) => {

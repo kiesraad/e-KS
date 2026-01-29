@@ -51,6 +51,6 @@ export const setupPositionPreview = () => {
   updatePreview();
 };
 
-if (typeof window !== "undefined") {
-  window.addEventListener("load", setupPositionPreview);
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", setupPositionPreview);
 }

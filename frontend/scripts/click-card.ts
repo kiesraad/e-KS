@@ -10,6 +10,6 @@ export const setupClickCard = () => {
   });
 };
 
-if (typeof window !== "undefined") {
-  window.addEventListener("load", setupClickCard);
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", setupClickCard);
 }

@@ -6,10 +6,10 @@ services:
       - ./tests:/app/tests
       - ../frontend:/frontend:ro
     environment:
-      PLAYWRIGHT_TEST_BASE_URL: http://eks:3000
+      PLAYWRIGHT_TEST_BASE_URL: http://application:3000
     depends_on:
-      - eks
-    networks: [default]
+      - application
+    networks: [pw_network]
     
   psql:
     image: ghcr.io/tweedegolf/postgres:18
@@ -19,9 +19,9 @@ services:
       POSTGRES_DB: eks
       POSTGRES_HOST_AUTH_METHOD: trust
       TZ: Europe/Amsterdam
-    networks: [default]
+    networks: [pw_network]
 
-  eks:
+  application:
     image: debian:bookworm-slim
     working_dir: /app
     volumes:
@@ -35,9 +35,12 @@ services:
     depends_on:
       - psql
       - bag-service
-    networks: [default]
+    networks: [pw_network]
 
   bag-service:
     image: ghcr.io/tweedegolf/bag-address-lookup:0.3.2
-    networks: [default]
+    networks: [pw_network]
 
+networks:
+  pw_network:
+    name: pw_network
