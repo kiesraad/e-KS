@@ -1,13 +1,10 @@
 use serde::{Deserialize, Serialize};
+use validate::Validate;
 
-use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList, form::WithCsrfToken};
-use validate::Validate as ValidateDerive;
+use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList};
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
-#[validate(
-    target = "CandidateList",
-    build = "CandidateListForm::build_candidate_list"
-)]
+#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
+#[validate(target = "CandidateList")]
 #[serde(default)]
 pub struct CandidateListForm {
     pub electoral_districts: Vec<ElectoralDistrict>,
@@ -15,39 +12,11 @@ pub struct CandidateListForm {
     pub csrf_token: TokenValue,
 }
 
-impl CandidateListForm {
-    fn build_candidate_list(
-        validated: CandidateListFormValidated,
-        current: Option<CandidateList>,
-    ) -> CandidateList {
-        if let Some(current) = current {
-            CandidateList {
-                electoral_districts: validated.electoral_districts,
-                ..current
-            }
-        } else {
-            CandidateList {
-                electoral_districts: validated.electoral_districts,
-                ..Default::default()
-            }
-        }
-    }
-}
-
 impl From<CandidateList> for CandidateListForm {
     fn from(value: CandidateList) -> Self {
         CandidateListForm {
             electoral_districts: value.electoral_districts,
             csrf_token: Default::default(),
-        }
-    }
-}
-
-impl WithCsrfToken for CandidateListForm {
-    fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
-        CandidateListForm {
-            csrf_token: csrf_token.value,
-            ..self
         }
     }
 }

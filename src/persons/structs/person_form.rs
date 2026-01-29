@@ -2,18 +2,17 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    CsrfToken, TokenValue,
+    TokenValue,
     constants::DEFAULT_DATE_FORMAT,
     form::{
-        WithCsrfToken, validate_country_code, validate_eleven_check, validate_initials,
-        validate_last_name_prefix, validate_length, validate_no_last_name_prefix,
-        validate_teletex_chars,
+        validate_country_code, validate_eleven_check, validate_initials, validate_last_name_prefix,
+        validate_length, validate_no_last_name_prefix, validate_teletex_chars,
     },
     persons::{Gender, Person},
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "Person", build = "PersonForm::build_person")]
+#[validate(target = "Person")]
 #[serde(default)]
 pub struct PersonForm {
     #[validate(parse = "Gender", optional)]
@@ -67,47 +66,6 @@ impl From<Person> for PersonForm {
             place_of_residence: person.place_of_residence.unwrap_or_default(),
             country_of_residence: person.country_of_residence.unwrap_or_default(),
             csrf_token: Default::default(),
-        }
-    }
-}
-
-impl WithCsrfToken for PersonForm {
-    fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
-        PersonForm {
-            csrf_token: csrf_token.value,
-            ..self
-        }
-    }
-}
-
-impl PersonForm {
-    fn build_person(validated: PersonFormValidated, current: Option<Person>) -> Person {
-        if let Some(current_person) = current {
-            Person {
-                gender: validated.gender,
-                last_name: validated.last_name,
-                last_name_prefix: validated.last_name_prefix,
-                first_name: validated.first_name,
-                initials: validated.initials,
-                date_of_birth: validated.date_of_birth,
-                bsn: validated.bsn,
-                place_of_residence: validated.place_of_residence,
-                country_of_residence: validated.country_of_residence,
-                ..current_person
-            }
-        } else {
-            Person {
-                gender: validated.gender,
-                last_name: validated.last_name,
-                last_name_prefix: validated.last_name_prefix,
-                first_name: validated.first_name,
-                initials: validated.initials,
-                date_of_birth: validated.date_of_birth,
-                bsn: validated.bsn,
-                place_of_residence: validated.place_of_residence,
-                country_of_residence: validated.country_of_residence,
-                ..Default::default()
-            }
         }
     }
 }
@@ -168,7 +126,7 @@ mod tests {
             csrf_token: tokens.issue().value,
         };
 
-        let updated = form.validate_update(current.clone(), &tokens).unwrap();
+        let updated = form.validate_update(&current, &tokens).unwrap();
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.gender, Some(Gender::Male));

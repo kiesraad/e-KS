@@ -59,7 +59,7 @@ pub async fn update_candidate_list(
     let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;
 
-    match form.validate_update(candidate_list.clone(), &context.csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 candidate_lists,

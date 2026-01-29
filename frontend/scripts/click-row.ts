@@ -15,6 +15,6 @@ export const setupClickRow = () => {
   });
 };
 
-if (typeof globalThis !== "undefined") {
-  globalThis.addEventListener("load", setupClickRow);
+if (typeof window !== "undefined") {
+  window.addEventListener("load", setupClickRow);
 }

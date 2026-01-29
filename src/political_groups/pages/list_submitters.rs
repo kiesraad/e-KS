@@ -45,7 +45,7 @@ pub async fn update_list_submitters(
 ) -> Result<Response, AppError> {
     let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
-    match form.validate_update(political_group.clone(), &context.csrf_tokens) {
+    match form.validate_update(&political_group, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmittersTemplate {
                 form: form_data,

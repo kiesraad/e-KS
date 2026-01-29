@@ -65,7 +65,7 @@ mod tests {
             political_group,
             context,
             State(pool.clone()),
-            Form(EmptyForm::from(csrf_token)),
+            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();
@@ -111,7 +111,7 @@ mod tests {
             political_group,
             context,
             State(pool.clone()),
-            Form(EmptyForm::from(TokenValue("invalid".to_string()))),
+            Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await
         .unwrap();

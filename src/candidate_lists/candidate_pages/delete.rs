@@ -78,7 +78,7 @@ mod tests {
             list.clone(),
             context,
             State(pool.clone()),
-            Form(EmptyForm::from(csrf_token)),
+            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();

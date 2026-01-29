@@ -64,7 +64,7 @@ mod tests {
             DeletePersonPath { person_id },
             context,
             State(pool.clone()),
-            Form(EmptyForm::from(csrf_token)),
+            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();

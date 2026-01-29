@@ -21,8 +21,8 @@ export const countryCodeToFlagEmoji = (countryCode: string) => {
   }
 };
 
-if (typeof globalThis !== "undefined") {
-  globalThis.addEventListener("load", () => {
+if (typeof window !== "undefined") {
+  window.addEventListener("load", () => {
     // Make flag icon match country code input
     const countryInputs = getCountryInputs();
     countryInputs.forEach((input) => {

@@ -1,11 +1,11 @@
 use proc_macro::TokenStream;
-use quote::{format_ident, quote};
+use quote::quote;
 use syn::{Data, DeriveInput, Expr, Fields, LitStr, Path, Type, parse_macro_input};
 
 /// Derive `Validate` implementations with field annotations.
 ///
 /// Supported annotations:
-/// - `#[validate(target = "Type", build = "path::to::builder")]` on the struct.
+/// - `#[validate(target = "Type")]` on the struct.
 /// - `#[validate(with = "expr")]` on fields (repeatable to apply multiple validators in order),
 ///   where `expr` evaluates to `Fn(&str) -> Result<String, ValidationError>`.
 /// - `#[validate(parse = "Type")]` to parse via `Type::from_str`.
@@ -23,7 +23,6 @@ pub fn derive_validate(input: TokenStream) -> TokenStream {
 
 struct StructOptions {
     target: Type,
-    build: Path,
 }
 
 #[derive(Default)]
@@ -48,9 +47,7 @@ enum Validator {
 fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
     let struct_options = parse_struct_options(input)?;
     let struct_name = &input.ident;
-    let validated_name = format_ident!("{}Validated", struct_name);
     let target = struct_options.target;
-    let build_fn = struct_options.build;
 
     let fields = match &input.data {
         Data::Struct(data) => match &data.fields {
@@ -113,15 +110,19 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
     }
 
     let tokens = quote! {
-        #[derive(Debug, Clone)]
-        struct #validated_name {
-            #(#validated_fields,)*
+        impl crate::form::WithCsrfToken for #struct_name {
+            fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
+                #[allow(clippy::needless_update)]
+                #struct_name {
+                    csrf_token: csrf_token.value,
+                    ..self
+                }
+            }
         }
 
         impl crate::form::Validate<#target> for #struct_name {
-            fn validate(
+            fn validate_create(
                 self,
-                current: Option<#target>,
                 csrf_tokens: &crate::form::CsrfTokens,
             ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
@@ -137,11 +138,36 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
                     ));
                 }
 
-                let validated = #validated_name {
+                #[allow(clippy::needless_update)]
+                Ok(#target {
                     #(#field_inits,)*
-                };
+                    ..Default::default()
+                })
+            }
 
-                Ok(#build_fn(validated, current))
+            fn validate_update(
+                self,
+                current: &#target,
+                csrf_tokens: &crate::form::CsrfTokens,
+            ) -> Result<#target, crate::form::FormData<Self>> {
+                let mut errors: crate::form::FieldErrors = Vec::new();
+
+                #(#field_blocks)*
+
+                if !errors.is_empty() {
+                    tracing::debug!("Validation errors: {errors:?}");
+                    return Err(crate::form::FormData::new_with_errors(
+                        self,
+                        csrf_tokens,
+                        errors,
+                    ));
+                }
+
+                #[allow(clippy::needless_update)]
+                Ok(#target {
+                    #(#field_inits,)*
+                    ..current.clone()
+                })
             }
         }
     };
@@ -151,7 +177,6 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
 
 fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
     let mut target = None;
-    let mut build = None;
 
     for attr in &input.attrs {
         if !attr.path().is_ident("validate") {
@@ -164,11 +189,6 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
                 target = Some(lit.parse::<Type>()?);
                 return Ok(());
             }
-            if meta.path.is_ident("build") {
-                let lit: LitStr = meta.value()?.parse()?;
-                build = Some(lit.parse::<Path>()?);
-                return Ok(());
-            }
 
             Err(meta.error("unsupported validate attribute on struct"))
         })?;
@@ -177,11 +197,8 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
     let target = target.ok_or_else(|| {
         syn::Error::new_spanned(input, "missing #[validate(target = \"Type\")] on struct")
     })?;
-    let build = build.ok_or_else(|| {
-        syn::Error::new_spanned(input, "missing #[validate(build = \"path\")] on struct")
-    })?;
 
-    Ok(StructOptions { target, build })
+    Ok(StructOptions { target })
 }
 
 fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {

@@ -53,7 +53,7 @@ pub async fn update_person(
     State(pool): State<PgPool>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(candidate.person.clone(), &context.csrf_tokens) {
+    match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 candidate,

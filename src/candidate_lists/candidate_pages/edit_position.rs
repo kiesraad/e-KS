@@ -64,7 +64,7 @@ pub async fn update_candidate_position(
         action: CandidatePositionAction::Move,
     };
 
-    match form.validate_update(candidate_position, &context.csrf_tokens) {
+    match form.validate_update(&candidate_position, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             EditCandidatePositionTemplate {
                 candidate,

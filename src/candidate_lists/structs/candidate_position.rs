@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use strum::{Display, EnumString};
 
-use crate::form::{TokenValue, WithCsrfToken};
+use crate::form::TokenValue;
 use validate::Validate;
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Display, EnumString)]
@@ -19,7 +19,7 @@ pub struct CandidatePosition {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "CandidatePosition", build = "CandidatePositionForm::build")]
+#[validate(target = "CandidatePosition")]
 #[serde(default)]
 pub struct CandidatePositionForm {
     #[validate(parse = "usize")]
@@ -28,31 +28,6 @@ pub struct CandidatePositionForm {
     pub action: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
-}
-
-impl WithCsrfToken for CandidatePositionForm {
-    fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
-        CandidatePositionForm {
-            csrf_token: csrf_token.value,
-            ..self
-        }
-    }
-}
-
-impl CandidatePositionForm {
-    fn build(
-        validated: CandidatePositionFormValidated,
-        current: Option<CandidatePosition>,
-    ) -> CandidatePosition {
-        if let Some(_current) = current {
-            CandidatePosition {
-                position: validated.position,
-                action: validated.action,
-            }
-        } else {
-            CandidatePosition::default()
-        }
-    }
 }
 
 impl From<CandidatePosition> for CandidatePositionForm {

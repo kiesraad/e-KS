@@ -46,7 +46,7 @@ pub async fn update_person_address(
     person_pagination: PersonPagination,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(person.clone(), &context.csrf_tokens) {
+    match form.validate_update(&person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,

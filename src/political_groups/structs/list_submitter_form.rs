@@ -1,16 +1,13 @@
 use crate::{
     TokenValue,
-    form::{CsrfToken, WithCsrfToken, validate_initials, validate_length, validate_teletex_chars},
+    form::{validate_initials, validate_length, validate_teletex_chars},
     political_groups::ListSubmitter,
 };
 use serde::Deserialize;
 use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
-#[validate(
-    target = "ListSubmitter",
-    build = "ListSubmitterForm::build_list_submitter"
-)]
+#[validate(target = "ListSubmitter")]
 #[serde(default)]
 pub struct ListSubmitterForm {
     #[validate(with = "validate_length(2, 255)", with = "validate_teletex_chars()")]
@@ -35,48 +32,6 @@ pub struct ListSubmitterForm {
     pub street_name: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
-}
-
-impl WithCsrfToken for ListSubmitterForm {
-    fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
-        ListSubmitterForm {
-            csrf_token: csrf_token.value,
-            ..self
-        }
-    }
-}
-
-impl ListSubmitterForm {
-    fn build_list_submitter(
-        validated: ListSubmitterFormValidated,
-        current: Option<ListSubmitter>,
-    ) -> ListSubmitter {
-        if let Some(current) = current {
-            ListSubmitter {
-                last_name: validated.last_name,
-                last_name_prefix: validated.last_name_prefix,
-                initials: validated.initials,
-                locality: validated.locality,
-                postal_code: validated.postal_code,
-                house_number: validated.house_number,
-                house_number_addition: validated.house_number_addition,
-                street_name: validated.street_name,
-                ..current
-            }
-        } else {
-            ListSubmitter {
-                last_name: validated.last_name,
-                last_name_prefix: validated.last_name_prefix,
-                initials: validated.initials,
-                locality: validated.locality,
-                postal_code: validated.postal_code,
-                house_number: validated.house_number,
-                house_number_addition: validated.house_number_addition,
-                street_name: validated.street_name,
-                ..Default::default()
-            }
-        }
-    }
 }
 
 impl From<ListSubmitter> for ListSubmitterForm {

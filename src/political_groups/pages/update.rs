@@ -52,7 +52,7 @@ pub async fn update_political_group(
     let authorised_agents =
         political_groups::get_authorised_agents(&pool, political_group.id).await?;
 
-    match form.validate_update(political_group.clone(), &context.csrf_tokens) {
+    match form.validate_update(&political_group, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PoliticalGroupUpdateTemplate {
                 form: form_data,

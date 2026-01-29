@@ -61,7 +61,7 @@ pub async fn update_list_submitter(
         political_groups::get_list_submitter(&pool, political_group.id, &submitter_id).await?;
     let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
 
-    match form.validate_update(list_submitter.clone(), &context.csrf_tokens) {
+    match form.validate_update(&list_submitter, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
                 form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),

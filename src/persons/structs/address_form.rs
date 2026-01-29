@@ -1,14 +1,10 @@
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
-use crate::{
-    CsrfToken, TokenValue,
-    form::{WithCsrfToken, validate_length},
-    persons::Person,
-};
+use crate::{TokenValue, form::validate_length, persons::Person};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "Person", build = "AddressForm::build_address")]
+#[validate(target = "Person")]
 pub struct AddressForm {
     #[validate(with = "validate_length(2, 255)", optional)]
     pub locality: String,
@@ -33,32 +29,6 @@ impl From<Person> for AddressForm {
             house_number_addition: person.house_number_addition.unwrap_or_default(),
             street_name: person.street_name.unwrap_or_default(),
             csrf_token: Default::default(),
-        }
-    }
-}
-
-impl WithCsrfToken for AddressForm {
-    fn with_csrf_token(self, csrf_token: CsrfToken) -> Self {
-        AddressForm {
-            csrf_token: csrf_token.value,
-            ..self
-        }
-    }
-}
-
-impl AddressForm {
-    fn build_address(validated: AddressFormValidated, current: Option<Person>) -> Person {
-        if let Some(current_person) = current {
-            Person {
-                locality: validated.locality,
-                postal_code: validated.postal_code,
-                house_number: validated.house_number,
-                house_number_addition: validated.house_number_addition,
-                street_name: validated.street_name,
-                ..current_person
-            }
-        } else {
-            panic!("Can't update the address of a non-existent person!");
         }
     }
 }
