@@ -4,6 +4,7 @@ services:
       dockerfile: docker/playwright.Dockerfile
     volumes:
       - ./tests:/app/tests
+      - ./playwright-report:/app/playwright-report
       - ../frontend:/frontend:ro
     environment:
       PLAYWRIGHT_TEST_BASE_URL: http://application:3000
