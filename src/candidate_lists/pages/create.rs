@@ -13,8 +13,7 @@ use crate::{
     },
     filters,
     form::{FormData, Validate},
-    persons,
-    persons::Person,
+    persons::{self, Person},
 };
 
 #[derive(Template)]
@@ -78,9 +77,17 @@ pub async fn create_candidate_list(
         Ok(candidate_list) => {
             let candidate_list =
                 candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(Redirect::to(&candidate_list.list_submitter_path()).into_response())
         }
     }
+}
+
+#[derive(Template)]
+#[template(path = "candidate_lists/create.html")]
+struct CandidateListCreateSubmitterTemplate {
+    candidate_lists: Vec<CandidateListSummary>,
+    total_persons: i64,
+    form: FormData<CandidateListForm>,
 }
 
 #[cfg(test)]

@@ -7,6 +7,7 @@ use uuid::Uuid;
 use crate::{
     ElectoralDistrict,
     candidate_lists::{CandidateList, CandidateListId, CandidateListSummary},
+    political_groups::ListSubmitterId,
 };
 
 pub struct ListIdAndCount {
@@ -73,7 +74,12 @@ pub async fn list_candidate_list(db: &PgPool) -> Result<Vec<CandidateList>, sqlx
     sqlx::query_as!(
         CandidateList,
         r#"
-            SELECT id, electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", created_at, updated_at
+            SELECT
+                id,
+                electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", 
+                list_submitter_id AS "list_submitter_id: ListSubmitterId",
+                created_at,
+                updated_at
             FROM candidate_lists
             ORDER BY created_at ASC
             "#,
@@ -89,7 +95,12 @@ pub async fn get_candidate_list(
     sqlx::query_as!(
         CandidateList,
         r#"
-        SELECT id, electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>", created_at, updated_at
+        SELECT
+            id,
+            electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>",
+            list_submitter_id AS "list_submitter_id: ListSubmitterId",
+            created_at,
+            updated_at
         FROM candidate_lists
         WHERE id = $1
         "#,
@@ -136,6 +147,7 @@ pub async fn create_candidate_list(
         RETURNING
             id,
             electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>",
+            list_submitter_id AS "list_submitter_id: ListSubmitterId",
             created_at,
             updated_at
         "#,
@@ -158,17 +170,22 @@ pub async fn update_candidate_list(
         UPDATE candidate_lists
         SET
             electoral_districts = $1,
+            list_submitter_id = $2,
             updated_at = $3
-        WHERE id = $2
+        WHERE id = $4
         RETURNING
             id,
             electoral_districts AS "electoral_districts: Vec<ElectoralDistrict>",
+            list_submitter_id AS "list_submitter_id: ListSubmitterId",
             created_at,
             updated_at
         "#,
         &updated_candidate_list.electoral_districts as &[ElectoralDistrict],
-        updated_candidate_list.id.uuid(),
+        updated_candidate_list
+            .list_submitter_id
+            .map(|id| Uuid::from(id)),
         Utc::now(),
+        updated_candidate_list.id.uuid(),
     )
     .fetch_one(db)
     .await
@@ -225,6 +242,7 @@ mod tests {
         let list = CandidateList {
             id: CandidateListId::new(),
             electoral_districts,
+            list_submitter_id: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };
@@ -299,12 +317,14 @@ mod tests {
         let list_early = CandidateList {
             id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
+            list_submitter_id: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };
         let list_late = CandidateList {
             id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::OV],
+            list_submitter_id: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         };

@@ -16,6 +16,7 @@ districts:
 edit_position: Volgorde op de lijst
 fields:
   electoral_districts: Kiesdistricten
+  list_submitter: Gegevens lijstinleveraar
   position: Positie
 form:
   create:

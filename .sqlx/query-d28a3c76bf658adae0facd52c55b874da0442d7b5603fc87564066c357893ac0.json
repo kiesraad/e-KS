@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "\n        INSERT INTO candidate_lists (id, electoral_districts, created_at, updated_at)\n        VALUES ($1, $2, $3, $4)\n        RETURNING\n            id,\n            electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\",\n            created_at,\n            updated_at\n        ",
+  "query": "\n            SELECT\n                id,\n                electoral_districts AS \"electoral_districts: Vec<ElectoralDistrict>\", \n                list_submitter_id AS \"list_submitter_id: ListSubmitterId\",\n                created_at,\n                updated_at\n            FROM candidate_lists\n            ORDER BY created_at ASC\n            ",
   "describe": {
     "columns": [
       {
@@ -46,60 +46,30 @@
       },
       {
         "ordinal": 2,
+        "name": "list_submitter_id: ListSubmitterId",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 3,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 3,
+        "ordinal": 4,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
-      "Left": [
-        "Uuid",
-        {
-          "Custom": {
-            "name": "electoral_district[]",
-            "kind": {
-              "Array": {
-                "Custom": {
-                  "name": "electoral_district",
-                  "kind": {
-                    "Enum": [
-                      "DR",
-                      "FL",
-                      "FR",
-                      "GE",
-                      "GR",
-                      "LI",
-                      "NB",
-                      "NH",
-                      "OV",
-                      "UT",
-                      "ZE",
-                      "ZH",
-                      "BO",
-                      "SE",
-                      "SA",
-                      "KN"
-                    ]
-                  }
-                }
-              }
-            }
-          }
-        },
-        "Timestamptz",
-        "Timestamptz"
-      ]
+      "Left": []
     },
     "nullable": [
       false,
       false,
+      true,
       false,
       false
     ]
   },
-  "hash": "0cfe0e2121e5d3942589ea61fa7c4a52150e8bcb44f2fdf01083c57d9376be0e"
+  "hash": "d28a3c76bf658adae0facd52c55b874da0442d7b5603fc87564066c357893ac0"
 }

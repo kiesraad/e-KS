@@ -2,7 +2,7 @@ use chrono::DateTime;
 use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 
-use crate::{ElectionConfig, ElectoralDistrict, id_newtype};
+use crate::{ElectionConfig, ElectoralDistrict, id_newtype, political_groups::ListSubmitterId};
 
 id_newtype!(pub struct CandidateListId);
 
@@ -10,6 +10,7 @@ id_newtype!(pub struct CandidateListId);
 pub struct CandidateList {
     pub id: CandidateListId,
     pub electoral_districts: Vec<ElectoralDistrict>,
+    pub list_submitter_id: Option<ListSubmitterId>,
     pub created_at: DateTime<Utc>,
     pub updated_at: DateTime<Utc>,
 }
@@ -44,6 +45,7 @@ mod tests {
         CandidateList {
             id: CandidateListId::new(),
             electoral_districts,
+            list_submitter_id: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }

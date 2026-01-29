@@ -34,6 +34,7 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
     let candidate_list = CandidateList {
         id: uuid.into(),
         electoral_districts,
+        list_submitter_id: None,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };

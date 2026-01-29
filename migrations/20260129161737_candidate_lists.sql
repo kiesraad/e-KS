@@ -4,6 +4,7 @@ CREATE TABLE candidate_lists
 (
     id                  UUID PRIMARY KEY,
     electoral_districts electoral_district[]     NOT NULL,
+    list_submitter_id   UUID REFERENCES list_submitters (id) ON DELETE RESTRICT,
     created_at          timestamp with time zone NOT NULL,
     updated_at          timestamp with time zone NOT NULL
 );

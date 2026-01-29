@@ -16,6 +16,7 @@ districts:
 edit_position: Position on the list
 fields:
   electoral_districts: Electoral districts
+  list_submitter: Submitter of the list
   position: Position
 form:
   create:

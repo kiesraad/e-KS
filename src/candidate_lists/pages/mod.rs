@@ -10,6 +10,7 @@ use crate::{
 mod create;
 mod delete;
 mod list;
+mod list_submitter;
 mod reorder;
 mod update;
 mod view;
@@ -58,6 +59,12 @@ pub struct CreateCandidatePath {
     pub list_id: CandidateListId,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{list_id}/list-submitter", rejection(AppError))]
+pub struct AddListSubmitterPath {
+    pub list_id: CandidateListId,
+}
+
 impl CandidateList {
     pub fn list_path() -> String {
         CandidateListsPath {}.to_string()
@@ -79,6 +86,10 @@ impl CandidateList {
         ViewCandidateListPath { list_id: self.id }.to_string()
     }
 
+    pub fn list_submitter_path(&self) -> String {
+        AddListSubmitterPath { list_id: self.id }.to_string()
+    }
+
     pub fn reorder_path(&self) -> String {
         CandidateListReorderPath { list_id: self.id }.to_string()
     }
@@ -98,6 +109,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(list::list_candidate_lists)
         .typed_get(create::new_candidate_list_form)
         .typed_post(create::create_candidate_list)
+        .typed_get(list_submitter::update_list_submitter_form)
         // manage single list
         .typed_get(view::view_candidate_list)
         .typed_get(update::edit_candidate_list)
