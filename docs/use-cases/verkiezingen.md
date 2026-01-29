@@ -19,7 +19,7 @@ Bij een verkiezing voor de Eerste Kamer kiezen de leden van de Provinciale State
 Bij een verkiezing voor de Provinciale Staten kiezen de kiesgerechtigde inwoners van de provincie met de Nederlandse nationaliteit de leden van Provinciale Staten.
 
 - 12 centrale stembureaus: provincies
-- 1 kieskring voor (Drente, Flevoland, Groningen, OVerijssel, Friesland, Utrecht, Zeeland): Art. E 1, tweede lid, biedt mogelijkheid om provincie onder te verdelen in meerdere kieskringen.
+- 1 kieskring voor (Drente, Flevoland, Groningen, Overijssel, Friesland, Utrecht, Zeeland): Art. E 1, tweede lid, biedt mogelijkheid om provincie onder te verdelen in meerdere kieskringen.
 - Meerdere kieskringen voor
     - Gelderland: 2 kieskringen (Arnhem, Nijmegen)
     - Noord-Brabant: 2 kieskringen (Den Bosch, Tilburg)
@@ -45,7 +45,7 @@ Bij een verkiezing van het Europees Parlement kiezen de kiesgerechtigden met de 
 - Geen kieskringen/ 1 kieskring (Nederland)
 
 ## Kiescollege niet-ingezetenen
-De leden worden gekozen door de Nederlanders die op geen ingezetenen van Nederland zijn, met uitzondering van degenen die hun woonplaats hebben in Aruba, Curacao of Sint Maarten.
+De leden worden gekozen door de Nederlanders die op geen ingezetenen van Nederland zijn, met uitzondering van degenen die hun woonplaats hebben in Aruba, Curaçao of Sint Maarten.
 -	1 centraal stembureau: het centraal stembureau van de leden van provinciale staten van de provincie Zuid-Holland (Pa 6)
 -	1 kieskring (kieskring buitenland, art Pa 4)
  
