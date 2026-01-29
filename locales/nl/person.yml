@@ -6,7 +6,7 @@ authorized_person: Gemachtigde van kandidaat
 correspondence_address: Correspondentieadres
 fields:
   bsn: Burgerservicenummer (BSN)
-  country_of_residence: Land
+  country_of_residence: Landcode
   date_of_birth: Geboortedatum
   first_name: Roepnaam
   gender: Geslacht

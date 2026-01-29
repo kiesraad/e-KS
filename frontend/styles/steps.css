@@ -27,13 +27,22 @@
         background-color: var(--gray-100);
       }
 
-      &.ok {
-        background-image: url("../icons/checkmarkSmall.svg");
-      }
-
       &.active {
         background-image: url("../icons/arrowNarrowRight.svg");
         background-color: var(--gray-200);
+      }
+
+      &.warning {
+        background-image: url("../icons/warning.svg");
+      }
+
+      &.disabled {
+        background-image: url("../icons/lock.svg");
+        background-size: 1rem;
+      }
+
+      &.ok {
+        background-image: url("../icons/checkmarkSmall.svg");
       }
 
       &.disabled {

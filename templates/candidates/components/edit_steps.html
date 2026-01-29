@@ -1,13 +1,13 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ candidate.edit_path() }}">
+      <a href="{{ candidate.edit_path() }}" class="{% if candidate.person.is_personal_info_complete() %}ok{% else %}warning{% endif %}">
         {{ "person.personal_details"|trans }}
       </a>
     </li>
     {% if candidate.person.is_dutch() %}
     <li>
-      <a href="{{ candidate.edit_address_path() }}">
+      <a href="{{ candidate.edit_address_path() }}" class="{% if candidate.person.is_address_complete() %}ok{% else %}warning{% endif %}">
         {{ "person.correspondence_address"|trans }}
       </a>
     </li>
@@ -18,10 +18,12 @@
       </a>
     </li>
     {% endif %}
-    <li>
-      <a href="{{ candidate.edit_position_path() }}">
-        {{ "candidate_list.edit_position"|trans }}
-      </a>
-    </li>
+    {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+      <li>
+        <a href="{{ candidate.edit_position_path() }}" class="{% if candidate.position <= **max_candidates %}ok{% else %}warning{% endif %}">
+          {{ "candidate_list.edit_position"|trans }}
+        </a>
+      </li>
+    {% endif %}
   </ul>
 </div>

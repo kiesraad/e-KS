@@ -73,6 +73,22 @@ impl Person {
             })
             .unwrap_or("")
     }
+
+    pub fn is_personal_info_complete(&self) -> bool {
+        !self.initials.is_empty()
+            && !self.last_name.is_empty()
+            && self.date_of_birth.is_some()
+            && self.bsn.is_some()
+            && self.place_of_residence.is_some()
+            && self.country_of_residence.is_some()
+    }
+
+    pub fn is_address_complete(&self) -> bool {
+        self.street_name.is_some()
+            && self.house_number.is_some()
+            && self.postal_code.is_some()
+            && self.locality.is_some()
+    }
 }
 
 #[cfg(test)]

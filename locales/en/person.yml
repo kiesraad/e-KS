@@ -6,7 +6,7 @@ authorized_person: Authorized person
 correspondence_address: Correspondence address
 fields:
   bsn: Social security number (BSN)
-  country_of_residence: Country of residence
+  country_of_residence: Country code
   date_of_birth: Date of birth
   first_name: First name
   gender: Gender
