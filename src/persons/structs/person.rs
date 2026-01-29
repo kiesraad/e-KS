@@ -89,6 +89,10 @@ impl Person {
             && self.postal_code.is_some()
             && self.locality.is_some()
     }
+
+    pub fn is_complete(&self) -> bool {
+        self.is_personal_info_complete() && self.is_address_complete()
+    }
 }
 
 #[cfg(test)]

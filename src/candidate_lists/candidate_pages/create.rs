@@ -63,7 +63,7 @@ pub async fn create_person_candidate_list(
             let candidate =
                 candidate_lists::get_candidate(&pool, full_list.id(), person.id).await?;
 
-            Ok(Redirect::to(&candidate.edit_address_path()).into_response())
+            Ok(Redirect::to(&candidate.after_create_path()).into_response())
         }
     }
 }
@@ -150,7 +150,7 @@ mod tests {
             .expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
-        assert_eq!(location, candidate.edit_address_path());
+        assert_eq!(location, candidate.after_create_path());
 
         Ok(())
     }

@@ -5,22 +5,26 @@ use uuid::Uuid;
 use crate::{
     AppError, ElectionConfig,
     candidate_lists::{self, CandidateList},
+    pagination::SortDirection,
     persons::{self, Person, PersonId},
 };
 
-const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
+const FIXTURE_CANDIDATE_LIST_SIZE: i64 = 55;
 
 fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
-    persons
-        .into_iter()
-        .map(|person| person.id)
-        .take(FIXTURE_CANDIDATE_LIST_SIZE)
-        .collect()
+    persons.into_iter().map(|person| person.id).collect()
 }
 
 pub async fn load(db: &PgPool) -> Result<(), AppError> {
     let electoral_districts = ElectionConfig::EK2027.electoral_districts().to_vec();
-    let persons = persons::list_all_persons(db).await?;
+    let persons = persons::list_persons(
+        db,
+        FIXTURE_CANDIDATE_LIST_SIZE,
+        0,
+        &persons::PersonSort::CreatedAt,
+        &SortDirection::Asc,
+    )
+    .await?;
     let person_ids = collect_person_ids(persons);
     let uuid = Uuid::new_v5(
         &Uuid::NAMESPACE_OID,
@@ -58,6 +62,6 @@ mod tests {
             .unwrap();
 
         assert_eq!(lists.len(), 1);
-        assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE as i64);
+        assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE);
     }
 }

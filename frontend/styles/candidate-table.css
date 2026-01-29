@@ -7,7 +7,7 @@
     }
   }
 
-  tr:nth-child(even) td {
+  tr:nth-child(even) {
     background-color: var(--gray-100);
   }
 
@@ -107,7 +107,7 @@
 }
 
 #add-candidate-table {
-  tr:nth-child(even) td {
+  tr:nth-child(even) {
     background-color: var(--gray-100);
   }
 
@@ -135,7 +135,7 @@
 }
 
 #position-preview {
-  tr:nth-child(even) td {
+  tr:nth-child(even) {
     background-color: var(--gray-100);
   }
 }

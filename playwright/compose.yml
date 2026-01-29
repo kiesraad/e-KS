@@ -31,7 +31,6 @@ services:
       DATABASE_URL: postgres://eks@psql:5432/eks
       BAG_SERVICE_URL: http://bag-service:8080
       LOAD_FIXTURES: "true"
-    ports: ["3000:3000"]
     depends_on:
       - psql
       - bag-service

@@ -12,6 +12,7 @@
         <legend>
           <h3>{{ "person.personal_information"|trans }}</h3>
         </legend>
+        {% let should_warn = true %}
         {% include "persons/components/form.html" %}
         <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
           {{ "person.actions.delete"|trans }}

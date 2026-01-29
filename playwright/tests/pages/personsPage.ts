@@ -13,7 +13,7 @@ export class PersonsPage {
   }
 
   async addPersons(candidates: Candidate[]) {
-    for (var candidate of candidates) {
+    for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Add person" }).click();
       await this.page.getByLabel("Initials").fill(candidate.initials);
       await this.page
@@ -27,6 +27,7 @@ export class PersonsPage {
       await this.page
         .getByRole("textbox", { name: "Date of birth" })
         .fill(candidate.dateOfBirth ?? "");
+      await this.page.getByLabel("Country code").fill("NL");
       await this.page.getByRole("button", { name: "Save" }).click();
       await this.page
         .getByRole("textbox", { name: "Postal code" })
@@ -35,7 +36,7 @@ export class PersonsPage {
         .getByRole("textbox", { name: "House number", exact: true })
         .fill(candidate.houseNumber ?? "");
       await this.page
-        .getByRole("textbox", { name: "House number", exact: true })
+        .getByRole("textbox", { name: "House number addition", exact: true })
         .press("Tab");
       await expect(
         this.page.getByRole("textbox", { name: "Street name" }),
@@ -49,7 +50,7 @@ export class PersonsPage {
   }
 
   async checkPerson(candidates: Candidate[]) {
-    for (var candidate of candidates) {
+    for (const candidate of candidates) {
       await expect(
         this.page.getByRole("cell", { name: candidate.lastName }).first(),
       ).toBeVisible();

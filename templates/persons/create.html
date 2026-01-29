@@ -20,7 +20,7 @@
       </li>
       <li>
         <a class="disabled" disabled>
-          {{ "person.authorized_person"|trans }}
+          {{ "person.authorised_person"|trans }}
         </a>
       </li>
     </ul>
@@ -30,8 +30,17 @@
       <legend>
         <h2>{{ "person.form.create.title"|trans }}</h2>
       </legend>
+      {% let should_warn = false %}
       {% include "persons/components/form.html" %}
     </fieldset>
   </div>
 </div>
+{% endblock %}
+
+{% block overlay_footer %}
+<footer>
+  <button type="submit" class="button">
+    {{ "action.save_and_continue"|trans }}
+  </button>
+</footer>
 {% endblock %}

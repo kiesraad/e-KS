@@ -82,7 +82,7 @@ person:
   personal_information: Personal information
   address: Address
   correspondence_address: Correspondence address
-  authorized_person: Authorized person
+  authorised_person: Authorised person
   personal_details: Personal details
   hints:
     first_name: Optional. Only fill in if this should be displayed on the candidate list.

@@ -18,9 +18,9 @@ test("add and delete candidate list", async ({ page }) => {
 
   const manageCandidateListPage = new ManageCandidateListPage(page);
   await manageCandidateListPage.addExistingCandidates([
-    "Abdul Rahman, N.A. (Nadia)",
-    "Ali, F.A. (Fatima)",
-    "Alvarez, M.A. (Marco)",
+    "Nagelhout, H (Hubertus)",
+    "Meerman, K.S (Kevin)",
+    "Altena, J (Jeroen)",
   ]);
 
   const candidate: Candidate = {

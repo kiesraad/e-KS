@@ -1,4 +1,4 @@
-use std::{io, str::FromStr};
+use std::io;
 
 use chrono::{NaiveDate, Utc};
 use csv::{ReaderBuilder, Trim};
@@ -8,7 +8,6 @@ use uuid::Uuid;
 
 use crate::{
     AppError,
-    constants::DEFAULT_DATE_FORMAT,
     persons::{self, Gender, Person},
 };
 
@@ -16,44 +15,62 @@ const PERSONS_CSV: &str = include_str!("persons.csv");
 
 #[derive(Debug, Deserialize)]
 struct PersonRecord {
-    gender: Option<String>,
-    last_name: String,
-    last_name_prefix: Option<String>,
-    first_name: Option<String>,
-    initials: String,
-    date_of_birth: String,
-    locality: String,
-    postal_code: String,
-    house_number: String,
-    house_number_addition: Option<String>,
-    street_name: String,
+    burgerservicenummer: String,
+    geslacht: String,
+    voornamen: String,
+    geslachtsnaam: String,
+    geboortedatum: String,
+    straat: String,
+    huisnummer: String,
+    postcode: String,
+    woonplaats: String,
 }
 
 impl PersonRecord {
     fn into_person(self) -> Result<Person, AppError> {
-        let id = format!("{}{}", self.last_name, self.initials);
+        let initials = self
+            .voornamen
+            .split_whitespace()
+            .filter_map(|n| n.chars().next().map(|c| c.to_string()))
+            .collect::<Vec<String>>()
+            .join(".");
+
+        let locality = if self.woonplaats.is_empty() {
+            None
+        } else {
+            Some(self.woonplaats)
+        };
+
+        let id = format!(
+            "{}{}{}",
+            self.burgerservicenummer, self.geslachtsnaam, initials
+        );
         let uuid = Uuid::new_v5(&Uuid::NAMESPACE_OID, id.as_bytes());
 
         Ok(Person {
             id: uuid.into(),
-            gender: self.gender.and_then(|s| Gender::from_str(&s).ok()),
-            last_name: self.last_name,
-            last_name_prefix: self.last_name_prefix,
+            gender: match self.geslacht.as_str() {
+                "M" => Some(Gender::Male),
+                "V" => Some(Gender::Female),
+                _ => None,
+            },
+            last_name: self.geslachtsnaam,
+            last_name_prefix: None,
             first_name: self
-                .first_name
-                .and_then(|n| if n.is_empty() { None } else { Some(n) }),
-            initials: self.initials,
-            date_of_birth: NaiveDate::parse_from_str(&self.date_of_birth, DEFAULT_DATE_FORMAT).ok(),
-            bsn: None,
-            place_of_residence: Some(self.locality.clone()),
+                .voornamen
+                .split_whitespace()
+                .next()
+                .map(|s| s.to_string()),
+            initials,
+            date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d").ok(),
+            bsn: Some(self.burgerservicenummer),
+            place_of_residence: locality.clone(),
             country_of_residence: Some("NL".to_string()),
-            locality: Some(self.locality),
-            postal_code: Some(self.postal_code),
-            house_number: Some(self.house_number),
-            house_number_addition: self
-                .house_number_addition
-                .and_then(|n| if n.is_empty() { None } else { Some(n) }),
-            street_name: Some(self.street_name),
+            locality,
+            postal_code: Some(self.postcode),
+            house_number: Some(self.huisnummer),
+            house_number_addition: None,
+            street_name: Some(self.straat),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })

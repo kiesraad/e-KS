@@ -56,9 +56,9 @@ pub async fn create_person(
         )
         .into_response()),
         Ok(person) => {
-            persons::create_person(&pool, &person).await?;
+            let person = persons::create_person(&pool, &person).await?;
 
-            Ok(Redirect::to(&person.edit_address_path()).into_response())
+            Ok(Redirect::to(&person.after_create_path()).into_response())
         }
     }
 }
@@ -117,7 +117,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert!(location.ends_with("/address"));
+        assert!(location.contains("/address"));
 
         let count = persons::count_persons(&pool).await?;
         assert_eq!(count, 1);

@@ -82,7 +82,7 @@ person:
   personal_information: Persoonlijke gegevens
   address: Adres
   correspondence_address: Correspondentieadres
-  authorized_person: Gemachtigde van kandidaat
+  authorised_person: Gemachtigde van kandidaat
   personal_details: Persoonlijke gegevens
   hints:
     first_name: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.

@@ -11,7 +11,7 @@
   </thead>
   <tbody>
     {% for candidate in full_list.candidates %}
-    <tr class="clickable" data-id="{{ candidate.person.id }}">
+    <tr class="clickable {% if !candidate.person.is_complete() %}warning{% endif %}" data-id="{{ candidate.person.id }}">
       <td class="drag-handle"></td>
       <td>
         <span class="position-badge">{{ candidate.position }}</span>

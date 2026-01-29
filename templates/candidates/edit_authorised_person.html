@@ -1,0 +1,16 @@
+{% extends "candidates/components/overlay.html" %}
+
+
+{% block overlay_content %}
+  <div class="overlay-content steps">
+    {% include "candidates/components/edit_steps.html" %}
+    <div class="form">
+      <fieldset>
+        <legend>
+          <h3>{{ "person.authorised_person"|trans }}</h3>
+        </legend>
+        <p>Under construction...</p>
+      </fieldset>
+    </div>
+  </div>
+{% endblock %}

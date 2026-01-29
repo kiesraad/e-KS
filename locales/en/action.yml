@@ -8,4 +8,6 @@ manage_candidate_lists: Manage candidate lists
 manage_data: Manage data
 review_and_submit: Review and submit
 save: Save
+save_and_close: Save and close
+save_and_continue: Save and continue
 signout: Sign out

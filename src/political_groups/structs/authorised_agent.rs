@@ -26,7 +26,7 @@ pub struct AuthorisedAgent {
 impl AuthorisedAgent {
     pub fn last_name_with_prefix(&self) -> String {
         if let Some(prefix) = &self.last_name_prefix {
-            format!("{} {}", prefix, self.last_name)
+            format!("{prefix} {}", self.last_name)
         } else {
             self.last_name.clone()
         }

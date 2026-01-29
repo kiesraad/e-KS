@@ -2,7 +2,7 @@ actions:
   add: Add person
   delete: Delete person
 all: All persons
-authorized_person: Authorized person
+authorised_person: Authorised person
 correspondence_address: Correspondence address
 fields:
   bsn: Social security number (BSN)

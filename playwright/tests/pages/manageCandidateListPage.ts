@@ -9,7 +9,7 @@ export class ManageCandidateListPage {
   }
 
   async addExistingCandidates(candidates: string[]) {
-    for (var candidate of candidates) {
+    for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Existing" }).click();
       await this.page
         .getByRole("row", { name: candidate })
@@ -22,13 +22,14 @@ export class ManageCandidateListPage {
   }
 
   async addNewCandidates(candidates: Candidate[]) {
-    for (var candidate of candidates) {
+    for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "New" }).click();
       await this.page.getByLabel("Initials").fill(candidate.initials);
       await this.page
         .locator('input[name="last_name"]')
         .fill(candidate.lastName);
       await this.page.getByLabel("First name").fill(candidate.firstName ?? "");
+      await this.page.getByLabel("Country code").fill("NL");
       await this.page.getByRole("button", { name: "Save" }).click();
       await this.page.getByLabel("Locality").fill(candidate.locality ?? "");
       await this.page.getByRole("button", { name: "Save" }).click();
@@ -40,7 +41,7 @@ export class ManageCandidateListPage {
 
   async removeDistricts(districts: string[]) {
     await this.page.getByRole("link", { name: "List details" }).click();
-    for (var district of districts) {
+    for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
     await this.page.getByRole("button", { name: "Save" }).click();
@@ -48,7 +49,7 @@ export class ManageCandidateListPage {
 
   async addDistricts(districts: string[]) {
     await this.page.getByRole("link", { name: "List details" }).click();
-    for (var district of districts) {
+    for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
     await this.page.getByRole("button", { name: "Save" }).click();
@@ -62,7 +63,7 @@ export class ManageCandidateListPage {
     await this.page
       .getByRole("button", { name: "Delete", exact: true })
       .click();
-    for (var district of districts) {
+    for (const district of districts) {
       await expect(
         this.page.getByRole("listitem", { name: district }),
       ).toHaveCount(0);

@@ -2,7 +2,7 @@ actions:
   add: Persoon toevoegen
   delete: Persoon verwijderen
 all: Alle personen
-authorized_person: Gemachtigde van kandidaat
+authorised_person: Gemachtigde van kandidaat
 correspondence_address: Correspondentieadres
 fields:
   bsn: Burgerservicenummer (BSN)

@@ -7,7 +7,7 @@ export class SelectElectoralDistrictsPage {
     this.page = page;
   }
   async selectDistricts(districts: string[]) {
-    for (var district of districts) {
+    for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
     await this.page.getByRole("button", { name: "Save" }).click();

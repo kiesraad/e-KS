@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
@@ -13,12 +13,13 @@ use crate::{
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, AddressForm},
+    persons::{self, AddressForm, InitialEditQuery},
 };
 
 #[derive(Template)]
 #[template(path = "candidates/edit_address.html")]
 struct PersonAddressUpdateTemplate {
+    should_warn: bool,
     candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
@@ -29,6 +30,7 @@ pub async fn edit_person_address(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
+    Query(query): Query<InitialEditQuery>,
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
         AddressForm::from(candidate.person.clone()),
@@ -37,6 +39,7 @@ pub async fn edit_person_address(
 
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
+            should_warn: query.should_warn(),
             form,
             candidate: candidate.clone(),
             full_list,
@@ -51,11 +54,13 @@ pub async fn update_person_address(
     full_list: FullCandidateList,
     candidate: Candidate,
     State(pool): State<PgPool>,
+    Query(query): Query<InitialEditQuery>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
+                should_warn: query.should_warn(),
                 candidate,
                 form: form_data,
                 full_list,
@@ -75,6 +80,7 @@ pub async fn update_person_address(
 mod tests {
     use super::*;
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -114,6 +120,7 @@ mod tests {
             Context::new_test(pool.clone()).await,
             full_list,
             candidate,
+            Query(InitialEditQuery::new()),
         )
         .await
         .unwrap()
@@ -155,6 +162,7 @@ mod tests {
             full_list,
             candidate,
             State(pool.clone()),
+            Query(InitialEditQuery::new()),
             Form(form),
         )
         .await
@@ -208,6 +216,7 @@ mod tests {
             full_list,
             candidate,
             State(pool.clone()),
+            Query(InitialEditQuery::new()),
             Form(form),
         )
         .await

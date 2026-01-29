@@ -40,6 +40,12 @@
         max-width: 100%;
       }
     }
+
+    &.warning {
+      input {
+        border-color: var(--color-warning-darker);
+      }
+    }
   }
 
   .form-row {
@@ -132,7 +138,8 @@
 
 .form select {
   appearance: none;
-  background: url("../icons/select.svg") no-repeat right 1rem center;
+  background: var(--base-white) url("../icons/select.svg") no-repeat right 1rem
+    center;
   cursor: pointer;
 }
 

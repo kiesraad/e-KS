@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
@@ -10,13 +10,15 @@ use crate::{
     AppError, AppResponse, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
     persons::{
-        self, AddressForm, Person, PersonPagination, PersonSort, pages::EditPersonAddressPath,
+        self, AddressForm, InitialEditQuery, Person, PersonPagination, PersonSort,
+        pages::EditPersonAddressPath,
     },
 };
 
 #[derive(Template)]
 #[template(path = "persons/address.html")]
 struct PersonAddressUpdateTemplate {
+    should_warn: bool,
     person: Person,
     form: FormData<AddressForm>,
     person_pagination: PersonPagination,
@@ -27,9 +29,11 @@ pub async fn edit_person_address(
     context: Context,
     person: Person,
     person_pagination: PersonPagination,
+    Query(query): Query<InitialEditQuery>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
+            should_warn: query.should_warn(),
             form: FormData::new_with_data(AddressForm::from(person.clone()), &context.csrf_tokens),
             person,
             person_pagination,
@@ -44,12 +48,14 @@ pub async fn update_person_address(
     person: Person,
     State(pool): State<PgPool>,
     person_pagination: PersonPagination,
+    Query(query): Query<InitialEditQuery>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
+                should_warn: query.should_warn(),
                 form: form_data,
                 person_pagination,
             },
@@ -68,6 +74,7 @@ pub async fn update_person_address(
 mod tests {
     use super::*;
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -92,6 +99,7 @@ mod tests {
             Context::new_test(pool.clone()).await,
             person,
             PersonPagination::empty(),
+            Query(InitialEditQuery::new()),
         )
         .await
         .unwrap()
@@ -121,6 +129,7 @@ mod tests {
             person,
             State(pool.clone()),
             PersonPagination::empty(),
+            Query(InitialEditQuery::new()),
             Form(form),
         )
         .await
@@ -164,6 +173,7 @@ mod tests {
             person,
             State(pool.clone()),
             PersonPagination::empty(),
+            Query(InitialEditQuery::new()),
             Form(form),
         )
         .await
@@ -193,6 +203,7 @@ mod tests {
             person.clone(),
             State(pool.clone()),
             PersonPagination::empty(),
+            Query(InitialEditQuery::new()),
             Form(AddressForm {
                 locality: "Juinen".to_string(),
                 postal_code: "1234 AB".to_string(),

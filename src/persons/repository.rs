@@ -138,13 +138,6 @@ pub async fn remove_person(db: &PgPool, person_id: PersonId) -> Result<(), sqlx:
     Ok(())
 }
 
-#[cfg(feature = "fixtures")]
-pub async fn list_all_persons(db: &PgPool) -> Result<Vec<Person>, sqlx::Error> {
-    sqlx::query_file_as!(Person, "sql/persons/list_all_persons.sql")
-        .fetch_all(db)
-        .await
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -264,26 +257,6 @@ mod tests {
         let persons = list_persons_not_on_candidate_list(&pool, list_id).await?;
         assert_eq!(persons.len(), 1);
         assert_eq!(persons[0].id, person_b.id);
-
-        Ok(())
-    }
-
-    #[cfg(feature = "fixtures")]
-    #[sqlx::test]
-    async fn list_all_persons_returns_all(pool: PgPool) -> Result<(), sqlx::Error> {
-        create_person(
-            &pool,
-            &sample_person_with_last_name(PersonId::new(), "Jansen"),
-        )
-        .await?;
-        create_person(
-            &pool,
-            &sample_person_with_last_name(PersonId::new(), "Bakker"),
-        )
-        .await?;
-
-        let persons = list_all_persons(&pool).await?;
-        assert_eq!(persons.len(), 2);
 
         Ok(())
     }

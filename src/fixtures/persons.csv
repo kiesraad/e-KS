@@ -1,81 +1,82 @@
-gender,last_name,last_name_prefix,first_name,initials,date_of_birth,locality,postal_code,house_number,house_number_addition,street_name
-,Groen,,River,R.V.,31-07-1992,Zaandam,1234AB,10,A,Stationsstraat
-,Bos,,Noor,N.O.,18-04-1992,Zwolle,1234AB,10,B,Stationsstraat
-female,Brons,,Amber,A.M.,11-07-1994,Heerenveen,1234AB,10,,Stationsstraat
-female,Dijkstra,,Eva,E.A.,15-05-1990,Emmen,1234AB,10,,Stationsstraat
-male,Tanaka,,Kenji,K.T.,02-02-1990,Arnhem,1234AB,10,,Stationsstraat
-male,Smit,,John,E.K.,01-01-1987,Amsterdam,1234AB,10,,Stationsstraat
-male,Nakamura,,Daichi,D.N.,16-02-1978,Venlo,1234AB,10,,Stationsstraat
-male,Loon,van,Daan,D.A.,26-04-1991,Tilburg,1234AB,10,,Stationsstraat
-male,Benali,,Youssef,Y.B.,14-12-1976,Zwolle,1234AB,10,,Stationsstraat
-female,Smeets,,Julia,J.A.,13-12-1985,Venray,1234AB,10,,Stationsstraat
-male,Yilmaz,,Emre,E.Y.,05-02-1985,Amersfoort,1234AB,10,,Stationsstraat
-male,Timmerman,,Jeroen,J.R.,08-01-1983,Alkmaar,1234AB,10,,Stationsstraat
-female,Abdul Rahman,,Nadia,N.A.,06-06-1995,Hilversum,1234AB,10,,Stationsstraat
-female,Brands,,Lisa,L.I.,18-10-1989,Weert,1234AB,10,,Stationsstraat
-male,Patel,,Raj,R.P.,11-04-1980,Enschede,1234AB,10,,Stationsstraat
-female,Khan,,Aisha,A.K.,12-09-1996,Hoorn,1234AB,10,,Stationsstraat
-,Vries,de,Chris,C.D.,30-09-1990,Utrecht,1234AB,10,,Stationsstraat
-female,Meulens,,Roos,R.O.,12-02-1995,Deventer,1234AB,10,,Stationsstraat
-female,Terpstra,,Mara,M.R.,03-04-1981,Sneek,1234AB,10,,Stationsstraat
-male,Bruijn,de,Nick,N.K.,05-07-1988,Hengelo,1234AB,10,,Stationsstraat
-female,Meer,van der,Ilse,I.S.,24-11-1986,Leeuwarden,1234AB,10,,Stationsstraat
-female,Reinders,,Nina,N.N.,07-03-1987,Harderwijk,1234AB,10,,Stationsstraat
-female,Boutaleb,,Sara,S.B.,04-08-1993,Amstelveen,1234AB,10,,Stationsstraat
-male,Santoso,,Adi,A.S.,03-05-1982,Nijmegen,1234AB,10,,Stationsstraat
-female,Sharma,,Anika,A.S.,27-01-1986,Assen,1234AB,10,,Stationsstraat
-female,Amrani,El,Leila,L.A.,19-08-1991,Breda,1234AB,10,,Stationsstraat
-male,Noordhoek,,Kevin,K.E.,21-08-1984,Hoorn,1234AB,10,,Stationsstraat
-male,Waterman,,Oscar,O.S.,25-05-1991,Helmond,1234AB,10,,Stationsstraat
-female,Klaassen,,Fiona,F.G.,12-12-1988,Den Haag,1234AB,10,,Stationsstraat
-,Pater,de,Charlie,C.H.,16-10-1986,Zeist,1234AB,10,,Stationsstraat
-,Tran,,Quinn,Q.T.,30-10-1991,Maastricht,1234AB,10,,Stationsstraat
-female,Oldenhof,,Tess,T.E.,09-09-1997,Meppel,1234AB,10,,Stationsstraat
-,Li,,Jun,J.L.,23-10-1993,Almere,1234AB,10,,Stationsstraat
-female,Jansen,,Anna,A.B.,15-05-1975,Rotterdam,1234AB,10,,Stationsstraat
-male,Liu,,Wei,W.L.,07-11-1984,Apeldoorn,1234AB,10,,Stationsstraat
-female,Visser,,Linda,L.M.,02-11-1995,Leiden,1234AB,10,,Stationsstraat
-,Overbeek,,Casey,C.Y.,14-01-1990,Ede,1234AB,10,,Stationsstraat
-,Verbeek,,Jamie,J.M.,29-03-1993,Zoetermeer,1234AB,10,,Stationsstraat
-male,Demir,,Can,C.D.,19-12-1988,Leeuwarden,1234AB,10,,Stationsstraat
-male,Koopman,,Peter,P.E.,10-03-1977,Zwolle,1234AB,10,,Stationsstraat
-female,Chen,,Mei,M.C.,28-01-1994,Delft,1234AB,10,,Stationsstraat
-,Zhang,,Alex,A.Z.,22-04-1992,Middelburg,1234AB,10,,Stationsstraat
-,Park,,Ji-Min,J.P.,17-03-1989,s-Hertogenbosch,1234AB,10,,Stationsstraat
-male,Stam,,Lucas,L.U.,20-12-1992,Barneveld,1234AB,10,,Stationsstraat
-female,Nguyen,,Linh,L.N.,09-06-1987,Haarlem,1234AB,10,,Stationsstraat
-male,Bakker,,Kevin,J.K.,07-07-1982,Groningen,1234AB,10,,Stationsstraat
-male,Meijer,,Hugo,H.I.,22-03-1979,Eindhoven,1234AB,10,,Stationsstraat
-female,Kaya,,Selin,S.K.,21-07-1983,Heerlen,1234AB,10,,Stationsstraat
-male,Boerma,,Thijs,T.H.,17-06-1979,Hoogeveen,1234AB,10,,Stationsstraat
-male,Schipper,,Milan,M.L.,02-09-1994,Gouda,1234AB,10,,Stationsstraat
-female,Dam,van,Sophie,S.D.,12-01-1991,Rotterdam,1234AB,12,,Stationsstraat
-male,Alvarez,,Marco,M.A.,05-06-1986,Amersfoort,1234AB,7,,Stationsstraat
-,Kaplan,,Riley,R.K.,19-03-1990,Leiden,1234AB,18,,Stationsstraat
-female,Vis,,Emma,E.V.,27-08-1993,Alkmaar,1234AB,3,,Stationsstraat
-male,Groot,de,Bram,B.G.,14-02-1982,Utrecht,1234AB,25,,Stationsstraat
-female,Huizinga,,Naomi,N.H.,09-11-1988,Groningen,1234AB,9,,Stationsstraat
-male,Okoro,,Chinedu,C.O.,21-04-1979,Haarlem,1234AB,30,,Stationsstraat
-female,Peters,,Lotte,L.P.,03-12-1995,Zwolle,1234AB,6,,Stationsstraat
-male,Dijk,van,Sem,S.V.,17-07-1984,Enschede,1234AB,14,,Stationsstraat
-female,Ali,,Fatima,F.A.,26-05-1992,Eindhoven,1234AB,11,,Stationsstraat
-,Ng,,Jamie,J.N.,08-09-1987,Den Haag,1234AB,21,,Stationsstraat
-male,Kovac,,Marko,M.K.,02-10-1983,Breda,1234AB,4,,Stationsstraat
-female,Vermeer,,Isabel,I.V.,29-01-1996,Amstelveen,1234AB,16,,Stationsstraat
-male,Smith,,Oliver,O.S.,13-03-1978,Maastricht,1234AB,5,,Stationsstraat
-female,Jong,de,Elise,E.D.,06-06-1989,Apeldoorn,1234AB,8,,Stationsstraat
-male,Hassan,,Omar,O.H.,24-12-1990,Nijmegen,1234AB,19,,Stationsstraat
-female,Kuipers,,Sara,S.K.,15-02-1985,Venlo,1234AB,22,,Stationsstraat
-,Pereira,,Alex,A.P.,01-07-1994,Arnhem,1234AB,13,,Stationsstraat
-male,Jonker,,Tom,T.J.,28-04-1981,Leeuwarden,1234AB,2,,Stationsstraat
-female,Schouten,,Noa,N.S.,30-03-1997,Hoorn,1234AB,17,,Stationsstraat
-male,Visser,,Willem,W.V.,18-10-1976,Deventer,1234AB,27,,Stationsstraat
-female,Meijer,,Kim,K.M.,11-09-1991,Gouda,1234AB,15,,Stationsstraat
-,Rossi,,Sam,S.R.,04-05-1986,Assen,1234AB,24,,Stationsstraat
-male,Beek,van,Arjan,A.V.,22-02-1980,Helmond,1234AB,31,,Stationsstraat
-female,Singh,,Priya,P.S.,07-01-1993,Delft,1234AB,20,,Stationsstraat
-male,Wit,de,Julian,J.W.,16-06-1988,Barneveld,1234AB,23,,Stationsstraat
-female,Bakker,,Ellen,E.B.,25-11-1984,Hoogeveen,1234AB,26,,Stationsstraat
-male,Brown,,Noah,N.B.,09-04-1992,Meppel,1234AB,28,,Stationsstraat
-female,Veen,van der,Inge,I.V.,02-08-1977,Hilversum,1234AB,29,,Stationsstraat
-,Lee,,Jordan,J.L.,10-12-1995,Ede,1234AB,32,,Stationsstraat
+burgerservicenummer,geslacht,voornamen,geslachtsnaam,geboortedatum,straat,huisnummer,postcode,woonplaats
+"999995972","M","Hubertus","Nagelhout","19750606","Knuttelweg",9,"6718ZD","Ede"
+"999997695","M","Kevin Sander","Meerman","20000606","Thorbeckelaan",16,"3552CS","Utrecht"
+"999991991","M","Jeroen","Altena","19840623","Lange Vijverberg",5,"2513AC","'s-Gravenhage"
+"999990858","M","Lance","Smit","19500209","Mississippidreef",151,"3565CE","Utrecht"
+"900194054","V","Tina-Antïna","Bruin","19901211","Croeselaan",15,"3521BJ","Utrecht"
+"999991760","V","Angélie Francisca","Holthuizen","19310612","Lobelialaan",53,"2555PC","'s-Gravenhage"
+"999995285","M","Young","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999995844","M","Farid","Ghezala","19510000","Frederiksplein",1,"1017XK","Amsterdam"
+"999995273","M","Zach","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999990366","M","Chen Eetiré","Tjon á Jon","19770716","Rozenburgstraat",218,"2512SW",
+"999995091","M","Thanatos","Olympos","19880401","'t Haantje",86,"8646TK","Noord-Sleen"
+"999997610","V","Estrella","Jager","19940101","De Villeneuvestraat",24,"3053ZV","Rotterdam"
+"999994335","M","Pepijn Floris","Holthuizen","19800526","Jonkheer van Riemsdijkln",88,"2497BV","'s-Gravenhage"
+"999994542","M","Gerrit","Braber","19680318","Schakelstraat",14,"1014AW","Amsterdam"
+"999992752","V","Ingeborg Elvira","Bronwaßer","19790607","Rodenrijslaan",15,"3037XB",
+"999999321","V","Maria","Akwasi","19970901","Achterdoelen",37,"6711AV","Ede"
+"999995297","V","Xena","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999994219","M","Joost","Trappen Banckert","19670230","Oosteinde",102,"2271EJ",
+"999999473","","Olinka","Oei","20200606","Turfmarkt",29,"2511CA","'s-Gravenhage"
+"999999503","M","Pierre","Perquin","20131201","Turfmarkt",31,"2511CA","'s-Gravenhage"
+"999994785","V","Anita","Jansen","19710101","Leyweg",1485,"2548AE","'s-Gravenhage"
+"999970410","M","Peterjan","Pluym","19760501","Turfmarkt",73,"2511CA","'s-Gravenhage"
+"999991115","M","Martijn","Burck","19570508","Houttuinen",49,"2551VN","'s-Gravenhage"
+"999999655","V","Astrid","Abels","19741216","Turfmarkt",39,"2511CA","'s-Gravenhage"
+"999996940","M","Wojciech","Partyka","19951208","Aalbersestraat",281,"1067MD","Amsterdam"
+"999999527","V","Patricia","Peereboom","19830201","Turfmarkt",33,"2511CA","'s-Gravenhage"
+"999991048","V","Karin","Kierkegaard","19601009","Mimosastraat",130,"2555DT",
+"999999126","V","Manon","Maasland","19880201","Turfmarkt",25,"2511CA","'s-Gravenhage"
+"999999461","","Ottolien","Oei","19820301","Turfmarkt",29,"2511CA","'s-Gravenhage"
+"999992260","M","Henk","Vermeulen","19400616","Malmöpad",24,"3067PW","Rotterdam"
+"999995352","M","Ronald","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999993550","V","Christine","Jansen-de Groot","19870712","Kerkstraat",158,"1017GS","Amsterdam"
+"999990949","V","Marianne","Jong","19520422","Mississippidreef",151,"3565CE","Utrecht"
+"999990755","V","Mary Eloise","Kierkegaard","19620225","Fluitenbergstraat",182,"2545NN",
+"999993355","M","Jan-Kees","Brouwers","19780331","Belcampostraat",10,"3544NG","Utrecht"
+"999999245","M","Isidoros","Iakovidis","20110601","Turfmarkt",17,"2511CA","'s-Gravenhage"
+"999996915","M","Waclaw","Komar","19940331","Aalbersestraat",281,"1067MD","Amsterdam"
+"999990196","V","Anna Maria Petra","Wesseling","19450418","Eemhavenweg",20,"3089KG","Rotterdam"
+"999994013","V","Eveline Johanna","Holthuizen","19310612","B v Voerst v Lyndenstr",25,"7783BC","Gramsbergen"
+"999993446","M","Henk","Vermolen","19400616","Eemhavenweg",20,"3089KG","Rotterdam"
+"999990421","M","Adrianus Hendrikus","Holthuizen","19040215","Nieuwe Parklaan",58,"2597LD","'s-Gravenhage"
+"999990044","V","Margriet","Maassen","19480117","Laan van Nieuw-O-Indië",264,"2252EB","'s-Gravenhage"
+"999996277","V","Christina Annabel","Christiaansen","19700717","Franciscus Romanusweg",60,"6221AH","Maastricht"
+"999995303","V","Wilma","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999995315","M","Vladimir","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999999515","V","Pascalle","Perquin","20131201","Turfmarkt",31,"2511CA","'s-Gravenhage"
+"999990676","V","Cornelia Francisca","Wiegman","19070203","Nieuwe Parklaan",58,"2597LD","'s-Gravenhage"
+"999999977","V","Felicia","Felsen","20140801","Turfmarkt",53,"2511CA","'s-Gravenhage"
+"999994657","V","Hannah","Thain","19661111","Eemhavenweg",20,"3089KG","Rotterdam"
+"999995340","V","Sonja","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999992570","M","Albert","Vogel","19580719","Poolsestraat",36,"3028EN","Rotterdam"
+"999995339","V","Targa","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999970732","V","Ria","Rozenburg","19781201","Turfmarkt",75,"2511CA","'s-Gravenhage"
+"999993926","M","Petrus Paulus","Leemstra","19211210","Johan van Hasseltweg ",1,"1021KN",
+"999997737","V","Allegonda","Rood","19650526","Eemstein",21,"3073KA","Rotterdam"
+"999996952","M","Marek","Pyrek","19980309","Aalbersestraat",281,"1067MD","Amsterdam"
+"999995327","","Udina","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999999497","V","Priscilla","Perquin","19861101","Turfmarkt",31,"2511CA","'s-Gravenhage"
+"999992880","V","Mieke","Muis","19490516","Eemhavenweg",20,"3089KG","Rotterdam"
+"999998869","M","Jorik","Janssen","20161201","Turfmarkt",19,"2511CA","'s-Gravenhage"
+"999998857","V","Helena","Hanssen","19971201","Turfmarkt",17,"2511CA","'s-Gravenhage"
+"999991097","M","Floris","Kierkegaard","19590207","Mimosastraat",130,"2555DT",
+"999993112","V","Wilma","Zon","19700407","Schakelstraat",14,"1014AW","Amsterdam"
+"999990792","M","Jan","Cuykelaer","19771210","Thorbeckelaan",731,"2564CJ","'s-Gravenhage"
+"999994360","M","Douwe","Aukes","19601230","Oosteinde",102,"2271EJ",
+"999970045","V","Meike","Maasland","20170101","Turfmarkt",25,"2511CA","'s-Gravenhage"
+"999995364","V","Quinty","Precise","20100501","Papierweg",5,"1013BL","Amsterdam"
+"999994992","V","Helen","Jansens","19300401","Laan van Poot",353,"2566DA","'s-Gravenhage"
+"999992971","M","Robert","Bronwaßer","19530722","Rodenrijselaan",15,"3037XB",
+"999970033","V","Mira","Maasland","20170101","Turfmarkt",25,"2511CA","'s-Gravenhage"
+"999999230","V","Noralie","Nicolaesen","20151201","Turfmarkt",27,"2511CA","'s-Gravenhage"
+"999993471","M","Albert","Zaal","19631207","Zaagmolendrift",2,"3035JA","Rotterdam"
+"000009842","M","Artem","Sahakian","19931008","Koningskade",4,"2596AA","'s-Gravenhage"
+"999999485","M","Peter","Petersen","19841001","Turfmarkt",31,"2511CA","'s-Gravenhage"
+"999970720","M","Richard","Reijmersma","19800901","Turfmarkt",75,"2511CA","'s-Gravenhage"
+"999990627","M","Stephan","Janssen","19750406","Mandelaplein",2,"2572HT","'s-Gravenhage"
+"999997609","V","Eleonora","Crooy","19691227","Loosduinse Hoofdstraat",189,"2552AB","'s-Gravenhage"
+"999999448","M","Jasper","Janssen","20161201","Turfmarkt",19,"2511CA","'s-Gravenhage"
+"999970744","M","Ronny","Rozenburg","20090801","Turfmarkt",75,"2511CA","'s-Gravenhage"
+"999991383","M","Laertes","Bultenaar","20080126","Eik",3,"3224TB","Hellevoetsluis"
+"999994815","M","Bruno","Schoonzinger","19650612","Burgemeester Röellstraat",16,"1064BN","Amsterdam"

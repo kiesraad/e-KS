@@ -11,3 +11,11 @@
     {% include "candidates/components/position_form.html" %}
   </div>
 {% endblock %}
+
+{% block overlay_footer %}
+<footer>
+  <button type="submit" class="button" name="action" value="move">
+    {{ "action.save_and_close"|trans }}
+  </button>
+</footer>
+{% endblock %}

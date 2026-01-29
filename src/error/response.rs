@@ -13,7 +13,7 @@ use crate::{AppError, Context, HtmlTemplate, filters};
 /// Variants of error responses that can be sent to the client
 #[derive(Serialize)]
 enum ErrorResponseVariant {
-    Unauthorized,
+    Unauthorised,
     BadRequest,
     InternalServerError,
     NotFound,
@@ -24,14 +24,14 @@ impl ErrorResponseVariant {
         match self {
             ErrorResponseVariant::NotFound => StatusCode::NOT_FOUND,
             ErrorResponseVariant::BadRequest => StatusCode::BAD_REQUEST,
-            ErrorResponseVariant::Unauthorized => StatusCode::UNAUTHORIZED,
+            ErrorResponseVariant::Unauthorised => StatusCode::UNAUTHORIZED,
             ErrorResponseVariant::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
         }
     }
 
     fn title(&self) -> &'static str {
         match self {
-            ErrorResponseVariant::Unauthorized => "Unauthorized",
+            ErrorResponseVariant::Unauthorised => "Unauthorised",
             ErrorResponseVariant::BadRequest => "Bad request",
             ErrorResponseVariant::InternalServerError => "Internal server error",
             ErrorResponseVariant::NotFound => "Not found",
@@ -116,9 +116,9 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::NotFound,
                 message: "Page not found".to_string(),
             },
-            AppError::Unauthorized => ErrorResponse {
-                error: ErrorResponseVariant::Unauthorized,
-                message: "You are not authorized to perform this action.".to_string(),
+            AppError::Unauthorised => ErrorResponse {
+                error: ErrorResponseVariant::Unauthorised,
+                message: "You are not authorised to perform this action.".to_string(),
             },
             AppError::MultipartFormError(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,

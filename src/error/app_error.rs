@@ -16,7 +16,7 @@ pub type AppResponse<T> = Result<T, AppError>;
 #[derive(Default, Debug)]
 pub enum AppError {
     // Request level errors
-    Unauthorized,
+    Unauthorised,
     InternalServerError,
     #[default]
     GenericNotFound,
@@ -41,7 +41,7 @@ pub enum AppError {
 impl Display for AppError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            AppError::Unauthorized => write!(f, "Unauthorized"),
+            AppError::Unauthorised => write!(f, "Unauthorised"),
             AppError::InternalServerError => write!(f, "Internal server error"),
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
             AppError::TemplateError(err) => write!(f, "Template error: {err}"),
@@ -203,7 +203,7 @@ mod tests {
         .unwrap_err();
 
         let errors = vec![
-            AppError::Unauthorized,
+            AppError::Unauthorised,
             AppError::InternalServerError,
             AppError::GenericNotFound,
             AppError::NotFound("missing".to_string()),
