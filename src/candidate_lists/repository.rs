@@ -1,3 +1,5 @@
+use std::collections::BTreeMap;
+
 use chrono::Utc;
 use sqlx::PgPool;
 use uuid::Uuid;
@@ -32,38 +34,39 @@ pub async fn list_candidate_list_summary(
 
     let lists = list_candidate_list(db).await?;
 
-    let mut summaries = vec![];
-
-    for list in lists {
-        let person_count = counts
-            .iter()
-            .find(|c| c.id == list.id)
-            .map(|c| c.person_count)
-            .unwrap_or(0);
-        let duplicate_districts = get_duplicate_districts(db, &list).await?;
-
-        summaries.push(CandidateListSummary {
-            list,
-            person_count,
-            duplicate_districts,
-        });
+    let mut district_count = BTreeMap::<ElectoralDistrict, usize>::new();
+    for list in &lists {
+        for district in &list.electoral_districts {
+            district_count
+                .entry(*district)
+                .and_modify(|c| *c += 1)
+                .or_insert(1);
+        }
     }
 
-    Ok(summaries)
-}
-
-async fn get_duplicate_districts(
-    db: &PgPool,
-    list: &CandidateList,
-) -> Result<Vec<ElectoralDistrict>, sqlx::Error> {
-    let used_districts = get_used_districts(db, vec![list.id]).await?;
-
-    Ok(list
-        .electoral_districts
-        .clone()
+    let summaries = lists
         .into_iter()
-        .filter(|district| used_districts.contains(district))
-        .collect())
+        .map(|list| {
+            let person_count = counts
+                .iter()
+                .find(|c| c.id == list.id)
+                .map(|c| c.person_count)
+                .unwrap_or(0);
+            let duplicate_districts = list
+                .electoral_districts
+                .iter()
+                .filter(|district| *district_count.entry(**district).or_default() > 1)
+                .cloned()
+                .collect();
+            CandidateListSummary {
+                list,
+                person_count,
+                duplicate_districts,
+            }
+        })
+        .collect();
+
+    Ok(summaries)
 }
 
 pub async fn list_candidate_list(db: &PgPool) -> Result<Vec<CandidateList>, sqlx::Error> {
