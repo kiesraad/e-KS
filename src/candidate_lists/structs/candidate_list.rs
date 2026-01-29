@@ -22,7 +22,7 @@ pub struct CandidateListSummary {
 }
 
 impl CandidateList {
-    pub fn districts(&self) -> String {
+    pub fn districts_name(&self) -> String {
         self.electoral_districts
             .iter()
             .map(|d| d.title())
@@ -57,7 +57,7 @@ mod tests {
             ElectoralDistrict::DR,
         ]);
 
-        assert_eq!(list.districts(), "Utrecht, Noord-Holland, Drenthe");
+        assert_eq!(list.districts_name(), "Utrecht, Noord-Holland, Drenthe");
     }
 
     #[test]

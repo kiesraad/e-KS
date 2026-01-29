@@ -11,7 +11,7 @@
         {% if full_list.list.contains_all_districts(election) %}
           {{ "candidate_list.districts.all"|trans }}
         {% else %}
-          {{ full_list.list.districts() }}
+          {{ full_list.list.districts_name() }}
         {% endif %}
       </span>
     {% endif %}
