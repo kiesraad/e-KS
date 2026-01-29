@@ -1,14 +1,18 @@
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
-use crate::{TokenValue, form::validate_length, persons::Person};
+use crate::{
+    TokenValue,
+    form::{validate_length, validate_post_code},
+    persons::Person,
+};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person")]
 pub struct AddressForm {
     #[validate(with = "validate_length(2, 255)", optional)]
     pub locality: String,
-    #[validate(with = "validate_length(2, 16)", optional)]
+    #[validate(with = "validate_post_code()", optional)]
     pub postal_code: String,
     #[validate(with = "validate_length(1, 16)", optional)]
     pub house_number: String,
