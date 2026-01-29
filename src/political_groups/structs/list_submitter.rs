@@ -3,7 +3,7 @@ use chrono::{DateTime, Utc};
 
 id_newtype!(pub struct ListSubmitterId);
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct ListSubmitter {
     pub id: ListSubmitterId,
 

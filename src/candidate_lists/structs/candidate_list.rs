@@ -6,7 +6,7 @@ use crate::{ElectionConfig, ElectoralDistrict, id_newtype};
 
 id_newtype!(pub struct CandidateListId);
 
-#[derive(Debug, Clone, Deserialize, Serialize, sqlx::Type, PartialEq, Eq)]
+#[derive(Default, Debug, Clone, Deserialize, Serialize, sqlx::Type, PartialEq, Eq)]
 pub struct CandidateList {
     pub id: CandidateListId,
     pub electoral_districts: Vec<ElectoralDistrict>,

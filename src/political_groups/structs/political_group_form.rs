@@ -1,9 +1,8 @@
 use crate::{
     TokenValue,
     form::{CsrfToken, WithCsrfToken},
-    political_groups::{AuthorisedAgentId, PoliticalGroup, PoliticalGroupId},
+    political_groups::{AuthorisedAgentId, PoliticalGroup},
 };
-use chrono::Utc;
 use serde::Deserialize;
 use validate::Validate;
 
@@ -50,17 +49,11 @@ impl PoliticalGroupForm {
             }
         } else {
             PoliticalGroup {
-                id: PoliticalGroupId::new(),
-
                 long_list_allowed: validated.long_list_allowed,
                 legal_name_confirmed: validated.legal_name_confirmed,
                 display_name_confirmed: validated.display_name_confirmed,
                 authorised_agent_id: validated.authorised_agent_id,
-                legal_name: String::new(),
-                display_name: String::new(),
-                list_submitter_id: None,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
+                ..Default::default()
             }
         }
     }

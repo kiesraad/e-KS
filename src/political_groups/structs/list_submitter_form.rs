@@ -1,9 +1,8 @@
 use crate::{
     TokenValue,
     form::{CsrfToken, WithCsrfToken, validate_initials, validate_length, validate_teletex_chars},
-    political_groups::{ListSubmitter, ListSubmitterId},
+    political_groups::ListSubmitter,
 };
-use chrono::Utc;
 use serde::Deserialize;
 use validate::Validate;
 
@@ -66,7 +65,6 @@ impl ListSubmitterForm {
             }
         } else {
             ListSubmitter {
-                id: ListSubmitterId::new(),
                 last_name: validated.last_name,
                 last_name_prefix: validated.last_name_prefix,
                 initials: validated.initials,
@@ -75,8 +73,7 @@ impl ListSubmitterForm {
                 house_number: validated.house_number,
                 house_number_addition: validated.house_number_addition,
                 street_name: validated.street_name,
-                created_at: Utc::now(),
-                updated_at: Utc::now(),
+                ..Default::default()
             }
         }
     }

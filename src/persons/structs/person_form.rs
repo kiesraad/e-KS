@@ -9,7 +9,7 @@ use crate::{
         validate_last_name_prefix, validate_length, validate_no_last_name_prefix,
         validate_teletex_chars,
     },
-    persons::{Gender, Person, structs::person::PersonId},
+    persons::{Gender, Person},
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -97,7 +97,6 @@ impl PersonForm {
             }
         } else {
             Person {
-                id: PersonId::new(),
                 gender: validated.gender,
                 last_name: validated.last_name,
                 last_name_prefix: validated.last_name_prefix,
@@ -107,13 +106,7 @@ impl PersonForm {
                 bsn: validated.bsn,
                 place_of_residence: validated.place_of_residence,
                 country_of_residence: validated.country_of_residence,
-                locality: None,
-                postal_code: None,
-                house_number: None,
-                house_number_addition: None,
-                street_name: None,
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
+                ..Default::default()
             }
         }
     }
@@ -127,6 +120,7 @@ mod tests {
     use crate::{
         CsrfTokens,
         form::{Validate, ValidationError},
+        persons::PersonId,
     };
     use chrono::NaiveDate;
 

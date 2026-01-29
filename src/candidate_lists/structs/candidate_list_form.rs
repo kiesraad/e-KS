@@ -1,10 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    ElectoralDistrict, TokenValue,
-    candidate_lists::{CandidateList, CandidateListId},
-    form::WithCsrfToken,
-};
+use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList, form::WithCsrfToken};
 use validate::Validate as ValidateDerive;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, ValidateDerive)]
@@ -31,10 +27,8 @@ impl CandidateListForm {
             }
         } else {
             CandidateList {
-                id: CandidateListId::new(),
                 electoral_districts: validated.electoral_districts,
-                created_at: chrono::Utc::now(),
-                updated_at: chrono::Utc::now(),
+                ..Default::default()
             }
         }
     }
@@ -44,7 +38,7 @@ impl From<CandidateList> for CandidateListForm {
     fn from(value: CandidateList) -> Self {
         CandidateListForm {
             electoral_districts: value.electoral_districts,
-            csrf_token: TokenValue(String::new()),
+            csrf_token: Default::default(),
         }
     }
 }
