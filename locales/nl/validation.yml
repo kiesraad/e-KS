@@ -6,3 +6,4 @@ starts_with_last_name_prefix: Zet het voorvoegsel in het juiste veld.
 value_should_not_be_empty: Dit veld mag niet leeg zijn.
 value_too_long: "De waarde is te lang ({} tekens), maximaal {} tekens toegestaan."
 value_too_short: "De waarde is te kort ({} tekens), minimaal {} tekens vereist."
+invalid_postal_code: De postcode is ongeldig, gebruik het formaat 1234AB.

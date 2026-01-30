@@ -182,7 +182,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("The value is too short"));
+        assert!(body.contains("The postal code is not valid"));
 
         Ok(())
     }
@@ -221,7 +221,7 @@ mod tests {
             .await?
             .expect("updated person");
         assert_eq!(updated.locality, Some("Juinen".to_string()));
-        assert_eq!(updated.postal_code, Some("1234 AB".to_string()));
+        assert_eq!(updated.postal_code, Some("1234AB".to_string()));
         assert_eq!(updated.house_number, Some("10".to_string()));
         assert_eq!(updated.house_number_addition, Some("A".to_string()));
         assert_eq!(updated.street_name, Some("Stationsstraat".to_string()));

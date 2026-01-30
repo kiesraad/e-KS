@@ -14,6 +14,7 @@ pub enum ValidationError {
     ValueTooShort(ActualLength, MinLength),
     InvalidChecksum,
     StartsWithLastNamePrefix,
+    InvalidPostalCode,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -40,6 +41,9 @@ impl ValidationError {
             ValidationError::InvalidChecksum => trans!("validation.invalid_bsn", locale),
             ValidationError::StartsWithLastNamePrefix => {
                 trans!("validation.starts_with_last_name_prefix", locale)
+            }
+            ValidationError::InvalidPostalCode => {
+                trans!("validation.invalid_postal_code", locale)
             }
         }
         .to_string()

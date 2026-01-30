@@ -1,6 +1,6 @@
 use crate::{
     TokenValue,
-    form::{validate_initials, validate_length, validate_post_code, validate_teletex_chars},
+    form::{validate_initials, validate_length, validate_postal_code, validate_teletex_chars},
     political_groups::ListSubmitter,
 };
 use serde::Deserialize;
@@ -22,7 +22,7 @@ pub struct ListSubmitterForm {
     pub initials: String,
     #[validate(with = "validate_length(2, 255)")]
     pub locality: String,
-    #[validate(with = "validate_post_code()")]
+    #[validate(with = "validate_postal_code()")]
     pub postal_code: String,
     #[validate(with = "validate_length(1, 16)")]
     pub house_number: String,
