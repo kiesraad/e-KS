@@ -30,9 +30,13 @@ export class ManageCandidateListPage {
         .fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
       await this.page.getByLabel("Landcode").fill("NL");
-      await this.page.getByRole("button", { name: "Opslaan en verder" }).click();
+      await this.page
+        .getByRole("button", { name: "Opslaan en verder" })
+        .click();
       await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
-      await this.page.getByRole("button", { name: "Opslaan en sluiten" }).click();
+      await this.page
+        .getByRole("button", { name: "Opslaan en sluiten" })
+        .click();
       await expect(
         this.page.getByRole("cell", { name: candidate.lastName }),
       ).toBeVisible();
@@ -40,7 +44,10 @@ export class ManageCandidateListPage {
   }
 
   async removeDistricts(districts: string[]) {
-    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
+    await this.page
+      .getByRole('main')
+      .getByRole('link', { name: 'Lijstgegevens' })
+      .click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
@@ -48,7 +55,10 @@ export class ManageCandidateListPage {
   }
 
   async addDistricts(districts: string[]) {
-    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
+    await this.page
+      .getByRole('main')
+      .getByRole('link', { name: 'Lijstgegevens' })
+      .click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
@@ -56,7 +66,10 @@ export class ManageCandidateListPage {
   }
 
   async removeList(districts: string[]) {
-    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
+    await this.page
+      .getByRole('main')
+      .getByRole('link', { name: 'Lijstgegevens' })
+      .click();
     await this.page
       .getByRole("button", { name: "Kandidatenlijst verwijderen" })
       .click();

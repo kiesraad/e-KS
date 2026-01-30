@@ -23,12 +23,16 @@ export class PersonsPage {
         .locator('input[name="last_name"]')
         .fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
-      await this.page.getByLabel("Geslacht").selectOption(candidate.gender ?? "");
+      await this.page
+        .getByLabel("Geslacht")
+        .selectOption(candidate.gender ?? "");
       await this.page
         .getByRole("textbox", { name: "Geboortedatum" })
         .fill(candidate.dateOfBirth ?? "");
       await this.page.getByLabel("Landcode").fill("NL");
-      await this.page.getByRole("button", { name: "Opslaan en verder" }).click();
+      await this.page
+        .getByRole("button", { name: "Opslaan en verder" })
+        .click();
       await this.page
         .getByRole("textbox", { name: "Postcode" })
         .fill(candidate.postalCode ?? "");
@@ -45,7 +49,9 @@ export class PersonsPage {
         this.page.getByRole("combobox", { name: "Woonplaats" }),
       ).toHaveValue(candidate.locality ?? "");
       await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
-      await this.page.getByRole("button", { name: "Opslaan en sluiten" }).click();
+      await this.page
+        .getByRole("button", { name: "Opslaan en sluiten" })
+        .click();
     }
   }
 
