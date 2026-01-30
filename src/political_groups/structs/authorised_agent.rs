@@ -11,11 +11,11 @@ pub struct AuthorisedAgent {
     pub last_name_prefix: Option<String>,
     pub initials: String,
 
-    pub locality: String,
-    pub postal_code: String,
-    pub house_number: String,
+    pub locality: Option<String>,
+    pub postal_code: Option<String>,
+    pub house_number: Option<String>,
     pub house_number_addition: Option<String>,
-    pub street_name: String,
+    pub street_name: Option<String>,
 
     #[allow(unused)]
     pub created_at: DateTime<Utc>,

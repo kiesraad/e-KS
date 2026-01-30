@@ -4,6 +4,7 @@ actions:
 all: All persons
 authorised_person: Authorised person
 correspondence_address: Correspondence address
+autoformat_initials: Auto-format initials
 fields:
   bsn: Social security number (BSN)
   country_of_residence: Country code

@@ -46,6 +46,16 @@
         border-color: var(--color-warning-darker);
       }
     }
+
+    .autoformat {
+      font-size: var(--font-size-sm);
+      font-weight: normal;
+      color: var(--text-color-body);
+      display: flex;
+      gap: var(--space-xs);
+      align-items: center;
+      margin-top: calc(-1 * var(--space-xs));
+    }
   }
 
   .form-row {

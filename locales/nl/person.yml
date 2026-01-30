@@ -4,6 +4,7 @@ actions:
 all: Alle personen
 authorised_person: Gemachtigde van kandidaat
 correspondence_address: Correspondentieadres
+autoformat_initials: Automatisch opmaken
 fields:
   bsn: Burgerservicenummer (BSN)
   country_of_residence: Landcode

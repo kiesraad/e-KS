@@ -3,6 +3,10 @@
   <p class="form-field form-field-sm {% if form.data.initials.is_empty() && should_warn %}warning{% endif %}">
     <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
     <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" required />
+    <label class="autoformat">
+      <input type="checkbox" checked />
+      <span>{{ "person.autoformat_initials"|trans }}</span>
+    </label>
     {% for error in form|error("initials") %}
     <span class="error">{{ error }}</span>
     {% endfor %}

@@ -2,6 +2,11 @@
 window.addEventListener("load", () => {
   const initialsInputs: NodeListOf<HTMLInputElement> =
     document.querySelectorAll('input[name="initials"]');
+
+  const checkbox: HTMLInputElement | null = document.querySelector(
+    '.autoformat input[type="checkbox"]',
+  );
+
   initialsInputs.forEach((input: HTMLInputElement) => {
     let lastKey: string | null = null;
 
@@ -10,6 +15,10 @@ window.addEventListener("load", () => {
     });
 
     input.addEventListener("input", () => {
+      if (checkbox && !checkbox.checked) {
+        return;
+      }
+
       let initials = input.value.toUpperCase().replaceAll(/[^A-Z]/g, "");
 
       if (lastKey === "Backspace") {

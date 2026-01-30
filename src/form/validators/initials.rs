@@ -1,9 +1,9 @@
-use crate::form::ValidationError;
+use crate::form::{ValidationError, validators::teletex::is_teletex_char};
 
-/// Validates initials they should be uppercase alphanumeric and every initial should be followed by a point.
+/// Validates initials they should be alphanumeric, including teletex chars and every initial should be followed by a point.
 pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
     |value: &str| {
-        let initials = value.trim();
+        let initials = value.split_whitespace().collect::<String>();
 
         if initials.is_empty() {
             return Err(ValidationError::ValueShouldNotBeEmpty);
@@ -20,7 +20,7 @@ pub fn validate_initials() -> impl Fn(&str) -> Result<String, ValidationError> {
 
         for part in &parts {
             let chars: Vec<char> = part.chars().collect();
-            if chars.len() != 1 || !chars[0].is_ascii_uppercase() {
+            if chars.len() != 1 || !chars[0].is_alphanumeric() || !is_teletex_char(chars[0]) {
                 return Err(ValidationError::InvalidValue);
             }
         }
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn rejects_lowercase_initials() {
-        let err = (validate_initials())("M.b.").unwrap_err();
+        let err = (validate_initials())("M.!.").unwrap_err();
         assert_eq!(err, ValidationError::InvalidValue);
     }
 

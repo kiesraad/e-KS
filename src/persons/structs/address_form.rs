@@ -3,22 +3,33 @@ use validate::Validate;
 
 use crate::{
     TokenValue,
-    form::{validate_length, validate_postal_code},
+    form::{
+        validate_house_number_addition, validate_housenumber, validate_length,
+        validate_postal_code, validate_teletex_chars,
+    },
     persons::Person,
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person")]
 pub struct AddressForm {
-    #[validate(with = "validate_length(2, 255)", optional)]
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
     pub locality: String,
     #[validate(with = "validate_postal_code()", optional)]
     pub postal_code: String,
-    #[validate(with = "validate_length(1, 16)", optional)]
+    #[validate(with = "validate_housenumber()", optional)]
     pub house_number: String,
-    #[validate(with = "validate_length(1, 16)", optional)]
+    #[validate(with = "validate_house_number_addition()", optional)]
     pub house_number_addition: String,
-    #[validate(with = "validate_length(2, 255)", optional)]
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
     pub street_name: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,

@@ -42,7 +42,11 @@ pub struct PersonForm {
     pub date_of_birth: String,
     #[validate(with = "validate_eleven_check()", optional)]
     pub bsn: String,
-    #[validate(with = "validate_length(2, 255)", optional)]
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
     pub place_of_residence: String,
     #[validate(with = "validate_country_code()", optional)]
     pub country_of_residence: String,

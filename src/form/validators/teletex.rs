@@ -1,11 +1,15 @@
 use crate::form::ValidationError;
 
+pub fn is_teletex_char(c: char) -> bool {
+    let code = c as u32;
+    (32..127).contains(&code) || (161..383).contains(&code)
+}
+
 /// Validate the characters are UTF8 but no different chars than those of the Teletex (T.61) standard are used
 pub fn validate_teletex_chars() -> impl Fn(&str) -> Result<String, ValidationError> {
     |value: &str| {
         value.chars().try_for_each(|c| {
-            let code = c as u32;
-            if (32..127).contains(&code) || (161..383).contains(&code) {
+            if is_teletex_char(c) {
                 Ok(())
             } else {
                 Err(ValidationError::InvalidValue)

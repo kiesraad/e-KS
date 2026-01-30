@@ -135,9 +135,9 @@
         <span>
           <strong>{{ agent.last_name_with_prefix() }}</strong>, {{ agent.initials }}
           <br />
-          {{ agent.street_name }} {{ agent.house_number }}{{ agent.house_number_addition|display }}
+          {{ agent.street_name|display }} {{ agent.house_number|display }}{{ agent.house_number_addition|display }}
           <br />
-          {{ agent.postal_code }} {{ agent.locality }}
+          {{ agent.postal_code|display }} {{ agent.locality|display }}
         </span>
       </label>
       {% endfor %}

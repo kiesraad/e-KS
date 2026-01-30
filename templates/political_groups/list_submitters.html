@@ -35,9 +35,9 @@
               <span>
                 <strong>{{ submitter.last_name_with_prefix() }}</strong>, {{ submitter.initials }}
                 <br/>
-                {{ submitter.street_name }} {{ submitter.house_number }}{{ submitter.house_number_addition|display }}
+                {{ submitter.street_name|display }} {{ submitter.house_number|display }}{{ submitter.house_number_addition|display }}
                 <br/>
-                {{ submitter.postal_code }} {{ submitter.locality }}
+                {{ submitter.postal_code|display }} {{ submitter.locality|display }}
                 <br/>
               </span>
               <a href="{{ submitter.edit_path() }}" class="button secondary icon-edit">
