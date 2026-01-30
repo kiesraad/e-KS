@@ -10,7 +10,7 @@
     "test:ui": "playwright test --ui",
     "report": "playwright show-report"
   },
-  "dependencies": {
-    "@playwright/test": "^1.47.2"
+  "devDependencies": {
+    "@playwright/test": "^1.58.0"
   }
 }

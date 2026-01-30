@@ -10,7 +10,7 @@ export class ManageCandidateListPage {
 
   async addExistingCandidates(candidates: string[]) {
     for (const candidate of candidates) {
-      await this.page.getByRole("link", { name: "Existing" }).click();
+      await this.page.getByRole("link", { name: "Bestaande" }).click();
       await this.page
         .getByRole("row", { name: candidate })
         .getByRole("button")
@@ -23,16 +23,16 @@ export class ManageCandidateListPage {
 
   async addNewCandidates(candidates: Candidate[]) {
     for (const candidate of candidates) {
-      await this.page.getByRole("link", { name: "New" }).click();
-      await this.page.getByLabel("Initials").fill(candidate.initials);
+      await this.page.getByRole("link", { name: "Nieuwe" }).click();
+      await this.page.getByLabel("Voorletters").fill(candidate.initials);
       await this.page
         .locator('input[name="last_name"]')
         .fill(candidate.lastName);
-      await this.page.getByLabel("First name").fill(candidate.firstName ?? "");
-      await this.page.getByLabel("Country code").fill("NL");
-      await this.page.getByRole("button", { name: "Save" }).click();
-      await this.page.getByLabel("Locality").fill(candidate.locality ?? "");
-      await this.page.getByRole("button", { name: "Save" }).click();
+      await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
+      await this.page.getByLabel("Landcode").fill("NL");
+      await this.page.getByRole("button", { name: "Opslaan en verder" }).click();
+      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+      await this.page.getByRole("button", { name: "Opslaan en sluiten" }).click();
       await expect(
         this.page.getByRole("cell", { name: candidate.lastName }),
       ).toBeVisible();
@@ -40,28 +40,28 @@ export class ManageCandidateListPage {
   }
 
   async removeDistricts(districts: string[]) {
-    await this.page.getByRole("link", { name: "List details" }).click();
+    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
-    await this.page.getByRole("button", { name: "Save" }).click();
+    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async addDistricts(districts: string[]) {
-    await this.page.getByRole("link", { name: "List details" }).click();
+    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.page.getByRole("button", { name: "Save" }).click();
+    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async removeList(districts: string[]) {
-    await this.page.getByRole("link", { name: "List details" }).click();
+    await this.page.getByRole('main').getByRole('link', { name: 'Lijstgegevens' }).click();
     await this.page
-      .getByRole("button", { name: "Delete candidate list" })
+      .getByRole("button", { name: "Kandidatenlijst verwijderen" })
       .click();
     await this.page
-      .getByRole("button", { name: "Delete", exact: true })
+      .getByRole("button", { name: "Verwijderen", exact: true })
       .click();
     for (const district of districts) {
       await expect(

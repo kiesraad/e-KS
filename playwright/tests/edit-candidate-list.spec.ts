@@ -29,5 +29,5 @@ test("edit candidate list", async ({ page }) => {
   ]);
 
   await candidateListsOverviewPage.open();
-  await expect(page.getByText("Electoral districts: All")).toBeVisible();
+  await expect(page.getByText("Kieskringen: Alle")).toBeVisible();
 });

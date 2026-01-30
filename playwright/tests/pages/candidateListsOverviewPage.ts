@@ -14,19 +14,19 @@ export class CandidateListsOverviewPage {
   async addList() {
     await this.page
       .getByRole("main")
-      .getByRole("link", { name: "Add list" })
+      .getByRole("link", { name: "Lijst aanmaken" })
       .click();
   }
 
   async manageList() {
     await this.page
-      .getByRole("link", { name: "Candidate list Electoral" })
+      .getByRole("link", { name: "Kandidatenlijst Kieskringen" })
       .first()
       .click();
   }
 
   async managePersons() {
-    await this.page.getByRole("heading", { name: "All persons" }).click();
+    await this.page.getByRole("heading", { name: "Alle personen" }).click();
   }
 
   async checkRemovedDistricts(districts: string[]) {
