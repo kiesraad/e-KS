@@ -5,11 +5,13 @@
 {% block main_class %}pt-sm{% endblock %}
 
 {% block page_sub_title %}
-  {% if full_list.list.electoral_districts.len() > 2 %}
+  {% if full_list.list.electoral_districts.is_empty() || full_list.list.electoral_districts.len() >= 3 %}
     {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
       <span class="subtitle">{{ "common.electoral_districts"|trans }}:
         {% if full_list.list.contains_all_districts(election) %}
           {{ "candidate_list.districts.all"|trans }}
+        {% else if full_list.list.electoral_districts.is_empty() %}
+          {{ "candidate_list.none"|trans }}
         {% else %}
           {{ full_list.list.districts_name() }}
         {% endif %}

@@ -33,3 +33,4 @@ title_single: Kandidatenlijst
 view:
   empty: Deze kandidatenlijst heeft nog geen kandidaten.
   max_candidates_exceeded: "De lijst mag maximaal uit {} kandidaten bestaan."
+none: "Geen"

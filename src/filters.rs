@@ -97,7 +97,7 @@ pub fn error<T: WithCsrfToken>(
 pub fn list_name(list: &CandidateList, values: &dyn askama::Values) -> askama::Result<String> {
     let locale: Locale = *askama::get_value(values, "locale")?;
 
-    if list.electoral_districts.len() < 3 {
+    if !list.electoral_districts.is_empty() && list.electoral_districts.len() < 3 {
         Ok(list.districts_name())
     } else {
         Ok(trans!("candidate_list.title_single", locale).to_string())

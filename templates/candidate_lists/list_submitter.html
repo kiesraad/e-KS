@@ -9,7 +9,7 @@
     <h2>
       {{ "candidate_list.form.create.title"|trans }}
     </h2>
-    <a href="{{ CandidateList::list_path() }}" class="close-overlay" aria-label="{{ " action.close"|trans }}">
+    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ " action.close"|trans }}">
       <span>
         {{ "action.close"|trans }}
       </span>
@@ -19,7 +19,7 @@
     <div class="steps-nav">
       <ul>
         <li>
-          <a href="{{ CandidateList::new_path() }}">
+          <a href="{{ candidate_list.update_path() }}">
             {{ "candidate_list.fields.electoral_districts"|trans }}
           </a>
         </li>
