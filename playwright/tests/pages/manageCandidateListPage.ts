@@ -45,8 +45,8 @@ export class ManageCandidateListPage {
 
   async removeDistricts(districts: string[]) {
     await this.page
-      .getByRole('main')
-      .getByRole('link', { name: 'Lijstgegevens' })
+      .getByRole("main")
+      .getByRole("link", { name: "Lijstgegevens" })
       .click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
@@ -56,8 +56,8 @@ export class ManageCandidateListPage {
 
   async addDistricts(districts: string[]) {
     await this.page
-      .getByRole('main')
-      .getByRole('link', { name: 'Lijstgegevens' })
+      .getByRole("main")
+      .getByRole("link", { name: "Lijstgegevens" })
       .click();
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
@@ -67,8 +67,8 @@ export class ManageCandidateListPage {
 
   async removeList(districts: string[]) {
     await this.page
-      .getByRole('main')
-      .getByRole('link', { name: 'Lijstgegevens' })
+      .getByRole("main")
+      .getByRole("link", { name: "Lijstgegevens" })
       .click();
     await this.page
       .getByRole("button", { name: "Kandidatenlijst verwijderen" })
