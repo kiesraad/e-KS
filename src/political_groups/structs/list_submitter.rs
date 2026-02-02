@@ -31,4 +31,11 @@ impl ListSubmitter {
             self.last_name.clone()
         }
     }
+
+    pub fn is_address_complete(&self) -> bool {
+        self.street_name.is_some()
+            && self.house_number.is_some()
+            && self.postal_code.is_some()
+            && self.locality.is_some()
+    }
 }

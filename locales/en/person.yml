@@ -3,9 +3,10 @@ actions:
   delete: Delete person
 all: All persons
 authorised_person: Authorised person
-correspondence_address: Correspondence address
 autoformat_initials: Auto-format initials
+correspondence_address: Correspondence address
 fields:
+  address: Address
   bsn: Social security number (BSN)
   country_of_residence: Country code
   date_of_birth: Date of birth

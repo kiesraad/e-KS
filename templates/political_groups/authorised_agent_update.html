@@ -1,27 +1,26 @@
-{% extends "political_groups/components/overlay.html" %}
+{% extends "political_groups/components/authorised_agent_overlay.html" %}
 
-{% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
+{% block overlay_title %}{{ "political_group.edit_authorised_agent"|trans }}{% endblock %}
 
-{% block overlay_start %}<form method="post" action="{{ list_submitter.edit_path() }}" class="overlay">{% endblock %}
+{% block overlay_start %}<form method="post" action="{{ authorised_agent.edit_path() }}" class="overlay">{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
     <div class="steps-nav">
       <ul>
         <li>
-          <a href="{{ list_submitter.edit_path() }}">
-            {{ "political_group.edit_list_submitter"|trans }}
+          <a href="{{ authorised_agent.edit_path() }}">
+            {{ "political_group.edit_authorised_agent"|trans }}
           </a>
         </li>
       </ul>
     </div>
     <div class="form">
       <fieldset>
-        {% set should_warn = true %}
-        {% include "political_groups/components/list_submitter_form.html" %}
+        {% include "political_groups/components/authorised_agent_form.html" %}
       </fieldset>
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ "political_group.actions.delete_list_submitter"|trans }}
+        {{ "political_group.actions.delete_authorised_agent"|trans }}
       </button>
     </div>
   </div>
@@ -30,7 +29,7 @@
 {% block overlay_end %}
 </form>
 <dialog class="modal">
-  <form method="post" action="{{ list_submitter.delete_path() }}" class="form">
+  <form method="post" action="{{ authorised_agent.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <button class="close-modal" aria-label="{{ "action.close"|trans }}">
       <span>
@@ -38,9 +37,9 @@
       </span>
     </button>
     <h3>
-      {{ "political_group.actions.delete_list_submitter"|trans }}
+      {{ "political_group.actions.delete_authorised_agent"|trans }}
     </h3>
-    <p class="mt-lg mb-lg">{{ "political_group.delete_list_submitter_warning_text"|trans }}</p>
+    <p class="mt-lg mb-lg">{{ "political_group.delete_authorised_agent_warning_text"|trans }}</p>
     <button type="submit" class="button primary-destructive">
       {{ "action.delete"|trans }}
     </button>

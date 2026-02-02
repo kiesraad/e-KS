@@ -14,11 +14,7 @@ pub async fn get_single_political_group(
         SELECT id,
                long_list_allowed,
                legal_name,
-               legal_name_confirmed,
                display_name,
-               display_name_confirmed,
-               authorised_agent_id AS "authorised_agent_id:AuthorisedAgentId",
-               list_submitter_id AS "list_submitter_id:ListSubmitterId",
                created_at,
                updated_at
         FROM political_groups
@@ -41,31 +37,19 @@ pub async fn update_political_group(
         SET
             long_list_allowed = $1,
             legal_name = $2,
-            legal_name_confirmed = $3,
-            display_name = $4,
-            display_name_confirmed = $5,
-            authorised_agent_id = $6,
-            list_submitter_id = $7,
-            updated_at = $8
-        WHERE id = $9
+            display_name = $3,
+            updated_at = $4
+        WHERE id = $5
         RETURNING id,
             long_list_allowed,
             legal_name,
-            legal_name_confirmed,
             display_name,
-            display_name_confirmed,
-            authorised_agent_id AS "authorised_agent_id:AuthorisedAgentId",
-            list_submitter_id AS "list_submitter_id:ListSubmitterId",
             created_at,
             updated_at
         "#,
         political_group.long_list_allowed,
-        &political_group.legal_name,
-        political_group.legal_name_confirmed,
-        &political_group.display_name,
-        political_group.display_name_confirmed,
-        &political_group.authorised_agent_id as _,
-        &political_group.list_submitter_id as _,
+        political_group.legal_name,
+        political_group.display_name,
         Utc::now(),
         political_group.id.uuid(),
     )
@@ -85,34 +69,22 @@ pub async fn create_political_group(
             id,
             long_list_allowed,
             legal_name,
-            legal_name_confirmed,
             display_name,
-            display_name_confirmed,
-            authorised_agent_id,
-            list_submitter_id,
             created_at,
             updated_at
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        VALUES ($1, $2, $3, $4, $5, $6)
         RETURNING id,
             long_list_allowed,
             legal_name,
-            legal_name_confirmed,
             display_name,
-            display_name_confirmed,
-            authorised_agent_id AS "authorised_agent_id:AuthorisedAgentId",
-            list_submitter_id AS "list_submitter_id:ListSubmitterId",
             created_at,
             updated_at
         "#,
         political_group.id.uuid(),
         political_group.long_list_allowed,
-        &political_group.legal_name,
-        political_group.legal_name_confirmed,
-        &political_group.display_name,
-        political_group.display_name_confirmed,
-        &political_group.authorised_agent_id as _,
-        &political_group.list_submitter_id as _,
+        political_group.legal_name,
+        political_group.display_name,
         &political_group.created_at,
         &political_group.updated_at
     )
@@ -158,11 +130,6 @@ pub async fn get_authorised_agents(
                last_name,
                last_name_prefix,
                initials,
-               locality,
-               postal_code,
-               house_number,
-               house_number_addition,
-               street_name,
                created_at,
                updated_at
         FROM authorised_agents
@@ -174,7 +141,6 @@ pub async fn get_authorised_agents(
     .await
 }
 
-#[cfg(any(test, feature = "fixtures"))]
 pub async fn create_authorised_agent(
     db: &PgPool,
     political_group_id: PoliticalGroupId,
@@ -188,24 +154,14 @@ pub async fn create_authorised_agent(
                                       last_name,
                                       last_name_prefix,
                                       initials,
-                                      locality,
-                                      postal_code,
-                                      house_number,
-                                      house_number_addition,
-                                      street_name,
                                       created_at,
                                       updated_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        VALUES ($1, $2, $3, $4, $5, $6, $7)
         RETURNING
             id,
             last_name,
             last_name_prefix,
             initials,
-            locality,
-            postal_code,
-            house_number,
-            house_number_addition,
-            street_name,
             created_at,
             updated_at
         "#,
@@ -214,13 +170,33 @@ pub async fn create_authorised_agent(
         authorised_agent.last_name,
         authorised_agent.last_name_prefix,
         authorised_agent.initials,
-        authorised_agent.locality,
-        authorised_agent.postal_code,
-        authorised_agent.house_number,
-        authorised_agent.house_number_addition,
-        authorised_agent.street_name,
         Utc::now(),
         Utc::now(),
+    )
+    .fetch_one(db)
+    .await
+}
+
+pub async fn get_authorised_agent(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    agent_id: &AuthorisedAgentId,
+) -> Result<AuthorisedAgent, sqlx::Error> {
+    sqlx::query_as!(
+        AuthorisedAgent,
+        r#"
+        SELECT id,
+               last_name,
+               last_name_prefix,
+               initials,
+               created_at,
+               updated_at
+        FROM authorised_agents
+        WHERE political_group_id = $1
+          AND id = $2
+        "#,
+        political_group_id.uuid(),
+        agent_id.uuid()
     )
     .fetch_one(db)
     .await
@@ -254,26 +230,6 @@ pub async fn get_list_submitter(
     )
     .fetch_one(db)
     .await
-}
-
-pub async fn set_default_list_submitter(
-    db: &PgPool,
-    political_group_id: PoliticalGroupId,
-    submitter_id: Option<ListSubmitterId>,
-) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"
-        UPDATE political_groups
-        SET list_submitter_id = $1
-        WHERE id = $2
-        "#,
-        submitter_id.map(|id| id.uuid()),
-        political_group_id.uuid()
-    )
-    .execute(db)
-    .await?;
-
-    Ok(())
 }
 
 pub async fn create_list_submitter(
@@ -377,24 +333,46 @@ pub async fn update_list_submitter(
     .await
 }
 
+pub async fn update_authorised_agent(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    authorised_agent: &AuthorisedAgent,
+) -> Result<AuthorisedAgent, sqlx::Error> {
+    sqlx::query_as!(
+        AuthorisedAgent,
+        r#"
+        UPDATE authorised_agents
+        SET
+            last_name = $1,
+            last_name_prefix = $2,
+            initials = $3,
+            updated_at = $4
+        WHERE political_group_id = $5
+          AND id = $6
+        RETURNING
+            id,
+            last_name,
+            last_name_prefix,
+            initials,
+            created_at,
+            updated_at
+        "#,
+        authorised_agent.last_name,
+        authorised_agent.last_name_prefix,
+        authorised_agent.initials,
+        Utc::now(),
+        political_group_id.uuid(),
+        authorised_agent.id.uuid(),
+    )
+    .fetch_one(db)
+    .await
+}
+
 pub async fn remove_list_submitter(
     db: &PgPool,
     political_group_id: PoliticalGroupId,
     list_submitter_id: ListSubmitterId,
 ) -> Result<(), sqlx::Error> {
-    sqlx::query!(
-        r#"
-        UPDATE political_groups
-        SET list_submitter_id = NULL
-        WHERE id = $1
-          AND list_submitter_id = $2
-        "#,
-        political_group_id.uuid(),
-        list_submitter_id.uuid()
-    )
-    .execute(db)
-    .await?;
-
     sqlx::query!(
         r#"
         DELETE FROM list_submitters
@@ -403,6 +381,26 @@ pub async fn remove_list_submitter(
         "#,
         political_group_id.uuid(),
         list_submitter_id.uuid()
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn remove_authorised_agent(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    authorised_agent_id: AuthorisedAgentId,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM authorised_agents
+        WHERE political_group_id = $1
+          AND id = $2
+        "#,
+        political_group_id.uuid(),
+        authorised_agent_id.uuid()
     )
     .execute(db)
     .await?;

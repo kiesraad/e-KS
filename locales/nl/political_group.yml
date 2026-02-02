@@ -1,25 +1,24 @@
 actions:
+  delete_authorised_agent: Gemachtigde verwijderen
   delete_list_submitter: Lijstinleveraar verwijderen
+add_authorised_agent: Gemachtigde toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
-authorised_agent: Gemachtigde van de politieke groepering
+authorised_agent_data: Gegevens gemachtigde
 authorised_agent_info: De gemachtigde van de partij is de persoon die bij het centraal stembureau is geregistreerd als gemachtigde of plaatsvervangend gemachtigde voor de aanduiding. Deze persoon machtigt met formulier H3-1 / H3-2 de lijstinleveraar om de naam van de partij boven de kandidatenlijst te plaatsen
-authorised_agent_short: Gemachtigde
 basic_information: Basisinformatie
-default_list_submitter: Selecteer een standaard lijstinleveraar
+delete_authorised_agent_warning_text: Weet u zeker dat u deze gemachtigde wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_list_submitter_warning_text: Weet u zeker dat u deze lijstinleveraar wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
-display_name_confirmed: Is de geregistreerde aanduiding correct?
+edit_authorised_agent: Gegevens gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 general_information: Algemeen
 legal_name: Volledige statutaire naam
-legal_name_confirmed: Is de volledige statutaire naam correct?
 list_submitter_data: Gegevens lijstinleveraar
 list_type: Type lijst aanduiding
 long_list_allowed: Heeft u bij de vorige verkiezing 16 zetels of meer behaald
-no_authorised_agent: Geen van de bovenstaande gemachtigden
+no_authorised_agents: Geen gemachtigden
 no_list_submitters: Geen lijstinleveraars
-registration_change_required: Verander uw registratie bij het centraal stembureau
-select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen. Per kandidatenlijst kan een lijstinleveraar worden geregistreerd. Hier kan de standaard lijstinleveraar voor deze politieke groepering worden geselecteerd. Deze persoon kan later nog worden aangepast bij het aanmaken van een kandidatenlijst.
+select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 title: Politieke groepering
 type:
   blank_name: Blanco lijst

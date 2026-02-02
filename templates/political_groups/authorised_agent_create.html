@@ -1,0 +1,25 @@
+{% extends "political_groups/components/authorised_agent_overlay.html" %}
+
+{% block overlay_title %}{{ "political_group.add_authorised_agent"|trans }}{% endblock %}
+
+{% block overlay_start %}<form method="post" action="{{ AuthorisedAgent::new_path() }}" class="overlay">{% endblock %}
+{% block overlay_end %}</form>{% endblock %}
+
+{% block overlay_content %}
+  <div class="overlay-content steps">
+    <div class="steps-nav">
+      <ul>
+        <li>
+          <a href="{{ AuthorisedAgent::new_path() }}">
+            {{ "political_group.add_authorised_agent"|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="form">
+      <fieldset>
+        {% include "political_groups/components/authorised_agent_form.html" %}
+      </fieldset>
+    </div>
+  </div>
+{% endblock %}

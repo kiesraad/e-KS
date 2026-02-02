@@ -27,12 +27,8 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
     let political_group = PoliticalGroup {
         id: political_group_id,
         long_list_allowed: None,
-        legal_name: "Kiesraad Demo Partij".to_string(),
-        legal_name_confirmed: None,
-        display_name: "Kiesraad Demo".to_string(),
-        display_name_confirmed: None,
-        authorised_agent_id: None,
-        list_submitter_id: None,
+        legal_name: Some("Kiesraad Demo Partij".to_string()),
+        display_name: Some("Kiesraad Demo".to_string()),
         created_at: Utc::now(),
         updated_at: Utc::now(),
     };
@@ -47,11 +43,6 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
             last_name: "Jansen".to_string(),
             last_name_prefix: Some("de".to_string()),
             initials: "A.B.".to_string(),
-            locality: Some("Utrecht".to_string()),
-            postal_code: Some("3511 AA".to_string()),
-            house_number: Some("10".to_string()),
-            house_number_addition: Some("A".to_string()),
-            street_name: Some("Oude Gracht".to_string()),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         },
@@ -66,11 +57,6 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
             last_name: "Visser".to_string(),
             last_name_prefix: None,
             initials: "C.D.".to_string(),
-            locality: Some("Amersfoort".to_string()),
-            postal_code: Some("3811 BB".to_string()),
-            house_number: Some("25".to_string()),
-            house_number_addition: None,
-            street_name: Some("Langegracht".to_string()),
             created_at: Utc::now(),
             updated_at: Utc::now(),
         },
@@ -130,16 +116,7 @@ mod tests {
         sqlx::query_as!(
             PoliticalGroup,
             r#"
-            SELECT id,
-                long_list_allowed,
-                legal_name,
-                legal_name_confirmed,
-                display_name,
-                display_name_confirmed,
-                authorised_agent_id AS "authorised_agent_id:AuthorisedAgentId",
-                list_submitter_id AS "list_submitter_id:ListSubmitterId",
-                created_at,
-                updated_at
+            SELECT *
             FROM political_groups
             ORDER BY created_at ASC
             "#,

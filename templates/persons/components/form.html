@@ -53,7 +53,7 @@
 <div class="form-row">
   <p class="form-field form-field-sm {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
     <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
-    <input type="text" name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
+    <input type="text" placeholder=" " name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
       placeholder="dd-mm-jjjj" inputmode="numeric" />
     {% for error in form|error("date_of_birth") %}
     <span class="error">{{ error }}</span>
@@ -62,7 +62,7 @@
   <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <div class="obfuscate">
-      <input type="text" name="bsn" id="bsn" value="{{ form.data.bsn }}" />
+      <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
     </div>
     {% for error in form|error("bsn") %}
     <span class="error">{{ error }}</span>
@@ -72,7 +72,7 @@
 <div class="form-row">
   <p class="form-field {% if form.data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
-    <input type="text" name="place_of_residence" id="locality" value="{{ form.data.place_of_residence }}"
+    <input type="text" placeholder=" " name="place_of_residence" id="locality" value="{{ form.data.place_of_residence }}"
       list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>
     {% for error in form|error("place_of_residence") %}
@@ -83,7 +83,7 @@
     <label for="country_of_residence" class="required">{{ "person.fields.country_of_residence"|trans }}</label>
     <span class="country_input input-icon">
       <span class="icon">🌐</span>
-      <input type="text" name="country_of_residence" id="country_of_residence"
+      <input type="text" placeholder=" " name="country_of_residence" id="country_of_residence"
         value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" list="countries" required />
       <datalist id="countries">
         {% for country in countries %}

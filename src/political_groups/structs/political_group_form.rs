@@ -1,9 +1,11 @@
-use crate::{
-    TokenValue,
-    political_groups::{AuthorisedAgentId, PoliticalGroup},
-};
 use serde::Deserialize;
 use validate::Validate;
+
+use crate::{
+    TokenValue,
+    form::{validate_length, validate_teletex_chars},
+    political_groups::PoliticalGroup,
+};
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(target = "PoliticalGroup")]
@@ -11,12 +13,18 @@ use validate::Validate;
 pub struct PoliticalGroupForm {
     #[validate(parse = "bool", optional)]
     pub long_list_allowed: String,
-    #[validate(parse = "bool", optional)]
-    pub legal_name_confirmed: String,
-    #[validate(parse = "bool", optional)]
-    pub display_name_confirmed: String,
-    #[validate(parse = "AuthorisedAgentId", optional)]
-    pub authorised_agent_id: String,
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
+    pub legal_name: String,
+    #[validate(
+        with = "validate_length(2, 255)",
+        with = "validate_teletex_chars()",
+        optional
+    )]
+    pub display_name: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
@@ -26,20 +34,10 @@ impl From<PoliticalGroup> for PoliticalGroupForm {
         PoliticalGroupForm {
             long_list_allowed: value
                 .long_list_allowed
-                .map(|value| value.to_string())
+                .map(|b| b.to_string())
                 .unwrap_or_default(),
-            legal_name_confirmed: value
-                .legal_name_confirmed
-                .map(|value| value.to_string())
-                .unwrap_or_default(),
-            display_name_confirmed: value
-                .display_name_confirmed
-                .map(|value| value.to_string())
-                .unwrap_or_default(),
-            authorised_agent_id: value
-                .authorised_agent_id
-                .map(|id| id.to_string())
-                .unwrap_or_default(),
+            legal_name: value.legal_name.unwrap_or_default(),
+            display_name: value.display_name.unwrap_or_default(),
             csrf_token: Default::default(),
         }
     }

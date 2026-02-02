@@ -1,12 +1,8 @@
 const COUNTRY_INPUT_SELECTOR = ".country_input";
-const COUNTRY_OPTION_SELECTOR = "#countries option";
+// const COUNTRY_OPTION_SELECTOR = "#countries option";
 
 function getCountryInputs(): NodeListOf<HTMLInputElement> {
   return document.querySelectorAll(COUNTRY_INPUT_SELECTOR);
-}
-
-function getCountryOptions(): NodeListOf<HTMLOptionElement> {
-  return document.querySelectorAll(COUNTRY_OPTION_SELECTOR);
 }
 
 export const countryCodeToFlagEmoji = (countryCode: string) => {
@@ -40,13 +36,19 @@ if (typeof window !== "undefined") {
       };
 
       textInput.addEventListener("input", setFlagIcon);
+
+      // Select NL by default if no country is selected
+      if (textInput.value === "") {
+        textInput.value = "NL";
+      }
+
       setFlagIcon();
     });
 
-    // Add country flags to options
-    const options = getCountryOptions();
-    options.forEach((option) => {
-      option.innerText = `${countryCodeToFlagEmoji(option.value)} ${option.value}`;
-    });
+    // Add country flags to options, disabled for now, since these emojis are not rendered correctly in all browsers
+    // const options = document.querySelectorAll(COUNTRY_OPTION_SELECTOR);
+    // options.forEach((option) => {
+    //   option.innerText = `${countryCodeToFlagEmoji(option.value)} ${option.value}`;
+    // });
   });
 }

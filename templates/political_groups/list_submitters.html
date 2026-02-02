@@ -21,37 +21,34 @@
     {% if list_submitters.is_empty() %}
       <p>{{ "political_group.no_list_submitters"|trans }}</p>
     {% else %}
-      <form method="post" action="{{ ListSubmitter::select_default_path() }}" class="form mt-lg">
-        <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-        <fieldset class="form-field">
-          <legend class="legend-sm">{{ "political_group.default_list_submitter"|trans }}</legend>
-          <div class="checklist">
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ "person.fields.initials"|trans }}</th>
+            <th>{{ "person.fields.last_name"|trans }}</th>
+            <th>{{ "person.fields.address"|trans }}</th>
+            <th>{{ "person.fields.locality"|trans }}</th>
+            <th>{{ "person.fields.postal_code"|trans }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
           {% for submitter in list_submitters %}
-            {% set submitter_id = submitter.id.to_string() %}
-            <label for="list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
-              <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
-                    form.data.list_submitter_id==submitter_id %}checked{% endif %}
-                    id="list_submitter_id_{{ submitter_id }}"/>
-              <span>
-                <strong>{{ submitter.last_name_with_prefix() }}</strong>, {{ submitter.initials }}
-                <br/>
-                {{ submitter.street_name|display }} {{ submitter.house_number|display }}{{ submitter.house_number_addition|display }}
-                <br/>
-                {{ submitter.postal_code|display }} {{ submitter.locality|display }}
-                <br/>
-              </span>
-              <a href="{{ submitter.edit_path() }}" class="button secondary icon-edit">
-                {{ "action.edit"|trans }}
+          <tr class="clickable {% if !submitter.is_address_complete() %}warning{% endif %}">
+            <td>{{ submitter.initials }}</td>
+            <td>{{ submitter.last_name_with_prefix() }}</td>
+            <td>{{ submitter.street_name|display }} {{ submitter.house_number|display }}{{ submitter.house_number_addition|display }}</td>
+            <td>{{ submitter.locality|display }}</td>
+            <td>{{ submitter.postal_code|display }}</td>
+            <td>
+              <a href="{{ submitter.edit_path() }}">
+                <span>{{ "action.edit"|trans }}</span>
               </a>
-            </label>
-            {% endfor %}
-          </div>
-          {% for error in form|error("list_submitter_id") %}
-            <span class="error">{{ error }}</span>
+            </td>
+          </tr>
           {% endfor %}
-        </fieldset>
-        <button type="submit" class="button lg">{{ "action.save"|trans }}</button>
-      </form>
+        </tbody>
+      </table>
       {% endif %}
       <p class="mt-lg">
         <a href="{{ ListSubmitter::new_path() }}" class="button secondary icon-plus" type="button">

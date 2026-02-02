@@ -1,7 +1,7 @@
 .form {
   h3 {
     font-size: var(--font-size-xl);
-    margin: var(--space-lg) 0;
+    margin: var(--space-xl) 0 var(--space-lg) 0;
   }
 
   .form-field {
@@ -42,7 +42,7 @@
     }
 
     &.warning {
-      input {
+      input:placeholder-shown {
         border-color: var(--color-warning-darker);
       }
     }
@@ -92,8 +92,8 @@
       }
     }
 
-    legend + .checklist {
-      padding-top: 0;
+    .checklist {
+      padding: 0;
     }
 
     .form-row {

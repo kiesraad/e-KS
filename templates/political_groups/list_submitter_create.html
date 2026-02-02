@@ -6,10 +6,19 @@
 {% block overlay_end %}</form>{% endblock %}
 
 {% block overlay_content %}
-{% let form = overlay_form %}
-  <div class="overlay-content">
+  <div class="overlay-content steps">
+    <div class="steps-nav">
+      <ul>
+        <li>
+          <a href="{{ ListSubmitter::new_path() }}">
+            {{ "political_group.add_list_submitter"|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
     <div class="form">
       <fieldset>
+        {% set should_warn = false %}
         {% include "political_groups/components/list_submitter_form.html" %}
       </fieldset>
     </div>

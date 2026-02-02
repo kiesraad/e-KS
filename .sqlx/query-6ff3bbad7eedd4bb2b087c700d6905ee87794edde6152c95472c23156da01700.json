@@ -1,0 +1,57 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE authorised_agents\n        SET\n            last_name = $1,\n            last_name_prefix = $2,\n            initials = $3,\n            updated_at = $4\n        WHERE political_group_id = $5\n          AND id = $6\n        RETURNING\n            id,\n            last_name,\n            last_name_prefix,\n            initials,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 5,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      false,
+      false
+    ]
+  },
+  "hash": "6ff3bbad7eedd4bb2b087c700d6905ee87794edde6152c95472c23156da01700"
+}

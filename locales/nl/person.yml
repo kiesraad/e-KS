@@ -3,9 +3,10 @@ actions:
   delete: Persoon verwijderen
 all: Alle personen
 authorised_person: Gemachtigde van kandidaat
-correspondence_address: Correspondentieadres
 autoformat_initials: Automatisch opmaken
+correspondence_address: Correspondentieadres
 fields:
+  address: Adres
   bsn: Burgerservicenummer (BSN)
   country_of_residence: Landcode
   date_of_birth: Geboortedatum

@@ -6,60 +6,61 @@ use axum::{
 use axum_extra::extract::Form;
 use sqlx::PgPool;
 
-use super::ListSubmitterNewPath;
+use super::AuthorisedAgentNewPath;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    political_groups::{self, AuthorisedAgent, ListSubmitter, ListSubmitterForm, PoliticalGroup},
+    political_groups::{self, AuthorisedAgent, AuthorisedAgentForm, ListSubmitter, PoliticalGroup},
 };
 
 #[derive(Template)]
-#[template(path = "political_groups/list_submitter_create.html")]
-struct ListSubmitterCreateTemplate {
-    list_submitters: Vec<ListSubmitter>,
-    form: FormData<ListSubmitterForm>,
+#[template(path = "political_groups/authorised_agent_create.html")]
+struct AuthorisedAgentCreateTemplate {
+    authorised_agents: Vec<AuthorisedAgent>,
+    form: FormData<AuthorisedAgentForm>,
 }
 
-pub async fn new_list_submitter_form(
-    _: ListSubmitterNewPath,
+pub async fn new_authorised_agent_form(
+    _: AuthorisedAgentNewPath,
     context: Context,
     State(pool): State<PgPool>,
     political_group: PoliticalGroup,
 ) -> Result<impl IntoResponse, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
+    let authorised_agents =
+        political_groups::get_authorised_agents(&pool, political_group.id).await?;
 
     Ok(HtmlTemplate(
-        ListSubmitterCreateTemplate {
-            list_submitters,
+        AuthorisedAgentCreateTemplate {
+            authorised_agents,
             form: FormData::new(&context.csrf_tokens),
         },
         context,
     ))
 }
 
-pub async fn create_list_submitter(
-    _: ListSubmitterNewPath,
+pub async fn create_authorised_agent(
+    _: AuthorisedAgentNewPath,
     context: Context,
     political_group: PoliticalGroup,
     State(pool): State<PgPool>,
-    Form(form): Form<ListSubmitterForm>,
+    Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    let list_submitters = political_groups::get_list_submitters(&pool, political_group.id).await?;
+    let authorised_agents =
+        political_groups::get_authorised_agents(&pool, political_group.id).await?;
 
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterCreateTemplate {
-                list_submitters,
+            AuthorisedAgentCreateTemplate {
+                authorised_agents,
                 form: form_data,
             },
             context,
         )
         .into_response()),
-        Ok(list_submitter) => {
-            political_groups::create_list_submitter(&pool, political_group.id, &list_submitter)
+        Ok(authorised_agent) => {
+            political_groups::create_authorised_agent(&pool, political_group.id, &authorised_agent)
                 .await?;
-            // TODO: set success flash message
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
         }
     }
 }
@@ -76,17 +77,17 @@ mod tests {
 
     use crate::{
         Context,
-        political_groups::{self, ListSubmitter, PoliticalGroupId},
-        test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
+        political_groups::{self, AuthorisedAgent, PoliticalGroupId},
+        test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
     };
 
     #[sqlx::test]
-    async fn new_list_submitter_form_renders_csrf_field(pool: PgPool) {
+    async fn new_authorised_agent_form_renders_csrf_field(pool: PgPool) {
         let context = Context::new_test(pool.clone()).await;
         let group_id = PoliticalGroupId::new();
 
-        let response = new_list_submitter_form(
-            ListSubmitterNewPath {},
+        let response = new_authorised_agent_form(
+            AuthorisedAgentNewPath {},
             context,
             State(pool),
             sample_political_group(group_id),
@@ -98,21 +99,23 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains(&format!("action=\"{}\"", ListSubmitter::new_path())));
+        assert!(body.contains(&format!("action=\"{}\"", AuthorisedAgent::new_path())));
     }
 
     #[sqlx::test]
-    async fn create_list_submitter_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn create_authorised_agent_persists_and_redirects(
+        pool: PgPool,
+    ) -> Result<(), sqlx::Error> {
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_groups::create_political_group(&pool, &political_group).await?;
 
         let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
-        let form = sample_list_submitter_form(&csrf_token);
+        let form = sample_authorised_agent_form(&csrf_token);
 
-        let response = create_list_submitter(
-            ListSubmitterNewPath {},
+        let response = create_authorised_agent(
+            AuthorisedAgentNewPath {},
             context,
             political_group,
             State(pool.clone()),
@@ -128,16 +131,16 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(location, AuthorisedAgent::list_path());
 
-        let submitters = political_groups::get_list_submitters(&pool, group_id).await?;
-        assert_eq!(submitters.len(), 1);
+        let agents = political_groups::get_authorised_agents(&pool, group_id).await?;
+        assert_eq!(agents.len(), 1);
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn create_list_submitter_invalid_form_renders_template(
+    async fn create_authorised_agent_invalid_form_renders_template(
         pool: PgPool,
     ) -> Result<(), sqlx::Error> {
         let group_id = PoliticalGroupId::new();
@@ -146,11 +149,11 @@ mod tests {
 
         let context = Context::new_test(pool.clone()).await;
         let csrf_token = context.csrf_tokens.issue().value;
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_authorised_agent_form(&csrf_token);
         form.last_name = " ".to_string();
 
-        let response = create_list_submitter(
-            ListSubmitterNewPath {},
+        let response = create_authorised_agent(
+            AuthorisedAgentNewPath {},
             context,
             political_group,
             State(pool.clone()),

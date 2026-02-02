@@ -3,19 +3,13 @@ use chrono::{DateTime, Utc};
 
 id_newtype!(pub struct AuthorisedAgentId);
 
-#[derive(Debug, Clone)]
+#[derive(Default, Debug, Clone)]
 pub struct AuthorisedAgent {
     pub id: AuthorisedAgentId,
 
     pub last_name: String,
     pub last_name_prefix: Option<String>,
     pub initials: String,
-
-    pub locality: Option<String>,
-    pub postal_code: Option<String>,
-    pub house_number: Option<String>,
-    pub house_number_addition: Option<String>,
-    pub street_name: Option<String>,
 
     #[allow(unused)]
     pub created_at: DateTime<Utc>,
