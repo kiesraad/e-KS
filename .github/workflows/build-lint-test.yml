@@ -25,7 +25,7 @@ jobs:
       - name: Filter changes for non-Markdown files
         id: filter
         run: | 
-          if [[ $(git diff --name-only "origin/${{ github.base_ref }}" HEAD | grep -v "\.md$") ]]  ; then 
+          if [[ "${{ github.ref_name }}" == "main" ]] || [[ $(git diff --name-only "origin/${{ github.base_ref }}" HEAD | grep -v "\.md$") ]]  ; then 
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -130,7 +130,6 @@ jobs:
     timeout-minutes: 60
     env:
       CARGO_TERM_COLOR: always
-      PLAYWRIGHT_BROWSERS_PATH: .cache/playwright
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
