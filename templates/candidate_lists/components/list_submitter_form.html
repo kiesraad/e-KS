@@ -8,7 +8,7 @@
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <fieldset class="form-field">
       <div class="checklist">
-      {% for submitter in list_submitters %}
+      {% for (i, submitter) in list_submitters.iter().enumerate() %}
       {% set submitter_id = submitter.id.to_string() %}
       <label for="list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
         <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
@@ -26,7 +26,7 @@
       {% endfor %}
     </div>
     {% for error in form|error("list_submitter_id") %}
-      <span class="error">{{ error }}</span>
+    <span class="error">{{ error }}</span>
     {% endfor %}
   </fieldset>
   {% endif %}

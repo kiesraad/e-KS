@@ -33,6 +33,7 @@ pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
 pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,
+        list_submitter_id: None,
         electoral_districts: vec![ElectoralDistrict::UT],
         created_at: Utc::now(),
         updated_at: Utc::now(),

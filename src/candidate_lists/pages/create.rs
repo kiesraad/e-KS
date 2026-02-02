@@ -77,7 +77,7 @@ pub async fn create_candidate_list(
         Ok(candidate_list) => {
             let candidate_list =
                 candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
-            Ok(Redirect::to(&candidate_list.list_submitter_path()).into_response())
+            Ok(Redirect::to(&candidate_list.edit_list_submitter_path()).into_response())
         }
     }
 }

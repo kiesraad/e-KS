@@ -4,7 +4,7 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-<form method="post" action="{{ CandidateList::update_path(candidate_list) }}" class="overlay">
+<form method="post" action="{{ candidate_list.edit_list_submitter_path() }}" class="overlay">
   <header>
     <h2>
       {{ "candidate_list.form.create.title"|trans }}
@@ -24,7 +24,7 @@
           </a>
         </li>
         <li>
-          <a href="{{ candidate_list.list_submitter_path() }}">
+          <a href="{{ candidate_list.edit_list_submitter_path() }}">
             {{ "candidate_list.fields.list_submitter"|trans }}
           </a>
         </li>

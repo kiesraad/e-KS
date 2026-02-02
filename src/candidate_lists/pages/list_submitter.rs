@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
 use sqlx::PgPool;
@@ -9,10 +9,11 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, HtmlTemplate,
     candidate_lists::{
-        self, CandidateList, CandidateListSummary, ListSubmitterForm, pages::AddListSubmitterPath,
+        self, Candidate, CandidateList, CandidateListSummary, ListSubmitterForm,
+        pages::EditListSubmitterPath,
     },
     filters,
-    form::FormData,
+    form::{FormData, Validate},
     persons::{self, Person},
     political_groups::{self, ListSubmitter},
 };
@@ -27,8 +28,8 @@ struct ListSubmitterUpdateTemplate {
     list_submitters: Vec<ListSubmitter>,
 }
 
-pub async fn update_list_submitter_form(
-    _: AddListSubmitterPath,
+pub async fn edit_list_submitter_form(
+    _: EditListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
     State(pool): State<PgPool>,
@@ -40,10 +41,7 @@ pub async fn update_list_submitter_form(
         political_groups::get_list_submitters(&pool, context.political_group.id).await?;
 
     let form = FormData::new_with_data(
-        ListSubmitterForm {
-            list_submitter_id: form.list_submitter_id,
-            csrf_token: context.csrf_tokens.issue().value,
-        },
+        ListSubmitterForm::from(candidate_list.clone()),
         &context.csrf_tokens,
     );
 
@@ -58,4 +56,34 @@ pub async fn update_list_submitter_form(
         context,
     )
     .into_response())
+}
+
+pub async fn update_list_submitter(
+    _: EditListSubmitterPath,
+    context: Context,
+    candidate_list: CandidateList,
+    State(pool): State<PgPool>,
+    Form(form): Form<ListSubmitterForm>,
+) -> Result<Response, AppError> {
+    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
+    let total_persons = persons::count_persons(&pool).await?;
+    let list_submitters =
+        political_groups::get_list_submitters(&pool, context.political_group.id).await?;
+    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+        Err(form_data) => Ok(HtmlTemplate(
+            ListSubmitterUpdateTemplate {
+                candidate_lists,
+                total_persons,
+                form: form_data,
+                candidate_list,
+                list_submitters,
+            },
+            context,
+        )
+        .into_response()),
+        Ok(candidate_list) => {
+            candidate_lists::update_candidate_list(&pool, &candidate_list).await?;
+            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+        }
+    }
 }

@@ -61,7 +61,7 @@ pub struct CreateCandidatePath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}/list-submitter", rejection(AppError))]
-pub struct AddListSubmitterPath {
+pub struct EditListSubmitterPath {
     pub list_id: CandidateListId,
 }
 
@@ -86,8 +86,8 @@ impl CandidateList {
         ViewCandidateListPath { list_id: self.id }.to_string()
     }
 
-    pub fn list_submitter_path(&self) -> String {
-        AddListSubmitterPath { list_id: self.id }.to_string()
+    pub fn edit_list_submitter_path(&self) -> String {
+        EditListSubmitterPath { list_id: self.id }.to_string()
     }
 
     pub fn reorder_path(&self) -> String {
@@ -109,7 +109,8 @@ pub fn router() -> Router<AppState> {
         .typed_get(list::list_candidate_lists)
         .typed_get(create::new_candidate_list_form)
         .typed_post(create::create_candidate_list)
-        .typed_get(list_submitter::update_list_submitter_form)
+        .typed_get(list_submitter::edit_list_submitter_form)
+        .typed_post(list_submitter::update_list_submitter)
         // manage single list
         .typed_get(view::view_candidate_list)
         .typed_get(update::edit_candidate_list)

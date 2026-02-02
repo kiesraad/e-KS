@@ -24,6 +24,7 @@ form:
   delete_warning_text: Are you sure you want to delete this candidate list?
   update:
     title: Edit candidate list
+  to_be_determined: "To be determined"
 not_found: "Candidate {} not found."
 remove_candidate: Remove candidate
 search_existing_person: Search existing person

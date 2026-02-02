@@ -24,6 +24,7 @@ form:
   delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?
   update:
     title: Kandidatenlijst aanpassen
+  to_be_determined: "Nader te bepalen"
 not_found: "Kandidatenlijst {} niet gevonden."
 remove_candidate: Uit deze lijst verwijderen
 search_existing_person: Zoek bestaande persoon
