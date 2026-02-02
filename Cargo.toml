@@ -46,7 +46,7 @@ chrono = { version = "0.4.43", features = ["alloc", "std", "serde"] }
 uuid = { version = "1.11.0", features = ["serde", "v4", "v5"] }
 
 # well maintained + many downloads
-askama = "0.15.1" # 31M downloads (Dirkjan Ochtman)
+askama = "0.15.4" # 31M downloads (Dirkjan Ochtman)
 strum = { version = "0.27.2", features = ["derive"] } # 307M downloads (Peter Glotfelty)
 csv = "1.4.0" # 136M downloads (Andrew Gallant)
 phf = { version = "0.13.1", default-features = false } # 247M downloads (Steven Fackler)
