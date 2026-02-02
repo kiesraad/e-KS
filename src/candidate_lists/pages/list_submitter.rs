@@ -9,8 +9,7 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, HtmlTemplate,
     candidate_lists::{
-        self, Candidate, CandidateList, CandidateListSummary, ListSubmitterForm,
-        pages::EditListSubmitterPath,
+        self, CandidateList, CandidateListSummary, ListSubmitterForm, pages::EditListSubmitterPath,
     },
     filters,
     form::{FormData, Validate},
@@ -33,7 +32,6 @@ pub async fn edit_list_submitter_form(
     context: Context,
     candidate_list: CandidateList,
     State(pool): State<PgPool>,
-    Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
     let total_persons = persons::count_persons(&pool).await?;

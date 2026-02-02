@@ -153,7 +153,7 @@ mod test {
 
         let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
         assert_eq!(lists.len(), 1);
-        assert_eq!(location, lists[0].list.view_path());
+        assert_eq!(location, lists[0].list.edit_list_submitter_path());
 
         Ok(())
     }

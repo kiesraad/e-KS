@@ -24,7 +24,7 @@ form:
   delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?
   update:
     title: Kandidatenlijst aanpassen
-  to_be_determined: "Nader te bepalen"
+none: Geen
 not_found: "Kandidatenlijst {} niet gevonden."
 remove_candidate: Uit deze lijst verwijderen
 search_existing_person: Zoek bestaande persoon
@@ -34,4 +34,3 @@ title_single: Kandidatenlijst
 view:
   empty: Deze kandidatenlijst heeft nog geen kandidaten.
   max_candidates_exceeded: "De lijst mag maximaal uit {} kandidaten bestaan."
-none: "Geen"
