@@ -1,5 +1,9 @@
 use crate::form::ValidationError;
 
+/// Max characters according to the BAG specification
+/// See https://catalogus.kadaster.nl/bag/nl/page/Huisnummertoevoeging
+const MAX_HOUSE_NUMBER_ADDITION_LENGTH: usize = 4;
+
 /// Validates a Dutch house number addition (alphanumeric, no spaces).
 pub fn validate_house_number_addition() -> impl Fn(&str) -> Result<String, ValidationError> {
     |value: &str| {
@@ -9,8 +13,11 @@ pub fn validate_house_number_addition() -> impl Fn(&str) -> Result<String, Valid
             return Err(ValidationError::ValueShouldNotBeEmpty);
         }
 
-        if trimmed_value.len() > 4 {
-            return Err(ValidationError::ValueTooLong(trimmed_value.len(), 4));
+        if trimmed_value.len() > MAX_HOUSE_NUMBER_ADDITION_LENGTH {
+            return Err(ValidationError::ValueTooLong(
+                trimmed_value.len(),
+                MAX_HOUSE_NUMBER_ADDITION_LENGTH,
+            ));
         }
 
         if !trimmed_value
@@ -30,8 +37,10 @@ mod tests {
 
     #[test]
     fn accepts_dashes() {
-        let result = (validate_house_number_addition())("12-B").unwrap();
-        assert_eq!(result, "12-B");
+        assert_eq!((validate_house_number_addition())("12-B").unwrap(), "12-B");
+        assert_eq!((validate_house_number_addition())("12a").unwrap(), "12a");
+        assert_eq!((validate_house_number_addition())("12-").unwrap(), "12-");
+        assert_eq!((validate_house_number_addition())("A1").unwrap(), "A1");
     }
 
     #[test]

@@ -36,9 +36,10 @@ mod tests {
     use super::*;
 
     #[test]
-    fn accepts_trimmed_uppercase_initials() {
-        let result = (validate_initials())("  M.B.  ").unwrap();
-        assert_eq!(result, "M.B.");
+    fn accepts_trimmed_initials() {
+        assert_eq!((validate_initials())("A.B").unwrap(), "A.B.");
+        assert_eq!((validate_initials())("a.B.").unwrap(), "a.B.");
+        assert_eq!((validate_initials())("  M.B.  ").unwrap(), "M.B.");
     }
 
     #[test]
@@ -48,7 +49,7 @@ mod tests {
     }
 
     #[test]
-    fn rejects_lowercase_initials() {
+    fn rejects_special_characters() {
         let err = (validate_initials())("M.!.").unwrap_err();
         assert_eq!(err, ValidationError::InvalidValue);
     }

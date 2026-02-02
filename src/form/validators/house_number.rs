@@ -1,5 +1,8 @@
 use crate::form::ValidationError;
 
+/// Max practical length - currently there are no house numbers in the bag with more than 5 digits
+const MAX_HOUSE_NUMBER_LENGTH: usize = 7;
+
 /// Validates a Dutch house number (digits only, without additions).
 pub fn validate_housenumber() -> impl Fn(&str) -> Result<String, ValidationError> {
     |value: &str| {
@@ -9,8 +12,11 @@ pub fn validate_housenumber() -> impl Fn(&str) -> Result<String, ValidationError
             return Err(ValidationError::ValueShouldNotBeEmpty);
         }
 
-        if trimmed_value.len() > 7 {
-            return Err(ValidationError::ValueTooLong(trimmed_value.len(), 7));
+        if trimmed_value.len() > MAX_HOUSE_NUMBER_LENGTH {
+            return Err(ValidationError::ValueTooLong(
+                trimmed_value.len(),
+                MAX_HOUSE_NUMBER_LENGTH,
+            ));
         }
 
         if !trimmed_value.chars().all(|c| c.is_ascii_digit()) {
@@ -26,9 +32,12 @@ mod tests {
     use super::*;
 
     #[test]
-    fn accepts_trimmed_digits_only() {
-        let result = (validate_housenumber())("  12  ").unwrap();
-        assert_eq!(result, "12");
+    fn accepts_only_prefix_or_suffix_whitespace() {
+        assert_eq!((validate_housenumber())("  12  ").unwrap(), "12");
+        assert_eq!(
+            (validate_housenumber())("   1    24   ").unwrap_err(),
+            ValidationError::InvalidValue
+        );
     }
 
     #[test]
@@ -39,8 +48,18 @@ mod tests {
 
     #[test]
     fn rejects_house_number_with_additions() {
-        let err = (validate_housenumber())("12A").unwrap_err();
-        assert_eq!(err, ValidationError::InvalidValue);
+        assert_eq!(
+            (validate_housenumber())("12A").unwrap_err(),
+            ValidationError::InvalidValue
+        );
+        assert_eq!(
+            (validate_housenumber())("+12").unwrap_err(),
+            ValidationError::InvalidValue
+        );
+        assert_eq!(
+            (validate_housenumber())("-23").unwrap_err(),
+            ValidationError::InvalidValue
+        );
     }
 
     #[test]
