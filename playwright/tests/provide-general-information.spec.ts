@@ -11,18 +11,18 @@ test("provide general information for political group", async ({ page }) => {
   await politicalGroupPage.fillRegisteredDesignation();
   await politicalGroupPage.fillStatutoryName();
 
-//   const authorisedAgentsPage = new AuthorisedAgentsPage(page);
+  const authorisedAgentsPage = new AuthorisedAgentsPage(page);
 
-//    const authorisedAgent: AuthorisedAgent = {
-//       initials: "K",
-//       lastNamePrefix: "de",
-//       lastName: "Kraai",
-//     };
-//     const authorisedAgentTwo: AuthorisedAgent = {
-//       initials: "E",
-//       lastName: "Ekster",
-//     };
-//     await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
+   const authorisedAgent: AuthorisedAgent = {
+      initials: "K",
+      lastNamePrefix: "de",
+      lastName: "Kraai",
+    };
+    const authorisedAgentTwo: AuthorisedAgent = {
+      initials: "E",
+      lastName: "Ekster",
+    };
+    await authorisedAgentsPage.addAuthorisedAgent([authorisedAgent, authorisedAgentTwo]);
 
 }
 )

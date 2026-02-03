@@ -18,7 +18,7 @@ export class PoliticalGroupPage {
   }
 
   async fillRegisteredDesignation() {
-    await this.page.getByLabel("Geregistreerde aanduiding").fill("TP");
+    await this.page.getByRole("textbox", {name: "Geregistreerde aanduiding"}).fill("TP");
     await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
