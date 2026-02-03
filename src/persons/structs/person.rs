@@ -102,7 +102,7 @@ impl Person {
 
     pub fn is_representative_complete(&self) -> bool {
         if self.is_dutch() {
-            return false;
+            return true;
         }
 
         self.is_address_complete()
