@@ -16,12 +16,19 @@
   font-weight: 100 900;
 }
 
+@font-face {
+  font-family: "FlagEmojis";
+  unicode-range: U+1F1E6-1F1FF; /* range for flag emojis */
+  src: url("../fonts/NotoColorEmoji/NotoColorEmojiFlags.woff2") format("woff2");
+}
+
 :root {
   /* FONTS */
   --font-header: "SpaceGrotesk";
   --font-header-body: "DMSans";
   --font-text: "DMSans";
   --font-number: "GeistMono", monospace, monospace;
+  --font-flag-emojis: "FlagEmojis";
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

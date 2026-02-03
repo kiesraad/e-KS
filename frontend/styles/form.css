@@ -221,6 +221,7 @@
   display: inline-block;
 
   .icon {
+    font-family: var(--font-flag-emojis);
     position: absolute;
     left: 1rem;
     top: 50%;
