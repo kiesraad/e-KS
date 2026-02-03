@@ -87,7 +87,9 @@ mod tests {
     use crate::{
         Context,
         persons::{self, PersonId},
-        test_utils::{response_body_string, sample_person, sample_representative_form},
+        test_utils::{
+            extract_csrf_token, response_body_string, sample_person, sample_representative_form,
+        },
     };
 
     #[sqlx::test]
@@ -111,6 +113,35 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Jansen"));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn edit_representative_renders_valid_csrf_token(pool: PgPool) -> Result<(), sqlx::Error> {
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        persons::create_person(&pool, &person).await?;
+
+        let context = Context::new_test(pool.clone()).await;
+        let csrf_tokens = context.csrf_tokens.clone();
+
+        let response = edit_representative(
+            EditRepresentativePath { person_id },
+            context,
+            person,
+            PersonPagination::empty(),
+            Query(InitialEditQuery::new()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        let csrf_token = extract_csrf_token(&body).expect("csrf token");
+        assert!(csrf_tokens.consume(&csrf_token));
 
         Ok(())
     }

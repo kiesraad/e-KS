@@ -92,7 +92,8 @@ mod tests {
         candidate_lists::{self, CandidateListId},
         persons::{self, PersonId},
         test_utils::{
-            response_body_string, sample_candidate_list, sample_person, sample_representative_form,
+            extract_csrf_token, response_body_string, sample_candidate_list, sample_person,
+            sample_representative_form,
         },
     };
 
@@ -128,6 +129,46 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Jansen"));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn edit_representative_renders_valid_csrf_token(pool: PgPool) -> Result<(), sqlx::Error> {
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(PersonId::new());
+
+        candidate_lists::create_candidate_list(&pool, &list).await?;
+        persons::create_person(&pool, &person).await?;
+        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id]).await?;
+
+        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
+            .await?
+            .expect("candidate list");
+        let candidate = candidate_lists::get_candidate(&pool, list_id, person.id).await?;
+
+        let context = Context::new_test(pool.clone()).await;
+        let csrf_tokens = context.csrf_tokens.clone();
+
+        let response = edit_representative(
+            EditRepresentativePath {
+                list_id,
+                person_id: person.id,
+            },
+            context,
+            full_list,
+            candidate,
+            Query(InitialEditQuery::new()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        let csrf_token = extract_csrf_token(&body).expect("csrf token");
+        assert!(csrf_tokens.consume(&csrf_token));
 
         Ok(())
     }

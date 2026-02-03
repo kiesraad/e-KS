@@ -63,7 +63,7 @@ pub async fn update_person(
         Ok(person) => {
             persons::update_person(&pool, &person).await?;
 
-            Ok(Redirect::to(&person.edit_address_path()).into_response())
+            Ok(Redirect::to(&Person::list_path()).into_response())
         }
     }
 }
@@ -138,7 +138,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert!(location.ends_with("/address"));
+        assert!(location.ends_with("/persons"));
 
         let updated = persons::get_person(&pool, person_id)
             .await?

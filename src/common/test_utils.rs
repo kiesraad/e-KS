@@ -21,6 +21,14 @@ pub async fn response_body_string(response: axum::response::Response) -> String 
     String::from_utf8(bytes.to_vec()).expect("utf-8 body")
 }
 
+pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
+    let marker = "name=\"csrf_token\" value=\"";
+    body.split(marker)
+        .nth(1)
+        .and_then(|rest| rest.split('"').next())
+        .map(|token| TokenValue(token.to_string()))
+}
+
 pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,

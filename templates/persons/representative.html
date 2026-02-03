@@ -1,6 +1,10 @@
 {% extends "persons/components/overlay.html" %}
 
-{% block overlay_start %}<form method="post" action="{{ person.edit_representative_path() }}" class="overlay">{% endblock %}
+{% block overlay_start %}
+<form method="post" action="{{ person.edit_representative_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+{% endblock %}
+
 {% block overlay_end %}</form>{% endblock %}
 
 {% block overlay_content %}
