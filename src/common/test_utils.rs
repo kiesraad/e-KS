@@ -7,7 +7,8 @@ use crate::{
     persons::{AddressForm, Gender, Person, PersonForm, PersonId, RepresentativeForm},
     political_groups::{
         AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId, ListSubmitter, ListSubmitterForm,
-        ListSubmitterId, PoliticalGroup, PoliticalGroupForm, PoliticalGroupId,
+        ListSubmitterId, PoliticalGroup, PoliticalGroupForm, PoliticalGroupId, SubstituteSubmitter,
+        SubstituteSubmitterForm, SubstituteSubmitterId,
     },
 };
 
@@ -169,6 +170,36 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
         house_number: "5".to_string(),
         house_number_addition: "B".to_string(),
         street_name: "Coolsingel".to_string(),
+        csrf_token: csrf_token.clone(),
+    }
+}
+
+pub fn sample_substitute_submitter(id: SubstituteSubmitterId) -> SubstituteSubmitter {
+    SubstituteSubmitter {
+        id,
+        last_name: "Bakker".to_string(),
+        last_name_prefix: None,
+        initials: "I.J.".to_string(),
+        locality: Some("Utrecht".to_string()),
+        postal_code: Some("3511 AA".to_string()),
+        house_number: Some("21".to_string()),
+        house_number_addition: Some("C".to_string()),
+        street_name: Some("Oudegracht".to_string()),
+        created_at: Utc::now(),
+        updated_at: Utc::now(),
+    }
+}
+
+pub fn sample_substitute_submitter_form(csrf_token: &TokenValue) -> SubstituteSubmitterForm {
+    SubstituteSubmitterForm {
+        last_name: "Bakker".to_string(),
+        last_name_prefix: "".to_string(),
+        initials: "I.J.".to_string(),
+        locality: "Utrecht".to_string(),
+        postal_code: "3511 AA".to_string(),
+        house_number: "21".to_string(),
+        house_number_addition: "C".to_string(),
+        street_name: "Oudegracht".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }

@@ -6,7 +6,7 @@ use crate::{
     AppError,
     political_groups::{
         self, AuthorisedAgent, AuthorisedAgentId, ListSubmitter, ListSubmitterId, PoliticalGroup,
-        PoliticalGroupId,
+        PoliticalGroupId, SubstituteSubmitter, SubstituteSubmitterId,
     },
 };
 
@@ -23,6 +23,8 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter_1").into();
     let submitter_2_id: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter_2").into();
+    let substitute_submitter_id: SubstituteSubmitterId =
+        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_1").into();
 
     let political_group = PoliticalGroup {
         id: political_group_id,
@@ -101,6 +103,25 @@ pub async fn load(db: &PgPool) -> Result<(), AppError> {
     )
     .await?;
 
+    political_groups::create_substitute_submitter(
+        db,
+        political_group.id,
+        &SubstituteSubmitter {
+            id: substitute_submitter_id,
+            last_name: "De Jong".to_string(),
+            last_name_prefix: None,
+            initials: "I.J.".to_string(),
+            locality: Some("Utrecht".to_string()),
+            postal_code: Some("3511 AA".to_string()),
+            house_number: Some("21".to_string()),
+            house_number_addition: Some("C".to_string()),
+            street_name: Some("Oudegracht".to_string()),
+            created_at: Utc::now(),
+            updated_at: Utc::now(),
+        },
+    )
+    .await?;
+
     Ok(())
 }
 
@@ -137,6 +158,12 @@ mod tests {
             .await
             .unwrap();
         assert_eq!(list_submitters.len(), 2);
+
+        let substitute_submitters =
+            political_groups::get_substitute_submitters(&pool, groups[0].id)
+                .await
+                .unwrap();
+        assert_eq!(substitute_submitters.len(), 1);
 
         let authorised_count = political_groups::get_authorised_agents(&pool, groups[0].id)
             .await

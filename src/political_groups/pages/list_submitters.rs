@@ -1,7 +1,7 @@
 use super::ListSubmittersPath;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
-    political_groups::{self, AuthorisedAgent, ListSubmitter, PoliticalGroup},
+    political_groups::{self, AuthorisedAgent, ListSubmitter, PoliticalGroup, SubstituteSubmitter},
 };
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};

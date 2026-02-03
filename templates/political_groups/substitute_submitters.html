@@ -1,0 +1,60 @@
+{% extends "layout.html" %}
+
+{% block page_title %}
+{{ "common.general_information"|trans }}
+{% endblock %}
+
+{% block header_action %}
+<a href="/" class="button secondary">
+  {{ "action.back"|trans }}
+</a>
+{% endblock %}
+
+{% block content %}
+<div class="steps">
+  {% include "political_groups/components/steps.html" %}
+  <div>
+    <h2>{{ "political_group.substitute_submitter_data"|trans }}</h2>
+    <div class="alert alert-info">
+      {{ "political_group.select_default_substitute_submitter_info"|trans }}
+    </div>
+    {% if substitute_submitters.is_empty() %}
+      <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
+    {% else %}
+      <table class="table">
+        <thead>
+          <tr>
+            <th>{{ "person.fields.initials"|trans }}</th>
+            <th>{{ "person.fields.last_name"|trans }}</th>
+            <th>{{ "person.fields.address"|trans }}</th>
+            <th>{{ "person.fields.locality"|trans }}</th>
+            <th>{{ "person.fields.postal_code"|trans }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for submitter in substitute_submitters %}
+          <tr class="clickable {% if !submitter.is_address_complete() %}warning{% endif %}">
+            <td>{{ submitter.initials }}</td>
+            <td>{{ submitter.last_name_with_prefix() }}</td>
+            <td>{{ submitter.street_name|display }} {{ submitter.house_number|display }}{{ submitter.house_number_addition|display }}</td>
+            <td>{{ submitter.locality|display }}</td>
+            <td>{{ submitter.postal_code|display }}</td>
+            <td>
+              <a href="{{ submitter.edit_path() }}">
+                <span>{{ "action.edit"|trans }}</span>
+              </a>
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+      {% endif %}
+      <p class="mt-lg">
+        <a href="{{ SubstituteSubmitter::new_path() }}" class="button secondary icon-plus" type="button">
+          {{ "political_group.add_substitute_submitter"|trans }}
+        </a>
+      </p>
+  </div>
+</div>
+{% endblock %}

@@ -1,0 +1,92 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        UPDATE substitute_submitters\n        SET\n            last_name = $1,\n            last_name_prefix = $2,\n            initials = $3,\n            locality = $4,\n            postal_code = $5,\n            house_number = $6,\n            house_number_addition = $7,\n            street_name = $8,\n            updated_at = $9\n        WHERE political_group_id = $10\n          AND id = $11\n        RETURNING\n            id,\n            last_name,\n            last_name_prefix,\n            initials,\n            locality,\n            postal_code,\n            house_number,\n            house_number_addition,\n            street_name,\n            created_at,\n            updated_at\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "ac2adc96657a03d2b7a7d5ded546f5bbf4f1faeb5a084193c2ce82ac0aaf768a"
+}

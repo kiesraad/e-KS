@@ -1,16 +1,20 @@
 actions:
   delete_authorised_agent: Delete authorised agent
   delete_list_submitter: Delete list submitter
+  delete_substitute_submitter: Delete substitute submitter
 add_authorised_agent: Add authorised agent
 add_list_submitter: Add list submitter
+add_substitute_submitter: Add substitute submitter
 authorised_agent_data: Authorised agent data
 authorised_agent_info: "The authorised agent of the party is the person registered with the central electoral committee as the authorised or deputy authorised person for the designation. This person authorizes the list submitter with form H3-1 / H3-2 to place the party's name above the candidate list."
 basic_information: Basic information
 delete_authorised_agent_warning_text: Are you sure you want to delete this authorised agent? This action cannot be undone.
 delete_list_submitter_warning_text: Are you sure you want to delete this list submitter? This action cannot be undone.
+delete_substitute_submitter_warning_text: Are you sure you want to delete this substitute submitter? This action cannot be undone.
 display_name: Registered designation
 edit_authorised_agent: Edit authorised agent
 edit_list_submitter: Edit list submitter
+edit_substitute_submitter: Edit substitute submitter
 general_information: General
 legal_name: Full statutory name
 list_submitter_data: List submitter data
@@ -18,7 +22,10 @@ list_type: Type list designation
 long_list_allowed: Did you win 16 seats or more in the previous election
 no_authorised_agents: No authorised agents
 no_list_submitters: No list submitters
+no_substitute_submitters: No substitute submitters
 select_default_list_submitter_info: The list submitter is the only person authorised to submit the candidate list and to remedy omissions. A list submitter can be selected for each candidate list.
+select_default_substitute_submitter_info: Select one or more substitute(s) for remedying omissions.
+substitute_submitter_data: Substitute submitter data
 title: Political group
 type:
   blank_name: Blank list

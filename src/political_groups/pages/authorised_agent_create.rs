@@ -10,7 +10,10 @@ use super::AuthorisedAgentNewPath;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    political_groups::{self, AuthorisedAgent, AuthorisedAgentForm, ListSubmitter, PoliticalGroup},
+    political_groups::{
+        self, AuthorisedAgent, AuthorisedAgentForm, ListSubmitter, PoliticalGroup,
+        SubstituteSubmitter,
+    },
 };
 
 #[derive(Template)]

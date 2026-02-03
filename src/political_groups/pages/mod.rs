@@ -6,6 +6,7 @@ use crate::{
     AppError, AppState,
     political_groups::{
         AuthorisedAgent, AuthorisedAgentId, ListSubmitter, ListSubmitterId, PoliticalGroup,
+        SubstituteSubmitter, SubstituteSubmitterId,
     },
 };
 
@@ -17,6 +18,10 @@ mod list_submitter_create;
 mod list_submitter_delete;
 mod list_submitter_update;
 mod list_submitters;
+mod substitute_submitter_create;
+mod substitute_submitter_delete;
+mod substitute_submitter_update;
+mod substitute_submitters;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
@@ -26,6 +31,10 @@ pub struct PoliticalGroupEditPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/political-group/list-submitters", rejection(AppError))]
 pub struct ListSubmittersPath;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/political-group/substitute-submitters", rejection(AppError))]
+pub struct SubstituteSubmittersPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/political-group/authorised-agents", rejection(AppError))]
@@ -38,6 +47,10 @@ pub struct AuthorisedAgentNewPath;
 #[derive(TypedPath)]
 #[typed_path("/political-group/list-submitters/new", rejection(AppError))]
 pub struct ListSubmitterNewPath;
+
+#[derive(TypedPath)]
+#[typed_path("/political-group/substitute-submitters/new", rejection(AppError))]
+pub struct SubstituteSubmitterNewPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
@@ -59,6 +72,15 @@ pub struct ListSubmitterEditPath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
+    "/political-group/substitute-submitters/{submitter_id}/edit",
+    rejection(AppError)
+)]
+pub struct SubstituteSubmitterEditPath {
+    pub submitter_id: SubstituteSubmitterId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
     "/political-group/authorised-agents/{agent_id}/delete",
     rejection(AppError)
 )]
@@ -73,6 +95,15 @@ pub struct AuthorisedAgentDeletePath {
 )]
 pub struct ListSubmitterDeletePath {
     pub submitter_id: ListSubmitterId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/political-group/substitute-submitters/{submitter_id}/delete",
+    rejection(AppError)
+)]
+pub struct SubstituteSubmitterDeletePath {
+    pub submitter_id: SubstituteSubmitterId,
 }
 
 impl PoliticalGroup {
@@ -99,6 +130,30 @@ impl ListSubmitter {
 
     pub fn delete_path(&self) -> String {
         ListSubmitterDeletePath {
+            submitter_id: self.id,
+        }
+        .to_string()
+    }
+}
+
+impl SubstituteSubmitter {
+    pub fn list_path() -> String {
+        SubstituteSubmittersPath {}.to_string()
+    }
+
+    pub fn new_path() -> String {
+        SubstituteSubmitterNewPath {}.to_string()
+    }
+
+    pub fn edit_path(&self) -> String {
+        SubstituteSubmitterEditPath {
+            submitter_id: self.id,
+        }
+        .to_string()
+    }
+
+    pub fn delete_path(&self) -> String {
+        SubstituteSubmitterDeletePath {
             submitter_id: self.id,
         }
         .to_string()
@@ -139,4 +194,10 @@ pub fn router() -> Router<AppState> {
         .typed_get(list_submitter_update::edit_list_submitter)
         .typed_post(list_submitter_update::update_list_submitter)
         .typed_post(list_submitter_delete::delete_list_submitter)
+        .typed_get(substitute_submitters::list_substitute_submitters)
+        .typed_get(substitute_submitter_create::new_substitute_submitter_form)
+        .typed_post(substitute_submitter_create::create_substitute_submitter)
+        .typed_get(substitute_submitter_update::edit_substitute_submitter)
+        .typed_post(substitute_submitter_update::update_substitute_submitter)
+        .typed_post(substitute_submitter_delete::delete_substitute_submitter)
 }

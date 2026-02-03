@@ -1,6 +1,6 @@
 use crate::political_groups::{
     AuthorisedAgent, AuthorisedAgentId, ListSubmitter, ListSubmitterId, PoliticalGroup,
-    PoliticalGroupId,
+    PoliticalGroupId, SubstituteSubmitter, SubstituteSubmitterId,
 };
 use chrono::Utc;
 use sqlx::PgPool;
@@ -111,6 +111,33 @@ pub async fn get_list_submitters(
                created_at,
                updated_at
         FROM list_submitters
+        WHERE political_group_id = $1
+        "#,
+        political_group_id.uuid()
+    )
+    .fetch_all(db)
+    .await
+}
+
+pub async fn get_substitute_submitters(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+) -> Result<Vec<SubstituteSubmitter>, sqlx::Error> {
+    sqlx::query_as!(
+        SubstituteSubmitter,
+        r#"
+        SELECT id,
+               last_name,
+               last_name_prefix,
+               initials,
+               locality,
+               postal_code,
+               house_number,
+               house_number_addition,
+               street_name,
+               created_at,
+               updated_at
+        FROM substitute_submitters
         WHERE political_group_id = $1
         "#,
         political_group_id.uuid()
@@ -232,6 +259,36 @@ pub async fn get_list_submitter(
     .await
 }
 
+pub async fn get_substitute_submitter(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    submitter_id: &SubstituteSubmitterId,
+) -> Result<SubstituteSubmitter, sqlx::Error> {
+    sqlx::query_as!(
+        SubstituteSubmitter,
+        r#"
+        SELECT id,
+               last_name,
+               last_name_prefix,
+               initials,
+               locality,
+               postal_code,
+               house_number,
+               house_number_addition,
+               street_name,
+               created_at,
+               updated_at
+        FROM substitute_submitters
+        WHERE political_group_id = $1
+          AND id = $2
+        "#,
+        political_group_id.uuid(),
+        submitter_id.uuid()
+    )
+    .fetch_one(db)
+    .await
+}
+
 pub async fn create_list_submitter(
     db: &PgPool,
     political_group_id: PoliticalGroupId,
@@ -276,6 +333,57 @@ pub async fn create_list_submitter(
         list_submitter.house_number,
         list_submitter.house_number_addition,
         list_submitter.street_name,
+        Utc::now(),
+        Utc::now(),
+    )
+    .fetch_one(db)
+    .await
+}
+
+pub async fn create_substitute_submitter(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    substitute_submitter: &SubstituteSubmitter,
+) -> Result<SubstituteSubmitter, sqlx::Error> {
+    sqlx::query_as!(
+        SubstituteSubmitter,
+        r#"
+        INSERT INTO substitute_submitters (id,
+                                           political_group_id,
+                                           last_name,
+                                           last_name_prefix,
+                                           initials,
+                                           locality,
+                                           postal_code,
+                                           house_number,
+                                           house_number_addition,
+                                           street_name,
+                                           created_at,
+                                           updated_at)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
+        RETURNING
+            id,
+            last_name,
+            last_name_prefix,
+            initials,
+            locality,
+            postal_code,
+            house_number,
+            house_number_addition,
+            street_name,
+            created_at,
+            updated_at
+        "#,
+        substitute_submitter.id.uuid(),
+        political_group_id.uuid(),
+        substitute_submitter.last_name,
+        substitute_submitter.last_name_prefix,
+        substitute_submitter.initials,
+        substitute_submitter.locality,
+        substitute_submitter.postal_code,
+        substitute_submitter.house_number,
+        substitute_submitter.house_number_addition,
+        substitute_submitter.street_name,
         Utc::now(),
         Utc::now(),
     )
@@ -333,6 +441,56 @@ pub async fn update_list_submitter(
     .await
 }
 
+pub async fn update_substitute_submitter(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    substitute_submitter: &SubstituteSubmitter,
+) -> Result<SubstituteSubmitter, sqlx::Error> {
+    sqlx::query_as!(
+        SubstituteSubmitter,
+        r#"
+        UPDATE substitute_submitters
+        SET
+            last_name = $1,
+            last_name_prefix = $2,
+            initials = $3,
+            locality = $4,
+            postal_code = $5,
+            house_number = $6,
+            house_number_addition = $7,
+            street_name = $8,
+            updated_at = $9
+        WHERE political_group_id = $10
+          AND id = $11
+        RETURNING
+            id,
+            last_name,
+            last_name_prefix,
+            initials,
+            locality,
+            postal_code,
+            house_number,
+            house_number_addition,
+            street_name,
+            created_at,
+            updated_at
+        "#,
+        substitute_submitter.last_name,
+        substitute_submitter.last_name_prefix,
+        substitute_submitter.initials,
+        substitute_submitter.locality,
+        substitute_submitter.postal_code,
+        substitute_submitter.house_number,
+        substitute_submitter.house_number_addition,
+        substitute_submitter.street_name,
+        Utc::now(),
+        political_group_id.uuid(),
+        substitute_submitter.id.uuid(),
+    )
+    .fetch_one(db)
+    .await
+}
+
 pub async fn update_authorised_agent(
     db: &PgPool,
     political_group_id: PoliticalGroupId,
@@ -381,6 +539,26 @@ pub async fn remove_list_submitter(
         "#,
         political_group_id.uuid(),
         list_submitter_id.uuid()
+    )
+    .execute(db)
+    .await?;
+
+    Ok(())
+}
+
+pub async fn remove_substitute_submitter(
+    db: &PgPool,
+    political_group_id: PoliticalGroupId,
+    substitute_submitter_id: SubstituteSubmitterId,
+) -> Result<(), sqlx::Error> {
+    sqlx::query!(
+        r#"
+        DELETE FROM substitute_submitters
+        WHERE political_group_id = $1
+          AND id = $2
+        "#,
+        political_group_id.uuid(),
+        substitute_submitter_id.uuid()
     )
     .execute(db)
     .await?;

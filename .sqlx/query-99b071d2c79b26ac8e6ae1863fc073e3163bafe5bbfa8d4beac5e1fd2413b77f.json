@@ -1,0 +1,83 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n        SELECT id,\n               last_name,\n               last_name_prefix,\n               initials,\n               locality,\n               postal_code,\n               house_number,\n               house_number_addition,\n               street_name,\n               created_at,\n               updated_at\n        FROM substitute_submitters\n        WHERE political_group_id = $1\n          AND id = $2\n        ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "id",
+        "type_info": "Uuid"
+      },
+      {
+        "ordinal": 1,
+        "name": "last_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 2,
+        "name": "last_name_prefix",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 3,
+        "name": "initials",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 4,
+        "name": "locality",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 5,
+        "name": "postal_code",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 6,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 7,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 9,
+        "name": "created_at",
+        "type_info": "Timestamptz"
+      },
+      {
+        "ordinal": 10,
+        "name": "updated_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      false,
+      true,
+      false,
+      true,
+      true,
+      true,
+      true,
+      true,
+      false,
+      false
+    ]
+  },
+  "hash": "99b071d2c79b26ac8e6ae1863fc073e3163bafe5bbfa8d4beac5e1fd2413b77f"
+}

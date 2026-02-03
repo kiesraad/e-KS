@@ -9,7 +9,10 @@ use sqlx::PgPool;
 use crate::{
     AppError, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    political_groups::{self, AuthorisedAgent, ListSubmitter, ListSubmitterForm, PoliticalGroup},
+    political_groups::{
+        self, AuthorisedAgent, ListSubmitter, ListSubmitterForm, PoliticalGroup,
+        SubstituteSubmitter,
+    },
 };
 
 use super::ListSubmitterEditPath;

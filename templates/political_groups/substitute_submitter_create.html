@@ -1,0 +1,38 @@
+{% extends "political_groups/components/substitute_submitter_overlay.html" %}
+
+{% block overlay_title %}{{ "political_group.add_substitute_submitter"|trans }}{% endblock %}
+
+{% block overlay_start %}
+<form method="post" action="{{ SubstituteSubmitter::new_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+{% endblock %}
+
+{% block overlay_end %}</form>{% endblock %}
+
+{% block overlay_content %}
+  <div class="overlay-content steps">
+    <div class="steps-nav">
+      <ul>
+        <li>
+          <a href="{{ SubstituteSubmitter::new_path() }}">
+            {{ "political_group.add_substitute_submitter"|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="form">
+      <fieldset>
+        {% include "components/person_name_fields.html" %}
+        {% include "components/address_fields.html" %}
+      </fieldset>
+    </div>
+  </div>
+{% endblock %}
+
+{% block overlay_footer %}
+<footer>
+  <button type="submit" class="button">
+    {{ "action.save_and_continue"|trans }}
+  </button>
+</footer>
+{% endblock %}
