@@ -32,6 +32,12 @@
           {{ pagination.dir_icon(PersonSort::PlaceOfResidence) }}
         </a>
       </th>
+      <th scope="col">
+        <a href="{{ pagination.sort_link(PersonSort::CreatedAt) }}">
+          {{ "person.fields.created_at"|trans }}
+          {{ pagination.dir_icon(PersonSort::CreatedAt) }}
+        </a>
+      </th>
       <th scope="col"></th>
     </tr>
   </thead>
@@ -43,6 +49,7 @@
       <td>{{ person.first_name_display() }}</td>
       <td>{{ person.gender_key()|trans }}</td>
       <td>{{ person.place_of_residence|display }}</td>
+      <td>{{ person.created_at|datetime }}</td>
       <td>
         <a href="{{ person.edit_path() }}">
           <span>{{ "action.edit"|trans }}</span>

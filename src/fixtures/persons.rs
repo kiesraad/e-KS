@@ -71,6 +71,9 @@ impl PersonRecord {
             house_number: Some(self.huisnummer),
             house_number_addition: None,
             street_name: Some(self.straat),
+            representative_initials: None,
+            representative_last_name: None,
+            representative_last_name_prefix: None,
             created_at: Utc::now(),
             updated_at: Utc::now(),
         })

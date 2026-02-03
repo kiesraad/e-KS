@@ -9,6 +9,9 @@ INSERT INTO persons (
     bsn,
     place_of_residence,
     country_of_residence,
+    representative_last_name,
+    representative_last_name_prefix,
+    representative_initials,
     locality,
     postal_code,
     house_number,
@@ -17,7 +20,28 @@ INSERT INTO persons (
     created_at,
     updated_at
 )
-VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17)
+VALUES (
+    $1,
+    $2,
+    $3,
+    $4,
+    $5,
+    $6,
+    $7,
+    $8,
+    $9,
+    $10,
+    $11,
+    $12,
+    $13,
+    $14,
+    $15,
+    $16,
+    $17,
+    $18,
+    $19,
+    $20
+)
 RETURNING
     id,
     gender as "gender: Gender",
@@ -29,6 +53,9 @@ RETURNING
     bsn,
     place_of_residence,
     country_of_residence,
+    representative_last_name,
+    representative_last_name_prefix,
+    representative_initials,
     locality,
     postal_code,
     house_number,

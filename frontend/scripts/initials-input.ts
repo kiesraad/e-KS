@@ -1,7 +1,7 @@
 // Enforce uppercase initials with dots and no spaces
 window.addEventListener("load", () => {
   const initialsInputs: NodeListOf<HTMLInputElement> =
-    document.querySelectorAll('input[name="initials"]');
+    document.querySelectorAll("input.initials-input");
 
   const checkbox: HTMLInputElement | null = document.querySelector(
     '.autoformat input[type="checkbox"]',

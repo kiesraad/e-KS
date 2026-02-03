@@ -122,7 +122,6 @@
   }
 
   &.card-persons {
-    border: 1px solid var(--base-white);
     height: 10rem;
     background-image: url("../icons/politician.svg");
   }

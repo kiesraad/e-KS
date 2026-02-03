@@ -1,9 +1,11 @@
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-
 <div class="form-row">
-  <p class="form-field form-field-sm">
+  <p class="form-field form-field-sm {% if use_name_warnings|default(false) && form.data.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
-    <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" required />
+    <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" class="initials-input" required />
+    <label class="autoformat">
+      <input type="checkbox" checked />
+      <span>{{ "person.autoformat_initials"|trans }}</span>
+    </label>
     {% for error in form|error("initials") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
@@ -15,7 +17,7 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field">
+  <p class="form-field {% if use_name_warnings|default(false) && form.data.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
     <input type="text" name="last_name" id="last_name" value="{{ form.data.last_name }}" required />
     {% for error in form|error("last_name") %}

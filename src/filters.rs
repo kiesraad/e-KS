@@ -1,8 +1,11 @@
 //! Askama template filters for, among others, display, translation, and validation errors.
 //! Used to keep the formatting logic out of the templates.
+use chrono::{DateTime, Utc};
+
 use crate::{
     Locale,
     candidate_lists::CandidateList,
+    constants::DEFAULT_DATE_TIME_FORMAT,
     form::{FormData, WithCsrfToken},
     trans,
 };
@@ -10,6 +13,11 @@ use crate::{
 #[askama::filter_fn]
 pub fn display<'a>(value: &'a Option<String>, _: &dyn askama::Values) -> askama::Result<&'a str> {
     Ok(value.as_deref().unwrap_or_default())
+}
+
+#[askama::filter_fn]
+pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(value.format(DEFAULT_DATE_TIME_FORMAT).to_string())
 }
 
 #[askama::filter_fn]

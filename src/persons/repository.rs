@@ -74,6 +74,9 @@ pub async fn create_person(db: &PgPool, new_person: &Person) -> Result<Person, s
         new_person.bsn,
         new_person.place_of_residence,
         new_person.country_of_residence,
+        new_person.representative_last_name,
+        new_person.representative_last_name_prefix,
+        new_person.representative_initials,
         new_person.locality,
         new_person.postal_code,
         new_person.house_number,
@@ -111,6 +114,29 @@ pub async fn update_address(db: &PgPool, updated_person: &Person) -> Result<Pers
     let person = sqlx::query_file_as!(
         Person,
         "sql/persons/update_address.sql",
+        updated_person.locality,
+        updated_person.postal_code,
+        updated_person.house_number,
+        updated_person.house_number_addition,
+        updated_person.street_name,
+        updated_person.id.uuid(),
+    )
+    .fetch_one(db)
+    .await?;
+
+    Ok(person)
+}
+
+pub async fn update_representative(
+    db: &PgPool,
+    updated_person: &Person,
+) -> Result<Person, sqlx::Error> {
+    let person = sqlx::query_file_as!(
+        Person,
+        "sql/persons/update_representative.sql",
+        updated_person.representative_last_name,
+        updated_person.representative_last_name_prefix,
+        updated_person.representative_initials,
         updated_person.locality,
         updated_person.postal_code,
         updated_person.house_number,

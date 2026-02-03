@@ -7,10 +7,10 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::{Deserialize, Serialize};
 
 mod address;
-mod authorised_person;
 mod create;
 mod delete;
 mod list;
+mod representative;
 mod update;
 
 #[derive(Serialize, Deserialize)]
@@ -57,8 +57,8 @@ pub struct EditPersonAddressPath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/persons/{person_id}/authorised-person", rejection(AppError))]
-pub struct EditPersonAuthorisedPersonPath {
+#[typed_path("/persons/{person_id}/representative", rejection(AppError))]
+pub struct EditRepresentativePath {
     pub person_id: PersonId,
 }
 
@@ -85,8 +85,8 @@ impl Person {
             .to_string()
     }
 
-    pub fn edit_authorised_person_path(&self) -> String {
-        EditPersonAuthorisedPersonPath { person_id: self.id }
+    pub fn edit_representative_path(&self) -> String {
+        EditRepresentativePath { person_id: self.id }
             .to_uri()
             .to_string()
     }
@@ -97,7 +97,7 @@ impl Person {
                 .with_query_params(InitialEditQuery::new())
                 .to_string()
         } else {
-            EditPersonAuthorisedPersonPath { person_id: self.id }
+            EditRepresentativePath { person_id: self.id }
                 .with_query_params(InitialEditQuery::new())
                 .to_string()
         }
@@ -113,6 +113,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(update::update_person)
         .typed_get(address::edit_person_address)
         .typed_post(address::update_person_address)
-        .typed_get(authorised_person::edit_authorised_person)
+        .typed_get(representative::edit_representative)
+        .typed_post(representative::update_representative)
         .typed_post(delete::delete_person)
 }

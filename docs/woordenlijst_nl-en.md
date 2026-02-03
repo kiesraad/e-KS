@@ -61,23 +61,22 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 
 ## Kandidaatstelling
 
-| Nederlands                     | Afkorting | Engels                 | Opmerkingen | 
-|--------------------------------|-----------|------------------------|-------------|
-| ondersteuningsverklaring       |           | declaration of support |             |
-| verzuim                        |           | omission               |             |
-| herstel verzuim                |           | rectify omission       |             |
-| dag van kandidaatstelling      |           | nomination day         |             |
-| aanduiding                     |           | appellation            |             |
-| waarborgsom                    |           | deposit                |             |
-| betalingsbewijs                |           | proof of payment       |             |
-| gemachtigde                    |           | authorised agent       |             |
-| plaatsvervangend gemachtigde   |           | deputy agent           |             |
-| Kamer van Koophandel           | KVK       | Chamber of Commerce    |             |
-| instemmingsverklaring          |           | declaration of consent |             |
-| gemeenteambtenaar              |           | municipal official     |             |
-| bij loting vaststellen         |           | to determine by lot    |             |
-| een lijst indienen             |           | to submit a list       |             |
-
+| Nederlands                     | Afkorting | Engels                    | Opmerkingen | 
+|--------------------------------|-----------|---------------------------|-------------|
+| ondersteuningsverklaring       |           | declaration of support    |             |
+| verzuim                        |           | omission                  |             |
+| herstel verzuim                |           | rectify omission          |             |
+| dag van kandidaatstelling      |           | nomination day            |             |
+| aanduiding                     |           | appellation               |             |
+| waarborgsom                    |           | deposit                   |             |
+| betalingsbewijs                |           | proof of payment          |             |
+| gemachtigde                    |           | authorised agent          |             |
+| gemachtigde van kandidaat      |           | authorised representative |             |
+| Kamer van Koophandel           | KVK       | Chamber of Commerce       |             |
+| instemmingsverklaring          |           | declaration of consent    |             |
+| gemeenteambtenaar              |           | municipal official        |             |
+| bij loting vaststellen         |           | to determine by lot       |             |
+| een lijst indienen             |           | to submit a list          |             |
 
 
 

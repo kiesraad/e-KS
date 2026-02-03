@@ -2,7 +2,11 @@
 
 {% block overlay_title %}{{ "political_group.add_list_submitter"|trans }}{% endblock %}
 
-{% block overlay_start %}<form method="post" action="{{ ListSubmitter::new_path() }}" class="overlay">{% endblock %}
+{% block overlay_start %}
+<form method="post" action="{{ ListSubmitter::new_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+{% endblock %}
+
 {% block overlay_end %}</form>{% endblock %}
 
 {% block overlay_content %}
@@ -18,9 +22,17 @@
     </div>
     <div class="form">
       <fieldset>
-        {% set should_warn = false %}
-        {% include "political_groups/components/list_submitter_form.html" %}
+        {% include "components/person_name_fields.html" %}
+        {% include "components/address_fields.html" %}
       </fieldset>
     </div>
   </div>
+{% endblock %}
+
+{% block overlay_footer %}
+<footer>
+  <button type="submit" class="button">
+    {{ "action.save_and_continue"|trans }}
+  </button>
+</footer>
 {% endblock %}

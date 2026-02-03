@@ -2,13 +2,13 @@ actions:
   add: Add person
   delete: Delete person
 all: All persons
-authorised_person: Authorised person
 autoformat_initials: Auto-format initials
 correspondence_address: Correspondence address
 fields:
   address: Address
   bsn: Social security number (BSN)
   country_of_residence: Country code
+  created_at: Created
   date_of_birth: Date of birth
   first_name: First name
   gender: Gender
@@ -35,6 +35,7 @@ not_found: "Person {} not found."
 not_found_in_candidate_list: Person not found in candidate list.
 personal_details: Personal details
 personal_information: Personal information
+representative: Authorised person
 title: Persons
 total: "{} persons in total"
 view:

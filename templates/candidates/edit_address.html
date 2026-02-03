@@ -2,6 +2,7 @@
 
 {% block overlay_start %}
 <form method="post" action="{{ candidate.edit_address_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
 {% endblock %}
 {% block overlay_end %}</form>{% endblock %}
 
@@ -13,7 +14,7 @@
         <legend>
           <h3>{{ "person.correspondence_address"|trans }}</h3>
         </legend>
-        {% include "persons/components/address_form.html" %}
+        {% include "components/address_fields.html" %}
       </fieldset>
     </div>
   </div>

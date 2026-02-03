@@ -2,7 +2,10 @@
 
 {% block overlay_title %}{{ "political_group.edit_authorised_agent"|trans }}{% endblock %}
 
-{% block overlay_start %}<form method="post" action="{{ authorised_agent.edit_path() }}" class="overlay">{% endblock %}
+{% block overlay_start %}
+<form method="post" action="{{ authorised_agent.edit_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -17,7 +20,7 @@
     </div>
     <div class="form">
       <fieldset>
-        {% include "political_groups/components/authorised_agent_form.html" %}
+        {% include "components/person_name_fields.html" %}
       </fieldset>
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
         {{ "political_group.actions.delete_authorised_agent"|trans }}

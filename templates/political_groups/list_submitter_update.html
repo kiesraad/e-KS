@@ -2,7 +2,10 @@
 
 {% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
 
-{% block overlay_start %}<form method="post" action="{{ list_submitter.edit_path() }}" class="overlay">{% endblock %}
+{% block overlay_start %}
+<form method="post" action="{{ list_submitter.edit_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -17,8 +20,8 @@
     </div>
     <div class="form">
       <fieldset>
-        {% set should_warn = true %}
-        {% include "political_groups/components/list_submitter_form.html" %}
+        {% include "components/person_name_fields.html" %}
+        {% include "components/address_fields.html" %}
       </fieldset>
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
         {{ "political_group.actions.delete_list_submitter"|trans }}

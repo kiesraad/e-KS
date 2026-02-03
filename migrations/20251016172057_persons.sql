@@ -15,6 +15,10 @@ CREATE TABLE persons
     -- personal details
     gender                gender,
     date_of_birth         DATE,
+    -- deputy agent
+    representative_last_name             VARCHAR(255),
+    representative_last_name_prefix      VARCHAR(50),
+    representative_initials              VARCHAR(50),
     -- correspondence address
     locality              VARCHAR(255),
     postal_code           VARCHAR(16),

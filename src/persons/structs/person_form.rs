@@ -107,6 +107,9 @@ mod tests {
             house_number: Some("10".to_string()),
             house_number_addition: Some("B".to_string()),
             street_name: Some("Spoorstraat".to_string()),
+            representative_initials: None,
+            representative_last_name: None,
+            representative_last_name_prefix: None,
             created_at: timestamp,
             updated_at: timestamp,
         }

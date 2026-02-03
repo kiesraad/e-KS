@@ -4,7 +4,7 @@ use http_body_util::BodyExt;
 use crate::{
     ElectoralDistrict, TokenValue,
     candidate_lists::{CandidateList, CandidateListId},
-    persons::{AddressForm, Gender, Person, PersonForm, PersonId},
+    persons::{AddressForm, Gender, Person, PersonForm, PersonId, RepresentativeForm},
     political_groups::{
         AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId, ListSubmitter, ListSubmitterForm,
         ListSubmitterId, PoliticalGroup, PoliticalGroupForm, PoliticalGroupId,
@@ -47,6 +47,9 @@ pub fn sample_person(id: PersonId) -> Person {
         house_number: Some("10".to_string()),
         house_number_addition: Some("A".to_string()),
         street_name: Some("Stationsstraat".to_string()),
+        representative_initials: None,
+        representative_last_name: None,
+        representative_last_name_prefix: None,
         created_at: Utc::now(),
         updated_at: Utc::now(),
     }
@@ -78,6 +81,20 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
 
 pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
     AddressForm {
+        locality: "Juinen".to_string(),
+        postal_code: "1234 AB".to_string(),
+        house_number: "10".to_string(),
+        house_number_addition: "A".to_string(),
+        street_name: "Stationsstraat".to_string(),
+        csrf_token: csrf_token.clone(),
+    }
+}
+
+pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
+    RepresentativeForm {
+        representative_last_name: "Bakker".to_string(),
+        representative_last_name_prefix: "".to_string(),
+        representative_initials: "A.B.".to_string(),
         locality: "Juinen".to_string(),
         postal_code: "1234 AB".to_string(),
         house_number: "10".to_string(),

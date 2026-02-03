@@ -1,15 +1,17 @@
 {% extends "persons/components/overlay.html" %}
 
+{% block overlay_start %}<form method="post" action="{{ person.edit_representative_path() }}" class="overlay">{% endblock %}
+{% block overlay_end %}</form>{% endblock %}
+
 {% block overlay_content %}
   <div class="overlay-content steps">
-    {% let should_warn = true %}
     {% include "persons/components/edit_steps.html" %}
     <div class="form">
       <fieldset>
         <legend>
-          <h3>{{ "person.authorised_person"|trans }}</h3>
+          <h3>{{ "person.representative"|trans }}</h3>
         </legend>
-        <p>Under construction...</p>
+        {% include "persons/components/representative_form.html" %}
       </fieldset>
     </div>
   </div>

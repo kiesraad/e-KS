@@ -13,8 +13,8 @@
     </li>
     {% else %}
     <li>
-      <a href="{{ candidate.edit_authorised_person_path() }}">
-        {{ "person.authorised_person"|trans }}
+      <a href="{{ candidate.edit_representative_path() }}" class="{% if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+        {{ "person.representative"|trans }}
       </a>
     </li>
     {% endif %}

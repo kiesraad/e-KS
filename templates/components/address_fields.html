@@ -1,14 +1,12 @@
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-
 <div class="form-row">
-  <p class="form-field form-field-sm {% if form.data.postal_code.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if form.data.postal_code.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="postal_code">{{ "person.fields.postal_code"|trans }}</label>
     <input type="text" placeholder=" " name="postal_code" id="postal_code" value="{{ form.data.postal_code }}" />
     {% for error in form|error("postal_code") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field form-field-sm {% if form.data.house_number.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if form.data.house_number.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="house_number">{{ "person.fields.house_number"|trans }}</label>
     <input type="text" placeholder=" " name="house_number" id="house_number" value="{{ form.data.house_number }}" />
     {% for error in form|error("house_number") %}
@@ -26,14 +24,14 @@
 </div>
 
 <div class="form-row">
-  <p class="form-field {% if form.data.street_name.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field {% if form.data.street_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="street_name">{{ "person.fields.street_name"|trans }}</label>
     <input type="text" placeholder=" " name="street_name" id="street_name" value="{{ form.data.street_name }}" />
     {% for error in form|error("street_name") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field {% if form.data.locality.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field {% if form.data.locality.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="locality">{{ "person.fields.locality"|trans }}</label>
     <input type="text" placeholder=" " name="locality" id="locality" value="{{ form.data.locality }}" list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>

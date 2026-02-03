@@ -12,8 +12,8 @@ mod add;
 mod create;
 mod delete;
 mod edit_address;
-mod edit_authorised_person;
 mod edit_position;
+mod edit_representative;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
@@ -25,10 +25,10 @@ pub struct EditCandidatePositionPath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/candidate-lists/{list_id}/authorised-person/{person_id}",
+    "/candidate-lists/{list_id}/representative/{person_id}",
     rejection(AppError)
 )]
-pub struct EditAuthorisedPersonPath {
+pub struct EditRepresentativePath {
     pub list_id: CandidateListId,
     pub person_id: PersonId,
 }
@@ -79,8 +79,8 @@ impl Candidate {
         .to_string()
     }
 
-    pub fn edit_authorised_person_path(&self) -> String {
-        EditAuthorisedPersonPath {
+    pub fn edit_representative_path(&self) -> String {
+        EditRepresentativePath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
@@ -104,7 +104,7 @@ impl Candidate {
             .with_query_params(InitialEditQuery::new())
             .to_string()
         } else {
-            EditAuthorisedPersonPath {
+            EditRepresentativePath {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
@@ -124,7 +124,8 @@ pub fn candidate_router() -> Router<AppState> {
         .typed_post(create::create_person_candidate_list)
         .typed_get(edit_address::edit_person_address)
         .typed_post(edit_address::update_person_address)
-        .typed_get(edit_authorised_person::edit_authorised_person)
+        .typed_get(edit_representative::edit_representative)
+        .typed_post(edit_representative::update_representative)
         .typed_get(update::edit_person_form)
         .typed_post(update::update_person)
         .typed_post(delete::delete_person)

@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\nFROM persons\nWHERE id NOT IN (\n    SELECT person_id\n    FROM candidate_lists_persons\n    WHERE candidate_list_id = $1\n)\nORDER BY last_name asc, initials asc\n",
+  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\nFROM persons\nWHERE id = $1\n",
   "describe": {
     "columns": [
       {
@@ -65,36 +65,51 @@
       },
       {
         "ordinal": 10,
-        "name": "locality",
+        "name": "representative_last_name",
         "type_info": "Varchar"
       },
       {
         "ordinal": 11,
-        "name": "postal_code",
+        "name": "representative_last_name_prefix",
         "type_info": "Varchar"
       },
       {
         "ordinal": 12,
-        "name": "house_number",
+        "name": "representative_initials",
         "type_info": "Varchar"
       },
       {
         "ordinal": 13,
-        "name": "house_number_addition",
+        "name": "locality",
         "type_info": "Varchar"
       },
       {
         "ordinal": 14,
-        "name": "street_name",
+        "name": "postal_code",
         "type_info": "Varchar"
       },
       {
         "ordinal": 15,
+        "name": "house_number",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 16,
+        "name": "house_number_addition",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 17,
+        "name": "street_name",
+        "type_info": "Varchar"
+      },
+      {
+        "ordinal": 18,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 16,
+        "ordinal": 19,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
@@ -120,9 +135,12 @@
       true,
       true,
       true,
+      true,
+      true,
+      true,
       false,
       false
     ]
   },
-  "hash": "e7c9196f93fc10846b402565e180e403553daf5ad21daefd9affa4a1c4463078"
+  "hash": "ef9bbc6fae906b6684857af241632f9bb738c1de5c8ea0e0953c997fde21bc5f"
 }
