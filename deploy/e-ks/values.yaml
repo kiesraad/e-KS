@@ -1,5 +1,6 @@
 hostname: "eks-test.nl"
 subdomain: "<branchname>"
+requireLogin: true
 
 db:
   setup: false
