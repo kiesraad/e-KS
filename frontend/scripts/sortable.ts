@@ -365,7 +365,6 @@ class SortableTable {
    */
   private handleMouseUp(event: MouseEvent) {
     if (!this.drag) {
-      console.log("No active drag on mouse up");
       return;
     }
 
