@@ -26,6 +26,7 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - Overzichtspagina voor CSB's
 - Registratie partijen fase 1
 - EML (kandidatenlijsten, totaallijst en verkiezingsdefinitie)
+- Verzuimen invoeren door CSB
 - Verzuimbrieven genereren
 - Design systeem
 - Monitoring
