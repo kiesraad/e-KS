@@ -26,8 +26,7 @@ __Niveau:__ Gebruikersdoel, zee, 🌊
 
 __Hoofdscenario:__
 
-1. De gebruiker logt in met e-Herkenning.
-2. De gebruiker kiest rol: gemachtigde of lijstinleveraar.
+1. De gebruiker logt in met DigiD.
 
 
 ## Politieke groepering zet alle algemene lijstgegevens in de applicatie (zee), art. R (voor Eerste Kamerverkiezing)
@@ -39,20 +38,23 @@ __Niveau:__ Gebruikersdoel, zee, 🌊
 
 __Hoofdscenario:__
 
-1. De politieke groepering selecteert het type groepering.
-2. De gemachtigde vult de gegevens van de lijstinleveraar in, dit kan ook een bestaande kandidaat zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
-3. De politieke groepering vult de gegevens van de politieke groepering in: aanduiding, volledige statuaire naam, gemachtigde per groepering. **art. R (voor Eerste Kamerverkiezing)** 
-4. De applicatie bepaalt de maximale lengte van de lijst o.b.v. de uitslag van de vorige verkiezing. **art. R 4 (voor Eerste Kamerverkiezing)** 
-5. De politieke groepering bevestigt de maximale lijstlengte.
+1. De gebruiker selecteert dat ze meedoen met een op zichzelfstaande geregistreerde naam.
+2. De gebruiker vult in dat er bij de vorige verkiezing 16 of meer zetels zijn behaald en mag hierdoor maximaal 80 kandidaten op de lijst plaatsen **art. R 4 (voor Eerste Kamerverkiezing)** 
+3. De gebruiker vult de gegevens van de politieke groepering in: aanduiding en volledige statuaire naam. **art. R (voor Eerste Kamerverkiezing)** 
+4. De gebruiker vult de gegevens van de gemachtigde in.
+3. De gebruiker vult de gegevens van de lijstinleveraar in en de vervangers voor herstel verzuim, dit kunnen oo bestaande kandidaten zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
+
 
 __Uitbreidingen__: 
-3a. [De politieke groepering kiest ervoor om de lijst samen in te leveren](#de-politieke-groepering-kiest-ervoor-om-de-lijst-samen-in-te-leveren)
-  
+1a. [De politieke groepering kiest ervoor om de lijst samen in te leveren](#de-politieke-groepering-kiest-ervoor-om-de-lijst-samen-in-te-leveren)
+1b. De politieke groepering doet mee met een blanco lijst.
+  1b1. De politieke groepering hoeft geen gemachtigde te selecteren
+2a. De politieke groering vult in dat ze minder dan 16 zetels hebben behaald en mogen daardoor maximaal 50 kandidaten op de lijst plaatsen
 
 ### Open punten
 
-- Check wie welke stap doet.
-- Checken of inderdaad voor elke H1 een andere lijstinleveraar
+- Check wie welke stap doet. >> Fase 1, een gebruiker kan iedereen zijn. Authenticatie wordt nog schriftelijk gedaan
+- Checken of inderdaad voor elke H1 een andere lijstinleveraar >> Ja dat mag
 
 ## Politieke groepering maakt de kandidatenlijsten (zee) art. R (voor Eerste Kamerverkiezing)
 
@@ -71,7 +73,6 @@ __Hoofdscenario:__
 Optioneel vervolg: door naar stap 1
 
 __Uitbreidingen__:
-
 
 - 1a. Politieke groepering selecteert een bestaande lijst als sjabloon
 - 2a. Politieke groepering kiest voor deze lijst een andere lijstinleveraar
