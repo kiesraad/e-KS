@@ -11,6 +11,8 @@ set -euo pipefail
     --loader:.svg=file \
     --public-path=/static/
 
+cp frontend/favicon.svg frontend/static/favicon.svg
+
 cargo build \
     --features memory-serve \
     --no-default-features \
