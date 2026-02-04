@@ -1,5 +1,5 @@
 const COUNTRY_INPUT_SELECTOR = ".country_input";
-// const COUNTRY_OPTION_SELECTOR = "#countries option";
+const COUNTRY_OPTION_SELECTOR = "#countries option";
 
 function getCountryInputs(): NodeListOf<HTMLInputElement> {
   return document.querySelectorAll(COUNTRY_INPUT_SELECTOR);
@@ -46,9 +46,9 @@ if (typeof window !== "undefined") {
     });
 
     // Add country flags to options, disabled for now, since these emojis are not rendered correctly in all browsers
-    // const options = document.querySelectorAll(COUNTRY_OPTION_SELECTOR);
-    // options.forEach((option) => {
-    //   option.innerText = `${countryCodeToFlagEmoji(option.value)} ${option.value}`;
-    // });
+    const options = document.querySelectorAll(COUNTRY_OPTION_SELECTOR);
+    options.forEach((option) => {
+      option.innerText = `${countryCodeToFlagEmoji(option.value)} ${option.value}`;
+    });
   });
 }

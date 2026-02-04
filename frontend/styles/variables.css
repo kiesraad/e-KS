@@ -19,7 +19,7 @@
 @font-face {
   font-family: "FlagEmojis";
   unicode-range: U+1F1E6-1F1FF; /* range for flag emojis */
-  src: url("../fonts/NotoColorEmoji/NotoColorEmojiFlags.woff2") format("woff2");
+  src: url("../fonts/OpenMoji/OpenMoji-flags.woff2") format("woff2");
 }
 
 :root {
