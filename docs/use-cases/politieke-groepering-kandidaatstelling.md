@@ -45,11 +45,11 @@ __Hoofdscenario:__
 3. De gebruiker vult de gegevens van de lijstinleveraar in en de vervangers voor herstel verzuim, dit kunnen oo bestaande kandidaten zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
 
 
-__Uitbreidingen__: 
-1a. [De politieke groepering kiest ervoor om de lijst samen in te leveren](#de-politieke-groepering-kiest-ervoor-om-de-lijst-samen-in-te-leveren)
-1b. De politieke groepering doet mee met een blanco lijst.
-  1b1. De politieke groepering hoeft geen gemachtigde te selecteren
-2a. De politieke groering vult in dat ze minder dan 16 zetels hebben behaald en mogen daardoor maximaal 50 kandidaten op de lijst plaatsen
+__Uitbreidingen__:   
+1a. [De politieke groepering kiest ervoor om de lijst samen in te leveren](#de-politieke-groepering-kiest-ervoor-om-de-lijst-samen-in-te-leveren)  
+1b. De politieke groepering doet mee met een blanco lijst.  
+  1b1. De politieke groepering hoeft geen gemachtigde te selecteren  
+2a. De politieke groering vult in dat ze minder dan 16 zetels hebben behaald en mogen daardoor maximaal 50 kandidaten op de lijst plaatsen  
 
 ### Open punten
 
