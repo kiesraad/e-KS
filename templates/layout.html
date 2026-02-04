@@ -1,52 +1,59 @@
 {% extends "base.html" %}
 
 {% block body %}
-  {% block overlay %}{% endblock %}
-  <header>
-    <nav>
-      <ul>
-        <li>
-          <a href="/" class="home">
-            <span>{{ "common.home"|trans }}</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ crate::political_groups::PoliticalGroup::edit_path() }}">
-            {{ "common.general_information"|trans }}
-          </a>
-        </li>
-        <li>
-          <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
-            {{ "candidate_list.title"|trans }}
-          </a>
-        </li>
-        <li>
-          <a href="{{ crate::submit::SubmitPath{}.to_string() }}">
-            {{ "common.submit"|trans }}
-          </a>
-        </li>
-      </ul>
-      <ul>
-        <li class="user-info">
-          <strong>Evert Klaas Smit</strong>
-          <span>(Lijst Hekking)</span>
-        </li>
-        <li><a href="/" class="logout">{{ "action.signout"|trans }}</a></li>
-      </ul>
-    </nav>
-    <div class="header-content">
-      <div>
-        <h1>{% block page_title %}{{ "common.title"|trans }}{% endblock %}</h1>
-        {% block page_sub_title %}{% endblock %}
-      </div>
-      {% block header_action %}{% endblock %}
+{% block overlay %}{% endblock %}
+<header>
+  <nav>
+    <ul>
+      <li>
+        <a href="/" class="home">
+          <span>{{ "common.home"|trans }}</span>
+        </a>
+      </li>
+      <li>
+        <a href="{{ crate::political_groups::PoliticalGroup::edit_path() }}">
+          {{ "common.general_information"|trans }}
+        </a>
+      </li>
+      <li>
+        <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
+          {{ "candidate_list.title"|trans }}
+        </a>
+      </li>
+      <li>
+        <a href="{{ crate::submit::SubmitPath{}.to_string() }}">
+          {{ "common.submit"|trans }}
+        </a>
+      </li>
+    </ul>
+    <ul>
+      <li class="user-info">
+        <strong>Evert Klaas Smit</strong>
+        <span>(Lijst Hekking)</span>
+      </li>
+      <li><a href="/" class="logout">{{ "action.signout"|trans }}</a></li>
+      <li>
+        <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST">
+<!--          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">-->
+          <button type="submit" name="lang" value="en">English</button>
+          <button type="submit" name="lang" value="nl">Nederlands</button>
+        </form>
+      </li>
+    </ul>
+  </nav>
+  <div class="header-content">
+    <div>
+      <h1>{% block page_title %}{{ "common.title"|trans }}{% endblock %}</h1>
+      {% block page_sub_title %}{% endblock %}
     </div>
-  </header>
-  <main class="{% block main_class %}{% endblock %}">
-    {% block content %}{% endblock %}
-  </main>
-  <footer>
-    <span>{{ "common.title"|trans }}</span>
-    <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
-  </footer>
+    {% block header_action %}{% endblock %}
+  </div>
+</header>
+<main class="{% block main_class %}{% endblock %}">
+  {% block content %}{% endblock %}
+</main>
+<footer>
+  <span>{{ "common.title"|trans }}</span>
+  <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
+</footer>
 {% endblock %}

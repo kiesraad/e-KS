@@ -7,7 +7,7 @@ use axum::{Router, middleware, routing::get};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, candidate_lists, pages, persons, political_groups, render_error_pages, submit,
+    AppState, candidate_lists, locale, pages, persons, political_groups, render_error_pages, submit,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -17,7 +17,8 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(political_groups::router())
         .merge(submit::router())
         .merge(candidate_lists::router())
-        .merge(candidate_lists::candidate_router());
+        .merge(candidate_lists::candidate_router())
+        .merge(locale::locale_router());
 
     #[cfg(feature = "dev-features")]
     let bag_service_url =

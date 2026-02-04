@@ -1,18 +1,72 @@
 //! Locale detection and formatting helpers for request handling.
 //! Extracted from Accept-Language headers and used by Context and templates.
 
-use std::convert::Infallible;
-
+use crate::{AppError, AppState, Context, TokenValue, form::Validate};
 use axum::{
+    Router,
     extract::FromRequestParts,
     http::{header, request::Parts},
+    response::{IntoResponse, Response},
 };
+use axum_extra::{
+    extract::{CookieJar, Form, cookie::Cookie},
+    routing::{RouterExt, TypedPath},
+};
+use serde::{Deserialize, Serialize};
+use std::{convert::Infallible, str::FromStr};
+use validate::Validate;
+
+#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
+#[validate(target = "LanguageSwitch")]
+struct LanguageSwitchForm {
+    #[validate(parse = "Locale")]
+    lang: String,
+    #[validate(csrf)]
+    pub csrf_token: TokenValue,
+}
+
+#[derive(Default, Clone, Debug)]
+struct LanguageSwitch {
+    lang: Locale,
+}
+
+#[derive(TypedPath)]
+#[typed_path("/language", rejection(AppError))]
+pub struct SwitchLanguagePath;
+
+async fn switch_language(
+    _: SwitchLanguagePath,
+    context: Context,
+    mut cookie_jar: CookieJar,
+    Form(form): Form<LanguageSwitchForm>,
+) -> Result<Response, AppError> {
+    match form.validate_create(&context.csrf_tokens) {
+        Err(_) => Ok(().into_response()),
+        Ok(LanguageSwitch { lang }) => {
+            cookie_jar = cookie_jar.add(Cookie::new("LANGUAGE", lang.as_str()));
+
+            Ok(cookie_jar.into_response())
+        }
+    }
+}
 
 #[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
 pub enum Locale {
     En,
     #[default]
     Nl,
+}
+
+impl FromStr for Locale {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "en" => Ok(Locale::En),
+            "nl" => Ok(Locale::Nl),
+            _ => Err("invalid locale"),
+        }
+    }
 }
 
 impl Locale {
@@ -72,6 +126,10 @@ where
 
         Ok(locale)
     }
+}
+
+pub fn locale_router() -> Router<AppState> {
+    Router::new().typed_post(switch_language)
 }
 
 #[cfg(test)]
