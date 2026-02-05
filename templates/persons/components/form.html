@@ -53,20 +53,20 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field form-field-sm {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field form-field-sm {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="country_of_residence" class="required">{{ "person.fields.country_of_residence"|trans }}</label>
-    <span class="country_input input-icon">
+    <div class="country-input input-icon">
       <span class="icon">🌐</span>
       <input type="text" placeholder=" " name="country_of_residence" id="country_of_residence"
-        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" list="countries" required />
-      <datalist id="countries">
+        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" required />
+      <ul>
         {% for country in countries %}
-        <option value="{{ country }}" />
+        <li data-country="{{ country }}"><span>{{ country|flag }}</span> {{ country }}</li>
         {% endfor %}
-      </datalist>
-    </span>
+      </ul>
+    </div>
     {% for error in form|error("country_of_residence") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
-  </p>
+  </div>
 </div>

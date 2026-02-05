@@ -28,7 +28,7 @@
   --font-header-body: "DMSans";
   --font-text: "DMSans";
   --font-number: "GeistMono", monospace, monospace;
-  --font-flag-emojis: "FlagEmojis";
+  --font-flag-emojis: "FlagEmojis", "DMSans";
 
   --font-size-xs: 0.75rem;
   --font-size-sm: 0.875rem;

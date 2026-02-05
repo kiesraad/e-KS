@@ -21,6 +21,28 @@ pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result
 }
 
 #[askama::filter_fn]
+pub fn flag(country_code: &str, _: &dyn askama::Values) -> askama::Result<String> {
+    if !country_code.is_ascii() || country_code.len() != 2 {
+        return Ok("🌐".to_string());
+    }
+
+    let mut flag = String::new();
+
+    for c in country_code.chars() {
+        let code = 0x1f1e6 + c.to_ascii_uppercase() as u32 - 65;
+
+        match char::from_u32(code) {
+            Some(flag_char) => flag.push(flag_char),
+            None => {
+                return Ok("🌐".to_string());
+            }
+        }
+    }
+
+    Ok(flag)
+}
+
+#[askama::filter_fn]
 pub fn trans(
     key: &str,
     values: &dyn askama::Values,

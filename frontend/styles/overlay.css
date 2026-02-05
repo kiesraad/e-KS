@@ -34,6 +34,7 @@ body.overlay-open {
   flex-direction: column;
   position: relative;
   z-index: 1000;
+  overflow: hidden;
   top: var(--space-lg);
   left: var(--space-lg);
   width: calc(100% - 2 * var(--space-lg));
