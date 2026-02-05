@@ -10,9 +10,7 @@
       {{ "candidate_list.form.update.title"|trans }}
     </h2>
     <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
-      <span>
-        {{ "action.close"|trans }}
-      </span>
+      <span>{{ "action.close"|trans }}</span>
     </a>
   </header>
   <div class="overlay-content steps">
@@ -48,9 +46,7 @@
   <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>
-        {{ "action.close"|trans }}
-      </span>
+      <span>{{ "action.close"|trans }}</span>
     </button>
     <h3>
       {{ "candidate_list.actions.delete_list"|trans }}

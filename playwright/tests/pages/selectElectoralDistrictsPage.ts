@@ -13,6 +13,6 @@ export class SelectElectoralDistrictsPage {
 
     await this.page.getByRole("button", { name: "Volgende" }).click();
     // TODO Grietje: deze test fatsoenlijk fixen met selecteren list submitter
-    await this.page.getByRole("link", { name: "Close" }).click();
+    await this.page.getByRole("link", { name: "Sluiten" }).click();
   }
 }

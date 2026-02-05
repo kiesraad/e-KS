@@ -36,9 +36,7 @@
   <form method="post" action="{{ substitute_submitter.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>
-        {{ "action.close"|trans }}
-      </span>
+      <span>{{ "action.close"|trans }}</span>
     </button>
     <h3>
       {{ "political_group.actions.delete_substitute_submitter"|trans }}

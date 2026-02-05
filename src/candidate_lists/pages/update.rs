@@ -171,7 +171,7 @@ mod tests {
             vec![ElectoralDistrict::DR],
             updated_list.electoral_districts
         );
-        assert!((candidate_list.created_at - Utc::now()).abs() < Duration::seconds(10));
+        assert!(Utc::now() - candidate_list.updated_at < Duration::seconds(10));
         // we don't know the exact update date
         // best we can do is to check it at least got updated (i.e. not equal to creation_date)
         assert_ne!(candidate_list.created_at, updated_list.updated_at);

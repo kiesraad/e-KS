@@ -28,9 +28,7 @@
   <form method="post" action="{{ candidate.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>
-        {{ "action.close"|trans }}
-      </span>
+      <span>{{ "action.close"|trans }}</span>
     </button>
     <h3>
       {{ "person.actions.delete"|trans }}
