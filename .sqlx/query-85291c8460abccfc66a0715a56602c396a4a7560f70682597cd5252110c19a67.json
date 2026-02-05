@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "UPDATE persons\nSET\n    locality = $1,\n    postal_code = $2,\n    house_number = $3,\n    house_number_addition = $4,\n    street_name = $5,\n    updated_at = NOW()\nWHERE id = $6\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n",
+  "query": "INSERT INTO persons (\n    id,\n    gender,\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    no_bsn_confirmed,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n)\nVALUES (\n    $1,\n    $2,\n    $3,\n    $4,\n    $5,\n    $6,\n    $7,\n    $8,\n    $9,\n    $10,\n    $11,\n    $12,\n    $13,\n    $14,\n    $15,\n    $16,\n    $17,\n    $18,\n    $19,\n    $20,\n    $21\n)\nRETURNING\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    no_bsn_confirmed,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
@@ -10,7 +10,7 @@
       },
       {
         "ordinal": 1,
-        "name": "gender?: Gender",
+        "name": "gender: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -55,73 +55,103 @@
       },
       {
         "ordinal": 8,
+        "name": "no_bsn_confirmed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
         "name": "place_of_residence",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "country_of_residence",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "representative_last_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "representative_last_name_prefix",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "representative_initials",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "locality",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "postal_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "house_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "house_number_addition",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "street_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
+        "Uuid",
+        {
+          "Custom": {
+            "name": "gender",
+            "kind": {
+              "Enum": [
+                "male",
+                "female"
+              ]
+            }
+          }
+        },
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Date",
+        "Varchar",
+        "Bool",
         "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
         "Varchar",
-        "Uuid"
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Timestamptz",
+        "Timestamptz"
       ]
     },
     "nullable": [
@@ -133,6 +163,7 @@
       false,
       true,
       true,
+      false,
       true,
       true,
       true,
@@ -147,5 +178,5 @@
       false
     ]
   },
-  "hash": "c37ef091a164a8f4b8ce5d610b0aa2b6b48bde006fd9c9d3b19276ef7bcf7d0f"
+  "hash": "85291c8460abccfc66a0715a56602c396a4a7560f70682597cd5252110c19a67"
 }

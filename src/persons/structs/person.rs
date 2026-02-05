@@ -18,6 +18,7 @@ pub struct Person {
     pub gender: Option<Gender>,
 
     pub bsn: Option<String>,
+    pub no_bsn_confirmed: bool,
     pub date_of_birth: Option<NaiveDate>,
 
     pub place_of_residence: Option<String>,
@@ -138,6 +139,7 @@ mod tests {
             initials: "A.B.".to_string(),
             first_name: None,
             bsn: None,
+            no_bsn_confirmed: false,
             place_of_residence: None,
             country_of_residence: None,
             gender: None,

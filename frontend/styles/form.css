@@ -47,7 +47,8 @@
       }
     }
 
-    .autoformat {
+    .autoformat,
+    .no_bsn_confirmed {
       font-size: var(--font-size-sm);
       font-weight: normal;
       color: var(--text-color-body);
@@ -182,6 +183,11 @@
 
 .form input[type="number"] {
   appearance: textfield;
+}
+
+.form input:disabled {
+  background-color: var(--bg-gray-light);
+  cursor: not-allowed;
 }
 
 .form textarea {

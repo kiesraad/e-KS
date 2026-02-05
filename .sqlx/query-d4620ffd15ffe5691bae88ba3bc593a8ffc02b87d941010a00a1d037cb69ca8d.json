@@ -1,6 +1,6 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\nFROM persons\nORDER BY\n    CASE WHEN $3 = 'last_name' AND $4 = 'asc' THEN last_name END ASC,\n    CASE WHEN $3 = 'last_name' AND $4 = 'desc' THEN last_name END DESC,\n    CASE WHEN $3 = 'first_name' AND $4 = 'asc' THEN first_name END ASC,\n    CASE WHEN $3 = 'first_name' AND $4 = 'desc' THEN first_name END DESC,\n    CASE WHEN $3 = 'initials' AND $4 = 'asc' THEN initials END ASC,\n    CASE WHEN $3 = 'initials' AND $4 = 'desc' THEN initials END DESC,\n    CASE WHEN $3 = 'gender' AND $4 = 'asc' THEN gender END ASC,\n    CASE WHEN $3 = 'gender' AND $4 = 'desc' THEN gender END DESC,\n    CASE WHEN $3 = 'place_of_residence' AND $4 = 'asc' THEN place_of_residence END ASC,\n    CASE WHEN $3 = 'place_of_residence' AND $4 = 'desc' THEN place_of_residence END DESC,\n    CASE WHEN $3 = 'created_at' AND $4 = 'asc' THEN created_at END ASC,\n    CASE WHEN $3 = 'created_at' AND $4 = 'desc' THEN created_at END DESC,\n    CASE WHEN $3 = 'updated_at' AND $4 = 'asc' THEN updated_at END ASC,\n    CASE WHEN $3 = 'updated_at' AND $4 = 'desc' THEN updated_at END DESC,\n    id DESC\nLIMIT $1\nOFFSET $2\n",
+  "query": "SELECT\n    id,\n    gender as \"gender: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    no_bsn_confirmed,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\nFROM persons\nWHERE id NOT IN (\n    SELECT person_id\n    FROM candidate_lists_persons\n    WHERE candidate_list_id = $1\n)\nORDER BY last_name asc, initials asc\n",
   "describe": {
     "columns": [
       {
@@ -55,71 +55,73 @@
       },
       {
         "ordinal": 8,
+        "name": "no_bsn_confirmed",
+        "type_info": "Bool"
+      },
+      {
+        "ordinal": 9,
         "name": "place_of_residence",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 9,
+        "ordinal": 10,
         "name": "country_of_residence",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 10,
+        "ordinal": 11,
         "name": "representative_last_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 11,
+        "ordinal": 12,
         "name": "representative_last_name_prefix",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 12,
+        "ordinal": 13,
         "name": "representative_initials",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 13,
+        "ordinal": 14,
         "name": "locality",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 14,
+        "ordinal": 15,
         "name": "postal_code",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 15,
+        "ordinal": 16,
         "name": "house_number",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 16,
+        "ordinal": 17,
         "name": "house_number_addition",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 17,
+        "ordinal": 18,
         "name": "street_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 18,
+        "ordinal": 19,
         "name": "created_at",
         "type_info": "Timestamptz"
       },
       {
-        "ordinal": 19,
+        "ordinal": 20,
         "name": "updated_at",
         "type_info": "Timestamptz"
       }
     ],
     "parameters": {
       "Left": [
-        "Int8",
-        "Int8",
-        "Text",
-        "Text"
+        "Uuid"
       ]
     },
     "nullable": [
@@ -131,6 +133,7 @@
       false,
       true,
       true,
+      false,
       true,
       true,
       true,
@@ -145,5 +148,5 @@
       false
     ]
   },
-  "hash": "239734d160e46ceadaa977dbb1f7ac596f0e3bc2c28cfe400936cab152164965"
+  "hash": "d4620ffd15ffe5691bae88ba3bc593a8ffc02b87d941010a00a1d037cb69ca8d"
 }

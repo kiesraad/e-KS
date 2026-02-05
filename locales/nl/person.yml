@@ -29,6 +29,7 @@ form:
 hints:
   first_name: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
   gender: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
+no_bsn_confirm: Ik bevestig dat deze persoon geen BSN heeft.
 list:
   empty: Geen personen gevonden.
 not_found: "Persoon {} niet gevonden."

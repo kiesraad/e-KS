@@ -10,6 +10,7 @@ CREATE TABLE persons
     first_name            VARCHAR(255),
     -- required personal details
     bsn                   VARCHAR(9),
+    no_bsn_confirmed      BOOLEAN                  NOT NULL DEFAULT FALSE,
     place_of_residence    VARCHAR(255),
     country_of_residence  VARCHAR(2),
     -- personal details

@@ -7,6 +7,7 @@ INSERT INTO persons (
     initials,
     date_of_birth,
     bsn,
+    no_bsn_confirmed,
     place_of_residence,
     country_of_residence,
     representative_last_name,
@@ -40,7 +41,8 @@ VALUES (
     $17,
     $18,
     $19,
-    $20
+    $20,
+    $21
 )
 RETURNING
     id,
@@ -51,6 +53,7 @@ RETURNING
     initials,
     date_of_birth,
     bsn,
+    no_bsn_confirmed,
     place_of_residence,
     country_of_residence,
     representative_last_name,

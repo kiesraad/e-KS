@@ -12,5 +12,6 @@ import "./scripts/modal";
 import "./scripts/position-preview";
 import "./scripts/active-link";
 import "./scripts/select-all-checkbox";
+import "./scripts/bsn-input";
 
 import "./styles/index.css";

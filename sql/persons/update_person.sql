@@ -7,10 +7,11 @@ SET
     initials = $5,
     date_of_birth = $6,
     bsn = $7,
-    place_of_residence = $8,
-    country_of_residence = $9,
+    no_bsn_confirmed = $8,
+    place_of_residence = $9,
+    country_of_residence = $10,
     updated_at = NOW()
-WHERE id = $10
+WHERE id = $11
 RETURNING
     id,
     gender as "gender: Gender",
@@ -20,6 +21,7 @@ RETURNING
     initials,
     date_of_birth,
     bsn,
+    no_bsn_confirmed,
     place_of_residence,
     country_of_residence,
     representative_last_name,

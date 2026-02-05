@@ -50,16 +50,20 @@ pub async fn update_person(
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &context.csrf_tokens) {
-        Err(form_data) => Ok(HtmlTemplate(
-            PersonUpdateTemplate {
-                person,
-                person_pagination,
-                form: form_data,
-                countries: &COUNTRY_CODES,
-            },
-            context,
-        )
-        .into_response()),
+        Err(form_data) => {
+            dbg!(&form_data);
+
+            Ok(HtmlTemplate(
+                PersonUpdateTemplate {
+                    person,
+                    person_pagination,
+                    form: form_data,
+                    countries: &COUNTRY_CODES,
+                },
+                context,
+            )
+            .into_response())
+        }
         Ok(person) => {
             persons::update_person(&pool, &person).await?;
 

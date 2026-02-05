@@ -42,6 +42,8 @@ pub struct PersonForm {
     pub date_of_birth: String,
     #[validate(with = "validate_eleven_check()", optional)]
     pub bsn: String,
+    #[validate(parse = "bool")]
+    pub no_bsn_confirmed: String,
     #[validate(
         with = "validate_length(2, 255)",
         with = "validate_teletex_chars()",
@@ -67,6 +69,7 @@ impl From<Person> for PersonForm {
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
             bsn: person.bsn.unwrap_or_default(),
+            no_bsn_confirmed: person.no_bsn_confirmed.to_string(),
             place_of_residence: person.place_of_residence.unwrap_or_default(),
             country_of_residence: person.country_of_residence.unwrap_or_default(),
             csrf_token: Default::default(),
@@ -100,6 +103,7 @@ mod tests {
             initials: "E.D.".to_string(),
             date_of_birth: None,
             bsn: None,
+            no_bsn_confirmed: false,
             place_of_residence: Some("Waterdam".to_string()),
             country_of_residence: Some("NL".to_string()),
             locality: Some("Heemdamseburg".to_string()),
@@ -128,6 +132,7 @@ mod tests {
             initials: "E.D.".to_string(),
             date_of_birth: "01-02-2020".to_string(),
             bsn: "".to_string(),
+            no_bsn_confirmed: "true".to_string(),
             place_of_residence: "Waterdam".to_string(),
             country_of_residence: " nl ".to_string(),
             csrf_token: tokens.issue().value,
@@ -167,6 +172,7 @@ mod tests {
             initials: "jd".to_string(),
             date_of_birth: "2020/01/01".to_string(),
             bsn: "".to_string(),
+            no_bsn_confirmed: "true".to_string(),
             place_of_residence: "x".to_string(),
             country_of_residence: "xx".to_string(),
             csrf_token: tokens.issue().value,

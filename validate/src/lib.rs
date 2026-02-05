@@ -366,12 +366,19 @@ fn build_field_validation(
                 } else {
                     quote!({
                         let value = self.#ident.trim();
-                        if value.is_empty() {
-                            errors.push((
-                                #field_name.to_string(),
-                                crate::form::ValidationError::ValueShouldNotBeEmpty,
-                            ));
-                            None
+                        let is_bool = std::any::TypeId::of::<#ty>() == std::any::TypeId::of::<bool>();
+
+                        if value.is_empty()
+                        {
+                            if (is_bool) {
+                                Some(<#ty as ::std::str::FromStr>::from_str(value).unwrap_or_default())
+                            } else {
+                                errors.push((
+                                    #field_name.to_string(),
+                                    crate::form::ValidationError::ValueShouldNotBeEmpty,
+                                ));
+                                None
+                            }
                         } else {
                             match <#ty as ::std::str::FromStr>::from_str(value) {
                                 Ok(value) => Some(value),

@@ -7,6 +7,7 @@ SELECT
     initials,
     date_of_birth,
     bsn,
+    no_bsn_confirmed,
     place_of_residence,
     country_of_residence,
     representative_last_name,

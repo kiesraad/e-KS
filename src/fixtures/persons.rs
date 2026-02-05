@@ -64,6 +64,7 @@ impl PersonRecord {
             initials,
             date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d").ok(),
             bsn: Some(self.burgerservicenummer),
+            no_bsn_confirmed: false,
             place_of_residence: locality.clone(),
             country_of_residence: Some("NL".to_string()),
             locality,

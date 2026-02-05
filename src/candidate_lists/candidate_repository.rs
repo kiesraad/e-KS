@@ -35,6 +35,7 @@ pub async fn get_full_candidate_list(
             initials: row.initials,
             date_of_birth: row.date_of_birth,
             bsn: row.bsn,
+            no_bsn_confirmed: row.no_bsn_confirmed,
             place_of_residence: row.place_of_residence,
             country_of_residence: row.country_of_residence,
             representative_last_name: row.representative_last_name,

@@ -1,21 +1,16 @@
 {
   "db_name": "PostgreSQL",
-  "query": "SELECT\n    clp.position,\n    p.id as \"id: PersonId\",\n    p.gender as \"gender: Gender\",\n    p.last_name,\n    p.last_name_prefix,\n    p.first_name,\n    p.initials,\n    p.date_of_birth,\n    p.bsn,\n    p.place_of_residence,\n    p.country_of_residence,\n    p.representative_last_name,\n    p.representative_last_name_prefix,\n    p.representative_initials,\n    p.locality,\n    p.postal_code,\n    p.house_number,\n    p.house_number_addition,\n    p.street_name,\n    p.created_at,\n    p.updated_at\nFROM candidate_lists_persons clp\nJOIN persons p ON p.id = clp.person_id\nWHERE clp.candidate_list_id = $1\nORDER BY clp.position ASC\n",
+  "query": "UPDATE persons\nSET\n    locality = $1,\n    postal_code = $2,\n    house_number = $3,\n    house_number_addition = $4,\n    street_name = $5,\n    updated_at = NOW()\nWHERE id = $6\nRETURNING\n    id,\n    gender as \"gender?: Gender\",\n    last_name,\n    last_name_prefix,\n    first_name,\n    initials,\n    date_of_birth,\n    bsn,\n    no_bsn_confirmed,\n    place_of_residence,\n    country_of_residence,\n    representative_last_name,\n    representative_last_name_prefix,\n    representative_initials,\n    locality,\n    postal_code,\n    house_number,\n    house_number_addition,\n    street_name,\n    created_at,\n    updated_at\n",
   "describe": {
     "columns": [
       {
         "ordinal": 0,
-        "name": "position",
-        "type_info": "Int4"
-      },
-      {
-        "ordinal": 1,
-        "name": "id: PersonId",
+        "name": "id",
         "type_info": "Uuid"
       },
       {
-        "ordinal": 2,
-        "name": "gender: Gender",
+        "ordinal": 1,
+        "name": "gender?: Gender",
         "type_info": {
           "Custom": {
             "name": "gender",
@@ -29,34 +24,39 @@
         }
       },
       {
-        "ordinal": 3,
+        "ordinal": 2,
         "name": "last_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 4,
+        "ordinal": 3,
         "name": "last_name_prefix",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 5,
+        "ordinal": 4,
         "name": "first_name",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 6,
+        "ordinal": 5,
         "name": "initials",
         "type_info": "Varchar"
       },
       {
-        "ordinal": 7,
+        "ordinal": 6,
         "name": "date_of_birth",
         "type_info": "Date"
       },
       {
-        "ordinal": 8,
+        "ordinal": 7,
         "name": "bsn",
         "type_info": "Varchar"
+      },
+      {
+        "ordinal": 8,
+        "name": "no_bsn_confirmed",
+        "type_info": "Bool"
       },
       {
         "ordinal": 9,
@@ -121,12 +121,16 @@
     ],
     "parameters": {
       "Left": [
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
+        "Varchar",
         "Uuid"
       ]
     },
     "nullable": [
       false,
-      false,
       true,
       false,
       true,
@@ -134,6 +138,7 @@
       false,
       true,
       true,
+      false,
       true,
       true,
       true,
@@ -148,5 +153,5 @@
       false
     ]
   },
-  "hash": "35386ec5b6692e1ac8b2ae01d7ee22323c84295deae93fb1e6f0d91c33c03d83"
+  "hash": "9f71940275f794653871444f0b494139b0075489f7c37a062a6123df28f80f35"
 }

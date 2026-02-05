@@ -25,7 +25,7 @@
   </p>
 </div>
 <div class="form-row">
-  <p class="form-field form-field-sm {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
     <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
     <input type="text" placeholder=" " name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
       placeholder="dd-mm-jjjj" inputmode="numeric" />
@@ -33,11 +33,15 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.bsn.is_empty() && should_warn && form.data.no_bsn_confirmed != "true" %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <div class="obfuscate">
       <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
     </div>
+    <label for="no_bsn_confirmed" class="no_bsn_confirmed">
+      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed == "true" %}checked{% endif %} />
+      <span>{{ "person.no_bsn_confirm"|trans }}</span>
+    </label>
     {% for error in form|error("bsn") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
