@@ -1,0 +1,10 @@
+.button-group {
+  display: inline-flex;
+  border-radius: var(--rounded-default);
+  overflow: hidden;
+}
+
+.button-group > .button {
+  border-radius: 0;
+  margin: 0;
+}

@@ -1,7 +1,18 @@
 {% extends "base.html" %}
 
+
+
 {% block body %}
 {% block overlay %}{% endblock %}
+
+{% decl lang %}
+{% match "locale"|value::<crate::Locale> %}
+{% when Ok(locale) %}
+  {% let lang = locale.clone().clone() %}
+{% when Err(_) %}
+  {% let lang = crate::Locale::Nl %}
+{% endmatch %}
+
 <header>
   <nav>
     <ul>
@@ -34,9 +45,10 @@
       <li><a href="/" class="logout">{{ "action.signout"|trans }}</a></li>
       <li>
         <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST">
-<!--          <input type="hidden" name="csrf_token" value="{{ csrf_token }}">-->
-          <button type="submit" name="lang" value="en">English</button>
-          <button type="submit" name="lang" value="nl">Nederlands</button>
+          <div class="button-group">
+            <button class="button sm {% if (lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">English</button>
+            <button class="button sm {% if (lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">Nederlands</button>
+          </div>
         </form>
       </li>
     </ul>

@@ -1,31 +1,25 @@
 //! Locale detection and formatting helpers for request handling.
 //! Extracted from Accept-Language headers and used by Context and templates.
 
-use crate::{AppError, AppState, Context, TokenValue, form::Validate};
+use crate::{AppError, AppState};
 use axum::{
     Router,
     extract::FromRequestParts,
     http::{header, request::Parts},
-    response::{IntoResponse, Response},
+    response::Redirect,
 };
 use axum_extra::{
+    TypedHeader,
     extract::{CookieJar, Form, cookie::Cookie},
+    headers,
     routing::{RouterExt, TypedPath},
 };
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
 use std::{convert::Infallible, str::FromStr};
-use validate::Validate;
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "LanguageSwitch")]
-struct LanguageSwitchForm {
-    #[validate(parse = "Locale")]
-    lang: String,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
-}
+static LOCALE_COOKIE_NAME: &str = "LANGUAGE";
 
-#[derive(Default, Clone, Debug)]
+#[derive(Default, Deserialize, Clone, Debug)]
 struct LanguageSwitch {
     lang: Locale,
 }
@@ -36,21 +30,17 @@ pub struct SwitchLanguagePath;
 
 async fn switch_language(
     _: SwitchLanguagePath,
-    context: Context,
+    TypedHeader(referer): TypedHeader<headers::Referer>,
     mut cookie_jar: CookieJar,
-    Form(form): Form<LanguageSwitchForm>,
-) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(().into_response()),
-        Ok(LanguageSwitch { lang }) => {
-            cookie_jar = cookie_jar.add(Cookie::new("LANGUAGE", lang.as_str()));
+    Form(form): Form<LanguageSwitch>,
+) -> (CookieJar, Redirect) {
+    cookie_jar = cookie_jar.add(Cookie::new(LOCALE_COOKIE_NAME, form.lang.as_str()));
 
-            Ok(cookie_jar.into_response())
-        }
-    }
+    (cookie_jar, Redirect::to(&referer.to_string()))
 }
 
-#[derive(Default, Clone, Copy, Debug, Eq, PartialEq)]
+#[derive(Default, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
+#[serde(rename_all = "lowercase")]
 pub enum Locale {
     En,
     #[default]
@@ -117,6 +107,15 @@ where
     type Rejection = Infallible;
 
     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        let cookies = CookieJar::from_request_parts(parts, _state).await?;
+        let cookie: Option<Locale> = cookies
+            .get(LOCALE_COOKIE_NAME)
+            .and_then(|cookie| cookie.value().parse().ok());
+
+        if let Some(locale) = cookie {
+            return Ok(locale);
+        }
+
         let locale = parts
             .headers
             .get(header::ACCEPT_LANGUAGE)

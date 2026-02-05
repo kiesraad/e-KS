@@ -27,7 +27,7 @@ test = false
 [dependencies]
 # tokio universe
 axum = { version = "0.8.6", features = ["multipart", "macros"] }
-axum-extra = { version = "0.12.1", features = ["routing", "typed-routing", "form", "cookie"] }
+axum-extra = { version = "0.12.1", features = ["routing", "typed-routing", "form", "cookie", "typed-header"] }
 tower-http = { version = "0.6.8", features = ["trace"], optional = true }
 hyper-util = { version = "0.1.1", features = ["client-legacy"] }
 tokio = { version = "1.48.0", features = ["full", "test-util"] }
