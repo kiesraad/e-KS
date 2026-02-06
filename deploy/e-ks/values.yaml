@@ -1,4 +1,4 @@
-hostname: "eks-test.nl"
+hostname: "kiesraad.net"
 subdomain: "<branchname>"
 requireLogin: true
 

@@ -17,28 +17,6 @@ helm upgrade --install traefik oci://ghcr.io/traefik/helm/traefik -n ingress --c
 kubectl apply -f traefik-middleware.yaml
 ```
 
-## Scaleway cert manager webhook (for wildcard certificates)
-
-Create new credentials in the [Scaleway console](https://console.scaleway.com/credentials/credentials) with just DNS write permissions and fill them in below.
-
-```shell
-helm repo add scaleway https://helm.scw.cloud/
-helm repo update
-helm upgrade --install --namespace cert-manager scaleway-certmanager-webhook scaleway/scaleway-certmanager-webhook \
-  --set secret.accessKey=<YOUR-ACCESS-KEY> \
-  --set secret.secretKey=<YOUR-SECRET_KEY>
-```
-
-## Oauth2 proxy
-```shell
-helm repo add oauth2-proxy https://oauth2-proxy.github.io/manifests
-helm upgrade --install oauth2-proxy oauth2-proxy/oauth2-proxy -n ingress \
- -f oauth2-proxy-values.yaml \
- --set config.clientID=<YOUR-CLIENT-ID> \
- --set config.clientSecret=<YOUR-CLIENT-SECRET>  \
- --set config.cookieSecret=<YOUR-COOKIE-SECRET>
-```
-
 ## Cert manager
 
 ```shell
@@ -50,16 +28,45 @@ kubectl apply -f ingress-cert.yaml
 kubectl apply -f traefik-tlsstore.yaml
 ```
 
-## Postgres
 
-> [!CAUTION]
-> Change the password for the superuser to a secure password
+## Scaleway cert manager webhook (for wildcard certificates)
+
+Create new credentials in the [Scaleway console](https://console.scaleway.com/credentials/credentials) with just DNS write permissions and fill them in below.
 
 ```shell
+export SCW_ACCESS_KEY=<access-key>
+export SCW_SECRET_KEY=<secret-key>
+
+helm repo add scaleway https://helm.scw.cloud/
+helm repo update
+helm upgrade --install --namespace cert-manager scaleway-certmanager-webhook scaleway/scaleway-certmanager-webhook \
+  --set secret.accessKey=$SCW_ACCESS_KEY \
+  --set secret.secretKey=$SCW_SECRET_KEY
+```
+
+## Oauth2 proxy
+```shell
+export CLIENT_ID=<client-id>
+export CLIENT_SECRET=<client-secret>
+export COOKIE_SECRET=<cookie-secret>
+
+helm repo add oauth2-proxy https://oauth2-proxy.github.io/manifests
+helm upgrade --install oauth2-proxy oauth2-proxy/oauth2-proxy -n ingress \
+ -f oauth2-proxy-values.yaml \
+ --set config.clientID=$CLIENT_ID \
+ --set config.clientSecret=$CLIENT_SECRET  \
+ --set config.cookieSecret=$COOKIE_SECRET
+```
+
+## Postgres
+
+```shell
+export PG_PASSWORD=<password>
+
 helm upgrade --install postgresql \
   oci://registry-1.docker.io/bitnamicharts/postgresql \
   --version 18.1.14 -n postgresql --create-namespace -f psql-values.yaml \
-  --set auth.postgresPassword="supersecurepassword"
+  --set auth.postgresPassword=$PG_PASSWORD
 ```
 
 ## Docker pull secret

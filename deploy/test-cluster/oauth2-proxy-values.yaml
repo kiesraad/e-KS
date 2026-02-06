@@ -3,6 +3,7 @@ extraArgs:
   set-xauthrequest: "true"
   pass-authorization-header: "true"
   github-org: kiesraad
+  github-user: basdijkstra
 
 # Oauth client configuration specifics
 config:
