@@ -38,17 +38,11 @@
       </li>
     </ul>
     <ul>
-      <li class="user-info">
-        <strong>Evert Klaas Smit</strong>
-        <span>(Lijst Hekking)</span>
-      </li>
-      <li><a href="/" class="logout">{{ "action.signout"|trans }}</a></li>
+      <li><a href="javascript:alert('Under construction...');" class="logout">{{ "action.signout"|trans }}</a></li>
       <li>
-        <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST">
-          <div class="button-group">
-            <button class="button sm {% if (lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">English</button>
-            <button class="button sm {% if (lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">Nederlands</button>
-          </div>
+        <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST" class="language-switch">
+          <button class="button sm {% if (lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">NL</button>
+          <button class="button sm {% if (lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">EN</button>
         </form>
       </li>
     </ul>

@@ -8,3 +8,28 @@
   border-radius: 0;
   margin: 0;
 }
+
+.language-switch {
+  height: 100%;
+  display: flex;
+  align-items: center;
+  margin-left: var(--space-md);
+  border-radius: var(--rounded-default);
+
+  button.sm {
+    background-color: var(--blue-900);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: 0;
+    color: var(--blue-400);
+
+    &.active {
+      background-color: var(--blue-700);
+      color: var(--base-white);
+    }
+
+    &:focus {
+      outline: none;
+      box-shadow: inset 0 0 0 1px var(--shadow-color-focus);
+    }
+  }
+}

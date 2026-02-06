@@ -40,7 +40,6 @@ header {
 
           &.logout {
             text-decoration: underline;
-            color: var(--base-white);
           }
 
           &.active {
