@@ -12,7 +12,7 @@
 - personalia kandidaat H1 minus geboortedatum
 - BSN
 - correspondentieadres kandidaat
-- correspondentieadresadres en naam gemachtigde (optioneel), besloten: max 1 gemachtigde per kandidaat
+- correspondentieadres en naam gemachtigde (optioneel), besloten: max 1 gemachtigde per kandidaat
 - Kiesgerechtigdheid
 
 ## Personalia gemachtigde
