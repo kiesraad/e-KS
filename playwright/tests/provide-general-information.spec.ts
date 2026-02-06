@@ -4,7 +4,8 @@ import type { PoliticalGroup } from "./models/politicalGroup";
 import type { AuthorisedAgent } from "./models/authorisedAgent";
 import type { ListSubmitter} from "./models/listSubmitter"
 import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage";
-import { ListSumbittersPage } from "./pages/listSubmittersPage";
+import { ListSubmittersPage } from "./pages/listSubmittersPage";
+import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
 
 
 test.describe("provide general information for political group", async () => {
@@ -29,8 +30,8 @@ test.describe("provide general information for political group", async () => {
     await authorisedAgentsPage.deleteExistingAuthorisedAgents();
     const agentOne: AuthorisedAgent = {
         initials: "K",
-        lastNamePrefix: "de",
-        lastName: "Koek",
+        lastNamePrefix: "van",
+        lastName: "Jansen",
       };
       const agentTwo: AuthorisedAgent = {
         initials: "E",
@@ -46,23 +47,45 @@ test.describe("provide general information for political group", async () => {
 
   test("provide list submitter", async ({ page }) => {
 
-    const listSumbittersPage = new ListSumbittersPage(page);
-    await listSumbittersPage.open();
-    await listSumbittersPage.deleteExistingListSubmitters();
+    const listSubmittersPage = new ListSubmittersPage(page);
+    await listSubmittersPage.open();
+    await listSubmittersPage.deleteExistingListSubmitters();
     const submitterOne: ListSubmitter = {
-        initials: "B",
+        initials: "C",
         lastNamePrefix: "de",
-        lastName: "Beer",
+        lastName: "Vries",
       };
       const submitterTwo: ListSubmitter = {
-        initials: "O",
-        lastName: "Olifant",
+        initials: "Z",
+        lastName: "Zeeman",
       };
-      await listSumbittersPage.addListSubmitter([submitterOne, submitterTwo]);
+      await listSubmittersPage.addListSubmitter([submitterOne, submitterTwo]);
 
       for (const submitter of [submitterOne, submitterTwo]) {
         var submitterLastName = submitter.lastNamePrefix ? `${submitter.lastNamePrefix} ${submitter.lastName}` : submitter.lastName
-        await expect(listSumbittersPage.getSubmitterLocator(submitterLastName)).toBeVisible();
+        await expect(listSubmittersPage.getSubmitterLocator(submitterLastName)).toBeVisible();
+      }
+})
+
+test("provide substitute list submitter", async ({ page }) => {
+
+    const substituteSubmittersPage = new SubstituteSubmittersPage(page);
+    await substituteSubmittersPage.open();
+    await substituteSubmittersPage.deleteExistingSubstituteSubmitters();
+    const submitterOne: ListSubmitter = {
+        initials: "B",
+        lastNamePrefix: "van",
+        lastName: "Beers",
+      };
+      const submitterTwo: ListSubmitter = {
+        initials: "O",
+        lastName: "Smit",
+      };
+      await substituteSubmittersPage.addSubstituteSubmitter([submitterOne, submitterTwo]);
+
+      for (const submitter of [submitterOne, submitterTwo]) {
+        var submitterLastName = submitter.lastNamePrefix ? `${submitter.lastNamePrefix} ${submitter.lastName}` : submitter.lastName
+        await expect(substituteSubmittersPage.getSubmitterLocator(submitterLastName)).toBeVisible();
       }
 })
 
