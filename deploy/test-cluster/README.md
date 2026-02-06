@@ -23,7 +23,7 @@ kubectl apply -f traefik-middleware.yaml
 helm upgrade --install cert-manager oci://quay.io/jetstack/charts/cert-manager -n cert-manager --create-namespace -f cert-manager-values.yaml
 kubectl apply -f cert-issuers.yaml
 
-# Use wildcard certificate for *.eks-test.nl as default certificate
+# Use wildcard certificate for *.kiesraad.net as default certificate
 kubectl apply -f ingress-cert.yaml
 kubectl apply -f traefik-tlsstore.yaml
 ```
@@ -56,6 +56,8 @@ helm upgrade --install oauth2-proxy oauth2-proxy/oauth2-proxy -n ingress \
  --set config.clientID=$CLIENT_ID \
  --set config.clientSecret=$CLIENT_SECRET  \
  --set config.cookieSecret=$COOKIE_SECRET
+ 
+kubectl apply -f oauth-ingress.yaml
 ```
 
 ## Postgres

@@ -7,10 +7,10 @@ spec:
   entryPoints:
     - websecure
   routes:
-    - match: HostRegexp(`^.+\.eks-test\.nl$`) && PathPrefix(`/oauth2`)
+    - match: HostRegexp(`^.+\.kiesraad\.net$`) && PathPrefix(`/oauth2`)
       kind: Rule
       services:
         - name: oauth2-proxy
           port: http
-  # This falls back to the default certificate, which should be a wildcard cert for *.eks-test.nl
+  # This falls back to the default certificate, which should be a wildcard cert for *.kiesraad.net
   tls: {}

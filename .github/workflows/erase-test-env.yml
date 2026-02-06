@@ -34,7 +34,7 @@ jobs:
       KUBECONFIG: ${{ github.workspace }}/kubeconfig
       KUBECONFIG_CONTENT: ${{ secrets.KUBECONFIG }}
     environment:
-      url: https://${{ needs.canonical-name.outputs.branch-name }}.eks-test.nl
+      url: https://${{ needs.canonical-name.outputs.branch-name }}.kiesraad.net
       name: staging
     steps:
       - name: Install Helm

@@ -138,7 +138,7 @@ jobs:
       IMAGE_PULL_SECRET_TOKEN: ${{ secrets.image_pull_secret_token }}
       PGPASSWORD: ${{ secrets.PGPASSWORD }}
     environment:
-      url: https://${{ needs.rust.outputs.branch-name }}.eks-test.nl
+      url: https://${{ needs.rust.outputs.branch-name }}.kiesraad.net
       name: staging
     needs: [ build-docker, rust ]
     steps:
