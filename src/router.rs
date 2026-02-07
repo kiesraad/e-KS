@@ -7,7 +7,8 @@ use axum::{Router, middleware, routing::get};
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, candidate_lists, locale, pages, persons, political_groups, render_error_pages, submit,
+    AppState, authorised_agents, candidate_lists, candidates, list_submitters, locale, pages,
+    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -15,9 +16,12 @@ pub fn create(state: AppState) -> Router<AppState> {
         .route("/", get(pages::index))
         .merge(persons::router())
         .merge(political_groups::router())
+        .merge(authorised_agents::router())
+        .merge(list_submitters::router())
+        .merge(substitute_list_submitters::router())
         .merge(submit::router())
         .merge(candidate_lists::router())
-        .merge(candidate_lists::candidate_router())
+        .merge(candidates::router())
         .merge(locale::locale_router());
 
     #[cfg(feature = "dev-features")]

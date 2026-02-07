@@ -141,6 +141,8 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
                 #[allow(clippy::needless_update)]
                 Ok(#target {
                     #(#field_inits,)*
+                    updated_at: chrono::Utc::now(),
+                    created_at: chrono::Utc::now(),
                     ..Default::default()
                 })
             }
@@ -166,6 +168,7 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
                 #[allow(clippy::needless_update)]
                 Ok(#target {
                     #(#field_inits,)*
+                    updated_at: chrono::Utc::now(),
                     ..current.clone()
                 })
             }

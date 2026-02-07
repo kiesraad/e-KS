@@ -1,6 +1,9 @@
-body.overlay-open {
-  padding-bottom: calc(2 * var(--space-lg));
+html,
+body {
+  overscroll-behavior: none;
+}
 
+body.overlay-open {
   & > header,
   & > main {
     position: fixed;
@@ -38,10 +41,10 @@ body.overlay-open {
   top: var(--space-lg);
   left: var(--space-lg);
   width: calc(100% - 2 * var(--space-lg));
-  min-height: calc(100vh - 2 * var(--space-lg));
+  min-height: calc(100vh - var(--space-lg));
   background-color: var(--gray-50);
   height: auto;
-  border-radius: var(--space-sm);
+  border-radius: var(--space-sm) var(--space-sm) 0 0;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
 
   header {
@@ -78,7 +81,9 @@ body.overlay-open {
   }
 
   .overlay-content {
+    position: relative;
     padding: var(--space-lg);
+    padding-bottom: 7rem;
     flex: 1;
 
     &.steps {
@@ -93,12 +98,17 @@ body.overlay-open {
   }
 
   footer {
+    position: fixed;
+    bottom: 0;
+    left: var(--space-lg);
+    width: calc(100% - 2 * var(--space-lg));
     border-top: 1px solid var(--border-color-default);
     display: flex;
     justify-content: flex-end;
     align-items: center;
     padding: var(--space-md) var(--space-lg);
     border-radius: 0 0 var(--space-sm) var(--space-sm);
-    background-color: var(--gray-50);
+    background-color: rgba(249, 250, 251, 0.6);
+    backdrop-filter: blur(1px);
   }
 }

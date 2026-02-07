@@ -36,19 +36,20 @@
         background-image: url("../icons/warning.svg");
       }
 
-      &.disabled {
-        background-image: url("../icons/lock.svg");
-        background-size: 1rem;
-      }
-
       &.ok {
         background-image: url("../icons/checkmarkSmall.svg");
       }
 
       &.disabled {
+        background-image: none;
         pointer-events: none;
-        cursor: default;
+        cursor: not-allowed;
         color: var(--gray-400);
+      }
+
+      &.locked {
+        background-image: url("../icons/lock.svg");
+        background-size: 1rem;
       }
     }
   }

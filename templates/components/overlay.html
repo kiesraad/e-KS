@@ -1,0 +1,25 @@
+{% extends "layout.html" %}
+
+{% block body_class %}overlay-open{% endblock %}
+
+{% block overlay %}
+<div class="overlay-backdrop"></div>
+{% block overlay_start %}<div class="overlay">{% endblock %}
+  <header>
+    <h2>
+      {% block overlay_title %}{% endblock %}
+    </h2>
+    <a href="{% block close_action %}/{% endblock %}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
+      <span>{{ "action.close"|trans }}</span>
+    </a>
+  </header>
+  {% block overlay_content %}{% endblock %}
+  {% block overlay_footer %}
+  <footer>
+    <button type="submit" class="button">
+      {{ "action.save_and_close"|trans }}
+    </button>
+  </footer>
+  {% endblock %}
+{% block overlay_end %}</div>{% endblock %}
+{% endblock %}

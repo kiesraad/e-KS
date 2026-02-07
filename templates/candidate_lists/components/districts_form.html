@@ -1,9 +1,8 @@
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
 <fieldset>
   <legend>
     {{ "candidate_list.fields.electoral_districts"|trans }}
   </legend>
-  <div class="checkbox select-all-checkbox mt-md">
+  <div class="checkbox select-all-checkbox mt-sm mb-lg">
     <input type="checkbox" for-checklist="district_list" id="select-all" />
     <label for="select-all">
       {{ "candidate_list.actions.select_all_districts"|trans }}

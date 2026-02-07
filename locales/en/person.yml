@@ -29,9 +29,9 @@ form:
 hints:
   first_name: Optional. Only fill in if this should be displayed on the candidate list.
   gender: Optional. Only fill in if this should be displayed on the candidate list.
-no_bsn_confirm: I confirm this person does not have a BSN.
 list:
   empty: No persons found.
+no_bsn_confirm: I confirm this person does not have a BSN.
 not_found: "Person {} not found."
 not_found_in_candidate_list: Person not found in candidate list.
 personal_details: Personal details

@@ -1,23 +1,18 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ PoliticalGroup::edit_path() }}">
+      <a href="{{ PoliticalGroup::update_path() }}" {% if steps.basic_complete %}class="ok"{% else if !steps.basic_empty %}class="warning"{% endif %}>
         {{ "political_group.basic_information"|trans }}
       </a>
     </li>
     <li>
-      <a href="{{ AuthorisedAgent::list_path() }}">
+      <a href="{{ AuthorisedAgent::list_path() }}" {% if steps.authorised_agents_complete %}class="ok"{% else if !steps.authorised_agents_empty %}class="warning"{% endif %}>
         {{ "political_group.authorised_agent_data"|trans }}
       </a>
     </li>
     <li>
-      <a href="{{ ListSubmitter::list_path() }}">
+      <a href="{{ ListSubmitter::list_path() }}" {% if steps.submitters_complete %}class="ok"{% else if !steps.submitters_empty %}class="warning"{% endif %}>
         {{ "political_group.list_submitter_data"|trans }}
-      </a>
-    </li>
-    <li>
-      <a href="{{ SubstituteSubmitter::list_path() }}">
-        {{ "political_group.substitute_submitter_data"|trans }}
       </a>
     </li>
   </ul>

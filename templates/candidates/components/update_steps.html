@@ -1,0 +1,28 @@
+<div class="steps-nav">
+  <ul>
+    {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+      {% if should_warn|default(true)  %}
+      <li>
+        <a href="{{ candidate.update_position_path() }}" class="{% if candidate.position <= **max_candidates %}ok{% else %}warning{% endif %}">
+          {{ "candidate_list.edit_position"|trans }}
+        </a>
+      </li>
+      {% endif %}
+    {% endif %}
+    <li>
+      <a href="{{ candidate.update_path() }}" class="{% if candidate.person.is_personal_info_complete() %}ok{% else %}warning{% endif %}">
+        {{ "person.personal_details"|trans }}
+      </a>
+    </li>
+    <li>
+      <a href="{{ candidate.update_address_path() }}" class="{% if !candidate.person.is_dutch() %}disabled locked{% else if candidate.person.is_address_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+        {{ "person.correspondence_address"|trans }}
+      </a>
+    </li>
+    <li>
+      <a href="{{ candidate.update_representative_path() }}" class="{% if candidate.person.is_dutch() %}disabled locked{% else if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+        {{ "person.representative"|trans }}
+      </a>
+    </li>
+  </ul>
+</div>

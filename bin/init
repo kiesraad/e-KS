@@ -6,7 +6,7 @@ if [ -f bin/dev ] && [ -f bin/setup ] && [ -f bin/update_locales ]; then
     echo "Binaries already exist. Skipping build."
     bin/setup "$@"
     exit 0
-fi  
+fi
 
 pushd development
     cargo build --release

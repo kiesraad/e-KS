@@ -1,10 +1,9 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
 use serde::Deserialize;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, CsrfTokens,
-    persons::{self, Person, PersonId},
+    AppError, AppStore, Locale,
+    persons::{Person, PersonId},
     trans,
 };
 
@@ -17,8 +16,7 @@ struct PersonPathParams {
 impl<S> FromRequestParts<S> for Person
 where
     S: Clone + Send + Sync + 'static,
-    PgPool: FromRef<S>,
-    CsrfTokens: FromRef<S>,
+    AppStore: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -26,18 +24,14 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let pool = PgPool::from_ref(state);
-        let context = Context::from_request_parts(parts, state).await?;
+        let store = AppStore::from_ref(state);
+        let locale = Locale::from_request_parts(parts, state).await?;
         let Path(PersonPathParams { person_id }) =
             Path::<PersonPathParams>::from_request_parts(parts, state).await?;
 
-        let person = persons::get_person(&pool, person_id)
-            .await?
-            .ok_or(AppError::NotFound(trans!(
-                "person.not_found",
-                context.locale,
-                person_id
-            )))?;
+        let person = store
+            .get_person(person_id)
+            .map_err(|_| AppError::NotFound(trans!("person.not_found", locale, person_id)))?;
 
         Ok(person)
     }
@@ -57,16 +51,20 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale, persons, render_error_pages,
+        AppEvent, AppState, Locale, render_error_pages,
         test_utils::{response_body_string, sample_person},
     };
 
     #[sqlx::test]
     async fn person_extractor_loads_person(pool: PgPool) {
         let person = sample_person(PersonId::new());
-        persons::create_person(&pool, &person).await.unwrap();
 
         let app_state = AppState::new_for_tests(&pool).await;
+        app_state
+            .store
+            .update(AppEvent::CreatePerson(person.clone()))
+            .await
+            .unwrap();
 
         let app = Router::new()
             .route(

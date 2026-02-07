@@ -1,18 +1,13 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
-use sqlx::PgPool;
 
-use crate::{
-    AppError, Context, CsrfTokens,
-    candidate_lists::{self, FullCandidateList},
-    trans,
-};
+use crate::{AppError, AppStore, Context, CsrfTokens, candidate_lists::FullCandidateList, trans};
 
 use super::CandidateListPathParams;
 
 impl<S> FromRequestParts<S> for FullCandidateList
 where
     S: Clone + Send + Sync + 'static,
-    PgPool: FromRef<S>,
+    AppStore: FromRef<S>,
     CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
@@ -21,18 +16,14 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let pool = PgPool::from_ref(state);
+        let store = AppStore::from_ref(state);
         let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-        let full_list = candidate_lists::get_full_candidate_list(&pool, list_id)
-            .await?
-            .ok_or(AppError::NotFound(trans!(
-                "candidate_list.not_found",
-                context.locale,
-                list_id
-            )))?;
+        let full_list = FullCandidateList::get(&store, list_id).map_err(|_| {
+            AppError::NotFound(trans!("candidate_list.not_found", context.locale, list_id))
+        })?;
 
         Ok(full_list)
     }
@@ -52,9 +43,9 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale,
-        candidate_lists::{self, CandidateListId},
-        persons::{self, PersonId},
+        AppEvent, AppState, Locale,
+        candidate_lists::{CandidateList, CandidateListId},
+        persons::PersonId,
         render_error_pages,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
@@ -65,15 +56,21 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        candidate_lists::create_candidate_list(&pool, &list)
+        let app_state = AppState::new_for_tests(&pool).await;
+        app_state
+            .store
+            .update(AppEvent::CreateCandidateList(list.clone()))
             .await
             .unwrap();
-        persons::create_person(&pool, &person).await.unwrap();
-        candidate_lists::update_candidate_list_order(&pool, list_id, &[person.id])
+        app_state
+            .store
+            .update(AppEvent::CreatePerson(person.clone()))
             .await
             .unwrap();
 
-        let app_state = AppState::new_for_tests(&pool).await;
+        CandidateList::update_order(&app_state.store, list_id, &[person.id])
+            .await
+            .unwrap();
 
         let app = Router::new()
             .route(
@@ -135,6 +132,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
         let expected = trans!("candidate_list.not_found", Locale::En, list_id);
+
         assert!(body.contains(&expected));
     }
 }

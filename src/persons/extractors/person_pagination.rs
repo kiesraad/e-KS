@@ -1,8 +1,7 @@
 use axum::extract::{FromRef, FromRequestParts};
-use sqlx::PgPool;
 
 use crate::{
-    AppError,
+    AppError, AppStore,
     pagination::Pagination,
     persons::{self, PersonPagination, PersonSort},
 };
@@ -10,7 +9,7 @@ use crate::{
 impl<S> FromRequestParts<S> for PersonPagination
 where
     S: Send + Sync,
-    PgPool: FromRef<S>,
+    AppStore: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -18,21 +17,20 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let pool = PgPool::from_ref(state);
+        let store = AppStore::from_ref(state);
         let pagination: Pagination<PersonSort> =
             Pagination::from_request_parts(parts, state).await?;
 
-        let total_items = persons::count_persons(&pool).await?.max(0) as u64;
+        let total_items = store.get_person_count()?;
         let pagination = pagination.set_total(total_items);
 
-        let persons = persons::list_persons(
-            &pool,
+        let persons = persons::Person::list(
+            &store,
             pagination.limit(),
             pagination.offset(),
             pagination.sort(),
             pagination.direction(),
-        )
-        .await?;
+        )?;
 
         Ok(PersonPagination {
             persons,
@@ -54,26 +52,30 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState,
-        persons::{self, PersonId},
+        AppEvent, AppState,
+        persons::PersonId,
         test_utils::{response_body_string, sample_person_with_last_name},
     };
 
     #[sqlx::test]
     async fn person_pagination_extractor_slices_and_orders(pool: PgPool) {
-        persons::create_person(
-            &pool,
-            &sample_person_with_last_name(PersonId::new(), "Bakker"),
-        )
-        .await
-        .unwrap();
-        persons::create_person(
-            &pool,
-            &sample_person_with_last_name(PersonId::new(), "Jansen"),
-        )
-        .await
-        .unwrap();
         let app_state = AppState::new_for_tests(&pool).await;
+        app_state
+            .store
+            .update(AppEvent::CreatePerson(sample_person_with_last_name(
+                PersonId::new(),
+                "Bakker",
+            )))
+            .await
+            .unwrap();
+        app_state
+            .store
+            .update(AppEvent::CreatePerson(sample_person_with_last_name(
+                PersonId::new(),
+                "Jansen",
+            )))
+            .await
+            .unwrap();
 
         let app = Router::new()
             .route(

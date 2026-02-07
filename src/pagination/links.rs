@@ -3,7 +3,7 @@ use std::collections::BTreeSet;
 #[derive(Clone, Debug, serde::Serialize)]
 pub struct PageLink {
     /// Concrete page number, or `None` to represent an ellipsis.
-    pub number: Option<u32>,
+    pub number: Option<usize>,
     /// Marks the current page.
     pub current: bool,
 }
@@ -12,7 +12,7 @@ pub struct PageLink {
 ///
 /// Always includes the first and last page, the current page, and up to two neighbours on each
 /// side. Large gaps are represented as `None`, allowing templates to render ellipses.
-pub(super) fn build_links(page: u32, total_pages: u32) -> Vec<PageLink> {
+pub(super) fn build_links(page: usize, total_pages: usize) -> Vec<PageLink> {
     if total_pages == 0 {
         return Vec::new();
     }
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn builds_compact_sequence_without_gaps() {
         let links = build_links(2, 3);
-        let numbers: Vec<Option<u32>> = links.iter().map(|l| l.number).collect();
+        let numbers: Vec<Option<usize>> = links.iter().map(|l| l.number).collect();
         assert_eq!(numbers, vec![Some(1), Some(2), Some(3)]);
         assert_eq!(links.iter().filter(|l| l.current).count(), 1);
         assert!(links.iter().any(|l| l.current && l.number == Some(2)));
@@ -76,7 +76,7 @@ mod tests {
     #[test]
     fn inserts_ellipses_when_gap_exists() {
         let links = build_links(5, 10);
-        let numbers: Vec<Option<u32>> = links.iter().map(|l| l.number).collect();
+        let numbers: Vec<Option<usize>> = links.iter().map(|l| l.number).collect();
 
         assert_eq!(
             numbers,

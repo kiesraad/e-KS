@@ -18,7 +18,10 @@ fields:
   electoral_districts: Kiesdistricten
   list_submitter: Gegevens lijstinleveraar
   position: Positie
+  substitute_list_submitters: Vervangers voor herstel verzuimen
 form:
+  copy_candidates_from_previous: Kopieer kandidaten van de laatst aangemaakte lijst
+  copy_candidates_from_previous_legend: Kopieer kandidaten
   create:
     title: Kandidatenlijst aanmaken
   delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?

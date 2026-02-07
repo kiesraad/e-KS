@@ -51,7 +51,7 @@
       <td>{{ person.place_of_residence|display }}</td>
       <td>{{ person.created_at|datetime }}</td>
       <td>
-        <a href="{{ person.edit_path() }}">
+        <a href="{{ person.update_path() }}">
           <span>{{ "action.edit"|trans }}</span>
         </a>
       </td>

@@ -3,18 +3,18 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, candidate_lists,
+    AppError, AppStore, Context,
+    candidate_lists::CandidateList,
     form::{EmptyForm, Validate},
-    persons::{self, Person, pages::DeletePersonPath},
+    persons::{Person, pages::DeletePersonPath},
 };
 
 pub async fn delete_person(
     DeletePersonPath { person_id }: DeletePersonPath,
     context: Context,
-    State(pool): State<PgPool>,
+    State(store): State<AppStore>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -23,15 +23,9 @@ pub async fn delete_person(
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
         Ok(_) => {
-            match candidate_lists::remove_candidate(&pool, person_id).await {
-                Err(sqlx::Error::RowNotFound) => {
-                    // Candidate was not part of any candidate list, continue deletion
-                }
-                Err(e) => return Err(e.into()),
-                _ => {}
-            }
+            CandidateList::remove_candidate_from_all(&store, person_id).await?;
 
-            persons::remove_person(&pool, person_id).await?;
+            Person::delete_by_id(&store, person_id).await?;
             // TODO: set success flash message
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -44,26 +38,23 @@ mod tests {
     use axum_extra::extract::Form;
     use sqlx::PgPool;
 
-    use crate::{
-        Context,
-        persons::{self, PersonId},
-        test_utils::sample_person,
-    };
+    use crate::{AppError, AppStore, Context, persons::PersonId, test_utils::sample_person};
 
     #[sqlx::test]
-    async fn delete_person_removes_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn delete_person_removes_and_redirects(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
 
         let response = delete_person(
             DeletePersonPath { person_id },
             context,
-            State(pool.clone()),
+            State(store.clone()),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -78,8 +69,8 @@ mod tests {
             .expect("location header value");
         assert_eq!(location, Person::list_path());
 
-        let found = persons::get_person(&pool, person_id).await?;
-        assert!(found.is_none());
+        let found = store.get_person(person_id);
+        assert!(found.is_err());
 
         Ok(())
     }

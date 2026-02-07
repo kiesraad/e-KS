@@ -1,7 +1,9 @@
 use serde::Serialize;
 
 use crate::{
-    candidate_lists::{Candidate, CandidateList, CandidateListId},
+    AppError, AppStore,
+    candidate_lists::{CandidateList, CandidateListId},
+    candidates::Candidate,
     persons::PersonId,
 };
 
@@ -9,6 +11,14 @@ use crate::{
 pub struct FullCandidateList {
     pub list: CandidateList,
     pub candidates: Vec<Candidate>,
+}
+
+impl FullCandidateList {
+    pub fn get(store: &AppStore, list_id: CandidateListId) -> Result<FullCandidateList, AppError> {
+        let list = store.get_candidate_list(list_id)?;
+
+        CandidateList::build_full_candidate_list(store, list)
+    }
 }
 
 impl FullCandidateList {

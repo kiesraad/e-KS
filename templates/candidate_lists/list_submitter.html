@@ -1,41 +1,32 @@
-{% extends "candidate_lists/list.html" %}
+{% extends "components/overlay.html" %}
 
-{% block body_class %}overlay-open{% endblock %}
+{% block close_action %}{{ candidate_list.view_path() }}{% endblock %}
 
-{% block overlay %}
-<div class="overlay-backdrop"></div>
-<form method="post" action="{{ candidate_list.edit_list_submitter_path() }}" class="overlay">
-  <header>
-    <h2>
-      {{ "candidate_list.form.create.title"|trans }}
-    </h2>
-    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </a>
-  </header>
+{% block overlay_title %}{{ "candidate_list.fields.list_submitter"|trans }}{% endblock %}
+
+{% block overlay_start %}
+<form method="post" action="{{ form_action }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+{% endblock %}
+
+{% block overlay_content %}
   <div class="overlay-content steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ candidate_list.update_path() }}">
-            {{ "candidate_list.fields.electoral_districts"|trans }}
-          </a>
-        </li>
-        <li>
-          <a href="{{ candidate_list.edit_list_submitter_path() }}">
-            {{ "candidate_list.fields.list_submitter"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
+    {% include "candidate_lists/components/update_steps.html" %}
     <div class="form">
       {% include "candidate_lists/components/list_submitter_form.html" %}
+      {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
     </div>
   </div>
+{% endblock %}
+
+{% block overlay_footer %}
   <footer>
     <button type="submit" class="button">
-      {{ "action.save"|trans }}
+      {{ "action.save_and_close"|trans }}
     </button>
   </footer>
+{% endblock %}
+
+{% block overlay_end %}
 </form>
 {% endblock %}

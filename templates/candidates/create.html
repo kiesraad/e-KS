@@ -1,7 +1,9 @@
-{% extends "candidates/components/overlay.html" %}
+{% extends "components/overlay.html" %}
+
+{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
 
 {% block overlay_start %}
-<form method="post" action="{{ full_list.list.new_candidate_path() }}" class="overlay">
+<form method="post" action="{{ full_list.list.create_candidate_path() }}" class="overlay">
 {% endblock %}
 {% block overlay_end %}</form>{% endblock %}
 

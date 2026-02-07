@@ -4,56 +4,47 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, AppResponse, Context, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self, COUNTRY_CODES, Person, PersonForm, PersonPagination, PersonSort,
-        pages::EditPersonPath,
-    },
+    persons::{COUNTRY_CODES, Person, PersonForm, pages::UpdatePersonPath},
 };
 
 #[derive(Template)]
 #[template(path = "persons/update.html")]
 struct PersonUpdateTemplate {
     person: Person,
-    person_pagination: PersonPagination,
     form: FormData<PersonForm>,
     countries: &'static [&'static str],
 }
 
-pub async fn edit_person_form(
-    _: EditPersonPath,
+pub async fn update_person(
+    _: UpdatePersonPath,
     context: Context,
     person: Person,
-    person_pagination: PersonPagination,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
             person,
-            person_pagination,
             countries: &COUNTRY_CODES,
         },
         context,
     ))
 }
 
-pub async fn update_person(
-    _: EditPersonPath,
+pub async fn update_person_submit(
+    _: UpdatePersonPath,
     context: Context,
-    State(pool): State<PgPool>,
+    State(store): State<AppStore>,
     person: Person,
-    person_pagination: PersonPagination,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
-                person_pagination,
                 form: form_data,
                 countries: &COUNTRY_CODES,
             },
@@ -61,7 +52,7 @@ pub async fn update_person(
         )
         .into_response()),
         Ok(person) => {
-            persons::update_person(&pool, &person).await?;
+            person.update(&store).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -79,23 +70,23 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context,
-        persons::{self, PersonId},
+        AppError, AppStore, Context,
+        persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
 
     #[sqlx::test]
-    async fn edit_person_form_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_renders_existing_person(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let response = edit_person_form(
-            EditPersonPath { person_id },
-            Context::new_test(pool.clone()).await,
+        let response = update_person(
+            UpdatePersonPath { person_id },
+            Context::new_test_without_db(),
             person,
-            PersonPagination::empty(),
         )
         .await
         .unwrap()
@@ -109,23 +100,23 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn update_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_persists_and_redirects(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = "Updated".to_string();
 
-        let response = update_person(
-            EditPersonPath { person_id },
+        let response = update_person_submit(
+            UpdatePersonPath { person_id },
             context,
-            State(pool.clone()),
+            State(store.clone()),
             person,
-            PersonPagination::empty(),
             Form(form),
         )
         .await
@@ -140,32 +131,30 @@ mod tests {
             .expect("location header value");
         assert!(location.ends_with("/persons"));
 
-        let updated = persons::get_person(&pool, person_id)
-            .await?
-            .expect("updated person");
+        let updated = store.get_person(person_id)?;
         assert_eq!(updated.last_name, "Updated");
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn update_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_invalid_form_renders_template(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
-        let response = update_person(
-            EditPersonPath { person_id },
+        let response = update_person_submit(
+            UpdatePersonPath { person_id },
             context,
-            State(pool.clone()),
+            State(store),
             person,
-            PersonPagination::empty(),
             Form(form),
         )
         .await

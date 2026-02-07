@@ -1,52 +1,7 @@
 <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+
 {% include "components/person_name_fields.html" %}
-<div class="form-row">
-  <p class="form-field">
-    <label for="first_name">{{ "person.fields.first_name"|trans }}</label>
-    <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
-    {% for error in form|error("first_name") %}
-    <span class="error">{{ error }}</span>
-    {% else %}
-    <span class="hint">{{ "person.hints.first_name"|trans }}</span>
-    {% endfor %}
-  </p>
-  <p class="form-field">
-    <label for="gender">{{ "person.fields.gender"|trans }}</label>
-    <select name="gender" id="gender">
-      <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
-      <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "gender.male"|trans }}</option>
-      <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ "gender.female"|trans }}</option>
-    </select>
-    {% for error in form|error("gender") %}
-    <span class="error">{{ error }}</span>
-    {% else %}
-    <span class="hint">{{ "person.hints.gender"|trans }}</span>
-    {% endfor %}
-  </p>
-</div>
-<div class="form-row">
-  <p class="form-field {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
-    <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
-    <input type="text" placeholder=" " name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
-      placeholder="dd-mm-jjjj" inputmode="numeric" />
-    {% for error in form|error("date_of_birth") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
-  </p>
-  <div class="form-field {% if form.data.bsn.is_empty() && should_warn && form.data.no_bsn_confirmed != "true" %}warning{% endif %}">
-    <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
-    <div class="obfuscate">
-      <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
-    </div>
-    <label for="no_bsn_confirmed" class="no_bsn_confirmed">
-      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed == "true" %}checked{% endif %} />
-      <span>{{ "person.no_bsn_confirm"|trans }}</span>
-    </label>
-    {% for error in form|error("bsn") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
-  </div>
-</div>
+
 <div class="form-row">
   <p class="form-field {% if form.data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
@@ -73,4 +28,51 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </div>
+</div>
+<div class="form-row">
+  <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
+    <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
+    <div class="obfuscate">
+      <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
+    </div>
+    <label for="no_bsn_confirmed" class="no_bsn_confirmed">
+      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed == "true" %}checked{% endif %} />
+      <span>{{ "person.no_bsn_confirm"|trans }}</span>
+    </label>
+    {% for error in form|error("bsn") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </div>
+  <p class="form-field form-field-sm {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
+    <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
+    <input type="text" placeholder=" " name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
+      placeholder="dd-mm-jjjj" inputmode="numeric" />
+    {% for error in form|error("date_of_birth") %}
+    <span class="error">{{ error }}</span>
+    {% endfor %}
+  </p>
+</div>
+<div class="form-row">
+  <p class="form-field">
+    <label for="first_name">{{ "person.fields.first_name"|trans }}</label>
+    <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
+    {% for error in form|error("first_name") %}
+    <span class="error">{{ error }}</span>
+    {% else %}
+    <span class="hint">{{ "person.hints.first_name"|trans }}</span>
+    {% endfor %}
+  </p>
+  <p class="form-field">
+    <label for="gender">{{ "person.fields.gender"|trans }}</label>
+    <select name="gender" id="gender">
+      <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
+      <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "gender.male"|trans }}</option>
+      <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ "gender.female"|trans }}</option>
+    </select>
+    {% for error in form|error("gender") %}
+    <span class="error">{{ error }}</span>
+    {% else %}
+    <span class="hint">{{ "person.hints.gender"|trans }}</span>
+    {% endfor %}
+  </p>
 </div>

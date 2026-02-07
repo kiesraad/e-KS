@@ -4,59 +4,50 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, HtmlTemplate, filters,
+    AppError, AppStore, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self, COUNTRY_CODES, Person, PersonForm, PersonPagination, PersonSort,
-        pages::PersonsNewPath,
-    },
+    persons::{COUNTRY_CODES, Person, PersonForm, pages::PersonsCreatePath},
 };
 
 #[derive(Template)]
 #[template(path = "persons/create.html")]
 struct PersonCreateTemplate {
     form: FormData<PersonForm>,
-    person_pagination: PersonPagination,
     countries: &'static [&'static str],
 }
 
-pub async fn new_person_form(
-    _: PersonsNewPath,
+pub async fn create_person(
+    _: PersonsCreatePath,
     context: Context,
-    person_pagination: PersonPagination,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             form: FormData::new(&context.csrf_tokens),
-            person_pagination,
             countries: &COUNTRY_CODES,
         },
         context,
     ))
 }
 
-pub async fn create_person(
-    _: PersonsNewPath,
+pub async fn create_person_submit(
+    _: PersonsCreatePath,
     context: Context,
-    State(pool): State<PgPool>,
-    person_pagination: PersonPagination,
+    State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 form: form_data,
-                person_pagination,
                 countries: &COUNTRY_CODES,
             },
             context,
         )
         .into_response()),
         Ok(person) => {
-            let person = persons::create_person(&pool, &person).await?;
+            person.create(&store).await?;
 
             Ok(Redirect::to(&person.after_create_path()).into_response())
         }
@@ -74,15 +65,15 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context, persons,
+        AppError, AppStore, Context,
         test_utils::{response_body_string, sample_person_form},
     };
 
-    #[sqlx::test]
-    async fn new_person_form_renders_csrf_field(pool: PgPool) {
-        let context = Context::new_test(pool).await;
+    #[tokio::test]
+    async fn create_person_renders_csrf_field() {
+        let context = Context::new_test_without_db();
 
-        let response = new_person_form(PersonsNewPath {}, context, PersonPagination::empty())
+        let response = create_person(PersonsCreatePath {}, context)
             .await
             .unwrap()
             .into_response();
@@ -91,20 +82,20 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains("action=\"/persons/new\""));
+        assert!(body.contains("action=\"/persons/create\""));
     }
 
     #[sqlx::test]
-    async fn create_person_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test(pool.clone()).await;
+    async fn create_person_persists_and_redirects(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let response = create_person(
-            PersonsNewPath {},
+        let response = create_person_submit(
+            PersonsCreatePath {},
             context,
-            State(pool.clone()),
-            PersonPagination::empty(),
+            State(store.clone()),
             Form(form),
         )
         .await
@@ -119,28 +110,24 @@ mod tests {
             .expect("location header value");
         assert!(location.contains("/address"));
 
-        let count = persons::count_persons(&pool).await?;
+        let count = store.get_person_count()?;
         assert_eq!(count, 1);
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn create_person_invalid_form_renders_template(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test(pool.clone()).await;
+    async fn create_person_invalid_form_renders_template(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.last_name = " ".to_string();
 
-        let response = create_person(
-            PersonsNewPath {},
-            context,
-            State(pool.clone()),
-            PersonPagination::empty(),
-            Form(form),
-        )
-        .await
-        .unwrap();
+        let response =
+            create_person_submit(PersonsCreatePath {}, context, State(store), Form(form))
+                .await
+                .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

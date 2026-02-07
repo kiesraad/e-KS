@@ -1,12 +1,16 @@
 use chrono::{DateTime, NaiveDate};
-use serde::Serialize;
+use serde::{Deserialize, Serialize};
 use sqlx::types::chrono::Utc;
 
-use crate::{id_newtype, persons::Gender};
+use crate::{
+    AppError, AppEvent, AppStore, id_newtype,
+    pagination::SortDirection,
+    persons::{Gender, PersonSort, structs::person_sort::compare_persons},
+};
 
 id_newtype!(pub struct PersonId);
 
-#[derive(Default, Debug, Serialize, Clone, sqlx::FromRow)]
+#[derive(Default, Debug, Serialize, Deserialize, Clone, sqlx::FromRow)]
 pub struct Person {
     pub id: PersonId,
 
@@ -124,12 +128,70 @@ impl Person {
             && self.is_address_complete()
             && self.is_representative_complete()
     }
+
+    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::CreatePerson(self.clone())).await
+    }
+
+    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::UpdatePerson(self.clone())).await
+    }
+
+    pub async fn update_address(&self, store: &AppStore) -> Result<(), AppError> {
+        let existing = store.get_person(self.id)?;
+
+        let updated = Person {
+            locality: self.locality.clone(),
+            postal_code: self.postal_code.clone(),
+            house_number: self.house_number.clone(),
+            house_number_addition: self.house_number_addition.clone(),
+            street_name: self.street_name.clone(),
+            updated_at: Utc::now(),
+            ..existing
+        };
+
+        store.update(AppEvent::UpdatePerson(updated.clone())).await
+    }
+
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::DeletePerson(self.id)).await
+    }
+
+    pub async fn delete_by_id(store: &AppStore, person_id: PersonId) -> Result<(), AppError> {
+        store.update(AppEvent::DeletePerson(person_id)).await
+    }
+
+    pub fn list(
+        store: &AppStore,
+        limit: usize,
+        offset: usize,
+        sort_field: &PersonSort,
+        sort_direction: &SortDirection,
+    ) -> Result<Vec<Person>, AppError> {
+        let mut persons = store.get_persons()?;
+        persons.sort_by(|a, b| compare_persons(a, b, sort_field));
+
+        if matches!(sort_direction, SortDirection::Desc) {
+            persons.reverse();
+        }
+
+        let offset = offset.max(0);
+        let limit = limit.max(0);
+
+        Ok(persons.into_iter().skip(offset).take(limit).collect())
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::types::chrono::Utc;
+    use crate::{
+        AppStore,
+        pagination::SortDirection,
+        persons::PersonSort,
+        test_utils::{sample_person, sample_person_with_last_name},
+    };
+    use sqlx::{PgPool, types::chrono::Utc};
 
     fn base_person() -> Person {
         Person {
@@ -155,6 +217,99 @@ mod tests {
             created_at: Utc::now(),
             updated_at: Utc::now(),
         }
+    }
+
+    #[sqlx::test]
+    async fn create_and_get_person(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let id = PersonId::new();
+        let person = sample_person(id);
+
+        person.create(&store).await?;
+
+        let loaded = store.get_person(id)?;
+        assert_eq!(loaded.id, id);
+        assert_eq!(loaded.last_name, "Jansen");
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_person_overwrites_fields(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let id = PersonId::new();
+        let mut person = sample_person(id);
+
+        person.create(&store).await?;
+
+        person.last_name = "Updated".to_string();
+        person.update(&store).await?;
+
+        let updated = store.get_person(id)?;
+        assert_eq!(updated.last_name, "Updated");
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn remove_person_deletes_record(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let id = PersonId::new();
+        let person = sample_person(id);
+
+        person.create(&store).await?;
+        person.delete(&store).await?;
+
+        let missing = store.get_person(id);
+        assert!(missing.is_err());
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn update_address_overwrites_fields(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let id = PersonId::new();
+        let mut person = sample_person(id);
+
+        person.create(&store).await?;
+
+        person.locality = Some("Nieuwegein".to_string());
+        person.postal_code = Some("9999 ZZ".to_string());
+        person.house_number = Some("99".to_string());
+        person.house_number_addition = None;
+        person.street_name = Some("Nieuweweg".to_string());
+
+        person.update_address(&store).await?;
+
+        let updated = store.get_person(id)?;
+        assert_eq!(updated.locality, Some("Nieuwegein".to_string()));
+        assert_eq!(updated.postal_code, Some("9999 ZZ".to_string()));
+        assert_eq!(updated.house_number, Some("99".to_string()));
+        assert_eq!(updated.house_number_addition, None);
+        assert_eq!(updated.street_name, Some("Nieuweweg".to_string()));
+
+        Ok(())
+    }
+
+    #[sqlx::test]
+    async fn list_and_count_persons(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        sample_person_with_last_name(PersonId::new(), "Jansen")
+            .create(&store)
+            .await?;
+        sample_person_with_last_name(PersonId::new(), "Bakker")
+            .create(&store)
+            .await?;
+
+        let total = store.get_person_count()?;
+        assert_eq!(total, 2);
+
+        let persons = Person::list(&store, 10, 0, &PersonSort::LastName, &SortDirection::Asc)?;
+        assert_eq!(persons.len(), 2);
+        assert_eq!(persons[0].last_name, "Bakker");
+
+        Ok(())
     }
 
     #[test]

@@ -1,55 +1,52 @@
 use askama::Template;
 use axum::{
-    extract::State,
+    extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, Context, HtmlTemplate,
+    AppError, AppStore, Context, HtmlTemplate, InitialEditQuery,
     candidate_lists::{
-        self, CandidateList, CandidateListSummary, ListSubmitterForm, pages::EditListSubmitterPath,
+        CandidateList, ListSubmitterForm,
+        pages::{UpdateListSubmitterPath, UpdateSubstituteListSubmittersPath},
     },
     filters,
     form::{FormData, Validate},
-    persons::{self, Person},
-    political_groups::{self, ListSubmitter},
+    list_submitters::ListSubmitter,
+    substitute_list_submitters::SubstituteSubmitter,
 };
 
 #[derive(Template)]
 #[template(path = "candidate_lists/list_submitter.html")]
 struct ListSubmitterUpdateTemplate {
-    candidate_lists: Vec<CandidateListSummary>,
-    total_persons: i64,
+    should_warn: bool,
     form: FormData<ListSubmitterForm>,
     candidate_list: CandidateList,
     list_submitters: Vec<ListSubmitter>,
+    substitute_submitters: Vec<SubstituteSubmitter>,
+    form_action: String,
 }
 
-pub async fn edit_list_submitter_form(
-    _: EditListSubmitterPath,
+fn render_submitter_form(
     context: Context,
     candidate_list: CandidateList,
-    State(pool): State<PgPool>,
+    store: &AppStore,
+    should_warn: bool,
+    form: FormData<ListSubmitterForm>,
+    form_action: String,
 ) -> Result<Response, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
-    let total_persons = persons::count_persons(&pool).await?;
-    let list_submitters =
-        political_groups::get_list_submitters(&pool, context.political_group.id).await?;
-
-    let form = FormData::new_with_data(
-        ListSubmitterForm::from(candidate_list.clone()),
-        &context.csrf_tokens,
-    );
+    let list_submitters = store.get_list_submitters()?;
+    let substitute_submitters = store.get_substitute_submitters()?;
 
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            candidate_lists,
-            total_persons,
+            should_warn,
             form,
             candidate_list,
             list_submitters,
+            substitute_submitters,
+            form_action,
         },
         context,
     )
@@ -57,30 +54,98 @@ pub async fn edit_list_submitter_form(
 }
 
 pub async fn update_list_submitter(
-    _: EditListSubmitterPath,
+    _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
-    State(pool): State<PgPool>,
+    State(store): State<AppStore>,
+    Query(query): Query<InitialEditQuery>,
+) -> Result<Response, AppError> {
+    let form = FormData::new_with_data(
+        ListSubmitterForm::from(candidate_list.clone()),
+        &context.csrf_tokens,
+    );
+    let form_action = candidate_list.update_list_submitter_path();
+
+    render_submitter_form(
+        context,
+        candidate_list,
+        &store,
+        query.should_warn(),
+        form,
+        form_action,
+    )
+}
+
+pub async fn update_substitute_list_submitters(
+    _: UpdateSubstituteListSubmittersPath,
+    context: Context,
+    candidate_list: CandidateList,
+    State(store): State<AppStore>,
+    Query(query): Query<InitialEditQuery>,
+) -> Result<Response, AppError> {
+    let form = FormData::new_with_data(
+        ListSubmitterForm::from(candidate_list.clone()),
+        &context.csrf_tokens,
+    );
+    let form_action = candidate_list.update_substitute_list_submitters_path();
+
+    render_submitter_form(
+        context,
+        candidate_list,
+        &store,
+        query.should_warn(),
+        form,
+        form_action,
+    )
+}
+
+pub async fn update_list_submitter_submit(
+    _: UpdateListSubmitterPath,
+    context: Context,
+    candidate_list: CandidateList,
+    State(store): State<AppStore>,
+    Query(query): Query<InitialEditQuery>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let candidate_lists = candidate_lists::list_candidate_list_summary(&pool).await?;
-    let total_persons = persons::count_persons(&pool).await?;
-    let list_submitters =
-        political_groups::get_list_submitters(&pool, context.political_group.id).await?;
+    let form_action = candidate_list.update_list_submitter_path();
+
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
-        Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterUpdateTemplate {
-                candidate_lists,
-                total_persons,
-                form: form_data,
-                candidate_list,
-                list_submitters,
-            },
+        Err(form_data) => render_submitter_form(
             context,
-        )
-        .into_response()),
+            candidate_list,
+            &store,
+            query.should_warn(),
+            form_data,
+            form_action,
+        ),
         Ok(candidate_list) => {
-            candidate_lists::update_candidate_list(&pool, &candidate_list).await?;
+            candidate_list.update(&store).await?;
+            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+        }
+    }
+}
+
+pub async fn update_substitute_list_submitters_submit(
+    _: UpdateSubstituteListSubmittersPath,
+    context: Context,
+    candidate_list: CandidateList,
+    State(store): State<AppStore>,
+    Query(query): Query<InitialEditQuery>,
+    Form(form): Form<ListSubmitterForm>,
+) -> Result<Response, AppError> {
+    let form_action = candidate_list.update_substitute_list_submitters_path();
+
+    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+        Err(form_data) => render_submitter_form(
+            context,
+            candidate_list,
+            &store,
+            query.should_warn(),
+            form_data,
+            form_action,
+        ),
+        Ok(candidate_list) => {
+            candidate_list.update(&store).await?;
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
@@ -89,40 +154,50 @@ pub async fn update_list_submitter(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::{StatusCode, header};
+    use axum::{
+        extract::Query,
+        http::{StatusCode, header},
+    };
     use axum_extra::extract::Form;
     use chrono::DateTime;
-    use sqlx::PgPool;
 
     use crate::{
-        Context, ElectoralDistrict, TokenValue,
-        candidate_lists::{self, CandidateListId},
-        political_groups::{ListSubmitterId, PoliticalGroupId},
+        AppStore, Context, CsrfTokens, ElectoralDistrict, InitialEditQuery, Locale, TokenValue,
+        candidate_lists::{CandidateListId, CandidateListSummary},
+        list_submitters::ListSubmitterId,
+        political_groups::PoliticalGroupId,
+        substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_list_submitter,
-            sample_political_group,
+            sample_political_group, sample_substitute_submitter,
         },
     };
 
     #[sqlx::test]
-    async fn edit_list_submitter_renders_list_submitter_form(
-        pool: PgPool,
-    ) -> Result<(), sqlx::Error> {
+    async fn update_list_submitter_renders_submitter_form(
+        pool: sqlx::PgPool,
+    ) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
+        let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
         let political_group = sample_political_group(PoliticalGroupId::new());
 
-        candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
-        political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
+        candidate_list.create(&store).await?;
+        political_group.create(&store).await?;
+        list_submitter.create(&store).await?;
+        substitute_submitter.create(&store).await?;
 
-        let response = edit_list_submitter_form(
-            EditListSubmitterPath {
+        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
+
+        let response = update_list_submitter(
+            UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
-            Context::new_test(pool.clone()).await,
+            context,
             candidate_list.clone(),
-            State(pool.clone()),
+            State(store),
+            Query(InitialEditQuery::default()),
         )
         .await
         .unwrap();
@@ -130,44 +205,58 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Submitter of the list"));
+        assert!(body.contains("Substitute list submitters"));
         assert!(body.contains("csrf_token"));
-        assert!(body.contains(&candidate_list.edit_list_submitter_path()));
+        assert!(body.contains(&candidate_list.update_list_submitter_path()));
         assert!(body.contains(&list_submitter.last_name));
         assert!(body.contains(&list_submitter.initials));
+        assert!(body.contains(&substitute_submitter.last_name));
+        assert!(body.contains(&substitute_submitter.initials));
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn update_list_submitter_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
-        let context = Context::new_test(pool.clone()).await;
+    async fn update_list_submitters_persists_and_redirects(
+        pool: sqlx::PgPool,
+    ) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let political_group = sample_political_group(PoliticalGroupId::new());
+        political_group.create(&store).await?;
+        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
         let csrf_token = context.csrf_tokens.issue().value;
         let creation_date = DateTime::from_timestamp(0, 0).unwrap();
         let candidate_list = CandidateList {
-            id: CandidateListId::new(),
             electoral_districts: vec![ElectoralDistrict::UT],
-            list_submitter_id: None,
             created_at: creation_date,
             updated_at: creation_date,
+            ..Default::default()
         };
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let political_group = sample_political_group(PoliticalGroupId::new());
+        let substitute_submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
 
-        candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
-        political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
+        candidate_list.create(&store).await?;
+        list_submitter.create(&store).await?;
+        substitute_submitter_a.create(&store).await?;
+        substitute_submitter_b.create(&store).await?;
 
         let form = ListSubmitterForm {
             list_submitter_id: list_submitter.id.to_string(),
+            substitute_list_submitter_ids: vec![
+                substitute_submitter_a.id,
+                substitute_submitter_b.id,
+            ],
             csrf_token,
         };
-        let response = update_list_submitter(
-            EditListSubmitterPath {
+        let response = update_list_submitter_submit(
+            UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
             context,
             candidate_list.clone(),
-            State(pool.clone()),
+            State(store.clone()),
+            Query(InitialEditQuery::default()),
             Form(form),
         )
         .await
@@ -183,7 +272,7 @@ mod tests {
             .expect("location header value");
 
         // verify updated candidate list object in database
-        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
+        let lists = CandidateListSummary::list(&store)?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
@@ -193,34 +282,43 @@ mod tests {
         assert_eq!(candidate_list.id, updated_list.id);
 
         assert_eq!(list_submitter.id, updated_list.list_submitter_id.unwrap());
+        assert_eq!(
+            vec![substitute_submitter_a.id, substitute_submitter_b.id],
+            updated_list.substitute_list_submitter_ids
+        );
 
         Ok(())
     }
 
     #[sqlx::test]
-    async fn update_list_submitter_invalid_form_renders_template(
-        pool: PgPool,
-    ) -> Result<(), sqlx::Error> {
-        let context = Context::new_test(pool.clone()).await;
+    async fn update_list_submitters_invalid_form_renders_template(
+        pool: sqlx::PgPool,
+    ) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
+        let political_group = sample_political_group(PoliticalGroupId::new());
+        political_group.create(&store).await?;
+        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let political_group = sample_political_group(PoliticalGroupId::new());
+        let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
 
-        candidate_lists::create_candidate_list(&pool, &candidate_list).await?;
-        political_groups::create_political_group(&pool, &political_group).await?;
-        political_groups::create_list_submitter(&pool, political_group.id, &list_submitter).await?;
+        candidate_list.create(&store).await?;
+        list_submitter.create(&store).await?;
+        substitute_submitter.create(&store).await?;
 
         let form = ListSubmitterForm {
             list_submitter_id: list_submitter.id.to_string(),
+            substitute_list_submitter_ids: vec![substitute_submitter.id],
             csrf_token: TokenValue("invalid".to_string()),
         };
-        let response = update_list_submitter(
-            EditListSubmitterPath {
+        let response = update_list_submitter_submit(
+            UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
             context,
             candidate_list.clone(),
-            State(pool.clone()),
+            State(store.clone()),
+            Query(InitialEditQuery::default()),
             Form(form),
         )
         .await
@@ -229,17 +327,16 @@ mod tests {
         assert_eq!(StatusCode::OK, response.status());
         let body = response_body_string(response).await;
         assert!(body.contains("Submitter of the list"));
+        assert!(body.contains("Substitute list submitters"));
 
-        let lists = candidate_lists::list_candidate_list_summary(&pool).await?;
+        let lists = CandidateListSummary::list(&store)?;
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
 
         // verify candidate list didn't update in database
-        assert_eq!(
-            candidate_list.electoral_districts,
-            updated_list.electoral_districts
-        );
+        assert!(updated_list.list_submitter_id.is_none());
+        assert!(updated_list.substitute_list_submitter_ids.is_empty());
 
         Ok(())
     }

@@ -5,9 +5,10 @@ use axum::{
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
 };
-use sqlx::PgPool;
 
-use crate::{AppError, CsrfTokens, ElectionConfig, Locale, political_groups::PoliticalGroup};
+use crate::{
+    AppError, AppStore, CsrfTokens, ElectionConfig, Locale, political_groups::PoliticalGroup,
+};
 
 #[derive(Clone)]
 pub struct Context {
@@ -33,13 +34,15 @@ impl Context {
     }
 
     #[cfg(test)]
-    pub async fn new_test(pool: PgPool) -> Self {
-        let political_group = crate::political_groups::get_single_political_group(&pool)
-            .await
-            .unwrap()
-            .unwrap_or_default();
+    pub async fn new_test() -> Self {
+        let political_group = PoliticalGroup::default();
 
         Self::new(political_group, Locale::En, CsrfTokens::default())
+    }
+
+    #[cfg(test)]
+    pub fn new_test_without_db() -> Self {
+        Self::new(PoliticalGroup::default(), Locale::En, CsrfTokens::default())
     }
 
     pub fn livereload_enabled() -> bool {
@@ -62,7 +65,7 @@ impl<S> FromRequestParts<S> for Context
 where
     S: Clone + Send + Sync + 'static,
     CsrfTokens: FromRef<S>,
-    PgPool: FromRef<S>,
+    AppStore: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -80,8 +83,8 @@ mod tests {
     use super::*;
 
     #[sqlx::test]
-    async fn new_context_sets_locale(pool: PgPool) {
-        let context = Context::new_test(pool).await;
+    async fn new_context_sets_locale() {
+        let context = Context::new_test().await;
         assert_eq!(context.locale, Locale::En);
     }
 

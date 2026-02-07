@@ -6,12 +6,12 @@ use super::{MAX_PER_PAGE, PageLink, Pagination, SortDirection, links::build_link
 #[derive(Clone, Debug, Serialize)]
 pub struct PaginationInfo<S> {
     /// Current 1-indexed page.
-    pub page: u32,
+    pub page: usize,
     /// Items per page after clamping.
-    pub per_page: u32,
+    pub per_page: usize,
     pub has_prev: bool,
     pub has_next: bool,
-    pub total_pages: u32,
+    pub total_pages: usize,
     /// Pre-computed markup-friendly page links (numbers and ellipses).
     pub links: Vec<PageLink>,
 
@@ -24,17 +24,17 @@ where
     S: Serialize + Copy + PartialEq + Default,
 {
     /// Translate the pagination configuration into a SQL `LIMIT`.
-    pub fn limit(&self) -> i64 {
-        self.per_page as i64
+    pub fn limit(&self) -> usize {
+        self.per_page
     }
 
     /// Translate the pagination configuration into a SQL `OFFSET`.
-    pub fn offset(&self) -> i64 {
-        ((self.page - 1) as i64) * self.per_page as i64
+    pub fn offset(&self) -> usize {
+        (self.page - 1) * self.per_page
     }
 
     /// Generate a URL query string for the given page and per-page values.
-    pub fn url(&self, page: u32, per_page: u32) -> String {
+    pub fn url(&self, page: usize, per_page: usize) -> String {
         Pagination {
             page,
             per_page,
@@ -60,7 +60,7 @@ where
         self.url(self.page.saturating_sub(1), self.per_page)
     }
 
-    pub fn goto(&self, page: &u32) -> String {
+    pub fn goto(&self, page: &usize) -> String {
         self.url(*page, self.per_page)
     }
 
@@ -90,7 +90,7 @@ where
     }
 }
 
-pub fn to_info<S>(pagination: Pagination<S>, total_items: u64) -> PaginationInfo<S>
+pub fn to_info<S>(pagination: Pagination<S>, total_items: usize) -> PaginationInfo<S>
 where
     S: Serialize + Copy + PartialEq + Default,
 {
@@ -99,10 +99,10 @@ where
     let total_pages = if total_items == 0 {
         1
     } else {
-        ((total_items - 1) / per_page as u64) as u32 + 1
+        ((total_items - 1) / per_page) + 1
     };
 
-    let page: u32 = pagination.page.min(total_pages).max(1);
+    let page: usize = pagination.page.min(total_pages).max(1);
     let has_prev = page > 1;
     let has_next = page < total_pages;
 

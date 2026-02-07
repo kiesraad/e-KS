@@ -1,4 +1,4 @@
-<form method="post" action="{{ PoliticalGroup::edit_path() }}" class="form mb-xl">
+<form method="post" action="{{ PoliticalGroup::update_path() }}" class="form mb-xl">
   <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
 
   <h3>{{ "political_group.general_information"|trans }}</h3>

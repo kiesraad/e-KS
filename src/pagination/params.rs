@@ -32,11 +32,11 @@ pub struct Pagination<S: Default + PartialEq> {
     /// Requested page number (1-indexed). Defaults to `1`.
     #[serde(default = "default_page")]
     #[serde(skip_serializing_if = "is_default_page")]
-    pub page: u32,
+    pub page: usize,
     /// Requested page size. Defaults to [`Pagination::default_per_page`].
     #[serde(default = "default_per_page")]
     #[serde(skip_serializing_if = "is_default_per_page")]
-    pub per_page: u32,
+    pub per_page: usize,
     /// Optional field to sort by.
     #[serde(default)]
     #[serde(skip_serializing_if = "is_default")]
@@ -48,20 +48,20 @@ pub struct Pagination<S: Default + PartialEq> {
 }
 
 /// Default page when the user omits or zeroes the parameter.
-const fn default_page() -> u32 {
+const fn default_page() -> usize {
     1
 }
 
-fn is_default_page(page: &u32) -> bool {
+fn is_default_page(page: &usize) -> bool {
     *page == default_page()
 }
 
 /// Default page size when unspecified.
-const fn default_per_page() -> u32 {
+const fn default_per_page() -> usize {
     500
 }
 
-fn is_default_per_page(per_page: &u32) -> bool {
+fn is_default_per_page(per_page: &usize) -> bool {
     *per_page == default_per_page()
 }
 
@@ -105,7 +105,7 @@ where
     /// Combine the current request with the number of available items to compute final pagination
     /// values. This clamps the current page within valid bounds and prepares the metadata we need
     /// for database queries and template rendering.
-    pub fn set_total(self, total_items: u64) -> PaginationInfo<S> {
+    pub fn set_total(self, total_items: usize) -> PaginationInfo<S> {
         info::to_info(self, total_items)
     }
 

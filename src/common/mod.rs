@@ -2,6 +2,7 @@ pub mod config;
 pub mod constants;
 pub mod context;
 pub mod election;
+pub mod initial_edit;
 pub mod locale;
 pub mod logging;
 pub mod new_type;

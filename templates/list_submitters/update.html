@@ -1,0 +1,55 @@
+{% extends "components/overlay.html" %}
+
+{% block close_action %}{{ ListSubmitter::list_path() }}{% endblock %}
+
+{% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
+
+{% block overlay_start %}
+<form method="post" action="{{ list_submitter.update_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+{% endblock %}
+
+{% block overlay_content %}
+  <div class="overlay-content steps">
+    <div class="steps-nav">
+      <ul>
+        <li>
+          <a href="{{ list_submitter.update_path() }}">
+            {{ "political_group.edit_list_submitter"|trans }}
+          </a>
+        </li>
+      </ul>
+    </div>
+    <div class="form">
+      <fieldset>
+        {% include "components/person_name_fields.html" %}
+        {% include "components/address_fields.html" %}
+      </fieldset>
+      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
+        {{ "political_group.actions.delete_list_submitter"|trans }}
+      </button>
+    </div>
+  </div>
+{% endblock %}
+
+{% block overlay_end %}
+</form>
+<dialog class="modal">
+  <form method="post" action="{{ list_submitter.delete_path() }}" class="form">
+    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
+      <span>{{ "action.close"|trans }}</span>
+    </button>
+    <h3>
+      {{ "political_group.actions.delete_list_submitter"|trans }}
+    </h3>
+    <p class="mt-lg mb-lg">{{ "political_group.delete_list_submitter_warning_text"|trans }}</p>
+    <button type="submit" class="button primary-destructive">
+      {{ "action.delete"|trans }}
+    </button>
+    <button type="submit" class="button secondary close">
+      {{ "action.cancel"|trans }}
+    </button>
+  </form>
+</dialog>
+{% endblock %}

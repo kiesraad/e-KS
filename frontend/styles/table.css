@@ -33,7 +33,7 @@ table {
     font-size: var(--font-size-lg);
   }
 
-  tr.warning {
+  tr.warning:not(.exceeded) {
     background-image: url("../icons/warning.svg");
     background-repeat: no-repeat;
     background-position: right 3.5rem center;

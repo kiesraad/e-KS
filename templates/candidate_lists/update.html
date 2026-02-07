@@ -1,33 +1,16 @@
-{% extends "candidate_lists/list.html" %}
+{% extends "components/overlay.html" %}
 
-{% block body_class %}overlay-open{% endblock %}
+{% block close_action %}{{ candidate_list.view_path() }}{% endblock %}
 
-{% block overlay %}
-<div class="overlay-backdrop"></div>
+{% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
+
+{% block overlay_start %}
 <form method="post" action="{{ candidate_list.update_path() }}" class="overlay">
-  <header>
-    <h2>
-      {{ "candidate_list.form.update.title"|trans }}
-    </h2>
-    <a href="{{ candidate_list.view_path() }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </a>
-  </header>
+{% endblock %}
+
+{% block overlay_content %}
   <div class="overlay-content steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ candidate_list.update_path() }}">
-            {{ "candidate_list.fields.electoral_districts"|trans }}
-          </a>
-        </li>
-        <li>
-          <a href="{{ candidate_list.edit_list_submitter_path() }}">
-            {{ "candidate_list.fields.list_submitter"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
+    {% include "candidate_lists/components/update_steps.html" %}
     <div class="form">
       {% include "candidate_lists/components/districts_form.html" %}
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
@@ -35,11 +18,9 @@
       </button>
     </div>
   </div>
-  <footer>
-    <button type="submit" class="button">
-      {{ "action.save_and_close"|trans }}
-    </button>
-  </footer>
+{% endblock %}
+
+{% block overlay_end %}
 </form>
 
 <dialog class="modal">

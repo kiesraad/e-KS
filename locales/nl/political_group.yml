@@ -1,10 +1,10 @@
 actions:
   delete_authorised_agent: Gemachtigde verwijderen
   delete_list_submitter: Lijstinleveraar verwijderen
-  delete_substitute_submitter: Vervangende lijstinleveraar verwijderen
+  delete_substitute_submitter: Vervanger voor herstel verzuimen verwijderen
 add_authorised_agent: Gemachtigde toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
-add_substitute_submitter: Vervangende lijstinleveraar toevoegen
+add_substitute_submitter: Vervanger herstel verzuimen toevoegen
 authorised_agent_data: Gegevens gemachtigde
 authorised_agent_info: De gemachtigde van de partij is de persoon die bij het centraal stembureau is geregistreerd als gemachtigde of plaatsvervangend gemachtigde voor de aanduiding. Deze persoon machtigt met formulier H3-1 / H3-2 de lijstinleveraar om de naam van de partij boven de kandidatenlijst te plaatsen
 basic_information: Basisinformatie
@@ -14,7 +14,7 @@ delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervangende li
 display_name: Geregistreerde aanduiding
 edit_authorised_agent: Gegevens gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
-edit_substitute_submitter: Vervangers voor herstel verzuim aanpassen
+edit_substitute_submitter: Vervangers voor herstel en aanpassen
 general_information: Algemeen
 legal_name: Volledige statutaire naam
 list_submitter_data: Gegevens lijstinleveraar
@@ -25,7 +25,7 @@ no_list_submitters: Geen lijstinleveraars
 no_substitute_submitters: Geen vervangende lijstinleveraars
 select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 select_default_substitute_submitter_info: Kies een of meerdere vervanger(s) voor het herstel van verzuimen.
-substitute_submitter_data: Vervangers voor herstel verzuim
+substitute_submitter_data: Vervangers voor herstel verzuimen
 title: Politieke groepering
 type:
   blank_name: Blanco lijst

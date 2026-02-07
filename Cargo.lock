@@ -515,6 +515,7 @@ dependencies = [
  "http-body-util",
  "hyper-util",
  "memory-serve",
+ "parking_lot",
  "phf",
  "phf_codegen",
  "rand 0.9.2",

@@ -3,7 +3,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState,
+    AppError, AppState, InitialEditQuery,
     candidate_lists::{CandidateList, CandidateListId},
 };
 
@@ -20,8 +20,8 @@ mod view;
 pub struct CandidateListsPath;
 
 #[derive(TypedPath)]
-#[typed_path("/candidate-lists/new", rejection(AppError))]
-pub struct CandidateListNewPath;
+#[typed_path("/candidate-lists/create", rejection(AppError))]
+pub struct CandidateListCreatePath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}", rejection(AppError))]
@@ -30,8 +30,8 @@ pub struct ViewCandidateListPath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{list_id}/edit", rejection(AppError))]
-pub struct CandidateListsEditPath {
+#[typed_path("/candidate-lists/{list_id}/update", rejection(AppError))]
+pub struct CandidateListUpdatePath {
     pub list_id: CandidateListId,
 }
 
@@ -48,20 +48,17 @@ pub struct CandidateListReorderPath {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{list_id}/add", rejection(AppError))]
-pub struct AddCandidatePath {
-    pub list_id: CandidateListId,
-}
-
-#[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{list_id}/new", rejection(AppError))]
-pub struct CreateCandidatePath {
-    pub list_id: CandidateListId,
-}
-
-#[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}/list-submitter", rejection(AppError))]
-pub struct EditListSubmitterPath {
+pub struct UpdateListSubmitterPath {
+    pub list_id: CandidateListId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/candidate-lists/{list_id}/substitute-list-submitters",
+    rejection(AppError)
+)]
+pub struct UpdateSubstituteListSubmittersPath {
     pub list_id: CandidateListId,
 }
 
@@ -70,12 +67,12 @@ impl CandidateList {
         CandidateListsPath {}.to_string()
     }
 
-    pub fn new_path() -> String {
-        CandidateListNewPath {}.to_string()
+    pub fn create_path() -> String {
+        CandidateListCreatePath {}.to_string()
     }
 
     pub fn update_path(&self) -> String {
-        CandidateListsEditPath { list_id: self.id }.to_string()
+        CandidateListUpdatePath { list_id: self.id }.to_string()
     }
 
     pub fn delete_path(&self) -> String {
@@ -86,8 +83,12 @@ impl CandidateList {
         ViewCandidateListPath { list_id: self.id }.to_string()
     }
 
-    pub fn edit_list_submitter_path(&self) -> String {
-        EditListSubmitterPath { list_id: self.id }.to_string()
+    pub fn update_list_submitter_path(&self) -> String {
+        UpdateListSubmitterPath { list_id: self.id }.to_string()
+    }
+
+    pub fn update_substitute_list_submitters_path(&self) -> String {
+        UpdateSubstituteListSubmittersPath { list_id: self.id }.to_string()
     }
 
     pub fn reorder_path(&self) -> String {
@@ -95,11 +96,17 @@ impl CandidateList {
     }
 
     pub fn add_candidate_path(&self) -> String {
-        AddCandidatePath { list_id: self.id }.to_string()
+        crate::candidates::AddCandidatePath { list_id: self.id }.to_string()
     }
 
-    pub fn new_candidate_path(&self) -> String {
-        CreateCandidatePath { list_id: self.id }.to_string()
+    pub fn create_candidate_path(&self) -> String {
+        crate::candidates::CreateCandidatePath { list_id: self.id }.to_string()
+    }
+
+    pub fn after_create_path(&self) -> String {
+        UpdateListSubmitterPath { list_id: self.id }
+            .with_query_params(InitialEditQuery::default())
+            .to_string()
     }
 }
 
@@ -107,14 +114,17 @@ pub fn router() -> Router<AppState> {
     Router::new()
         // manage lists
         .typed_get(list::list_candidate_lists)
-        .typed_get(create::new_candidate_list_form)
-        .typed_post(create::create_candidate_list)
-        .typed_get(list_submitter::edit_list_submitter_form)
-        .typed_post(list_submitter::update_list_submitter)
+        // create a new list
+        .typed_get(create::create_candidate_list)
+        .typed_post(create::create_candidate_list_submit)
         // manage single list
         .typed_get(view::view_candidate_list)
-        .typed_get(update::edit_candidate_list)
-        .typed_post(update::update_candidate_list)
+        .typed_get(update::update_candidate_list)
+        .typed_post(update::update_candidate_list_submit)
+        .typed_get(list_submitter::update_list_submitter)
+        .typed_post(list_submitter::update_list_submitter_submit)
+        .typed_get(list_submitter::update_substitute_list_submitters)
+        .typed_post(list_submitter::update_substitute_list_submitters_submit)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
 }

@@ -3,12 +3,13 @@ use http_body_util::BodyExt;
 
 use crate::{
     ElectoralDistrict, TokenValue,
+    authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
+    list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Gender, Person, PersonForm, PersonId, RepresentativeForm},
-    political_groups::{
-        AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId, ListSubmitter, ListSubmitterForm,
-        ListSubmitterId, PoliticalGroup, PoliticalGroupForm, PoliticalGroupId, SubstituteSubmitter,
-        SubstituteSubmitterForm, SubstituteSubmitterId,
+    political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupId},
+    substitute_list_submitters::{
+        SubstituteSubmitter, SubstituteSubmitterForm, SubstituteSubmitterId,
     },
 };
 
@@ -33,10 +34,8 @@ pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
 pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
     CandidateList {
         id,
-        list_submitter_id: None,
         electoral_districts: vec![ElectoralDistrict::UT],
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        ..Default::default()
     }
 }
 

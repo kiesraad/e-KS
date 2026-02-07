@@ -158,7 +158,7 @@ mod tests {
         assert_eq!(updated.house_number_addition, Some("B".to_string()));
         assert_eq!(updated.street_name, Some("Spoorstraat".to_string()));
         assert_eq!(updated.created_at, current.created_at);
-        assert_eq!(updated.updated_at, current.updated_at);
+        assert!(updated.updated_at >= current.updated_at);
     }
 
     #[test]

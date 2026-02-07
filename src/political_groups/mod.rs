@@ -1,8 +1,8 @@
 mod extractors;
 mod pages;
-mod repository;
+mod steps;
 mod structs;
 
 pub use pages::router;
-pub use repository::*;
+pub use steps::PoliticalGroupSteps;
 pub use structs::*;

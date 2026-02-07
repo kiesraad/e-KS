@@ -1,18 +1,13 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
-use sqlx::PgPool;
 
-use crate::{
-    AppError, Context, CsrfTokens,
-    candidate_lists::{self, CandidateList},
-    trans,
-};
+use crate::{AppError, AppStore, Context, CsrfTokens, candidate_lists::CandidateList, trans};
 
 use super::CandidateListPathParams;
 
 impl<S> FromRequestParts<S> for CandidateList
 where
     S: Clone + Send + Sync + 'static,
-    PgPool: FromRef<S>,
+    AppStore: FromRef<S>,
     CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
@@ -21,18 +16,14 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let pool = PgPool::from_ref(state);
+        let store = AppStore::from_ref(state);
         let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-        let candidate_list = candidate_lists::get_candidate_list(&pool, list_id)
-            .await?
-            .ok_or(AppError::NotFound(trans!(
-                "candidate_list.not_found",
-                context.locale,
-                list_id
-            )))?;
+        let candidate_list = store.get_candidate_list(list_id).map_err(|_| {
+            AppError::NotFound(trans!("candidate_list.not_found", context.locale, list_id))
+        })?;
 
         Ok(candidate_list)
     }
@@ -52,8 +43,8 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale,
-        candidate_lists::{self, CandidateListId},
+        AppEvent, AppState, Locale,
+        candidate_lists::CandidateListId,
         render_error_pages,
         test_utils::{response_body_string, sample_candidate_list},
         trans,
@@ -62,11 +53,13 @@ mod tests {
     #[sqlx::test]
     async fn candidate_list_extractor_loads_list(pool: PgPool) {
         let list = sample_candidate_list(CandidateListId::new());
-        candidate_lists::create_candidate_list(&pool, &list)
-            .await
-            .unwrap();
 
         let app_state = AppState::new_for_tests(&pool).await;
+        app_state
+            .store
+            .update(AppEvent::CreateCandidateList(list.clone()))
+            .await
+            .unwrap();
 
         let app = Router::new()
             .route(

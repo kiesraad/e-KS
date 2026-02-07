@@ -4,31 +4,25 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::Form;
-use sqlx::PgPool;
 
 use crate::{
-    AppError, AppResponse, Context, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, filters,
     form::{FormData, Validate},
-    persons::{
-        self, AddressForm, InitialEditQuery, Person, PersonPagination, PersonSort,
-        pages::EditPersonAddressPath,
-    },
+    persons::{AddressForm, InitialEditQuery, Person, pages::UpdatePersonAddressPath},
 };
 
 #[derive(Template)]
-#[template(path = "persons/address.html")]
+#[template(path = "persons/update_address.html")]
 struct PersonAddressUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<AddressForm>,
-    person_pagination: PersonPagination,
 }
 
-pub async fn edit_person_address(
-    _: EditPersonAddressPath,
+pub async fn update_person_address(
+    _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    person_pagination: PersonPagination,
     Query(query): Query<InitialEditQuery>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
@@ -36,18 +30,16 @@ pub async fn edit_person_address(
             should_warn: query.should_warn(),
             form: FormData::new_with_data(AddressForm::from(person.clone()), &context.csrf_tokens),
             person,
-            person_pagination,
         },
         context,
     ))
 }
 
-pub async fn update_person_address(
-    _: EditPersonAddressPath,
+pub async fn update_person_address_submit(
+    _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    State(pool): State<PgPool>,
-    person_pagination: PersonPagination,
+    State(store): State<AppStore>,
     Query(query): Query<InitialEditQuery>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
@@ -57,13 +49,12 @@ pub async fn update_person_address(
                 person,
                 should_warn: query.should_warn(),
                 form: form_data,
-                person_pagination,
             },
             context,
         )
         .into_response()),
         Ok(person) => {
-            persons::update_address(&pool, &person).await?;
+            person.update_address(&store).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -82,24 +73,24 @@ mod tests {
     use sqlx::PgPool;
 
     use crate::{
-        Context,
-        persons::{self, PersonId},
+        AppError, AppStore, Context,
+        persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
 
     #[sqlx::test]
-    async fn edit_person_address_renders_existing_person(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_address_renders_existing_person(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id: PersonId = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let response = edit_person_address(
-            EditPersonAddressPath { person_id },
-            Context::new_test(pool.clone()).await,
+        let response = update_person_address(
+            UpdatePersonAddressPath { person_id },
+            Context::new_test_without_db(),
             person,
-            PersonPagination::empty(),
-            Query(InitialEditQuery::new()),
+            Query(InitialEditQuery::default()),
         )
         .await
         .unwrap()
@@ -113,23 +104,23 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn update_person_address_persists_and_redirects(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_address_persists_and_redirects(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
 
-        let response = update_person_address(
-            EditPersonAddressPath { person_id },
+        let response = update_person_address_submit(
+            UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(pool.clone()),
-            PersonPagination::empty(),
-            Query(InitialEditQuery::new()),
+            State(store.clone()),
+            Query(InitialEditQuery::default()),
             Form(form),
         )
         .await
@@ -145,9 +136,7 @@ mod tests {
 
         assert_eq!(location, Person::list_path());
 
-        let updated = persons::get_person(&pool, person_id)
-            .await?
-            .expect("updated person");
+        let updated = store.get_person(person_id)?;
         assert_eq!(updated.locality, Some("Juinen".to_string()));
 
         Ok(())
@@ -156,24 +145,24 @@ mod tests {
     #[sqlx::test]
     async fn update_person_address_invalid_form_renders_template(
         pool: PgPool,
-    ) -> Result<(), sqlx::Error> {
+    ) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.postal_code = "a".to_string();
 
-        let response = update_person_address(
-            EditPersonAddressPath { person_id },
+        let response = update_person_address_submit(
+            UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(pool.clone()),
-            PersonPagination::empty(),
-            Query(InitialEditQuery::new()),
+            State(store),
+            Query(InitialEditQuery::default()),
             Form(form),
         )
         .await
@@ -188,22 +177,22 @@ mod tests {
     }
 
     #[sqlx::test]
-    async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), sqlx::Error> {
+    async fn update_person_address_dutch_xor_non_dutch(pool: PgPool) -> Result<(), AppError> {
+        let store = AppStore::new(pool);
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        persons::create_person(&pool, &person).await?;
+        person.create(&store).await?;
 
-        let context = Context::new_test(pool.clone()).await;
+        let context = Context::new_test_without_db();
 
         // Update with Dutch address (but all form fields filled)
-        update_person_address(
-            EditPersonAddressPath { person_id },
+        update_person_address_submit(
+            UpdatePersonAddressPath { person_id },
             context.clone(),
             person.clone(),
-            State(pool.clone()),
-            PersonPagination::empty(),
-            Query(InitialEditQuery::new()),
+            State(store.clone()),
+            Query(InitialEditQuery::default()),
             Form(AddressForm {
                 locality: "Juinen".to_string(),
                 postal_code: "1234 AB".to_string(),
@@ -217,9 +206,7 @@ mod tests {
         .unwrap();
 
         // The international address should be removed because `is_dutch` is true
-        let updated = persons::get_person(&pool, person_id)
-            .await?
-            .expect("updated person");
+        let updated = store.get_person(person_id)?;
         assert_eq!(updated.locality, Some("Juinen".to_string()));
         assert_eq!(updated.postal_code, Some("1234AB".to_string()));
         assert_eq!(updated.house_number, Some("10".to_string()));

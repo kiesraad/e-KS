@@ -18,7 +18,10 @@ fields:
   electoral_districts: Electoral districts
   list_submitter: Submitter of the list
   position: Position
+  substitute_list_submitters: Substitute list submitters
 form:
+  copy_candidates_from_previous: Copy candidates from the last created list
+  copy_candidates_from_previous_legend: Copy candidates
   create:
     title: Create candidate list
   delete_warning_text: Are you sure you want to delete this candidate list?

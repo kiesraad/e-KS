@@ -29,8 +29,8 @@ mod tests {
         form::{Validate, ValidationError},
     };
 
-    #[test]
-    fn builds_candidate_list_with_valid_csrf() {
+    #[tokio::test]
+    async fn builds_candidate_list_with_valid_csrf() {
         let tokens = CsrfTokens::default();
         let csrf_token = tokens.issue().value;
         let form = CandidateListForm {
@@ -42,8 +42,8 @@ mod tests {
         assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
     }
 
-    #[test]
-    fn rejects_invalid_csrf_token() {
+    #[tokio::test]
+    async fn rejects_invalid_csrf_token() {
         let tokens = CsrfTokens::default();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],

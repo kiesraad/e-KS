@@ -85,22 +85,23 @@
     border-left: 1px solid var(--gray-300);
   }
 
-  &[data-max="50"] {
-    tr:nth-child(n + 51):not(.dragging) {
-      background-image: repeating-linear-gradient(
-        -45deg,
-        var(--red-200),
-        var(--gray-50) 2px,
-        var(--gray-50) 17px
-      );
+  &[data-max="50"] tr:nth-child(n + 51):not(.dragging),
+  &[data-max="80"] tr:nth-child(n + 81):not(.dragging) {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--red-200),
+      var(--gray-50) 2px,
+      var(--gray-50) 17px
+    );
+    background-repeat: repeat;
+    background-position: 0 0;
 
-      td {
-        background-color: transparent;
+    td {
+      background-color: transparent;
 
-        .position-badge {
-          color: var(--red-100);
-          background-color: var(--red-100);
-        }
+      .position-badge {
+        color: var(--red-200);
+        background-color: var(--red-100);
       }
     }
   }

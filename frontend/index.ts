@@ -13,5 +13,6 @@ import "./scripts/position-preview";
 import "./scripts/active-link";
 import "./scripts/select-all-checkbox";
 import "./scripts/bsn-input";
+import "./scripts/dirty-form";
 
 import "./styles/index.css";

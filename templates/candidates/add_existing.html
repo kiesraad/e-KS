@@ -1,4 +1,6 @@
-{% extends "candidates/components/overlay.html" %}
+{% extends "components/overlay.html" %}
+
+{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
 
 {% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}{% endblock %}
 

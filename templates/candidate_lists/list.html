@@ -4,7 +4,7 @@
 {% block candidate_lists_nav_class %}active{% endblock %}
 
 {% block header_action %}
-<a href="{{ CandidateList::new_path() }}" class="button secondary icon-plus">
+<a href="{{ CandidateList::create_path() }}" class="button secondary icon-plus">
   {{ "candidate_list.actions.add"|trans }}
 </a>
 {% endblock %}
@@ -51,7 +51,7 @@
 
       {# add new candidate list card #}
       <div class="card card-add-list">
-        <a href="{{ CandidateList::new_path() }}" class="button secondary icon-plus">
+        <a href="{{ CandidateList::create_path() }}" class="button secondary icon-plus">
           {{ "candidate_list.actions.add"|trans }}
         </a>
       </div>
