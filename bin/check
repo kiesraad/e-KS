@@ -12,8 +12,8 @@ fi
 # rust
 cargo check --all-features
 cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo test --all-features
 cargo clippy --all-targets --all-features -- -D warnings
+cargo test --all-features
 
 # typescript
 ./bin/biome check --fix ./frontend

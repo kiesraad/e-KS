@@ -1,12 +1,14 @@
-use std::io;
+use std::{io, str::FromStr};
 
-use chrono::{NaiveDate, Utc};
+use chrono::NaiveDate;
 use csv::{ReaderBuilder, Trim};
 use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppEvent, AppStore,
+    AppError, AppEvent, AppStore, Bsn, CountryCode, Date, DutchAddress, FirstName, FullName,
+    HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
+    UtcDateTime,
     persons::{Gender, Person},
 };
 
@@ -26,6 +28,15 @@ struct PersonRecord {
 }
 
 impl PersonRecord {
+    fn parse_value<T: FromStr>(value: &str, field: &str) -> Result<T, AppError> {
+        value.parse::<T>().map_err(|_| {
+            AppError::ServerError(io::Error::new(
+                io::ErrorKind::InvalidData,
+                format!("Failed to parse {field}"),
+            ))
+        })
+    }
+
     fn into_person(self) -> Result<Person, AppError> {
         let initials = self
             .voornamen
@@ -37,7 +48,7 @@ impl PersonRecord {
         let locality = if self.woonplaats.is_empty() {
             None
         } else {
-            Some(self.woonplaats)
+            Some(Self::parse_value::<Locality>(&self.woonplaats, "locality")?)
         };
 
         let id = format!(
@@ -53,29 +64,48 @@ impl PersonRecord {
                 "V" => Some(Gender::Female),
                 _ => None,
             },
-            last_name: self.geslachtsnaam,
-            last_name_prefix: None,
+            name: FullName {
+                last_name: Self::parse_value::<LastName>(&self.geslachtsnaam, "last name")?,
+                last_name_prefix: None,
+                initials: Self::parse_value::<Initials>(&initials, "initials")?,
+            },
             first_name: self
                 .voornamen
                 .split_whitespace()
                 .next()
-                .map(|s| s.to_string()),
-            initials,
-            date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d").ok(),
-            bsn: Some(self.burgerservicenummer),
+                .map(|s| Self::parse_value::<FirstName>(s, "first name"))
+                .transpose()?,
+            date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
+                .ok()
+                .map(Date::from),
+            bsn: Self::parse_value::<Bsn>(&self.burgerservicenummer, "bsn").ok(),
             no_bsn_confirmed: false,
-            place_of_residence: locality.clone(),
-            country_of_residence: Some("NL".to_string()),
-            locality,
-            postal_code: Some(self.postcode),
-            house_number: Some(self.huisnummer),
-            house_number_addition: None,
-            street_name: Some(self.straat),
-            representative_initials: None,
-            representative_last_name: None,
-            representative_last_name_prefix: None,
-            created_at: Utc::now(),
-            updated_at: Utc::now(),
+            place_of_residence: locality
+                .as_deref()
+                .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
+                .transpose()?,
+            country_of_residence: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+            address: DutchAddress {
+                locality,
+                postal_code: Some(self.postcode.parse::<PostalCode>().map_err(|_| {
+                    AppError::ServerError(io::Error::new(
+                        io::ErrorKind::InvalidData,
+                        "Failed to parse postal code",
+                    ))
+                })?),
+                house_number: Some(Self::parse_value::<HouseNumber>(
+                    &self.huisnummer,
+                    "house number",
+                )?),
+                house_number_addition: None,
+                street_name: Some(Self::parse_value::<StreetName>(
+                    &self.straat,
+                    "street name",
+                )?),
+            },
+            representative: FullName::default(),
+            created_at: UtcDateTime::now(),
+            updated_at: UtcDateTime::now(),
         })
     }
 }

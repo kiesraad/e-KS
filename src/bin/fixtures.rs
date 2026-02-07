@@ -7,8 +7,6 @@ async fn run() -> Result<(), Box<dyn std::error::Error>> {
     // Create application state
     let state = AppState::new()?;
 
-    sqlx::migrate!().run(&state.store.pool).await?;
-
     fixtures::load(&state.store).await?;
 
     Ok(())

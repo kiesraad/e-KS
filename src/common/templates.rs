@@ -38,7 +38,7 @@ mod tests {
     #[template(source = "{{ 123|foo }}", ext = "txt")]
     struct MyTemplate;
 
-    #[sqlx::test]
+    #[tokio::test]
     async fn html_template_returns_500_when_render_fails() {
         let context = Context::new_test().await;
         let response = HtmlTemplate(MyTemplate, context).into_response();

@@ -63,14 +63,13 @@ mod tests {
         http::{Request, StatusCode},
         routing::get,
     };
-    use sqlx::PgPool;
     use tokio::net::TcpListener;
     use tower::ServiceExt;
 
     use crate::test_utils::response_body_string;
 
-    #[sqlx::test]
-    async fn proxy_forwards_requests_to_upstream(pool: PgPool) -> Result<(), sqlx::Error> {
+    #[tokio::test]
+    async fn proxy_forwards_requests_to_upstream() -> Result<(), sqlx::Error> {
         let upstream_router = Router::new().route("/up", get(|| async { "ok" }));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -78,7 +77,7 @@ mod tests {
             axum::serve(listener, upstream_router).await.unwrap();
         });
 
-        let app_state = AppState::new_for_tests(&pool).await;
+        let app_state = AppState::new_for_tests().await;
         let app = Router::new()
             .route("/up", proxy_handler(format!("http://{addr}")))
             .with_state(app_state);

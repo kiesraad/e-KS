@@ -1,26 +1,26 @@
 <div class="form-row">
-  <p class="form-field form-field-sm {% if use_name_warnings|default(false) && form.data.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if use_name_warnings|default(false) && form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
-    <input type="text" name="initials" id="initials" value="{{ form.data.initials }}" class="initials-input" required />
+    <input type="text" name="initials" id="initials" value="{{ form.data.name.initials }}" class="initials-input" required />
     <label class="autoformat">
       <input type="checkbox" checked />
       <span>{{ "person.autoformat_initials"|trans }}</span>
     </label>
-    {% for error in form|error("initials") %}
+    {% for error in form|error("name.initials") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field form-field-sm">
     <label for="last_name_prefix">{{ "person.fields.last_name_prefix"|trans }}</label>
-    <input type="text" name="last_name_prefix" id="last_name_prefix" value="{{ form.data.last_name_prefix }}" />
-    {% for error in form|error("last_name_prefix") %}
+    <input type="text" name="last_name_prefix" id="last_name_prefix" value="{{ form.data.name.last_name_prefix }}" />
+    {% for error in form|error("name.last_name_prefix") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field {% if use_name_warnings|default(false) && form.data.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field {% if use_name_warnings|default(false) && form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
-    <input type="text" name="last_name" id="last_name" value="{{ form.data.last_name }}" required />
-    {% for error in form|error("last_name") %}
+    <input type="text" name="last_name" id="last_name" value="{{ form.data.name.last_name }}" required />
+    {% for error in form|error("name.last_name") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>

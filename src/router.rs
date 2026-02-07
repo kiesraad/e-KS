@@ -77,14 +77,13 @@ mod tests {
         body::Body,
         http::{Request, StatusCode},
     };
-    use sqlx::PgPool;
     use tower::ServiceExt;
 
     use crate::{AppState, test_utils::response_body_string};
 
-    #[sqlx::test]
-    async fn index_route_renders_index(pool: PgPool) {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn index_route_renders_index() {
+        let state = AppState::new_for_tests().await;
         let app: Router = create(state.clone()).with_state(state);
 
         let request = Request::builder().uri("/").body(Body::empty()).unwrap();
@@ -95,9 +94,9 @@ mod tests {
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
     }
 
-    #[sqlx::test]
-    async fn fallback_route_renders_not_found(pool: PgPool) {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn fallback_route_renders_not_found() {
+        let state = AppState::new_for_tests().await;
         let app: Router = create(state.clone()).with_state(state);
 
         let request = Request::builder()

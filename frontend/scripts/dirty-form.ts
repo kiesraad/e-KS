@@ -29,7 +29,7 @@ function setupDirtyForms() {
       updateSubmitButtons();
     });
 
-    form.addEventListener("change", () => {
+    form.addEventListener("keydown", () => {
       isDirty = true;
       dirtyForms.add(form);
       updateSubmitButtons();
@@ -44,13 +44,13 @@ function setupDirtyForms() {
     updateSubmitButtons();
   });
 
-  window.addEventListener("beforeunload", (event) => {
+  globalThis.addEventListener("beforeunload", (event) => {
     if (dirtyForms.size > 0 && !isSubmitting) {
       event.preventDefault();
     }
   });
 }
 
-if (typeof window !== "undefined") {
-  window.addEventListener("load", setupDirtyForms);
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", setupDirtyForms);
 }

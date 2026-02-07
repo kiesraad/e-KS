@@ -1,41 +1,41 @@
 <div class="form-row">
-  <p class="form-field form-field-sm {% if form.data.postal_code.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if form.data.address.postal_code.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="postal_code">{{ "person.fields.postal_code"|trans }}</label>
-    <input type="text" placeholder=" " name="postal_code" id="postal_code" value="{{ form.data.postal_code }}" />
-    {% for error in form|error("postal_code") %}
+    <input type="text" placeholder=" " name="postal_code" id="postal_code" value="{{ form.data.address.postal_code }}" />
+    {% for error in form|error("address.postal_code") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field form-field-sm {% if form.data.house_number.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if form.data.address.house_number.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="house_number">{{ "person.fields.house_number"|trans }}</label>
-    <input type="text" placeholder=" " name="house_number" id="house_number" value="{{ form.data.house_number }}" />
-    {% for error in form|error("house_number") %}
+    <input type="text" placeholder=" " name="house_number" id="house_number" value="{{ form.data.address.house_number }}" />
+    {% for error in form|error("address.house_number") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
   <p class="form-field form-field-sm">
     <label for="house_number_addition">{{ "person.fields.house_number_addition"|trans }}</label>
     <input type="text" name="house_number_addition" id="house_number_addition"
-      value="{{ form.data.house_number_addition }}" />
-    {% for error in form|error("house_number_addition") %}
+      value="{{ form.data.address.house_number_addition }}" />
+    {% for error in form|error("address.house_number_addition") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
 </div>
 
 <div class="form-row">
-  <p class="form-field {% if form.data.street_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field {% if form.data.address.street_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="street_name">{{ "person.fields.street_name"|trans }}</label>
-    <input type="text" placeholder=" " name="street_name" id="street_name" value="{{ form.data.street_name }}" />
-    {% for error in form|error("street_name") %}
+    <input type="text" placeholder=" " name="street_name" id="street_name" value="{{ form.data.address.street_name }}" />
+    {% for error in form|error("address.street_name") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field {% if form.data.locality.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field {% if form.data.address.locality.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="locality">{{ "person.fields.locality"|trans }}</label>
-    <input type="text" placeholder=" " name="locality" id="locality" value="{{ form.data.locality }}" list="locality-suggestions" />
+    <input type="text" placeholder=" " name="locality" id="locality" value="{{ form.data.address.locality }}" list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>
-    {% for error in form|error("locality") %}
+    {% for error in form|error("address.locality") %}
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>

@@ -36,6 +36,9 @@ pub enum AppError {
     MissingEnvVar(&'static str),
     ConfigLoadError(String),
     ServerError(std::io::Error),
+
+    NoStorageConfigured,
+    IntegrityViolation,
 }
 
 impl Display for AppError {
@@ -57,6 +60,8 @@ impl Display for AppError {
             AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
+            AppError::NoStorageConfigured => write!(f, "No event storage configured"),
+            AppError::IntegrityViolation => write!(f, "Data integrity violation"),
         }
     }
 }

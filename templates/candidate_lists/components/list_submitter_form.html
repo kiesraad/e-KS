@@ -14,11 +14,11 @@
               form.data.list_submitter_id==submitter_id %}checked{% endif %}
               id="list_submitter_id_{{ submitter_id }}"/>
         <span>
-          <strong>{{ submitter.last_name_with_prefix() }}</strong>, {{ submitter.initials }}
+          <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
           <br/>
-          {{ submitter.street_name|display }} {{ submitter.house_number|display }}{{ submitter.house_number_addition|display }}
+          {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
           <br/>
-          {{ submitter.postal_code|display }} {{ submitter.locality|display }}
+          {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
           <br/>
         </span>
       </label>

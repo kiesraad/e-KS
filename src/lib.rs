@@ -1,11 +1,5 @@
-mod authorised_agents;
 /// Application specific modules
-mod candidate_lists;
-mod candidates;
-mod list_submitters;
-mod persons;
-mod political_groups;
-mod substitute_list_submitters;
+mod core;
 
 /// Generic modules
 mod common;
@@ -16,6 +10,7 @@ mod pages;
 mod pagination;
 pub mod router;
 mod store;
+mod structs;
 mod submit;
 
 #[cfg(feature = "fixtures")]
@@ -26,17 +21,28 @@ pub use common::{
     constants,
     context::Context,
     election::{ElectionConfig, ElectoralDistrict},
-    initial_edit::InitialEditQuery,
+    initial_edit::InitialQuery,
     locale,
     locale::Locale,
-    logging, new_type, server,
+    logging, new_type,
+    option_string_ext::OptionStringExt,
+    server,
     state::AppState,
     templates::HtmlTemplate,
     translate,
 };
+pub use core::{
+    authorised_agents, candidate_lists, candidates, list_submitters, persons, political_groups,
+    substitute_list_submitters,
+};
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, TokenValue};
 pub use store::{AppEvent, AppStore, AppStoreData};
+pub use structs::{
+    Bsn, CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName, FullName,
+    FullNameForm, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix, LegalName,
+    Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
+};
 
 #[cfg(test)]
 pub use common::test_utils;

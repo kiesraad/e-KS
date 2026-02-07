@@ -149,6 +149,8 @@ impl ErrorResponse {
                 message: format!("Bad request: {e}"),
             },
             AppError::InternalServerError
+            | AppError::NoStorageConfigured
+            | AppError::IntegrityViolation
             | AppError::MissingEnvVar(_)
             | AppError::ConfigLoadError(_)
             | AppError::DatabaseError(_)
@@ -172,12 +174,11 @@ mod tests {
         middleware,
         routing::get,
     };
-    use sqlx::PgPool;
     use tower::ServiceExt;
 
-    #[sqlx::test]
-    async fn not_found_renders_template_with_message(pool: PgPool) {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn not_found_renders_template_with_message() {
+        let state = AppState::new_for_tests().await;
         let app = Router::new()
             .route(
                 "/",
@@ -196,9 +197,9 @@ mod tests {
         assert!(body.contains("missing"));
     }
 
-    #[sqlx::test]
-    async fn validation_error_maps_to_bad_request(pool: PgPool) {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn validation_error_maps_to_bad_request() {
+        let state = AppState::new_for_tests().await;
         let app = Router::new()
             .route(
                 "/",
@@ -218,9 +219,9 @@ mod tests {
         assert!(body.contains("Validation error"));
     }
 
-    #[sqlx::test]
-    async fn database_error_maps_to_internal_server_error(pool: PgPool) {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn database_error_maps_to_internal_server_error() {
+        let state = AppState::new_for_tests().await;
         let app = Router::new()
             .route(
                 "/",

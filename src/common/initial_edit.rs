@@ -1,23 +1,22 @@
 use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
-pub struct InitialEditQuery {
-    initial: Option<bool>,
+pub struct InitialQuery {
+    #[serde(default)]
+    initial: bool,
 }
 
-impl InitialEditQuery {
+impl InitialQuery {
     pub fn should_warn(&self) -> bool {
-        !self.initial.unwrap_or(false)
+        !self.initial
     }
 
     pub fn new() -> Self {
-        Self {
-            initial: Some(true),
-        }
+        Self { initial: true }
     }
 }
 
-impl Default for InitialEditQuery {
+impl Default for InitialQuery {
     fn default() -> Self {
         Self::new()
     }

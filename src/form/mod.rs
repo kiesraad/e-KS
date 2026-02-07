@@ -1,22 +1,53 @@
 mod csrf;
 mod empty_form;
 mod form_data;
+mod string_validators;
 mod validation_error;
-mod validators;
 
 pub use csrf::{CsrfToken, CsrfTokens, TokenValue, WithCsrfToken};
 pub use empty_form::EmptyForm;
 pub use form_data::FormData;
+pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};
 pub use validation_error::ValidationError;
-pub use validators::*;
 
 pub type FieldErrors = Vec<(String, ValidationError)>;
 
-pub trait Validate<T>
-where
-    Self: Sized,
-{
-    fn validate_update(self, current: &T, csrf_tokens: &CsrfTokens) -> Result<T, FormData<Self>>;
+pub trait IntoValidationError {
+    fn into_validation_error(self) -> ValidationError;
+}
 
-    fn validate_create(self, csrf_tokens: &CsrfTokens) -> Result<T, FormData<Self>>;
+impl IntoValidationError for ValidationError {
+    fn into_validation_error(self) -> ValidationError {
+        self
+    }
+}
+
+impl IntoValidationError for std::num::ParseIntError {
+    fn into_validation_error(self) -> ValidationError {
+        ValidationError::InvalidValue
+    }
+}
+
+impl IntoValidationError for std::str::ParseBoolError {
+    fn into_validation_error(self) -> ValidationError {
+        ValidationError::InvalidValue
+    }
+}
+
+impl IntoValidationError for derive_more::FromStrError {
+    fn into_validation_error(self) -> ValidationError {
+        ValidationError::InvalidValue
+    }
+}
+
+impl IntoValidationError for uuid::Error {
+    fn into_validation_error(self) -> ValidationError {
+        ValidationError::InvalidValue
+    }
+}
+
+impl IntoValidationError for chrono::ParseError {
+    fn into_validation_error(self) -> ValidationError {
+        ValidationError::InvalidValue
+    }
 }

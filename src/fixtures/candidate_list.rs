@@ -46,11 +46,9 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 mod tests {
     use super::*;
     use crate::candidate_lists::CandidateListSummary;
-    use sqlx::PgPool;
-
-    #[sqlx::test]
-    async fn test_load(pool: PgPool) {
-        let store = AppStore::new(pool);
+    #[tokio::test]
+    async fn test_load() {
+        let store = AppStore::new_for_test().await;
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 

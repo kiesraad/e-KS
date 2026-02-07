@@ -17,11 +17,9 @@ export class PersonsPage {
       await this.page.getByRole("link", { name: "Persoon toevoegen" }).click();
       await this.page.getByLabel("Voorletters").fill(candidate.initials);
       await this.page
-        .locator('input[name="last_name_prefix"]')
+        .getByLabel("Voorvoegsel")
         .fill(candidate.lastNamePrefix ?? "");
-      await this.page
-        .locator('input[name="last_name"]')
-        .fill(candidate.lastName);
+      await this.page.getByLabel("Achternaam").fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
       await this.page
         .getByLabel("Geslacht")
@@ -30,6 +28,10 @@ export class PersonsPage {
         .getByRole("textbox", { name: "Geboortedatum" })
         .fill(candidate.dateOfBirth ?? "");
       await this.page.getByLabel("Landcode").fill("NL");
+
+      // enable the submit button (only active if all required fields are filled in)
+      await this.page.getByLabel("Landcode").press("Tab");
+
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })
         .click();

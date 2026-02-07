@@ -36,7 +36,7 @@
       <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
     </div>
     <label for="no_bsn_confirmed" class="no_bsn_confirmed">
-      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed == "true" %}checked{% endif %} />
+      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed %}checked{% endif %} />
       <span>{{ "person.no_bsn_confirm"|trans }}</span>
     </label>
     {% for error in form|error("bsn") %}

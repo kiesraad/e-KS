@@ -35,12 +35,6 @@ async fn run(listener: TcpListener) -> Result<(), AppError> {
     #[cfg(feature = "fixtures")]
     {
         if std::env::var("LOAD_FIXTURES").is_ok() {
-            // Run database migrations
-            sqlx::migrate!()
-                .run(&state.store.pool)
-                .await
-                .expect("Failed to run migrations");
-
             // Load fixtures
             eks::fixtures::load(&state.store).await?;
         }

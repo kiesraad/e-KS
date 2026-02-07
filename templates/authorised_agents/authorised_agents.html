@@ -34,8 +34,8 @@
         <tbody>
           {% for agent in authorised_agents %}
           <tr class="clickable">
-            <td>{{ agent.initials }}</td>
-            <td>{{ agent.last_name_with_prefix() }}</td>
+            <td>{{ agent.name.initials }}</td>
+            <td>{{ agent.name.last_name_with_prefix() }}</td>
             <td>
               <a href="{{ agent.update_path() }}">
                 <span>{{ "action.edit"|trans }}</span>

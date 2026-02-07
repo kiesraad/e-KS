@@ -11,8 +11,11 @@ use crate::{
 };
 
 #[askama::filter_fn]
-pub fn display<'a>(value: &'a Option<String>, _: &dyn askama::Values) -> askama::Result<&'a str> {
-    Ok(value.as_deref().unwrap_or_default())
+pub fn display<T: std::fmt::Display>(
+    value: &Option<T>,
+    _: &dyn askama::Values,
+) -> askama::Result<String> {
+    Ok(value.as_ref().map(|v| v.to_string()).unwrap_or_default())
 }
 
 #[askama::filter_fn]

@@ -31,21 +31,10 @@ impl AppState {
     }
 
     #[cfg(test)]
-    pub async fn new_for_tests(pool: &PgPool) -> Self {
-        use crate::AppEvent;
-
-        let political_group_id = crate::political_groups::PoliticalGroupId::new();
-        let political_group = crate::test_utils::sample_political_group(political_group_id);
-        let store = AppStore::new(pool.clone());
-
-        store
-            .update(AppEvent::UpdatePoliticalGroup(political_group))
-            .await
-            .expect("store update");
-
+    pub async fn new_for_tests() -> Self {
         Self {
             config: Config::new_test(),
-            store,
+            store: AppStore::new_for_test().await,
             csrf_tokens: CsrfTokens::default(),
         }
     }
@@ -69,11 +58,10 @@ where
 mod tests {
     use super::*;
     use axum::http::Request;
-    use sqlx::PgPool;
 
-    #[sqlx::test]
-    async fn new_for_tests_sets_config_and_tokens(pool: PgPool) -> Result<(), sqlx::Error> {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn new_for_tests_sets_config_and_tokens() -> Result<(), sqlx::Error> {
+        let state = AppState::new_for_tests().await;
         let config = Config::new_test();
 
         assert_eq!(state.config.database_url, config.database_url);
@@ -84,11 +72,9 @@ mod tests {
         Ok(())
     }
 
-    #[sqlx::test]
-    async fn config_from_request_parts_matches_state_config(
-        pool: PgPool,
-    ) -> Result<(), sqlx::Error> {
-        let state = AppState::new_for_tests(&pool).await;
+    #[tokio::test]
+    async fn config_from_request_parts_matches_state_config() -> Result<(), sqlx::Error> {
+        let state = AppState::new_for_tests().await;
         let (mut parts, _) = Request::new(()).into_parts();
 
         let config = Config::from_request_parts(&mut parts, &state)

@@ -11,6 +11,12 @@ export class ManageCandidateListPage {
   async addExistingCandidates(candidates: string[]) {
     for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Bestaande" }).click();
+
+      // search first part of the name
+      await this.page
+        .getByLabel("Zoek bestaande persoon")
+        .pressSequentially(candidate.slice(0, 5));
+
       await this.page
         .getByRole("row", { name: candidate })
         .getByRole("button")
@@ -30,6 +36,10 @@ export class ManageCandidateListPage {
         .fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
       await this.page.getByLabel("Landcode").fill("NL");
+
+      // enable the submit button (only active if all required fields are filled in)
+      await this.page.getByLabel("Landcode").press("Tab");
+
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })
         .click();

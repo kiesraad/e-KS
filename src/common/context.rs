@@ -82,7 +82,7 @@ where
 mod tests {
     use super::*;
 
-    #[sqlx::test]
+    #[tokio::test]
     async fn new_context_sets_locale() {
         let context = Context::new_test().await;
         assert_eq!(context.locale, Locale::En);

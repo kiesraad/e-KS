@@ -6,6 +6,7 @@ pub mod initial_edit;
 pub mod locale;
 pub mod logging;
 pub mod new_type;
+pub mod option_string_ext;
 pub mod server;
 pub mod state;
 pub mod templates;

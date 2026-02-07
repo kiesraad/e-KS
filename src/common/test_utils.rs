@@ -1,8 +1,9 @@
-use chrono::{NaiveDate, Utc};
 use http_body_util::BodyExt;
 
 use crate::{
-    ElectoralDistrict, TokenValue,
+    CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, ElectoralDistrict, FirstName,
+    FullName, FullNameForm, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
+    LegalName, Locality, PlaceOfResidence, PostalCode, StreetName, TokenValue, UtcDateTime,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
@@ -43,47 +44,55 @@ pub fn sample_person(id: PersonId) -> Person {
     Person {
         id,
         gender: Some(Gender::Female),
-        last_name: "Jansen".to_string(),
-        last_name_prefix: None,
-        first_name: Some("Henk".to_string()),
-        initials: "H.A.H.A.".to_string(),
-        date_of_birth: Some(NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()),
+        name: FullName {
+            last_name: "Jansen".parse::<LastName>().expect("last name"),
+            last_name_prefix: None,
+            initials: "H.A.H.A.".parse::<Initials>().expect("initials"),
+        },
+        first_name: Some("Henk".parse::<FirstName>().expect("first name")),
+        date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
         bsn: None,
         no_bsn_confirmed: false,
-        place_of_residence: Some("Juinen".to_string()),
-        country_of_residence: Some("NL".to_string()),
-        locality: Some("Juinen".to_string()),
-        postal_code: Some("1234 AB".to_string()),
-        house_number: Some("10".to_string()),
-        house_number_addition: Some("A".to_string()),
-        street_name: Some("Stationsstraat".to_string()),
-        representative_initials: None,
-        representative_last_name: None,
-        representative_last_name_prefix: None,
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        place_of_residence: Some(
+            "Juinen"
+                .parse::<PlaceOfResidence>()
+                .expect("place of residence"),
+        ),
+        country_of_residence: Some("NL".parse::<CountryCode>().expect("country code")),
+        address: DutchAddress {
+            locality: Some("Juinen".parse::<Locality>().expect("locality")),
+            postal_code: Some("1234 AB".parse::<PostalCode>().expect("postal code")),
+            house_number: Some("10".parse::<HouseNumber>().expect("house number")),
+            house_number_addition: Some(
+                "A".parse::<HouseNumberAddition>()
+                    .expect("house number addition"),
+            ),
+            street_name: Some("Stationsstraat".parse::<StreetName>().expect("street name")),
+        },
+        representative: FullName::default(),
+        created_at: UtcDateTime::now(),
+        updated_at: UtcDateTime::now(),
     }
 }
 
 pub fn sample_person_with_last_name(id: PersonId, last_name: &str) -> Person {
-    let sample = sample_person(id);
-
-    Person {
-        last_name: last_name.to_string(),
-        ..sample
-    }
+    let mut sample = sample_person(id);
+    sample.name.last_name = last_name.parse::<LastName>().expect("last name");
+    sample
 }
 
 pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
     PersonForm {
         gender: "male".to_string(),
-        last_name: "Jansen".to_string(),
-        last_name_prefix: "".to_string(),
+        name: FullNameForm {
+            last_name: "Jansen".to_string(),
+            last_name_prefix: "".to_string(),
+            initials: "H.A.H.A.".to_string(),
+        },
         first_name: "Henk".to_string(),
-        initials: "H.A.H.A.".to_string(),
         date_of_birth: "01-02-1990".to_string(),
         bsn: "".to_string(),
-        no_bsn_confirmed: "".to_string(),
+        no_bsn_confirmed: false,
         place_of_residence: "Juinen".to_string(),
         country_of_residence: "NL".to_string(),
         csrf_token: csrf_token.clone(),
@@ -92,25 +101,31 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
 
 pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
     AddressForm {
-        locality: "Juinen".to_string(),
-        postal_code: "1234 AB".to_string(),
-        house_number: "10".to_string(),
-        house_number_addition: "A".to_string(),
-        street_name: "Stationsstraat".to_string(),
+        address: DutchAddressForm {
+            locality: "Juinen".to_string(),
+            postal_code: "1234 AB".to_string(),
+            house_number: "10".to_string(),
+            house_number_addition: "A".to_string(),
+            street_name: "Stationsstraat".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }
 
 pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
     RepresentativeForm {
-        representative_last_name: "Bakker".to_string(),
-        representative_last_name_prefix: "".to_string(),
-        representative_initials: "A.B.".to_string(),
-        locality: "Juinen".to_string(),
-        postal_code: "1234 AB".to_string(),
-        house_number: "10".to_string(),
-        house_number_addition: "A".to_string(),
-        street_name: "Stationsstraat".to_string(),
+        representative: FullNameForm {
+            last_name: "Bakker".to_string(),
+            last_name_prefix: "".to_string(),
+            initials: "A.B.".to_string(),
+        },
+        address: DutchAddressForm {
+            locality: "Juinen".to_string(),
+            postal_code: "1234 AB".to_string(),
+            house_number: "10".to_string(),
+            house_number_addition: "A".to_string(),
+            street_name: "Stationsstraat".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }
@@ -119,29 +134,41 @@ pub fn sample_political_group(id: PoliticalGroupId) -> PoliticalGroup {
     PoliticalGroup {
         id,
         long_list_allowed: Some(false),
-        legal_name: Some("Kiesraad Demo Partij".to_string()),
-        display_name: Some("Kiesraad Demo".to_string()),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        legal_name: Some(
+            "Kiesraad Demo Partij"
+                .parse::<LegalName>()
+                .expect("legal name"),
+        ),
+        display_name: Some(
+            "Kiesraad Demo"
+                .parse::<DisplayName>()
+                .expect("display name"),
+        ),
+        created_at: UtcDateTime::now(),
+        updated_at: UtcDateTime::now(),
     }
 }
 
 pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
     AuthorisedAgent {
         id,
-        last_name: "Jansen".to_string(),
-        last_name_prefix: Some("de".to_string()),
-        initials: "A.B.".to_string(),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        name: FullName {
+            last_name: "Jansen".parse::<LastName>().expect("last name"),
+            last_name_prefix: Some("de".parse::<LastNamePrefix>().expect("last name prefix")),
+            initials: "A.B.".parse::<Initials>().expect("initials"),
+        },
+        created_at: UtcDateTime::now(),
+        updated_at: UtcDateTime::now(),
     }
 }
 
 pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
     AuthorisedAgentForm {
-        last_name: "Jansen".to_string(),
-        last_name_prefix: "de".to_string(),
-        initials: "A.B.".to_string(),
+        name: FullNameForm {
+            last_name: "Jansen".to_string(),
+            last_name_prefix: "de".to_string(),
+            initials: "A.B.".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }
@@ -149,29 +176,40 @@ pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentF
 pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
     ListSubmitter {
         id,
-        last_name: "Bos".to_string(),
-        last_name_prefix: None,
-        initials: "E.F.".to_string(),
-        locality: Some("Rotterdam".to_string()),
-        postal_code: Some("3011 CC".to_string()),
-        house_number: Some("5".to_string()),
-        house_number_addition: Some("B".to_string()),
-        street_name: Some("Coolsingel".to_string()),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        name: FullName {
+            last_name: "Bos".parse::<LastName>().expect("last name"),
+            last_name_prefix: None,
+            initials: "E.F.".parse::<Initials>().expect("initials"),
+        },
+        address: DutchAddress {
+            locality: Some("Rotterdam".parse::<Locality>().expect("locality")),
+            postal_code: Some("3011 CC".parse::<PostalCode>().expect("postal code")),
+            house_number: Some("5".parse::<HouseNumber>().expect("house number")),
+            house_number_addition: Some(
+                "B".parse::<HouseNumberAddition>()
+                    .expect("house number addition"),
+            ),
+            street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
+        },
+        created_at: UtcDateTime::now(),
+        updated_at: UtcDateTime::now(),
     }
 }
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
-        last_name: "Bos".to_string(),
-        last_name_prefix: "".to_string(),
-        initials: "E.F.".to_string(),
-        locality: "Rotterdam".to_string(),
-        postal_code: "3011 CC".to_string(),
-        house_number: "5".to_string(),
-        house_number_addition: "B".to_string(),
-        street_name: "Coolsingel".to_string(),
+        name: FullNameForm {
+            last_name: "Bos".to_string(),
+            last_name_prefix: "".to_string(),
+            initials: "E.F.".to_string(),
+        },
+        address: DutchAddressForm {
+            locality: "Rotterdam".to_string(),
+            postal_code: "3011 CC".to_string(),
+            house_number: "5".to_string(),
+            house_number_addition: "B".to_string(),
+            street_name: "Coolsingel".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }
@@ -179,29 +217,40 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
 pub fn sample_substitute_submitter(id: SubstituteSubmitterId) -> SubstituteSubmitter {
     SubstituteSubmitter {
         id,
-        last_name: "Bakker".to_string(),
-        last_name_prefix: None,
-        initials: "I.J.".to_string(),
-        locality: Some("Utrecht".to_string()),
-        postal_code: Some("3511 AA".to_string()),
-        house_number: Some("21".to_string()),
-        house_number_addition: Some("C".to_string()),
-        street_name: Some("Oudegracht".to_string()),
-        created_at: Utc::now(),
-        updated_at: Utc::now(),
+        name: FullName {
+            last_name: "Bakker".parse::<LastName>().expect("last name"),
+            last_name_prefix: None,
+            initials: "I.J.".parse::<Initials>().expect("initials"),
+        },
+        address: DutchAddress {
+            locality: Some("Utrecht".parse::<Locality>().expect("locality")),
+            postal_code: Some("3511 AA".parse::<PostalCode>().expect("postal code")),
+            house_number: Some("21".parse::<HouseNumber>().expect("house number")),
+            house_number_addition: Some(
+                "C".parse::<HouseNumberAddition>()
+                    .expect("house number addition"),
+            ),
+            street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
+        },
+        created_at: UtcDateTime::now(),
+        updated_at: UtcDateTime::now(),
     }
 }
 
 pub fn sample_substitute_submitter_form(csrf_token: &TokenValue) -> SubstituteSubmitterForm {
     SubstituteSubmitterForm {
-        last_name: "Bakker".to_string(),
-        last_name_prefix: "".to_string(),
-        initials: "I.J.".to_string(),
-        locality: "Utrecht".to_string(),
-        postal_code: "3511 AA".to_string(),
-        house_number: "21".to_string(),
-        house_number_addition: "C".to_string(),
-        street_name: "Oudegracht".to_string(),
+        name: FullNameForm {
+            last_name: "Bakker".to_string(),
+            last_name_prefix: "".to_string(),
+            initials: "I.J.".to_string(),
+        },
+        address: DutchAddressForm {
+            locality: "Utrecht".to_string(),
+            postal_code: "3511 AA".to_string(),
+            house_number: "21".to_string(),
+            house_number_addition: "C".to_string(),
+            street_name: "Oudegracht".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }

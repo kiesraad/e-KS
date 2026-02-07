@@ -3,12 +3,10 @@ use axum::{
     http::request::Parts,
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
-use strum::AsRefStr;
 
 use super::{PaginationInfo, info};
 
-#[derive(Debug, Copy, Clone, Deserialize, Serialize, Default, PartialEq, AsRefStr)]
-#[strum(serialize_all = "lowercase")]
+#[derive(Debug, Copy, Clone, Deserialize, Serialize, Default, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortDirection {
     #[default]

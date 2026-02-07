@@ -27,14 +27,14 @@
               <span class="position-badge">{{ c.position }}</span>
             </td>
             <td>
-              <strong>{{ c.person.last_name }},</strong>
-              {{ c.person.initials }}
+              <strong>{{ c.person.name.last_name }},</strong>
+              {{ c.person.name.initials }}
               {% if let Some(first_name) = c.person.first_name %}
               ({{ first_name }})
               {% endif %}
             </td>
             <td>
-              {% if let Some(locality) = c.person.locality %}
+              {% if let Some(locality) = c.person.address.locality %}
               {{ locality }}
               {% endif %}
             </td>

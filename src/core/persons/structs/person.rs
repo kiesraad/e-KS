@@ -1,0 +1,337 @@
+use serde::{Deserialize, Serialize};
+
+use crate::{
+    AppError, AppEvent, AppStore, Bsn, CountryCode, Date, DutchAddress, FirstName, FullName,
+    PlaceOfResidence, UtcDateTime, id_newtype,
+    pagination::SortDirection,
+    persons::{Gender, PersonSort, PersonalInfo, structs::person_sort::compare_persons},
+};
+
+id_newtype!(pub struct PersonId);
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct Person {
+    pub id: PersonId,
+    pub name: FullName,
+
+    pub first_name: Option<FirstName>,
+    pub gender: Option<Gender>,
+
+    pub bsn: Option<Bsn>,
+    pub no_bsn_confirmed: bool,
+    pub date_of_birth: Option<Date>,
+
+    pub place_of_residence: Option<PlaceOfResidence>,
+    pub country_of_residence: Option<CountryCode>,
+
+    pub address: DutchAddress,
+    pub representative: FullName,
+
+    pub created_at: UtcDateTime,
+    pub updated_at: UtcDateTime,
+}
+
+impl Person {
+    pub fn display_name(&self) -> String {
+        if let Some(first_name) = &self.first_name {
+            format!("{} {}", first_name, self.name.last_name_with_prefix())
+        } else {
+            format!(
+                "{} {}",
+                self.name.initials,
+                self.name.last_name_with_prefix()
+            )
+        }
+    }
+
+    pub fn is_dutch(&self) -> bool {
+        match &self.country_of_residence {
+            Some(country) => country.as_str() == "NL",
+            None => true, // Assume Dutch if no country is set
+        }
+    }
+
+    pub fn update_personal_info(&mut self, personal_info: PersonalInfo) -> Self {
+        let mut updated = self.clone();
+
+        updated.name = personal_info.name;
+        updated.first_name = personal_info.first_name;
+        updated.gender = personal_info.gender;
+        updated.bsn = personal_info.bsn;
+        updated.no_bsn_confirmed = personal_info.no_bsn_confirmed;
+        updated.date_of_birth = personal_info.date_of_birth;
+        updated.place_of_residence = personal_info.place_of_residence;
+        updated.country_of_residence = personal_info.country_of_residence;
+        updated.updated_at = personal_info.updated_at;
+
+        updated
+    }
+
+    pub fn gender_key(&self) -> &'static str {
+        self.gender
+            .map(|g| match g {
+                Gender::Male => "gender.male",
+                Gender::Female => "gender.female",
+            })
+            .unwrap_or("")
+    }
+
+    pub fn is_personal_info_complete(&self) -> bool {
+        self.name.is_complete()
+            && self.date_of_birth.is_some()
+            && self.bsn.is_some()
+            && self.place_of_residence.is_some()
+            && self.country_of_residence.is_some()
+    }
+
+    pub fn is_address_complete(&self) -> bool {
+        self.address.is_complete()
+    }
+
+    pub fn is_representative_complete(&self) -> bool {
+        if self.is_dutch() {
+            return true;
+        }
+
+        self.is_address_complete()
+            && !self.representative.initials.is_empty()
+            && !self.representative.last_name.is_empty()
+    }
+
+    pub fn is_complete(&self) -> bool {
+        self.is_personal_info_complete()
+            && self.is_address_complete()
+            && self.is_representative_complete()
+    }
+
+    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::CreatePerson(self.clone())).await
+    }
+
+    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::UpdatePerson(self.clone())).await
+    }
+
+    pub async fn update_address(&self, store: &AppStore) -> Result<(), AppError> {
+        let existing = store.get_person(self.id)?;
+
+        let updated = Person {
+            address: self.address.clone(),
+            updated_at: UtcDateTime::now(),
+            ..existing
+        };
+
+        store.update(AppEvent::UpdatePerson(updated.clone())).await
+    }
+
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::DeletePerson(self.id)).await
+    }
+
+    pub async fn delete_by_id(store: &AppStore, person_id: PersonId) -> Result<(), AppError> {
+        store.update(AppEvent::DeletePerson(person_id)).await
+    }
+
+    pub fn list(
+        store: &AppStore,
+        limit: usize,
+        offset: usize,
+        sort_field: &PersonSort,
+        sort_direction: &SortDirection,
+    ) -> Result<Vec<Person>, AppError> {
+        let mut persons = store.get_persons()?;
+        persons.sort_by(|a, b| compare_persons(a, b, sort_field));
+
+        if matches!(sort_direction, SortDirection::Desc) {
+            persons.reverse();
+        }
+
+        let offset = offset.max(0);
+        let limit = limit.max(0);
+
+        Ok(persons.into_iter().skip(offset).take(limit).collect())
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        AppStore,
+        pagination::SortDirection,
+        persons::PersonSort,
+        test_utils::{sample_person, sample_person_with_last_name},
+    };
+    fn base_person() -> Person {
+        Person {
+            id: PersonId::new(),
+            name: FullName {
+                last_name: "Dijk".parse().expect("last name"),
+                last_name_prefix: None,
+                initials: "A.B.".parse().expect("initials"),
+            },
+            created_at: UtcDateTime::now(),
+            updated_at: UtcDateTime::now(),
+            ..Default::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn create_and_get_person() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        let id = PersonId::new();
+        let person = sample_person(id);
+
+        person.create(&store).await?;
+
+        let loaded = store.get_person(id)?;
+        assert_eq!(loaded.id, id);
+        assert_eq!(loaded.name.last_name.to_string(), "Jansen");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_overwrites_fields() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        let id = PersonId::new();
+        let mut person = sample_person(id);
+
+        person.create(&store).await?;
+
+        person.name.last_name = "Updated".parse().expect("last name");
+        person.update(&store).await?;
+
+        let updated = store.get_person(id)?;
+        assert_eq!(updated.name.last_name.to_string(), "Updated");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn remove_person_deletes_record() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        let id = PersonId::new();
+        let person = sample_person(id);
+
+        person.create(&store).await?;
+        person.delete(&store).await?;
+
+        let missing = store.get_person(id);
+        assert!(missing.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_address_overwrites_fields() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        let id = PersonId::new();
+        let mut person = sample_person(id);
+
+        person.create(&store).await?;
+
+        person.address.locality = Some("Nieuwegein".parse().expect("locality"));
+        person.address.postal_code = Some("9999 ZZ".parse().expect("postal code"));
+        person.address.house_number = Some("99".parse().expect("house number"));
+        person.address.house_number_addition = None;
+        person.address.street_name = Some("Nieuweweg".parse().expect("street name"));
+
+        person.update_address(&store).await?;
+
+        let updated = store.get_person(id)?;
+        assert_eq!(
+            updated.address.locality.as_deref().map(|v| v.to_string()),
+            Some("Nieuwegein".to_string())
+        );
+        assert_eq!(
+            updated.address.postal_code.unwrap(),
+            "9999ZZ".parse().unwrap()
+        );
+        assert_eq!(
+            updated
+                .address
+                .house_number
+                .as_deref()
+                .map(|v| v.to_string()),
+            Some("99".to_string())
+        );
+        assert_eq!(updated.address.house_number_addition, None);
+        assert_eq!(
+            updated
+                .address
+                .street_name
+                .as_deref()
+                .map(|v| v.to_string()),
+            Some("Nieuweweg".to_string())
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn list_and_count_persons() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        sample_person_with_last_name(PersonId::new(), "Jansen")
+            .create(&store)
+            .await?;
+        sample_person_with_last_name(PersonId::new(), "Bakker")
+            .create(&store)
+            .await?;
+
+        let total = store.get_person_count()?;
+        assert_eq!(total, 2);
+
+        let persons = Person::list(&store, 10, 0, &PersonSort::LastName, &SortDirection::Asc)?;
+        assert_eq!(persons.len(), 2);
+        assert_eq!(persons[0].name.last_name.to_string(), "Bakker");
+
+        Ok(())
+    }
+
+    #[test]
+    fn last_name_formats_with_optional_prefix() {
+        let mut person = base_person();
+        assert_eq!(person.name.last_name_with_prefix(), "Dijk");
+        assert_eq!(person.name.last_name_with_prefix_appended(), "Dijk");
+
+        person.name.last_name_prefix = Some("van".parse().expect("last name prefix"));
+        assert_eq!(person.name.last_name_with_prefix(), "van Dijk");
+        assert_eq!(person.name.last_name_with_prefix_appended(), "Dijk, van");
+    }
+
+    #[test]
+    fn display_name_prefers_first_name_over_initials() {
+        let mut person = base_person();
+        person.name.last_name_prefix = Some("van".parse().expect("last name prefix"));
+        person.first_name = Some("Anne".parse().expect("first name"));
+        assert_eq!(person.display_name(), "Anne van Dijk");
+
+        person.first_name = None;
+        assert_eq!(person.display_name(), "A.B. van Dijk");
+    }
+
+    #[test]
+    fn is_dutch_defaults_to_true_and_accepts_variants() {
+        let mut person = base_person();
+        assert!(person.is_dutch());
+
+        person.country_of_residence = Some("NL".parse().expect("country code"));
+        assert!(person.is_dutch());
+
+        person.country_of_residence = Some("BE".parse().expect("country code"));
+        assert!(!person.is_dutch());
+    }
+
+    #[test]
+    fn gender_key_returns_translations_or_empty_keys() {
+        let mut person = base_person();
+        assert_eq!(person.gender_key(), "");
+
+        person.gender = Some(Gender::Male);
+        assert_eq!(person.gender_key(), "gender.male");
+
+        person.gender = Some(Gender::Female);
+        assert_eq!(person.gender_key(), "gender.female");
+    }
+}

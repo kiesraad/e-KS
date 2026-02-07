@@ -1,20 +1,13 @@
-use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::TokenValue;
 
 #[derive(Clone, Default)]
-pub struct EmptyFormValue {
-    #[allow(unused)]
-    pub created_at: DateTime<Utc>,
-    #[allow(unused)]
-    pub updated_at: DateTime<Utc>,
-}
+pub struct EmptyFormValue;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "EmptyFormValue")]
-#[serde(default)]
+#[validate(target = "EmptyFormValue", timestamps = false)]
 pub struct EmptyForm {
     #[validate(csrf)]
     pub csrf_token: TokenValue,

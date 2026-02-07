@@ -22,16 +22,16 @@
   </div>
 </nav>
 {% if person_pagination.persons.is_empty() %}
-<section>
-  <p>{{ "person.list.empty"|trans }}</p>
-</section>
+  <section>
+    <p>{{ "person.list.empty"|trans }}</p>
+  </section>
 {% else %}
-<section>
-  {% include "persons/components/person_table.html" %}
-</section>
-{% if person_pagination.pagination.total_pages > 1 %}
-  {% set pagination = person_pagination.pagination %}
-  {% include "components/pagination.html"  %}
-{% endif %}
+  <section>
+    {% include "persons/components/person_table.html" %}
+  </section>
+  {% if person_pagination.pagination.total_pages > 1 %}
+    {% set pagination = person_pagination.pagination %}
+    {% include "components/pagination.html"  %}
+  {% endif %}
 {% endif %}
 {% endblock %}

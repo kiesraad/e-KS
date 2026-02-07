@@ -31,9 +31,8 @@ impl<T: WithCsrfToken> FormData<T> {
         }
     }
 
-    #[cfg(test)]
-    pub fn errors(&self) -> &FieldErrors {
-        &self.errors
+    pub fn errors(self) -> FieldErrors {
+        self.errors
     }
 
     pub fn error(&self, name: &str, locale: Locale) -> Vec<String> {
