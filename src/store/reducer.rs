@@ -137,7 +137,17 @@ impl AppStore {
             AppEvent::UpdateListSubmitter(ls) => {
                 data.list_submitters.entry(ls.id).and_modify(|s| *s = ls);
             }
-            AppEvent::DeleteListSubmitter(ls_id) => {
+            AppEvent::DeleteListSubmitter {
+                list_submitter_id: ls_id,
+                updated_at,
+            } => {
+                for list in data.candidate_lists.values_mut() {
+                    if list.list_submitter_id == Some(ls_id) {
+                        list.list_submitter_id = None;
+                        list.updated_at = updated_at;
+                    }
+                }
+
                 data.list_submitters.remove(&ls_id);
             }
             AppEvent::CreateSubstituteSubmitter(ss) => {
@@ -148,7 +158,17 @@ impl AppStore {
                     .entry(ss.id)
                     .and_modify(|s| *s = ss);
             }
-            AppEvent::DeleteSubstituteSubmitter(ss_id) => {
+            AppEvent::DeleteSubstituteSubmitter {
+                substitute_submitter_id: ss_id,
+                updated_at,
+            } => {
+                for list in data.candidate_lists.values_mut() {
+                    if list.substitute_list_submitter_ids.contains(&ss_id) {
+                        list.substitute_list_submitter_ids.retain(|id| *id != ss_id);
+                        list.updated_at = updated_at;
+                    }
+                }
+
                 data.substitute_submitters.remove(&ss_id);
             }
         }

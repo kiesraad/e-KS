@@ -49,7 +49,10 @@ impl ListSubmitter {
         list_submitter_id: ListSubmitterId,
     ) -> Result<(), AppError> {
         store
-            .update(AppEvent::DeleteListSubmitter(list_submitter_id))
+            .update(AppEvent::DeleteListSubmitter {
+                list_submitter_id,
+                updated_at: UtcDateTime::now(),
+            })
             .await?;
 
         Ok(())

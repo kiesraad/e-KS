@@ -68,9 +68,15 @@ pub enum AppEvent {
 
     CreateListSubmitter(ListSubmitter),
     UpdateListSubmitter(ListSubmitter),
-    DeleteListSubmitter(ListSubmitterId),
+    DeleteListSubmitter {
+        list_submitter_id: ListSubmitterId,
+        updated_at: UtcDateTime,
+    },
 
     CreateSubstituteSubmitter(SubstituteSubmitter),
     UpdateSubstituteSubmitter(SubstituteSubmitter),
-    DeleteSubstituteSubmitter(SubstituteSubmitterId),
+    DeleteSubstituteSubmitter {
+        substitute_submitter_id: SubstituteSubmitterId,
+        updated_at: UtcDateTime,
+    },
 }

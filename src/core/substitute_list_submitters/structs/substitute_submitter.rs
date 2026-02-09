@@ -37,7 +37,10 @@ impl SubstituteSubmitter {
         substitute_submitter_id: SubstituteSubmitterId,
     ) -> Result<(), AppError> {
         store
-            .update(AppEvent::DeleteSubstituteSubmitter(substitute_submitter_id))
+            .update(AppEvent::DeleteSubstituteSubmitter {
+                substitute_submitter_id,
+                updated_at: UtcDateTime::now(),
+            })
             .await
     }
 }
