@@ -6,12 +6,8 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppEvent, AppResponse, AppStore, Context, HtmlTemplate, UtcDateTime,
-    candidate_lists::FullCandidateList,
-    candidates::Candidate,
-    filters,
-    form::FormData,
-    persons::{COUNTRY_CODES, PersonForm},
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::FullCandidateList,
+    candidates::Candidate, filters, form::FormData, persons::PersonForm,
 };
 
 use super::CandidateListUpdatePersonPath;
@@ -21,7 +17,6 @@ struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<PersonForm>,
-    countries: &'static [&'static str],
 }
 
 pub async fn update_person(
@@ -38,7 +33,6 @@ pub async fn update_person(
             ),
             candidate,
             full_list,
-            countries: &COUNTRY_CODES,
         },
         context,
     ))
@@ -58,14 +52,12 @@ pub async fn update_person_submit(
                 candidate,
                 full_list,
                 form: form_data,
-                countries: &COUNTRY_CODES,
             },
             context,
         )
         .into_response()),
-        Ok(mut person) => {
-            person.updated_at = UtcDateTime::now();
-            store.update(AppEvent::UpdatePerson(person)).await?;
+        Ok(person) => {
+            person.update(&store).await?;
 
             Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
@@ -76,8 +68,8 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore, Context,
-        candidate_lists::{CandidateList, CandidateListId},
+        AppStore, Context,
+        candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_person, sample_person_form,
@@ -97,11 +89,14 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let response = update_person(
             CandidateListUpdatePersonPath {
@@ -130,11 +125,14 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -181,11 +179,14 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;

@@ -54,7 +54,9 @@ pub async fn update_person_address_submit(
         )
         .into_response()),
         Ok(person) => {
-            person.update_address(&store).await?;
+            person
+                .update_address(&store, person.address.clone())
+                .await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }

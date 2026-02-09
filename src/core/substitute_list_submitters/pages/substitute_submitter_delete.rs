@@ -9,21 +9,19 @@ use crate::{
     substitute_list_submitters::SubstituteSubmitter,
 };
 
-use super::{SubstituteSubmitterDeletePath, SubstituteSubmitterUpdatePath};
+use super::SubstituteSubmitterDeletePath;
 
 pub async fn delete_substitute_submitter(
-    SubstituteSubmitterDeletePath { sub_submitter_id }: SubstituteSubmitterDeletePath,
+    _: SubstituteSubmitterDeletePath,
     context: Context,
+    substitute_submitter: SubstituteSubmitter,
     State(store): State<AppStore>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(
-            Redirect::to(&SubstituteSubmitterUpdatePath { sub_submitter_id }.to_string())
-                .into_response(),
-        ),
+        Err(_) => Ok(Redirect::to(&substitute_submitter.update_path()).into_response()),
         Ok(_) => {
-            SubstituteSubmitter::delete_by_id(&store, sub_submitter_id).await?;
+            substitute_submitter.delete(&store).await?;
 
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
@@ -60,6 +58,7 @@ mod tests {
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
+            substitute_submitter,
             State(store.clone()),
             Form(EmptyForm::new(csrf_token)),
         )
@@ -98,6 +97,7 @@ mod tests {
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
+            substitute_submitter.clone(),
             State(store.clone()),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
@@ -111,10 +111,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(
-            location,
-            SubstituteSubmitterUpdatePath { sub_submitter_id }.to_string()
-        );
+        assert_eq!(location, substitute_submitter.update_path());
 
         let submitters = store.get_substitute_submitters()?;
         assert_eq!(submitters.len(), 1);

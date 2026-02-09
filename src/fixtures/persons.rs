@@ -6,9 +6,8 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppEvent, AppStore, Bsn, CountryCode, Date, DutchAddress, FirstName, FullName,
-    HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
-    UtcDateTime,
+    AppError, AppStore, Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, HouseNumber,
+    Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
     persons::{Gender, Person},
 };
 
@@ -123,8 +122,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             ))
         })?;
 
-        let person = record.into_person()?;
-        store.update(AppEvent::CreatePerson(person)).await?;
+        record.into_person()?.create(store).await?;
     }
 
     Ok(())

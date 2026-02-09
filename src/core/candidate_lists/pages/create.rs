@@ -52,15 +52,7 @@ pub async fn create_candidate_list_submit(
     State(store): State<AppStore>,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
-    let previous_candidates = if form.copy_candidates {
-        store
-            .get_candidate_lists()?
-            .last()
-            .map(|list| list.candidates.clone())
-    } else {
-        None
-    };
-
+    let should_copy_candidates = form.copy_candidates;
     match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
@@ -70,14 +62,16 @@ pub async fn create_candidate_list_submit(
             context,
         )
         .into_response()),
-        Ok(candidate_list) => {
-            candidate_list.create(&store).await?;
-
-            if let Some(candidates) = previous_candidates
-                && !candidates.is_empty()
-            {
-                CandidateList::update_order(&store, candidate_list.id, &candidates).await?;
+        Ok(mut candidate_list) => {
+            if should_copy_candidates {
+                candidate_list.candidates = store
+                    .get_candidate_lists()?
+                    .last()
+                    .map(|list| list.candidates.clone())
+                    .unwrap_or_default();
             }
+
+            candidate_list.create(&store).await?;
 
             Ok(Redirect::to(&candidate_list.after_create_path()).into_response())
         }
@@ -187,18 +181,14 @@ mod test {
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person_a = sample_person(PersonId::new());
         let person_b = sample_person(PersonId::new());
 
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.candidates = vec![person_a.id, person_b.id];
         list.create(&store).await?;
-        store
-            .update(crate::AppEvent::CreatePerson(person_a.clone()))
-            .await?;
-        store
-            .update(crate::AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::DR],

@@ -6,20 +6,19 @@ use axum_extra::extract::Form;
 
 use crate::{AppError, AppStore, Context, form::EmptyForm, list_submitters::ListSubmitter};
 
-use super::{ListSubmitterDeletePath, ListSubmitterUpdatePath};
+use super::ListSubmitterDeletePath;
 
 pub async fn delete_list_submitter(
-    ListSubmitterDeletePath { submitter_id }: ListSubmitterDeletePath,
+    _: ListSubmitterDeletePath,
     context: Context,
+    submitter: ListSubmitter,
     State(store): State<AppStore>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => {
-            Ok(Redirect::to(&ListSubmitterUpdatePath { submitter_id }.to_string()).into_response())
-        }
+        Err(_) => Ok(Redirect::to(&submitter.update_path()).into_response()),
         Ok(_) => {
-            ListSubmitter::delete_by_id(&store, submitter_id).await?;
+            submitter.delete(&store).await?;
 
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
@@ -43,8 +42,10 @@ mod tests {
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
+        let submitter = sample_list_submitter(submitter_id);
 
         political_group.create(&store).await?;
+        submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -52,6 +53,7 @@ mod tests {
         let response = delete_list_submitter(
             ListSubmitterDeletePath { submitter_id },
             context,
+            submitter,
             State(store.clone()),
             Form(EmptyForm::new(csrf_token)),
         )
@@ -89,6 +91,7 @@ mod tests {
         let response = delete_list_submitter(
             ListSubmitterDeletePath { submitter_id },
             context,
+            list_submitter.clone(),
             State(store.clone()),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
@@ -102,10 +105,8 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(
-            location,
-            ListSubmitterUpdatePath { submitter_id }.to_string()
-        );
+
+        assert_eq!(location, list_submitter.update_path());
 
         let submitters = store.get_list_submitters()?;
         assert_eq!(submitters.len(), 1);

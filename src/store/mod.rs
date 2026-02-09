@@ -33,21 +33,21 @@ pub struct AppStoreData {
 }
 
 #[derive(Clone)]
-pub enum AppStorePersistance {
+pub enum AppStorePersistence {
     Database(sqlx::PgPool),
     None,
 }
 
 #[derive(Clone)]
 pub struct AppStore {
-    pub persistance: AppStorePersistance,
+    pub persistence: AppStorePersistence,
     data: Arc<parking_lot::RwLock<AppStoreData>>,
 }
 
 impl AppStore {
     pub fn new(pool: sqlx::PgPool) -> Self {
         AppStore {
-            persistance: AppStorePersistance::Database(pool),
+            persistence: AppStorePersistence::Database(pool),
             data: Default::default(),
         }
     }
@@ -58,14 +58,11 @@ impl AppStore {
         let political_group = crate::test_utils::sample_political_group(political_group_id);
 
         let store = AppStore {
-            persistance: AppStorePersistance::None,
+            persistence: AppStorePersistence::None,
             data: Default::default(),
         };
 
-        store
-            .update(AppEvent::UpdatePoliticalGroup(political_group))
-            .await
-            .expect("store update");
+        political_group.update(&store).await.expect("store update");
 
         store
     }

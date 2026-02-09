@@ -19,10 +19,6 @@ impl AuthorisedAgent {
         self.name.is_complete()
     }
 
-    pub fn last_name_with_prefix(&self) -> String {
-        self.name.last_name_with_prefix()
-    }
-
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateAuthorisedAgent(self.clone()))

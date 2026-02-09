@@ -42,8 +42,8 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState, Locale,
-        candidate_lists::{CandidateList, CandidateListId},
+        AppState, Locale,
+        candidate_lists::CandidateListId,
         persons::PersonId,
         render_error_pages,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -56,20 +56,17 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateCandidateList(list.clone()))
+        list.create(&app_state.store)
             .await
-            .unwrap();
-        app_state
-            .store
-            .update(AppEvent::CreatePerson(person.clone()))
+            .expect("create candidate list");
+        person
+            .create(&app_state.store)
             .await
-            .unwrap();
-
-        CandidateList::update_order(&app_state.store, list_id, &[person.id])
+            .expect("create person");
+        list.clone()
+            .update_order(&app_state.store, &[person.id])
             .await
-            .unwrap();
+            .expect("update candidate list order");
 
         let app = Router::new()
             .route(

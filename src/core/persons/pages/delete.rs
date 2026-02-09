@@ -11,8 +11,9 @@ use crate::{
 };
 
 pub async fn delete_person(
-    DeletePersonPath { person_id }: DeletePersonPath,
+    _: DeletePersonPath,
     context: Context,
+    person: Person,
     State(store): State<AppStore>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
@@ -22,7 +23,7 @@ pub async fn delete_person(
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
         Ok(_) => {
-            Person::delete_by_id(&store, person_id).await?;
+            person.delete(&store).await?;
             // TODO: set success flash message
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -49,6 +50,7 @@ mod tests {
         let response = delete_person(
             DeletePersonPath { person_id },
             context,
+            person,
             State(store.clone()),
             Form(EmptyForm::new(csrf_token)),
         )

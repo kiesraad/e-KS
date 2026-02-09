@@ -7,7 +7,7 @@ use axum_extra::extract::Form;
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
-    candidate_lists::{CandidateList, FullCandidateList},
+    candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionAction, CandidatePositionForm},
     filters,
     form::FormData,
@@ -80,17 +80,12 @@ pub async fn update_candidate_position_submit(
 
             match position_form.action {
                 CandidatePositionAction::Remove => {
-                    CandidateList::remove_candidate_from_list(
-                        &store,
-                        candidate.list_id,
-                        candidate.person.id,
-                    )
-                    .await?;
+                    let mut list = full_list.list;
+                    list.remove_candidate(&store, candidate.person.id).await?;
                 }
                 CandidatePositionAction::Move => {
-                    let mut full_list = full_list;
-                    full_list.update_position(candidate.person.id, position_form.position);
-                    CandidateList::update_order(&store, candidate.list_id, &full_list.get_ids())
+                    let mut list = full_list.list;
+                    list.update_position(&store, candidate.person.id, position_form.position)
                         .await?;
                 }
             }
@@ -104,7 +99,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore, Context, TokenValue,
+        AppStore, Context, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -131,15 +126,15 @@ mod tests {
     async fn update_candidate_position_renders_form() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
+        person.create(&store).await?;
+        list.candidates = vec![person.id];
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = list.get_candidate(&store, person.id).await?;
 
         let response = update_candidate_position(
             UpdateCandidatePositionPath {
@@ -170,16 +165,17 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.clone()
+            .update_order(&store, &[person_a.id, person_b.id])
             .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person_a.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person_a.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -218,16 +214,17 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.clone()
+            .update_order(&store, &[person_a.id, person_b.id])
             .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person_a.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person_a.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -265,16 +262,17 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.clone()
+            .update_order(&store, &[person_a.id, person_b.id])
             .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person_a.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person_a.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());

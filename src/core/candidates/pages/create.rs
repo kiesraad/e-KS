@@ -6,11 +6,8 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate, UtcDateTime,
-    candidate_lists::{CandidateList, FullCandidateList},
-    filters,
-    form::FormData,
-    persons::{COUNTRY_CODES, PersonForm},
+    AppError, AppStore, Context, HtmlTemplate, candidate_lists::FullCandidateList, filters,
+    form::FormData, persons::PersonForm,
 };
 
 use super::CreateCandidatePath;
@@ -19,7 +16,6 @@ use super::CreateCandidatePath;
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonForm>,
-    countries: &'static [&'static str],
 }
 
 pub async fn create_person_candidate_list(
@@ -31,7 +27,6 @@ pub async fn create_person_candidate_list(
         PersonCreateTemplate {
             full_list,
             form: FormData::new(&context.csrf_tokens),
-            countries: &COUNTRY_CODES,
         },
         context,
     )
@@ -50,20 +45,16 @@ pub async fn create_person_candidate_list_submit(
             PersonCreateTemplate {
                 full_list,
                 form: form_data,
-                countries: &COUNTRY_CODES,
             },
             context,
         )
         .into_response()),
-        Ok(mut person) => {
-            let now = UtcDateTime::now();
-            person.created_at = now;
-            person.updated_at = now;
-            store.update(AppEvent::CreatePerson(person.clone())).await?;
+        Ok(person) => {
+            person.create(&store).await?;
 
-            CandidateList::append_candidate(&store, full_list.id(), person.id).await?;
-
-            let candidate = CandidateList::get_candidate(&store, full_list.id(), person.id).await?;
+            let mut list = full_list.list;
+            list.append_candidate(&store, person.id).await?;
+            let candidate = list.get_candidate(&store, person.id).await?;
 
             Ok(Redirect::to(&candidate.after_create_path()).into_response())
         }

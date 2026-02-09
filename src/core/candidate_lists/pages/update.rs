@@ -60,6 +60,7 @@ pub async fn update_candidate_list_submit(
         .into_response()),
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
+
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }

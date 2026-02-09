@@ -43,7 +43,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState,
+        AppState,
         test_utils::{response_body_string, sample_substitute_submitter},
     };
 
@@ -52,13 +52,7 @@ mod tests {
         let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateSubstituteSubmitter(
-                substitute_submitter.clone(),
-            ))
-            .await
-            .unwrap();
+        substitute_submitter.create(&app_state.store).await.unwrap();
 
         let app = Router::new()
             .route(

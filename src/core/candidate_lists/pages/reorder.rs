@@ -13,11 +13,13 @@ pub struct CandidateListReorderPayload {
 
 pub async fn reorder_candidate_list(
     _: CandidateListReorderPath,
-    candidate_list: CandidateList,
+    mut candidate_list: CandidateList,
     State(store): State<AppStore>,
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
-    CandidateList::update_order(&store, candidate_list.id, &payload.person_ids).await?;
+    candidate_list
+        .update_order(&store, &payload.person_ids)
+        .await?;
 
     Ok(StatusCode::NO_CONTENT)
 }
@@ -26,7 +28,7 @@ pub async fn reorder_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore,
+        AppStore,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person_with_last_name},
@@ -41,13 +43,11 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.clone()
+            .update_order(&store, &[person_a.id, person_b.id])
             .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let response = reorder_candidate_list(
             CandidateListReorderPath { list_id },

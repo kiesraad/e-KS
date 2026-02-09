@@ -21,10 +21,18 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .name
             .last_name
             .cmp(&b.name.last_name)
-            .then_with(|| cmp_option_string(&a.name.last_name_prefix, &b.name.last_name_prefix))
+            .then_with(|| {
+                a.name
+                    .last_name_prefix
+                    .as_str_or_empty()
+                    .cmp(b.name.last_name_prefix.as_str_or_empty())
+            })
             .then_with(|| a.name.initials.cmp(&b.name.initials))
             .then_with(|| a.id.cmp(&b.id)),
-        PersonSort::FirstName => cmp_option_string(&a.first_name, &b.first_name)
+        PersonSort::FirstName => a
+            .first_name
+            .as_str_or_empty()
+            .cmp(b.first_name.as_str_or_empty())
             .then_with(|| a.name.last_name.cmp(&b.name.last_name))
             .then_with(|| a.id.cmp(&b.id)),
         PersonSort::Initials => a
@@ -38,11 +46,12 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .cmp(&b.gender)
             .then_with(|| a.name.last_name.cmp(&b.name.last_name))
             .then_with(|| a.id.cmp(&b.id)),
-        PersonSort::PlaceOfResidence => {
-            cmp_option_string(&a.place_of_residence, &b.place_of_residence)
-                .then_with(|| a.name.last_name.cmp(&b.name.last_name))
-                .then_with(|| a.id.cmp(&b.id))
-        }
+        PersonSort::PlaceOfResidence => a
+            .place_of_residence
+            .as_str_or_empty()
+            .cmp(b.place_of_residence.as_str_or_empty())
+            .then_with(|| a.name.last_name.cmp(&b.name.last_name))
+            .then_with(|| a.id.cmp(&b.id)),
         PersonSort::CreatedAt => a
             .created_at
             .cmp(&b.created_at)
@@ -52,13 +61,6 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .cmp(&b.updated_at)
             .then_with(|| a.id.cmp(&b.id)),
     }
-}
-
-fn cmp_option_string<T>(a: &Option<T>, b: &Option<T>) -> std::cmp::Ordering
-where
-    T: std::ops::Deref<Target = String>,
-{
-    a.as_str_or_empty().cmp(b.as_str_or_empty())
 }
 
 #[cfg(test)]
@@ -92,17 +94,6 @@ mod tests {
             updated_at: timestamp(1),
             ..Default::default()
         }
-    }
-
-    #[test]
-    fn cmp_option_string_treats_none_as_empty() {
-        let none_value = None;
-        let empty = Some(FirstName::default());
-        let value = Some("Al".parse::<FirstName>().expect("first name"));
-
-        assert_eq!(cmp_option_string(&none_value, &empty), Ordering::Equal);
-        assert_eq!(cmp_option_string(&none_value, &value), Ordering::Less);
-        assert_eq!(cmp_option_string(&value, &none_value), Ordering::Greater);
     }
 
     #[test]

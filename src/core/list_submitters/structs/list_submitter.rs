@@ -17,15 +17,7 @@ pub struct ListSubmitter {
 
 impl ListSubmitter {
     pub fn is_complete(&self) -> bool {
-        self.name.is_complete() && self.is_address_complete()
-    }
-
-    pub fn is_address_complete(&self) -> bool {
-        self.address.is_complete()
-    }
-
-    pub fn last_name_with_prefix(&self) -> String {
-        self.name.last_name_with_prefix()
+        self.name.is_complete() && self.address.is_complete()
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
@@ -44,17 +36,12 @@ impl ListSubmitter {
             .await
     }
 
-    pub async fn delete_by_id(
-        store: &AppStore,
-        list_submitter_id: ListSubmitterId,
-    ) -> Result<(), AppError> {
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::DeleteListSubmitter {
-                list_submitter_id,
+                list_submitter_id: self.id,
                 updated_at: UtcDateTime::now(),
             })
-            .await?;
-
-        Ok(())
+            .await
     }
 }

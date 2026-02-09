@@ -50,7 +50,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState, Locale, render_error_pages,
+        AppState, Locale, render_error_pages,
         test_utils::{response_body_string, sample_person},
     };
 
@@ -59,11 +59,7 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreatePerson(person.clone()))
-            .await
-            .unwrap();
+        person.create(&app_state.store).await.unwrap();
 
         let app = Router::new()
             .route(

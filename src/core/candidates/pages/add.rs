@@ -27,7 +27,7 @@ pub async fn add_existing_person(
     full_list: FullCandidateList,
     State(store): State<AppStore>,
 ) -> Result<impl IntoResponse, AppError> {
-    let persons = CandidateList::persons_not_on_list(&store, full_list.id())?;
+    let persons = full_list.list.persons_not_on_list(&store)?;
 
     Ok(HtmlTemplate(
         AddExistingPersonTemplate { full_list, persons },
@@ -42,21 +42,21 @@ pub struct AddPersonForm {
 
 pub async fn add_person_to_candidate_list(
     _: AddCandidatePath,
-    full_list: FullCandidateList,
+    mut list: CandidateList,
     State(store): State<AppStore>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect = Redirect::to(&full_list.list.view_path()).into_response();
+    let redirect = Redirect::to(&list.view_path()).into_response();
     let person_exists = store
         .get_persons()?
         .iter()
         .any(|person| person.id == form.person_id);
 
-    if full_list.contains(form.person_id) || !person_exists {
+    if list.candidates.contains(&form.person_id) || !person_exists {
         return Ok(redirect);
     }
 
-    CandidateList::append_candidate(&store, full_list.id(), form.person_id).await?;
+    list.append_candidate(&store, form.person_id).await?;
 
     Ok(redirect)
 }
@@ -65,7 +65,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore, Context,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -87,7 +87,7 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
+        person.create(&store).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
@@ -116,13 +116,11 @@ mod tests {
         let person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        person.create(&store).await?;
 
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
-            full_list,
+            list.clone(),
             State(store.clone()),
             Form(AddPersonForm {
                 person_id: person.id,
@@ -151,24 +149,18 @@ mod tests {
     {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let existing_person = sample_person_with_last_name(PersonId::new(), "Jansen");
         let new_person = sample_person_with_last_name(PersonId::new(), "Bakker");
 
+        existing_person.create(&store).await?;
+        list.candidates = vec![existing_person.id];
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(existing_person.clone()))
-            .await?;
-        store
-            .update(AppEvent::CreatePerson(new_person.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[existing_person.id]).await?;
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        new_person.create(&store).await?;
 
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
-            full_list,
+            list.clone(),
             State(store.clone()),
             Form(AddPersonForm {
                 person_id: new_person.id,

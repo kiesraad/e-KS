@@ -83,7 +83,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context,
-        candidate_lists::{CandidateList, CandidateListId},
+        candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_candidate_list, sample_person,
@@ -106,10 +106,13 @@ mod tests {
 
         list.create(&store).await?;
         person.create(&store).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let response = update_representative(
             UpdateRepresentativePath {
@@ -141,10 +144,13 @@ mod tests {
 
         list.create(&store).await?;
         person.create(&store).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_tokens = context.csrf_tokens.clone();
@@ -180,10 +186,13 @@ mod tests {
 
         list.create(&store).await?;
         person.create(&store).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -229,10 +238,13 @@ mod tests {
 
         list.create(&store).await?;
         person.create(&store).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;

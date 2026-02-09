@@ -6,7 +6,7 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppEvent, AppResponse, AppStore, Context, HtmlTemplate, UtcDateTime,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate,
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     filters,
@@ -67,9 +67,10 @@ pub async fn update_person_address_submit(
             context,
         )
         .into_response()),
-        Ok(mut person) => {
-            person.updated_at = UtcDateTime::now();
-            store.update(AppEvent::UpdatePerson(person)).await?;
+        Ok(person) => {
+            person
+                .update_address(&store, person.address.clone())
+                .await?;
 
             Ok(Redirect::to(&full_list.list.view_path()).into_response())
         }
@@ -80,8 +81,8 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore, Context,
-        candidate_lists::{CandidateList, CandidateListId},
+        AppStore, Context,
+        candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
             response_body_string, sample_address_form, sample_candidate_list,
@@ -103,11 +104,14 @@ mod tests {
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let response = update_person_address(
             CandidateListUpdateAddressPath {
@@ -133,15 +137,18 @@ mod tests {
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
+        person.create(&store).await?;
+        list.candidates = vec![person.id];
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
@@ -188,15 +195,18 @@ mod tests {
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
+        person.create(&store).await?;
+        list.candidates = vec![person.id];
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;

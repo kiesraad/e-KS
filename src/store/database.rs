@@ -1,17 +1,17 @@
 use crate::{
-    AppError, AppEvent, AppStore, constants::DEFAULT_STREAM_ID, store::AppStorePersistance,
+    AppError, AppEvent, AppStore, constants::DEFAULT_STREAM_ID, store::AppStorePersistence,
 };
 
 #[derive(Debug, sqlx::FromRow)]
 pub struct DatabaseEvent {
-    // pub event_id: i64,
+    pub event_id: i64,
     pub payload: serde_json::Value,
     // pub created_at: chrono::DateTime<chrono::Utc>,
 }
 
 impl AppStore {
     pub async fn load(&self) -> Result<(), AppError> {
-        let AppStorePersistance::Database(pool) = &self.persistance else {
+        let AppStorePersistence::Database(pool) = &self.persistence else {
             return Ok(());
         };
 
@@ -33,7 +33,7 @@ impl AppStore {
         &self,
         tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
     ) -> Result<usize, AppError> {
-        let last_id = self.get_last_event_id()?;
+        let last_id: usize = self.get_last_event_id()?;
 
         let stream_last_id: i64 = sqlx::query_scalar(
             r#"SELECT last_event_id
@@ -47,7 +47,7 @@ impl AppStore {
 
         let missing: Vec<DatabaseEvent> = sqlx::query_as::<_, DatabaseEvent>(
             r#"
-            SELECT payload
+            SELECT event_id, payload
             FROM events
             WHERE stream_id = $1 AND event_id > $2
             ORDER BY event_id ASC
@@ -61,8 +61,18 @@ impl AppStore {
         let mut data = self.data.write();
 
         for event in missing {
+            if data.last_event_id >= event.event_id as usize {
+                // This can happen if another instance of the application processed events concurrently
+                // and updated the store before this instance could acquire the write lock. In that case,
+                // the store is already up-to-date and we can skip applying the event again.
+                continue;
+            }
+
             match serde_json::from_value::<AppEvent>(event.payload) {
-                Ok(ev) => AppStore::apply(ev, &mut data),
+                Ok(ev) => {
+                    AppStore::apply(ev, &mut data);
+                    data.last_event_id = event.event_id as usize;
+                }
                 Err(e) => {
                     tracing::error!("Failed to deserialize event: {e:?}");
                     continue;
@@ -102,7 +112,7 @@ impl AppStore {
     }
 
     pub async fn update(&self, event: AppEvent) -> Result<(), AppError> {
-        let AppStorePersistance::Database(pool) = &self.persistance else {
+        let AppStorePersistence::Database(pool) = &self.persistence else {
             let mut data = self.data.write();
             AppStore::apply(event, &mut data);
 
@@ -143,6 +153,14 @@ impl AppStore {
         tx.commit().await?;
 
         let mut data = self.data.write();
+
+        if data.last_event_id >= next_id {
+            // This can happen if another instance of the application processed events concurrently
+            // and updated the store before this instance could acquire the write lock. In that case,
+            // the store is already up-to-date and we can skip applying the event again.
+            return Ok(());
+        }
+
         AppStore::apply(event, &mut data);
         data.last_event_id = next_id;
 
@@ -151,7 +169,7 @@ impl AppStore {
 
     #[cfg(feature = "fixtures")]
     pub async fn clear(&self) -> Result<(), AppError> {
-        let AppStorePersistance::Database(pool) = &self.persistance else {
+        let AppStorePersistence::Database(pool) = &self.persistence else {
             return Ok(());
         };
 
@@ -193,7 +211,7 @@ mod tests {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
+        person.create(&store).await?;
 
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
@@ -213,7 +231,7 @@ mod tests {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
+        person.create(&store).await?;
 
         let invalid_payload = serde_json::json!({"not": "an app event"});
         sqlx::query(

@@ -8,14 +8,13 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate, filters,
     form::FormData,
-    persons::{COUNTRY_CODES, Person, PersonForm, pages::PersonsCreatePath},
+    persons::{Person, PersonForm, pages::PersonsCreatePath},
 };
 
 #[derive(Template)]
 #[template(path = "persons/create.html")]
 struct PersonCreateTemplate {
     form: FormData<PersonForm>,
-    countries: &'static [&'static str],
 }
 
 pub async fn create_person(
@@ -25,7 +24,6 @@ pub async fn create_person(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             form: FormData::new(&context.csrf_tokens),
-            countries: &COUNTRY_CODES,
         },
         context,
     ))
@@ -38,14 +36,9 @@ pub async fn create_person_submit(
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(form_data) => Ok(HtmlTemplate(
-            PersonCreateTemplate {
-                form: form_data,
-                countries: &COUNTRY_CODES,
-            },
-            context,
-        )
-        .into_response()),
+        Err(form_data) => {
+            Ok(HtmlTemplate(PersonCreateTemplate { form: form_data }, context).into_response())
+        }
         Ok(person) => {
             person.create(&store).await?;
 
