@@ -15,6 +15,8 @@ pub enum ValidationError {
     InvalidChecksum,
     StartsWithLastNamePrefix,
     InvalidPostalCode,
+    NameAlreadyExists,
+    BsnAlreadyExists,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -45,6 +47,10 @@ impl ValidationError {
             ValidationError::InvalidPostalCode => {
                 trans!("validation.invalid_postal_code", locale)
             }
+            ValidationError::NameAlreadyExists => {
+                trans!("validation.name_already_exists", locale)
+            }
+            ValidationError::BsnAlreadyExists => trans!("validation.bsn_already_exists", locale),
         }
         .to_string()
     }
@@ -87,6 +93,14 @@ mod tests {
         assert_eq!(
             ValidationError::StartsWithLastNamePrefix.message(Locale::En),
             "Please put the prefix in the correct field."
+        );
+        assert_eq!(
+            ValidationError::NameAlreadyExists.message(Locale::En),
+            "A person with this name already exists."
+        );
+        assert_eq!(
+            ValidationError::BsnAlreadyExists.message(Locale::En),
+            "This BSN is already in use."
         );
     }
 

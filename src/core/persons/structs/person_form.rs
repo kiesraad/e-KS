@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    Bsn, CountryCode, Date, FirstName, FullNameForm, OptionStringExt, PlaceOfResidence, TokenValue,
+    AppStore, Bsn, CountryCode, CsrfTokens, Date, FirstName, FullNameForm, OptionStringExt,
+    PlaceOfResidence, TokenValue,
     constants::DEFAULT_DATE_FORMAT,
+    form::{FieldErrors, FormData, ValidationError},
     persons::{Gender, Person},
 };
 
@@ -47,6 +49,60 @@ impl From<Person> for PersonForm {
             country_of_residence: person.country_of_residence.to_string_or_default(),
             csrf_token: Default::default(),
         }
+    }
+}
+
+impl PersonForm {
+    pub fn validate_create_unique(
+        self,
+        csrf_tokens: &CsrfTokens,
+        store: &AppStore,
+    ) -> Result<Person, Box<FormData<Self>>> {
+        let existing = store.get_persons().unwrap_or_default();
+        let person = self.clone().validate_create(csrf_tokens)?;
+        let errors = PersonForm::uniqueness_errors(&person, &existing);
+
+        if errors.is_empty() {
+            Ok(person)
+        } else {
+            Err(Box::new(FormData::new_with_errors(
+                self,
+                csrf_tokens,
+                errors,
+            )))
+        }
+    }
+
+    pub(crate) fn uniqueness_errors(person: &Person, existing: &[Person]) -> FieldErrors {
+        let mut errors = Vec::new();
+
+        if let Some(bsn) = &person.bsn {
+            if existing
+                .iter()
+                .any(|existing_person| existing_person.bsn.as_ref() == Some(bsn))
+            {
+                errors.push(("bsn".to_string(), ValidationError::BsnAlreadyExists));
+            }
+
+            return errors;
+        }
+
+        let has_duplicate_name = existing
+            .iter()
+            .any(|existing_person| existing_person.name == person.name);
+
+        if has_duplicate_name {
+            errors.push((
+                "name.initials".to_string(),
+                ValidationError::NameAlreadyExists,
+            ));
+            errors.push((
+                "name.last_name".to_string(),
+                ValidationError::NameAlreadyExists,
+            ));
+        }
+
+        errors
     }
 }
 
@@ -243,5 +299,55 @@ mod tests {
         person.first_name = None;
         assert_eq!(person.first_name.as_str_or_empty(), "");
         assert_eq!(person.display_name(), "E.D. Klaas Smit");
+    }
+
+    #[test]
+    fn uniqueness_errors_for_duplicate_name_without_bsn() {
+        let mut existing = base_person();
+        existing.bsn = Some("123456782".parse().expect("bsn"));
+
+        let mut incoming = base_person();
+        incoming.bsn = None;
+
+        let errors = PersonForm::uniqueness_errors(&incoming, &[existing]);
+
+        assert!(errors.contains(&(
+            "name.initials".to_string(),
+            ValidationError::NameAlreadyExists
+        )));
+        assert!(errors.contains(&(
+            "name.last_name".to_string(),
+            ValidationError::NameAlreadyExists
+        )));
+    }
+
+    #[test]
+    fn uniqueness_errors_for_duplicate_bsn() {
+        let mut existing = base_person();
+        existing.bsn = Some("123456782".parse().expect("bsn"));
+
+        let mut incoming = base_person();
+        incoming.name.last_name = "Other".parse().expect("last name");
+        incoming.bsn = Some("123456782".parse().expect("bsn"));
+
+        let errors = PersonForm::uniqueness_errors(&incoming, &[existing]);
+
+        assert_eq!(
+            errors,
+            vec![("bsn".to_string(), ValidationError::BsnAlreadyExists)]
+        );
+    }
+
+    #[test]
+    fn uniqueness_allows_duplicate_name_with_unique_bsn() {
+        let mut existing = base_person();
+        existing.bsn = Some("123456782".parse().expect("bsn"));
+
+        let mut incoming = base_person();
+        incoming.bsn = Some("111222333".parse().expect("bsn"));
+
+        let errors = PersonForm::uniqueness_errors(&incoming, &[existing]);
+
+        assert!(errors.is_empty());
     }
 }

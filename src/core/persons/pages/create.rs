@@ -35,9 +35,9 @@ pub async fn create_person_submit(
     State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create_unique(&context.csrf_tokens, &store) {
         Err(form_data) => {
-            Ok(HtmlTemplate(PersonCreateTemplate { form: form_data }, context).into_response())
+            Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }
         Ok(person) => {
             person.create(&store).await?;
@@ -123,6 +123,28 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_person_duplicate_name_renders_error() -> Result<(), AppError> {
+        let store = AppStore::new_for_test().await;
+        let existing = crate::test_utils::sample_person(crate::persons::PersonId::new());
+        existing.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.csrf_tokens.issue().value;
+        let form = sample_person_form(&csrf_token);
+
+        let response =
+            create_person_submit(PersonsCreatePath {}, context, State(store), Form(form))
+                .await
+                .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("A person with this name already exists."));
 
         Ok(())
     }

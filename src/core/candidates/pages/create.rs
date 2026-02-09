@@ -40,11 +40,11 @@ pub async fn create_person_candidate_list_submit(
     State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create_unique(&context.csrf_tokens, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
-                form: form_data,
+                form: *form_data,
             },
             context,
         )
