@@ -6,7 +6,6 @@ use crate::form::{ValidationError, validate_length, validate_teletex_chars};
 
 pub type FirstName = ConstrainedString;
 pub type LegalName = ConstrainedString;
-pub type DisplayName = ConstrainedString;
 pub type StreetName = ConstrainedString;
 pub type Locality = ConstrainedString;
 pub type PlaceOfResidence = ConstrainedString;

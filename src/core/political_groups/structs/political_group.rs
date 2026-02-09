@@ -1,5 +1,6 @@
 use crate::{
-    AppError, AppEvent, AppStore, DisplayName, LegalName, OptionStringExt, UtcDateTime, id_newtype,
+    AppError, AppEvent, AppStore, LegalName, OptionStringExt, UtcDateTime, id_newtype,
+    structs::DisplayName,
 };
 use serde::{Deserialize, Serialize};
 

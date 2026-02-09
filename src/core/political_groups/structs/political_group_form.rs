@@ -2,7 +2,7 @@ use serde::Deserialize;
 use validate::Validate;
 
 use crate::{
-    DisplayName, LegalName, OptionStringExt, TokenValue, political_groups::PoliticalGroup,
+    LegalName, OptionStringExt, TokenValue, political_groups::PoliticalGroup, structs::DisplayName,
 };
 
 #[derive(Default, Deserialize, Debug, Validate)]
