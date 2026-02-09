@@ -6,6 +6,7 @@
 
 {% block overlay_start %}
 <form method="post" action="{{ candidate_list.update_path() }}" class="overlay">
+<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
 {% endblock %}
 
 {% block overlay_content %}

@@ -22,6 +22,7 @@
     </div>
     <div class="form">
       <fieldset>
+        {% set should_warn = true %}
         {% include "components/person_name_fields.html" %}
       </fieldset>
       <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">

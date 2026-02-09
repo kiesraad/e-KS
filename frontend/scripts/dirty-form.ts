@@ -4,39 +4,34 @@ function setupDirtyForms() {
   let isSubmitting = false;
 
   forms.forEach((form) => {
-    const submitButton: HTMLButtonElement | null = form.querySelector(
-      'button[type="submit"]',
-    );
+    const submitButton: HTMLButtonElement | null =
+      form.querySelector("button.dirty-check");
     const anyFieldRequired = form.querySelector("[required]") !== null;
 
-    if (!submitButton || !anyFieldRequired) {
+    if (!submitButton) {
       return;
     }
 
-    let isDirty = false;
-
     const updateSubmitButtons = () => {
-      if (isDirty && form.checkValidity()) {
+      if (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity())) {
         submitButton.disabled = false;
       } else {
         submitButton.disabled = true;
       }
     };
 
-    form.addEventListener("input", () => {
-      isDirty = true;
+    const setDirty = () => {
       dirtyForms.add(form);
       updateSubmitButtons();
-    });
+    };
 
-    form.addEventListener("keydown", () => {
-      isDirty = true;
-      dirtyForms.add(form);
-      updateSubmitButtons();
+    form.querySelectorAll("input, textarea, select").forEach((input) => {
+      input.addEventListener("change", setDirty);
+      input.addEventListener("input", setDirty);
+      input.addEventListener("keydown", setDirty);
     });
 
     form.addEventListener("submit", () => {
-      isDirty = false;
       dirtyForms.delete(form);
       isSubmitting = true;
     });

@@ -1,5 +1,5 @@
 <div class="form-row">
-  <p class="form-field form-field-sm {% if use_name_warnings|default(false) && form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
     <input type="text" name="initials" id="initials" value="{{ form.data.name.initials }}" class="initials-input" required />
     <label class="autoformat">
@@ -17,7 +17,7 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field {% if use_name_warnings|default(false) && form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field {% if form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
     <input type="text" name="last_name" id="last_name" value="{{ form.data.name.last_name }}" required />
     {% for error in form|error("name.last_name") %}
