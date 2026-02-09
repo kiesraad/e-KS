@@ -43,7 +43,18 @@ impl AppStore {
                     existing.updated_at = updated_at;
                 });
             }
-            AppEvent::DeletePerson(person_id) => {
+            AppEvent::DeletePerson {
+                person_id,
+                updated_at,
+            } => {
+                for list in data.candidate_lists.values_mut() {
+                    let before = list.candidates.len();
+                    list.candidates.retain(|id| *id != person_id);
+                    if list.candidates.len() != before {
+                        list.updated_at = updated_at;
+                    }
+                }
+
                 data.persons.remove(&person_id);
             }
             AppEvent::CreateCandidateList(cl) => {
@@ -107,18 +118,6 @@ impl AppStore {
                     existing.candidates.retain(|id| *id != person_id);
                     existing.updated_at = updated_at;
                 });
-            }
-            AppEvent::RemoveCandidateFromAllCandidateLists {
-                person_id,
-                updated_at,
-            } => {
-                for list in data.candidate_lists.values_mut() {
-                    let before = list.candidates.len();
-                    list.candidates.retain(|id| *id != person_id);
-                    if list.candidates.len() != before {
-                        list.updated_at = updated_at;
-                    }
-                }
             }
             AppEvent::DeleteCandidateList(cl_id) => {
                 data.candidate_lists.remove(&cl_id);

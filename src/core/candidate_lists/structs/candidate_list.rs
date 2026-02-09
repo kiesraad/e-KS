@@ -94,23 +94,6 @@ impl CandidateList {
         Ok(())
     }
 
-    pub async fn remove_candidate_from_all(
-        store: &AppStore,
-        person_id: PersonId,
-    ) -> Result<(), AppError> {
-        let lists = store.get_candidate_lists()?;
-
-        for mut list in lists {
-            if list.candidates.contains(&person_id) {
-                list.candidates.retain(|id| *id != person_id);
-                list.updated_at = UtcDateTime::now();
-                store.update(AppEvent::UpdateCandidateList(list)).await?;
-            }
-        }
-
-        Ok(())
-    }
-
     pub async fn remove_candidate_from_list(
         store: &AppStore,
         list_id: CandidateListId,
@@ -623,16 +606,12 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
-            .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
         CandidateList::append_candidate(&store, list_id, person_a.id).await?;
         CandidateList::append_candidate(&store, list_id, person_b.id).await?;
 
-        CandidateList::remove_candidate_from_all(&store, person_a.id).await?;
+        person_a.delete(&store).await?;
 
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(detail.candidates.len(), 1);

@@ -177,7 +177,7 @@ fn apply_add_candidate_to_list_deduplicates() {
 }
 
 #[test]
-fn apply_remove_candidate_from_all_lists_updates_only_matches() {
+fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
     let mut data = AppStoreData::default();
     let person_id = PersonId::new();
     let base_time = Utc::now();
@@ -196,7 +196,7 @@ fn apply_remove_candidate_from_all_lists_updates_only_matches() {
 
     let removed_at = UtcDateTime::from(base_time - Duration::seconds(10));
     AppStore::apply(
-        AppEvent::RemoveCandidateFromAllCandidateLists {
+        AppEvent::DeletePerson {
             person_id,
             updated_at: removed_at,
         },

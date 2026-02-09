@@ -6,7 +6,6 @@ use axum_extra::extract::Form;
 
 use crate::{
     AppError, AppStore, Context,
-    candidate_lists::CandidateList,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
 };
@@ -23,8 +22,6 @@ pub async fn delete_person(
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
         Ok(_) => {
-            CandidateList::remove_candidate_from_all(&store, person_id).await?;
-
             Person::delete_by_id(&store, person_id).await?;
             // TODO: set success flash message
             Ok(Redirect::to(&Person::list_path()).into_response())

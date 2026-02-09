@@ -28,8 +28,10 @@ pub enum AppEvent {
         address: DutchAddress,
         updated_at: UtcDateTime,
     },
-    DeletePerson(PersonId),
-
+    DeletePerson {
+        person_id: PersonId,
+        updated_at: UtcDateTime,
+    },
     CreateCandidateList(CandidateList),
     UpdateCandidateList(CandidateList),
     UpdateCandidateListDistricts {
@@ -55,10 +57,6 @@ pub enum AppEvent {
     },
     RemoveCandidateFromCandidateList {
         list_id: CandidateListId,
-        person_id: PersonId,
-        updated_at: UtcDateTime,
-    },
-    RemoveCandidateFromAllCandidateLists {
         person_id: PersonId,
         updated_at: UtcDateTime,
     },

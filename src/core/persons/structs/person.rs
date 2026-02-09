@@ -125,11 +125,21 @@ impl Person {
     }
 
     pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
-        store.update(AppEvent::DeletePerson(self.id)).await
+        store
+            .update(AppEvent::DeletePerson {
+                person_id: self.id,
+                updated_at: UtcDateTime::now(),
+            })
+            .await
     }
 
     pub async fn delete_by_id(store: &AppStore, person_id: PersonId) -> Result<(), AppError> {
-        store.update(AppEvent::DeletePerson(person_id)).await
+        store
+            .update(AppEvent::DeletePerson {
+                person_id,
+                updated_at: UtcDateTime::now(),
+            })
+            .await
     }
 
     pub fn list(

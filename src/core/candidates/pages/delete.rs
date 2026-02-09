@@ -5,7 +5,7 @@ use axum::{
 use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, candidate_lists::CandidateList, candidates::Candidate,
+    AppError, AppStore, Context, candidate_lists::CandidateList, candidates::Candidate,
     form::EmptyForm,
 };
 
@@ -24,10 +24,7 @@ pub async fn delete_person(
             Ok(Redirect::to(&candidate.update_path()).into_response())
         }
         Ok(_) => {
-            CandidateList::remove_candidate_from_all(&store, candidate.person.id).await?;
-            store
-                .update(AppEvent::DeletePerson(candidate.person.id))
-                .await?;
+            candidate.person.delete(&store).await?;
             // TODO: set success flash message
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
