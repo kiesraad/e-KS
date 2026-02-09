@@ -29,7 +29,7 @@ pub async fn update_representative(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
             form: FormData::new_with_data(
-                RepresentativeForm::from(person.clone()),
+                RepresentativeForm::from(person.representative.clone()),
                 &context.csrf_tokens,
             ),
             person,
@@ -46,7 +46,7 @@ pub async fn update_representative_submit(
     Query(query): Query<InitialQuery>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.csrf_tokens) {
+    match form.validate_update(&person.representative, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -56,8 +56,8 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(person) => {
-            person.update(&store).await?;
+        Ok(representative) => {
+            person.update_representative(&store, representative).await?;
 
             Ok(Redirect::to(&Person::list_path()).into_response())
         }
@@ -146,7 +146,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
-        form.representative.last_name = "Smit".to_string();
+        form.name.last_name = "Smit".to_string();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },
@@ -169,7 +169,7 @@ mod tests {
         assert_eq!(location, Person::list_path());
 
         let updated = store.get_person(person_id)?;
-        assert_eq!(updated.representative.last_name.to_string(), "Smit");
+        assert_eq!(updated.representative.name.last_name.to_string(), "Smit");
 
         Ok(())
     }

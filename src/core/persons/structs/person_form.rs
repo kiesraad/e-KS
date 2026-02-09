@@ -86,7 +86,7 @@ mod tests {
                 house_number_addition: Some("B".parse().expect("house number addition")),
                 street_name: Some("Spoorstraat".parse().expect("street name")),
             },
-            representative: FullName::default(),
+            representative: Default::default(),
             created_at: UtcDateTime::from(timestamp),
             updated_at: UtcDateTime::from(timestamp),
         }

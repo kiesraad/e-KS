@@ -7,7 +7,9 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
-    persons::{AddressForm, Gender, Person, PersonForm, PersonId, RepresentativeForm},
+    persons::{
+        AddressForm, Gender, Person, PersonForm, PersonId, Representative, RepresentativeForm,
+    },
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupId},
     substitute_list_submitters::{
         SubstituteSubmitter, SubstituteSubmitterForm, SubstituteSubmitterId,
@@ -69,7 +71,7 @@ pub fn sample_person(id: PersonId) -> Person {
             ),
             street_name: Some("Stationsstraat".parse::<StreetName>().expect("street name")),
         },
-        representative: FullName::default(),
+        representative: Representative::default(),
         created_at: UtcDateTime::now(),
         updated_at: UtcDateTime::now(),
     }
@@ -114,7 +116,7 @@ pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
 
 pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
     RepresentativeForm {
-        representative: FullNameForm {
+        name: FullNameForm {
             last_name: "Bakker".to_string(),
             last_name_prefix: "".to_string(),
             initials: "A.B.".to_string(),

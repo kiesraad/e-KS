@@ -34,12 +34,10 @@ impl AppStore {
             AppEvent::UpdatePersonRepresentative {
                 person_id,
                 representative,
-                address,
                 updated_at,
             } => {
                 data.persons.entry(person_id).and_modify(|existing| {
                     existing.representative = representative;
-                    existing.address = address;
                     existing.updated_at = updated_at;
                 });
             }

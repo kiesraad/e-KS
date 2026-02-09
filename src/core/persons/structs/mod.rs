@@ -11,7 +11,7 @@ mod representative_form;
 pub use address_form::AddressForm;
 pub use countries::COUNTRY_CODES;
 pub use gender::Gender;
-pub use person::{Person, PersonId};
+pub use person::{Person, PersonId, Representative};
 pub use person_form::PersonForm;
 pub use person_pagination::PersonPagination;
 pub use person_sort::PersonSort;

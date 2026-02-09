@@ -5,7 +5,7 @@ use crate::{
     PostalCode, StreetName, UtcDateTime,
     candidate_lists::CandidateListId,
     list_submitters::ListSubmitterId,
-    persons::{Gender, PersonId, PersonalInfo},
+    persons::{Gender, PersonId, PersonalInfo, Representative},
     substitute_list_submitters::SubstituteSubmitterId,
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
 };
@@ -102,38 +102,41 @@ fn apply_update_person_address_and_representative() {
     assert_eq!(updated.address.postal_code, new_address.postal_code);
     assert_eq!(updated.updated_at, address_updated_at);
     assert_eq!(
-        updated.representative.initials,
-        original_representative.initials
+        updated.representative.name.initials,
+        original_representative.name.initials
     );
 
     let rep_updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(10));
-    let representative = FullName {
-        last_name: "Bakker".parse::<LastName>().expect("last name"),
-        last_name_prefix: None,
-        initials: "C.D.".parse::<Initials>().expect("initials"),
-    };
-
-    let updated_address = DutchAddress {
-        locality: Some("Rotterdam".parse::<Locality>().expect("locality")),
-        postal_code: Some("3011 CC".parse::<PostalCode>().expect("postal code")),
-        house_number: Some("5".parse::<HouseNumber>().expect("house number")),
-        house_number_addition: None,
-        street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
+    let representative = Representative {
+        name: FullName {
+            last_name: "Bakker".parse::<LastName>().expect("last name"),
+            last_name_prefix: None,
+            initials: "C.D.".parse::<Initials>().expect("initials"),
+        },
+        address: DutchAddress {
+            locality: Some("Rotterdam".parse::<Locality>().expect("locality")),
+            postal_code: Some("3011 CC".parse::<PostalCode>().expect("postal code")),
+            house_number: Some("5".parse::<HouseNumber>().expect("house number")),
+            house_number_addition: None,
+            street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
+        },
     };
 
     AppStore::apply(
         AppEvent::UpdatePersonRepresentative {
             person_id,
             representative: representative.clone(),
-            address: updated_address.clone(),
             updated_at: rep_updated_at,
         },
         &mut data,
     );
 
     let updated = data.persons.get(&person_id).expect("person exists");
-    assert_eq!(updated.representative.last_name.to_string(), "Bakker");
-    assert_eq!(updated.address.street_name, updated_address.street_name);
+    assert_eq!(updated.representative.name.last_name.to_string(), "Bakker");
+    assert_eq!(
+        updated.representative.address.street_name,
+        representative.address.street_name
+    );
     assert_eq!(updated.updated_at, rep_updated_at);
 }
 

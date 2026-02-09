@@ -103,7 +103,7 @@ impl PersonRecord {
                     "street name",
                 )?),
             },
-            representative: FullName::default(),
+            representative: Default::default(),
             created_at: UtcDateTime::now(),
             updated_at: UtcDateTime::now(),
         })

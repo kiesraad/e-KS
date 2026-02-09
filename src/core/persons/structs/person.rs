@@ -25,10 +25,22 @@ pub struct Person {
     pub country_of_residence: Option<CountryCode>,
 
     pub address: DutchAddress,
-    pub representative: FullName,
+    pub representative: Representative,
 
     pub created_at: UtcDateTime,
     pub updated_at: UtcDateTime,
+}
+
+#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+pub struct Representative {
+    pub name: FullName,
+    pub address: DutchAddress,
+}
+
+impl Representative {
+    pub fn is_complete(&self) -> bool {
+        self.name.is_complete() && self.address.is_complete()
+    }
 }
 
 impl Person {
@@ -93,9 +105,7 @@ impl Person {
             return true;
         }
 
-        self.is_address_complete()
-            && !self.representative.initials.is_empty()
-            && !self.representative.last_name.is_empty()
+        self.representative.is_complete()
     }
 
     pub fn is_complete(&self) -> bool {
@@ -110,6 +120,20 @@ impl Person {
 
     pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store.update(AppEvent::UpdatePerson(self.clone())).await
+    }
+
+    pub async fn update_representative(
+        &self,
+        store: &AppStore,
+        representative: Representative,
+    ) -> Result<(), AppError> {
+        store
+            .update(AppEvent::UpdatePersonRepresentative {
+                person_id: self.id,
+                representative,
+                updated_at: UtcDateTime::now(),
+            })
+            .await
     }
 
     pub async fn update_address(&self, store: &AppStore) -> Result<(), AppError> {
