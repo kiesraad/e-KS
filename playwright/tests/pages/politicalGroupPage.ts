@@ -1,5 +1,4 @@
-import { Page } from "@playwright/test";
-import type { PoliticalGroup } from "../models/politicalGroup";
+import type { Page } from "@playwright/test";
 
 export class PoliticalGroupPage {
   private readonly page: Page;
@@ -17,12 +16,14 @@ export class PoliticalGroupPage {
    * @param input accepted values "Ja" or "Nee"
    */
   async selectHasMoreThan16Seats(input: string) {
-    await this.page.getByRole("radio", {name: input} ).check();
+    await this.page.getByRole("radio", { name: input }).check();
     await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async setRegisteredDesignation(registeredDesignation: string) {
-    await this.page.getByRole("textbox", {name: "Geregistreerde aanduiding"}).fill(registeredDesignation);
+    await this.page
+      .getByRole("textbox", { name: "Geregistreerde aanduiding" })
+      .fill(registeredDesignation);
     await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
@@ -31,4 +32,3 @@ export class PoliticalGroupPage {
     await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 }
-
