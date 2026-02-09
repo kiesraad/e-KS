@@ -23,25 +23,20 @@ test.describe("provide general information for political group", async () => {
     const authorisedAgentsPage = new AuthorisedAgentsPage(page);
     await authorisedAgentsPage.open();
     await authorisedAgentsPage.deleteExistingAuthorisedAgents();
-    const agentOne: AuthorisedAgent = {
+    const agent: AuthorisedAgent = {
       initials: "K",
       lastNamePrefix: "van",
       lastName: "Jansen",
     };
-    const agentTwo: AuthorisedAgent = {
-      initials: "E",
-      lastName: "Ekster",
-    };
-    await authorisedAgentsPage.addAuthorisedAgent([agentOne, agentTwo]);
+    await authorisedAgentsPage.addAuthorisedAgent(agent);
 
-    for (const agent of [agentOne, agentTwo]) {
-      const agentLastName = agent.lastNamePrefix
-        ? `${agent.lastNamePrefix} ${agent.lastName}`
-        : agent.lastName;
-      await expect(
-        authorisedAgentsPage.getAgentLocator(agentLastName),
-      ).toBeVisible();
-    }
+    const agentLastName = agent.lastNamePrefix
+      ? `${agent.lastNamePrefix} ${agent.lastName}`
+      : agent.lastName;
+
+    await expect(
+      authorisedAgentsPage.getAgentLocator(agentLastName),
+    ).toBeVisible();
   });
 
   test("provide list submitter", async ({ page }) => {

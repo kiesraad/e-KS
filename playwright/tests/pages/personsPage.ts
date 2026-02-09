@@ -27,10 +27,7 @@ export class PersonsPage {
       await this.page
         .getByRole("textbox", { name: "Geboortedatum" })
         .fill(candidate.dateOfBirth ?? "");
-      await this.page.getByLabel("Landcode").fill("NL");
-
-      // enable the submit button (only active if all required fields are filled in)
-      await this.page.getByLabel("Landcode").press("Tab");
+      await this.page.getByLabel("Landcode").pressSequentially("NL");
 
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })

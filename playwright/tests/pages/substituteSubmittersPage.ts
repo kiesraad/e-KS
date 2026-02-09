@@ -10,7 +10,7 @@ export class SubstituteSubmittersPage {
 
   getSubmitterLocator(lastName: string) {
     return this.page
-      .locator("table.table")
+      .locator("table.substitute-submitters-table")
       .getByRole("cell", { name: lastName });
   }
 
@@ -21,7 +21,7 @@ export class SubstituteSubmittersPage {
   async deleteExistingSubstituteSubmitters() {
     //takes all links from table and saves href attributes of each link in list
     const hrefs = await this.page
-      .locator("table.table")
+      .locator("table.substitute-submitters-table")
       .getByRole("link")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
 
@@ -30,7 +30,7 @@ export class SubstituteSubmittersPage {
         await this.page.goto(href);
         await this.page
           .getByRole("button", {
-            name: "Vervangende lijstinleveraar verwijderen",
+            name: "Vervanger voor herstel verzuimen verwijderen",
             exact: true,
           })
           .click();
@@ -44,7 +44,7 @@ export class SubstituteSubmittersPage {
   async addSubstituteSubmitter(listSubmitters: ListSubmitter[]) {
     for (const listSubmitter of listSubmitters) {
       await this.page
-        .getByRole("link", { name: "Vervangende lijstinleveraar toevoegen" })
+        .getByRole("link", { name: "Vervanger herstel verzuimen toevoegen" })
         .click();
       await this.page
         .getByRole("textbox", { name: "Voorletters *" })
@@ -54,14 +54,15 @@ export class SubstituteSubmittersPage {
         .fill(listSubmitter.lastNamePrefix ?? "");
       await this.page
         .getByRole("textbox", { name: "Achternaam *" })
-        .fill(listSubmitter.lastName);
+        .pressSequentially(listSubmitter.lastName);
+
       await this.page.getByRole("button", { name: "Opslaan" }).click();
     }
   }
 
   async editListSubmitter() {
     await this.page
-      .getByRole("cell", { name: "Vervangende lijstinleveraar toevoegen" })
+      .getByRole("cell", { name: "Vervanger herstel verzuimen toevoegen" })
       .click();
     await this.page.getByRole("textbox", { name: "Voorletters *" }).fill("A");
     await this.page.getByRole("textbox", { name: "Voorvoegsel" }).fill("de");

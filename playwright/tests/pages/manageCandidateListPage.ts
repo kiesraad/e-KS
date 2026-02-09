@@ -35,10 +35,7 @@ export class ManageCandidateListPage {
         .locator('input[name="last_name"]')
         .fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
-      await this.page.getByLabel("Landcode").fill("NL");
-
-      // enable the submit button (only active if all required fields are filled in)
-      await this.page.getByLabel("Landcode").press("Tab");
+      await this.page.getByLabel("Landcode").pressSequentially("NL");
 
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })

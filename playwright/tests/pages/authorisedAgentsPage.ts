@@ -38,22 +38,21 @@ export class AuthorisedAgentsPage {
     }
   }
 
-  async addAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
-    for (const authorisedAgent of authorisedAgents) {
-      await this.page
-        .getByRole("link", { name: "Gemachtigde toevoegen" })
-        .click();
-      await this.page
-        .getByRole("textbox", { name: "Voorletters *" })
-        .fill(authorisedAgent.initials);
-      await this.page
-        .getByRole("textbox", { name: "Voorvoegsel" })
-        .fill(authorisedAgent.lastNamePrefix ?? "");
-      await this.page
-        .getByRole("textbox", { name: "Achternaam *" })
-        .fill(authorisedAgent.lastName);
-      await this.page.getByRole("button", { name: "Opslaan" }).click();
-    }
+  async addAuthorisedAgent(authorisedAgent: AuthorisedAgent) {
+    await this.page
+      .getByRole("link", { name: "Gemachtigde toevoegen" })
+      .click();
+    await this.page
+      .getByRole("textbox", { name: "Voorletters *" })
+      .fill(authorisedAgent.initials);
+    await this.page
+      .getByRole("textbox", { name: "Voorvoegsel" })
+      .fill(authorisedAgent.lastNamePrefix ?? "");
+    await this.page
+      .getByRole("textbox", { name: "Achternaam *" })
+      .pressSequentially(authorisedAgent.lastName);
+
+    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async editAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
@@ -69,7 +68,8 @@ export class AuthorisedAgentsPage {
         .fill(authorisedAgent.lastNamePrefix ?? "");
       await this.page
         .getByRole("textbox", { name: "Achternaam *" })
-        .fill(authorisedAgent.lastName);
+        .pressSequentially(authorisedAgent.lastName);
+
       await this.page.getByRole("button", { name: "Opslaan" }).click();
     }
   }

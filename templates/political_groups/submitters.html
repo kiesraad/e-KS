@@ -21,7 +21,7 @@
     {% if list_submitters.is_empty() %}
       <p>{{ "political_group.no_list_submitters"|trans }}</p>
     {% else %}
-      <table class="table">
+      <table class="table submitters-table">
         <thead>
           <tr>
             <th>{{ "person.fields.initials"|trans }}</th>
@@ -63,7 +63,7 @@
     {% if substitute_submitters.is_empty() %}
       <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
     {% else %}
-      <table class="table">
+      <table class="table substitute-submitters-table">
         <thead>
           <tr>
             <th>{{ "person.fields.initials"|trans }}</th>
