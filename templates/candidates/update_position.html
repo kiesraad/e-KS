@@ -5,24 +5,11 @@
   {{ candidate.person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ candidate.update_position_path() }}" class="overlay">
-{% endblock %}
-{% block overlay_end %}</form>{% endblock %}
+{% set close_action = full_list.list.view_path() %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
     {% include "candidates/components/update_steps.html" %}
     {% include "candidates/components/position_form.html" %}
   </div>
-{% endblock %}
-
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button" name="action" value="move">
-    {{ "action.save_and_close"|trans }}
-  </button>
-</footer>
 {% endblock %}

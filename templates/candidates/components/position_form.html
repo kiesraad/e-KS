@@ -1,6 +1,5 @@
 <div class="form">
   <fieldset>
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
     {% for error in form|error("csrf_token") %}
     <span class="error">{{ error }}</span>
     {% endfor %}

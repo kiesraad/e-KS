@@ -109,5 +109,9 @@ body.overlay-open {
     border-radius: 0 0 var(--space-sm) var(--space-sm);
     background-color: rgba(249, 250, 251, 0.6);
     backdrop-filter: blur(1px);
+
+    .button {
+      margin-left: var(--space-md);
+    }
   }
 }

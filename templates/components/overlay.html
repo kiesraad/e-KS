@@ -4,22 +4,29 @@
 
 {% block overlay %}
 <div class="overlay-backdrop"></div>
-{% block overlay_start %}<div class="overlay">{% endblock %}
+<form method="post" class="overlay">
+  {% if form is defined %}
+  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+  {% endif %}
   <header>
     <h2>
       {% block overlay_title %}{% endblock %}
     </h2>
-    <a href="{% block close_action %}/{% endblock %}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
+    <a href="{{ close_action|default("/") }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
       <span>{{ "action.close"|trans }}</span>
     </a>
   </header>
   {% block overlay_content %}{% endblock %}
   {% block overlay_footer %}
-  <footer>
-    <button type="submit" class="button dirty-check">
-      {{ "action.save_and_close"|trans }}
-    </button>
-  </footer>
+    <footer>
+      <a href="{{ close_action|default("/") }}" class="button secondary lg icon-close mr-md">
+        {{ "action.close"|trans }}
+      </a>
+      <button type="submit" class="button dirty-check lg" name="action" value="save">
+        {{ "action.save"|trans }}
+      </button>
+    </footer>
   {% endblock %}
-{% block overlay_end %}</div>{% endblock %}
+</form>
+{% block overlay_end %}{% endblock %}
 {% endblock %}

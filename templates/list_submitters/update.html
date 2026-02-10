@@ -1,13 +1,8 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ ListSubmitter::list_path() }}{% endblock %}
+{% set close_action = ListSubmitter::list_path() %}
 
 {% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ list_submitter.update_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
-{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -34,7 +29,6 @@
 {% endblock %}
 
 {% block overlay_end %}
-</form>
 <dialog class="modal">
   <form method="post" action="{{ list_submitter.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">

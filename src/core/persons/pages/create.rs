@@ -41,7 +41,7 @@ pub async fn create_person_submit(
         Ok(person) => {
             person.create(&store).await?;
 
-            Ok(Redirect::to(&person.after_create_path()).into_response())
+            Ok(Redirect::to(&person.update_path()).into_response())
         }
     }
 }
@@ -71,7 +71,6 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains("action=\"/persons/create\""));
     }
 
     #[tokio::test]
@@ -97,7 +96,10 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert!(location.contains("/address"));
+        let persons = store.get_persons()?;
+        assert_eq!(persons.len(), 1);
+        let created = persons.first().expect("person");
+        assert_eq!(location, created.update_path());
 
         let count = store.get_person_count()?;
         assert_eq!(count, 1);

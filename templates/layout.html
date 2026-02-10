@@ -2,15 +2,6 @@
 
 {% block body %}
 {% block overlay %}{% endblock %}
-
-{% decl lang %}
-{% match "locale"|value::<crate::Locale> %}
-{% when Ok(locale) %}
-  {% let lang = locale.clone().clone() %}
-{% when Err(_) %}
-  {% let lang = crate::Locale::Nl %}
-{% endmatch %}
-
 <header>
   <nav>
     <ul>
@@ -37,12 +28,14 @@
     </ul>
     <ul>
       <li><a href="javascript:alert('Under construction...');" class="logout">{{ "action.signout"|trans }}</a></li>
+      {% if let Ok(lang) = "locale"|value::<crate::Locale> %}
       <li>
         <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST" class="language-switch">
-          <button class="button sm {% if (lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">NL</button>
-          <button class="button sm {% if (lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">EN</button>
+          <button class="button sm {% if (**lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">NL</button>
+          <button class="button sm {% if (**lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">EN</button>
         </form>
       </li>
+      {% endif %}
     </ul>
   </nav>
   <div class="header-content">

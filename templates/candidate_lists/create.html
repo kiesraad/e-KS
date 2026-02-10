@@ -1,13 +1,8 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ CandidateList::list_path() }}{% endblock %}
+{% set close_action = CandidateList::list_path() %}
 
 {% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ CandidateList::create_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -42,16 +37,4 @@
       {% include "candidate_lists/components/districts_form.html" %}
     </div>
   </div>
-{% endblock %}
-
-{% block overlay_footer %}
-  <footer>
-    <button type="submit" class="button">
-      {{ "action.save_and_continue"|trans }}
-    </button>
-  </footer>
-{% endblock %}
-
-{% block overlay_end %}
-</form>
 {% endblock %}

@@ -47,7 +47,7 @@ pub async fn update_person_address(
 }
 
 pub async fn update_person_address_submit(
-    _: CandidateListUpdateAddressPath,
+    path: CandidateListUpdateAddressPath,
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
@@ -55,6 +55,7 @@ pub async fn update_person_address_submit(
     Query(query): Query<InitialQuery>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
+    let redirect_path = path.to_string();
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
@@ -71,7 +72,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(Redirect::to(&full_list.list.view_path()).into_response())
+            Ok(Redirect::to(&redirect_path).into_response())
         }
     }
 }
@@ -152,6 +153,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.locality = "Rotterdam".to_string();
+        let expected_path = candidate.update_address_path();
 
         let response = update_person_address_submit(
             CandidateListUpdateAddressPath {
@@ -174,7 +176,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(location, expected_path);
 
         let updated = store
             .get_persons()?

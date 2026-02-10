@@ -1,11 +1,8 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ Person::list_path() }}{% endblock %}
+{% set close_action = Person::list_path() %}
 
 {% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
-
-{% block overlay_start %}<form method="post" action="{{ Person::create_path() }}" class="overlay">{% endblock %}
-{% block overlay_end %}</form>{% endblock %}
 
 {% block overlay_content %}
 <div class="overlay-content steps">
@@ -38,12 +35,4 @@
     </fieldset>
   </div>
 </div>
-{% endblock %}
-
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button dirty-check">
-    {{ "action.save_and_continue"|trans }}
-  </button>
-</footer>
 {% endblock %}

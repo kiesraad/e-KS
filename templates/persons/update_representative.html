@@ -5,14 +5,7 @@
   {{ person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ Person::list_path() }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ person.update_representative_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-{% endblock %}
-
-{% block overlay_end %}</form>{% endblock %}
+{% set close_action = Person::list_path() %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">

@@ -5,11 +5,7 @@
   {{ candidate.person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ candidate.update_path() }}" class="overlay">
-{% endblock %}
+{% set close_action = full_list.list.view_path() %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -30,7 +26,6 @@
 {% endblock %}
 
 {% block overlay_end %}
-</form>
 <dialog class="modal">
   <form method="post" action="{{ candidate.delete_path() }}" class="form">
     <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">

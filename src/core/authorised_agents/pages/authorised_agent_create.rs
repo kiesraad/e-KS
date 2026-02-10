@@ -44,7 +44,7 @@ pub async fn create_authorised_agent_submit(
         .into_response()),
         Ok(authorised_agent) => {
             authorised_agent.create(&store).await?;
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+            Ok(Redirect::to(&authorised_agent.update_path()).into_response())
         }
     }
 }
@@ -54,7 +54,6 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form,
-        authorised_agents::AuthorisedAgent,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
     };
@@ -79,7 +78,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains(&format!("action=\"{}\"", AuthorisedAgent::create_path())));
 
         Ok(())
     }
@@ -111,10 +109,10 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, AuthorisedAgent::list_path());
-
         let agents = store.get_authorised_agents()?;
         assert_eq!(agents.len(), 1);
+        let created = agents.first().expect("agent");
+        assert_eq!(location, created.update_path());
 
         Ok(())
     }

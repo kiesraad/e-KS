@@ -1,15 +1,8 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ ListSubmitter::list_path() }}{% endblock %}
+{% set close_action = ListSubmitter::list_path() %}
 
 {% block overlay_title %}{{ "political_group.add_substitute_submitter"|trans }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ SubstituteSubmitter::create_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
-{% endblock %}
-
-{% block overlay_end %}</form>{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -29,12 +22,4 @@
       </fieldset>
     </div>
   </div>
-{% endblock %}
-
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button dirty-check">
-    {{ "action.save_and_continue"|trans }}
-  </button>
-</footer>
 {% endblock %}

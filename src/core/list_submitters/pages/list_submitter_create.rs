@@ -44,7 +44,7 @@ pub async fn create_list_submitter_submit(
         Ok(list_submitter) => {
             list_submitter.create(&store).await?;
             // TODO: set success flash message
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(Redirect::to(&list_submitter.update_path()).into_response())
         }
     }
 }
@@ -54,7 +54,6 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form,
-        list_submitters::ListSubmitter,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
@@ -75,7 +74,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains(&format!("action=\"{}\"", ListSubmitter::create_path())));
     }
 
     #[tokio::test]
@@ -105,10 +103,10 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
-
         let submitters = store.get_list_submitters()?;
         assert_eq!(submitters.len(), 1);
+        let created = submitters.first().expect("submitter");
+        assert_eq!(location, created.update_path());
 
         Ok(())
     }

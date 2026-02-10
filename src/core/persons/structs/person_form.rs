@@ -29,6 +29,7 @@ pub struct PersonForm {
     pub place_of_residence: String,
     #[validate(parse = "CountryCode", optional)]
     pub country_of_residence: String,
+
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }

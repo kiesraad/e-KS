@@ -50,7 +50,7 @@ pub async fn update_person_submit(
         Ok(person) => {
             person.update(&store).await?;
 
-            Ok(Redirect::to(&Person::list_path()).into_response())
+            Ok(Redirect::to(&person.update_path()).into_response())
         }
     }
 }
@@ -104,6 +104,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
+        let expected_path = person.update_path();
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
@@ -122,7 +123,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert!(location.ends_with("/persons"));
+        assert_eq!(location, expected_path);
 
         let updated = store.get_person(person_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

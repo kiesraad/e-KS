@@ -4,19 +4,24 @@ function setupDirtyForms() {
   let isSubmitting = false;
 
   forms.forEach((form) => {
-    const submitButton: HTMLButtonElement | null =
-      form.querySelector("button.dirty-check");
+    const submitButtons: NodeListOf<HTMLButtonElement> = form.querySelectorAll(
+      "button[value='save'], button[value='next']",
+    );
     const anyFieldRequired = form.querySelector("[required]") !== null;
 
-    if (!submitButton) {
+    if (submitButtons.length === 0) {
       return;
     }
 
     const updateSubmitButtons = () => {
       if (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity())) {
-        submitButton.disabled = false;
+        submitButtons.forEach((button) => {
+          button.disabled = false;
+        });
       } else {
-        submitButton.disabled = true;
+        submitButtons.forEach((button) => {
+          button.disabled = true;
+        });
       }
     };
 

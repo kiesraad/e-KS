@@ -167,6 +167,14 @@ label.button {
     }
   }
 
+  &.icon-close {
+    background-image: url("../icons/cross.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: var(--space-xl);
+    background-size: 20px;
+  }
+
   &.icon-plus {
     background-image: url("../icons/plus.svg");
     background-repeat: no-repeat;

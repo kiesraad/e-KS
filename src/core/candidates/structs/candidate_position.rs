@@ -1,22 +1,12 @@
-use derive_more::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 
-use crate::{UtcDateTime, form::TokenValue};
+use crate::{UtcDateTime, form::TokenValue, structs::FormAction};
 use validate::Validate;
-
-#[derive(Default, Debug, Clone, Copy, PartialEq, Eq, Display, FromStr)]
-#[display(rename_all = "snake_case")]
-#[from_str(rename_all = "snake_case")]
-pub enum CandidatePositionAction {
-    #[default]
-    Move,
-    Remove,
-}
 
 #[derive(Debug, Default, Clone)]
 pub struct CandidatePosition {
     pub position: usize,
-    pub action: CandidatePositionAction,
+    pub action: FormAction,
     #[allow(unused)]
     pub created_at: UtcDateTime,
     #[allow(unused)]
@@ -29,7 +19,7 @@ pub struct CandidatePosition {
 pub struct CandidatePositionForm {
     #[validate(parse = "usize")]
     pub position: String,
-    #[validate(parse = "CandidatePositionAction")]
+    #[validate(parse = "FormAction")]
     pub action: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,

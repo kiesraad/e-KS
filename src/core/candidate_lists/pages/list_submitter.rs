@@ -21,7 +21,6 @@ struct ListSubmitterUpdateTemplate {
     candidate_list: CandidateList,
     list_submitters: Vec<ListSubmitter>,
     substitute_submitters: Vec<SubstituteSubmitter>,
-    form_action: String,
 }
 
 fn render_submitter_form(
@@ -30,7 +29,6 @@ fn render_submitter_form(
     store: &AppStore,
     should_warn: bool,
     form: FormData<ListSubmitterForm>,
-    form_action: String,
 ) -> Result<Response, AppError> {
     let list_submitters = store.get_list_submitters()?;
     let substitute_submitters = store.get_substitute_submitters()?;
@@ -42,7 +40,6 @@ fn render_submitter_form(
             candidate_list,
             list_submitters,
             substitute_submitters,
-            form_action,
         },
         context,
     )
@@ -60,28 +57,19 @@ pub async fn update_list_submitter(
         ListSubmitterForm::from(candidate_list.clone()),
         &context.csrf_tokens,
     );
-    let form_action = candidate_list.update_list_submitter_path();
 
-    render_submitter_form(
-        context,
-        candidate_list,
-        &store,
-        query.should_warn(),
-        form,
-        form_action,
-    )
+    render_submitter_form(context, candidate_list, &store, query.should_warn(), form)
 }
 
 pub async fn update_list_submitter_submit(
-    _: UpdateListSubmitterPath,
+    path: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
     Query(query): Query<InitialQuery>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let form_action = candidate_list.update_list_submitter_path();
-
+    let redirect_path = path.to_string();
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
         Err(form_data) => render_submitter_form(
             context,
@@ -89,12 +77,11 @@ pub async fn update_list_submitter_submit(
             &store,
             query.should_warn(),
             form_data,
-            form_action,
         ),
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(Redirect::to(&redirect_path).into_response())
         }
     }
 }
@@ -220,7 +207,7 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.view_path(), location);
+        assert_eq!(updated_list.update_list_submitter_path(), location);
 
         assert_eq!(candidate_list.id, updated_list.id);
 

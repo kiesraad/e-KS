@@ -38,13 +38,14 @@ pub async fn update_representative(
 }
 
 pub async fn update_representative_submit(
-    _: UpdateRepresentativePath,
+    path: UpdateRepresentativePath,
     context: Context,
     person: Person,
     State(store): State<AppStore>,
     Query(query): Query<InitialQuery>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
+    let redirect_path = path.to_string();
     match form.validate_update(&person.representative, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
@@ -58,7 +59,7 @@ pub async fn update_representative_submit(
         Ok(representative) => {
             person.update_representative(&store, representative).await?;
 
-            Ok(Redirect::to(&Person::list_path()).into_response())
+            Ok(Redirect::to(&redirect_path).into_response())
         }
     }
 }
@@ -145,6 +146,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
+        let expected_path = person.update_representative_path();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },
@@ -164,7 +166,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, Person::list_path());
+        assert_eq!(location, expected_path);
 
         let updated = store.get_person(person_id)?;
         assert_eq!(updated.representative.name.last_name.to_string(), "Smit");

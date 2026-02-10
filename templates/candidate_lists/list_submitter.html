@@ -1,13 +1,9 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ candidate_list.view_path() }}{% endblock %}
+{% set close_action = candidate_list.view_path() %}
+{% set has_next = false %}
 
 {% block overlay_title %}{{ "candidate_list.fields.list_submitter"|trans }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ form_action }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-{% endblock %}
 
 {% block overlay_content %}
   <div class="overlay-content steps">
@@ -17,16 +13,4 @@
       {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
     </div>
   </div>
-{% endblock %}
-
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button">
-    {{ "action.save_and_close"|trans }}
-  </button>
-</footer>
-{% endblock %}
-
-{% block overlay_end %}
-</form>
 {% endblock %}
