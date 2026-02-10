@@ -262,7 +262,7 @@
       }
 
       &:hover {
-        background-color: var(--button-color-secondary-hover);
+        background-color: var(--bg-gray-darker);
       }
     }
   }
