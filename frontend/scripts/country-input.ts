@@ -1,5 +1,5 @@
 const COUNTRY_INPUT_SELECTOR = ".country-input";
-const MAX_SUGGESTIONS = 3;
+const MAX_SUGGESTIONS = 5;
 
 function applyCountrySuggestions() {
   // Make flag icon match country code input
@@ -46,7 +46,7 @@ function applyCountrySuggestions() {
         items[index].classList.remove("active");
         if (
           country.startsWith(newValue) &&
-          suggestions.length <= MAX_SUGGESTIONS
+          suggestions.length < MAX_SUGGESTIONS
         ) {
           items[index].style.display = "block";
           suggestions.push(index);
@@ -69,7 +69,7 @@ function applyCountrySuggestions() {
     // render initial icon
     setFlagIcon();
 
-    // show the suggestioon list when focus on country code input
+    // show the suggestion list when focus on country code input
     textInput.addEventListener("focus", () => {
       updateSuggestions();
       list.style.display = "block";
