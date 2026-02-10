@@ -229,8 +229,9 @@
   .icon {
     position: absolute;
     left: 1rem;
-    top: 2rem;
-    transform: translateY(-50%);
+    display: flex;
+    align-items: center;
+    height: 100%;
     pointer-events: none;
     font-size: 1rem;
   }
