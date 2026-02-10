@@ -227,6 +227,7 @@
   display: inline-block;
 
   .icon {
+    font-variant-emoji: var(--font-flag-emojis);
     position: absolute;
     left: 1rem;
     display: flex;
@@ -263,13 +264,6 @@
       &:hover {
         background-color: var(--button-color-secondary-hover);
       }
-    }
-  }
-
-  /* biome-ignore lint/a11y/useGenericFontNames: only to define fallback */
-  @supports (font-family: "Segoe UI Emoji") {
-    span {
-      font-variant-emoji: var(--font-flag-emojis);
     }
   }
 }
