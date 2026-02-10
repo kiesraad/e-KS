@@ -47,7 +47,7 @@ export class PersonsPage {
       await expect(
         this.page.getByRole("combobox", { name: "Woonplaats" }),
       ).toHaveValue(candidate.locality ?? "");
-      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+
       await this.page
         .getByRole("button", { name: "Opslaan en sluiten" })
         .click();

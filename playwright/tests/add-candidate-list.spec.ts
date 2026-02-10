@@ -3,6 +3,7 @@ import type { Candidate } from "./models/candidate";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage";
+import { randomName } from "./utils/random";
 
 test("add and delete candidate list", async ({ page }) => {
   const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
@@ -25,13 +26,14 @@ test("add and delete candidate list", async ({ page }) => {
 
   const candidate: Candidate = {
     initials: "A",
-    lastName: "Berg",
+    lastName: `Berg ${randomName()}`,
     firstName: "Anita",
     locality: "Utrecht",
   };
   const candidateTwo: Candidate = {
     initials: "B",
-    lastName: "Beer",
+    lastName: `Beer ${randomName()}`,
+    locality: "Amsterdam",
   };
   await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
 
