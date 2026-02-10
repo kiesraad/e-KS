@@ -77,7 +77,7 @@ header {
     display: flex;
     justify-content: space-between;
     align-items: center;
-    min-height: 8rem;
+    min-height: 9rem;
     padding: 0 var(--space-xxl);
     margin: 0;
 

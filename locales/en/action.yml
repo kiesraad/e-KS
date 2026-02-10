@@ -4,7 +4,9 @@ cancel: Cancel
 close: Close
 delete: Delete
 edit: Edit
+manage_candidate_list: Manage candidate list
 manage_candidate_lists: Manage candidate lists
+manage_candidates: Manage candidates
 manage_data: Manage data
 review_and_submit: Review and submit
 save: Save

@@ -1,7 +1,6 @@
 actions:
   add: Add person
   delete: Delete person
-all: All persons
 autoformat_initials: Auto-format initials
 correspondence_address: Correspondence address
 fields:
@@ -38,6 +37,6 @@ personal_details: Personal details
 personal_information: Personal information
 representative: Authorised person
 title: Persons
-total: "{} persons in total"
+total: "<strong>{}</strong> persons in total"
 view:
   empty: No details available for this person.

@@ -9,6 +9,7 @@ actions:
   edit_list_details: Edit the list details here
   select_all_districts: Select all electoral districts
 add_candidate: Add candidate
+all_candidates: All candidates
 candidate_count: "<strong>{}</strong> / {} candidates"
 description: Add candidates here and create candidate list(s).
 districts:
@@ -27,7 +28,6 @@ form:
   delete_warning_text: Are you sure you want to delete this candidate list?
   update:
     title: Edit candidate list
-none: None
 not_found: "Candidate {} not found."
 remove_candidate: Remove candidate
 search_existing_person: Search existing person

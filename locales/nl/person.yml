@@ -1,7 +1,6 @@
 actions:
   add: Persoon toevoegen
   delete: Persoon verwijderen
-all: Alle personen
 autoformat_initials: Automatisch opmaken
 correspondence_address: Correspondentieadres
 fields:
@@ -38,6 +37,6 @@ personal_details: Persoonlijke gegevens
 personal_information: Persoonlijke gegevens
 representative: Gemachtigde van kandidaat
 title: Personen
-total: "{} personen in totaal"
+total: "<strong>{}</strong> personen in totaal"
 view:
   empty: Geen personen gevonden.

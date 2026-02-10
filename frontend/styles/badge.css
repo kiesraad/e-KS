@@ -1,4 +1,5 @@
-.position-badge {
+.position-badge,
+.person-badge {
   display: inline-block;
   width: var(--badge-size);
   height: var(--badge-size);
@@ -13,8 +14,17 @@
   background-color: var(--blue-200);
 }
 
+.person-badge {
+  vertical-align: middle;
+  background-image: url("../icons/politician-badge.svg");
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: var(--badge-size) var(--badge-size);
+}
+
 h2 {
-  .position-badge {
+  .position-badge,
+  .person-badge {
     margin-right: var(--space-sm);
     font-size: var(--font-size-xl);
     color: var(--text-color-body);
