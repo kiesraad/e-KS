@@ -22,6 +22,10 @@ function applyCountrySuggestions() {
       return;
     }
 
+    // disable built-in browser autocomplete
+    textInput.autocomplete = "off";
+    textInput.autocapitalize = "characters";
+
     const setFlagIcon = () => {
       const inputValue = textInput.value.toUpperCase();
       const flag = countries.indexOf(inputValue);
