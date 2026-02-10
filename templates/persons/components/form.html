@@ -20,7 +20,7 @@
         value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" required />
       <ul>
         {% for country in crate::persons::COUNTRY_CODES %}
-        <li data-country="{{ country }}"><span>{{ country|flag }}</span> {{ country }}</li>
+        <li data-country="{{ country }}"><span class="icon">{{ country|flag }}</span> {{ country }}</li>
         {% endfor %}
       </ul>
     </div>

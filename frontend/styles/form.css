@@ -227,14 +227,18 @@
   display: inline-block;
 
   .icon {
-    font-variant-emoji: var(--font-flag-emojis);
-    position: absolute;
+    font-family: var(--font-flag-emojis);
+    font-variant-ligatures: normal;
+    pointer-events: none;
+    font-size: 1rem;
+  }
+
+  & > .icon {
     left: 1rem;
+    position: absolute;
     display: flex;
     align-items: center;
     height: 100%;
-    pointer-events: none;
-    font-size: 1rem;
   }
 
   input {
@@ -249,7 +253,7 @@
     background-color: var(--base-white);
     border: 1px solid var(--gray-200);
     border-radius: var(--space-sm);
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.3);
     list-style: none;
     padding: 0;
     max-height: 8rem;
@@ -258,6 +262,10 @@
     li {
       cursor: pointer;
       padding: var(--space-xs) var(--space-sm);
+
+      .icon {
+        margin-right: var(--space-md);
+      }
 
       &.active {
         background-color: var(--blue-100);
