@@ -73,9 +73,11 @@ impl PersonForm {
         }
     }
 
+    /// Validate that the BSN is unique OR the name (initials, prefix, lastname) is unique
     pub(crate) fn uniqueness_errors(person: &Person, existing: &[Person]) -> FieldErrors {
         let mut errors = Vec::new();
 
+        // If a BSN is set, validate BSN uniqueness and skip name uniqueness checks
         if let Some(bsn) = &person.bsn {
             if existing
                 .iter()
