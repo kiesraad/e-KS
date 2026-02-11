@@ -31,21 +31,21 @@ export class ManageCandidateListPage {
     for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Nieuwe" }).click();
       await this.page.getByLabel("Voorletters").fill(candidate.initials);
-      await this.page
-        .locator('input[name="last_name"]')
-        .pressSequentially(candidate.lastName);
+      await this.page.getByLabel("Achternaam").fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
 
+      await this.page.locator("body").click();
+      await this.page.getByRole("button", { name: "Opslaan" }).click();
       await this.page
-        .getByRole("button", { name: "Opslaan en verder" })
+        .getByRole("link", { name: "Correspondentieadres" })
         .click();
-      await this.page
-        .getByLabel("Woonplaats")
-        .pressSequentially(candidate.locality ?? "");
 
-      await this.page
-        .getByRole("button", { name: "Opslaan en sluiten" })
-        .click();
+      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+      await this.page.locator("body").click();
+
+      await this.page.getByRole("button", { name: "Opslaan" }).click();
+      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
+
       await expect(
         this.page.getByRole("cell", { name: candidate.lastName }),
       ).toBeVisible();

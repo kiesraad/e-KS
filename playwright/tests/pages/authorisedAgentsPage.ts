@@ -50,9 +50,11 @@ export class AuthorisedAgentsPage {
       .fill(authorisedAgent.lastNamePrefix ?? "");
     await this.page
       .getByRole("textbox", { name: "Achternaam *" })
-      .pressSequentially(authorisedAgent.lastName);
+      .fill(authorisedAgent.lastName);
+    await this.page.locator("body").click();
 
     await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("link", { name: "Sluiten" }).first().click();
   }
 
   async editAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
@@ -68,9 +70,11 @@ export class AuthorisedAgentsPage {
         .fill(authorisedAgent.lastNamePrefix ?? "");
       await this.page
         .getByRole("textbox", { name: "Achternaam *" })
-        .pressSequentially(authorisedAgent.lastName);
+        .fill(authorisedAgent.lastName);
+      await this.page.locator("body").click();
 
       await this.page.getByRole("button", { name: "Opslaan" }).click();
+      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
     }
   }
 }

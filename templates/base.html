@@ -8,7 +8,7 @@
   <link rel="icon" href="/static/favicon.svg" />
   <link rel="stylesheet" href="/static/index.css?{{ filters::cache_buster() }}" />
   {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
-  <script src="/static/index.js?{{ filters::cache_buster() }}" defer></script>
+  <script src="/static/index.js?{{ filters::cache_buster() }}"></script>
 </head>
 
 <body class="{% block body_class %}{% endblock %}">

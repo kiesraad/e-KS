@@ -45,7 +45,7 @@ pub async fn add_person_to_candidate_list(
     State(store): State<AppStore>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect = Redirect::to(&list.add_candidate_path()).into_response();
+    let redirect = Redirect::to(&list.view_path()).into_response();
     let person_exists = store
         .get_persons()?
         .iter()
@@ -132,7 +132,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.add_candidate_path());
+        assert_eq!(location, list.view_path());
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -172,7 +172,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.add_candidate_path());
+        assert_eq!(location, list.view_path());
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

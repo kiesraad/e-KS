@@ -54,9 +54,11 @@ export class SubstituteSubmittersPage {
         .fill(listSubmitter.lastNamePrefix ?? "");
       await this.page
         .getByRole("textbox", { name: "Achternaam *" })
-        .pressSequentially(listSubmitter.lastName);
+        .fill(listSubmitter.lastName);
+      await this.page.locator("body").click();
 
       await this.page.getByRole("button", { name: "Opslaan" }).click();
+      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
     }
   }
 
@@ -70,5 +72,6 @@ export class SubstituteSubmittersPage {
       .getByRole("textbox", { name: "Achternaam *" })
       .fill("Tester");
     await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("link", { name: "Sluiten" }).first().click();
   }
 }
