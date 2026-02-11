@@ -31,13 +31,11 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let candidate_list = CandidateList {
         id: uuid.into(),
         electoral_districts,
+        candidates: person_ids,
         ..Default::default()
     };
 
     candidate_list.create(store).await?;
-
-    // Persist the ordered set of persons to ensure deterministic candidate positions.
-    CandidateList::update_order(store, candidate_list.id, &person_ids).await?;
 
     Ok(())
 }

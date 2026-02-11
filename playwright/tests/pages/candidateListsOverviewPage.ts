@@ -20,13 +20,13 @@ export class CandidateListsOverviewPage {
 
   async manageList() {
     await this.page
-      .getByRole("link", { name: "Kandidatenlijst Kieskringen" })
+      .getByRole("link", { name: /^Kandidatenlijst \d+ \/ \d+/ })
       .first()
       .click();
   }
 
   async managePersons() {
-    await this.page.getByRole("heading", { name: "Alle personen" }).click();
+    await this.page.getByRole("heading", { name: "Alle kandidaten" }).click();
   }
 
   async checkRemovedDistricts(districts: string[]) {

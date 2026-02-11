@@ -227,12 +227,18 @@
   display: inline-block;
 
   .icon {
-    position: absolute;
-    left: 1rem;
-    top: 2rem;
-    transform: translateY(-50%);
+    font-family: var(--font-flag-emojis);
+    font-variant-ligatures: normal;
     pointer-events: none;
     font-size: 1rem;
+  }
+
+  & > .icon {
+    left: 1rem;
+    position: absolute;
+    display: flex;
+    align-items: center;
+    height: 100%;
   }
 
   input {
@@ -247,28 +253,27 @@
     background-color: var(--base-white);
     border: 1px solid var(--gray-200);
     border-radius: var(--space-sm);
-    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
+    box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.3);
     list-style: none;
     padding: 0;
+    max-height: 8rem;
+    overflow-y: auto;
 
     li {
       cursor: pointer;
       padding: var(--space-xs) var(--space-sm);
+
+      .icon {
+        margin-right: var(--space-md);
+      }
 
       &.active {
         background-color: var(--blue-100);
       }
 
       &:hover {
-        background-color: var(--button-color-secondary-hover);
+        background-color: var(--bg-gray-darker);
       }
-    }
-  }
-
-  /* biome-ignore lint/a11y/useGenericFontNames: only to define fallback */
-  @supports (font-family: "Segoe UI Emoji") {
-    span {
-      font-variant-emoji: var(--font-flag-emojis);
     }
   }
 }

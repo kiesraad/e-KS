@@ -39,18 +39,4 @@ impl FullCandidateList {
     pub fn id(&self) -> CandidateListId {
         self.list.id
     }
-
-    pub fn update_position(&mut self, id: PersonId, position: usize) {
-        let Some(current_index) = self.get_index(id) else {
-            return;
-        };
-
-        let mut moved = self.candidates.remove(current_index);
-
-        // convert the position (1, 2, 3...) to an index (0, 1, 2,..) and clamp it to the valid range
-        let target_index = position.saturating_sub(1).min(self.candidates.len());
-
-        moved.position = position;
-        self.candidates.insert(target_index, moved);
-    }
 }

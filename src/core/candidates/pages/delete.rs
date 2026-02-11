@@ -35,7 +35,7 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore,
+        AppStore,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -47,17 +47,19 @@ mod tests {
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
         let other_person = sample_person_with_last_name(PersonId::new(), "Other");
 
+        person.create(&store).await?;
+        other_person.create(&store).await?;
+        list.candidates = vec![person.id, other_person.id];
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        store
-            .update(AppEvent::CreatePerson(other_person.clone()))
+
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
             .await?;
-        CandidateList::update_order(&store, list_id, &[person.id, other_person.id]).await?;
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;

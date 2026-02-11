@@ -1,5 +1,4 @@
 const COUNTRY_INPUT_SELECTOR = ".country-input";
-const MAX_SUGGESTIONS = 3;
 
 function applyCountrySuggestions() {
   // Make flag icon match country code input
@@ -22,6 +21,10 @@ function applyCountrySuggestions() {
       return;
     }
 
+    // disable built-in browser autocomplete
+    textInput.autocomplete = "off";
+    textInput.autocapitalize = "characters";
+
     const setFlagIcon = () => {
       const inputValue = textInput.value.toUpperCase();
       const flag = countries.indexOf(inputValue);
@@ -40,14 +43,12 @@ function applyCountrySuggestions() {
 
       countries.forEach((country, index) => {
         items[index].classList.remove("active");
-        if (
-          country.startsWith(newValue) &&
-          suggestions.length <= MAX_SUGGESTIONS
-        ) {
+        if (country.startsWith(newValue)) {
           items[index].style.display = "block";
           suggestions.push(index);
           if (suggestions.length === 1) {
             items[index].classList.add("active");
+            items[index].scrollIntoView();
           }
         } else {
           items[index].style.display = "none";
@@ -65,7 +66,7 @@ function applyCountrySuggestions() {
     // render initial icon
     setFlagIcon();
 
-    // show the suggestioon list when focus on country code input
+    // show the suggestion list when focus on country code input
     textInput.addEventListener("focus", () => {
       updateSuggestions();
       list.style.display = "block";
@@ -94,12 +95,14 @@ function applyCountrySuggestions() {
         items.forEach((item, index) => {
           item.classList.toggle("active", suggestions[active] === index);
         });
+        items[suggestions[active]].scrollIntoView({ block: "nearest" });
       } else if (event.key === "ArrowUp") {
         event.preventDefault();
         active = (active - 1 + suggestions.length) % suggestions.length;
         items.forEach((item, index) => {
           item.classList.toggle("active", suggestions[active] === index);
         });
+        items[suggestions[active]].scrollIntoView({ block: "nearest" });
       } else if (event.key === "Enter") {
         event.preventDefault();
         if (suggestions.length > 0) {

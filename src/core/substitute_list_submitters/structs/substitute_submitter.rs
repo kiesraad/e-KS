@@ -32,13 +32,10 @@ impl SubstituteSubmitter {
             .await
     }
 
-    pub async fn delete_by_id(
-        store: &AppStore,
-        substitute_submitter_id: SubstituteSubmitterId,
-    ) -> Result<(), AppError> {
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::DeleteSubstituteSubmitter {
-                substitute_submitter_id,
+                substitute_submitter_id: self.id,
                 updated_at: UtcDateTime::now(),
             })
             .await

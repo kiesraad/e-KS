@@ -9,6 +9,7 @@ actions:
   edit_list_details: Pas hier de lijstgegevens aan
   select_all_districts: Selecteer alle kieskringen
 add_candidate: Kandidaat toevoegen
+all_candidates: Alle kandidaten
 candidate_count: "<strong>{}</strong> / {} kandidaten"
 description: Voeg hier kandidaten toe en maak kandidatenlijst(en) aan.
 districts:
@@ -27,7 +28,6 @@ form:
   delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?
   update:
     title: Kandidatenlijst aanpassen
-none: Geen
 not_found: "Kandidatenlijst {} niet gevonden."
 remove_candidate: Uit deze lijst verwijderen
 search_existing_person: Zoek bestaande persoon

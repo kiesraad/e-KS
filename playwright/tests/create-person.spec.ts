@@ -2,6 +2,7 @@ import { test } from "@playwright/test";
 import type { Candidate } from "./models/candidate";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { PersonsPage } from "./pages/personsPage";
+import { randomName } from "./utils/random";
 
 test("create new person", async ({ page }) => {
   const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
@@ -11,7 +12,7 @@ test("create new person", async ({ page }) => {
   const personsPage = new PersonsPage(page);
   const candidate: Candidate = {
     initials: "H",
-    lastName: "Jansen",
+    lastName: `Jansen ${randomName()}`,
     lastNamePrefix: "van",
     firstName: "Henk",
     gender: "male",
@@ -23,7 +24,7 @@ test("create new person", async ({ page }) => {
   };
   const candidateTwo: Candidate = {
     initials: "D",
-    lastName: "Duif",
+    lastName: `Duif ${randomName()}`,
   };
   await personsPage.addPersons([candidate, candidateTwo]);
 

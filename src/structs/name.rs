@@ -5,7 +5,7 @@ use crate::OptionStringExt;
 
 use super::{Initials, LastName, LastNamePrefix};
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FullName {
     pub last_name: LastName,
     pub last_name_prefix: Option<LastNamePrefix>,

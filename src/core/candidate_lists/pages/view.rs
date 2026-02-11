@@ -28,7 +28,7 @@ pub async fn view_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore, Context,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -43,8 +43,8 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::update_order(&store, list_id, &[person.id]).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 

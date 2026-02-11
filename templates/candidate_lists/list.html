@@ -14,10 +14,12 @@
   <div class="cards cards-candidate-lists">
     {# manage persons card #}
     <a href="{{ Person::list_path() }}" class="card card-persons">
-      <h3>{{ "person.all"|trans }}</h3>
+      <div class="badge"></div>
+      <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
       <p class="statistic">
-        {{ "person.total"|trans(&total_persons.to_string()) }}
+        {{ "person.total"|trans(&total_persons.to_string())|safe }}
       </p>
+      <p>{{ "action.manage_candidates"|trans }}</p>
     </a>
 
     <div class="cards-right">
@@ -26,24 +28,26 @@
       {% for candidate_list in candidate_lists %}
       <a href="{{ candidate_list.list.view_path() }}" {% if candidate_list.duplicate_districts.is_empty() %}
         class="card card-list" {% else %} class="card card-list-warning" {% endif %}>
+        <div class="badge"></div>
         <h3>{{ candidate_list.list|list_name }}</h3>
+        <p class="statistic">
+          {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string(), &max_candidates.to_string())|safe }}
+        </p>
         <h5>{{ "common.electoral_districts"|trans }}:</h5>
-        {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() %}
+        {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
         <p>{{ "candidate_list.districts.all"|trans }}</p>
         {% else %}
-        <ul>
+        <ul class="districts">
           {% for district in candidate_list.list.electoral_districts %}
           {% if candidate_list.duplicate_districts.contains(district) %}
-          <li class="note-warning"><span>{{ district.title() }}</span></li>
+          <li class="warning"><span>{{ district.title() }}</span></li>
           {% else %}
           <li><span>{{ district.title() }}</span></li>
           {% endif %}
           {% endfor %}
         </ul>
         {% endif %}
-        <p class="statistic">
-          {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string(), &max_candidates.to_string())|safe }}
-        </p>
+        <p>{{ "action.manage_candidate_list"|trans }}</p>
       </a>
       {% endfor %}
       {% endif %}

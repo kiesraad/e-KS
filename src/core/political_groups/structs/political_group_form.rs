@@ -9,6 +9,7 @@ use crate::{
 #[validate(target = "PoliticalGroup")]
 pub struct PoliticalGroupForm {
     #[validate(parse = "bool", optional)]
+    #[serde(default)]
     pub long_list_allowed: String,
     #[validate(parse = "LegalName", optional)]
     pub legal_name: String,

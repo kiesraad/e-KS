@@ -7,13 +7,17 @@
 {% block page_sub_title %}
   {% if full_list.list.electoral_districts.is_empty() || full_list.list.electoral_districts.len() >= 3 %}
     {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
-      <span class="subtitle">{{ "common.electoral_districts"|trans }}:
+      <span class="subtitle">
         {% if full_list.list.contains_all_districts(election) %}
-          {{ "candidate_list.districts.all"|trans }}
+          <!-- skip -->
         {% else if full_list.list.electoral_districts.is_empty() %}
-          {{ "candidate_list.none"|trans }}
+          <!-- skip -->
         {% else %}
-          {{ full_list.list.districts_name() }}
+          <ul class="districts">
+            {% for district in full_list.list.electoral_districts %}
+            <li><span>{{ district.title() }}</span></li>
+            {% endfor %}
+          </ul>
         {% endif %}
       </span>
     {% endif %}

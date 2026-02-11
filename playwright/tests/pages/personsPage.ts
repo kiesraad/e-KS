@@ -27,7 +27,6 @@ export class PersonsPage {
       await this.page
         .getByRole("textbox", { name: "Geboortedatum" })
         .fill(candidate.dateOfBirth ?? "");
-      await this.page.getByLabel("Landcode").pressSequentially("NL");
 
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })
@@ -37,7 +36,7 @@ export class PersonsPage {
         .fill(candidate.postalCode ?? "");
       await this.page
         .getByRole("textbox", { name: "Huisnummer", exact: true })
-        .fill(candidate.houseNumber ?? "");
+        .pressSequentially(candidate.houseNumber ?? "");
       await this.page
         .getByRole("textbox", { name: "Huisnummer toevoeging", exact: true })
         .press("Tab");
@@ -47,7 +46,7 @@ export class PersonsPage {
       await expect(
         this.page.getByRole("combobox", { name: "Woonplaats" }),
       ).toHaveValue(candidate.locality ?? "");
-      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+
       await this.page
         .getByRole("button", { name: "Opslaan en sluiten" })
         .click();

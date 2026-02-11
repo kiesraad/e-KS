@@ -43,7 +43,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState,
+        AppState,
         test_utils::{response_body_string, sample_authorised_agent},
     };
 
@@ -52,11 +52,10 @@ mod tests {
         let authorised_agent = sample_authorised_agent(AuthorisedAgentId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateAuthorisedAgent(authorised_agent.clone()))
+        authorised_agent
+            .create(&app_state.store)
             .await
-            .unwrap();
+            .expect("create authorised agent");
 
         let app = Router::new()
             .route(

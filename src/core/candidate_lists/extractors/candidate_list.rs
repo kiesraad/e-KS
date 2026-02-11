@@ -42,7 +42,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState, Locale,
+        AppState, Locale,
         candidate_lists::CandidateListId,
         render_error_pages,
         test_utils::{response_body_string, sample_candidate_list},
@@ -54,11 +54,9 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateCandidateList(list.clone()))
+        list.create(&app_state.store)
             .await
-            .unwrap();
+            .expect("create candidate list");
 
         let app = Router::new()
             .route(

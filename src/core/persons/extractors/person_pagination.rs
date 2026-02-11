@@ -51,7 +51,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState,
+        AppState,
         persons::PersonId,
         test_utils::{response_body_string, sample_person_with_last_name},
     };
@@ -59,20 +59,12 @@ mod tests {
     #[tokio::test]
     async fn person_pagination_extractor_slices_and_orders() {
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreatePerson(sample_person_with_last_name(
-                PersonId::new(),
-                "Bakker",
-            )))
+        sample_person_with_last_name(PersonId::new(), "Bakker")
+            .create(&app_state.store)
             .await
             .unwrap();
-        app_state
-            .store
-            .update(AppEvent::CreatePerson(sample_person_with_last_name(
-                PersonId::new(),
-                "Jansen",
-            )))
+        sample_person_with_last_name(PersonId::new(), "Jansen")
+            .create(&app_state.store)
             .await
             .unwrap();
 

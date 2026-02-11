@@ -8,19 +8,22 @@
 
 {% block content %}
 <div class="cards cards-home">
-  <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}" class="card">
+  <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}" class="card card-data">
+    <div class="badge"></div>
     <h3>{{ "common.step"|trans("1") }}</h3>
     <h4>{{ "common.general_information"|trans }}</h4>
     <p class="instruction">{{ "common.general_information_description"|trans }}</p>
     <p>{{ "action.manage_data"|trans }}</p>
   </a>
-  <a href="{{ crate::candidate_lists::CandidateList::list_path() }}" class="card">
+  <a href="{{ crate::candidate_lists::CandidateList::list_path() }}" class="card card-candidate-list">
+    <div class="badge"></div>
     <h3>{{ "common.step"|trans("2") }}</h3>
     <h4>{{ "candidate_list.title"|trans }}</h4>
     <p class="instruction">{{ "candidate_list.description"|trans }}</p>
     <p>{{ "action.manage_candidate_lists"|trans }}</p>
   </a>
   <a href="{{ crate::submit::SubmitPath{}.to_string() }}" class="card card-locked">
+    <div class="badge"></div>
     <h3>{{ "common.step"|trans("3") }}</h3>
     <h4>{{ "common.submit"|trans }}</h4>
     <p class="instruction">{{ "common.submit_description"|trans }}</p>

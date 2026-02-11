@@ -43,7 +43,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState,
+        AppState,
         test_utils::{response_body_string, sample_list_submitter},
     };
 
@@ -52,11 +52,7 @@ mod tests {
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateListSubmitter(list_submitter.clone()))
-            .await
-            .unwrap();
+        list_submitter.create(&app_state.store).await.unwrap();
 
         let app = Router::new()
             .route(

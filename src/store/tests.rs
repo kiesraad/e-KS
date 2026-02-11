@@ -347,9 +347,7 @@ async fn store_update_applies_event_in_memory() -> Result<(), crate::AppError> {
     let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
     let agent = sample_authorised_agent(agent_id);
 
-    store
-        .update(AppEvent::CreateAuthorisedAgent(agent.clone()))
-        .await?;
+    agent.create(&store).await?;
 
     let loaded = store.get_authorised_agent(agent_id)?;
     assert_eq!(loaded.id, agent.id);

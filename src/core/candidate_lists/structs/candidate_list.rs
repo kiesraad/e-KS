@@ -58,68 +58,93 @@ impl CandidateList {
     }
 
     pub async fn update_order(
+        &mut self,
         store: &AppStore,
-        list_id: CandidateListId,
         person_ids: &[PersonId],
-    ) -> Result<FullCandidateList, AppError> {
-        let mut list = store.get_candidate_list(list_id)?;
+    ) -> Result<(), AppError> {
+        let existing_person_ids = store
+            .get_persons()?
+            .iter()
+            .map(|p| p.id)
+            .collect::<BTreeSet<_>>();
 
-        CandidateList::ensure_persons_exist(store, person_ids)?;
+        // check all new ids exist
+        if !person_ids.iter().all(|id| existing_person_ids.contains(id)) {
+            return Err(AppError::GenericNotFound);
+        }
 
-        list.candidates = person_ids.to_vec();
-        list.updated_at = UtcDateTime::now();
+        let mut updated = store.get_candidate_list(self.id)?;
+
+        updated.candidates = person_ids.to_vec();
+        updated.updated_at = UtcDateTime::now();
 
         store
-            .update(AppEvent::UpdateCandidateList(list.clone()))
+            .update(AppEvent::UpdateCandidateList(updated.clone()))
             .await?;
 
-        CandidateList::build_full_candidate_list(store, list)
+        *self = updated;
+
+        Ok(())
+    }
+
+    pub async fn update_position(
+        &mut self,
+        store: &AppStore,
+        id: PersonId,
+        position: usize,
+    ) -> Result<(), AppError> {
+        let Some(current_index) = self.candidates.iter().position(|&pid| pid == id) else {
+            return Ok(());
+        };
+
+        let moved = self.candidates.remove(current_index);
+
+        // convert the position (1, 2, 3...) to an index (0, 1, 2,..) and clamp it to the valid range
+        let target_index = position.saturating_sub(1).min(self.candidates.len());
+
+        self.candidates.insert(target_index, moved);
+
+        self.update_order(store, &self.candidates.clone()).await?;
+
+        Ok(())
     }
 
     pub async fn append_candidate(
+        &mut self,
         store: &AppStore,
-        list_id: CandidateListId,
         person_id: PersonId,
     ) -> Result<(), AppError> {
-        let mut list = store.get_candidate_list(list_id)?;
+        let person = store.get_person(person_id)?;
 
-        CandidateList::ensure_persons_exist(store, &[person_id])?;
-
-        if !list.candidates.contains(&person_id) {
-            list.candidates.push(person_id);
-            list.updated_at = UtcDateTime::now();
-            store.update(AppEvent::UpdateCandidateList(list)).await?;
+        if !self.candidates.contains(&person.id) {
+            self.candidates.push(person.id);
+            self.updated_at = UtcDateTime::now();
+            self.update(store).await?;
         }
 
         Ok(())
     }
 
-    pub async fn remove_candidate_from_list(
+    pub async fn remove_candidate(
+        &mut self,
         store: &AppStore,
-        list_id: CandidateListId,
         person_id: PersonId,
     ) -> Result<(), AppError> {
-        let mut list = store.get_candidate_list(list_id)?;
-
-        if !list.candidates.contains(&person_id) {
-            return Err(AppError::NotFound(
-                "candidate not found on list".to_string(),
-            ));
+        if self.candidates.contains(&person_id) {
+            self.candidates.retain(|id| *id != person_id);
+            self.updated_at = UtcDateTime::now();
+            self.update(store).await?;
         }
-
-        list.candidates.retain(|id| *id != person_id);
-        list.updated_at = UtcDateTime::now();
-        store.update(AppEvent::UpdateCandidateList(list)).await?;
 
         Ok(())
     }
 
     pub async fn get_candidate(
+        &self,
         store: &AppStore,
-        list_id: CandidateListId,
         person_id: PersonId,
     ) -> Result<Candidate, AppError> {
-        let list = store.get_candidate_list(list_id)?;
+        let list = store.get_candidate_list(self.id)?;
 
         let position = list
             .candidates
@@ -131,18 +156,14 @@ impl CandidateList {
         let person = store.get_person(person_id)?;
 
         Ok(Candidate {
-            list_id,
+            list_id: self.id,
             position,
             person,
         })
     }
 
-    pub fn persons_not_on_list(
-        store: &AppStore,
-        list_id: CandidateListId,
-    ) -> Result<Vec<Person>, AppError> {
-        let list = store.get_candidate_list(list_id)?;
-
+    pub fn persons_not_on_list(&self, store: &AppStore) -> Result<Vec<Person>, AppError> {
+        let list = store.get_candidate_list(self.id)?;
         let existing: BTreeMap<PersonId, ()> =
             list.candidates.into_iter().map(|id| (id, ())).collect();
 
@@ -165,8 +186,8 @@ impl CandidateList {
             .await
     }
 
-    pub async fn delete_by_id(store: &AppStore, list_id: CandidateListId) -> Result<(), AppError> {
-        store.update(AppEvent::DeleteCandidateList(list_id)).await
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
+        store.update(AppEvent::DeleteCandidateList(self.id)).await
     }
 
     pub(crate) fn build_full_candidate_list(
@@ -189,27 +210,13 @@ impl CandidateList {
 
         Ok(FullCandidateList { list, candidates })
     }
-
-    fn ensure_persons_exist(store: &AppStore, person_ids: &[PersonId]) -> Result<(), AppError> {
-        let existing: BTreeMap<PersonId, ()> = store
-            .get_persons()?
-            .into_iter()
-            .map(|person| (person.id, ()))
-            .collect();
-
-        if person_ids.iter().any(|id| !existing.contains_key(id)) {
-            return Err(AppError::GenericNotFound);
-        }
-
-        Ok(())
-    }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        AppEvent, AppStore,
+        AppStore,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person_with_last_name},
@@ -481,31 +488,22 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list_a.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_a.id, &[person_a.id]).await?;
+        person_a.create(&store).await?;
+        list_a.clone().update_order(&store, &[person_a.id]).await?;
 
         list_b.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_b.id, &[person_b.id]).await?;
+        person_b.create(&store).await?;
+        list_b.clone().update_order(&store, &[person_b.id]).await?;
 
-        // test
-        CandidateList::delete_by_id(&store, list_a.id).await?;
+        list_a.delete(&store).await?;
 
-        // verify
         let lists = CandidateListSummary::list(&store)?;
         let list_b_from_db = FullCandidateList::get(&store, list_b.id).unwrap();
-        // one list remains
+
         assert_eq!(1, lists.len());
-        // the correct list got deleted
         assert_eq!(list_b.id, lists[0].list.id);
-        // and only persons got removed associated with the deleted list
         assert_eq!(1, lists[0].person_count);
         assert_eq!(person_b.id, list_b_from_db.candidates[0].person.id);
-        // no duplicate districts
         assert_eq!(0, lists[0].duplicate_districts.len());
 
         Ok(())
@@ -520,13 +518,11 @@ mod tests {
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
+        list.clone()
+            .update_order(&store, &[person_a.id, person_b.id])
             .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
-        CandidateList::update_order(&store, list_id, &[person_a.id, person_b.id]).await?;
 
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(2, detail.candidates.len());
@@ -539,9 +535,8 @@ mod tests {
     #[tokio::test]
     async fn update_candidate_list_order_returns_not_found() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
-        let err = CandidateList::update_order(&store, CandidateListId::new(), &[])
-            .await
-            .unwrap_err();
+        let mut missing_list = sample_candidate_list(CandidateListId::new());
+        let err = missing_list.update_order(&store, &[]).await.unwrap_err();
         assert!(matches!(err, AppError::GenericNotFound));
 
         Ok(())
@@ -560,20 +555,16 @@ mod tests {
     async fn test_append_candidate_to_list() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
         let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
 
         list.create(&store).await?;
-        store
-            .update(AppEvent::CreatePerson(person_a.clone()))
-            .await?;
-        store
-            .update(AppEvent::CreatePerson(person_b.clone()))
-            .await?;
+        person_a.create(&store).await?;
+        person_b.create(&store).await?;
 
-        CandidateList::append_candidate(&store, list_id, person_a.id).await?;
-        CandidateList::append_candidate(&store, list_id, person_b.id).await?;
+        list.append_candidate(&store, person_a.id).await?;
+        list.append_candidate(&store, person_b.id).await?;
 
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
 
@@ -589,7 +580,9 @@ mod tests {
     #[tokio::test]
     async fn append_candidate_to_list_returns_not_found() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
-        let err = CandidateList::append_candidate(&store, CandidateListId::new(), PersonId::new())
+        let mut missing_list = sample_candidate_list(CandidateListId::new());
+        let err = missing_list
+            .append_candidate(&store, PersonId::new())
             .await
             .unwrap_err();
         assert!(matches!(err, AppError::GenericNotFound));
@@ -608,8 +601,9 @@ mod tests {
         list.create(&store).await?;
         person_a.create(&store).await?;
         person_b.create(&store).await?;
-        CandidateList::append_candidate(&store, list_id, person_a.id).await?;
-        CandidateList::append_candidate(&store, list_id, person_b.id).await?;
+        let mut list = store.get_candidate_list(list_id)?;
+        list.append_candidate(&store, person_a.id).await?;
+        list.append_candidate(&store, person_b.id).await?;
 
         person_a.delete(&store).await?;
 
@@ -624,14 +618,18 @@ mod tests {
     async fn get_candidate_returns_candidate() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
 
         list.create(&store).await?;
-        store.update(AppEvent::CreatePerson(person.clone())).await?;
-        CandidateList::append_candidate(&store, list_id, person.id).await?;
+        person.create(&store).await?;
+        list.append_candidate(&store, person.id).await?;
 
-        let candidate = CandidateList::get_candidate(&store, list_id, person.id).await?;
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
+
         assert_eq!(candidate.list_id, list_id);
         assert_eq!(candidate.position, 1);
         assert_eq!(candidate.person.id, person.id);

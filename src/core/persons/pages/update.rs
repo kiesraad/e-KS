@@ -8,7 +8,7 @@ use axum_extra::extract::Form;
 use crate::{
     AppError, AppResponse, AppStore, Context, HtmlTemplate, filters,
     form::FormData,
-    persons::{COUNTRY_CODES, Person, PersonForm, pages::UpdatePersonPath},
+    persons::{Person, PersonForm, pages::UpdatePersonPath},
 };
 
 #[derive(Template)]
@@ -16,7 +16,6 @@ use crate::{
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonForm>,
-    countries: &'static [&'static str],
 }
 
 pub async fn update_person(
@@ -28,7 +27,6 @@ pub async fn update_person(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
             person,
-            countries: &COUNTRY_CODES,
         },
         context,
     ))
@@ -46,7 +44,6 @@ pub async fn update_person_submit(
             PersonUpdateTemplate {
                 person,
                 form: form_data,
-                countries: &COUNTRY_CODES,
             },
             context,
         )

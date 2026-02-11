@@ -32,9 +32,6 @@
   min-height: 10rem;
   border: 1px solid var(--gray-200);
   border-radius: var(--space-sm);
-  background-image: url("../icons/badge.svg");
-  background-repeat: no-repeat;
-  background-position: left var(--space-lg) top var(--space-lg);
   text-decoration: none;
 
   h3 {
@@ -58,29 +55,8 @@
     margin-bottom: var(--space-xs);
   }
 
-  ul {
-    margin: 0;
-    font-size: var(--font-size-sm);
-    margin-bottom: var(--space-md);
-    padding-left: 1rem;
-
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-
-    li {
-      padding-left: 0;
-      line-height: 1.5;
-
-      span {
-        line-height: 1.5;
-        vertical-align: middle;
-        display: inline-block;
-        max-width: calc(100% - var(--space-lg));
-        white-space: nowrap;
-        overflow: hidden;
-        text-overflow: ellipsis;
-      }
-    }
+  ul.districts {
+    margin-bottom: var(--space-lg);
   }
 
   p {
@@ -90,7 +66,6 @@
   }
 
   .statistic {
-    font-style: italic;
     font-size: var(--font-size-sm);
   }
 
@@ -109,21 +84,53 @@
     margin-bottom: 0;
   }
 
-  &.card-locked {
-    background-image: url("../icons/lock-badge.svg");
+  .badge {
+    position: absolute;
+    top: var(--space-lg);
+    left: var(--space-lg);
+    width: 2.5rem;
+    height: 2.5rem;
+    background-color: var(--blue-200);
+    border-radius: var(--space-sm);
+    background-repeat: no-repeat;
   }
 
-  &.card-list {
-    background-image: url("../icons/list-badge.svg");
+  &:hover .badge {
+    background-color: var(--blue-300);
   }
 
-  &.card-list-warning {
+  &.card-locked .badge {
+    background-color: var(--gray-200);
+    background-image: url("../icons/locked-badge.svg");
+  }
+
+  &.card-locked:hover .badge {
+    background-color: var(--gray-300);
+  }
+
+  &.card-data .badge {
+    background-image: url("../icons/data-badge.svg");
+  }
+
+  &.card-candidate-list .badge {
+    background-image: url("../icons/candidate-list-badge.svg");
+  }
+
+  &.card-list-warning .badge {
+    background-color: var(--orange-200);
     background-image: url("../icons/list-warning-badge.svg");
   }
 
+  &.card-list-warning:hover .badge {
+    background-color: var(--orange-300);
+  }
+
   &.card-persons {
-    height: 10rem;
-    background-image: url("../icons/politician.svg");
+    height: 13rem;
+
+    .badge {
+      background-image: url("../icons/politician-badge.svg");
+    }
   }
 
   &.card-add-list {
@@ -179,7 +186,45 @@ a.card {
 
 /* page width breakpoint */
 @media (max-width: 1700px) {
-  .cards-right {
-    grid-template-columns: repeat(6, 1fr);
+  .cards.cards-candidate-lists {
+    .cards-right {
+      grid-template-columns: repeat(6, 1fr);
+    }
+  }
+}
+
+/* page width breakpoint */
+@media (max-width: 1200px) {
+  .cards.cards-candidate-lists {
+    .cards-right {
+      grid-template-columns: repeat(3, 1fr);
+    }
+  }
+}
+
+ul.districts {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  padding: 0;
+  list-style: none;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+
+  li {
+    display: inline-block;
+    border: 1px solid var(--gray-200);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--space-xs);
+    max-width: calc(100% - var(--space-md));
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+
+    &.warning {
+      border-color: var(--orange-200);
+      color: var(--orange-800);
+    }
   }
 }

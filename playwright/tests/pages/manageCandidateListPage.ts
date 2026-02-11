@@ -33,14 +33,16 @@ export class ManageCandidateListPage {
       await this.page.getByLabel("Voorletters").fill(candidate.initials);
       await this.page
         .locator('input[name="last_name"]')
-        .fill(candidate.lastName);
+        .pressSequentially(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
-      await this.page.getByLabel("Landcode").pressSequentially("NL");
 
       await this.page
         .getByRole("button", { name: "Opslaan en verder" })
         .click();
-      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+      await this.page
+        .getByLabel("Woonplaats")
+        .pressSequentially(candidate.locality ?? "");
+
       await this.page
         .getByRole("button", { name: "Opslaan en sluiten" })
         .click();

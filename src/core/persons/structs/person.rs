@@ -96,10 +96,6 @@ impl Person {
             && self.country_of_residence.is_some()
     }
 
-    pub fn is_address_complete(&self) -> bool {
-        self.address.is_complete()
-    }
-
     pub fn is_representative_complete(&self) -> bool {
         if self.is_dutch() {
             return true;
@@ -110,7 +106,7 @@ impl Person {
 
     pub fn is_complete(&self) -> bool {
         self.is_personal_info_complete()
-            && self.is_address_complete()
+            && self.address.is_complete()
             && self.is_representative_complete()
     }
 
@@ -136,31 +132,24 @@ impl Person {
             .await
     }
 
-    pub async fn update_address(&self, store: &AppStore) -> Result<(), AppError> {
-        let existing = store.get_person(self.id)?;
-
-        let updated = Person {
-            address: self.address.clone(),
-            updated_at: UtcDateTime::now(),
-            ..existing
-        };
-
-        store.update(AppEvent::UpdatePerson(updated.clone())).await
+    pub async fn update_address(
+        &self,
+        store: &AppStore,
+        address: DutchAddress,
+    ) -> Result<(), AppError> {
+        store
+            .update(AppEvent::UpdatePersonAddress {
+                person_id: self.id,
+                address,
+                updated_at: UtcDateTime::now(),
+            })
+            .await
     }
 
     pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::DeletePerson {
                 person_id: self.id,
-                updated_at: UtcDateTime::now(),
-            })
-            .await
-    }
-
-    pub async fn delete_by_id(store: &AppStore, person_id: PersonId) -> Result<(), AppError> {
-        store
-            .update(AppEvent::DeletePerson {
-                person_id,
                 updated_at: UtcDateTime::now(),
             })
             .await
@@ -271,7 +260,9 @@ mod tests {
         person.address.house_number_addition = None;
         person.address.street_name = Some("Nieuweweg".parse().expect("street name"));
 
-        person.update_address(&store).await?;
+        person
+            .update_address(&store, person.address.clone())
+            .await?;
 
         let updated = store.get_person(id)?;
         assert_eq!(

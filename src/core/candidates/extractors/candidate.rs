@@ -1,9 +1,6 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
 
-use crate::{
-    AppError, AppStore, Context, CsrfTokens, candidate_lists::CandidateList, candidates::Candidate,
-    trans,
-};
+use crate::{AppError, AppStore, Context, CsrfTokens, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
@@ -24,7 +21,14 @@ where
         let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
             Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
 
-        let candidate = CandidateList::get_candidate(&store, list_id, person_id)
+        let candidate_list = store.get_candidate_list(list_id).map_err(|err| match err {
+            AppError::NotFound(_) => AppError::NotFound(
+                trans!("person.not_found_in_candidate_list", context.locale).to_string(),
+            ),
+            _ => err,
+        })?;
+        let candidate = candidate_list
+            .get_candidate(&store, person_id)
             .await
             .map_err(|err| match err {
                 AppError::NotFound(_) => AppError::NotFound(
@@ -50,7 +54,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppEvent, AppState,
+        AppState,
         candidate_lists::CandidateListId,
         persons::PersonId,
         render_error_pages,
@@ -64,17 +68,10 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        app_state
-            .store
-            .update(AppEvent::CreateCandidateList(list.clone()))
-            .await
-            .unwrap();
-        app_state
-            .store
-            .update(AppEvent::CreatePerson(person.clone()))
-            .await
-            .unwrap();
-        CandidateList::update_order(&app_state.store, list_id, &[person.id])
+        list.create(&app_state.store).await.unwrap();
+        person.create(&app_state.store).await.unwrap();
+        list.clone()
+            .update_order(&app_state.store, &[person.id])
             .await
             .unwrap();
 
@@ -110,16 +107,8 @@ mod tests {
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        state
-            .store
-            .update(AppEvent::CreateCandidateList(list.clone()))
-            .await
-            .unwrap();
-        state
-            .store
-            .update(AppEvent::CreatePerson(person.clone()))
-            .await
-            .unwrap();
+        list.create(&state.store).await.unwrap();
+        person.create(&state.store).await.unwrap();
 
         let app =
             Router::new()

@@ -19,8 +19,8 @@
       <input type="text" placeholder=" " name="country_of_residence" id="country_of_residence"
         value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" required />
       <ul>
-        {% for country in countries %}
-        <li data-country="{{ country }}"><span>{{ country|flag }}</span> {{ country }}</li>
+        {% for country in crate::persons::COUNTRY_CODES %}
+        <li data-country="{{ country }}"><span class="icon">{{ country|flag }}</span> {{ country }}</li>
         {% endfor %}
       </ul>
     </div>
