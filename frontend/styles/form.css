@@ -122,6 +122,11 @@
     margin-top: 0.5rem;
   }
 
+  span.hint-li {
+    display: inline-block;
+    width: 1ch;
+  }
+
   span.error {
     color: var(--color-error-darker);
     font-weight: normal;

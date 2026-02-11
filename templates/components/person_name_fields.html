@@ -1,7 +1,9 @@
 <div class="form-row">
-  <p class="form-field form-field-sm {% if form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p
+    class="form-field form-field-sm {% if form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
-    <input type="text" name="initials" id="initials" value="{{ form.data.name.initials }}" class="initials-input" required />
+    <input type="text" name="initials" id="initials" value="{{ form.data.name.initials }}" class="initials-input"
+      required />
     <label class="autoformat">
       <input type="checkbox" checked />
       <span>{{ "person.autoformat_initials"|trans }}</span>
@@ -22,6 +24,25 @@
     <input type="text" name="last_name" id="last_name" value="{{ form.data.name.last_name }}" required />
     {% for error in form|error("name.last_name") %}
     <span class="error">{{ error }}</span>
-    {% endfor %}
+    {% else %}
+  <span class="hint hint-expander">Meer info
+    <span class="hint hint-expansion">
+      Kandidaten kunnen zelf kiezen vermeld te worden met:<br>
+      <br>
+      <span class="hint-li">1.</span> De eigen achternaam;<br>
+      <span class="hint-li">2.</span> De achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde
+      partner;<br>
+      <span class="hint-li">3.</span> eerste de eigen achternaam en dan (verbonden door een liggend streepje) de
+      achternaam van de
+      (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;<br>
+      <span class="hint-li">4.</span> Beide achternamen, eerst de achternaam van de (ex) echtgenoot, (ex) echtgenote
+      of (ex) geregistreerde partner
+      en dan (verbonden door een liggend streepje) de eigen geslachtsnaam.<br>
+      <br>
+      Wel moet de kandidaat bevoegd zijn om de naam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde
+      partner te voeren (artikel 1:9 BW).<br>
+    </span>
+  </span>
+  {% endfor %}
   </p>
 </div>

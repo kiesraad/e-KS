@@ -14,5 +14,6 @@ import "./scripts/active-link";
 import "./scripts/select-all-checkbox";
 import "./scripts/bsn-input";
 import "./scripts/dirty-form";
+import "./scripts/expandable-hint";
 
 import "./styles/index.css";
