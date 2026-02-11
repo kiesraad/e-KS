@@ -10,11 +10,11 @@ authorised_agent_info: De gemachtigde van de partij is de persoon die bij het ce
 basic_information: Basisinformatie
 delete_authorised_agent_warning_text: Weet u zeker dat u deze gemachtigde wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_list_submitter_warning_text: Weet u zeker dat u deze lijstinleveraar wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
-delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervangende lijstinleveraar wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor herstel verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
 edit_authorised_agent: Gegevens gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
-edit_substitute_submitter: Vervangers voor herstel en aanpassen
+edit_substitute_submitter: Gegevens vervangers voor herstel verzuimen aanpassen
 general_information: Algemeen
 legal_name: Volledige statutaire naam
 list_submitter_data: Gegevens lijstinleveraar
@@ -22,7 +22,7 @@ list_type: Type lijst aanduiding
 long_list_allowed: Heeft u bij de vorige verkiezing 16 zetels of meer behaald
 no_authorised_agents: Geen gemachtigden
 no_list_submitters: Geen lijstinleveraars
-no_substitute_submitters: Geen vervangende lijstinleveraars
+no_substitute_submitters: Geen vervangers voor herstel verzuimen
 select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 select_default_substitute_submitter_info: Kies een of meerdere vervanger(s) voor het herstel van verzuimen.
 substitute_submitter_data: Vervangers voor herstel verzuimen
