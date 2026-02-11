@@ -28,13 +28,9 @@ impl FromStr for DisplayName {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = value.split_whitespace().collect::<Vec<&str>>().join(" ");
-        let char_count = trimmed_value
-            .split_whitespace()
-            .collect::<Vec<_>>()
-            .join("")
-            .chars()
-            .count();
+        let words: Vec<_> = value.split_whitespace().collect();
+        let trimmed_value = words.join(" ");
+        let char_count: usize = words.iter().map(|w| w.chars().count()).sum();
 
         if char_count < 2 {
             return Err(ValidationError::ValueTooShort(char_count, MAX_LENGTH));
@@ -50,43 +46,42 @@ impl FromStr for DisplayName {
 
 #[cfg(test)]
 mod tests {
-    use std::str::FromStr;
-
-    use crate::{form::ValidationError, structs::DisplayName};
-
-    fn test_display_name(input: &str, expected: Result<&str, ValidationError>) {
-        let result = DisplayName::from_str(input);
-        match result {
-            Ok(actual) => assert_eq!(expected.unwrap(), actual.0),
-            Err(err) => assert_eq!(expected.unwrap_err(), err),
-        }
-    }
+    use super::*;
 
     #[test]
     fn valid_name() {
-        test_display_name("De Tegen Partij", Ok("De Tegen Partij"));
+        assert_eq!(
+            Ok(DisplayName("De Tegen Partij".to_string())),
+            DisplayName::from_str("De Tegen Partij")
+        );
     }
 
     #[test]
     fn valid_name_with_extra_spaces() {
-        test_display_name("\t  De  \t  Tegen   Partij ", Ok("De Tegen Partij"));
+        assert_eq!(
+            Ok(DisplayName("De Tegen Partij".to_string())),
+            DisplayName::from_str("\t  De  \t  Tegen   Partij ")
+        );
 
-        test_display_name("\t  De  \t  Tegen   Partij \t", Ok("De Tegen Partij"));
+        assert_eq!(
+            Ok(DisplayName("De Tegen Partij".to_string())),
+            DisplayName::from_str("\t  De  \t  Tegen   Partij \t")
+        );
     }
 
     #[test]
     fn too_long() {
-        test_display_name(
-            "a string of exactly 36 chars long ex. spaces",
+        assert_eq!(
             Err(ValidationError::ValueTooLong(36, 35)),
+            DisplayName::from_str("a string of exactly 36 chars long ex. spaces")
         );
     }
 
     #[test]
     fn too_short() {
-        test_display_name(
-            "     f   \t      ",
+        assert_eq!(
             Err(ValidationError::ValueTooShort(1, 35)),
+            DisplayName::from_str("     f   \t      ")
         );
     }
 }

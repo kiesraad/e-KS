@@ -49,9 +49,7 @@ pub async fn update_political_group_submit(
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(store.clone())?;
-
-    dbg!(&form);
-
+    
     match form.validate_update(&political_group, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PoliticalGroupUpdateTemplate {
