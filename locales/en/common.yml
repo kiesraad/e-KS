@@ -9,7 +9,7 @@ no_label: "No"
 save_success: saved
 step: "Step {}"
 steps: Steps
-submit: Submit
+submit: Finalize
 submit_description: Review all information and submit the candidate list(s).
 title: Kiesraad - Kandidaatstelling
 version: Version

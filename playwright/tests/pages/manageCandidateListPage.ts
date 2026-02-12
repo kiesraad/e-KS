@@ -14,7 +14,7 @@ export class ManageCandidateListPage {
 
       // search first part of the name
       await this.page
-        .getByLabel("Zoek bestaande persoon")
+        .getByLabel("Zoek bestaande kandidaat")
         .pressSequentially(candidate.slice(0, 5));
 
       await this.page

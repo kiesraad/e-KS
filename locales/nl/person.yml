@@ -1,6 +1,6 @@
 actions:
-  add: Persoon toevoegen
-  delete: Persoon verwijderen
+  add: Kandidaat toevoegen
+  delete: Kandidaat verwijderen
 autoformat_initials: Automatisch opmaken
 correspondence_address: Correspondentieadres
 fields:
@@ -23,19 +23,19 @@ fields:
   street_name: Straatnaam
 form:
   create:
-    title: Persoon toevoegen
-  delete_warning_text: Weet je zeker dat je deze persoon wilt verwijderen?
+    title: Kandidaat toevoegen
+  delete_warning_text: Weet je zeker dat je deze kandidaat wilt verwijderen?
 hints:
   first_name: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
   gender: Optioneel. Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
 list:
-  empty: Geen personen gevonden.
+  empty: Geen kandidaten gevonden.
 no_bsn_confirm: Ik bevestig dat deze persoon geen BSN heeft.
 not_found: "Persoon {} niet gevonden."
-not_found_in_candidate_list: Persoon niet gevonden in kandidatenlijst.
+not_found_in_candidate_list: Kandidaat niet gevonden in kandidatenlijst.
 personal_details: Persoonlijke gegevens
 representative: Gemachtigde van kandidaat
-title: Personen
-total: "<strong>{}</strong> personen in totaal"
+title: Alle kandidaten
+total: "<strong>{}</strong> kandidaten toegevoegd"
 view:
-  empty: Geen personen gevonden.
+  empty: Geen kandidaten gevonden.

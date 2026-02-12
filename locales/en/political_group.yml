@@ -6,7 +6,7 @@ add_authorised_agent: Add authorised agent
 add_list_submitter: Add list submitter
 add_substitute_submitter: Add substitute submitter
 authorised_agent_data: Authorised agent data
-authorised_agent_info: "The authorised agent of the party is the person registered with the central electoral committee as the authorised or deputy authorised person for the designation. This person authorizes the list submitter with form H 3-1 / H 3-2 to place the party's name above the candidate list."
+authorised_agent_info: An authorized representative or deputy representative for the party designation is registered with the central electoral committee. This person grants the person submitting the list permission to place the party name above the candidate list. This is done using form H 3-1 or H 3-2.
 basic_information: Basic information
 delete_authorised_agent_warning_text: Are you sure you want to delete this authorised agent? This action cannot be undone.
 delete_list_submitter_warning_text: Are you sure you want to delete this list submitter? This action cannot be undone.
@@ -18,8 +18,8 @@ edit_substitute_submitter: Edit substitute submitter
 general_information: General
 legal_name: Full statutory name
 list_submitter_data: List submitter data
-list_type: Type list designation
-long_list_allowed: Did you win 16 seats or more in the previous election
+list_type: "Type list designation:"
+long_list_allowed: "Your party obtained 16 or more seats in the previous election:"
 no_authorised_agents: No authorised agents
 no_list_submitters: No list submitters
 no_substitute_submitters: No substitute submitters
@@ -29,8 +29,8 @@ substitute_submitter_data: Substitute submitter data
 title: Political group
 type:
   blank_name: Blank list
-  blank_name_hint: there is no registered designation
+  blank_name_hint: There is no registered designation.
   name_combination: Combination of multiple registered names
-  name_combination_hint: The party has a cooperation with one or more other registered parties and together they provide all candidates for the candidate list.
+  name_combination_hint: "The party has formed an alliance with one or more other registered parties. Together, they nominate all candidates for the candidate list."
   registered_name: Standalone registered name
-  registered_name_hint: The party does not have a cooperation with another registered party and participates in the elections as a single distinct party.
+  registered_name_hint: "The party participates in the election as a single, unified party."

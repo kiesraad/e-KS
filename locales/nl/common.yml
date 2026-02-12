@@ -9,7 +9,7 @@ no_label: Nee
 save_success: opgeslagen
 step: "Stap {}"
 steps: Stappen
-submit: Inleveren
+submit: Afronden
 submit_description: Controleer alle gegevens en dien de kandidatenlijst(en) in bij de Kiesraad.
 title: Kiesraad - Kandidaatstelling
 version: Versie
