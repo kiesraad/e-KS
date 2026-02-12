@@ -1,0 +1,44 @@
+{{- if .Values.ingress.enabled }}
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  annotations:
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      more_set_headers "Strict-Transport-Security: max-age=31536000; includeSubDomains;";
+    cert-manager.io/issuer: letsencrypt-production-http
+    odcn.rijksapps.nl/inet-loadbalancer-hostnames: {{ include "fullHostname" . }}
+  name: e-ks
+  namespace: {{ .Release.Namespace }}
+  labels:
+    odcn.rijksapps.nl/inet-loadbalancer: "" # Activeer de load balancer
+spec:
+  rules:
+  - host: {{ include "fullHostname" . }}
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: eks
+            port:
+              name: http
+      - path: /lookup
+        pathType: Prefix
+        backend:
+          service:
+            name: bag-lookup
+            port:
+              name: http
+      - path: /suggest
+        pathType: Prefix
+        backend:
+          service:
+            name: bag-lookup
+            port:
+              name: http
+  tls:
+    - hosts:
+        - {{ include "fullHostname" . }}
+      secretName: eks-cert
+{{- end }}

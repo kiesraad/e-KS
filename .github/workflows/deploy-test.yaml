@@ -169,4 +169,5 @@ jobs:
             --set db.setup=true \
             --set db.erase=true \
             --set db.runMigrations=true \
-            --set db.password=${PGPASSWORD}
+            --set db.password=${PGPASSWORD} \
+            --set gatewayApi.enabled=true

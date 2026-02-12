@@ -17,11 +17,12 @@ spec:
       labels:
         app.kubernetes.io/name: bag-lookup
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        ingress-controller-frontoffice-policy: allow
     spec:
       automountServiceAccountToken: false
       containers:
         - name: bag-lookup
-          image: "ghcr.io/tweedegolf/bag-address-lookup:0.3.2"
+          image: "{{ .Values.bag.image }}:{{ .Values.bag.version }}"
           ports:
             - containerPort: 8080
               name: http

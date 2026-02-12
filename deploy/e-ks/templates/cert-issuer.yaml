@@ -1,0 +1,21 @@
+{{ if .Values.ingress.enabled }}
+apiVersion: cert-manager.io/v1
+kind: Issuer
+metadata:
+  name: letsencrypt-production-http
+spec:
+  acme:
+    email: support@tweedegolf.com
+    privateKeySecretRef:
+      name: letsencrypt-production-http
+    server: https://acme-v02.api.letsencrypt.org/directory
+    solvers:
+      - http01:
+          ingress:
+            podTemplate:
+              metadata:
+                labels:
+                  ingress-controller-frontoffice-policy: allow
+                  egress-frontoffice-policy: allow
+            class: {{ .Values.ingress.class }}
+{{ end }}

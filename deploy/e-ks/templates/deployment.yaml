@@ -16,13 +16,14 @@ spec:
       labels:
         app.kubernetes.io/name: eks
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        ingress-controller-frontoffice-policy: allow
     spec:
       automountServiceAccountToken: false
       imagePullSecrets:
         - name: regcred
       containers:
         - name: eks
-          image: "ghcr.io/kiesraad/e-ks/eks-core:{{ .Chart.AppVersion }}"
+          image: "{{ .Values.eks.image }}:{{ .Chart.AppVersion }}"
           ports:
             - containerPort: 3000
               name: http

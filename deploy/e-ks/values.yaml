@@ -2,6 +2,20 @@ hostname: "kiesraad.net"
 subdomain: "<branchname>"
 requireLogin: true
 
+ingress:
+  enabled: false
+  class: nginx
+
+gatewayApi:
+  enabled: false
+
+bag:
+  image: "ghcr.io/tweedegolf/bag-address-lookup"
+  version: "0.3.3"
+
+eks:
+  image: "ghcr.io/kiesraad/e-ks/eks-core"
+
 db:
   setup: false
   erase: false

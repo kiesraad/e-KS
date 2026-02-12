@@ -1,3 +1,4 @@
+{{- if .Values.gatewayApi.enabled }}
 apiVersion: gateway.networking.k8s.io/v1
 kind: HTTPRoute
 metadata:
@@ -90,12 +91,8 @@ metadata:
   namespace: {{ .Release.Namespace }}
 spec:
   headers:
-    frameDeny: true
-    contentTypeNosniff: true
-    contentSecurityPolicy: "default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self' https://github.com/login/oauth/authorize; script-src 'self'; style-src 'self' 'unsafe-hashes' 'sha256-f5JbnZ2wnky3B/YgIC+GaLDK8cBvQj7OEOASYhBjUYA=' 'sha256-be2laphxFXcKr/3rNHrcGPm2jpf+OrcryYe8Gxt//J8='; font-src 'self'; img-src 'self'; frame-ancestors 'none';"
-    referrerPolicy: same-origin
-
     forceSTSHeader: true
     stsIncludeSubdomains: true
     stsSeconds: 31536000
     stsPreload: false # in production, we should consider setting this to true
+{{- end }}
