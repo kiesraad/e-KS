@@ -15,6 +15,7 @@ fields:
   house_number_addition: Huisnummer toevoeging
   initials: Voorletters
   last_name: Achternaam
+  last_name_info: "Kandidaten kunnen zelf kiezen vermeld te worden met: <ol> <li>De eigen achternaam;</li> <li>De achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;</li> <li>Beide achternamen, eerst de eigen achternaam en dan (verbonden door een koppelteken) de achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;</li> <li> Beide achternamen, eerst de achternaam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde partner en dan (verbonden door een liggend streepje) de eigen achternaam.</li> </ol> Wel moet de kandidaat bevoegd zijn om de naam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde partner te voeren (artikel 1:9 BW)."
   last_name_prefix: Voorvoegsel
   locality: Woonplaats
   name: Naam

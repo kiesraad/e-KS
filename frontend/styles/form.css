@@ -104,6 +104,7 @@
 
   span.substext,
   span.hint,
+  details.hint,
   span.error {
     display: inline-block;
     font-size: var(--font-size-md);
@@ -115,16 +116,13 @@
     font-weight: normal;
   }
 
+  details.hint,
   span.hint {
     font-size: var(--font-size-sm);
     color: var(--color-help-text);
     font-weight: normal;
     margin-top: 0.5rem;
-  }
-
-  span.hint-li {
-    display: inline-block;
-    width: 1ch;
+    margin-left: 0.5rem;
   }
 
   span.error {

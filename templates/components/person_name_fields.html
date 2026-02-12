@@ -19,30 +19,15 @@
     <span class="error">{{ error }}</span>
     {% endfor %}
   </p>
-  <p class="form-field {% if form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <div class="form-field {% if form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
     <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
     <input type="text" name="last_name" id="last_name" value="{{ form.data.name.last_name }}" required />
     {% for error in form|error("name.last_name") %}
     <span class="error">{{ error }}</span>
     {% else %}
-  <span class="hint hint-expander">Meer info
-    <span class="hint hint-expansion">
-      Kandidaten kunnen zelf kiezen vermeld te worden met:<br>
-      <br>
-      <span class="hint-li">1.</span> De eigen achternaam;<br>
-      <span class="hint-li">2.</span> De achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde
-      partner;<br>
-      <span class="hint-li">3.</span> eerste de eigen achternaam en dan (verbonden door een liggend streepje) de
-      achternaam van de
-      (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;<br>
-      <span class="hint-li">4.</span> Beide achternamen, eerst de achternaam van de (ex) echtgenoot, (ex) echtgenote
-      of (ex) geregistreerde partner
-      en dan (verbonden door een liggend streepje) de eigen geslachtsnaam.<br>
-      <br>
-      Wel moet de kandidaat bevoegd zijn om de naam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde
-      partner te voeren (artikel 1:9 BW).<br>
-    </span>
-  </span>
-  {% endfor %}
-  </p>
+    <details class="hint">
+      <summary>{{ "action.note"|trans }}</summary>
+      {{ "person.fields.last_name_info"|trans|safe }}
+    {% endfor %}
+  </div>
 </div>
