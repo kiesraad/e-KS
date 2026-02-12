@@ -2,9 +2,8 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
-use crate::{AppError, AppStore, Context, form::EmptyForm, list_submitters::ListSubmitter};
+use crate::{AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter};
 
 use super::ListSubmitterDeletePath;
 
@@ -29,12 +28,11 @@ pub async fn delete_list_submitter(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, TokenValue,
+        AppError, AppStore, Context, Form, TokenValue,
         list_submitters::{ListSubmitter, ListSubmitterId},
         political_groups::PoliticalGroupId,
         test_utils::{sample_list_submitter, sample_political_group},
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn delete_list_submitter_removes_and_redirects() -> Result<(), AppError> {

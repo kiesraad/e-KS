@@ -25,6 +25,7 @@ pub struct CandidatePosition {
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidatePosition")]
+#[serde(default)]
 pub struct CandidatePositionForm {
     #[validate(parse = "usize")]
     pub position: String,

@@ -36,7 +36,7 @@ pub use core::{
     substitute_list_submitters,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
-pub use form::{CsrfToken, CsrfTokens, TokenValue};
+pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
 pub use store::{AppEvent, AppStore, AppStoreData};
 pub use structs::{
     Bsn, CountryCode, Date, DutchAddress, DutchAddressForm, FirstName, FullName, FullNameForm,

@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::ListSubmitter,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterForm},
@@ -70,7 +69,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     use crate::{
         AppError, AppStore, Context,

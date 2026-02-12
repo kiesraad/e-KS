@@ -5,9 +5,9 @@ use crate::{TokenValue, candidate_lists::CandidateList};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidateList")]
+#[serde(default)]
 pub struct CandidateListCreateForm {
     pub electoral_districts: Vec<crate::ElectoralDistrict>,
-    #[serde(default)]
     #[validate(ignore)]
     pub copy_candidates: bool,
     #[validate(csrf)]

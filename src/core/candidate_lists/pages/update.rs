@@ -3,10 +3,9 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, InitialQuery,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
@@ -70,7 +69,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, InitialQuery, TokenValue, UtcDateTime,
+        AppStore, Context, ElectoralDistrict, Form, InitialQuery, TokenValue, UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -78,7 +77,6 @@ mod tests {
         extract::Query,
         http::{StatusCode, header},
     };
-    use axum_extra::extract::Form;
     use chrono::{Duration, Utc};
 
     #[tokio::test]

@@ -2,10 +2,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context,
+    AppError, AppStore, Context, Form,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
 };
@@ -33,8 +32,7 @@ pub async fn delete_person(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AppError, AppStore, Context, persons::PersonId, test_utils::sample_person};
-    use axum_extra::extract::Form;
+    use crate::{AppError, AppStore, Context, Form, persons::PersonId, test_utils::sample_person};
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {

@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, HtmlTemplate,
+    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
     filters,
     form::FormData,
@@ -87,7 +86,6 @@ mod test {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     use crate::{
         AppStore, Context, ElectoralDistrict, TokenValue,

@@ -5,6 +5,7 @@ use crate::{DutchAddressForm, FullNameForm, TokenValue, persons::Representative}
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Representative", timestamps = false)]
+#[serde(default)]
 pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]

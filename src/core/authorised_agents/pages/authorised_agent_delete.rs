@@ -1,10 +1,10 @@
+use crate::{
+    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+};
 use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
-
-use crate::{AppError, AppStore, Context, authorised_agents::AuthorisedAgent, form::EmptyForm};
 
 use super::AuthorisedAgentDeletePath;
 
@@ -29,12 +29,11 @@ pub async fn delete_authorised_agent(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, TokenValue,
+        AppError, AppStore, Context, Form, TokenValue,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{sample_authorised_agent, sample_political_group},
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {

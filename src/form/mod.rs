@@ -10,7 +10,30 @@ pub use form_data::FormData;
 pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};
 pub use validation_error::ValidationError;
 
+use axum::extract::{FromRequest, Request};
+use axum_extra::extract::Form as AxumForm;
+use serde::de::DeserializeOwned;
+
+use crate::AppError;
+
 pub type FieldErrors = Vec<(String, ValidationError)>;
+
+#[derive(Debug)]
+pub struct Form<T>(pub T);
+
+impl<T, S> FromRequest<S> for Form<T>
+where
+    S: Sync + Send,
+    T: DeserializeOwned,
+{
+    type Rejection = AppError;
+
+    async fn from_request(req: Request, state: &S) -> Result<Self, Self::Rejection> {
+        let AxumForm(form) = AxumForm::<T>::from_request(req, state).await?;
+
+        Ok(Form(form))
+    }
+}
 
 pub trait IntoValidationError {
     fn into_validation_error(self) -> ValidationError;

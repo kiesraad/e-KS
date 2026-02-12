@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{Person, PersonForm, pages::PersonsCreatePath},
 };
@@ -51,14 +50,13 @@ pub async fn create_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         test_utils::{response_body_string, sample_person_form},
     };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn create_person_renders_csrf_field() {

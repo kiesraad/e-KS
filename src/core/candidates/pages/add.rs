@@ -3,11 +3,10 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList},
     filters,
     persons::{Person, PersonId},
@@ -65,7 +64,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -77,7 +76,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn view_candidate_list_renders_persons() -> Result<(), AppError> {

@@ -4,6 +4,7 @@ use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(target = "AuthorisedAgent")]
+#[serde(default)]
 pub struct AuthorisedAgentForm {
     #[validate(flatten)]
     #[serde(flatten)]

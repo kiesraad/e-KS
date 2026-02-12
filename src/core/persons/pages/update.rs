@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{Person, PersonForm, pages::UpdatePersonPath},
 };
@@ -60,7 +59,7 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -68,7 +67,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_person_renders_existing_person() -> Result<(), AppError> {

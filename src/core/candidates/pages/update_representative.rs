@@ -3,10 +3,9 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     filters,
@@ -82,7 +81,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -95,7 +94,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_representative_renders_candidate() -> Result<(), AppError> {

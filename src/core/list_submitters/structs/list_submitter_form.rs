@@ -4,6 +4,7 @@ use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(target = "ListSubmitter")]
+#[serde(default)]
 pub struct ListSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]
