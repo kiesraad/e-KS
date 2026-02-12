@@ -27,7 +27,10 @@
     {% else %}
     <details class="hint">
       <summary>{{ "action.note"|trans }}</summary>
-      {{ "person.fields.last_name_info"|trans|safe }}
+      <div class="hint-popover">
+        {{ "person.fields.last_name_info"|trans|safe }}
+      </div>
+    </details>
     {% endfor %}
   </div>
 </div>

@@ -121,8 +121,37 @@
     font-size: var(--font-size-sm);
     color: var(--color-help-text);
     font-weight: normal;
-    margin-top: 0.5rem;
-    margin-left: 0.5rem;
+  }
+
+  .hint-popover {
+    position: absolute;
+    z-index: 30;
+    background-color: var(--gray-200);
+    border-radius: 5px;
+    padding: var(--space-sm);
+    width: 40em;
+  }
+
+  summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+  }
+
+  /* Add custom SVG */
+  summary::before {
+    content: url('../icons/chevronRight.svg');
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    transform-origin: center center;
+    transition: transform 0.2s;
+  }
+
+  details[open] > summary::before {
+    transform: rotate(90deg);
   }
 
   span.error {
