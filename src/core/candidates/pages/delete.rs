@@ -2,10 +2,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, candidate_lists::CandidateList, candidates::Candidate,
+    AppError, AppStore, Context, Form, candidate_lists::CandidateList, candidates::Candidate,
     form::EmptyForm,
 };
 
@@ -35,13 +34,12 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        AppStore,
+        AppStore, Form,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
     use axum::http::{StatusCode, header};
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {

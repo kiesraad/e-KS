@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -64,7 +63,7 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -76,7 +75,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_authorised_agent_renders_existing_agent() -> Result<(), AppError> {

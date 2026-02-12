@@ -3,10 +3,9 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, Form, HtmlTemplate, InitialQuery,
     candidate_lists::{CandidateList, ListSubmitterForm, pages::UpdateListSubmitterPath},
     filters,
     form::FormData,
@@ -107,7 +106,6 @@ mod tests {
         extract::Query,
         http::{StatusCode, header},
     };
-    use axum_extra::extract::Form;
 
     use crate::{
         AppStore, Context, CsrfTokens, ElectoralDistrict, InitialQuery, Locale, TokenValue,

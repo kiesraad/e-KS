@@ -2,10 +2,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, form::EmptyForm, list_submitters::ListSubmitter,
+    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
     substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -31,7 +30,6 @@ pub async fn delete_substitute_submitter(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum_extra::extract::Form;
 
     use crate::{
         AppError, AppStore, Context, TokenValue,

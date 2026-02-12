@@ -5,6 +5,7 @@ use crate::{DutchAddressForm, TokenValue, persons::Person};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person")]
+#[serde(default)]
 pub struct AddressForm {
     #[validate(flatten)]
     #[serde(flatten)]

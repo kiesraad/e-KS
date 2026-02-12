@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
 };
@@ -63,7 +62,7 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         list_submitters::{ListSubmitter, ListSubmitterId},
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -75,7 +74,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {

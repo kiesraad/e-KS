@@ -44,6 +44,7 @@ impl FullName {
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "FullName", timestamps = false)]
+#[serde(default)]
 pub struct FullNameForm {
     #[validate(parse = "LastName")]
     pub last_name: String,

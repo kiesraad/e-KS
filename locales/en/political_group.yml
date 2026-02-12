@@ -6,7 +6,7 @@ add_authorised_agent: Add authorised agent
 add_list_submitter: Add list submitter
 add_substitute_submitter: Add substitute submitter
 authorised_agent_data: Authorised agent data
-authorised_agent_info: "The authorised agent of the party is the person registered with the central electoral committee as the authorised or deputy authorised person for the designation. This person authorizes the list submitter with form H3-1 / H3-2 to place the party's name above the candidate list."
+authorised_agent_info: "The authorised agent of the party is the person registered with the central electoral committee as the authorised or deputy authorised person for the designation. This person authorizes the list submitter with form H 3-1 / H 3-2 to place the party's name above the candidate list."
 basic_information: Basic information
 delete_authorised_agent_warning_text: Are you sure you want to delete this authorised agent? This action cannot be undone.
 delete_list_submitter_warning_text: Are you sure you want to delete this list submitter? This action cannot be undone.

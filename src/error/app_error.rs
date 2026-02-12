@@ -1,7 +1,8 @@
 use axum::extract::{
     multipart::{MultipartError, MultipartRejection},
-    rejection::{FormRejection, JsonRejection, PathRejection, QueryRejection},
+    rejection::{JsonRejection, PathRejection, QueryRejection},
 };
+use axum_extra::extract::FormRejection;
 use std::{
     convert::Infallible,
     fmt::{Display, Formatter},
@@ -132,14 +133,14 @@ impl From<Infallible> for AppError {
 mod tests {
     use super::*;
     use crate::{
-        Context, ErrorResponse, HtmlTemplate, error::response::ErrorTemplate,
+        Context, ErrorResponse, Form, HtmlTemplate, error::response::ErrorTemplate,
         form::ValidationError, test_utils,
     };
     use axum::{
         body::Body,
         extract::{
             FromRequest, Multipart, Path, Request,
-            rejection::{InvalidFormContentType, JsonRejection, MissingJsonContentType},
+            rejection::{JsonRejection, MissingJsonContentType},
         },
         response::IntoResponse,
     };
@@ -187,7 +188,15 @@ mod tests {
 
     #[tokio::test]
     async fn app_error_variants_convert_to_error_response() {
-        let form_rejection: FormRejection = InvalidFormContentType::default().into();
+        let form_rejection = Form::<bool>::from_request(
+            Request::builder()
+                .uri("/save")
+                .body(Body::from("incorrect"))
+                .unwrap(),
+            &(),
+        )
+        .await
+        .unwrap_err();
         let json_rejection: JsonRejection = MissingJsonContentType::default().into();
         let multipart_rejection = Multipart::from_request(get_multipart_rejection_request(), &())
             .await
@@ -215,7 +224,7 @@ mod tests {
             AppError::from(askama::Error::Fmt),
             AppError::from(multipart_rejection),
             AppError::from(multipart_error),
-            AppError::from(form_rejection),
+            form_rejection,
             AppError::from(json_rejection),
             AppError::from(path_rejection),
             AppError::ValidationError(vec![("name".to_string(), ValidationError::InvalidValue)]),

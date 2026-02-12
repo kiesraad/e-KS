@@ -50,11 +50,12 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | lijst                                                    |           | list                                        |             |
 | blanco lijst                                             |           | unnamed list                                |             |
 | gemeente                                                 |           | municipality                                |             |
+| openbaar lichaam                                         |           | public body                                 |             |
 | kieskring                                                |           | electoral district                          |             |
 | kandidatenlijst                                          |           | list of candidates                          |             |
 | kandidaat                                                |           | candidate                                   |             |
 | lijst inleveraar                                         |           | submitter of the list                       |             |
-| vervangende lijst inleveraars                            |           | substitute submitter of the list            |             |
+| vervanger herstel verzuim                                |           | substitute submitter of the list            |             |
 | centraal stembureau                                      | CSB       | central electoral committee                 |             |
 | college van burgemeester en wethouders                   | B&W       | municipal executive of mayor and aldermen   |             |
 | ministerie van Binnenlandse Zaken en Koninkrijksrelaties | BZK       | ministry for Interior and Kingdom Relations |             |
@@ -72,11 +73,13 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | betalingsbewijs                |           | proof of payment          |             |
 | gemachtigde                    |           | authorised agent          |             |
 | gemachtigde van kandidaat      |           | authorised representative |             |
+| kiesgerechtigd                 |           | entiteld to vote          |             |
 | Kamer van Koophandel           | KVK       | Chamber of Commerce       |             |
 | instemmingsverklaring          |           | declaration of consent    |             |
 | gemeenteambtenaar              |           | municipal official        |             |
 | bij loting vaststellen         |           | to determine by lot       |             |
 | een lijst indienen             |           | to submit a list          |             |
+| zetel                          |           | seat                      |             |
 
 
 

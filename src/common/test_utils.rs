@@ -1,9 +1,9 @@
 use http_body_util::BodyExt;
 
 use crate::{
-    CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, ElectoralDistrict, FirstName,
-    FullName, FullNameForm, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
-    LegalName, Locality, PlaceOfResidence, PostalCode, StreetName, TokenValue, UtcDateTime,
+    CountryCode, Date, DutchAddress, DutchAddressForm, ElectoralDistrict, FirstName, FullName,
+    FullNameForm, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix, LegalName,
+    Locality, PlaceOfResidence, PostalCode, StreetName, TokenValue, UtcDateTime,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
@@ -11,6 +11,7 @@ use crate::{
         AddressForm, Gender, Person, PersonForm, PersonId, Representative, RepresentativeForm,
     },
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupId},
+    structs::DisplayName,
     substitute_list_submitters::{
         SubstituteSubmitter, SubstituteSubmitterForm, SubstituteSubmitterId,
     },

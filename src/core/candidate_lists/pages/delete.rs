@@ -2,10 +2,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context,
+    AppError, AppStore, Context, Form,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     form::EmptyForm,
 };
@@ -30,9 +29,10 @@ pub async fn delete_candidate_list(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AppStore, ElectoralDistrict, TokenValue, candidate_lists::CandidateListSummary};
+    use crate::{
+        AppStore, ElectoralDistrict, Form, TokenValue, candidate_lists::CandidateListSummary,
+    };
     use axum::http::{StatusCode, header};
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {

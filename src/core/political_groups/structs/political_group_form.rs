@@ -2,14 +2,14 @@ use serde::Deserialize;
 use validate::Validate;
 
 use crate::{
-    DisplayName, LegalName, OptionStringExt, TokenValue, political_groups::PoliticalGroup,
+    LegalName, OptionStringExt, TokenValue, political_groups::PoliticalGroup, structs::DisplayName,
 };
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(target = "PoliticalGroup")]
+#[serde(default)]
 pub struct PoliticalGroupForm {
     #[validate(parse = "bool", optional)]
-    #[serde(default)]
     pub long_list_allowed: String,
     #[validate(parse = "LegalName", optional)]
     pub legal_name: String,

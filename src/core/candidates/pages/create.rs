@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, candidate_lists::FullCandidateList, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, candidate_lists::FullCandidateList, filters,
     form::FormData, persons::PersonForm,
 };
 
@@ -65,7 +64,7 @@ pub async fn create_person_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
@@ -73,7 +72,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn create_person_candidate_list_renders_form() -> Result<(), AppError> {

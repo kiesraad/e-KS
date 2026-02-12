@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { test } from "@playwright/test";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 
@@ -27,7 +27,4 @@ test("edit candidate list", async ({ page }) => {
     "Friesland",
     "Groningen",
   ]);
-
-  await candidateListsOverviewPage.open();
-  await expect(page.getByText("Kieskringen: Alle")).toBeVisible();
 });

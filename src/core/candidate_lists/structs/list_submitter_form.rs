@@ -8,11 +8,10 @@ use crate::{
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidateList")]
+#[serde(default)]
 pub struct ListSubmitterForm {
     #[validate(parse = "ListSubmitterId", optional)]
-    #[serde(default)]
     pub list_submitter_id: String,
-    #[serde(default)]
     pub substitute_list_submitter_ids: Vec<SubstituteSubmitterId>,
     #[validate(csrf)]
     pub csrf_token: TokenValue,

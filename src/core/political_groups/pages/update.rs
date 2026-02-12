@@ -3,13 +3,12 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     authorised_agents::AuthorisedAgent,
     filters,
-    form::FormData,
+    form::{Form, FormData},
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
 };
@@ -71,7 +70,7 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -83,7 +82,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {

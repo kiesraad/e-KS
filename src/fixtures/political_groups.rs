@@ -1,11 +1,12 @@
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppStore, DisplayName, DutchAddress, FullName, HouseNumber, HouseNumberAddition,
-    Initials, LastName, LastNamePrefix, LegalName, Locality, PostalCode, StreetName, UtcDateTime,
+    AppError, AppStore, DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials,
+    LastName, LastNamePrefix, LegalName, Locality, PostalCode, StreetName, UtcDateTime,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     list_submitters::{ListSubmitter, ListSubmitterId},
     political_groups::{PoliticalGroup, PoliticalGroupId},
+    structs::DisplayName,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 

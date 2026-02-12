@@ -11,6 +11,7 @@ use crate::{
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Person")]
+#[serde(default)]
 pub struct PersonForm {
     #[validate(parse = "Gender", optional)]
     pub gender: String,
@@ -23,7 +24,6 @@ pub struct PersonForm {
     pub date_of_birth: String,
     #[validate(parse = "Bsn", optional)]
     pub bsn: String,
-    #[serde(default)]
     pub no_bsn_confirmed: bool,
     #[validate(parse = "PlaceOfResidence", optional)]
     pub place_of_residence: String,

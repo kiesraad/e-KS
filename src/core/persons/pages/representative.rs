@@ -3,10 +3,9 @@ use axum::{
     extract::{Query, State},
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{InitialQuery, Person, RepresentativeForm, pages::UpdateRepresentativePath},
 };
@@ -68,7 +67,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, Form,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_person, sample_representative_form,
@@ -79,7 +78,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::extract::Form;
 
     #[tokio::test]
     async fn update_representative_renders_existing_person() -> Result<(), AppError> {

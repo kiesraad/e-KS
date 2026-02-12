@@ -3,6 +3,7 @@ mod bsn;
 mod constrained_string;
 mod country_code;
 mod date;
+mod display_name;
 mod house_number;
 mod house_number_addition;
 mod initials;
@@ -14,11 +15,10 @@ mod utc_date_time;
 
 pub use address::{DutchAddress, DutchAddressForm};
 pub use bsn::Bsn;
-pub use constrained_string::{
-    DisplayName, FirstName, LegalName, Locality, PlaceOfResidence, StreetName,
-};
+pub use constrained_string::{FirstName, LegalName, Locality, PlaceOfResidence, StreetName};
 pub use country_code::CountryCode;
 pub use date::Date;
+pub use display_name::DisplayName;
 pub use house_number::HouseNumber;
 pub use house_number_addition::HouseNumberAddition;
 pub use initials::Initials;

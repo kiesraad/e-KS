@@ -5,6 +5,7 @@ use crate::{ElectoralDistrict, TokenValue, candidate_lists::CandidateList};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "CandidateList")]
+#[serde(default)]
 pub struct CandidateListForm {
     pub electoral_districts: Vec<ElectoralDistrict>,
     #[validate(csrf)]

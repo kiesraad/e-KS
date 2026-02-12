@@ -3,10 +3,9 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect},
 };
-use axum_extra::extract::Form;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionAction, CandidatePositionForm},
     filters,
@@ -99,7 +98,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, TokenValue,
+        AppStore, Context, Form, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -108,7 +107,6 @@ mod tests {
         },
     };
     use axum::{http::StatusCode, response::IntoResponse};
-    use axum_extra::extract::Form;
 
     fn sample_position_form(
         csrf_token: &TokenValue,

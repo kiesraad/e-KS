@@ -6,6 +6,7 @@ use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
 #[validate(target = "SubstituteSubmitter")]
+#[serde(default)]
 pub struct SubstituteSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]

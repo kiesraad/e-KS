@@ -8,6 +8,7 @@ pub struct EmptyFormValue;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "EmptyFormValue", timestamps = false)]
+#[serde(default)]
 pub struct EmptyForm {
     #[validate(csrf)]
     pub csrf_token: TokenValue,

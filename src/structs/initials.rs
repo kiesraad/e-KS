@@ -33,7 +33,7 @@ impl FromStr for Initials {
         }
 
         if initials.len() > 20 {
-            return Err(ValidationError::ValueTooLong(20, initials.len()));
+            return Err(ValidationError::ValueTooLong(initials.len(), 20));
         }
 
         let parts: Vec<&str> = initials
