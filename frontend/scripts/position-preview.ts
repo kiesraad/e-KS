@@ -47,7 +47,11 @@ export const setupPositionPreview = () => {
     container.classList.toggle("fade-bottom", position < total - 2);
   };
 
-  input.addEventListener("input", updatePreview);
+  input.addEventListener("input", () => {
+    container.style.opacity = "1";
+    updatePreview();
+  });
+
   updatePreview();
 };
 

@@ -65,7 +65,7 @@
   <p class="form-field">
     <label for="gender">{{ "person.fields.gender"|trans }}</label>
     <select name="gender" id="gender">
-      <option value="" {% if form.data.gender=="" %}selected{% endif %}></option>
+      <option value="" {% if form.data.gender=="" %}selected{% endif %}>{{ "gender.empty"|trans }}</option>
       <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "gender.male"|trans }}</option>
       <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ "gender.female"|trans }}</option>
     </select>

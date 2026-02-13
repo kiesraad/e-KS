@@ -277,3 +277,7 @@
     }
   }
 }
+
+#gender option:first-child {
+  color: var(--color-placeholder);
+}

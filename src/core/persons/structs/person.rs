@@ -106,8 +106,8 @@ impl Person {
 
     pub fn is_complete(&self) -> bool {
         self.is_personal_info_complete()
-            && self.address.is_complete()
-            && self.is_representative_complete()
+            && (!self.is_dutch() || self.address.is_complete())
+            && (self.is_dutch() || self.is_representative_complete())
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {

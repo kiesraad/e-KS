@@ -22,6 +22,9 @@
         {% if let Some(first_name) = candidate.person.first_name %}
         ({{ first_name }})
         {% endif %}
+        {% if let Some(gender) = candidate.person.gender %}
+        ({{ gender.abbreviation(lang) }})
+        {% endif %}
       </td>
       <td>
         {% if let Some(place_of_residence) = candidate.person.place_of_residence %}

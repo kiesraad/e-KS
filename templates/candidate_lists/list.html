@@ -4,9 +4,9 @@
 {% block candidate_lists_nav_class %}active{% endblock %}
 
 {% block header_action %}
-<a href="{{ CandidateList::create_path() }}" class="button secondary icon-plus">
-  {{ "candidate_list.actions.add"|trans }}
-</a>
+  <a href="/" class="button secondary">
+    {{ "action.back"|trans }}
+  </a>
 {% endblock %}
 
 {% block content %}
@@ -27,7 +27,7 @@
       {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
       {% for candidate_list in candidate_lists %}
       <a href="{{ candidate_list.list.view_path() }}" {% if candidate_list.duplicate_districts.is_empty() %}
-        class="card card-list" {% else %} class="card card-list-warning" {% endif %}>
+        class="card card-candidate-list" {% else %} class="card card-list-warning" {% endif %}>
         <div class="badge"></div>
         <h3>{{ candidate_list.list|list_name }}</h3>
         <p class="statistic">

@@ -56,6 +56,10 @@
     }
   }
 
+  tr:hover {
+    background-color: var(--blue-100);
+  }
+
   /* td.position-indicator { */
   td:nth-child(2) {
     width: 5rem;
