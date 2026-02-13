@@ -28,8 +28,8 @@
     <details class="hint">
       <summary>{{ "action.note"|trans }}</summary>
       <div class="hint-popover">
-        <!-- sonar-disable-next-line Web:S5247 : static string translation which is trusted -->
-        {{ "person.fields.last_name_info"|trans|safe }}
+        {# sonar Web:S5247: static string translation which is trusted #}
+        {{ "person.fields.last_name_info"|trans|safe }} 
       </div>
     </details>
     {% endfor %}
