@@ -21,3 +21,4 @@ cargo test --all-features
 
 # generic
 ./bin/check_newline
+./bin/update_locales

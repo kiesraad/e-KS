@@ -34,6 +34,22 @@
       display: flex;
       gap: var(--space-md);
     }
+
+    .form-field {
+      max-width: 40rem;
+      width: 100%;
+
+      label {
+        display: none;
+      }
+
+      #search {
+        padding: var(--space-sm) var(--space-md);
+        height: 3rem;
+        border-radius: var(--space-sm);
+        border-width: 1px;
+      }
+    }
   }
 
   &.is-stuck {
