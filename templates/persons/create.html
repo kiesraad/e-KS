@@ -4,8 +4,7 @@
 
 {% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
 
-{% block overlay_content %}
-<div class="overlay-content steps">
+{% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
@@ -18,21 +17,16 @@
           {{ "person.correspondence_address"|trans }}
         </a>
       </li>
-      <li>
-        <a class="disabled" disabled>
-          {{ "person.representative"|trans }}
-        </a>
-      </li>
     </ul>
   </div>
-  <div class="form">
-    <fieldset>
-      <legend>
-        <h2>{{ "person.form.create.title"|trans }}</h2>
-      </legend>
-      {% let should_warn = false %}
-      {% include "persons/components/form.html" %}
-    </fieldset>
-  </div>
-</div>
+{% endblock %}
+
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h2>{{ "person.form.create.title"|trans }}</h2>
+    </legend>
+    {% let should_warn = false %}
+    {% include "persons/components/form.html" %}
+  </fieldset>
 {% endblock %}

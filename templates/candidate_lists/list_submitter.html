@@ -5,12 +5,11 @@
 
 {% block overlay_title %}{{ "candidate_list.fields.list_submitter"|trans }}{% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidate_lists/components/update_steps.html" %}
-    <div class="form">
-      {% include "candidate_lists/components/list_submitter_form.html" %}
-      {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidate_lists/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form %}
+  {% include "candidate_lists/components/list_submitter_form.html" %}
+  {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
 {% endblock %}

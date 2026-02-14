@@ -5,7 +5,7 @@
 {% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}{% endblock %}
 
 {% block overlay_content %}
-  <div class="form overlay-content">
+  <div method="post" action="{{ full_list.list.add_candidate_path() }}" class="form overlay-content">
     {% if persons.is_empty() %}
     <p>{{ "person.view.empty"|trans }}</p>
     {% else %}
@@ -15,7 +15,7 @@
       </p>
       {% include "candidates/components/add_table.html" %}
     {% endif %}
-  </div>
+    </div>
 {% endblock %}
 
 {% block overlay_footer %}{% endblock %}

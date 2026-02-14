@@ -50,6 +50,12 @@ impl Person {
         PersonsPath {}.to_uri().to_string()
     }
 
+    pub fn highlight_path(&self) -> String {
+        PersonsPath {}
+            .with_query_params([("highlight", self.id.to_string())])
+            .to_string()
+    }
+
     pub fn create_path() -> String {
         PersonsCreatePath {}.to_uri().to_string()
     }

@@ -7,22 +7,21 @@
 
 {% set close_action = full_list.list.view_path() %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.personal_information"|trans }}</h3>
-        </legend>
-        {% let should_warn = true %}
-        {% include "persons/components/form.html" %}
-        <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-          {{ "person.actions.delete"|trans }}
-        </button>
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidates/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h3>{{ "person.personal_information"|trans }}</h3>
+    </legend>
+    {% let should_warn = true %}
+    {% include "persons/components/form.html" %}
+    <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
+      {{ "person.actions.delete"|trans }}
+    </button>
+  </fieldset>
 {% endblock %}
 
 {% block overlay_end %}

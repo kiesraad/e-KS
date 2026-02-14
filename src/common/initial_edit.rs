@@ -7,6 +7,10 @@ pub struct InitialQuery {
 }
 
 impl InitialQuery {
+    pub fn is_initial(&self) -> bool {
+        self.initial
+    }
+
     pub fn should_warn(&self) -> bool {
         !self.initial
     }

@@ -55,7 +55,6 @@ pub async fn update_person_address_submit(
     Query(query): Query<InitialQuery>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
@@ -71,6 +70,12 @@ pub async fn update_person_address_submit(
             person
                 .update_address(&store, person.address.clone())
                 .await?;
+
+            let mut redirect_path = path.to_string();
+
+            if query.is_initial() {
+                redirect_path = full_list.list.highlight_path(candidate.person.id);
+            }
 
             Ok(Redirect::to(&redirect_path).into_response())
         }
@@ -153,7 +158,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.locality = "Rotterdam".to_string();
-        let expected_path = candidate.update_address_path();
+        let expected_path = full_list.list.highlight_path(candidate.person.id);
 
         let response = update_person_address_submit(
             CandidateListUpdateAddressPath {

@@ -6,23 +6,22 @@
 {% endblock %}
 
 {% set close_action = Person::list_path() %}
+{% let should_warn = true %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% let should_warn = true %}
-    {% include "persons/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.personal_details"|trans }}</h3>
-        </legend>
-        {% include "persons/components/form.html" %}
-        <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-          {{ "person.actions.delete"|trans }}
-        </button>
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "persons/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h3>{{ "person.personal_details"|trans }}</h3>
+    </legend>
+    {% include "persons/components/form.html" %}
+    <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
+      {{ "person.actions.delete"|trans }}
+    </button>
+  </fieldset>
 {% endblock %}
 
 {% block overlay_end %}

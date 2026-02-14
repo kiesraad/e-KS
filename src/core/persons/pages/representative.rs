@@ -45,7 +45,6 @@ pub async fn update_representative_submit(
     Query(query): Query<InitialQuery>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&person.representative, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
@@ -58,6 +57,12 @@ pub async fn update_representative_submit(
         .into_response()),
         Ok(representative) => {
             person.update_representative(&store, representative).await?;
+
+            let mut redirect_path = path.to_string();
+
+            if query.is_initial() {
+                redirect_path = person.highlight_path();
+            }
 
             Ok(Redirect::to(&redirect_path).into_response())
         }
@@ -146,7 +151,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
-        let expected_path = person.update_representative_path();
+        let expected_path = person.highlight_path();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },

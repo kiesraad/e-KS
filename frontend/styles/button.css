@@ -120,6 +120,10 @@ label.button {
     background: var(--button-color-bg-disabled);
     border-color: var(--button-color-bg-disabled);
     color: var(--button-color-disabled);
+    cursor: default;
+  }
+
+  &:disabled {
     pointer-events: none;
   }
 

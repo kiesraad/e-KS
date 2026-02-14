@@ -7,9 +7,10 @@
 
 {% set close_action = full_list.list.view_path() %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/update_steps.html" %}
-    {% include "candidates/components/position_form.html" %}
-  </div>
+{% block overlay_steps %}
+  {% include "candidates/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form %}
+  {% include "candidates/components/position_form.html" %}
 {% endblock %}

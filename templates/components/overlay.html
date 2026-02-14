@@ -16,16 +16,18 @@
       <span>{{ "action.close"|trans }}</span>
     </a>
   </header>
-  {% block overlay_content %}{% endblock %}
-  {% block overlay_footer %}
-    <footer>
-      <a href="{{ close_action|default("/") }}" class="button secondary lg icon-close mr-md">
-        {{ "action.close"|trans }}
-      </a>
-      <button type="submit" class="button dirty-check lg" name="action" value="save">
-        {{ "action.save"|trans }}
-      </button>
-    </footer>
+  {% block overlay_content %}
+  <div class="overlay-content steps">
+    {% block overlay_steps %}{% endblock %}
+    <div class="form">
+      {% block overlay_form %}{% endblock %}
+      {% block overlay_actions %}
+        <button type="submit" class="button lg dirty-check" name="action" value="save">
+          {{ "action.save"|trans }}
+        </button>
+      {% endblock %}
+    </div>
+  </div>
   {% endblock %}
 </form>
 {% block overlay_end %}{% endblock %}

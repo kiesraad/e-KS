@@ -82,7 +82,6 @@ body.overlay-open {
   .overlay-content {
     position: relative;
     padding: var(--space-lg);
-    padding-bottom: 7rem;
     flex: 1;
 
     &.steps {
@@ -91,6 +90,7 @@ body.overlay-open {
 
       & > div:nth-child(2) {
         padding-left: var(--space-lg);
+        padding-bottom: var(--space-lg);
         flex: 1;
       }
     }

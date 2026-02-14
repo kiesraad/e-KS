@@ -4,16 +4,15 @@
 
 {% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidate_lists/components/update_steps.html" %}
-    <div class="form">
-      {% include "candidate_lists/components/districts_form.html" %}
-      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ "candidate_list.actions.delete_list"|trans }}
-      </button>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidate_lists/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form %}
+  {% include "candidate_lists/components/districts_form.html" %}
+  <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
+    {{ "candidate_list.actions.delete_list"|trans }}
+  </button>
 {% endblock %}
 
 {% block overlay_end %}

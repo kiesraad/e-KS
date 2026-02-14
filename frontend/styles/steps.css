@@ -42,7 +42,7 @@
 
       &.disabled {
         background-image: none;
-        pointer-events: none;
+        pointer-events: all;
         cursor: not-allowed;
         color: var(--gray-400);
       }

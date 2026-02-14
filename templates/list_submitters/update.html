@@ -4,28 +4,27 @@
 
 {% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ list_submitter.update_path() }}">
-            {{ "political_group.edit_list_submitter"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div class="form">
-      <fieldset>
-        {% set should_warn = true %}
-        {% include "components/person_name_fields.html" %}
-        {% include "components/address_fields.html" %}
-      </fieldset>
-      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ "political_group.actions.delete_list_submitter"|trans }}
-      </button>
-    </div>
+{% block overlay_steps %}
+  <div class="steps-nav">
+    <ul>
+      <li>
+        <a href="{{ list_submitter.update_path() }}">
+          {{ "political_group.edit_list_submitter"|trans }}
+        </a>
+      </li>
+    </ul>
   </div>
+{% endblock %}
+
+{% block overlay_form %}
+  <fieldset>
+    {% set should_warn = true %}
+    {% include "components/person_name_fields.html" %}
+    {% include "components/address_fields.html" %}
+  </fieldset>
+  <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
+    {{ "political_group.actions.delete_list_submitter"|trans }}
+  </button>
 {% endblock %}
 
 {% block overlay_end %}

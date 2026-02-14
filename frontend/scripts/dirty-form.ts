@@ -14,10 +14,15 @@ function setupDirtyForms() {
     }
 
     const updateSubmitButtons = () => {
-      if (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity())) {
-        submitButton.disabled = false;
-      } else {
-        submitButton.disabled = true;
+      if (submitButton.classList.contains("dirty-check")) {
+        if (
+          dirtyForms.has(form) &&
+          (!anyFieldRequired || form.checkValidity())
+        ) {
+          submitButton.classList.remove("disabled");
+        } else {
+          submitButton.classList.add("disabled");
+        }
       }
     };
 

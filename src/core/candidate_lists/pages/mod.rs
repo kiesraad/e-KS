@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppState, InitialQuery,
     candidate_lists::{CandidateList, CandidateListId},
+    persons::PersonId,
 };
 
 mod create;
@@ -65,6 +66,12 @@ pub struct UpdateSubstituteListSubmittersPath {
 impl CandidateList {
     pub fn list_path() -> String {
         CandidateListsPath {}.to_string()
+    }
+
+    pub fn highlight_path(&self, person_id: PersonId) -> String {
+        ViewCandidateListPath { list_id: self.id }
+            .with_query_params([("highlight", person_id.to_string())])
+            .to_string()
     }
 
     pub fn create_path() -> String {

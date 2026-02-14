@@ -55,7 +55,7 @@ pub async fn create_person_candidate_list_submit(
             list.append_candidate(&store, person.id).await?;
             let candidate = list.get_candidate(&store, person.id).await?;
 
-            Ok(Redirect::to(&candidate.update_path()).into_response())
+            Ok(Redirect::to(&candidate.after_create_path()).into_response())
         }
     }
 }
@@ -131,7 +131,7 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
-        assert_eq!(location, candidate.update_path());
+        assert_eq!(location, candidate.after_create_path());
 
         Ok(())
     }

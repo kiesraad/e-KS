@@ -7,16 +7,27 @@
 
 {% set close_action = full_list.list.view_path() %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.correspondence_address"|trans }}</h3>
-        </legend>
-        {% include "components/address_fields.html" %}
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidates/components/update_steps.html" %}
+{% endblock %}
+
+{% block overlay_form%}
+  <fieldset>
+    <legend>
+      <h3>{{ "person.correspondence_address"|trans }}</h3>
+    </legend>
+    {% include "components/address_fields.html" %}
+  </fieldset>
+{% endblock %}
+
+{% block overlay_actions %}
+  {% if should_warn %}
+    <button type="submit" class="button lg dirty-check" name="action" value="save">
+      {{ "action.save"|trans }}
+    </button>
+  {% else %}
+    <button type="submit" class="button lg" name="action" value="add">
+      {{ "action.add"|trans }}
+    </button>
+  {% endif %}
 {% endblock %}
