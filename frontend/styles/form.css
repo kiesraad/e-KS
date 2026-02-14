@@ -123,13 +123,23 @@
     font-weight: normal;
   }
 
+  details.hint {
+    position: relative;
+  }
+
   .hint-popover {
     position: absolute;
+    top: var(--space-lg);
+    right: 0;
     z-index: 30;
-    background-color: var(--gray-200);
+    background-color: var(--base-white);
+    box-shadow: 0 0 0 4px var(--shadow-color-focus);
     border-radius: 5px;
     padding: var(--space-sm);
-    width: 40em;
+    width: 30em;
+    max-width: min(30em, 90vw);
+    max-height: 70vh;
+    overflow: auto;
   }
 
   summary {
@@ -137,6 +147,7 @@
     display: flex;
     align-items: center;
     cursor: pointer;
+    user-select: none;
   }
 
   /* Add custom SVG */
