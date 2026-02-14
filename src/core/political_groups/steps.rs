@@ -37,12 +37,6 @@ impl PoliticalGroupSteps {
 
         let list_submitters_complete =
             !list_submitters_empty && list_submitters.iter().all(ListSubmitter::is_complete);
-        let substitute_submitters_complete = !substitute_submitters_empty
-            && substitute_submitters
-                .iter()
-                .all(SubstituteSubmitter::is_complete);
-
-        let submitters_complete = list_submitters_complete && substitute_submitters_complete;
 
         Ok(Self {
             authorised_agents,
@@ -52,7 +46,7 @@ impl PoliticalGroupSteps {
             basic_empty,
             authorised_agents_complete,
             authorised_agents_empty,
-            submitters_complete,
+            submitters_complete: list_submitters_complete,
             submitters_empty,
         })
     }
