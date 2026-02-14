@@ -131,6 +131,7 @@ mod tests {
     use super::*;
     use sqlx::PgPool;
 
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test]
     async fn test_load(pool: PgPool) {
         let store = AppStore::new(pool);

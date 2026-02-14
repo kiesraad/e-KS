@@ -36,13 +36,12 @@ pub async fn update_authorised_agent(
 }
 
 pub async fn update_authorised_agent_submit(
-    path: AuthorisedAgentUpdatePath,
+    _: AuthorisedAgentUpdatePath,
     context: Context,
     authorised_agent: AuthorisedAgent,
     State(store): State<AppStore>,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&authorised_agent, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentUpdateTemplate {
@@ -55,7 +54,7 @@ pub async fn update_authorised_agent_submit(
         Ok(authorised_agent) => {
             authorised_agent.update(&store).await?;
 
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
         }
     }
 }
@@ -137,7 +136,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, authorised_agent.update_path());
+        assert_eq!(location, AuthorisedAgent::list_path());
 
         let updated = store.get_authorised_agent(agent_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

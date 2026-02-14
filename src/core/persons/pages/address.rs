@@ -35,7 +35,7 @@ pub async fn update_person_address(
 }
 
 pub async fn update_person_address_submit(
-    path: UpdatePersonAddressPath,
+    _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
     State(store): State<AppStore>,
@@ -57,13 +57,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            let mut redirect_path = path.to_string();
-
-            if query.is_initial() {
-                redirect_path = person.highlight_path();
-            }
-
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&person.highlight_path()).into_response())
         }
     }
 }

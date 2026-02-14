@@ -37,3 +37,9 @@
   {% endif %}
   {% include "candidate_lists/components/districts_form.html" %}
 {% endblock %}
+
+{% block overlay_actions %}
+  <button type="submit" class="button" name="action" value="save">
+    {{ "action.next"|trans }}
+  </button>
+{% endblock %}

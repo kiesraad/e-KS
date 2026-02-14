@@ -45,7 +45,7 @@ pub async fn create_substitute_submitter_submit(
         Ok(substitute_submitter) => {
             substitute_submitter.create(&store).await?;
             // TODO: set success flash message
-            Ok(Redirect::to(&substitute_submitter.update_path()).into_response())
+            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
     }
 }
@@ -109,8 +109,7 @@ mod tests {
             .expect("location header value");
         let submitters = store.get_substitute_submitters()?;
         assert_eq!(submitters.len(), 1);
-        let created = submitters.first().expect("submitter");
-        assert_eq!(location, created.update_path());
+        assert_eq!(location, ListSubmitter::list_path());
 
         Ok(())
     }

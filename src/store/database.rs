@@ -205,6 +205,7 @@ mod tests {
     use chrono::Utc;
     use sqlx::PgPool;
 
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test]
     async fn update_persists_and_load_replays(pool: PgPool) -> Result<(), AppError> {
         let store = AppStore::new(pool.clone());
@@ -225,6 +226,7 @@ mod tests {
         Ok(())
     }
 
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test]
     async fn load_skips_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
         let store = AppStore::new(pool.clone());

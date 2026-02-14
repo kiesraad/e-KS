@@ -108,6 +108,22 @@ impl Candidate {
         .to_string()
     }
 
+    pub fn after_update_path(&self) -> String {
+        if self.person.lives_in_nl() {
+            CandidateListUpdateAddressPath {
+                list_id: self.list_id,
+                person_id: self.person.id,
+            }
+            .to_string()
+        } else {
+            UpdateRepresentativePath {
+                list_id: self.list_id,
+                person_id: self.person.id,
+            }
+            .to_string()
+        }
+    }
+
     pub fn after_create_path(&self) -> String {
         if self.person.lives_in_nl() {
             CandidateListUpdateAddressPath {

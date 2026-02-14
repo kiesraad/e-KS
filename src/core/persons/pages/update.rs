@@ -50,7 +50,7 @@ pub async fn update_person_submit(
         Ok(person) => {
             person.update(&store).await?;
 
-            Ok(Redirect::to(&person.update_path()).into_response())
+            Ok(Redirect::to(&person.after_update_path()).into_response())
         }
     }
 }
@@ -104,7 +104,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
-        let expected_path = person.update_path();
+        let expected_path = person.after_update_path();
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },

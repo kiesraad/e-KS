@@ -72,7 +72,7 @@ pub async fn create_candidate_list_submit(
 
             candidate_list.create(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.update_path()).into_response())
+            Ok(Redirect::to(&candidate_list.after_create_path()).into_response())
         }
     }
 }
@@ -142,7 +142,7 @@ mod test {
         let lists = CandidateListSummary::list(&store)?;
         assert_eq!(lists.len(), 1);
 
-        let expected = lists[0].list.update_path();
+        let expected = lists[0].list.after_create_path();
         assert_eq!(location, expected);
 
         Ok(())

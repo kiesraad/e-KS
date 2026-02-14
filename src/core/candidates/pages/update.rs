@@ -39,14 +39,13 @@ pub async fn update_person(
 }
 
 pub async fn update_person_submit(
-    path: CandidateListUpdatePersonPath,
+    _: CandidateListUpdatePersonPath,
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
     State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
@@ -60,7 +59,7 @@ pub async fn update_person_submit(
         Ok(person) => {
             person.update(&store).await?;
 
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&candidate.after_update_path()).into_response())
         }
     }
 }
@@ -138,7 +137,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
-        let expected_path = candidate.update_path();
+        let expected_path = candidate.after_update_path();
 
         let response = update_person_submit(
             CandidateListUpdatePersonPath {

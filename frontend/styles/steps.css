@@ -21,15 +21,10 @@
       background-size: 1.5rem;
       line-height: 2.75rem;
       border-radius: 3px;
-      font-weight: 600;
+      font-weight: normal;
 
       &:hover {
         background-color: var(--gray-100);
-      }
-
-      &.active {
-        background-image: url("../icons/arrowNarrowRight.svg");
-        background-color: var(--gray-200);
       }
 
       &.warning {
@@ -50,6 +45,12 @@
       &.locked {
         background-image: url("../icons/lock.svg");
         background-size: 1rem;
+      }
+
+      &.active {
+        background-image: url("../icons/arrowNarrowRight.svg");
+        background-color: var(--gray-200);
+        font-weight: 600;
       }
     }
   }

@@ -5,7 +5,7 @@
   {{ person.display_name() }}
 {% endblock %}
 
-{% set close_action = Person::list_path() %}
+{% set close_action = person.highlight_path() %}
 
 {% block overlay_steps %}
   {% include "persons/components/update_steps.html" %}
@@ -22,11 +22,11 @@
 
 {% block overlay_actions %}
   {% if should_warn %}
-    <button type="submit" class="button lg dirty-check" name="action" value="save">
+    <button type="submit" class="button" name="action" value="save">
       {{ "action.save"|trans }}
     </button>
   {% else %}
-    <button type="submit" class="button lg" name="action" value="add">
+    <button type="submit" class="button" name="action" value="add">
       {{ "action.add"|trans }}
     </button>
   {% endif %}

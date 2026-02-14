@@ -38,7 +38,7 @@ pub async fn update_representative(
 }
 
 pub async fn update_representative_submit(
-    path: UpdateRepresentativePath,
+    _: UpdateRepresentativePath,
     context: Context,
     person: Person,
     State(store): State<AppStore>,
@@ -58,13 +58,7 @@ pub async fn update_representative_submit(
         Ok(representative) => {
             person.update_representative(&store, representative).await?;
 
-            let mut redirect_path = path.to_string();
-
-            if query.is_initial() {
-                redirect_path = person.highlight_path();
-            }
-
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&person.highlight_path()).into_response())
         }
     }
 }

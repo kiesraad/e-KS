@@ -56,7 +56,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("button", { name: "Volgende" }).click();
   }
 
   async addDistricts(districts: string[]) {
@@ -67,7 +67,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("button", { name: "Volgende" }).click();
   }
 
   async removeList(districts: string[]) {

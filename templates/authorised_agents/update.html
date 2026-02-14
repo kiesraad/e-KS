@@ -1,4 +1,5 @@
 {% extends "components/overlay.html" %}
+{% import "components/macros.html" as macros %}
 
 {% set close_action = AuthorisedAgent::list_path() %}
 
@@ -27,22 +28,9 @@
 {% endblock %}
 
 {% block overlay_end %}
-<dialog class="modal">
-  <form method="post" action="{{ authorised_agent.delete_path() }}" class="form">
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </button>
-    <h3>
-      {{ "political_group.actions.delete_authorised_agent"|trans }}
-    </h3>
-    <p class="mt-lg mb-lg">{{ "political_group.delete_authorised_agent_warning_text"|trans }}</p>
-    <button type="submit" class="button primary-destructive">
-      {{ "action.delete"|trans }}
-    </button>
-    <button type="submit" class="button secondary close">
-      {{ "action.cancel"|trans }}
-    </button>
-  </form>
-</dialog>
+  {{ macros::delete_modal(
+    authorised_agent.delete_path(),
+    "political_group.actions.delete_authorised_agent"|trans,
+    "political_group.delete_authorised_agent_warning_text"|trans
+  ) }}
 {% endblock %}

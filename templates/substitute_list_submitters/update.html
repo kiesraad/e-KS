@@ -1,4 +1,5 @@
 {% extends "components/overlay.html" %}
+{% import "components/macros.html" as macros %}
 
 {% set close_action = ListSubmitter::list_path() %}
 
@@ -28,22 +29,9 @@
 {% endblock %}
 
 {% block overlay_end %}
-<dialog class="modal">
-  <form method="post" action="{{ substitute_submitter.delete_path() }}" class="form">
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </button>
-    <h3>
-      {{ "political_group.actions.delete_substitute_submitter"|trans }}
-    </h3>
-    <p class="mt-lg mb-lg">{{ "political_group.delete_substitute_submitter_warning_text"|trans }}</p>
-    <button type="submit" class="button primary-destructive">
-      {{ "action.delete"|trans }}
-    </button>
-    <button type="submit" class="button secondary close">
-      {{ "action.cancel"|trans }}
-    </button>
-  </form>
-</dialog>
+  {{ macros::delete_modal(
+    substitute_submitter.delete_path(),
+    "political_group.actions.delete_substitute_submitter"|trans,
+    "political_group.delete_substitute_submitter_warning_text"|trans
+  ) }}
 {% endblock %}

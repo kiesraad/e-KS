@@ -9,9 +9,7 @@ export class AuthorisedAgentsPage {
   }
 
   getAgentLocator(lastName: string) {
-    return this.page
-      .locator("table.table")
-      .getByRole("cell", { name: lastName });
+    return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
 
   async open() {
@@ -21,8 +19,7 @@ export class AuthorisedAgentsPage {
   async deleteExistingAuthorisedAgents() {
     //takes all links from table and saves href attributes of each link in list
     const hrefs = await this.page
-      .locator("table.table")
-      .getByRole("link")
+      .locator(".person-block")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
 
     for (const href of hrefs) {
@@ -54,7 +51,6 @@ export class AuthorisedAgentsPage {
     await this.page.locator("body").click();
 
     await this.page.getByRole("button", { name: "Opslaan" }).click();
-    await this.page.getByRole("link", { name: "Sluiten" }).first().click();
   }
 
   async editAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
@@ -74,7 +70,6 @@ export class AuthorisedAgentsPage {
       await this.page.locator("body").click();
 
       await this.page.getByRole("button", { name: "Opslaan" }).click();
-      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
     }
   }
 }

@@ -62,14 +62,13 @@ pub async fn update_list_submitter(
 }
 
 pub async fn update_list_submitter_submit(
-    path: UpdateListSubmitterPath,
+    _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
     Query(query): Query<InitialQuery>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
         Err(form_data) => render_submitter_form(
             context,
@@ -81,7 +80,7 @@ pub async fn update_list_submitter_submit(
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }
 }
@@ -207,7 +206,7 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.update_list_submitter_path(), location);
+        assert_eq!(updated_list.view_path(), location);
 
         assert_eq!(candidate_list.id, updated_list.id);
 

@@ -46,6 +46,10 @@
     }
   }
 
+  tr.highlighted {
+    background-color: var(--blue-50);
+  }
+
   tr.flash-success {
     td {
       background-color: var(--green-100);

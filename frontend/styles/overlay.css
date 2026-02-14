@@ -37,6 +37,8 @@ body.overlay-open {
   position: relative;
   z-index: 1000;
   overflow: hidden;
+  transform: translateY(0);
+  animation: overlay-enter 240ms ease-in both;
   top: var(--space-lg);
   left: var(--space-lg);
   width: calc(100% - 2 * var(--space-lg));
@@ -113,5 +115,24 @@ body.overlay-open {
     .button {
       margin-left: var(--space-md);
     }
+  }
+}
+
+body.overlay-skip-anim .overlay {
+  animation: none;
+}
+
+@keyframes overlay-enter {
+  from {
+    transform: translateY(2rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
   }
 }

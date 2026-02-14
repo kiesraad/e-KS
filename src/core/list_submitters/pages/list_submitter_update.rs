@@ -35,13 +35,12 @@ pub async fn update_list_submitter(
 }
 
 pub async fn update_list_submitter_submit(
-    path: ListSubmitterUpdatePath,
+    _: ListSubmitterUpdatePath,
     context: Context,
     list_submitter: ListSubmitter,
     State(store): State<AppStore>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let redirect_path = path.to_string();
     match form.validate_update(&list_submitter, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
@@ -54,7 +53,7 @@ pub async fn update_list_submitter_submit(
         Ok(list_submitter) => {
             list_submitter.update(&store).await?;
 
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
     }
 }
@@ -136,7 +135,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list_submitter.update_path());
+        assert_eq!(location, ListSubmitter::list_path());
 
         let updated = store.get_list_submitter(submitter_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

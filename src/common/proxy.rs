@@ -68,6 +68,7 @@ mod tests {
 
     use crate::test_utils::response_body_string;
 
+    #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
     async fn proxy_forwards_requests_to_upstream() -> Result<(), sqlx::Error> {
         let upstream_router = Router::new().route("/up", get(|| async { "ok" }));

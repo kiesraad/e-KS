@@ -48,11 +48,7 @@ impl Person {
         if let Some(first_name) = &self.first_name {
             format!("{} {}", first_name, self.name.last_name_with_prefix())
         } else {
-            format!(
-                "{} {}",
-                self.name.initials,
-                self.name.last_name_with_prefix()
-            )
+            self.name.display()
         }
     }
 

@@ -13,3 +13,15 @@
   {% include "candidate_lists/components/list_submitter_form.html" %}
   {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
 {% endblock %}
+
+{% block overlay_actions %}
+  {% if should_warn %}
+    <button type="submit" class="button" name="action" value="save">
+      {{ "action.save"|trans }}
+    </button>
+  {% else %}
+    <button type="submit" class="button" name="action" value="add">
+      {{ "action.add"|trans }}
+    </button>
+  {% endif %}
+{% endblock %}

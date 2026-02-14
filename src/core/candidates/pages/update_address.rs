@@ -47,7 +47,7 @@ pub async fn update_person_address(
 }
 
 pub async fn update_person_address_submit(
-    path: CandidateListUpdateAddressPath,
+    _: CandidateListUpdateAddressPath,
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
@@ -71,13 +71,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            let mut redirect_path = path.to_string();
-
-            if query.is_initial() {
-                redirect_path = full_list.list.highlight_path(candidate.person.id);
-            }
-
-            Ok(Redirect::to(&redirect_path).into_response())
+            Ok(Redirect::to(&full_list.list.highlight_path(candidate.person.id)).into_response())
         }
     }
 }

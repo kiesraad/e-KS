@@ -9,9 +9,7 @@ export class SubstituteSubmittersPage {
   }
 
   getSubmitterLocator(lastName: string) {
-    return this.page
-      .locator("table.substitute-submitters-table")
-      .getByRole("cell", { name: lastName });
+    return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
 
   async open() {
@@ -21,8 +19,7 @@ export class SubstituteSubmittersPage {
   async deleteExistingSubstituteSubmitters() {
     //takes all links from table and saves href attributes of each link in list
     const hrefs = await this.page
-      .locator("table.substitute-submitters-table")
-      .getByRole("link")
+      .locator(".substitute-list-submitters .person-block")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
 
     for (const href of hrefs) {
@@ -58,7 +55,6 @@ export class SubstituteSubmittersPage {
       await this.page.locator("body").click();
 
       await this.page.getByRole("button", { name: "Opslaan" }).click();
-      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
     }
   }
 
@@ -72,6 +68,5 @@ export class SubstituteSubmittersPage {
       .getByRole("textbox", { name: "Achternaam *" })
       .fill("Tester");
     await this.page.getByRole("button", { name: "Opslaan" }).click();
-    await this.page.getByRole("link", { name: "Sluiten" }).first().click();
   }
 }

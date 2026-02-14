@@ -81,6 +81,7 @@ mod tests {
         (status, body_string)
     }
 
+    #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
     async fn serves_homepage_and_not_found() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();

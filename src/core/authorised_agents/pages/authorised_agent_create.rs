@@ -44,7 +44,8 @@ pub async fn create_authorised_agent_submit(
         .into_response()),
         Ok(authorised_agent) => {
             authorised_agent.create(&store).await?;
-            Ok(Redirect::to(&authorised_agent.update_path()).into_response())
+
+            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
         }
     }
 }
@@ -111,8 +112,7 @@ mod tests {
             .expect("location header value");
         let agents = store.get_authorised_agents()?;
         assert_eq!(agents.len(), 1);
-        let created = agents.first().expect("agent");
-        assert_eq!(location, created.update_path());
+        assert_eq!(location, AuthorisedAgent::list_path());
 
         Ok(())
     }

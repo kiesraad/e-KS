@@ -52,7 +52,7 @@ pub async fn update_candidate_position(
 }
 
 pub async fn update_candidate_position_submit(
-    path: UpdateCandidatePositionPath,
+    _: UpdateCandidatePositionPath,
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
@@ -64,7 +64,6 @@ pub async fn update_candidate_position_submit(
         action: FormAction::Save,
         ..Default::default()
     };
-    let redirect_path = path.to_string();
 
     match form.validate_update(&candidate_position, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -77,8 +76,6 @@ pub async fn update_candidate_position_submit(
         )
         .into_response()),
         Ok(position_form) => {
-            let redirect = Redirect::to(&redirect_path).into_response();
-
             match position_form.action {
                 FormAction::Remove => {
                     let mut list = full_list.list;
@@ -91,7 +88,7 @@ pub async fn update_candidate_position_submit(
                 }
             }
 
-            Ok(redirect)
+            Ok(Redirect::to(&candidate.update_path()).into_response())
         }
     }
 }

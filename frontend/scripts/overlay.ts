@@ -1,4 +1,25 @@
+const OVERLAY_STORAGE_KEY = "has-overlay";
+
+const updateOverlayTransition = () => {
+  const overlay: HTMLElement | null = document.querySelector(".overlay");
+  const previousHadOverlay =
+    globalThis.sessionStorage?.getItem(OVERLAY_STORAGE_KEY) === "true";
+
+  if (overlay && previousHadOverlay) {
+    document.body.classList.add("overlay-skip-anim");
+  } else {
+    document.body.classList.remove("overlay-skip-anim");
+  }
+
+  globalThis.sessionStorage?.setItem(
+    OVERLAY_STORAGE_KEY,
+    overlay ? "true" : "false",
+  );
+};
+
 window.addEventListener("load", () => {
+  updateOverlayTransition();
+
   const overlay: HTMLElement | null = document.querySelector(".overlay");
 
   if (!overlay) {
@@ -21,4 +42,12 @@ window.addEventListener("load", () => {
       }
     }
   });
+});
+
+window.addEventListener("pagehide", () => {
+  const overlay: HTMLElement | null = document.querySelector(".overlay");
+  globalThis.sessionStorage?.setItem(
+    OVERLAY_STORAGE_KEY,
+    overlay ? "true" : "false",
+  );
 });

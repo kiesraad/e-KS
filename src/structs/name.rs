@@ -13,6 +13,10 @@ pub struct FullName {
 }
 
 impl FullName {
+    pub fn display(&self) -> String {
+        format!("{} {}", self.initials, self.last_name_with_prefix())
+    }
+
     /// Returns e.g. "van Dijk"
     pub fn last_name_with_prefix(&self) -> String {
         if let Some(prefix) = &self.last_name_prefix {
