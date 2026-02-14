@@ -29,10 +29,7 @@ export class PersonsPage {
         .fill(candidate.dateOfBirth ?? "");
       await this.page.locator("body").click();
 
-      await this.page.getByRole("button", { name: "Opslaan" }).click();
-      await this.page
-        .getByRole("link", { name: "Correspondentieadres" })
-        .click();
+      await this.page.getByRole("button", { name: "Volgende" }).click();
 
       await this.page
         .getByRole("textbox", { name: "Postcode" })
@@ -53,8 +50,7 @@ export class PersonsPage {
         this.page.getByRole("combobox", { name: "Woonplaats" }),
       ).toHaveValue(candidate.locality ?? "");
 
-      await this.page.getByRole("button", { name: "Opslaan" }).click();
-      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
+      await this.page.getByRole("button", { name: "Toevoegen" }).click();
     }
   }
 

@@ -30,3 +30,9 @@
     {% include "persons/components/form.html" %}
   </fieldset>
 {% endblock %}
+
+{% block overlay_actions %}
+  <button type="submit" class="button lg dirty-check" name="action" value="save">
+    {{ "action.next"|trans }}
+  </button>
+{% endblock %}
