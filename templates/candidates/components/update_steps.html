@@ -15,12 +15,12 @@
       </a>
     </li>
     <li>
-      <a href="{{ candidate.update_address_path() }}" class="{% if !candidate.person.is_dutch() %}disabled locked{% else if candidate.person.address.is_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+      <a href="{{ candidate.update_address_path() }}" class="{% if !candidate.person.lives_in_nl() %}disabled locked{% else if candidate.person.address.is_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
         {{ "person.correspondence_address"|trans }}
       </a>
     </li>
     <li>
-      <a href="{{ candidate.update_representative_path() }}" class="{% if candidate.person.is_dutch() %}disabled locked{% else if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+      <a href="{{ candidate.update_representative_path() }}" class="{% if candidate.person.lives_in_nl() %}disabled locked{% else if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
         {{ "person.representative"|trans }}
       </a>
     </li>

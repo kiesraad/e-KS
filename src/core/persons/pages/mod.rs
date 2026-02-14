@@ -75,7 +75,7 @@ impl Person {
     }
 
     pub fn after_create_path(&self) -> String {
-        if self.is_dutch() {
+        if self.lives_in_nl() {
             UpdatePersonAddressPath { person_id: self.id }
                 .with_query_params(InitialQuery::default())
                 .to_string()

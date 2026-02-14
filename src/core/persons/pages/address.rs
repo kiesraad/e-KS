@@ -206,7 +206,7 @@ mod tests {
         .await
         .unwrap();
 
-        // The international address should be removed because `is_dutch` is true
+        // The international address should be removed because `lives_in_nl` is true
         let updated = store.get_person(person_id)?;
         assert_eq!(
             updated.address.locality.as_deref().map(|v| v.to_string()),
