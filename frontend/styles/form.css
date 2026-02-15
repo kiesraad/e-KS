@@ -104,6 +104,7 @@
 
   span.substext,
   span.hint,
+  details.hint,
   span.error {
     display: inline-block;
     font-size: var(--font-size-md);
@@ -115,11 +116,53 @@
     font-weight: normal;
   }
 
+  details.hint,
   span.hint {
     font-size: var(--font-size-sm);
     color: var(--color-help-text);
     font-weight: normal;
-    margin-top: 0.5rem;
+  }
+
+  details.hint {
+    position: relative;
+  }
+
+  .hint-popover {
+    position: absolute;
+    top: var(--space-lg);
+    right: 0;
+    z-index: 30;
+    background-color: var(--base-white);
+    box-shadow: 0 0 0 4px var(--shadow-color-focus);
+    border-radius: 5px;
+    padding: var(--space-sm);
+    width: 30em;
+    max-width: min(30em, 90vw);
+    max-height: 70vh;
+    overflow: auto;
+  }
+
+  summary {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    cursor: pointer;
+    user-select: none;
+  }
+
+  /* Add custom SVG */
+  summary::before {
+    content: url("../icons/chevronRight.svg");
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    margin-right: 8px;
+    transform-origin: center center;
+    transition: transform 0.2s;
+  }
+
+  details[open] > summary::before {
+    transform: rotate(90deg);
   }
 
   span.error {
