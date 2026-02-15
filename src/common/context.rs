@@ -14,6 +14,7 @@ use crate::{
 pub struct Context {
     pub political_group: PoliticalGroup,
     pub locale: Locale,
+    pub show_success_alert: bool,
     pub election: ElectionConfig,
     pub max_candidates: usize,
     pub csrf_tokens: CsrfTokens,
@@ -28,6 +29,7 @@ impl Context {
             political_group,
             locale,
             max_candidates: election.get_max_candidates(long_list_allowed),
+            show_success_alert: false,
             election,
             csrf_tokens,
         }
@@ -56,6 +58,7 @@ impl askama::Values for Context {
             "locale" => Some(&self.locale as &dyn std::any::Any),
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
+            "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -73,8 +76,22 @@ where
         let locale = Locale::from_request_parts(parts, state).await?;
         let csrf_tokens = CsrfTokens::from_ref(state);
         let political_group = PoliticalGroup::from_request_parts(parts, state).await?;
+        let show_success_alert = parts
+            .uri
+            .query()
+            .is_some_and(|q| q.contains("success=true"));
+        let election = ElectionConfig::EK2027;
+        let long_list_allowed = political_group.long_list_allowed.unwrap_or(false);
+        let max_candidates = election.get_max_candidates(long_list_allowed);
 
-        Ok(Context::new(political_group, locale, csrf_tokens))
+        Ok(Context {
+            political_group,
+            locale,
+            show_success_alert,
+            election,
+            max_candidates,
+            csrf_tokens,
+        })
     }
 }
 

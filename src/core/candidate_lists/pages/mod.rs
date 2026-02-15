@@ -110,7 +110,7 @@ impl CandidateList {
     }
 
     pub fn after_create_path(&self) -> impl TypedPath {
-        UpdateListSubmitterPath { list_id: self.id }.with_query_params(QueryParamState::default())
+        UpdateListSubmitterPath { list_id: self.id }.with_query_params(QueryParamState::new())
     }
 }
 

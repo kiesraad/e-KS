@@ -21,10 +21,10 @@
 {% endblock %}
 
 {% block overlay_actions %}
-  {% if !should_warn %}
+  {% if should_warn %}
+    {% include "components/submit.html" %}  
+  {% else %}
     {% set submit_label = "action.add"|trans %}
     {% include "components/submit.html" %}
-  {% else %}
-    {% include "components/submit.html" %}  
   {% endif %}
 {% endblock %}

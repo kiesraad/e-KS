@@ -7,13 +7,12 @@
 {% endblock %}
 
 {% set close_action = person.highlight_path() %}
-{% let should_warn = true %}
-
 {% block overlay_steps %}
   {% include "persons/components/update_steps.html" %}
 {% endblock %}
 
 {% block overlay_form %}
+  {% let should_warn = true %}
   <fieldset>
     <legend>
       <h3>{{ "person.personal_details"|trans }}</h3>

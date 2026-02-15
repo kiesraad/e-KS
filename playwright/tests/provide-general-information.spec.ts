@@ -15,7 +15,9 @@ test.describe("provide general information for political group", async () => {
     const politicalGroupPage = new PoliticalGroupPage(page);
     await politicalGroupPage.open();
     await politicalGroupPage.selectHasMoreThan16Seats("Ja");
+    await politicalGroupPage.open();
     await politicalGroupPage.setRegisteredDesignation("TP");
+    await politicalGroupPage.open();
     await politicalGroupPage.setStatutoryName("De Testpartij");
   });
 

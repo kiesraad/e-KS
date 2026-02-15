@@ -222,6 +222,7 @@ mod tests {
             AppError::Unauthorised,
             AppError::InternalServerError,
             AppError::GenericNotFound,
+            AppError::CsrfTokenInvalid,
             AppError::NotFound("missing".to_string()),
             AppError::from(sqlx::Error::RowNotFound),
             AppError::from(askama::Error::Fmt),

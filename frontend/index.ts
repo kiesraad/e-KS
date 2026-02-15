@@ -1,6 +1,7 @@
 import "./scripts/country-input";
 import "./scripts/date-input";
 import "./scripts/initials-input";
+import "./scripts/alert-success";
 import "./scripts/click-row";
 import "./scripts/overlay";
 import "./scripts/sortable";

@@ -2,10 +2,11 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 #[derive(Serialize, Deserialize)]
-#[serde(default)]
 pub struct QueryParamState {
+    #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     initial: bool,
+    #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
