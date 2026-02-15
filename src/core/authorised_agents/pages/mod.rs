@@ -43,16 +43,16 @@ impl AuthorisedAgent {
         AuthorisedAgentsPath {}
     }
 
-    pub fn create_path() -> String {
-        AuthorisedAgentCreatePath {}.to_string()
+    pub fn create_path() -> impl TypedPath {
+        AuthorisedAgentCreatePath {}
     }
 
-    pub fn update_path(&self) -> String {
-        AuthorisedAgentUpdatePath { agent_id: self.id }.to_string()
+    pub fn update_path(&self) -> impl TypedPath {
+        AuthorisedAgentUpdatePath { agent_id: self.id }
     }
 
-    pub fn delete_path(&self) -> String {
-        AuthorisedAgentDeletePath { agent_id: self.id }.to_string()
+    pub fn delete_path(&self) -> impl TypedPath {
+        AuthorisedAgentDeletePath { agent_id: self.id }
     }
 }
 
@@ -80,15 +80,15 @@ mod tests {
             "/political-group/authorised-agents"
         );
         assert_eq!(
-            AuthorisedAgent::create_path(),
+            AuthorisedAgent::create_path().to_string(),
             "/political-group/authorised-agents/create"
         );
         assert_eq!(
-            agent.update_path(),
+            agent.update_path().to_string(),
             format!("/political-group/authorised-agents/{}/update", agent.id)
         );
         assert_eq!(
-            agent.delete_path(),
+            agent.delete_path().to_string(),
             format!("/political-group/authorised-agents/{}/delete", agent.id)
         );
     }

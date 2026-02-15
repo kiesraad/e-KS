@@ -7,6 +7,7 @@ pub mod locale;
 pub mod logging;
 pub mod new_type;
 pub mod option_string_ext;
+pub mod redirect;
 pub mod server;
 pub mod state;
 pub mod templates;

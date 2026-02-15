@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     form::{Form, FormData},
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
+    redirect_success,
 };
 
 use super::PoliticalGroupUpdatePath;
@@ -61,7 +62,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -82,6 +83,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {
@@ -141,7 +143,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, AuthorisedAgent::list_path());
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params([("alert", "success")])
+                .to_string()
+        );
 
         let updated = store.get_political_group()?;
         assert_eq!(updated.long_list_allowed, Some(true));

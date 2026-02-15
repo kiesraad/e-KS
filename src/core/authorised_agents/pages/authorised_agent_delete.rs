@@ -1,10 +1,8 @@
 use crate::{
     AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    redirect_success,
 };
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use super::AuthorisedAgentDeletePath;
 
@@ -20,13 +18,15 @@ pub async fn delete_authorised_agent(
         Ok(_) => {
             authorized_agent.delete(&store).await?;
 
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum_extra::routing::TypedPath;
+
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, TokenValue,
@@ -66,7 +66,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, AuthorisedAgent::list_path());
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params([("alert", "success")])
+                .to_string()
+        );
 
         let agents = store.get_authorised_agents()?;
         assert!(agents.is_empty());
@@ -75,7 +80,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_authorised_agent_invalid_csrf_redirects_to_edit() -> Result<(), AppError> {
+    async fn delete_authorised_agent_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
@@ -95,16 +100,9 @@ mod tests {
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await
-        .unwrap();
+        .unwrap_err();
 
-        assert_eq!(response.status(), axum::http::StatusCode::SEE_OTHER);
-        let location = response
-            .headers()
-            .get(axum::http::header::LOCATION)
-            .expect("location header")
-            .to_str()
-            .expect("location header value");
-        assert_eq!(location, authorised_agent.update_path());
+        assert!(matches!(response, AppError::CsrfTokenInvalid));
 
         let agents = store.get_authorised_agents()?;
         assert_eq!(agents.len(), 1);

@@ -79,7 +79,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_substitute_submitter_invalid_csrf_redirects_to_edit() -> Result<(), AppError> {
+    async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
@@ -100,16 +100,9 @@ mod tests {
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await
-        .unwrap();
+        .unwrap_err();
 
-        assert_eq!(response.status(), axum::http::StatusCode::SEE_OTHER);
-        let location = response
-            .headers()
-            .get(axum::http::header::LOCATION)
-            .expect("location header")
-            .to_str()
-            .expect("location header value");
-        assert_eq!(location, substitute_submitter.update_path());
+        assert!(matches!(response, AppError::CsrfTokenInvalid));
 
         let submitters = store.get_substitute_submitters()?;
         assert_eq!(submitters.len(), 1);

@@ -26,6 +26,7 @@ pub use common::{
     locale::Locale,
     logging, new_type,
     option_string_ext::OptionStringExt,
+    redirect::redirect_success,
     server,
     state::AppState,
     templates::HtmlTemplate,

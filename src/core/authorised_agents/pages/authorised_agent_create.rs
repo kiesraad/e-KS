@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use super::AuthorisedAgentCreatePath;
@@ -10,6 +10,7 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -45,7 +46,7 @@ pub async fn create_authorised_agent_submit(
         Ok(authorised_agent) => {
             authorised_agent.create(&store).await?;
 
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -62,6 +63,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn create_authorised_agent_renders_csrf_field() -> Result<(), AppError> {
@@ -112,7 +114,12 @@ mod tests {
             .expect("location header value");
         let agents = store.get_authorised_agents()?;
         assert_eq!(agents.len(), 1);
-        assert_eq!(location, AuthorisedAgent::list_path());
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params([("alert", "success")])
+                .to_string()
+        );
 
         Ok(())
     }

@@ -75,7 +75,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_candidate_invalid_form_renders_template() -> Result<(), AppError> {
+    async fn delete_candidate_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());
@@ -94,18 +94,10 @@ mod tests {
             State(store.clone()),
             Form(EmptyForm { csrf_token }),
         )
-        .await?;
+        .await
+        .unwrap_err();
 
-        // verify redirect
-        assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        let location = response
-            .headers()
-            .get(header::LOCATION)
-            .expect("location header")
-            .to_str()
-            .expect("location header value");
-
-        assert_eq!(location, candidate_list.update_path());
+        assert!(matches!(response, AppError::CsrfTokenInvalid));
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
         let lists = CandidateListSummary::list(&store)?;
