@@ -116,6 +116,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::NotFound,
                 message: "Page not found".to_string(),
             },
+            AppError::CsrfTokenInvalid => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: "Invalid CSRF token".to_string(),
+            },
             AppError::Unauthorised => ErrorResponse {
                 error: ErrorResponseVariant::Unauthorised,
                 message: "You are not authorised to perform this action.".to_string(),

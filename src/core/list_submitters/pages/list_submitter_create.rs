@@ -43,7 +43,7 @@ pub async fn create_list_submitter_submit(
         .into_response()),
         Ok(list_submitter) => {
             list_submitter.create(&store).await?;
-            // TODO: set success flash message
+
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
     }

@@ -17,7 +17,7 @@ pub async fn delete_candidate_list(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate_list.delete(&store).await?;
 

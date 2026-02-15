@@ -9,6 +9,7 @@ use crate::{
 };
 
 use super::CandidateListDeletePersonPath;
+
 pub async fn delete_person(
     _: CandidateListDeletePersonPath,
     candidate: Candidate,
@@ -18,13 +19,10 @@ pub async fn delete_person(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => {
-            // TODO: set error flash message
-            Ok(Redirect::to(&candidate.update_path()).into_response())
-        }
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate.person.delete(&store).await?;
-            // TODO: set success flash message
+
             Ok(Redirect::to(&candidate_list.view_path()).into_response())
         }
     }

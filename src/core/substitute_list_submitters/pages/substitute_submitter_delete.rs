@@ -18,7 +18,7 @@ pub async fn delete_substitute_submitter(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&substitute_submitter.update_path()).into_response()),
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             substitute_submitter.delete(&store).await?;
 

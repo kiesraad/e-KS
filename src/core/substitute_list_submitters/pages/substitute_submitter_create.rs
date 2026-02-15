@@ -44,7 +44,7 @@ pub async fn create_substitute_submitter_submit(
         .into_response()),
         Ok(substitute_submitter) => {
             substitute_submitter.create(&store).await?;
-            // TODO: set success flash message
+
             Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
         }
     }

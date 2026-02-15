@@ -16,7 +16,7 @@ pub async fn delete_authorised_agent(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&authorized_agent.update_path()).into_response()),
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             authorized_agent.delete(&store).await?;
 

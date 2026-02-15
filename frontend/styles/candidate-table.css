@@ -47,7 +47,7 @@
   }
 
   tr.highlighted {
-    background-color: var(--blue-50);
+    background-color: var(--blue-100);
   }
 
   tr.flash-success {

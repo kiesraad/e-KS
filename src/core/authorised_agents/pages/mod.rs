@@ -39,8 +39,8 @@ pub struct AuthorisedAgentDeletePath {
 }
 
 impl AuthorisedAgent {
-    pub fn list_path() -> String {
-        AuthorisedAgentsPath {}.to_string()
+    pub fn list_path() -> impl TypedPath {
+        AuthorisedAgentsPath {}
     }
 
     pub fn create_path() -> String {
@@ -76,7 +76,7 @@ mod tests {
         let agent = sample_authorised_agent(AuthorisedAgentId::new());
 
         assert_eq!(
-            AuthorisedAgent::list_path(),
+            AuthorisedAgent::list_path().to_string(),
             "/political-group/authorised-agents"
         );
         assert_eq!(
