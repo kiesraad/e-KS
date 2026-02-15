@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use super::SubstituteSubmitterCreatePath;
@@ -9,6 +9,7 @@ use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::ListSubmitter,
+    redirect_success,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterForm},
 };
 
@@ -45,7 +46,7 @@ pub async fn create_substitute_submitter_submit(
         Ok(substitute_submitter) => {
             substitute_submitter.create(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
@@ -53,10 +54,12 @@ pub async fn create_substitute_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SUCCESS_ALERT_QUERY;
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     use crate::{
         AppError, AppStore, Context,
@@ -109,7 +112,12 @@ mod tests {
             .expect("location header value");
         let submitters = store.get_substitute_submitters()?;
         assert_eq!(submitters.len(), 1);
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         Ok(())
     }

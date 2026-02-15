@@ -63,6 +63,7 @@ pub async fn create_person_candidate_list_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use crate::{
         AppStore, Context, Form,
         candidate_lists::CandidateListId,
@@ -92,7 +93,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&list.create_candidate_path()));
+        assert!(body.contains(&list.create_candidate_path().to_string()));
         assert!(body.contains("name=\"csrf_token\""));
 
         Ok(())

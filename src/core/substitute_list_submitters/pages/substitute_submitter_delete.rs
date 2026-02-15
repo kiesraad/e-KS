@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use crate::{
     AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
-    substitute_list_submitters::SubstituteSubmitter,
+    redirect_success, substitute_list_submitters::SubstituteSubmitter,
 };
 
 use super::SubstituteSubmitterDeletePath;
@@ -22,14 +19,17 @@ pub async fn delete_substitute_submitter(
         Ok(_) => {
             substitute_submitter.delete(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum_extra::routing::TypedPath;
+
     use super::*;
+    use crate::SUCCESS_ALERT_QUERY;
 
     use crate::{
         AppError, AppStore, Context, TokenValue,
@@ -70,7 +70,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let submitters = store.get_substitute_submitters()?;
         assert!(submitters.is_empty());

@@ -10,8 +10,8 @@ mod update;
 pub struct PoliticalGroupUpdatePath;
 
 impl PoliticalGroup {
-    pub fn update_path() -> String {
-        PoliticalGroupUpdatePath {}.to_string()
+    pub fn update_path() -> impl TypedPath {
+        PoliticalGroupUpdatePath {}
     }
 }
 
@@ -27,7 +27,10 @@ mod tests {
 
     #[test]
     fn political_group_update_path_matches_expected_route() {
-        assert_eq!(PoliticalGroup::update_path(), "/political-group");
+        assert_eq!(
+            PoliticalGroup::update_path().to_string(),
+            "/political-group"
+        );
     }
 
     #[test]

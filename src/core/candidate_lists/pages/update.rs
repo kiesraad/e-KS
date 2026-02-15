@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -9,6 +9,7 @@ use crate::{
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -60,7 +61,9 @@ pub async fn update_candidate_list_submit(
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.update_list_submitter_path()).into_response())
+            Ok(redirect_success(
+                candidate_list.update_list_submitter_path(),
+            ))
         }
     }
 }
@@ -69,7 +72,8 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, InitialQuery, TokenValue, UtcDateTime,
+        AppStore, Context, ElectoralDistrict, Form, InitialQuery, SUCCESS_ALERT_QUERY, TokenValue,
+        UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -77,6 +81,7 @@ mod tests {
         extract::Query,
         http::{StatusCode, header},
     };
+    use axum_extra::routing::TypedPath;
     use chrono::{Duration, Utc};
 
     #[tokio::test]
@@ -99,7 +104,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Edit candidate list"));
-        assert!(body.contains(&candidate_list.update_path()));
+        assert!(body.contains(&candidate_list.update_path().to_string()));
         assert!(body.contains("electoral_district_UT"));
         assert!(body.contains("checked"));
 
@@ -149,7 +154,13 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.update_list_submitter_path(), location);
+        assert_eq!(
+            updated_list
+                .update_list_submitter_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string(),
+            location
+        );
 
         assert_eq!(candidate_list.id, updated_list.id);
         assert_eq!(

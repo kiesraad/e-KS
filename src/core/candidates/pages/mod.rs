@@ -3,7 +3,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState,
+    AppError, AppState, SUCCESS_ALERT_QUERY,
     candidate_lists::CandidateListId,
     candidates::Candidate,
     persons::{InitialQuery, PersonId},
@@ -68,44 +68,39 @@ pub struct CreateCandidatePath {
 }
 
 impl Candidate {
-    pub fn update_position_path(&self) -> String {
+    pub fn update_position_path(&self) -> impl TypedPath {
         UpdateCandidatePositionPath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
-        .to_string()
     }
 
-    pub fn update_path(&self) -> String {
+    pub fn update_path(&self) -> impl TypedPath {
         CandidateListUpdatePersonPath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
-        .to_string()
     }
 
-    pub fn update_address_path(&self) -> String {
+    pub fn update_address_path(&self) -> impl TypedPath {
         CandidateListUpdateAddressPath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
-        .to_string()
     }
 
-    pub fn update_representative_path(&self) -> String {
+    pub fn update_representative_path(&self) -> impl TypedPath {
         UpdateRepresentativePath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
-        .to_string()
     }
 
-    pub fn delete_path(&self) -> String {
+    pub fn delete_path(&self) -> impl TypedPath {
         CandidateListDeletePersonPath {
             list_id: self.list_id,
             person_id: self.person.id,
         }
-        .to_string()
     }
 
     pub fn after_update_path(&self) -> String {
@@ -114,12 +109,14 @@ impl Candidate {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
+            .with_query_params(SUCCESS_ALERT_QUERY)
             .to_string()
         } else {
             UpdateRepresentativePath {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
+            .with_query_params(SUCCESS_ALERT_QUERY)
             .to_string()
         }
     }
@@ -131,6 +128,7 @@ impl Candidate {
                 person_id: self.person.id,
             }
             .with_query_params(InitialQuery::default())
+            .with_query_params(SUCCESS_ALERT_QUERY)
             .to_string()
         } else {
             UpdateRepresentativePath {
@@ -138,6 +136,7 @@ impl Candidate {
                 person_id: self.person.id,
             }
             .with_query_params(InitialQuery::default())
+            .with_query_params(SUCCESS_ALERT_QUERY)
             .to_string()
         }
     }
@@ -179,35 +178,35 @@ mod tests {
         };
 
         assert_eq!(
-            candidate.update_position_path(),
+            candidate.update_position_path().to_string(),
             format!(
                 "/candidate-lists/{}/reorder/{}",
                 candidate.list_id, candidate.person.id
             )
         );
         assert_eq!(
-            candidate.update_path(),
+            candidate.update_path().to_string(),
             format!(
                 "/candidate-lists/{}/update/{}",
                 candidate.list_id, candidate.person.id
             )
         );
         assert_eq!(
-            candidate.update_address_path(),
+            candidate.update_address_path().to_string(),
             format!(
                 "/candidate-lists/{}/address/{}",
                 candidate.list_id, candidate.person.id
             )
         );
         assert_eq!(
-            candidate.update_representative_path(),
+            candidate.update_representative_path().to_string(),
             format!(
                 "/candidate-lists/{}/representative/{}",
                 candidate.list_id, candidate.person.id
             )
         );
         assert_eq!(
-            candidate.delete_path(),
+            candidate.delete_path().to_string(),
             format!(
                 "/candidate-lists/{}/delete/{}",
                 candidate.list_id, candidate.person.id
@@ -237,16 +236,22 @@ mod tests {
         };
 
         let expected_dutch = format!(
-            "/candidate-lists/{}/address/{}?&initial=true",
+            "/candidate-lists/{}/address/{}?&initial=true&alert=success",
             dutch_candidate.list_id, dutch_candidate.person.id
         );
         let expected_foreign = format!(
-            "/candidate-lists/{}/representative/{}?&initial=true",
+            "/candidate-lists/{}/representative/{}?&initial=true&alert=success",
             foreign_candidate.list_id, foreign_candidate.person.id
         );
 
-        assert_eq!(dutch_candidate.after_create_path(), expected_dutch);
-        assert_eq!(foreign_candidate.after_create_path(), expected_foreign);
+        assert_eq!(
+            dutch_candidate.after_create_path().to_string(),
+            expected_dutch
+        );
+        assert_eq!(
+            foreign_candidate.after_create_path().to_string(),
+            expected_foreign
+        );
     }
 
     #[test]

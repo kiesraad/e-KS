@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     filters,
     form::FormData,
     persons::{AddressForm, InitialQuery},
+    redirect_success,
 };
 
 use super::CandidateListUpdateAddressPath;
@@ -71,7 +72,9 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(Redirect::to(&full_list.list.highlight_path(candidate.person.id)).into_response())
+            Ok(redirect_success(
+                full_list.list.highlight_path(candidate.person.id),
+            ))
         }
     }
 }
@@ -80,7 +83,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form,
+        AppStore, Context, Form, SUCCESS_ALERT_QUERY,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -93,6 +96,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_person_address_renders_candidate() -> Result<(), AppError> {
@@ -152,7 +156,11 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.locality = "Rotterdam".to_string();
-        let expected_path = full_list.list.highlight_path(candidate.person.id);
+        let expected_path = full_list
+            .list
+            .highlight_path(candidate.person.id)
+            .with_query_params(SUCCESS_ALERT_QUERY)
+            .to_string();
 
         let response = update_person_address_submit(
             CandidateListUpdateAddressPath {

@@ -1,13 +1,14 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{AddressForm, InitialQuery, Person, pages::UpdatePersonAddressPath},
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -57,7 +58,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(Redirect::to(&person.highlight_path()).into_response())
+            Ok(redirect_success(person.highlight_path()))
         }
     }
 }
@@ -66,7 +67,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, DutchAddressForm, Form,
+        AppError, AppStore, Context, DutchAddressForm, Form, SUCCESS_ALERT_QUERY,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
@@ -75,6 +76,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_person_address_renders_existing_person() -> Result<(), AppError> {
@@ -112,7 +114,10 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
-        let expected_path = person.highlight_path();
+        let expected_path = person
+            .highlight_path()
+            .with_query_params(SUCCESS_ALERT_QUERY)
+            .to_string();
 
         let response = update_person_address_submit(
             UpdatePersonAddressPath { person_id },

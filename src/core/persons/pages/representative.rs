@@ -1,13 +1,14 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{InitialQuery, Person, RepresentativeForm, pages::UpdateRepresentativePath},
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -58,7 +59,7 @@ pub async fn update_representative_submit(
         Ok(representative) => {
             person.update_representative(&store, representative).await?;
 
-            Ok(Redirect::to(&person.highlight_path()).into_response())
+            Ok(redirect_success(person.highlight_path()))
         }
     }
 }
@@ -67,7 +68,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_person, sample_representative_form,
@@ -78,6 +79,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_representative_renders_existing_person() -> Result<(), AppError> {
@@ -145,7 +147,10 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
-        let expected_path = person.highlight_path();
+        let expected_path = person
+            .highlight_path()
+            .with_query_params(SUCCESS_ALERT_QUERY)
+            .to_string();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },

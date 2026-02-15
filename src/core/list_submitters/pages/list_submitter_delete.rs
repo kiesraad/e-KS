@@ -1,9 +1,9 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
-use crate::{AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter};
+use crate::{
+    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
+    redirect_success,
+};
 
 use super::ListSubmitterDeletePath;
 
@@ -19,16 +19,18 @@ pub async fn delete_list_submitter(
         Ok(_) => {
             submitter.delete(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum_extra::routing::TypedPath;
+
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, TokenValue,
+        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY, TokenValue,
         list_submitters::{ListSubmitter, ListSubmitterId},
         political_groups::PoliticalGroupId,
         test_utils::{sample_list_submitter, sample_political_group},
@@ -65,7 +67,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let submitters = store.get_list_submitters()?;
         assert!(submitters.is_empty());

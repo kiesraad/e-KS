@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect},
-};
+use axum::{extract::State, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
@@ -10,6 +7,7 @@ use crate::{
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     filters,
     form::FormData,
+    redirect_success,
     structs::FormAction,
 };
 
@@ -88,7 +86,7 @@ pub async fn update_candidate_position_submit(
                 }
             }
 
-            Ok(Redirect::to(&candidate.update_path()).into_response())
+            Ok(redirect_success(candidate.update_path()))
         }
     }
 }
@@ -147,7 +145,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&candidate.update_position_path()));
+        assert!(body.contains(&candidate.update_position_path().to_string()));
         assert!(body.contains("Jansen"));
 
         Ok(())

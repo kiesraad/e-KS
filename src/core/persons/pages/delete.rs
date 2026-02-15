@@ -1,12 +1,10 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use crate::{
     AppError, AppStore, Context, Form,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
+    redirect_success,
 };
 
 pub async fn delete_person(
@@ -21,15 +19,20 @@ pub async fn delete_person(
         Ok(_) => {
             person.delete(&store).await?;
 
-            Ok(Redirect::to(&Person::list_path()).into_response())
+            Ok(redirect_success(Person::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum_extra::routing::TypedPath;
+
     use super::*;
-    use crate::{AppError, AppStore, Context, Form, persons::PersonId, test_utils::sample_person};
+    use crate::{
+        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY, persons::PersonId,
+        test_utils::sample_person,
+    };
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {
@@ -59,7 +62,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, Person::list_path());
+        assert_eq!(
+            location,
+            Person::list_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let found = store.get_person(person_id);
         assert!(found.is_err());

@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 use serde::Deserialize;
 
@@ -10,6 +10,7 @@ use crate::{
     candidate_lists::{CandidateList, FullCandidateList},
     filters,
     persons::{Person, PersonId},
+    redirect_success,
 };
 
 use super::AddCandidatePath;
@@ -45,7 +46,7 @@ pub async fn add_person_to_candidate_list(
     State(store): State<AppStore>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect = Redirect::to(&list.view_path()).into_response();
+    let redirect = redirect_success(list.view_path());
     let person_exists = store
         .get_persons()?
         .iter()
@@ -64,7 +65,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form,
+        AppStore, Context, Form, SUCCESS_ALERT_QUERY,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -76,6 +77,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn view_candidate_list_renders_persons() -> Result<(), AppError> {
@@ -132,7 +134,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(
+            location,
+            list.view_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -172,7 +179,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(
+            location,
+            list.view_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -9,6 +9,7 @@ use crate::{
     candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -72,7 +73,7 @@ pub async fn create_candidate_list_submit(
 
             candidate_list.create(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.after_create_path()).into_response())
+            Ok(redirect_success(candidate_list.after_create_path()))
         }
     }
 }
@@ -86,9 +87,10 @@ mod test {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, ElectoralDistrict, TokenValue,
+        AppStore, Context, ElectoralDistrict, SUCCESS_ALERT_QUERY, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -142,7 +144,11 @@ mod test {
         let lists = CandidateListSummary::list(&store)?;
         assert_eq!(lists.len(), 1);
 
-        let expected = lists[0].list.after_create_path();
+        let expected = lists[0]
+            .list
+            .after_create_path()
+            .with_query_params(SUCCESS_ALERT_QUERY)
+            .to_string();
         assert_eq!(location, expected);
 
         Ok(())

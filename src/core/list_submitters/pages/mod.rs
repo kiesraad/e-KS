@@ -39,26 +39,24 @@ pub struct ListSubmitterDeletePath {
 }
 
 impl ListSubmitter {
-    pub fn list_path() -> String {
-        ListSubmittersPath {}.to_string()
+    pub fn list_path() -> impl TypedPath {
+        ListSubmittersPath {}
     }
 
-    pub fn create_path() -> String {
-        ListSubmitterCreatePath {}.to_string()
+    pub fn create_path() -> impl TypedPath {
+        ListSubmitterCreatePath {}
     }
 
-    pub fn update_path(&self) -> String {
+    pub fn update_path(&self) -> impl TypedPath {
         ListSubmitterUpdatePath {
             submitter_id: self.id,
         }
-        .to_string()
     }
 
-    pub fn delete_path(&self) -> String {
+    pub fn delete_path(&self) -> impl TypedPath {
         ListSubmitterDeletePath {
             submitter_id: self.id,
         }
-        .to_string()
     }
 }
 
@@ -82,19 +80,19 @@ mod tests {
         let submitter = sample_list_submitter(ListSubmitterId::new());
 
         assert_eq!(
-            ListSubmitter::list_path(),
+            ListSubmitter::list_path().to_string(),
             "/political-group/list-submitters"
         );
         assert_eq!(
-            ListSubmitter::create_path(),
+            ListSubmitter::create_path().to_string(),
             "/political-group/list-submitters/create"
         );
         assert_eq!(
-            submitter.update_path(),
+            submitter.update_path().to_string(),
             format!("/political-group/list-submitters/{}/update", submitter.id)
         );
         assert_eq!(
-            submitter.delete_path(),
+            submitter.delete_path().to_string(),
             format!("/political-group/list-submitters/{}/delete", submitter.id)
         );
     }

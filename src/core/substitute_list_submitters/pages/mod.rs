@@ -34,22 +34,20 @@ pub struct SubstituteSubmitterDeletePath {
 }
 
 impl SubstituteSubmitter {
-    pub fn create_path() -> String {
-        SubstituteSubmitterCreatePath {}.to_string()
+    pub fn create_path() -> impl TypedPath {
+        SubstituteSubmitterCreatePath {}
     }
 
-    pub fn update_path(&self) -> String {
+    pub fn update_path(&self) -> impl TypedPath {
         SubstituteSubmitterUpdatePath {
             sub_submitter_id: self.id,
         }
-        .to_string()
     }
 
-    pub fn delete_path(&self) -> String {
+    pub fn delete_path(&self) -> impl TypedPath {
         SubstituteSubmitterDeletePath {
             sub_submitter_id: self.id,
         }
-        .to_string()
     }
 }
 
@@ -74,18 +72,18 @@ mod tests {
         let submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
 
         assert_eq!(
-            SubstituteSubmitter::create_path(),
+            SubstituteSubmitter::create_path().to_string(),
             "/political-group/substitute-submitters/create"
         );
         assert_eq!(
-            submitter.update_path(),
+            submitter.update_path().to_string(),
             format!(
                 "/political-group/substitute-submitters/{}/update",
                 submitter.id
             )
         );
         assert_eq!(
-            submitter.delete_path(),
+            submitter.delete_path().to_string(),
             format!(
                 "/political-group/substitute-submitters/{}/delete",
                 submitter.id

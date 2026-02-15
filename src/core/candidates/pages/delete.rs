@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use crate::{
     AppError, AppStore, Context, Form, candidate_lists::CandidateList, candidates::Candidate,
-    form::EmptyForm,
+    form::EmptyForm, redirect_success,
 };
 
 use super::CandidateListDeletePersonPath;
@@ -23,7 +20,7 @@ pub async fn delete_person(
         Ok(_) => {
             candidate.person.delete(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(redirect_success(candidate_list.view_path()))
         }
     }
 }
@@ -32,12 +29,13 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Form,
+        AppStore, Form, SUCCESS_ALERT_QUERY,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
     use axum::http::{StatusCode, header};
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {
@@ -80,7 +78,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(
+            location,
+            list.view_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string()
+        );
 
         let updated_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);

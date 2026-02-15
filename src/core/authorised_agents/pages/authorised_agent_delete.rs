@@ -29,7 +29,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, TokenValue,
+        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY, TokenValue,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{sample_authorised_agent, sample_political_group},
@@ -69,7 +69,7 @@ mod tests {
         assert_eq!(
             location,
             AuthorisedAgent::list_path()
-                .with_query_params([("alert", "success")])
+                .with_query_params(SUCCESS_ALERT_QUERY)
                 .to_string()
         );
 

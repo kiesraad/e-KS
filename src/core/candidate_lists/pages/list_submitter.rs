@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -10,6 +10,7 @@ use crate::{
     filters,
     form::FormData,
     list_submitters::ListSubmitter,
+    redirect_success,
     substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -80,7 +81,7 @@ pub async fn update_list_submitter_submit(
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(redirect_success(candidate_list.view_path()))
         }
     }
 }
@@ -88,10 +89,12 @@ pub async fn update_list_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::SUCCESS_ALERT_QUERY;
     use axum::{
         extract::Query,
         http::{StatusCode, header},
     };
+    use axum_extra::routing::TypedPath;
 
     use crate::{
         AppStore, Context, CsrfTokens, ElectoralDistrict, InitialQuery, Locale, TokenValue,
@@ -138,7 +141,7 @@ mod tests {
         assert!(body.contains("Submitter of the list"));
         assert!(body.contains("Substitute list submitters"));
         assert!(body.contains("csrf_token"));
-        assert!(body.contains(&candidate_list.update_list_submitter_path()));
+        assert!(body.contains(&candidate_list.update_list_submitter_path().to_string()));
         assert!(body.contains(list_submitter.name.last_name.as_str()));
         assert!(body.contains(list_submitter.name.initials.as_str()));
         assert!(body.contains(substitute_submitter.name.last_name.as_str()));
@@ -206,7 +209,13 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.view_path(), location);
+        assert_eq!(
+            updated_list
+                .view_path()
+                .with_query_params(SUCCESS_ALERT_QUERY)
+                .to_string(),
+            location
+        );
 
         assert_eq!(candidate_list.id, updated_list.id);
 

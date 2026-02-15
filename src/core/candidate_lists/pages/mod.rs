@@ -64,56 +64,53 @@ pub struct UpdateSubstituteListSubmittersPath {
 }
 
 impl CandidateList {
-    pub fn list_path() -> String {
-        CandidateListsPath {}.to_string()
+    pub fn list_path() -> impl TypedPath {
+        CandidateListsPath {}
     }
 
-    pub fn highlight_path(&self, person_id: PersonId) -> String {
+    pub fn highlight_path(&self, person_id: PersonId) -> impl TypedPath {
         ViewCandidateListPath { list_id: self.id }
             .with_query_params([("highlight", person_id.to_string())])
-            .to_string()
     }
 
-    pub fn create_path() -> String {
-        CandidateListCreatePath {}.to_string()
+    pub fn create_path() -> impl TypedPath {
+        CandidateListCreatePath {}
     }
 
-    pub fn update_path(&self) -> String {
-        CandidateListUpdatePath { list_id: self.id }.to_string()
+    pub fn update_path(&self) -> impl TypedPath {
+        CandidateListUpdatePath { list_id: self.id }
     }
 
-    pub fn delete_path(&self) -> String {
-        CandidateListsDeletePath { list_id: self.id }.to_string()
+    pub fn delete_path(&self) -> impl TypedPath {
+        CandidateListsDeletePath { list_id: self.id }
     }
 
-    pub fn view_path(&self) -> String {
-        ViewCandidateListPath { list_id: self.id }.to_string()
+    pub fn view_path(&self) -> impl TypedPath {
+        ViewCandidateListPath { list_id: self.id }
     }
 
-    pub fn update_list_submitter_path(&self) -> String {
-        UpdateListSubmitterPath { list_id: self.id }.to_string()
-    }
-
-    pub fn update_substitute_list_submitters_path(&self) -> String {
-        UpdateSubstituteListSubmittersPath { list_id: self.id }.to_string()
-    }
-
-    pub fn reorder_path(&self) -> String {
-        CandidateListReorderPath { list_id: self.id }.to_string()
-    }
-
-    pub fn add_candidate_path(&self) -> String {
-        crate::candidates::AddCandidatePath { list_id: self.id }.to_string()
-    }
-
-    pub fn create_candidate_path(&self) -> String {
-        crate::candidates::CreateCandidatePath { list_id: self.id }.to_string()
-    }
-
-    pub fn after_create_path(&self) -> String {
+    pub fn update_list_submitter_path(&self) -> impl TypedPath {
         UpdateListSubmitterPath { list_id: self.id }
-            .with_query_params(InitialQuery::default())
-            .to_string()
+    }
+
+    pub fn update_substitute_list_submitters_path(&self) -> impl TypedPath {
+        UpdateSubstituteListSubmittersPath { list_id: self.id }
+    }
+
+    pub fn reorder_path(&self) -> impl TypedPath {
+        CandidateListReorderPath { list_id: self.id }
+    }
+
+    pub fn add_candidate_path(&self) -> impl TypedPath {
+        crate::candidates::AddCandidatePath { list_id: self.id }
+    }
+
+    pub fn create_candidate_path(&self) -> impl TypedPath {
+        crate::candidates::CreateCandidatePath { list_id: self.id }
+    }
+
+    pub fn after_create_path(&self) -> impl TypedPath {
+        UpdateListSubmitterPath { list_id: self.id }.with_query_params(InitialQuery::default())
     }
 }
 
@@ -143,35 +140,41 @@ mod tests {
     fn candidate_list_paths_match_expected_routes() {
         let list = sample_candidate_list(CandidateListId::new());
 
-        assert_eq!(CandidateList::list_path(), "/candidate-lists");
-        assert_eq!(CandidateList::create_path(), "/candidate-lists/create");
+        assert_eq!(CandidateList::list_path().to_string(), "/candidate-lists");
         assert_eq!(
-            list.update_path(),
+            CandidateList::create_path().to_string(),
+            "/candidate-lists/create"
+        );
+        assert_eq!(
+            list.update_path().to_string(),
             format!("/candidate-lists/{}/update", list.id)
         );
         assert_eq!(
-            list.delete_path(),
+            list.delete_path().to_string(),
             format!("/candidate-lists/{}/delete", list.id)
         );
-        assert_eq!(list.view_path(), format!("/candidate-lists/{}", list.id));
         assert_eq!(
-            list.update_list_submitter_path(),
+            list.view_path().to_string(),
+            format!("/candidate-lists/{}", list.id)
+        );
+        assert_eq!(
+            list.update_list_submitter_path().to_string(),
             format!("/candidate-lists/{}/list-submitter", list.id)
         );
         assert_eq!(
-            list.update_substitute_list_submitters_path(),
+            list.update_substitute_list_submitters_path().to_string(),
             format!("/candidate-lists/{}/substitute-list-submitters", list.id)
         );
         assert_eq!(
-            list.reorder_path(),
+            list.reorder_path().to_string(),
             format!("/candidate-lists/{}/reorder", list.id)
         );
         assert_eq!(
-            list.add_candidate_path(),
+            list.add_candidate_path().to_string(),
             format!("/candidate-lists/{}/add", list.id)
         );
         assert_eq!(
-            list.create_candidate_path(),
+            list.create_candidate_path().to_string(),
             format!("/candidate-lists/{}/create", list.id)
         );
     }
@@ -181,7 +184,7 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
         let expected = format!("/candidate-lists/{}/list-submitter?&initial=true", list.id);
 
-        assert_eq!(list.after_create_path(), expected);
+        assert_eq!(list.after_create_path().to_string(), expected);
     }
 
     #[test]

@@ -95,7 +95,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&list_submitter.update_path()));
+        assert!(body.contains(&list_submitter.update_path().to_string()));
 
         Ok(())
     }
