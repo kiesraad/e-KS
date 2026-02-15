@@ -65,7 +65,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, SUCCESS_ALERT_QUERY,
+        AppStore, Context, Form, QueryParamState,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -137,7 +137,7 @@ mod tests {
         assert_eq!(
             location,
             list.view_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 
@@ -182,7 +182,7 @@ mod tests {
         assert_eq!(
             location,
             list.view_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

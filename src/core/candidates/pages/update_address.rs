@@ -5,13 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
-    candidate_lists::FullCandidateList,
-    candidates::Candidate,
-    filters,
-    form::FormData,
-    persons::{AddressForm, InitialQuery},
-    redirect_success,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
+    persons::AddressForm, redirect_success,
 };
 
 use super::CandidateListUpdateAddressPath;
@@ -29,7 +25,7 @@ pub async fn update_person_address(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
         AddressForm::from(candidate.person.clone()),
@@ -53,7 +49,7 @@ pub async fn update_person_address_submit(
     full_list: FullCandidateList,
     candidate: Candidate,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
@@ -83,7 +79,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, SUCCESS_ALERT_QUERY,
+        AppStore, Context, Form, QueryParamState,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -123,7 +119,7 @@ mod tests {
             Context::new_test_without_db(),
             full_list,
             candidate,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -159,7 +155,7 @@ mod tests {
         let expected_path = full_list
             .list
             .highlight_path(candidate.person.id)
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::success())
             .to_string();
 
         let response = update_person_address_submit(
@@ -171,7 +167,7 @@ mod tests {
             full_list,
             candidate,
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;
@@ -229,7 +225,7 @@ mod tests {
             full_list,
             candidate,
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?

@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
-    persons::{AddressForm, InitialQuery, Person, pages::UpdatePersonAddressPath},
+    persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
     redirect_success,
 };
 
@@ -23,7 +23,7 @@ pub async fn update_person_address(
     _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
@@ -40,7 +40,7 @@ pub async fn update_person_address_submit(
     context: Context,
     person: Person,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &context.csrf_tokens) {
@@ -67,7 +67,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, DutchAddressForm, Form, SUCCESS_ALERT_QUERY,
+        AppError, AppStore, Context, DutchAddressForm, Form, QueryParamState,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
@@ -90,7 +90,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             Context::new_test_without_db(),
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -116,7 +116,7 @@ mod tests {
         let form = sample_address_form(&csrf_token);
         let expected_path = person
             .highlight_path()
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::success())
             .to_string();
 
         let response = update_person_address_submit(
@@ -124,7 +124,7 @@ mod tests {
             context,
             person,
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -167,7 +167,7 @@ mod tests {
             context,
             person,
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -197,7 +197,7 @@ mod tests {
             context.clone(),
             person.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(AddressForm {
                 address: DutchAddressForm {
                     locality: "Juinen".to_string(),

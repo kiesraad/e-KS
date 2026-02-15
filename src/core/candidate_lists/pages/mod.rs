@@ -3,7 +3,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, InitialQuery,
+    AppError, AppState, QueryParamState,
     candidate_lists::{CandidateList, CandidateListId},
     persons::PersonId,
 };
@@ -70,7 +70,7 @@ impl CandidateList {
 
     pub fn highlight_path(&self, person_id: PersonId) -> impl TypedPath {
         ViewCandidateListPath { list_id: self.id }
-            .with_query_params([("highlight", person_id.to_string())])
+            .with_query_params(QueryParamState::highlight(person_id.into()))
     }
 
     pub fn create_path() -> impl TypedPath {
@@ -110,7 +110,7 @@ impl CandidateList {
     }
 
     pub fn after_create_path(&self) -> impl TypedPath {
-        UpdateListSubmitterPath { list_id: self.id }.with_query_params(InitialQuery::default())
+        UpdateListSubmitterPath { list_id: self.id }.with_query_params(QueryParamState::default())
     }
 }
 
@@ -182,7 +182,10 @@ mod tests {
     #[test]
     fn candidate_list_after_create_path_includes_initial_query() {
         let list = sample_candidate_list(CandidateListId::new());
-        let expected = format!("/candidate-lists/{}/list-submitter?&initial=true", list.id);
+        let expected = format!(
+            "/candidate-lists/{}/list-submitter?&initial=true&success=true",
+            list.id
+        );
 
         assert_eq!(list.after_create_path().to_string(), expected);
     }

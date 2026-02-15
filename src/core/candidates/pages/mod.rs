@@ -3,10 +3,8 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, SUCCESS_ALERT_QUERY,
-    candidate_lists::CandidateListId,
-    candidates::Candidate,
-    persons::{InitialQuery, PersonId},
+    AppError, AppState, QueryParamState, candidate_lists::CandidateListId, candidates::Candidate,
+    persons::PersonId,
 };
 
 mod add;
@@ -109,14 +107,14 @@ impl Candidate {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::success())
             .to_string()
         } else {
             UpdateRepresentativePath {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::success())
             .to_string()
         }
     }
@@ -127,16 +125,14 @@ impl Candidate {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(InitialQuery::default())
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::new())
             .to_string()
         } else {
             UpdateRepresentativePath {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(InitialQuery::default())
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::new())
             .to_string()
         }
     }
@@ -236,11 +232,11 @@ mod tests {
         };
 
         let expected_dutch = format!(
-            "/candidate-lists/{}/address/{}?&initial=true&alert=success",
+            "/candidate-lists/{}/address/{}?&initial=true&success=true",
             dutch_candidate.list_id, dutch_candidate.person.id
         );
         let expected_foreign = format!(
-            "/candidate-lists/{}/representative/{}?&initial=true&alert=success",
+            "/candidate-lists/{}/representative/{}?&initial=true&success=true",
             foreign_candidate.list_id, foreign_candidate.person.id
         );
 

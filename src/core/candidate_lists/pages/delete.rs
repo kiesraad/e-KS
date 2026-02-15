@@ -28,7 +28,7 @@ pub async fn delete_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, ElectoralDistrict, Form, SUCCESS_ALERT_QUERY, TokenValue,
+        AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::CandidateListSummary,
     };
     use axum::http::{StatusCode, header};
@@ -68,7 +68,7 @@ mod tests {
         assert_eq!(
             location,
             CandidateList::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

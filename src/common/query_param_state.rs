@@ -1,0 +1,61 @@
+use serde::{Deserialize, Serialize};
+use uuid::Uuid;
+
+#[derive(Serialize, Deserialize)]
+#[serde(default)]
+pub struct QueryParamState {
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    initial: bool,
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    success: bool,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    highlight: Option<Uuid>,
+}
+
+impl QueryParamState {
+    pub fn is_initial(&self) -> bool {
+        self.initial
+    }
+
+    pub fn should_warn(&self) -> bool {
+        !self.initial
+    }
+
+    pub fn get_highlight(&self) -> Option<Uuid> {
+        self.highlight
+    }
+
+    pub fn is_success(&self) -> bool {
+        self.success
+    }
+
+    pub fn new() -> Self {
+        Self {
+            initial: true,
+            success: true,
+            highlight: None,
+        }
+    }
+
+    pub fn success() -> Self {
+        Self {
+            initial: false,
+            success: true,
+            highlight: None,
+        }
+    }
+
+    pub fn highlight(id: Uuid) -> Self {
+        Self {
+            initial: false,
+            highlight: Some(id),
+            success: true,
+        }
+    }
+}
+
+impl Default for QueryParamState {
+    fn default() -> Self {
+        Self::new()
+    }
+}

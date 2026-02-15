@@ -29,7 +29,7 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Form, SUCCESS_ALERT_QUERY,
+        AppStore, Form, QueryParamState,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -81,7 +81,7 @@ mod tests {
         assert_eq!(
             location,
             list.view_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

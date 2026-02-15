@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
@@ -24,7 +24,7 @@ pub async fn update_candidate_list(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
@@ -45,7 +45,7 @@ pub async fn update_candidate_list_submit(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
@@ -72,8 +72,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, InitialQuery, SUCCESS_ALERT_QUERY, TokenValue,
-        UtcDateTime,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue, UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -97,7 +96,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await?;
 
@@ -134,7 +133,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;
@@ -157,7 +156,7 @@ mod tests {
         assert_eq!(
             updated_list
                 .update_list_submitter_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string(),
             location
         );
@@ -203,7 +202,7 @@ mod tests {
             Context::new_test_without_db(),
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;

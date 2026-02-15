@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, ListSubmitterForm, pages::UpdateListSubmitterPath},
     filters,
     form::FormData,
@@ -52,7 +52,7 @@ pub async fn update_list_submitter(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let form = FormData::new_with_data(
         ListSubmitterForm::from(candidate_list.clone()),
@@ -67,7 +67,7 @@ pub async fn update_list_submitter_submit(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
@@ -89,7 +89,6 @@ pub async fn update_list_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SUCCESS_ALERT_QUERY;
     use axum::{
         extract::Query,
         http::{StatusCode, header},
@@ -97,7 +96,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, CsrfTokens, ElectoralDistrict, InitialQuery, Locale, TokenValue,
+        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, QueryParamState, TokenValue,
         UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
@@ -131,7 +130,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap();
@@ -188,7 +187,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -212,7 +211,7 @@ mod tests {
         assert_eq!(
             updated_list
                 .view_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string(),
             location
         );
@@ -254,7 +253,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
-    persons::{InitialQuery, Person, RepresentativeForm, pages::UpdateRepresentativePath},
+    persons::{Person, RepresentativeForm, pages::UpdateRepresentativePath},
     redirect_success,
 };
 
@@ -23,7 +23,7 @@ pub async fn update_representative(
     _: UpdateRepresentativePath,
     context: Context,
     person: Person,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
@@ -43,7 +43,7 @@ pub async fn update_representative_submit(
     context: Context,
     person: Person,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person.representative, &context.csrf_tokens) {
@@ -68,7 +68,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY,
+        AppError, AppStore, Context, Form, QueryParamState,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_person, sample_representative_form,
@@ -93,7 +93,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             Context::new_test_without_db(),
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -121,7 +121,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             context,
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -149,7 +149,7 @@ mod tests {
         form.name.last_name = "Smit".to_string();
         let expected_path = person
             .highlight_path()
-            .with_query_params(SUCCESS_ALERT_QUERY)
+            .with_query_params(QueryParamState::success())
             .to_string();
 
         let response = update_representative_submit(
@@ -157,7 +157,7 @@ mod tests {
             context,
             person,
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -196,7 +196,7 @@ mod tests {
             context,
             person,
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

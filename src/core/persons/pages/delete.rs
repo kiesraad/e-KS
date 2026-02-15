@@ -30,7 +30,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY, persons::PersonId,
+        AppError, AppStore, Context, Form, QueryParamState, persons::PersonId,
         test_utils::sample_person,
     };
 
@@ -65,7 +65,7 @@ mod tests {
         assert_eq!(
             location,
             Person::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

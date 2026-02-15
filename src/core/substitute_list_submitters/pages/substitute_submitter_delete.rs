@@ -29,7 +29,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use super::*;
-    use crate::SUCCESS_ALERT_QUERY;
+    use crate::QueryParamState;
 
     use crate::{
         AppError, AppStore, Context, TokenValue,
@@ -73,7 +73,7 @@ mod tests {
         assert_eq!(
             location,
             ListSubmitter::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

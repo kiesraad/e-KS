@@ -66,7 +66,7 @@ pub async fn update_substitute_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::SUCCESS_ALERT_QUERY;
+    use crate::QueryParamState;
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
@@ -146,7 +146,7 @@ mod tests {
         assert_eq!(
             location,
             ListSubmitter::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

@@ -64,7 +64,7 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY,
+        AppError, AppStore, Context, Form, QueryParamState,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -141,7 +141,7 @@ mod tests {
         assert_eq!(
             location,
             AuthorisedAgent::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 

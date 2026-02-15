@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppState, InitialQuery, SUCCESS_ALERT_QUERY,
+    AppError, AppState, QueryParamState,
     persons::{Person, PersonId},
 };
 use axum::Router;
@@ -51,7 +51,7 @@ impl Person {
     }
 
     pub fn highlight_path(&self) -> impl TypedPath {
-        PersonsPath {}.with_query_params([("highlight", self.id.to_string())])
+        PersonsPath {}.with_query_params(QueryParamState::highlight(self.id.into()))
     }
 
     pub fn create_path() -> impl TypedPath {
@@ -77,11 +77,11 @@ impl Person {
     pub fn after_update_path(&self) -> String {
         if self.lives_in_nl() {
             UpdatePersonAddressPath { person_id: self.id }
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         } else {
             UpdateRepresentativePath { person_id: self.id }
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         }
     }
@@ -89,13 +89,11 @@ impl Person {
     pub fn after_create_path(&self) -> String {
         if self.lives_in_nl() {
             UpdatePersonAddressPath { person_id: self.id }
-                .with_query_params(InitialQuery::default())
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::new())
                 .to_string()
         } else {
             UpdateRepresentativePath { person_id: self.id }
-                .with_query_params(InitialQuery::default())
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::new())
                 .to_string()
         }
     }
@@ -151,9 +149,9 @@ mod tests {
         let mut foreign = sample_person(PersonId::new());
         foreign.country_of_residence = Some("BE".parse::<CountryCode>().expect("country code"));
 
-        let expected_dutch = format!("/persons/{}/address?&initial=true&alert=success", dutch.id);
+        let expected_dutch = format!("/persons/{}/address?&initial=true&success=true", dutch.id);
         let expected_foreign = format!(
-            "/persons/{}/representative?&initial=true&alert=success",
+            "/persons/{}/representative?&initial=true&success=true",
             foreign.id
         );
 

@@ -54,7 +54,7 @@ pub async fn create_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, SUCCESS_ALERT_QUERY,
+        AppError, AppStore, Context, Form, QueryParamState,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
@@ -110,7 +110,7 @@ mod tests {
         assert_eq!(
             location,
             ListSubmitter::list_path()
-                .with_query_params(SUCCESS_ALERT_QUERY)
+                .with_query_params(QueryParamState::success())
                 .to_string()
         );
 
