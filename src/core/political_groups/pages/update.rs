@@ -61,7 +61,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(Redirect::to(&PoliticalGroup::update_path()).into_response())
+            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
         }
     }
 }
@@ -141,7 +141,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, PoliticalGroup::update_path());
+        assert_eq!(location, AuthorisedAgent::list_path());
 
         let updated = store.get_political_group()?;
         assert_eq!(updated.long_list_allowed, Some(true));

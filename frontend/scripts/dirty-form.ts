@@ -13,16 +13,15 @@ function setupDirtyForms() {
       return;
     }
 
+    const canSubmit = () =>
+      !submitButton.classList.contains("dirty-check") ||
+      (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity()));
+
     const updateSubmitButtons = () => {
-      if (submitButton.classList.contains("dirty-check")) {
-        if (
-          dirtyForms.has(form) &&
-          (!anyFieldRequired || form.checkValidity())
-        ) {
-          submitButton.classList.remove("disabled");
-        } else {
-          submitButton.classList.add("disabled");
-        }
+      if (canSubmit()) {
+        submitButton.classList.remove("disabled");
+      } else {
+        submitButton.classList.add("disabled");
       }
     };
 
@@ -40,6 +39,21 @@ function setupDirtyForms() {
     form.addEventListener("submit", () => {
       dirtyForms.delete(form);
       isSubmitting = true;
+    });
+
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || !event.shiftKey || event.isComposing) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!canSubmit()) {
+        updateSubmitButtons();
+        return;
+      }
+
+      form.requestSubmit(submitButton);
     });
 
     updateSubmitButtons();

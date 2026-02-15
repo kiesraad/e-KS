@@ -21,13 +21,10 @@
 {% endblock %}
 
 {% block overlay_actions %}
-  {% if should_warn %}
-    <button type="submit" class="button" name="action" value="save">
-      {{ "action.save"|trans }}
-    </button>
+  {% if !should_warn %}
+    {% set submit_label = "action.add"|trans %}
+    {% include "components/submit.html" %}
   {% else %}
-    <button type="submit" class="button" name="action" value="add">
-      {{ "action.add"|trans }}
-    </button>
+    {% include "components/submit.html" %}  
   {% endif %}
 {% endblock %}

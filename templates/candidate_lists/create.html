@@ -39,7 +39,6 @@
 {% endblock %}
 
 {% block overlay_actions %}
-  <button type="submit" class="button" name="action" value="save">
-    {{ "action.next"|trans }}
-  </button>
+    {% set submit_label = "action.next"|trans %}
+    {% include "components/submit.html" %}
 {% endblock %}

@@ -21,13 +21,7 @@
     {% block overlay_steps %}{% endblock %}
     <div class="form">
       {% block overlay_form %}{% endblock %}
-      {% block overlay_actions %}
-      <div class="mt-lg">
-        <button type="submit" class="button" name="action" value="save">
-          {{ "action.save"|trans }}
-        </button>
-      </div>
-      {% endblock %}
+      {% block overlay_actions %}{% include "components/submit.html" %}{% endblock %}
     </div>
   </div>
   {% endblock %}
