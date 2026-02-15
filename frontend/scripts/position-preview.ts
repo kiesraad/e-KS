@@ -48,7 +48,7 @@ export const setupPositionPreview = () => {
   };
 
   input.addEventListener("input", () => {
-    container.style.opacity = "1";
+    container.classList.add("visible");
     updatePreview();
   });
 
