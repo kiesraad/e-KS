@@ -1,3 +1,4 @@
+import "./scripts/highlight-row";
 import "./scripts/country-input";
 import "./scripts/date-input";
 import "./scripts/initials-input";
@@ -11,7 +12,6 @@ import "./scripts/sticky-nav";
 import "./scripts/search";
 import "./scripts/modal";
 import "./scripts/position-preview";
-import "./scripts/highlight-row";
 import "./scripts/active-link";
 import "./scripts/select-all-checkbox";
 import "./scripts/bsn-input";

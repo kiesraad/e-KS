@@ -12,11 +12,19 @@ use crate::{
 
 #[derive(Clone)]
 pub struct Context {
+    /// Political group tied to the session / request.
     pub political_group: PoliticalGroup,
+    /// Active locale for translations and formatting.
     pub locale: Locale,
-    pub show_success_alert: bool,
+    /// Election configuration used to compute names, districts, rules and limits.
     pub election: ElectionConfig,
+    /// Maximum number of candidates allowed for this political group.
     pub max_candidates: usize,
+    /// Whether to show the success alert based on the request query.
+    pub show_success_alert: bool,
+    /// Whether the request came from an overlay page (via referrer query).
+    pub overlay_refferer: bool,
+    /// CSRF tokens used to protect form submissions.
     pub csrf_tokens: CsrfTokens,
 }
 
@@ -29,9 +37,10 @@ impl Context {
             political_group,
             locale,
             max_candidates: election.get_max_candidates(long_list_allowed),
-            show_success_alert: false,
             election,
             csrf_tokens,
+            show_success_alert: false,
+            overlay_refferer: false,
         }
     }
 
@@ -59,6 +68,7 @@ impl askama::Values for Context {
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
+            "overlay_refferer" => Some(&self.overlay_refferer as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -80,6 +90,12 @@ where
             .uri
             .query()
             .is_some_and(|q| q.contains("success=true"));
+        let overlay_refferer = parts
+            .headers
+            .get(axum::http::header::REFERER)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|url| url.contains("overlay=true"));
+
         let election = ElectionConfig::EK2027;
         let long_list_allowed = political_group.long_list_allowed.unwrap_or(false);
         let max_candidates = election.get_max_candidates(long_list_allowed);
@@ -88,6 +104,7 @@ where
             political_group,
             locale,
             show_success_alert,
+            overlay_refferer,
             election,
             max_candidates,
             csrf_tokens,

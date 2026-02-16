@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
-#[derive(Serialize, Deserialize)]
+#[derive(Default, Serialize, Deserialize)]
 pub struct QueryParamState {
     #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -34,37 +34,29 @@ impl QueryParamState {
         Self {
             initial: true,
             success: true,
-            highlight: None,
+            ..Default::default()
         }
     }
 
     pub fn success() -> Self {
         Self {
-            initial: false,
             success: true,
-            highlight: None,
+            ..Default::default()
         }
     }
 
     pub fn highlight(id: Uuid) -> Self {
         Self {
-            initial: false,
             highlight: Some(id),
-            success: false,
+            ..Default::default()
         }
     }
 
     pub fn highlight_success(id: Uuid) -> Self {
         Self {
-            initial: false,
-            highlight: Some(id),
             success: true,
+            highlight: Some(id),
+            ..Default::default()
         }
-    }
-}
-
-impl Default for QueryParamState {
-    fn default() -> Self {
-        Self::created()
     }
 }

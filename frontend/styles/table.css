@@ -40,7 +40,11 @@ table {
   }
 
   tr.highlighted {
-    background-color: var(--blue-100);
+    background-color: var(--yellow-100);
+
+    .position-badge {
+      background-color: var(--yellow-200);
+    }
   }
 
   tr.clickable {

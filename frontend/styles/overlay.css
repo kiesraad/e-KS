@@ -37,8 +37,6 @@ body.overlay-open {
   position: relative;
   z-index: 1000;
   overflow: hidden;
-  transform: translateY(0);
-  animation: overlay-enter 240ms ease-in both;
   top: var(--space-lg);
   left: var(--space-lg);
   width: calc(100% - 2 * var(--space-lg));
@@ -47,6 +45,11 @@ body.overlay-open {
   height: auto;
   border-radius: var(--space-sm) var(--space-sm) 0 0;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
+
+  &.animation {
+    transform: translateY(0);
+    animation: overlay-enter 240ms ease-in both;
+  }
 
   header {
     display: flex;

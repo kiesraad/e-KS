@@ -1,7 +1,11 @@
-const url = new URL(globalThis.location.href);
-const successParam = url.searchParams.get("success");
+if (typeof globalThis !== "undefined") {
+  globalThis.addEventListener("load", () => {
+    const url = new URL(globalThis.location.href);
 
-if (successParam === "true") {
-  url.searchParams.delete("success");
-  globalThis.history.replaceState({}, "", url.toString());
+    if (url.searchParams.get("success") === "true") {
+      url.searchParams.delete("success");
+    }
+
+    globalThis.history.replaceState({}, "", url.toString());
+  });
 }

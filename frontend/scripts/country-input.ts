@@ -48,7 +48,6 @@ function applyCountrySuggestions() {
           suggestions.push(index);
           if (suggestions.length === 1) {
             items[index].classList.add("active");
-            items[index].scrollIntoView();
           }
         } else {
           items[index].style.display = "none";
