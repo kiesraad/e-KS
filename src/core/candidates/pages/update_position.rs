@@ -73,21 +73,21 @@ pub async fn update_candidate_position_submit(
             context,
         )
         .into_response()),
-        Ok(position_form) => {
-            match position_form.action {
-                FormAction::Remove => {
-                    let mut list = full_list.list;
-                    list.remove_candidate(&store, candidate.person.id).await?;
-                }
-                FormAction::Save => {
-                    let mut list = full_list.list;
-                    list.update_position(&store, candidate.person.id, position_form.position)
-                        .await?;
-                }
-            }
+        Ok(position_form) => match position_form.action {
+            FormAction::Remove => {
+                let mut list = full_list.list;
+                list.remove_candidate(&store, candidate.person.id).await?;
 
-            Ok(redirect_success(candidate.update_path()))
-        }
+                Ok(redirect_success(list.view_path()))
+            }
+            FormAction::Save => {
+                let mut list = full_list.list;
+                list.update_position(&store, candidate.person.id, position_form.position)
+                    .await?;
+
+                Ok(redirect_success(candidate.update_path()))
+            }
+        },
     }
 }
 

@@ -39,6 +39,10 @@ table {
     background-position: right 3.5rem center;
   }
 
+  tr.highlighted {
+    background-color: var(--blue-100);
+  }
+
   tr.clickable {
     td:last-child {
       text-align: right;

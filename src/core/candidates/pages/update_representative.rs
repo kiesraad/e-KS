@@ -1,13 +1,13 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
-    persons::RepresentativeForm, redirect_success,
+    persons::RepresentativeForm,
 };
 
 use super::UpdateRepresentativePath;
@@ -44,7 +44,7 @@ pub async fn update_representative(
 }
 
 pub async fn update_representative_submit(
-    path: UpdateRepresentativePath,
+    _: UpdateRepresentativePath,
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
@@ -69,13 +69,13 @@ pub async fn update_representative_submit(
                 .update_representative(&store, representative)
                 .await?;
 
-            if query.is_initial() {
-                Ok(redirect_success(
-                    full_list.list.highlight_path(candidate.person.id),
-                ))
-            } else {
-                Ok(redirect_success(path))
-            }
+            Ok(Redirect::to(
+                &full_list
+                    .list
+                    .highlight_success_path(candidate.person.id)
+                    .to_string(),
+            )
+            .into_response())
         }
     }
 }
@@ -97,7 +97,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_representative_renders_candidate() -> Result<(), AppError> {
@@ -203,8 +202,7 @@ mod tests {
 
         let expected_path = full_list
             .list
-            .highlight_path(candidate.person.id)
-            .with_query_params(QueryParamState::success())
+            .highlight_success_path(candidate.person.id)
             .to_string();
         let response = update_representative_submit(
             UpdateRepresentativePath {

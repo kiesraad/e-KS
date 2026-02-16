@@ -23,20 +23,20 @@ impl PoliticalGroupSteps {
 
         Ok(Self {
             basic_state: if political_group.is_basic_info_complete() {
-                "complete"
+                "ok"
             } else if political_group.is_basic_info_empty() {
                 "empty"
             } else {
-                "incomplete"
+                "warning"
             },
             authorised_agents_state: if !authorised_agents.is_empty()
                 && authorised_agents.iter().all(AuthorisedAgent::is_complete)
             {
-                "complete"
+                "ok"
             } else if authorised_agents.is_empty() {
                 "empty"
             } else {
-                "incomplete"
+                "warning"
             },
             submitters_state: if !list_submitters.is_empty()
                 && list_submitters.iter().all(ListSubmitter::is_complete)
@@ -44,11 +44,11 @@ impl PoliticalGroupSteps {
                     .iter()
                     .all(SubstituteSubmitter::is_complete)
             {
-                "complete"
+                "ok"
             } else if list_submitters.is_empty() {
                 "empty"
             } else {
-                "incomplete"
+                "warning"
             },
             authorised_agents,
             list_submitters,

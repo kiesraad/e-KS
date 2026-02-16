@@ -8,6 +8,7 @@
     opacity 0.2s ease-in-out,
     max-height 0.2s ease-in-out;
   user-select: none;
+  overflow: hidden;
 
   &.fade-top::before,
   &.fade-bottom::after {

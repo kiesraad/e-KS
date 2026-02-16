@@ -50,6 +50,14 @@ impl QueryParamState {
         Self {
             initial: false,
             highlight: Some(id),
+            success: false,
+        }
+    }
+
+    pub fn highlight_success(id: Uuid) -> Self {
+        Self {
+            initial: false,
+            highlight: Some(id),
             success: true,
         }
     }

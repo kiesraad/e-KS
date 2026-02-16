@@ -36,6 +36,11 @@
         </a>
       </p>
     {% endif %}
+    <p class="mt-lg">
+      <a href="{{ crate::list_submitters::ListSubmitter::list_path() }}" class="button secondary">
+        {{ "action.next"|trans }}
+      </a>
+    </p>
   </div>
 </div>
 {% endblock %}

@@ -73,6 +73,11 @@ impl CandidateList {
             .with_query_params(QueryParamState::highlight(person_id.into()))
     }
 
+    pub fn highlight_success_path(&self, person_id: PersonId) -> impl TypedPath {
+        ViewCandidateListPath { list_id: self.id }
+            .with_query_params(QueryParamState::highlight_success(person_id.into()))
+    }
+
     pub fn create_path() -> impl TypedPath {
         CandidateListCreatePath {}
     }

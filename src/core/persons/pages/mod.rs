@@ -54,6 +54,10 @@ impl Person {
         PersonsPath {}.with_query_params(QueryParamState::highlight(self.id.into()))
     }
 
+    pub fn highlight_success_path(&self) -> impl TypedPath {
+        PersonsPath {}.with_query_params(QueryParamState::highlight_success(self.id.into()))
+    }
+
     pub fn create_path() -> impl TypedPath {
         PersonsCreatePath {}
     }

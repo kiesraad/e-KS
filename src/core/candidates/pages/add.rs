@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use serde::Deserialize;
 
@@ -10,7 +10,6 @@ use crate::{
     candidate_lists::{CandidateList, FullCandidateList},
     filters,
     persons::{Person, PersonId},
-    redirect_success,
 };
 
 use super::AddCandidatePath;
@@ -46,26 +45,23 @@ pub async fn add_person_to_candidate_list(
     State(store): State<AppStore>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect = redirect_success(list.view_path());
     let person_exists = store
         .get_persons()?
         .iter()
         .any(|person| person.id == form.person_id);
 
-    if list.candidates.contains(&form.person_id) || !person_exists {
-        return Ok(redirect);
+    if !list.candidates.contains(&form.person_id) && person_exists {
+        list.append_candidate(&store, form.person_id).await?;
     }
 
-    list.append_candidate(&store, form.person_id).await?;
-
-    Ok(redirect)
+    Ok(Redirect::to(&list.highlight_success_path(form.person_id).to_string()).into_response())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, QueryParamState,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -77,7 +73,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn view_candidate_list_renders_persons() -> Result<(), AppError> {
@@ -134,12 +129,8 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(
-            location,
-            list.view_path()
-                .with_query_params(QueryParamState::success())
-                .to_string()
-        );
+
+        assert_eq!(location, list.highlight_success_path(person.id).to_string());
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -179,11 +170,10 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
+
         assert_eq!(
             location,
-            list.view_path()
-                .with_query_params(QueryParamState::success())
-                .to_string()
+            list.highlight_success_path(new_person.id).to_string()
         );
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");

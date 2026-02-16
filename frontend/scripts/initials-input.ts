@@ -15,11 +15,9 @@ window.addEventListener("load", () => {
       checkbox.checked = false;
     }
 
-    input.addEventListener("keydown", (event) => {
-      lastKey = event.key;
-    });
+    const format = () => {
+      console.log("format");
 
-    input.addEventListener("input", () => {
       if (checkbox && !checkbox.checked) {
         return;
       }
@@ -36,6 +34,18 @@ window.addEventListener("load", () => {
       } else {
         input.value = "";
       }
+    };
+
+    input.addEventListener("keydown", (event) => {
+      lastKey = event.key;
     });
+
+    input.addEventListener("input", format);
+
+    if (checkbox !== null) {
+      checkbox.addEventListener("click", format);
+    }
+
+    format();
   });
 });

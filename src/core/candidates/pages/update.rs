@@ -42,7 +42,7 @@ pub async fn update_person_submit(
     _: CandidateListUpdatePersonPath,
     context: Context,
     full_list: FullCandidateList,
-    candidate: Candidate,
+    mut candidate: Candidate,
     State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
@@ -58,6 +58,7 @@ pub async fn update_person_submit(
         .into_response()),
         Ok(person) => {
             person.update(&store).await?;
+            candidate.person = person;
 
             Ok(Redirect::to(&candidate.after_update_path()).into_response())
         }

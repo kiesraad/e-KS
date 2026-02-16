@@ -1,14 +1,13 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -58,7 +57,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(redirect_success(person.highlight_path()))
+            Ok(Redirect::to(&person.highlight_success_path().to_string()).into_response())
         }
     }
 }
@@ -76,7 +75,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_person_address_renders_existing_person() -> Result<(), AppError> {
@@ -114,10 +112,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
-        let expected_path = person
-            .highlight_path()
-            .with_query_params(QueryParamState::success())
-            .to_string();
+        let expected_path = person.highlight_success_path().to_string();
 
         let response = update_person_address_submit(
             UpdatePersonAddressPath { person_id },

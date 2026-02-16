@@ -1,13 +1,13 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
-    persons::AddressForm, redirect_success,
+    persons::AddressForm,
 };
 
 use super::CandidateListUpdateAddressPath;
@@ -68,9 +68,13 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(redirect_success(
-                full_list.list.highlight_path(candidate.person.id),
-            ))
+            Ok(Redirect::to(
+                &full_list
+                    .list
+                    .highlight_success_path(candidate.person.id)
+                    .to_string(),
+            )
+            .into_response())
         }
     }
 }
@@ -92,7 +96,6 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_person_address_renders_candidate() -> Result<(), AppError> {
@@ -154,8 +157,7 @@ mod tests {
         form.address.locality = "Rotterdam".to_string();
         let expected_path = full_list
             .list
-            .highlight_path(candidate.person.id)
-            .with_query_params(QueryParamState::success())
+            .highlight_success_path(candidate.person.id)
             .to_string();
 
         let response = update_person_address_submit(

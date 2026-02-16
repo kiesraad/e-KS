@@ -15,6 +15,7 @@
     overflow-anchor: none;
     transition: box-shadow 0.5s;
     transition: padding 0.5s;
+    border: 1px solid var(--gray-200);
 
     p {
       display: block;
