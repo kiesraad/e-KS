@@ -26,7 +26,7 @@
     left: 4rem;
     padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl);
     bottom: var(--space-lg);
-    border-radius: 3px;
+    border-radius: var(--rounded-sm);
     z-index: 1000;
     margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);

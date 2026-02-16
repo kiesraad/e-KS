@@ -7,7 +7,7 @@ a.person-block {
   background-position: right var(--space-md) center;
   background-size: 1.5rem 1.5rem;
   border: 1px solid var(--gray-200);
-  border-radius: 0.25rem;
+  border-radius: var(--rounded-default);
   padding: var(--space-md);
   width: 100%;
   max-width: 32rem;

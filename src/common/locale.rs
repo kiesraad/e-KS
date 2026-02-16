@@ -6,7 +6,7 @@ use axum::{
     Router,
     extract::FromRequestParts,
     http::{header, request::Parts},
-    response::{IntoResponse, Redirect, Response},
+    response::Redirect,
 };
 use axum_extra::{
     TypedHeader,
@@ -33,12 +33,12 @@ async fn switch_language(
     TypedHeader(referer): TypedHeader<headers::Referer>,
     mut cookie_jar: CookieJar,
     Form(form): Form<LanguageSwitch>,
-) -> (CookieJar, Response) {
+) -> (CookieJar, Redirect) {
     cookie_jar = cookie_jar.add(Cookie::new(LOCALE_COOKIE_NAME, form.lang.as_str()));
 
     (
         cookie_jar,
-        Redirect::to(&referer.to_string()).into_response(),
+        Redirect::to(&referer.to_string()),
     )
 }
 

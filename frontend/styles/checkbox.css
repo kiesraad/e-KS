@@ -50,7 +50,7 @@
   &.radio-card {
     width: 32rem;
     border: 1px solid var(--gray-300);
-    border-radius: 3px;
+    border-radius: var(--rounded-sm);
     padding: var(--space-md);
     display: flex;
     align-items: start;

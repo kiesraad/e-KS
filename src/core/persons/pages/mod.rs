@@ -93,11 +93,11 @@ impl Person {
     pub fn after_create_path(&self) -> String {
         if self.lives_in_nl() {
             UpdatePersonAddressPath { person_id: self.id }
-                .with_query_params(QueryParamState::new())
+                .with_query_params(QueryParamState::created())
                 .to_string()
         } else {
             UpdateRepresentativePath { person_id: self.id }
-                .with_query_params(QueryParamState::new())
+                .with_query_params(QueryParamState::created())
                 .to_string()
         }
     }

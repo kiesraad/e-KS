@@ -30,7 +30,7 @@ impl QueryParamState {
         self.success
     }
 
-    pub fn new() -> Self {
+    pub fn created() -> Self {
         Self {
             initial: true,
             success: true,
@@ -65,6 +65,6 @@ impl QueryParamState {
 
 impl Default for QueryParamState {
     fn default() -> Self {
-        Self::new()
+        Self::created()
     }
 }

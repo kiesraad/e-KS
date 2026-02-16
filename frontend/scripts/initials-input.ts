@@ -16,8 +16,6 @@ window.addEventListener("load", () => {
     }
 
     const format = () => {
-      console.log("format");
-
       if (checkbox && !checkbox.checked) {
         return;
       }

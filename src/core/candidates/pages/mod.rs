@@ -125,14 +125,14 @@ impl Candidate {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(QueryParamState::new())
+            .with_query_params(QueryParamState::created())
             .to_string()
         } else {
             UpdateRepresentativePath {
                 list_id: self.list_id,
                 person_id: self.person.id,
             }
-            .with_query_params(QueryParamState::new())
+            .with_query_params(QueryParamState::created())
             .to_string()
         }
     }
