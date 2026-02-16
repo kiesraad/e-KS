@@ -99,6 +99,9 @@ jobs:
       - name: Lint playwright tests using Biome
         run: ./bin/biome ci --error-on-warnings ./playwright/tests
 
+      - name: Lint HTML with djlint
+        run: docker run -v ./templates:/work/templates djlint djlint --ignore=H025 --lint templates
+
       - name: Check Clippy with all features
         run: cargo --locked clippy --target=x86_64-unknown-linux-musl --all-targets --all-features -- -D warnings
 

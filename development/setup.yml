@@ -23,6 +23,15 @@ commands:
       - up
       - --quiet-pull
       - --detach
+  build_djlint_docker_image:
+    command: docker
+    args:
+      - build
+      - .
+      - -f
+      - development/djlint.Dockerfile
+      - -t
+      - djlint
   esbuild_bundle:
     command: ./bin/esbuild
     args:

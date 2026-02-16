@@ -37,6 +37,9 @@ async fn main() -> Result<()> {
         tool.verify_installed(&platform, bin_dir).await?;
     }
 
+    println!("🚀 Building djlint Docker container...");
+    config.commands.build_djlint_docker_image.run().await?;
+
     println!("🚀 Setting up Docker containers...");
     stop_running_containers().await?;
 
@@ -84,6 +87,7 @@ struct CommandConfig {
 struct CommandsConfig {
     docker_compose_rm: CommandConfig,
     docker_compose_up: CommandConfig,
+    build_djlint_docker_image: CommandConfig,
     install_cargo_watch: CommandConfig,
     install_cargo_sqlx: CommandConfig,
     migrate_database: CommandConfig,
