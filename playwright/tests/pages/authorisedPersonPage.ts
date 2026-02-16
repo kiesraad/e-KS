@@ -1,35 +1,35 @@
 import { expect, type Page } from "@playwright/test";
 import type { Candidate } from "../models/candidate";
-import { AuthorisedRepresentative } from "../models/authorisedRepresentative";
+import type { AuthorisedPerson } from "../models/authorisedPerson";
 
-export class AuthorisedRepresentativePage {
+export class AuthorisedPersonPage {
   private readonly page: Page;
 
   constructor(page: Page) {
     this.page = page;
   }
 
-  async setAuthorisedRepresentative(authorisedRepresentative: AuthorisedRepresentative) {
-    await this.page.getByLabel("Voorletters").fill(authorisedRepresentative.initials);
+  async setAuthorisedPerson(authorisedPerson: AuthorisedPerson) {
+    await this.page.getByLabel("Voorletters").fill(authorisedPerson.initials);
     await this.page
         .getByLabel("Voorvoegsel")
-        .fill(authorisedRepresentative.lastNamePrefix ?? "");
-    await this.page.getByLabel("Achternaam").fill(authorisedRepresentative.lastName);
+        .fill(authorisedPerson.lastNamePrefix ?? "");
+    await this.page.getByLabel("Achternaam").fill(authorisedPerson.lastName);
         await this.page
         .getByRole("textbox", { name: "Postcode" })
-        .fill(authorisedRepresentative.postalCode ?? "");
+        .fill(authorisedPerson.postalCode ?? "");
       await this.page
         .getByRole("textbox", { name: "Huisnummer", exact: true })
-        .pressSequentially(authorisedRepresentative.houseNumber ?? "");
+        .pressSequentially(authorisedPerson.houseNumber ?? "");
       await this.page
         .getByRole("textbox", { name: "Huisnummer toevoeging", exact: true })
         .press("Tab");
       await expect(
         this.page.getByRole("textbox", { name: "Straatnaam" }),
-      ).toHaveValue(authorisedRepresentative.streetName ?? "");
+      ).toHaveValue(authorisedPerson.streetName ?? "");
       await expect(
         this.page.getByRole("combobox", { name: "Woonplaats" }),
-      ).toHaveValue(authorisedRepresentative.locality ?? "");
+      ).toHaveValue(authorisedPerson.locality ?? "");
     await this.page
         .getByRole("button", { name: "Opslaan en sluiten" })
         .click();

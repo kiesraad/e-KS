@@ -1,4 +1,4 @@
-import { AuthorisedRepresentative } from "./authorisedRepresentative";
+import type { AuthorisedPerson } from "./authorisedPerson";
 
 export interface Candidate {
   initials: string;
@@ -13,5 +13,5 @@ export interface Candidate {
   streetName?: string;
   locality?: string;
   countryCode?: string;
-  authorisedRepresentative?: AuthorisedRepresentative;
+  authorisedRepresentative?: AuthorisedPerson;
 }
