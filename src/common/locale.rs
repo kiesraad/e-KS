@@ -36,10 +36,7 @@ async fn switch_language(
 ) -> (CookieJar, Redirect) {
     cookie_jar = cookie_jar.add(Cookie::new(LOCALE_COOKIE_NAME, form.lang.as_str()));
 
-    (
-        cookie_jar,
-        Redirect::to(&referer.to_string()),
-    )
+    (cookie_jar, Redirect::to(&referer.to_string()))
 }
 
 #[derive(Default, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
