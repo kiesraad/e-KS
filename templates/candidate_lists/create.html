@@ -26,9 +26,8 @@
       </ul>
     </div>
     <div class="form">
-      {% include "candidate_lists/components/districts_form.html" %}
       {% if has_previous_list %}
-      <fieldset class="mt-xl">
+      <fieldset class="mb-lg">
         <legend>
           {{ "candidate_list.form.copy_candidates_from_previous_legend"|trans }}
         </legend>
@@ -40,6 +39,7 @@
         </div>
       </fieldset>
       {% endif %}
+      {% include "candidate_lists/components/districts_form.html" %}
     </div>
   </div>
 {% endblock %}

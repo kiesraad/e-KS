@@ -56,7 +56,7 @@ impl Person {
         }
     }
 
-    pub fn is_dutch(&self) -> bool {
+    pub fn lives_in_nl(&self) -> bool {
         match &self.country_of_residence {
             Some(country) => country.as_str() == "NL",
             None => true, // Assume Dutch if no country is set
@@ -97,7 +97,7 @@ impl Person {
     }
 
     pub fn is_representative_complete(&self) -> bool {
-        if self.is_dutch() {
+        if self.lives_in_nl() {
             return true;
         }
 
@@ -106,8 +106,8 @@ impl Person {
 
     pub fn is_complete(&self) -> bool {
         self.is_personal_info_complete()
-            && self.address.is_complete()
-            && self.is_representative_complete()
+            && (!self.lives_in_nl() || self.address.is_complete())
+            && (self.lives_in_nl() || self.is_representative_complete())
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
@@ -337,15 +337,15 @@ mod tests {
     }
 
     #[test]
-    fn is_dutch_defaults_to_true_and_accepts_variants() {
+    fn lives_in_nl_defaults_to_true_and_accepts_variants() {
         let mut person = base_person();
-        assert!(person.is_dutch());
+        assert!(person.lives_in_nl());
 
         person.country_of_residence = Some("NL".parse().expect("country code"));
-        assert!(person.is_dutch());
+        assert!(person.lives_in_nl());
 
         person.country_of_residence = Some("BE".parse().expect("country code"));
-        assert!(!person.is_dutch());
+        assert!(!person.lives_in_nl());
     }
 
     #[test]
@@ -358,5 +358,75 @@ mod tests {
 
         person.gender = Some(Gender::Female);
         assert_eq!(person.gender_key(), "gender.female");
+    }
+
+    fn complete_address() -> DutchAddress {
+        DutchAddress {
+            locality: Some("Utrecht".parse().expect("locality")),
+            postal_code: Some("1234 AB".parse().expect("postal code")),
+            house_number: Some("10".parse().expect("house number")),
+            house_number_addition: None,
+            street_name: Some("Stationsstraat".parse().expect("street name")),
+        }
+    }
+
+    fn complete_representative() -> Representative {
+        Representative {
+            name: FullName {
+                last_name: "Dijk".parse().expect("last name"),
+                last_name_prefix: None,
+                initials: "A.B.".parse().expect("initials"),
+            },
+            address: complete_address(),
+        }
+    }
+
+    #[test]
+    fn representative_is_complete_requires_name_and_address() {
+        let mut representative = complete_representative();
+        assert!(representative.is_complete());
+
+        representative.address = DutchAddress::default();
+        assert!(!representative.is_complete());
+    }
+
+    #[test]
+    fn personal_info_complete_requires_core_fields() {
+        let mut person = sample_person(PersonId::new());
+        assert!(!person.is_personal_info_complete());
+
+        person.bsn = Some("999995972".parse().expect("bsn"));
+        assert!(person.is_personal_info_complete());
+
+        person.date_of_birth = None;
+        assert!(!person.is_personal_info_complete());
+    }
+
+    #[test]
+    fn representative_complete_depends_on_country() {
+        let mut person = sample_person(PersonId::new());
+        assert!(person.is_representative_complete());
+
+        person.country_of_residence = Some("BE".parse().expect("country code"));
+        assert!(!person.is_representative_complete());
+
+        person.representative = complete_representative();
+        assert!(person.is_representative_complete());
+    }
+
+    #[test]
+    fn person_complete_handles_dutch_and_non_dutch_requirements() {
+        let mut dutch_person = sample_person(PersonId::new());
+        dutch_person.bsn = Some("999995972".parse().expect("bsn"));
+        assert!(dutch_person.is_complete());
+
+        let mut non_dutch_person = sample_person(PersonId::new());
+        non_dutch_person.bsn = Some("999995972".parse().expect("bsn"));
+        non_dutch_person.country_of_residence = Some("BE".parse().expect("country code"));
+        non_dutch_person.address = DutchAddress::default();
+        assert!(!non_dutch_person.is_complete());
+
+        non_dutch_person.representative = complete_representative();
+        assert!(non_dutch_person.is_complete());
     }
 }

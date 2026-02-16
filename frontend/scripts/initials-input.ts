@@ -10,6 +10,11 @@ window.addEventListener("load", () => {
   initialsInputs.forEach((input: HTMLInputElement) => {
     let lastKey: string | null = null;
 
+    // disable autoformatting if the field already contains a lowercase letter
+    if (checkbox && /[a-z]/.test(input.value)) {
+      checkbox.checked = false;
+    }
+
     input.addEventListener("keydown", (event) => {
       lastKey = event.key;
     });

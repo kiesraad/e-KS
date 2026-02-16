@@ -2,6 +2,9 @@
   height: 15rem;
   position: relative;
   margin-top: var(--space-md);
+  opacity: 0;
+  transition: opacity 0.2s ease-in-out;
+  user-select: none;
 
   &.fade-top::before,
   &.fade-bottom::after {

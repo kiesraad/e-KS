@@ -109,7 +109,7 @@ impl Candidate {
     }
 
     pub fn after_create_path(&self) -> String {
-        if self.person.is_dutch() {
+        if self.person.lives_in_nl() {
             CandidateListUpdateAddressPath {
                 list_id: self.list_id,
                 person_id: self.person.id,
