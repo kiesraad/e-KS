@@ -5,6 +5,7 @@ import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage";
 import { ListSubmittersPage } from "./pages/listSubmittersPage";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
+import { randomName } from "./utils/random";
 
 test.describe("provide general information for political group", async () => {
   test.beforeEach("start application and login", async () => {
@@ -73,11 +74,11 @@ test.describe("provide general information for political group", async () => {
     const submitterOne: ListSubmitter = {
       initials: "B",
       lastNamePrefix: "van",
-      lastName: "Beers",
+      lastName: `Beers ${randomName()}`,
     };
     const submitterTwo: ListSubmitter = {
       initials: "O",
-      lastName: "Smit",
+      lastName: `Smit ${randomName()}`,
     };
     await substituteSubmittersPage.addSubstituteSubmitter([
       submitterOne,

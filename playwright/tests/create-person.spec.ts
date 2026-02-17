@@ -1,5 +1,5 @@
 import { test } from "@playwright/test";
-import type { AuthorisedRepresentative } from "./models/authorisedRepresentative";
+import type { AuthorisedPerson } from "./models/authorisedPerson";
 import type { Candidate } from "./models/candidate";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { PersonsPage } from "./pages/personsPage";
@@ -32,7 +32,7 @@ test("create new person", async ({ page }) => {
   await personsPage.checkPerson([candidate, candidateTwo]);
 });
 
-test("create new person living outside NL requires authorised representative", async ({
+test("create new person living outside NL requires authorised person", async ({
   page,
 }) => {
   const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
@@ -40,7 +40,7 @@ test("create new person living outside NL requires authorised representative", a
   await candidateListsOverviewPage.managePersons();
 
   const personsPage = new PersonsPage(page);
-  const authorisedRepresentative: AuthorisedRepresentative = {
+  const authorisedPerson: AuthorisedPerson = {
     initials: "C",
     lastName: "Winter",
   };
@@ -48,7 +48,7 @@ test("create new person living outside NL requires authorised representative", a
     initials: "H",
     lastName: `Jansen ${randomName()}`,
     countryCode: "VA",
-    authorisedRepresentative: authorisedRepresentative,
+    authorisedPerson: authorisedPerson,
   };
 
   await personsPage.addPersons([candidate]);

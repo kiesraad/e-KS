@@ -72,7 +72,7 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | waarborgsom                    |           | deposit                   |             |
 | betalingsbewijs                |           | proof of payment          |             |
 | gemachtigde                    |           | authorised agent          |             |
-| gemachtigde van kandidaat      |           | authorised representative |             |
+| gemachtigde van kandidaat      |           | authorised person         |             |
 | kiesgerechtigd                 |           | entiteld to vote          |             |
 | Kamer van Koophandel           | KVK       | Chamber of Commerce       |             |
 | instemmingsverklaring          |           | declaration of consent    |             |

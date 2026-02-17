@@ -13,5 +13,5 @@ export interface Candidate {
   streetName?: string;
   locality?: string;
   countryCode?: string;
-  authorisedRepresentative?: AuthorisedPerson;
+  authorisedPerson?: AuthorisedPerson;
 }

@@ -15,10 +15,12 @@ export class CorrespondenceAddressPage {
     await this.page
       .getByRole("textbox", { name: "Huisnummer", exact: true })
       .pressSequentially(candidate.houseNumber ?? "");
-    await this.page.getByRole("textbox", {
+    await this.page
+      .getByRole("textbox", {
         name: "Huisnummer toevoeging",
         exact: true,
-      });
+      })
+      .pressSequentially(candidate.houseNumberAddition ?? "");
     await this.page.locator("body").click();
     await expect(
       this.page.getByRole("textbox", { name: "Straatnaam" }),

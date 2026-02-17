@@ -19,9 +19,9 @@ export class PersonsPage {
     for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Persoon toevoegen" }).click();
       await new CreatePersonPage(this.page).setPersonalDetails(candidate);
-      if (candidate.authorisedRepresentative) {
+      if (candidate.authorisedPerson) {
         await new AuthorisedPersonPage(this.page).setAuthorisedPerson(
-          candidate.authorisedRepresentative,
+          candidate.authorisedPerson,
         );
       } else {
         await new CorrespondenceAddressPage(this.page).setCorrespondenceAddress(
