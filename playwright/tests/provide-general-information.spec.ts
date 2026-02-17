@@ -49,11 +49,11 @@ test.describe("provide general information for political group", async () => {
     const submitterOne: ListSubmitter = {
       initials: "C",
       lastNamePrefix: "de",
-      lastName: "Vries",
+      lastName: `Vries ${randomName()}`,
     };
     const submitterTwo: ListSubmitter = {
       initials: "Z",
-      lastName: "Zeeman",
+      lastName: `Zeeman ${randomName()}`,
     };
     await listSubmittersPage.addListSubmitter([submitterOne, submitterTwo]);
 
