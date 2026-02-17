@@ -1,3 +1,9 @@
+html,
+body {
+  overscroll-behavior: none;
+  min-height: 100vh;
+}
+
 body {
   display: flex;
   flex-direction: column;
@@ -106,7 +112,7 @@ header {
 
 main {
   background-color: var(--bg-gray);
-  flex: auto;
+  flex: 1;
   gap: var(--space-lg);
   padding: var(--space-xl) var(--space-xxl);
 

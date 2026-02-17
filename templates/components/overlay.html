@@ -3,28 +3,29 @@
 {% block body_class %}overlay-open{% endblock %}
 
 {% block overlay %}
-<div class="overlay-backdrop"></div>
-<form method="post" class="overlay {% if let Ok(overlay_refferer) = "overlay_refferer"|value::<bool> && overlay_refferer %}no-animation{% else %}animation{% endif %}">
-  {% if form is defined %}
-  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
-  {% endif %}
-  <header>
-    <h2>
-      {% block overlay_title %}{% endblock %}
-    </h2>
-    <a href="{{ close_action|default("/") }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </a>
-  </header>
-  {% block overlay_content %}
-  <div class="overlay-content steps">
-    {% block overlay_steps %}{% endblock %}
-    <div class="form">
-      {% block overlay_form %}{% endblock %}
-      {% block overlay_actions %}{% include "components/submit.html" %}{% endblock %}
+<div class="overlay-backdrop">
+  <form method="post" class="overlay {% if let Ok(overlay_refferer) = "overlay_refferer"|value::<bool> && overlay_refferer %}no-animation{% else %}animation{% endif %}">
+    {% if form is defined %}
+    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
+    {% endif %}
+    <header>
+      <h2>
+        {% block overlay_title %}{% endblock %}
+      </h2>
+      <a href="{{ close_action|default("/") }}" class="close-overlay" aria-label="{{ "action.close"|trans }}">
+        <span>{{ "action.close"|trans }}</span>
+      </a>
+    </header>
+    {% block overlay_content %}
+    <div class="overlay-content steps">
+      {% block overlay_steps %}{% endblock %}
+      <div class="form">
+        {% block overlay_form %}{% endblock %}
+        {% block overlay_actions %}{% include "components/submit.html" %}{% endblock %}
+      </div>
     </div>
-  </div>
-  {% endblock %}
-</form>
-{% block overlay_end %}{% endblock %}
+    {% endblock %}
+  </form>
+  {% block overlay_end %}{% endblock %}
+</div>
 {% endblock %}

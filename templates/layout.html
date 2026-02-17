@@ -1,7 +1,6 @@
 {% extends "base.html" %}
 
 {% block body %}
-{% block overlay %}{% endblock %}
 <header>
   <nav>
     <ul>
@@ -53,6 +52,7 @@
   <span>{{ "common.title"|trans }}</span>
   <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
 </footer>
+{% block overlay %}{% endblock %}
 {% if let Ok(show_success_alert) = "show_success_alert"|value::<bool> %}
   {% if show_success_alert %}
     <div class="alert alert-success alert-floating">

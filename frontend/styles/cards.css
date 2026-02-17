@@ -126,6 +126,8 @@
   }
 
   &.card-persons {
+    position: sticky;
+    top: var(--space-lg);
     height: 13rem;
 
     .badge {

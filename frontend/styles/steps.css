@@ -4,6 +4,8 @@
   padding-right: var(--space-lg);
 
   ul {
+    position: sticky;
+    top: var(--space-lg);
     padding: 0;
     list-style: none;
     display: flex;
