@@ -1,12 +1,15 @@
 tools:
   - name: esbuild
-    version: "0.27.1"
+    # https://github.com/evanw/esbuild/releases
+    version: "0.27.3"
     base_url: "https://registry.npmjs.org/@esbuild"
   - name: biome
-    version: "2.3.10"
+    # https://github.com/biomejs/biome/releases
+    version: "2.4.2"
     base_url: "https://github.com/biomejs/biome/releases/download/@biomejs/biome@"
   - name: bag-service
-    version: "0.3.2"
+    # https://github.com/tweedegolf/bag-address-lookup/releases
+    version: "0.3.3"
     base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
 commands:
   docker_compose_rm:

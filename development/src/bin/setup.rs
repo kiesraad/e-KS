@@ -138,11 +138,31 @@ impl ToolConfig {
 
         if fs::try_exists(&target).await? {
             println!("✅ {} already installed", self.name);
+
+            let output = Command::new(&target)
+                .arg("--version")
+                .output()
+                .await
+                .context(format!("check version of installed {}", self.name))?;
+
+            let installed_version = String::from_utf8_lossy(&output.stdout).trim().to_string();
+            if installed_version != self.version {
+                println!(
+                    "⚠️  {} version mismatch: installed {}, expected {}",
+                    self.name, installed_version, self.version
+                );
+                self.install(platform, &target)
+                    .await
+                    .context(format!("re-install {}", self.name))?;
+
+                println!("✅ {} updated to version {}", self.name, self.version);
+            }
         } else {
             println!("📦 Installing {} for platform: {platform}", self.name);
             self.install(platform, &target)
                 .await
                 .context(format!("install {}", self.name))?;
+
             println!("✅ {} installed", self.name);
         }
 
