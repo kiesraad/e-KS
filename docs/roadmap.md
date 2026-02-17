@@ -17,25 +17,26 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - (sprint 8) Overzichtspagina voor politieke groeperingen (de stappen in het proces weergeven)
 - (sprint 9) Definitieve inlevering (inclusief vervolgstappenplan voor partij: Infographic)
 - (sprint 10) Ondersteuningsverklaringen fase 1
-- (sprint 11) Defintieve kandidatenlijsten opstellen en uitprinten (model I4)
+- (sprint 11) Samengestelde lijst (aanduiding samenvoegen) + blanco lijst
 
 ### Mei t/m oktober (5 maanden: 11 sprints)
+- (!) Herstel verzuimen
+- (!) Betalingsbewijs waarborgsom
+- (!) EML (kandidatenlijsten, totaallijst en verkiezingsdefinitie)
+- (!) Verklaring voorgenomen vestiging (relevant bij Provenciale Staten, Waterschappen (algemeen bestuur) en Gemeenteraad). Zie art. H7.
+- (!) Monitoring
+- Defintieve kandidatenlijsten opstellen en uitprinten (model I4)
 - Voorlopige kandidatenlijsten opstellen en uitprinten (model I1)
-- Samengestelde lijst (aanduiding samenvoegen)
-- Betalingsbewijs waarborgsom
 - Overzichtspagina voor CSB's
 - Registratie partijen fase 1
-- EML (kandidatenlijsten, totaallijst en verkiezingsdefinitie)
 - Verzuimen invoeren door CSB
 - Verzuimbrieven genereren
 - Design systeem
-- Monitoring
 - Instemmingsverklaring afgeven (nice to have: inlog DigiD)
 - Gebruikersbeheer
 - Goedkeuring door CSB
 - Afkeuren/schrappen door CSB
 - Ambtelijke correctie door het CSB
-- Herstel verzuimen
 - Gegevens versleutelen
 - Kiesraad dashboard
 
@@ -48,9 +49,12 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - Verkiezingsbeheer voor politieke partij
 - Meldingen inrichten
 - To do lijst voor politieke partijen
-- Verklaring voorgenomen vestiging (relevant bij Provenciale Staten, Waterschappen (algemeen bestuur) en Gemeenteraad). Zie art. H7.
-
+  
 # Change log
+
+## 17-02-2026 Iris
+- Geschoven met epics zodat het gedeelte voor politieke partijen helemaal af is voordat we aan het gedeelte voor CSB's beginnen
+-  "(!)" toegevoegd als teken dat deze epics gedaan moeten worden voor het onderdeel voor de politieke partijen
 
 ## 28-01-2026 Iris
 - 'Verklaring voorgenomen vestiging' epic toegevoegd bij "later"
