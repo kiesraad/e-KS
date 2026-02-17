@@ -1,4 +1,4 @@
-export const setupPositionPreview = () => {
+export default function setupPositionPreview() {
   const container = document.getElementById("position-preview-container");
   const preview = document.getElementById("position-preview");
   const input = document.getElementById("position");
@@ -48,13 +48,9 @@ export const setupPositionPreview = () => {
   };
 
   input.addEventListener("input", () => {
-    container.style.opacity = "1";
+    container.classList.add("visible");
     updatePreview();
   });
 
   updatePreview();
-};
-
-if (typeof window !== "undefined") {
-  window.addEventListener("load", setupPositionPreview);
 }

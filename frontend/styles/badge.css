@@ -5,7 +5,7 @@
   height: var(--badge-size);
   line-height: var(--badge-size);
   text-align: center;
-  border-radius: 3px;
+  border-radius: var(--rounded-sm);
   transition: background-color 0.5s ease-in-out;
 
   font-family: var(--font-header);

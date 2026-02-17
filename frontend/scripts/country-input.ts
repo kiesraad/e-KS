@@ -1,6 +1,6 @@
 const COUNTRY_INPUT_SELECTOR = ".country-input";
 
-function applyCountrySuggestions() {
+export default function countryCodeInput() {
   // Make flag icon match country code input
   const countryInputs = document.querySelectorAll(COUNTRY_INPUT_SELECTOR);
 
@@ -48,7 +48,6 @@ function applyCountrySuggestions() {
           suggestions.push(index);
           if (suggestions.length === 1) {
             items[index].classList.add("active");
-            items[index].scrollIntoView();
           }
         } else {
           items[index].style.display = "none";
@@ -113,11 +112,5 @@ function applyCountrySuggestions() {
         }
       }
     });
-  });
-}
-
-if (typeof window !== "undefined") {
-  window.addEventListener("load", () => {
-    applyCountrySuggestions();
   });
 }

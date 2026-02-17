@@ -46,6 +46,11 @@ body.overlay-open {
   border-radius: var(--space-sm) var(--space-sm) 0 0;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
 
+  &.animation {
+    transform: translateY(0);
+    animation: overlay-enter 240ms ease-in both;
+  }
+
   header {
     display: flex;
     height: 6rem;
@@ -82,7 +87,6 @@ body.overlay-open {
   .overlay-content {
     position: relative;
     padding: var(--space-lg);
-    padding-bottom: 7rem;
     flex: 1;
 
     &.steps {
@@ -91,6 +95,7 @@ body.overlay-open {
 
       & > div:nth-child(2) {
         padding-left: var(--space-lg);
+        padding-bottom: var(--space-lg);
         flex: 1;
       }
     }
@@ -109,5 +114,28 @@ body.overlay-open {
     border-radius: 0 0 var(--space-sm) var(--space-sm);
     background-color: rgba(249, 250, 251, 0.6);
     backdrop-filter: blur(1px);
+
+    .button {
+      margin-left: var(--space-md);
+    }
+  }
+}
+
+body.overlay-skip-anim .overlay {
+  animation: none;
+}
+
+@keyframes overlay-enter {
+  from {
+    transform: translateY(2rem);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .overlay {
+    animation: none;
   }
 }

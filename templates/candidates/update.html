@@ -1,52 +1,21 @@
-{% extends "components/overlay.html" %}
+{% extends "persons/update.html" %}
+{% import "components/macros.html" as macros %}
 
 {% block overlay_title %}
   <span class="position-badge">{{ candidate.position }}</span>
   {{ candidate.person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
+{% set close_action = full_list.list.highlight_path(*candidate.person.id) %}
 
-{% block overlay_start %}
-<form method="post" action="{{ candidate.update_path() }}" class="overlay">
-{% endblock %}
-
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.personal_information"|trans }}</h3>
-        </legend>
-        {% let should_warn = true %}
-        {% include "persons/components/form.html" %}
-        <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-          {{ "person.actions.delete"|trans }}
-        </button>
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidates/components/update_steps.html" %}
 {% endblock %}
 
 {% block overlay_end %}
-</form>
-<dialog class="modal">
-  <form method="post" action="{{ candidate.delete_path() }}" class="form">
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </button>
-    <h3>
-      {{ "person.actions.delete"|trans }}
-    </h3>
-    <p class="mt-lg mb-lg">{{ "person.form.delete_warning_text"|trans }}</p>
-    <button type="submit" class="button primary-destructive">
-      {{ "action.delete"|trans }}
-    </button>
-    <button type="submit" class="button secondary close">
-      {{ "action.cancel"|trans }}
-    </button>
-  </form>
-</dialog>
+  {{ macros::delete_modal(
+    candidate.delete_path(),
+    "person.actions.delete"|trans,
+    "person.form.delete_warning_text"|trans
+  ) }}
 {% endblock %}

@@ -134,7 +134,7 @@
     z-index: 30;
     background-color: var(--base-white);
     box-shadow: 0 0 0 4px var(--shadow-color-focus);
-    border-radius: 5px;
+    border-radius: var(--rounded-sm);
     padding: var(--space-sm);
     width: 30em;
     max-width: min(30em, 90vw);
@@ -318,6 +318,30 @@
         background-color: var(--bg-gray-darker);
       }
     }
+  }
+}
+
+.form-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  margin-top: var(--space-lg);
+
+  .key-shift,
+  .key-enter {
+    display: inline-block;
+    width: 4rem;
+    height: 1.75rem;
+    background-repeat: no-repeat;
+  }
+
+  .key-shift {
+    background-image: url("../icons/shift.svg");
+    margin-left: var(--space-xl);
+  }
+
+  .key-enter {
+    background-image: url("../icons/enter.svg");
   }
 }
 

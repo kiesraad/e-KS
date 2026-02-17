@@ -1,15 +1,16 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, ListSubmitterForm, pages::UpdateListSubmitterPath},
     filters,
     form::FormData,
     list_submitters::ListSubmitter,
+    redirect_success,
     substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -21,7 +22,6 @@ struct ListSubmitterUpdateTemplate {
     candidate_list: CandidateList,
     list_submitters: Vec<ListSubmitter>,
     substitute_submitters: Vec<SubstituteSubmitter>,
-    form_action: String,
 }
 
 fn render_submitter_form(
@@ -30,7 +30,6 @@ fn render_submitter_form(
     store: &AppStore,
     should_warn: bool,
     form: FormData<ListSubmitterForm>,
-    form_action: String,
 ) -> Result<Response, AppError> {
     let list_submitters = store.get_list_submitters()?;
     let substitute_submitters = store.get_substitute_submitters()?;
@@ -42,7 +41,6 @@ fn render_submitter_form(
             candidate_list,
             list_submitters,
             substitute_submitters,
-            form_action,
         },
         context,
     )
@@ -54,22 +52,14 @@ pub async fn update_list_submitter(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let form = FormData::new_with_data(
         ListSubmitterForm::from(candidate_list.clone()),
         &context.csrf_tokens,
     );
-    let form_action = candidate_list.update_list_submitter_path();
 
-    render_submitter_form(
-        context,
-        candidate_list,
-        &store,
-        query.should_warn(),
-        form,
-        form_action,
-    )
+    render_submitter_form(context, candidate_list, &store, query.should_warn(), form)
 }
 
 pub async fn update_list_submitter_submit(
@@ -77,11 +67,9 @@ pub async fn update_list_submitter_submit(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let form_action = candidate_list.update_list_submitter_path();
-
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
         Err(form_data) => render_submitter_form(
             context,
@@ -89,12 +77,11 @@ pub async fn update_list_submitter_submit(
             &store,
             query.should_warn(),
             form_data,
-            form_action,
         ),
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(redirect_success(candidate_list.view_path()))
         }
     }
 }
@@ -106,9 +93,10 @@ mod tests {
         extract::Query,
         http::{StatusCode, header},
     };
+    use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, CsrfTokens, ElectoralDistrict, InitialQuery, Locale, TokenValue,
+        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, QueryParamState, TokenValue,
         UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
@@ -142,7 +130,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap();
@@ -152,7 +140,7 @@ mod tests {
         assert!(body.contains("Submitter of the list"));
         assert!(body.contains("Substitute list submitters"));
         assert!(body.contains("csrf_token"));
-        assert!(body.contains(&candidate_list.update_list_submitter_path()));
+        assert!(body.contains(&candidate_list.update_list_submitter_path().to_string()));
         assert!(body.contains(list_submitter.name.last_name.as_str()));
         assert!(body.contains(list_submitter.name.initials.as_str()));
         assert!(body.contains(substitute_submitter.name.last_name.as_str()));
@@ -199,7 +187,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -220,7 +208,13 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.view_path(), location);
+        assert_eq!(
+            updated_list
+                .view_path()
+                .with_query_params(QueryParamState::success())
+                .to_string(),
+            location
+        );
 
         assert_eq!(candidate_list.id, updated_list.id);
 
@@ -259,7 +253,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

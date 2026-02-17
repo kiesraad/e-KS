@@ -1,13 +1,14 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
+    redirect_success,
 };
 
 use super::ListSubmitterUpdatePath;
@@ -53,7 +54,7 @@ pub async fn update_list_submitter_submit(
         Ok(list_submitter) => {
             list_submitter.update(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
@@ -62,8 +63,8 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
-        list_submitters::{ListSubmitter, ListSubmitterId},
+        AppError, AppStore, Context, Form, QueryParamState,
+        list_submitters::ListSubmitterId,
         political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_list_submitter, sample_list_submitter_form,
@@ -74,6 +75,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
@@ -135,7 +137,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         let updated = store.get_list_submitter(submitter_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

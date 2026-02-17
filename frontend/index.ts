@@ -1,18 +1,46 @@
-import "./scripts/country-input";
-import "./scripts/date-input";
-import "./scripts/initials-input";
-import "./scripts/click-row";
-import "./scripts/overlay";
-import "./scripts/sortable";
-import "./scripts/lookup";
-import "./scripts/locality-suggestions";
-import "./scripts/sticky-nav";
-import "./scripts/search";
-import "./scripts/modal";
-import "./scripts/position-preview";
-import "./scripts/active-link";
-import "./scripts/select-all-checkbox";
-import "./scripts/bsn-input";
-import "./scripts/dirty-form";
+import highlightActiveLinks from "./scripts/active-link";
+import alertSuccess from "./scripts/alert-success";
+import bsnInput from "./scripts/bsn-input";
+import setupClickRow from "./scripts/click-row";
+import countryCodeInput from "./scripts/country-input";
+import dateInput from "./scripts/date-input";
+import setupDirtyForms from "./scripts/dirty-form";
+import highlightRow from "./scripts/highlight-row";
+import initialsInput from "./scripts/initials-input";
+import localitySuggestions from "./scripts/locality-suggestions";
+import addressLookup from "./scripts/lookup";
+import setupModal from "./scripts/modal";
+import setupOverlay from "./scripts/overlay";
+import setupPositionPreview from "./scripts/position-preview";
+import setupTextSearch from "./scripts/search";
+import setupSelectAllCheckbox from "./scripts/select-all-checkbox";
+import setupSortable from "./scripts/sortable";
+import setupStickyNav from "./scripts/sticky-nav";
 
 import "./styles/index.css";
+
+// table interaction
+setupClickRow();
+
+// highlights and alerts
+highlightActiveLinks();
+alertSuccess();
+highlightRow();
+
+// form inputs
+bsnInput();
+countryCodeInput();
+dateInput();
+initialsInput();
+addressLookup();
+localitySuggestions();
+setupPositionPreview();
+setupSelectAllCheckbox();
+setupDirtyForms();
+
+// generic UI
+setupStickyNav();
+setupModal();
+setupOverlay();
+setupTextSearch();
+setupSortable();

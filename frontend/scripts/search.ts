@@ -1,8 +1,9 @@
-window.addEventListener("load", () => {
+export default function setupTextSearch() {
   const search = document.getElementById("search") as HTMLInputElement | null;
-  const table = document.getElementById(
-    "add-candidate-table",
-  ) as HTMLTableElement | null;
+  const tableIds = ["add-candidate-table", "persons-table"];
+  const table = tableIds
+    .map((id) => document.getElementById(id))
+    .find(Boolean) as HTMLTableElement | null;
 
   if (!search || !table) {
     return;
@@ -14,22 +15,13 @@ window.addEventListener("load", () => {
 
     rows.forEach((element: Element) => {
       const row = element as HTMLTableRowElement;
-      const nameCell = row.querySelector("td:nth-child(2)");
-      const localityCell = row.querySelector("td:nth-child(3)");
+      const rowText = row.textContent?.toLowerCase() || "";
 
-      if (nameCell && localityCell) {
-        const nameText = nameCell.textContent?.toLowerCase() || "";
-        const localityText = localityCell.textContent?.toLowerCase() || "";
-
-        if (
-          nameText.includes(searchValue) ||
-          localityText.includes(searchValue)
-        ) {
-          row.style.display = "";
-        } else {
-          row.style.display = "none";
-        }
+      if (rowText.includes(searchValue)) {
+        row.style.display = "";
+      } else {
+        row.style.display = "none";
       }
     });
   });
-});
+}

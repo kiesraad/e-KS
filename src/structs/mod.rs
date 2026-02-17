@@ -4,6 +4,7 @@ mod constrained_string;
 mod country_code;
 mod date;
 mod display_name;
+mod form_action;
 mod house_number;
 mod house_number_addition;
 mod initials;
@@ -19,6 +20,7 @@ pub use constrained_string::{FirstName, LegalName, Locality, PlaceOfResidence, S
 pub use country_code::CountryCode;
 pub use date::Date;
 pub use display_name::DisplayName;
+pub use form_action::FormAction;
 pub use house_number::HouseNumber;
 pub use house_number_addition::HouseNumberAddition;
 pub use initials::Initials;

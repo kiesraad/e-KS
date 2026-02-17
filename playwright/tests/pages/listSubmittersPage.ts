@@ -9,9 +9,7 @@ export class ListSubmittersPage {
   }
 
   getSubmitterLocator(lastName: string) {
-    return this.page
-      .locator("table.submitters-table")
-      .getByRole("cell", { name: lastName });
+    return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
 
   async open() {
@@ -21,8 +19,7 @@ export class ListSubmittersPage {
   async deleteExistingListSubmitters() {
     //takes all links from table and saves href attributes of each link in list
     const hrefs = await this.page
-      .locator("table.submitters-table")
-      .getByRole("link")
+      .locator(".list-submitters .person-block")
       .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
 
     for (const href of hrefs) {
@@ -54,7 +51,8 @@ export class ListSubmittersPage {
         .fill(listSubmitter.lastNamePrefix ?? "");
       await this.page
         .getByRole("textbox", { name: "Achternaam *" })
-        .pressSequentially(listSubmitter.lastName);
+        .fill(listSubmitter.lastName);
+      await this.page.locator("body").click();
 
       await this.page.getByRole("button", { name: "Opslaan" }).click();
     }

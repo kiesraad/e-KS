@@ -1,22 +1,27 @@
-function setupDirtyForms() {
+export default function setupDirtyForms() {
   const forms = document.querySelectorAll("form");
   const dirtyForms = new Set<HTMLFormElement>();
   let isSubmitting = false;
 
   forms.forEach((form) => {
-    const submitButton: HTMLButtonElement | null =
-      form.querySelector("button.dirty-check");
+    const submitButton: HTMLButtonElement | null = form.querySelector(
+      "button[value='save']",
+    );
     const anyFieldRequired = form.querySelector("[required]") !== null;
 
-    if (!submitButton) {
+    if (submitButton === null) {
       return;
     }
 
+    const canSubmit = () =>
+      !submitButton.classList.contains("dirty-check") ||
+      (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity()));
+
     const updateSubmitButtons = () => {
-      if (dirtyForms.has(form) && (!anyFieldRequired || form.checkValidity())) {
-        submitButton.disabled = false;
+      if (canSubmit()) {
+        submitButton.classList.remove("disabled");
       } else {
-        submitButton.disabled = true;
+        submitButton.classList.add("disabled");
       }
     };
 
@@ -36,6 +41,21 @@ function setupDirtyForms() {
       isSubmitting = true;
     });
 
+    document.addEventListener("keydown", (event) => {
+      if (event.key !== "Enter" || !event.shiftKey || event.isComposing) {
+        return;
+      }
+
+      event.preventDefault();
+
+      if (!canSubmit()) {
+        updateSubmitButtons();
+        return;
+      }
+
+      form.requestSubmit(submitButton);
+    });
+
     updateSubmitButtons();
   });
 
@@ -44,8 +64,4 @@ function setupDirtyForms() {
       event.preventDefault();
     }
   });
-}
-
-if (typeof globalThis !== "undefined") {
-  globalThis.addEventListener("load", setupDirtyForms);
 }

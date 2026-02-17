@@ -21,10 +21,12 @@ pub enum AppError {
     InternalServerError,
     #[default]
     GenericNotFound,
+    CsrfTokenInvalid,
     NotFound(String),
     DatabaseError(sqlx::Error),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
+
     // Axum error types
     MultipartFormError(MultipartError),
     MultipartError(MultipartRejection),
@@ -45,24 +47,25 @@ pub enum AppError {
 impl Display for AppError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            AppError::Unauthorised => write!(f, "Unauthorised"),
-            AppError::InternalServerError => write!(f, "Internal server error"),
-            AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
-            AppError::TemplateError(err) => write!(f, "Template error: {err}"),
-            AppError::MissingEnvVar(var) => write!(f, "Missing environment variable: {var}"),
             AppError::ConfigLoadError(err) => write!(f, "Configuration load error: {err}"),
-            AppError::ServerError(err) => write!(f, "Server error: {err}"),
-            AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
-            AppError::MultipartError(err) => write!(f, "Multipart error: {err}"),
+            AppError::CsrfTokenInvalid => write!(f, "CSRF token is invalid"),
+            AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
-            AppError::PathRejection(err) => write!(f, "Path error: {err}"),
-            AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
-            AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
-            AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
-            AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
-            AppError::NoStorageConfigured => write!(f, "No event storage configured"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
+            AppError::InternalServerError => write!(f, "Internal server error"),
+            AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
+            AppError::MissingEnvVar(var) => write!(f, "Missing environment variable: {var}"),
+            AppError::MultipartError(err) => write!(f, "Multipart error: {err}"),
+            AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
+            AppError::NoStorageConfigured => write!(f, "No event storage configured"),
+            AppError::NotFound(msg) => write!(f, "{msg}"),
+            AppError::PathRejection(err) => write!(f, "Path error: {err}"),
+            AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
+            AppError::ServerError(err) => write!(f, "Server error: {err}"),
+            AppError::TemplateError(err) => write!(f, "Template error: {err}"),
+            AppError::Unauthorised => write!(f, "Unauthorised"),
+            AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
         }
     }
 }
@@ -219,6 +222,7 @@ mod tests {
             AppError::Unauthorised,
             AppError::InternalServerError,
             AppError::GenericNotFound,
+            AppError::CsrfTokenInvalid,
             AppError::NotFound("missing".to_string()),
             AppError::from(sqlx::Error::RowNotFound),
             AppError::from(askama::Error::Fmt),

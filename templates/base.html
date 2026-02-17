@@ -4,7 +4,8 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Kiesraad - Kandidaatstelling</title>
+  <meta name="description" content="{{ "common.description"|trans }}" />
+  <title>{{ "common.title"|trans }}</title>
   <link rel="icon" href="/static/favicon.svg" />
   <link rel="stylesheet" href="/static/index.css?{{ filters::cache_buster() }}" />
   {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}

@@ -9,12 +9,9 @@ pub struct PoliticalGroupSteps {
     pub list_submitters: Vec<ListSubmitter>,
     pub substitute_submitters: Vec<SubstituteSubmitter>,
 
-    pub basic_complete: bool,
-    pub basic_empty: bool,
-    pub authorised_agents_complete: bool,
-    pub authorised_agents_empty: bool,
-    pub submitters_complete: bool,
-    pub submitters_empty: bool,
+    pub basic_state: &'static str,
+    pub authorised_agents_state: &'static str,
+    pub submitters_state: &'static str,
 }
 
 impl PoliticalGroupSteps {
@@ -24,30 +21,38 @@ impl PoliticalGroupSteps {
         let list_submitters = store.get_list_submitters()?;
         let substitute_submitters = store.get_substitute_submitters()?;
 
-        let basic_complete = political_group.is_basic_info_complete();
-        let basic_empty = political_group.is_basic_info_empty();
-
-        let authorised_agents_empty = authorised_agents.is_empty();
-        let authorised_agents_complete =
-            !authorised_agents_empty && authorised_agents.iter().all(AuthorisedAgent::is_complete);
-
-        let list_submitters_empty = list_submitters.is_empty();
-        let substitute_submitters_empty = substitute_submitters.is_empty();
-        let submitters_empty = list_submitters_empty && substitute_submitters_empty;
-
-        let list_submitters_complete =
-            !list_submitters_empty && list_submitters.iter().all(ListSubmitter::is_complete);
-
         Ok(Self {
+            basic_state: if political_group.is_basic_info_complete() {
+                "ok"
+            } else if political_group.is_basic_info_empty() {
+                "empty"
+            } else {
+                "warning"
+            },
+            authorised_agents_state: if !authorised_agents.is_empty()
+                && authorised_agents.iter().all(AuthorisedAgent::is_complete)
+            {
+                "ok"
+            } else if authorised_agents.is_empty() {
+                "empty"
+            } else {
+                "warning"
+            },
+            submitters_state: if !list_submitters.is_empty()
+                && list_submitters.iter().all(ListSubmitter::is_complete)
+                && substitute_submitters
+                    .iter()
+                    .all(SubstituteSubmitter::is_complete)
+            {
+                "ok"
+            } else if list_submitters.is_empty() {
+                "empty"
+            } else {
+                "warning"
+            },
             authorised_agents,
             list_submitters,
             substitute_submitters,
-            basic_complete,
-            basic_empty,
-            authorised_agents_complete,
-            authorised_agents_empty,
-            submitters_complete: list_submitters_complete,
-            submitters_empty,
         })
     }
 }

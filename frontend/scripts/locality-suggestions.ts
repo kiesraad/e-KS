@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function localitySuggestions() {
   const input = document.getElementById("locality") as HTMLInputElement | null;
   const datalist = document.getElementById("locality-suggestions");
 
@@ -23,4 +23,4 @@ window.addEventListener("load", () => {
       datalist.appendChild(option);
     });
   });
-});
+}

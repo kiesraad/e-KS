@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function highlightActiveLinks() {
   document.querySelectorAll("a").forEach((link) => {
     const current = globalThis.location.pathname;
     const isMain = Boolean(link.closest("header"));
@@ -11,4 +11,4 @@ window.addEventListener("load", () => {
       link.classList.add("active");
     }
   });
-});
+}

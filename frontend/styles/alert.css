@@ -8,4 +8,47 @@
     border-left: 4px solid var(--blue-600);
     color: var(--gray-600);
   }
+
+  &.alert-success {
+    background-color: var(--green-100);
+    color: var(--green-600);
+    border: 1px solid var(--green-300);
+    background-image: url("../icons/checkmarkSmall.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    background-size: 1rem;
+  }
+
+  &.alert-floating {
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    position: fixed;
+    left: 4rem;
+    padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl);
+    bottom: var(--space-lg);
+    border-radius: var(--rounded-sm);
+    z-index: 1000;
+    margin: 0;
+    box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
+    animation: alert-float 4.5s ease-in-out forwards;
+  }
+}
+
+@keyframes alert-float {
+  0% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
+  12% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  78% {
+    transform: translateX(0);
+    opacity: 1;
+  }
+  100% {
+    transform: translateX(-120%);
+    opacity: 0;
+  }
 }

@@ -18,6 +18,7 @@ mod tests {
     use crate::{AppStore, fixtures::load};
     use sqlx::PgPool;
 
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test]
     async fn test_load_all_fixtures(pool: PgPool) {
         let store = AppStore::new(pool);

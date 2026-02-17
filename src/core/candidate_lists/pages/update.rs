@@ -1,14 +1,15 @@
 use askama::Template;
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, InitialQuery,
+    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -23,7 +24,7 @@ pub async fn update_candidate_list(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
@@ -44,7 +45,7 @@ pub async fn update_candidate_list_submit(
     context: Context,
     candidate_list: CandidateList,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate_list, &context.csrf_tokens) {
@@ -60,7 +61,9 @@ pub async fn update_candidate_list_submit(
         Ok(candidate_list) => {
             candidate_list.update(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.view_path()).into_response())
+            Ok(redirect_success(
+                candidate_list.update_list_submitter_path(),
+            ))
         }
     }
 }
@@ -69,7 +72,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, InitialQuery, TokenValue, UtcDateTime,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue, UtcDateTime,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -77,6 +80,7 @@ mod tests {
         extract::Query,
         http::{StatusCode, header},
     };
+    use axum_extra::routing::TypedPath;
     use chrono::{Duration, Utc};
 
     #[tokio::test]
@@ -92,14 +96,14 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await?;
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Edit candidate list"));
-        assert!(body.contains(&candidate_list.update_path()));
+        assert!(body.contains(&candidate_list.update_path().to_string()));
         assert!(body.contains("electoral_district_UT"));
         assert!(body.contains("checked"));
 
@@ -129,7 +133,7 @@ mod tests {
             context,
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;
@@ -149,7 +153,13 @@ mod tests {
 
         let updated_list = &lists[0].list;
 
-        assert_eq!(updated_list.view_path(), location);
+        assert_eq!(
+            updated_list
+                .update_list_submitter_path()
+                .with_query_params(QueryParamState::success())
+                .to_string(),
+            location
+        );
 
         assert_eq!(candidate_list.id, updated_list.id);
         assert_eq!(
@@ -192,7 +202,7 @@ mod tests {
             Context::new_test_without_db(),
             candidate_list.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;

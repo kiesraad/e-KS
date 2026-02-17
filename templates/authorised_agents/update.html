@@ -1,55 +1,36 @@
 {% extends "components/overlay.html" %}
+{% import "components/macros.html" as macros %}
 
-{% block close_action %}{{ AuthorisedAgent::list_path() }}{% endblock %}
+{% set close_action = AuthorisedAgent::list_path() %}
 
 {% block overlay_title %}{{ "political_group.edit_authorised_agent"|trans }}{% endblock %}
 
-{% block overlay_start %}
-<form method="post" action="{{ authorised_agent.update_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
-{% endblock %}
-
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ authorised_agent.update_path() }}">
-            {{ "political_group.edit_authorised_agent"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div class="form">
-      <fieldset>
-        {% set should_warn = true %}
-        {% include "components/person_name_fields.html" %}
-      </fieldset>
-      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ "political_group.actions.delete_authorised_agent"|trans }}
-      </button>
-    </div>
+{% block overlay_steps %}
+  <div class="steps-nav">
+    <ul>
+      <li>
+        <a href="{{ authorised_agent.update_path() }}">
+          {{ "political_group.edit_authorised_agent"|trans }}
+        </a>
+      </li>
+    </ul>
   </div>
 {% endblock %}
 
+{% block overlay_form %}
+  {% set should_warn = true %}
+  <fieldset>
+    {% include "components/person_name_fields.html" %}
+  </fieldset>
+  <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
+    {{ "political_group.actions.delete_authorised_agent"|trans }}
+  </button>
+{% endblock %}
+
 {% block overlay_end %}
-</form>
-<dialog class="modal">
-  <form method="post" action="{{ authorised_agent.delete_path() }}" class="form">
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </button>
-    <h3>
-      {{ "political_group.actions.delete_authorised_agent"|trans }}
-    </h3>
-    <p class="mt-lg mb-lg">{{ "political_group.delete_authorised_agent_warning_text"|trans }}</p>
-    <button type="submit" class="button primary-destructive">
-      {{ "action.delete"|trans }}
-    </button>
-    <button type="submit" class="button secondary close">
-      {{ "action.cancel"|trans }}
-    </button>
-  </form>
-</dialog>
+  {{ macros::delete_modal(
+    authorised_agent.delete_path(),
+    "political_group.actions.delete_authorised_agent"|trans,
+    "political_group.delete_authorised_agent_warning_text"|trans
+  ) }}
 {% endblock %}

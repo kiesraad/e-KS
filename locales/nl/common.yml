@@ -1,11 +1,15 @@
+back_to_home: Terug naar het startscherm
+description: Kandidaatstellen voor verkiezingen in Nederland
 electoral_districts: Kieskringen
 general_information: Lijstgegevens
 general_information_description: Vul hier de basisgegevens in en de gegevens van de lijstinleveraar.
 home: Start
 no_label: Nee
+save_success: opgeslagen
 step: "Stap {}"
+steps: Stappen
 submit: Inleveren
 submit_description: Controleer alle gegevens en dien de kandidatenlijst(en) in bij de Kiesraad.
-title: Kiesraad - Kandidaat stellen
+title: Kiesraad - Kandidaatstelling
 version: Versie
 yes_label: Ja

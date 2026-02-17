@@ -50,6 +50,7 @@
   --space-xxl: 5rem;
 
   /* CORNERS */
+  --rounded-sm: 3px;
   --rounded-default: 0.5rem;
 
   /* COLORS */

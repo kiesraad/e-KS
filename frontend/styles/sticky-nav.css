@@ -13,8 +13,7 @@
     padding: var(--space-lg);
     border-radius: var(--space-sm);
     overflow-anchor: none;
-    transition: box-shadow 0.5s;
-    transition: padding 0.5s;
+    border: 1px solid var(--gray-200);
 
     p {
       display: block;
@@ -23,7 +22,6 @@
       max-height: 2rem;
       overflow: hidden;
       opacity: 1;
-      transition: all 0.5s;
     }
 
     & > div:nth-child(2) {
@@ -33,6 +31,33 @@
     .buttons {
       display: flex;
       gap: var(--space-md);
+    }
+
+    .form-field {
+      max-width: 40rem;
+      width: 100%;
+
+      label {
+        display: none;
+      }
+
+      #search {
+        padding: var(--space-sm) var(--space-md);
+        height: 3rem;
+        border-radius: var(--space-sm);
+        border-width: 1px;
+      }
+    }
+  }
+
+  &:not(.no-animation) {
+    .sticky-nav-bar {
+      transition: box-shadow 200ms;
+      transition: padding 200ms;
+
+      p {
+        transition: all 200ms;
+      }
     }
   }
 

@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -9,6 +9,7 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 use super::AuthorisedAgentUpdatePath;
@@ -54,7 +55,7 @@ pub async fn update_authorised_agent_submit(
         Ok(authorised_agent) => {
             authorised_agent.update(&store).await?;
 
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -63,8 +64,8 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
-        authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
+        AppError, AppStore, Context, Form, QueryParamState,
+        authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_authorised_agent, sample_authorised_agent_form,
@@ -75,6 +76,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_authorised_agent_renders_existing_agent() -> Result<(), AppError> {
@@ -136,7 +138,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, AuthorisedAgent::list_path());
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         let updated = store.get_authorised_agent(agent_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

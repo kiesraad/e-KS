@@ -2,20 +2,11 @@
 
 {% block body %}
 {% block overlay %}{% endblock %}
-
-{% decl lang %}
-{% match "locale"|value::<crate::Locale> %}
-{% when Ok(locale) %}
-  {% let lang = locale.clone().clone() %}
-{% when Err(_) %}
-  {% let lang = crate::Locale::Nl %}
-{% endmatch %}
-
 <header>
   <nav>
     <ul>
       <li>
-        <a href="/" class="home">
+        <a href="/" class="home" aria-label="{{ "common.home"|trans }}">
           <span>{{ "common.home"|trans }}</span>
         </a>
       </li>
@@ -37,12 +28,14 @@
     </ul>
     <ul>
       <li><a href="javascript:alert('Under construction...');" class="logout">{{ "action.signout"|trans }}</a></li>
+      {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
       <li>
         <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}" method="POST" class="language-switch">
-          <button class="button sm {% if (lang == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">NL</button>
-          <button class="button sm {% if (lang == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">EN</button>
+          <button class="button sm {% if (**locale == crate::Locale::Nl) %} active {% endif %}" type="submit" name="lang" value="nl">NL</button>
+          <button class="button sm {% if (**locale == crate::Locale::En) %} active {% endif %}" type="submit" name="lang" value="en">EN</button>
         </form>
       </li>
+      {% endif %}
     </ul>
   </nav>
   <div class="header-content">
@@ -60,4 +53,11 @@
   <span>{{ "common.title"|trans }}</span>
   <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
 </footer>
+{% if let Ok(show_success_alert) = "show_success_alert"|value::<bool> %}
+  {% if show_success_alert %}
+    <div class="alert alert-success alert-floating">
+      {{ "common.save_success"|trans }}
+    </div>
+  {% endif %}
+{% endif %}
 {% endblock %}

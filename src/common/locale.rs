@@ -134,6 +134,11 @@ pub fn locale_router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode, header},
+    };
+    use tower::ServiceExt;
 
     #[test]
     fn converts_to_language_codes() {
@@ -155,5 +160,62 @@ mod tests {
 
         let header = "fr-CA,fr;q=0.8,en;q=0.5";
         assert_eq!(Locale::from_accept_language(header), None);
+    }
+
+    #[tokio::test]
+    async fn request_locale_prefers_cookie() {
+        let request = Request::builder()
+            .uri("/")
+            .header(header::COOKIE, "LANGUAGE=en")
+            .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
+            .body(Body::empty())
+            .unwrap();
+        let (mut parts, _body) = request.into_parts();
+
+        let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
+
+        assert_eq!(locale, Locale::En);
+    }
+
+    #[tokio::test]
+    async fn request_locale_falls_back_to_accept_language() {
+        let request = Request::builder()
+            .uri("/")
+            .header(header::COOKIE, "LANGUAGE=fr")
+            .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
+            .body(Body::empty())
+            .unwrap();
+        let (mut parts, _body) = request.into_parts();
+
+        let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
+
+        assert_eq!(locale, Locale::Nl);
+    }
+
+    #[tokio::test]
+    async fn switch_language_sets_cookie_and_redirects() {
+        let app = locale_router().with_state(AppState::new_for_tests().await);
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/language")
+            .header(header::REFERER, "https://example.com/return")
+            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(Body::from("lang=en"))
+            .unwrap();
+
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(
+            response.headers().get(header::LOCATION).unwrap(),
+            "https://example.com/return"
+        );
+        let set_cookie = response
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|value| value.to_str().ok())
+            .unwrap_or_default();
+        assert!(set_cookie.contains("LANGUAGE=en"));
     }
 }

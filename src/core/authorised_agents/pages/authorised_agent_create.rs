@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use super::AuthorisedAgentCreatePath;
@@ -10,6 +10,7 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
+    redirect_success,
 };
 
 #[derive(Template)]
@@ -44,7 +45,8 @@ pub async fn create_authorised_agent_submit(
         .into_response()),
         Ok(authorised_agent) => {
             authorised_agent.create(&store).await?;
-            Ok(Redirect::to(&AuthorisedAgent::list_path()).into_response())
+
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -53,8 +55,7 @@ pub async fn create_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
-        authorised_agents::AuthorisedAgent,
+        AppError, AppStore, Context, Form, QueryParamState,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
     };
@@ -62,6 +63,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn create_authorised_agent_renders_csrf_field() -> Result<(), AppError> {
@@ -79,7 +81,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains(&format!("action=\"{}\"", AuthorisedAgent::create_path())));
 
         Ok(())
     }
@@ -111,10 +112,14 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, AuthorisedAgent::list_path());
-
         let agents = store.get_authorised_agents()?;
         assert_eq!(agents.len(), 1);
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         Ok(())
     }

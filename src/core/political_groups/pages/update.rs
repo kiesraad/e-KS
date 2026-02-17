@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -11,6 +11,7 @@ use crate::{
     form::{Form, FormData},
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
+    redirect_success,
 };
 
 use super::PoliticalGroupUpdatePath;
@@ -61,7 +62,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(Redirect::to(&PoliticalGroup::update_path()).into_response())
+            Ok(redirect_success(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -70,7 +71,7 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, AppStore, Context, Form, QueryParamState,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -82,6 +83,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {
@@ -141,7 +143,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, PoliticalGroup::update_path());
+        assert_eq!(
+            location,
+            AuthorisedAgent::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         let updated = store.get_political_group()?;
         assert_eq!(updated.long_list_allowed, Some(true));

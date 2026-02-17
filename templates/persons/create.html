@@ -1,14 +1,10 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ Person::list_path() }}{% endblock %}
+{% set close_action = Person::list_path() %}
 
 {% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
 
-{% block overlay_start %}<form method="post" action="{{ Person::create_path() }}" class="overlay">{% endblock %}
-{% block overlay_end %}</form>{% endblock %}
-
-{% block overlay_content %}
-<div class="overlay-content steps">
+{% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
@@ -21,29 +17,21 @@
           {{ "person.correspondence_address"|trans }}
         </a>
       </li>
-      <li>
-        <a class="disabled" disabled>
-          {{ "person.representative"|trans }}
-        </a>
-      </li>
     </ul>
   </div>
-  <div class="form">
-    <fieldset>
-      <legend>
-        <h2>{{ "person.form.create.title"|trans }}</h2>
-      </legend>
-      {% let should_warn = false %}
-      {% include "persons/components/form.html" %}
-    </fieldset>
-  </div>
-</div>
 {% endblock %}
 
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button dirty-check">
-    {{ "action.save_and_continue"|trans }}
-  </button>
-</footer>
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h2>{{ "person.form.create.title"|trans }}</h2>
+    </legend>
+    {% let should_warn = false %}
+    {% include "persons/components/form.html" %}
+  </fieldset>
+{% endblock %}
+
+{% block overlay_actions %}
+    {% set submit_label = "action.next"|trans %}
+    {% include "components/submit.html" %}
 {% endblock %}

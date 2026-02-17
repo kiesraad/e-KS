@@ -11,8 +11,8 @@ export class SelectElectoralDistrictsPage {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
 
-    await this.page.getByRole("button", { name: "Opslaan en verder" }).click();
-    // TODO Grietje: deze test fatsoenlijk fixen met selecteren list submitter
-    await this.page.getByRole("link", { name: "Sluiten" }).click();
+    await this.page.getByRole("button", { name: "Volgende" }).click();
+
+    await this.page.getByRole("link", { name: "Sluiten" }).first().click();
   }
 }

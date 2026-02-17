@@ -3,8 +3,12 @@
   position: relative;
   margin-top: var(--space-md);
   opacity: 0;
-  transition: opacity 0.2s ease-in-out;
+  max-height: 0;
+  transition:
+    opacity 0.2s ease-in-out,
+    max-height 0.2s ease-in-out;
   user-select: none;
+  overflow: hidden;
 
   &.fade-top::before,
   &.fade-bottom::after {
@@ -28,6 +32,11 @@
   &.fade-bottom::after {
     bottom: 0;
     background: linear-gradient(to top, var(--gray-50), rgba(255, 255, 255, 0));
+  }
+
+  &.visible {
+    opacity: 1;
+    max-height: 15rem;
   }
 }
 

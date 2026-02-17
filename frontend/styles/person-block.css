@@ -1,0 +1,33 @@
+a.person-block {
+  display: block;
+  position: relative;
+  margin-bottom: var(--space-md);
+  background-image: url("../icons/edit.svg");
+  background-repeat: no-repeat;
+  background-position: right var(--space-md) center;
+  background-size: 1.5rem 1.5rem;
+  border: 1px solid var(--gray-200);
+  border-radius: var(--rounded-default);
+  padding: var(--space-md);
+  width: 100%;
+  max-width: 32rem;
+  color: var(--text-color-body);
+  text-decoration: none;
+
+  &.warning:after {
+    content: " ";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    width: 10rem;
+    background-image: url("../icons/warning.svg");
+    background-repeat: no-repeat;
+    background-position: right 3.5rem center;
+  }
+
+  &:hover {
+    background-color: var(--gray-100);
+  }
+}

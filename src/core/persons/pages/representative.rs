@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
-    persons::{InitialQuery, Person, RepresentativeForm, pages::UpdateRepresentativePath},
+    persons::{Person, RepresentativeForm, pages::UpdateRepresentativePath},
 };
 
 #[derive(Template)]
@@ -22,7 +22,7 @@ pub async fn update_representative(
     _: UpdateRepresentativePath,
     context: Context,
     person: Person,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
@@ -42,7 +42,7 @@ pub async fn update_representative_submit(
     context: Context,
     person: Person,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person.representative, &context.csrf_tokens) {
@@ -58,7 +58,7 @@ pub async fn update_representative_submit(
         Ok(representative) => {
             person.update_representative(&store, representative).await?;
 
-            Ok(Redirect::to(&Person::list_path()).into_response())
+            Ok(Redirect::to(&person.highlight_success_path().to_string()).into_response())
         }
     }
 }
@@ -67,7 +67,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, AppStore, Context, Form, QueryParamState,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_person, sample_representative_form,
@@ -91,7 +91,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             Context::new_test_without_db(),
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -119,7 +119,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             context,
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -145,13 +145,14 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
+        let expected_path = person.highlight_success_path().to_string();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },
             context,
             person,
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -164,7 +165,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, Person::list_path());
+        assert_eq!(location, expected_path);
 
         let updated = store.get_person(person_id)?;
         assert_eq!(updated.representative.name.last_name.to_string(), "Smit");
@@ -190,7 +191,7 @@ mod tests {
             context,
             person,
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

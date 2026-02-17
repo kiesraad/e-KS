@@ -1,15 +1,14 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect},
-};
+use axum::{extract::State, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::FullCandidateList,
-    candidates::{Candidate, CandidatePosition, CandidatePositionAction, CandidatePositionForm},
+    candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     filters,
     form::FormData,
+    redirect_success,
+    structs::FormAction,
 };
 
 use super::UpdateCandidatePositionPath;
@@ -30,7 +29,7 @@ pub async fn update_candidate_position(
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
         position: candidate.position,
-        action: CandidatePositionAction::Move,
+        action: FormAction::Save,
         ..Default::default()
     };
 
@@ -60,7 +59,7 @@ pub async fn update_candidate_position_submit(
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
         position: candidate.position,
-        action: CandidatePositionAction::Move,
+        action: FormAction::Save,
         ..Default::default()
     };
 
@@ -74,23 +73,21 @@ pub async fn update_candidate_position_submit(
             context,
         )
         .into_response()),
-        Ok(position_form) => {
-            let redirect = Redirect::to(&full_list.list.view_path()).into_response();
+        Ok(position_form) => match position_form.action {
+            FormAction::Remove => {
+                let mut list = full_list.list;
+                list.remove_candidate(&store, candidate.person.id).await?;
 
-            match position_form.action {
-                CandidatePositionAction::Remove => {
-                    let mut list = full_list.list;
-                    list.remove_candidate(&store, candidate.person.id).await?;
-                }
-                CandidatePositionAction::Move => {
-                    let mut list = full_list.list;
-                    list.update_position(&store, candidate.person.id, position_form.position)
-                        .await?;
-                }
+                Ok(redirect_success(list.view_path()))
             }
+            FormAction::Save => {
+                let mut list = full_list.list;
+                list.update_position(&store, candidate.person.id, position_form.position)
+                    .await?;
 
-            Ok(redirect)
-        }
+                Ok(redirect_success(candidate.update_path()))
+            }
+        },
     }
 }
 
@@ -148,7 +145,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&candidate.update_position_path()));
+        assert!(body.contains(&candidate.update_position_path().to_string()));
         assert!(body.contains("Jansen"));
 
         Ok(())
@@ -177,7 +174,7 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
-        let form = sample_position_form(&csrf_token, 2, "move");
+        let form = sample_position_form(&csrf_token, 2, "save");
 
         let response = update_candidate_position_submit(
             UpdateCandidatePositionPath {
@@ -274,7 +271,7 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());
-        let form = sample_position_form(&csrf_token, 2, "move");
+        let form = sample_position_form(&csrf_token, 2, "save");
 
         let response = update_candidate_position_submit(
             UpdateCandidatePositionPath {

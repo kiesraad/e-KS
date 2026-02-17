@@ -20,16 +20,11 @@
       background-position: left var(--space-sm) center;
       background-size: 1.5rem;
       line-height: 2.75rem;
-      border-radius: 3px;
-      font-weight: 600;
+      border-radius: var(--rounded-sm);
+      font-weight: normal;
 
       &:hover {
         background-color: var(--gray-100);
-      }
-
-      &.active {
-        background-image: url("../icons/arrowNarrowRight.svg");
-        background-color: var(--gray-200);
       }
 
       &.warning {
@@ -42,7 +37,7 @@
 
       &.disabled {
         background-image: none;
-        pointer-events: none;
+        pointer-events: all;
         cursor: not-allowed;
         color: var(--gray-400);
       }
@@ -50,6 +45,12 @@
       &.locked {
         background-image: url("../icons/lock.svg");
         background-size: 1rem;
+      }
+
+      &.active {
+        background-image: url("../icons/arrowNarrowRight.svg");
+        background-color: var(--gray-200);
+        font-weight: 600;
       }
     }
   }

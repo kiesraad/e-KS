@@ -42,7 +42,7 @@ pub async fn update_person_submit(
     _: CandidateListUpdatePersonPath,
     context: Context,
     full_list: FullCandidateList,
-    candidate: Candidate,
+    mut candidate: Candidate,
     State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
@@ -58,8 +58,9 @@ pub async fn update_person_submit(
         .into_response()),
         Ok(person) => {
             person.update(&store).await?;
+            candidate.person = person;
 
-            Ok(Redirect::to(&full_list.list.view_path()).into_response())
+            Ok(Redirect::to(&candidate.after_update_path()).into_response())
         }
     }
 }
@@ -137,6 +138,7 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
+        let expected_path = candidate.after_update_path();
 
         let response = update_person_submit(
             CandidateListUpdatePersonPath {
@@ -158,7 +160,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+        assert_eq!(location, expected_path);
 
         let updated = store
             .get_persons()?

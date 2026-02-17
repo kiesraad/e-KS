@@ -1,40 +1,24 @@
 {% extends "components/overlay.html" %}
 
-{% block close_action %}{{ ListSubmitter::list_path() }}{% endblock %}
+{% set close_action = ListSubmitter::list_path() %}
 
 {% block overlay_title %}{{ "political_group.add_list_submitter"|trans }}{% endblock %}
 
-{% block overlay_start %}
-<form method="post" action="{{ ListSubmitter::create_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />
-{% endblock %}
-
-{% block overlay_end %}</form>{% endblock %}
-
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    <div class="steps-nav">
-      <ul>
-        <li>
-          <a href="{{ ListSubmitter::create_path() }}">
-            {{ "political_group.add_list_submitter"|trans }}
-          </a>
-        </li>
-      </ul>
-    </div>
-    <div class="form">
-      <fieldset>
-        {% include "components/person_name_fields.html" %}
-        {% include "components/address_fields.html" %}
-      </fieldset>
-    </div>
+{% block overlay_steps %}
+  <div class="steps-nav">
+    <ul>
+      <li>
+        <a href="{{ ListSubmitter::create_path() }}">
+          {{ "political_group.add_list_submitter"|trans }}
+        </a>
+      </li>
+    </ul>
   </div>
 {% endblock %}
 
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button dirty-check">
-    {{ "action.save_and_continue"|trans }}
-  </button>
-</footer>
+{% block overlay_form %}
+  <fieldset>
+    {% include "components/person_name_fields.html" %}
+    {% include "components/address_fields.html" %}
+  </fieldset>
 {% endblock %}

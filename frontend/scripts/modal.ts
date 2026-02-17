@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function setupModal() {
   const modal: HTMLDialogElement | null =
     document.querySelector("dialog.modal");
 
@@ -28,4 +28,4 @@ window.addEventListener("load", () => {
       });
     }
   }
-});
+}

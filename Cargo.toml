@@ -18,6 +18,8 @@ fixtures = []
 livereload = []
 dev-features = []
 http-logging = ["dep:tower-http"]
+db-tests = []
+net-tests = []
 
 [[bin]]
 name = "fixtures"

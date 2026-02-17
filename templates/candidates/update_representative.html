@@ -1,29 +1,12 @@
-{% extends "components/overlay.html" %}
+{% extends "persons/update_representative.html" %}
 
 {% block overlay_title %}
   <span class="position-badge">{{ candidate.position }}</span>
   {{ candidate.person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
+{% set close_action = full_list.list.highlight_path(*candidate.person.id) %}
 
-{% block overlay_start %}
-<form method="post" action="{{ candidate.update_representative_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-{% endblock %}
-
-{% block overlay_end %}</form>{% endblock %}
-
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.representative"|trans }}</h3>
-        </legend>
-        {% include "persons/components/representative_form.html" %}
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_steps %}
+  {% include "candidates/components/update_steps.html" %}
 {% endblock %}

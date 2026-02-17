@@ -1,12 +1,10 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use crate::{
     AppError, AppStore, Context, Form,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     form::EmptyForm,
+    redirect_success,
 };
 
 pub async fn delete_candidate_list(
@@ -17,11 +15,11 @@ pub async fn delete_candidate_list(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&candidate_list.update_path()).into_response()),
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate_list.delete(&store).await?;
 
-            Ok(Redirect::to(&CandidateList::list_path()).into_response())
+            Ok(redirect_success(CandidateList::list_path()))
         }
     }
 }
@@ -30,9 +28,11 @@ pub async fn delete_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, ElectoralDistrict, Form, TokenValue, candidate_lists::CandidateListSummary,
+        AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        candidate_lists::CandidateListSummary,
     };
     use axum::http::{StatusCode, header};
+    use axum_extra::routing::TypedPath;
 
     #[tokio::test]
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
@@ -65,7 +65,12 @@ mod tests {
             .to_str()
             .expect("location header value");
 
-        assert_eq!(location, CandidateList::list_path());
+        assert_eq!(
+            location,
+            CandidateList::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         // verify deletion (i.e. no lists in database left)
         let lists = CandidateListSummary::list(&store)?;
@@ -75,7 +80,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_candidate_invalid_form_renders_template() -> Result<(), AppError> {
+    async fn delete_candidate_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());
@@ -94,18 +99,10 @@ mod tests {
             State(store.clone()),
             Form(EmptyForm { csrf_token }),
         )
-        .await?;
+        .await
+        .unwrap_err();
 
-        // verify redirect
-        assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        let location = response
-            .headers()
-            .get(header::LOCATION)
-            .expect("location header")
-            .to_str()
-            .expect("location header value");
-
-        assert_eq!(location, candidate_list.update_path());
+        assert!(matches!(response, AppError::CsrfTokenInvalid));
 
         // verify deletion didn't go through (i.e. still 1 list in database left)
         let lists = CandidateListSummary::list(&store)?;

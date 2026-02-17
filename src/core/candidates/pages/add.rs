@@ -45,19 +45,16 @@ pub async fn add_person_to_candidate_list(
     State(store): State<AppStore>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
-    let redirect = Redirect::to(&list.view_path()).into_response();
     let person_exists = store
         .get_persons()?
         .iter()
         .any(|person| person.id == form.person_id);
 
-    if list.candidates.contains(&form.person_id) || !person_exists {
-        return Ok(redirect);
+    if !list.candidates.contains(&form.person_id) && person_exists {
+        list.append_candidate(&store, form.person_id).await?;
     }
 
-    list.append_candidate(&store, form.person_id).await?;
-
-    Ok(redirect)
+    Ok(Redirect::to(&list.highlight_success_path(form.person_id).to_string()).into_response())
 }
 
 #[cfg(test)]
@@ -100,7 +97,6 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&list.add_candidate_path()));
         assert!(body.contains("Jansen"));
 
         Ok(())
@@ -133,7 +129,8 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+
+        assert_eq!(location, list.highlight_success_path(person.id).to_string());
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
@@ -173,7 +170,11 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, list.view_path());
+
+        assert_eq!(
+            location,
+            list.highlight_success_path(new_person.id).to_string()
+        );
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);

@@ -72,7 +72,7 @@ pub async fn create_candidate_list_submit(
 
             candidate_list.create(&store).await?;
 
-            Ok(Redirect::to(&candidate_list.after_create_path()).into_response())
+            Ok(Redirect::to(&candidate_list.after_create_path().to_string()).into_response())
         }
     }
 }
@@ -108,7 +108,6 @@ mod test {
         assert_eq!(StatusCode::OK, response.status());
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains("action=\"/candidate-lists/create\""));
 
         Ok(())
     }
@@ -143,7 +142,7 @@ mod test {
         let lists = CandidateListSummary::list(&store)?;
         assert_eq!(lists.len(), 1);
 
-        let expected = lists[0].list.after_create_path();
+        let expected = lists[0].list.after_create_path().to_string();
         assert_eq!(location, expected);
 
         Ok(())

@@ -11,6 +11,10 @@
     background-color: var(--gray-100);
   }
 
+  tr:hover {
+    background-color: var(--blue-100);
+  }
+
   th:first-child {
     padding-left: var(--space-md);
   }
@@ -32,35 +36,56 @@
     cursor: grab;
   }
 
+  &[data-max="50"]
+    tr:nth-child(n + 51):not(.dragging, .highlighted, .flash-success),
+  &[data-max="80"]
+    tr:nth-child(n + 81):not(.dragging, .highlighted, .flash-success) {
+    background-image: repeating-linear-gradient(
+      -45deg,
+      var(--red-200),
+      var(--gray-50) 2px,
+      var(--gray-50) 17px
+    );
+    background-repeat: repeat;
+    background-position: 0 0;
+
+    td {
+      background-color: transparent;
+
+      .position-badge {
+        color: var(--red-200);
+        background-color: var(--red-100);
+      }
+    }
+  }
+
   tr.dragging {
     transition: none;
     z-index: 10;
     position: relative;
+    background-color: var(--yellow-100);
 
-    td {
-      background-color: var(--yellow-100);
-
-      .position-badge {
-        background-color: var(--yellow-200);
-      }
+    .position-badge {
+      background-color: var(--yellow-200);
     }
   }
 
   tr.flash-success {
-    td {
-      background-color: var(--green-100);
+    background-color: var(--green-100);
 
-      .position-badge {
-        background-color: var(--green-200);
-      }
+    .position-badge {
+      background-color: var(--green-200);
     }
   }
 
-  tr:hover {
-    background-color: var(--blue-100);
+  tr.highlighted {
+    background-color: var(--yellow-100);
+
+    .position-badge {
+      background-color: var(--yellow-200);
+    }
   }
 
-  /* td.position-indicator { */
   td:nth-child(2) {
     width: 5rem;
     padding-left: 0;
@@ -87,27 +112,6 @@
 
   td:nth-child(3) {
     border-left: 1px solid var(--gray-300);
-  }
-
-  &[data-max="50"] tr:nth-child(n + 51):not(.dragging),
-  &[data-max="80"] tr:nth-child(n + 81):not(.dragging) {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--red-200),
-      var(--gray-50) 2px,
-      var(--gray-50) 17px
-    );
-    background-repeat: repeat;
-    background-position: 0 0;
-
-    td {
-      background-color: transparent;
-
-      .position-badge {
-        color: var(--red-200);
-        background-color: var(--red-100);
-      }
-    }
   }
 }
 

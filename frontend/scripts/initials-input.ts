@@ -1,5 +1,5 @@
 // Enforce uppercase initials with dots and no spaces
-window.addEventListener("load", () => {
+export default function initialsInput() {
   const initialsInputs: NodeListOf<HTMLInputElement> =
     document.querySelectorAll("input.initials-input");
 
@@ -15,11 +15,7 @@ window.addEventListener("load", () => {
       checkbox.checked = false;
     }
 
-    input.addEventListener("keydown", (event) => {
-      lastKey = event.key;
-    });
-
-    input.addEventListener("input", () => {
+    const format = () => {
       if (checkbox && !checkbox.checked) {
         return;
       }
@@ -36,6 +32,18 @@ window.addEventListener("load", () => {
       } else {
         input.value = "";
       }
+    };
+
+    input.addEventListener("keydown", (event) => {
+      lastKey = event.key;
     });
+
+    input.addEventListener("input", format);
+
+    if (checkbox !== null) {
+      checkbox.addEventListener("click", format);
+    }
+
+    format();
   });
-});
+}

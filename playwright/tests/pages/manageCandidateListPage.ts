@@ -31,21 +31,17 @@ export class ManageCandidateListPage {
     for (const candidate of candidates) {
       await this.page.getByRole("link", { name: "Nieuwe" }).click();
       await this.page.getByLabel("Voorletters").fill(candidate.initials);
-      await this.page
-        .locator('input[name="last_name"]')
-        .pressSequentially(candidate.lastName);
+      await this.page.getByLabel("Achternaam").fill(candidate.lastName);
       await this.page.getByLabel("Roepnaam").fill(candidate.firstName ?? "");
 
-      await this.page
-        .getByRole("button", { name: "Opslaan en verder" })
-        .click();
-      await this.page
-        .getByLabel("Woonplaats")
-        .pressSequentially(candidate.locality ?? "");
+      await this.page.locator("body").click();
+      await this.page.getByRole("button", { name: "Volgende" }).click();
 
-      await this.page
-        .getByRole("button", { name: "Opslaan en sluiten" })
-        .evaluate(button => (button as HTMLButtonElement).click());
+      await this.page.getByLabel("Woonplaats").fill(candidate.locality ?? "");
+      await this.page.locator("body").click();
+
+      await this.page.getByRole("button", { name: "Toevoegen" }).click();
+
       await expect(
         this.page.getByRole("cell", { name: candidate.lastName }),
       ).toBeVisible();
@@ -60,7 +56,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("button", { name: "Volgende" }).click();
   }
 
   async addDistricts(districts: string[]) {
@@ -71,7 +67,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
+    await this.page.getByRole("button", { name: "Volgende" }).click();
   }
 
   async removeList(districts: string[]) {

@@ -1,11 +1,8 @@
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::{extract::State, response::Response};
 
 use crate::{
     AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
-    substitute_list_submitters::SubstituteSubmitter,
+    redirect_success, substitute_list_submitters::SubstituteSubmitter,
 };
 
 use super::SubstituteSubmitterDeletePath;
@@ -18,18 +15,21 @@ pub async fn delete_substitute_submitter(
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
-        Err(_) => Ok(Redirect::to(&substitute_submitter.update_path()).into_response()),
+        Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             substitute_submitter.delete(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum_extra::routing::TypedPath;
+
     use super::*;
+    use crate::QueryParamState;
 
     use crate::{
         AppError, AppStore, Context, TokenValue,
@@ -70,7 +70,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         let submitters = store.get_substitute_submitters()?;
         assert!(submitters.is_empty());
@@ -79,7 +84,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn delete_substitute_submitter_invalid_csrf_redirects_to_edit() -> Result<(), AppError> {
+    async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
@@ -100,16 +105,9 @@ mod tests {
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await
-        .unwrap();
+        .unwrap_err();
 
-        assert_eq!(response.status(), axum::http::StatusCode::SEE_OTHER);
-        let location = response
-            .headers()
-            .get(axum::http::header::LOCATION)
-            .expect("location header")
-            .to_str()
-            .expect("location header value");
-        assert_eq!(location, substitute_submitter.update_path());
+        assert!(matches!(response, AppError::CsrfTokenInvalid));
 
         let submitters = store.get_substitute_submitters()?;
         assert_eq!(submitters.len(), 1);

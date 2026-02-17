@@ -20,10 +20,12 @@
         <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
         {{ candidate.person.name.initials }}
         {% if let Some(first_name) = candidate.person.first_name %}
-        ({{ first_name }})
+          ({{ first_name }})
         {% endif %}
-        {% if let Some(gender) = candidate.person.gender %}
-        ({{ gender.abbreviation(lang) }})
+        {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+          {% if let Some(gender) = candidate.person.gender %}
+            ({{ gender.abbreviation(locale) }})
+          {% endif %}
         {% endif %}
       </td>
       <td>
@@ -32,7 +34,7 @@
         {% endif %}
       </td>
       <td>
-        <a href="{{ candidate.update_position_path() }}">
+        <a href="{{ candidate.update_position_path() }}" aria-label="{{ "action.edit"|trans }}">
           <span>{{ "action.edit"|trans }}</span>
         </a>
       </td>

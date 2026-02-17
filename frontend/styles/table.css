@@ -39,6 +39,14 @@ table {
     background-position: right 3.5rem center;
   }
 
+  tr.highlighted {
+    background-color: var(--yellow-100);
+
+    .position-badge {
+      background-color: var(--yellow-200);
+    }
+  }
+
   tr.clickable {
     td:last-child {
       text-align: right;

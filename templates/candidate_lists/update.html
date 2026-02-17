@@ -1,45 +1,32 @@
 {% extends "components/overlay.html" %}
+{% import "components/macros.html" as macros %}
 
-{% block close_action %}{{ candidate_list.view_path() }}{% endblock %}
+{% set close_action = candidate_list.view_path() %}
 
 {% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
 
-{% block overlay_start %}
-<form method="post" action="{{ candidate_list.update_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+{% block overlay_steps %}
+  {% include "candidate_lists/components/update_steps.html" %}
 {% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidate_lists/components/update_steps.html" %}
-    <div class="form">
-      {% include "candidate_lists/components/districts_form.html" %}
-      <button class="button tertiary-destructive icon-trash open-modal mt-xl" type="button">
-        {{ "candidate_list.actions.delete_list"|trans }}
-      </button>
-    </div>
+{% block overlay_form %}
+  {% include "candidate_lists/components/districts_form.html" %}
+  <div class="mt-lg mb-lg">
+    <button class="button tertiary-destructive icon-trash open-modal" type="button">
+      {{ "candidate_list.actions.delete_list"|trans }}
+    </button>
   </div>
 {% endblock %}
 
 {% block overlay_end %}
-</form>
+  {{ macros::delete_modal(
+    candidate_list.delete_path(),
+    "candidate_list.actions.delete_list"|trans,
+    "candidate_list.form.delete_warning_text"|trans
+  ) }}
+{% endblock %}
 
-<dialog class="modal">
-  <form method="post" action="{{ candidate_list.delete_path() }}" class="form">
-    <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-    <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-      <span>{{ "action.close"|trans }}</span>
-    </button>
-    <h3>
-      {{ "candidate_list.actions.delete_list"|trans }}
-    </h3>
-    <p class="mt-lg mb-lg">{{ "candidate_list.form.delete_warning_text"|trans }}</p>
-    <button type="submit" class="button primary-destructive">
-      {{ "action.delete"|trans }}
-    </button>
-    <button type="submit" class="button secondary close">
-      {{ "action.cancel"|trans }}
-    </button>
-  </form>
-</dialog>
+{% block overlay_actions %}
+    {% set submit_label = "action.next"|trans %}
+    {% include "components/submit.html" %}
 {% endblock %}

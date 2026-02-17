@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function bsnInput() {
   const bsnInput = document.getElementById("bsn") as HTMLInputElement | null;
   const noBsnConfirmedInput = document.getElementById(
     "no_bsn_confirmed",
@@ -23,4 +23,4 @@ window.addEventListener("load", () => {
     noBsnConfirmedInput.addEventListener("change", toggleBsnInput);
     toggleBsnInput();
   }
-});
+}

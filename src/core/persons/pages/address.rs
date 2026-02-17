@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
-    persons::{AddressForm, InitialQuery, Person, pages::UpdatePersonAddressPath},
+    persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
 };
 
 #[derive(Template)]
@@ -22,7 +22,7 @@ pub async fn update_person_address(
     _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
@@ -39,7 +39,7 @@ pub async fn update_person_address_submit(
     context: Context,
     person: Person,
     State(store): State<AppStore>,
-    Query(query): Query<InitialQuery>,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&person, &context.csrf_tokens) {
@@ -57,7 +57,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(Redirect::to(&Person::list_path()).into_response())
+            Ok(Redirect::to(&person.highlight_success_path().to_string()).into_response())
         }
     }
 }
@@ -66,7 +66,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, DutchAddressForm, Form,
+        AppError, AppStore, Context, DutchAddressForm, Form, QueryParamState,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
     };
@@ -88,7 +88,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             Context::new_test_without_db(),
             person,
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -112,13 +112,14 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
+        let expected_path = person.highlight_success_path().to_string();
 
         let response = update_person_address_submit(
             UpdatePersonAddressPath { person_id },
             context,
             person,
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -132,7 +133,7 @@ mod tests {
             .to_str()
             .expect("location header value");
 
-        assert_eq!(location, Person::list_path());
+        assert_eq!(location, expected_path);
 
         let updated = store.get_person(person_id)?;
         assert_eq!(
@@ -161,7 +162,7 @@ mod tests {
             context,
             person,
             State(store),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -191,7 +192,7 @@ mod tests {
             context.clone(),
             person.clone(),
             State(store.clone()),
-            Query(InitialQuery::default()),
+            Query(QueryParamState::default()),
             Form(AddressForm {
                 address: DutchAddressForm {
                     locality: "Juinen".to_string(),

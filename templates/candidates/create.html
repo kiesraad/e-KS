@@ -1,33 +1,9 @@
-{% extends "components/overlay.html" %}
+{% extends "persons/create.html" %}
 
-{% block close_action %}{{ full_list.list.view_path() }}{% endblock %}
-
-{% block overlay_start %}
-<form method="post" action="{{ full_list.list.create_candidate_path() }}" class="overlay">
-{% endblock %}
-{% block overlay_end %}</form>{% endblock %}
+{% set close_action = full_list.list.view_path() %}
 
 {% block overlay_title %}{{ "person.actions.add"|trans }}{% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "candidates/components/create_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.personal_information"|trans }}</h3>
-        </legend>
-        {% let should_warn = false %}
-        {% include "persons/components/form.html" %}
-      </fieldset>
-    </div>
-  </div>
-{% endblock %}
-
-{% block overlay_footer %}
-<footer>
-  <button type="submit" class="button dirty-check">
-    {{ "action.save_and_continue"|trans }}
-  </button>
-</footer>
+{% block overlay_steps %}
+  {% include "candidates/components/create_steps.html" %}
 {% endblock %}

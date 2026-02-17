@@ -49,6 +49,7 @@ pub async fn create_person_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
+
     use crate::{
         AppError, AppStore, Context, Form,
         test_utils::{response_body_string, sample_person_form},
@@ -71,7 +72,6 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("name=\"csrf_token\""));
-        assert!(body.contains("action=\"/persons/create\""));
     }
 
     #[tokio::test]
@@ -97,7 +97,10 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert!(location.contains("/address"));
+        let persons = store.get_persons()?;
+        assert_eq!(persons.len(), 1);
+        let created = persons.first().expect("person");
+        assert_eq!(location, created.after_create_path());
 
         let count = store.get_person_count()?;
         assert_eq!(count, 1);

@@ -23,28 +23,11 @@
     {% if authorised_agents.is_empty() %}
       <p>{{ "political_group.no_authorised_agents"|trans }}</p>
     {% else %}
-      <table class="table">
-        <thead>
-          <tr>
-            <th>{{ "person.fields.initials"|trans }}</th>
-            <th>{{ "person.fields.last_name"|trans }}</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for agent in authorised_agents %}
-          <tr class="clickable">
-            <td>{{ agent.name.initials }}</td>
-            <td>{{ agent.name.last_name_with_prefix() }}</td>
-            <td>
-              <a href="{{ agent.update_path() }}">
-                <span>{{ "action.edit"|trans }}</span>
-              </a>
-            </td>
-          </tr>
-          {% endfor %}
-        </tbody>
-      </table>
+      {% for agent in authorised_agents %}
+      <a href="{{ agent.update_path() }}" class="person-block">
+        {{ agent.name.display() }}
+      </a>
+      {% endfor %}
     {% endif %}
     {% if authorised_agents.len() == 0%}
       <p class="mt-lg">
@@ -53,6 +36,11 @@
         </a>
       </p>
     {% endif %}
+    <p class="mt-lg">
+      <a href="{{ crate::list_submitters::ListSubmitter::list_path() }}" class="button secondary">
+        {{ "action.next"|trans }}
+      </a>
+    </p>
   </div>
 </div>
 {% endblock %}

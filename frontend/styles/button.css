@@ -120,6 +120,10 @@ label.button {
     background: var(--button-color-bg-disabled);
     border-color: var(--button-color-bg-disabled);
     color: var(--button-color-disabled);
+    cursor: default;
+  }
+
+  &:disabled {
     pointer-events: none;
   }
 
@@ -165,6 +169,14 @@ label.button {
       text-decoration: underline;
       box-shadow: 0 0 0 4px var(--shadow-color-focus);
     }
+  }
+
+  &.icon-close {
+    background-image: url("../icons/cross.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: var(--space-xl);
+    background-size: 20px;
   }
 
   &.icon-plus {

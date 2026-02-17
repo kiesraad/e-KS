@@ -1,24 +1,9 @@
-window.addEventListener("load", () => {
+export default function setupOverlay() {
   const overlay: HTMLElement | null = document.querySelector(".overlay");
 
-  if (!overlay) {
-    return;
+  if (overlay) {
+    const url = new URL(globalThis.location.href);
+    url.searchParams.set("overlay", "true");
+    globalThis.history.replaceState({}, "", url.toString());
   }
-
-  document.addEventListener("keyup", (event) => {
-    // check that we are not in an input field
-    const activeElement = document.activeElement;
-    if ((activeElement as HTMLElement).isContentEditable) {
-      return;
-    }
-
-    if (event.key === "Escape") {
-      const close: HTMLAnchorElement | null =
-        document.querySelector("a.close-overlay");
-
-      if (close) {
-        close.click();
-      }
-    }
-  });
-});
+}

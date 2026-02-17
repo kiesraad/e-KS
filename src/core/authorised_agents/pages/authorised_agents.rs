@@ -92,7 +92,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&authorised_agent.update_path()));
+        assert!(body.contains(&authorised_agent.update_path().to_string()));
 
         Ok(())
     }

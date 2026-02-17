@@ -1,13 +1,14 @@
 use askama::Template;
 use axum::{
     extract::State,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::ListSubmitter,
+    redirect_success,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterForm},
 };
 
@@ -57,7 +58,7 @@ pub async fn update_substitute_submitter_submit(
         Ok(substitute_submitter) => {
             substitute_submitter.update(&store).await?;
 
-            Ok(Redirect::to(&ListSubmitter::list_path()).into_response())
+            Ok(redirect_success(ListSubmitter::list_path()))
         }
     }
 }
@@ -65,10 +66,12 @@ pub async fn update_substitute_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::QueryParamState;
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use axum_extra::routing::TypedPath;
 
     use crate::{
         AppError, AppStore, Context,
@@ -140,7 +143,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        assert_eq!(location, ListSubmitter::list_path());
+        assert_eq!(
+            location,
+            ListSubmitter::list_path()
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        );
 
         let updated = store.get_substitute_submitter(sub_submitter_id)?;
         assert_eq!(updated.name.last_name.to_string(), "Updated");

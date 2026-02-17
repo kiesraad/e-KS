@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppState, InitialQuery,
+    AppError, AppState, QueryParamState,
     persons::{Person, PersonId},
 };
 use axum::Router;
@@ -46,42 +46,58 @@ pub struct UpdateRepresentativePath {
 }
 
 impl Person {
-    pub fn list_path() -> String {
-        PersonsPath {}.to_uri().to_string()
+    pub fn list_path() -> impl TypedPath {
+        PersonsPath {}
     }
 
-    pub fn create_path() -> String {
-        PersonsCreatePath {}.to_uri().to_string()
+    pub fn highlight_path(&self) -> impl TypedPath {
+        PersonsPath {}.with_query_params(QueryParamState::highlight(self.id.into()))
     }
 
-    pub fn update_path(&self) -> String {
-        UpdatePersonPath { person_id: self.id }.to_uri().to_string()
+    pub fn highlight_success_path(&self) -> impl TypedPath {
+        PersonsPath {}.with_query_params(QueryParamState::highlight_success(self.id.into()))
     }
 
-    pub fn delete_path(&self) -> String {
-        DeletePersonPath { person_id: self.id }.to_uri().to_string()
+    pub fn create_path() -> impl TypedPath {
+        PersonsCreatePath {}
     }
 
-    pub fn update_address_path(&self) -> String {
+    pub fn update_path(&self) -> impl TypedPath {
+        UpdatePersonPath { person_id: self.id }
+    }
+
+    pub fn delete_path(&self) -> impl TypedPath {
+        DeletePersonPath { person_id: self.id }
+    }
+
+    pub fn update_address_path(&self) -> impl TypedPath {
         UpdatePersonAddressPath { person_id: self.id }
-            .to_uri()
-            .to_string()
     }
 
-    pub fn update_representative_path(&self) -> String {
+    pub fn update_representative_path(&self) -> impl TypedPath {
         UpdateRepresentativePath { person_id: self.id }
-            .to_uri()
-            .to_string()
+    }
+
+    pub fn after_update_path(&self) -> String {
+        if self.lives_in_nl() {
+            UpdatePersonAddressPath { person_id: self.id }
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        } else {
+            UpdateRepresentativePath { person_id: self.id }
+                .with_query_params(QueryParamState::success())
+                .to_string()
+        }
     }
 
     pub fn after_create_path(&self) -> String {
         if self.lives_in_nl() {
             UpdatePersonAddressPath { person_id: self.id }
-                .with_query_params(InitialQuery::default())
+                .with_query_params(QueryParamState::created())
                 .to_string()
         } else {
             UpdateRepresentativePath { person_id: self.id }
-                .with_query_params(InitialQuery::default())
+                .with_query_params(QueryParamState::created())
                 .to_string()
         }
     }
@@ -110,22 +126,22 @@ mod tests {
     fn person_paths_match_expected_routes() {
         let person = sample_person(PersonId::new());
 
-        assert_eq!(Person::list_path(), "/persons");
-        assert_eq!(Person::create_path(), "/persons/create");
+        assert_eq!(Person::list_path().to_string(), "/persons");
+        assert_eq!(Person::create_path().to_string(), "/persons/create");
         assert_eq!(
-            person.update_path(),
+            person.update_path().to_string(),
             format!("/persons/{}/update", person.id)
         );
         assert_eq!(
-            person.delete_path(),
+            person.delete_path().to_string(),
             format!("/persons/{}/delete", person.id)
         );
         assert_eq!(
-            person.update_address_path(),
+            person.update_address_path().to_string(),
             format!("/persons/{}/address", person.id)
         );
         assert_eq!(
-            person.update_representative_path(),
+            person.update_representative_path().to_string(),
             format!("/persons/{}/representative", person.id)
         );
     }
@@ -137,8 +153,11 @@ mod tests {
         let mut foreign = sample_person(PersonId::new());
         foreign.country_of_residence = Some("BE".parse::<CountryCode>().expect("country code"));
 
-        let expected_dutch = format!("/persons/{}/address?&initial=true", dutch.id);
-        let expected_foreign = format!("/persons/{}/representative?&initial=true", foreign.id);
+        let expected_dutch = format!("/persons/{}/address?&initial=true&success=true", dutch.id);
+        let expected_foreign = format!(
+            "/persons/{}/representative?&initial=true&success=true",
+            foreign.id
+        );
 
         assert_eq!(dutch.after_create_path(), expected_dutch);
         assert_eq!(foreign.after_create_path(), expected_foreign);

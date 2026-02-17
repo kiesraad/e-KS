@@ -5,25 +5,26 @@
   {{ person.display_name() }}
 {% endblock %}
 
-{% block close_action %}{{ Person::list_path() }}{% endblock %}
+{% set close_action = person.highlight_path() %}
 
-{% block overlay_start %}
-<form method="post" action="{{ person.update_representative_path() }}" class="overlay">
-<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+{% block overlay_steps %}
+  {% include "persons/components/update_steps.html" %}
 {% endblock %}
 
-{% block overlay_end %}</form>{% endblock %}
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h3>{{ "person.representative"|trans }}</h3>
+    </legend>
+    {% include "persons/components/representative_form.html" %}
+  </fieldset>
+{% endblock %}
 
-{% block overlay_content %}
-  <div class="overlay-content steps">
-    {% include "persons/components/update_steps.html" %}
-    <div class="form">
-      <fieldset>
-        <legend>
-          <h3>{{ "person.representative"|trans }}</h3>
-        </legend>
-        {% include "persons/components/representative_form.html" %}
-      </fieldset>
-    </div>
-  </div>
+{% block overlay_actions %}
+  {% if !should_warn %}
+    {% set submit_label = "action.add"|trans %}
+    {% include "components/submit.html" %}
+  {% else %}
+    {% include "components/submit.html" %}  
+  {% endif %}
 {% endblock %}
