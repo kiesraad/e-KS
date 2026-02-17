@@ -1,8 +1,8 @@
 import { expect, type Page } from "@playwright/test";
 import type { Candidate } from "../models/candidate";
-import { CreatePersonPage } from "./createPersonPage";
-import { CorrespondenceAddressPage } from "./correspondenceAddressPage";
 import { AuthorisedPersonPage } from "./authorisedPersonPage";
+import { CorrespondenceAddressPage } from "./correspondenceAddressPage";
+import { CreatePersonPage } from "./createPersonPage";
 
 export class PersonsPage {
   private readonly page: Page;
@@ -20,10 +20,13 @@ export class PersonsPage {
       await this.page.getByRole("link", { name: "Persoon toevoegen" }).click();
       await new CreatePersonPage(this.page).setPersonalDetails(candidate);
       if (candidate.authorisedRepresentative) {
-        await new AuthorisedPersonPage(this.page).setAuthorisedPerson(candidate.authorisedRepresentative);
-      }
-      else {
-        await new CorrespondenceAddressPage(this.page).setCorrespondenceAddress(candidate);
+        await new AuthorisedPersonPage(this.page).setAuthorisedPerson(
+          candidate.authorisedRepresentative,
+        );
+      } else {
+        await new CorrespondenceAddressPage(this.page).setCorrespondenceAddress(
+          candidate,
+        );
       }
     }
   }
