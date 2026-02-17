@@ -1,5 +1,5 @@
 // Enforce uppercase initials with dots and no spaces
-window.addEventListener("load", () => {
+export default function initialsInput() {
   const initialsInputs: NodeListOf<HTMLInputElement> =
     document.querySelectorAll("input.initials-input");
 
@@ -46,4 +46,4 @@ window.addEventListener("load", () => {
 
     format();
   });
-});
+}

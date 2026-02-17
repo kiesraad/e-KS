@@ -1,6 +1,6 @@
 // Highlight a table row when the `highlight` query param is present, then
 // remove the param from the URL to avoid persistent state on refresh/share.
-const highlightRow = () => {
+export default function highlightRow() {
   const url = new URL(globalThis.location.href);
   const personId = url.searchParams.get("highlight");
   const sticky = document.querySelector(".sticky-nav");
@@ -38,8 +38,4 @@ const highlightRow = () => {
       sticky.classList.remove("no-animation");
     }
   }, 2000);
-};
-
-if (typeof globalThis !== "undefined") {
-  globalThis.addEventListener("load", highlightRow);
 }

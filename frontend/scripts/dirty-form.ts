@@ -1,4 +1,4 @@
-function setupDirtyForms() {
+export default function setupDirtyForms() {
   const forms = document.querySelectorAll("form");
   const dirtyForms = new Set<HTMLFormElement>();
   let isSubmitting = false;
@@ -64,8 +64,4 @@ function setupDirtyForms() {
       event.preventDefault();
     }
   });
-}
-
-if (typeof globalThis !== "undefined") {
-  globalThis.addEventListener("load", setupDirtyForms);
 }

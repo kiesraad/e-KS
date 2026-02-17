@@ -1,6 +1,6 @@
 const COUNTRY_INPUT_SELECTOR = ".country-input";
 
-function applyCountrySuggestions() {
+export default function countryCodeInput() {
   // Make flag icon match country code input
   const countryInputs = document.querySelectorAll(COUNTRY_INPUT_SELECTOR);
 
@@ -112,11 +112,5 @@ function applyCountrySuggestions() {
         }
       }
     });
-  });
-}
-
-if (typeof window !== "undefined") {
-  window.addEventListener("load", () => {
-    applyCountrySuggestions();
   });
 }

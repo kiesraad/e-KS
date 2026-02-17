@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function addressLookup() {
   const postalCodeInput = document.getElementById(
     "postal_code",
   ) as HTMLInputElement | null;
@@ -59,4 +59,4 @@ window.addEventListener("load", () => {
 
   postalCodeInput.addEventListener("change", lookup);
   houseNumberInput.addEventListener("change", lookup);
-});
+}

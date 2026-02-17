@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function setupStickyNav() {
   const sticky = document.querySelector(".sticky-nav");
 
   if (!sticky) {
@@ -13,4 +13,4 @@ window.addEventListener("load", () => {
   );
 
   observer.observe(sticky);
-});
+}

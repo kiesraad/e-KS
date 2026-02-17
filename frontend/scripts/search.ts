@@ -1,4 +1,4 @@
-window.addEventListener("load", () => {
+export default function setupTextSearch() {
   const search = document.getElementById("search") as HTMLInputElement | null;
   const tableIds = ["add-candidate-table", "persons-table"];
   const table = tableIds
@@ -24,4 +24,4 @@ window.addEventListener("load", () => {
       }
     });
   });
-});
+}

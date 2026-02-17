@@ -1,5 +1,7 @@
 import { expect, test } from "@playwright/test";
 
+import setupSortable from "../../../frontend/scripts/sortable";
+
 declare global {
   interface Window {
     recordFetch: (
@@ -88,12 +90,7 @@ test.describe("sortable", () => {
       });
     });
 
-    await page.addScriptTag({
-      path: "../../frontend/static/index.js",
-    });
-    await page.evaluate(() => {
-      window.dispatchEvent(new Event("load"));
-    });
+    await page.evaluate(setupSortable);
 
     const dragDistance = 30;
     await page.evaluate((distance) => {
