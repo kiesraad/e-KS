@@ -1,32 +1,24 @@
 {% extends "components/overlay.html" %}
 {% import "components/macros.html" as macros %}
-
 {% set close_action = candidate_list.view_path() %}
-
 {% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   {% include "candidate_lists/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_form %}
   {% include "candidate_lists/components/districts_form.html" %}
   <div class="mt-lg mb-lg">
-    <button class="button tertiary-destructive icon-trash open-modal" type="button">
-      {{ "candidate_list.actions.delete_list"|trans }}
-    </button>
+    <button class="button tertiary-destructive icon-trash open-modal"
+            type="button">{{ "candidate_list.actions.delete_list"|trans }}</button>
   </div>
 {% endblock %}
-
 {% block overlay_end %}
-  {{ macros::delete_modal(
-    candidate_list.delete_path(),
-    "candidate_list.actions.delete_list"|trans,
-    "candidate_list.form.delete_warning_text"|trans
+  {{ macros::delete_modal(candidate_list.delete_path() ,
+  "candidate_list.actions.delete_list"|trans,
+  "candidate_list.form.delete_warning_text"|trans
   ) }}
 {% endblock %}
-
 {% block overlay_actions %}
-    {% set submit_label = "action.next"|trans %}
-    {% include "components/submit.html" %}
+  {% set submit_label = "action.next"|trans %}
+  {% include "components/submit.html" %}
 {% endblock %}

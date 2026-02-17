@@ -1,16 +1,13 @@
 {% extends "components/overlay.html" %}
 {% import "components/macros.html" as macros %}
-
 {% block overlay_title %}
   <span class="person-badge"></span>
   {{ person.display_name() }}
 {% endblock %}
-
 {% set close_action = person.highlight_path() %}
 {% block overlay_steps %}
   {% include "persons/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_form %}
   {% let should_warn = true %}
   <fieldset>
@@ -18,21 +15,17 @@
       <h3>{{ "person.personal_details"|trans }}</h3>
     </legend>
     {% include "persons/components/form.html" %}
-    <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
-      {{ "person.actions.delete"|trans }}
-    </button>
+    <button class="button tertiary-destructive icon-trash open-modal mb-lg"
+            type="button">{{ "person.actions.delete"|trans }}</button>
   </fieldset>
 {% endblock %}
-
 {% block overlay_actions %}
-    {% set submit_label = "action.next"|trans %}
-    {% include "components/submit.html" %}
+  {% set submit_label = "action.next"|trans %}
+  {% include "components/submit.html" %}
 {% endblock %}
-
 {% block overlay_end %}
-  {{ macros::delete_modal(
-    person.delete_path(),
-    "person.actions.delete"|trans,
-    "person.form.delete_warning_text"|trans
+  {{ macros::delete_modal(person.delete_path() ,
+  "person.actions.delete"|trans,
+  "person.form.delete_warning_text"|trans
   ) }}
 {% endblock %}

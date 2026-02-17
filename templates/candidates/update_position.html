@@ -1,21 +1,16 @@
 {% extends "components/overlay.html" %}
-
 {% block overlay_title %}
   <span class="position-badge">{{ candidate.position }}</span>
   {{ candidate.person.display_name() }}
 {% endblock %}
-
 {% set close_action = full_list.list.highlight_path(*candidate.person.id) %}
-
 {% block overlay_steps %}
   {% include "candidates/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_form %}
   {% include "candidates/components/position_form.html" %}
 {% endblock %}
-
 {% block overlay_actions %}
-    {% set submit_label = "action.next"|trans %}
-    {% include "components/submit.html" %}
+  {% set submit_label = "action.next"|trans %}
+  {% include "components/submit.html" %}
 {% endblock %}

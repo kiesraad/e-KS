@@ -1,21 +1,22 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = full_list.list.view_path() %}
-
 {% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}{% endblock %}
-
 {% block overlay_content %}
   <div class="form overlay-content">
     {% if persons.is_empty() %}
-    <p>{{ "person.view.empty"|trans }}</p>
+      <p>{{ "person.view.empty"|trans }}</p>
     {% else %}
       <p class="form-field form-field-full">
         <label for="search">{{ "candidate_list.search_existing_person"|trans }}</label>
-        <input type="text" name="search" placeholder="{{ "candidate_list.search_placeholder"|trans }}" class="form-control w-full" id="search" autofocus />
+        <input type="text"
+               name="search"
+               placeholder="{{ "candidate_list.search_placeholder"|trans }}"
+               class="form-control w-full"
+               id="search"
+               autofocus />
       </p>
       {% include "candidates/components/add_table.html" %}
     {% endif %}
   </div>
 {% endblock %}
-
 {% block overlay_footer %}{% endblock %}

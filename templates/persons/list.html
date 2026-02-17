@@ -1,46 +1,40 @@
 {% extends "layout.html" %}
-
 {% block page_title %}{{ "person.title"|trans }}{% endblock %}
-
 {% block header_action %}
-  <a href="{{ crate::candidate_lists::CandidateList::list_path() }}" class="button secondary">
-    {{ "candidate_list.actions.back_to_list"|trans }}
-  </a>
+  <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
+     class="button secondary">{{ "candidate_list.actions.back_to_list"|trans }}</a>
 {% endblock %}
-
 {% block content %}
-<nav class="sticky-nav form">
-  <div class="sticky-nav-bar">
-    <div class="form-field">
-      <label for="search">{{ "candidate_list.search_existing_person"|trans }}</label>
-      <input
-        type="text"
-        name="search"
-        placeholder="{{ "candidate_list.search_placeholder"|trans }}"
-        class="form-control"
-        id="search"
-      />
-    </div>
-    <div>
-      <div class="buttons">
-        <a href="{{ Person::create_path() }}" class="button secondary icon-plus" type="button">
-          {{ "person.actions.add"|trans }}
-        </a>
+  <nav class="sticky-nav form">
+    <div class="sticky-nav-bar">
+      <div class="form-field">
+        <label for="search">{{ "candidate_list.search_existing_person"|trans }}</label>
+        <input type="text"
+               name="search"
+               placeholder="{{ "candidate_list.search_placeholder"|trans }}"
+               class="form-control"
+               id="search" />
+      </div>
+      <div>
+        <div class="buttons">
+          <a href="{{ Person::create_path() }}"
+             class="button secondary icon-plus"
+             type="button">{{ "person.actions.add"|trans }}</a>
+        </div>
       </div>
     </div>
-  </div>
-</nav>
-{% if person_pagination.persons.is_empty() %}
-  <section>
-    <p>{{ "person.list.empty"|trans }}</p>
-  </section>
-{% else %}
-  <section>
-    {% include "persons/components/person_table.html" %}
-  </section>
-  {% if person_pagination.pagination.total_pages > 1 %}
-    {% set pagination = person_pagination.pagination %}
-    {% include "components/pagination.html"  %}
+  </nav>
+  {% if person_pagination.persons.is_empty() %}
+    <section>
+      <p>{{ "person.list.empty"|trans }}</p>
+    </section>
+  {% else %}
+    <section>
+      {% include "persons/components/person_table.html" %}
+    </section>
+    {% if person_pagination.pagination.total_pages > 1 %}
+      {% set pagination = person_pagination.pagination %}
+      {% include "components/pagination.html" %}
+    {% endif %}
   {% endif %}
-{% endif %}
 {% endblock %}

@@ -1,36 +1,27 @@
 {% extends "components/overlay.html" %}
 {% import "components/macros.html" as macros %}
-
 {% set close_action = AuthorisedAgent::list_path() %}
-
 {% block overlay_title %}{{ "political_group.edit_authorised_agent"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ authorised_agent.update_path() }}">
-          {{ "political_group.edit_authorised_agent"|trans }}
-        </a>
+        <a href="{{ authorised_agent.update_path() }}">{{ "political_group.edit_authorised_agent"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   {% set should_warn = true %}
   <fieldset>
     {% include "components/person_name_fields.html" %}
   </fieldset>
-  <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
-    {{ "political_group.actions.delete_authorised_agent"|trans }}
-  </button>
+  <button class="button tertiary-destructive icon-trash open-modal mb-lg"
+          type="button">{{ "political_group.actions.delete_authorised_agent"|trans }}</button>
 {% endblock %}
-
 {% block overlay_end %}
-  {{ macros::delete_modal(
-    authorised_agent.delete_path(),
-    "political_group.actions.delete_authorised_agent"|trans,
-    "political_group.delete_authorised_agent_warning_text"|trans
+  {{ macros::delete_modal(authorised_agent.delete_path() ,
+  "political_group.actions.delete_authorised_agent"|trans,
+  "political_group.delete_authorised_agent_warning_text"|trans
   ) }}
 {% endblock %}

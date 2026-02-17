@@ -1,37 +1,28 @@
 {% extends "components/overlay.html" %}
 {% import "components/macros.html" as macros %}
-
 {% set close_action = ListSubmitter::list_path() %}
-
 {% block overlay_title %}{{ "political_group.edit_substitute_submitter"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ substitute_submitter.update_path() }}">
-          {{ "political_group.edit_substitute_submitter"|trans }}
-        </a>
+        <a href="{{ substitute_submitter.update_path() }}">{{ "political_group.edit_substitute_submitter"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   <fieldset>
     {% set should_warn = true %}
     {% include "components/person_name_fields.html" %}
     {% include "components/address_fields.html" %}
   </fieldset>
-  <button class="button tertiary-destructive icon-trash open-modal mb-lg" type="button">
-    {{ "political_group.actions.delete_substitute_submitter"|trans }}
-  </button>
+  <button class="button tertiary-destructive icon-trash open-modal mb-lg"
+          type="button">{{ "political_group.actions.delete_substitute_submitter"|trans }}</button>
 {% endblock %}
-
 {% block overlay_end %}
-  {{ macros::delete_modal(
-    substitute_submitter.delete_path(),
-    "political_group.actions.delete_substitute_submitter"|trans,
-    "political_group.delete_substitute_submitter_warning_text"|trans
+  {{ macros::delete_modal(substitute_submitter.delete_path() ,
+  "political_group.actions.delete_substitute_submitter"|trans,
+  "political_group.delete_substitute_submitter_warning_text"|trans
   ) }}
 {% endblock %}

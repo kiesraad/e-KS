@@ -1,21 +1,15 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = AuthorisedAgent::list_path() %}
-
 {% block overlay_title %}{{ "political_group.add_authorised_agent"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ AuthorisedAgent::create_path() }}">
-          {{ "political_group.add_authorised_agent"|trans }}
-        </a>
+        <a href="{{ AuthorisedAgent::create_path() }}">{{ "political_group.add_authorised_agent"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   <fieldset>
     {% include "components/person_name_fields.html" %}

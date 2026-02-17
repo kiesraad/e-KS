@@ -1,32 +1,29 @@
 <fieldset>
-  <legend>
-    {{ "candidate_list.fields.list_submitter"|trans }}
-  </legend>
+  <legend>{{ "candidate_list.fields.list_submitter"|trans }}</legend>
   {% if list_submitters.is_empty() %}
     <p>{{ "political_group.no_list_submitters"|trans }}</p>
   {% else %}
     <fieldset class="form-field">
       <div class="checklist">
-      {% for submitter in list_submitters %}
-      {% set submitter_id = submitter.id.to_string() %}
-      <label for="list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
-        <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
+        {% for submitter in list_submitters %}
+          {% set submitter_id = submitter.id.to_string() %}
+          <label for="list_submitter_id_{{ submitter_id }}"
+                 class="checkbox radio-card">
+            <input type="radio" name="list_submitter_id" value="{{ submitter_id }}" {% if
               form.data.list_submitter_id==submitter_id %}checked{% endif %}
               id="list_submitter_id_{{ submitter_id }}"/>
-        <span>
-          <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
-          <br/>
-          {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
-          <br/>
-          {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
-          <br/>
-        </span>
-      </label>
-      {% endfor %}
-    </div>
-    {% for error in form|error("list_submitter_id") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+              <span>
+                <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
+                <br />
+                {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+                <br />
+                {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+                <br />
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for error in form|error("list_submitter_id") %}<span class="error">{{ error }}</span>{% endfor %}
+      </fieldset>
+    {% endif %}
   </fieldset>
-  {% endif %}
-</fieldset>

@@ -1,63 +1,82 @@
 {% include "components/person_name_fields.html" %}
-
 <div class="form-row">
   <p class="form-field {% if form.data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
-    <input type="text" placeholder=" " name="place_of_residence" id="locality" value="{{ form.data.place_of_residence }}"
-      list="locality-suggestions" />
+    <input type="text"
+           placeholder=" "
+           name="place_of_residence"
+           id="locality"
+           value="{{ form.data.place_of_residence }}"
+           list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>
-    {% for error in form|error("place_of_residence") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+    {% for error in form|error("place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
   <div class="form-field form-field-sm {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="country_of_residence" class="required">{{ "person.fields.country_of_residence"|trans }}</label>
     <div class="country-input input-icon">
       <span class="icon">🌐</span>
-      <input type="text" placeholder=" " name="country_of_residence" id="country_of_residence"
-        value="{{ form.data.country_of_residence }}" minlength="2" maxlength="2" required />
+      <input type="text"
+             placeholder=" "
+             name="country_of_residence"
+             id="country_of_residence"
+             value="{{ form.data.country_of_residence }}"
+             minlength="2"
+             maxlength="2"
+             required />
       <ul>
         {% for country in crate::persons::COUNTRY_CODES %}
-        <li data-country="{{ country }}"><span class="icon">{{ country|flag }}</span> {{ country }}</li>
+          <li data-country="{{ country }}">
+            <span class="icon">{{ country|flag }}</span> {{ country }}
+          </li>
         {% endfor %}
       </ul>
     </div>
-    {% for error in form|error("country_of_residence") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+    {% for error in form|error("country_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
 </div>
 <div class="form-row">
   <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <div class="obfuscate">
-      <input type="text" placeholder=" " name="bsn" id="bsn" value="{{ form.data.bsn }}" />
+      <input type="text"
+             placeholder=" "
+             name="bsn"
+             id="bsn"
+             value="{{ form.data.bsn }}" />
     </div>
     <label for="no_bsn_confirmed" class="no_bsn_confirmed">
-      <input type="checkbox" name="no_bsn_confirmed" id="no_bsn_confirmed" value="true" {% if form.data.no_bsn_confirmed %}checked{% endif %} />
+      <input type="checkbox"
+             name="no_bsn_confirmed"
+             id="no_bsn_confirmed"
+             value="true"
+             {% if form.data.no_bsn_confirmed %}checked{% endif %} />
       <span>{{ "person.no_bsn_confirm"|trans }}</span>
     </label>
-    {% for error in form|error("bsn") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+    {% for error in form|error("bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
   <p class="form-field form-field-sm {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
     <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
-    <input type="text" placeholder=" " name="date_of_birth" id="date_of_birth" value="{{ form.data.date_of_birth }}"
-      placeholder="dd-mm-jjjj" inputmode="numeric" />
-    {% for error in form|error("date_of_birth") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+    <input type="text"
+           placeholder=" "
+           name="date_of_birth"
+           id="date_of_birth"
+           value="{{ form.data.date_of_birth }}"
+           placeholder="dd-mm-jjjj"
+           inputmode="numeric" />
+    {% for error in form|error("date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
 </div>
 <div class="form-row">
   <p class="form-field">
     <label for="first_name">{{ "person.fields.first_name"|trans }}</label>
-    <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
+    <input type="text"
+           name="first_name"
+           id="first_name"
+           value="{{ form.data.first_name }}" />
     {% for error in form|error("first_name") %}
-    <span class="error">{{ error }}</span>
+      <span class="error">{{ error }}</span>
     {% else %}
-    <span class="hint">{{ "person.hints.first_name"|trans }}</span>
+      <span class="hint">{{ "person.hints.first_name"|trans }}</span>
     {% endfor %}
   </p>
   <p class="form-field">
@@ -68,9 +87,9 @@
       <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>{{ "gender.female"|trans }}</option>
     </select>
     {% for error in form|error("gender") %}
-    <span class="error">{{ error }}</span>
+      <span class="error">{{ error }}</span>
     {% else %}
-    <span class="hint">{{ "person.hints.gender"|trans }}</span>
+      <span class="hint">{{ "person.hints.gender"|trans }}</span>
     {% endfor %}
   </p>
 </div>

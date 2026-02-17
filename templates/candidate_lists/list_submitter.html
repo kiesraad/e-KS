@@ -1,24 +1,19 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = candidate_list.view_path() %}
 {% set has_next = false %}
-
 {% block overlay_title %}{{ "candidate_list.fields.list_submitter"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   {% include "candidate_lists/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_form %}
   {% include "candidate_lists/components/list_submitter_form.html" %}
   {% include "candidate_lists/components/substitute_list_submitter_form.html" %}
 {% endblock %}
-
 {% block overlay_actions %}
   {% if !should_warn %}
     {% set submit_label = "action.add"|trans %}
     {% include "components/submit.html" %}
   {% else %}
-    {% include "components/submit.html" %}  
+    {% include "components/submit.html" %}
   {% endif %}
 {% endblock %}

@@ -1,19 +1,18 @@
 <!DOCTYPE html>
 <html lang="en">
-
-<head>
-  <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <meta name="description" content="{{ "common.description"|trans }}" />
-  <title>{{ "common.title"|trans }}</title>
-  <link rel="icon" href="/static/favicon.svg" />
-  <link rel="stylesheet" href="/static/index.css?{{ filters::cache_buster() }}" />
-  {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
-  <script src="/static/index.js?{{ filters::cache_buster() }}" defer></script>
-</head>
-
-<body class="{% block body_class %}{% endblock %}">
-  {% block body %}{% endblock %}
-</body>
-
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="description" content="{{ "common.description"|trans }}" />
+    <meta name="keywords" content="{{ "common.keywords"|trans }}" />
+    <title>{{ "common.title"|trans }}</title>
+    <link rel="icon" href="/static/favicon.svg" />
+    <link rel="stylesheet"
+          href="/static/index.css?{{ filters::cache_buster() }}" />
+    {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
+    <script src="/static/index.js?{{ filters::cache_buster() }}" defer></script>
+  </head>
+  <body class="{% block body_class %}{% endblock %}">
+    {% block body %}{% endblock %}
+  </body>
 </html>

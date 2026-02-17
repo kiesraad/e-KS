@@ -2,8 +2,13 @@
 
 set -euo pipefail
 
-if [ -f bin/dev ] && [ -f bin/setup ] && [ -f bin/update_locales ]; then
-    echo "Binaries already exist. Skipping build."
+CURRENT_VERSION=$(cat ./bin/version || echo "none")
+CARGO_VERSION=$(sed -n '/^\[package\]/,/^\[/ s/^version[[:space:]]*=[[:space:]]*"\(.*\)"/\1/p' development/Cargo.toml)
+
+if [ "$CURRENT_VERSION" != "$CARGO_VERSION" ]; then
+    echo "Version mismatch: bin/dev is version $CURRENT_VERSION but development crate is version $CARGO_VERSION. Rebuilding..."
+else
+    echo "Binaries already have the correct version. Skipping build."
     bin/setup "$@"
     exit 0
 fi
@@ -16,4 +21,5 @@ cp development/target/release/dev bin/dev
 cp development/target/release/update_locales bin/update_locales
 cp development/target/release/setup bin/setup
 
+echo "$CARGO_VERSION" > bin/version
 bin/setup "$@"

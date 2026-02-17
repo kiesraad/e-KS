@@ -1,65 +1,57 @@
 {% extends "layout.html" %}
-
 {% block page_title %}{{ "candidate_list.title"|trans }}{% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
-
-{% block header_action %}
-  <a href="/" class="button secondary">
-    {{ "action.back"|trans }}
-  </a>
-{% endblock %}
-
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
-<section>
-  <div class="cards cards-candidate-lists">
-    {# manage persons card #}
-    <a href="{{ Person::list_path() }}" class="card card-persons">
-      <div class="badge"></div>
-      <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
-      <p class="statistic">
-        {{ "person.total"|trans(&total_persons.to_string())|safe }}
-      </p>
-      <p>{{ "action.manage_candidates"|trans }}</p>
-    </a>
-
-    <div class="cards-right">
-      {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
-      {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
-      {% for candidate_list in candidate_lists %}
-      <a href="{{ candidate_list.list.view_path() }}" {% if candidate_list.duplicate_districts.is_empty() %}
-        class="card card-candidate-list" {% else %} class="card card-list-warning" {% endif %}>
+  <section>
+    <div class="cards cards-candidate-lists">
+      {# manage persons card #}
+      <a href="{{ Person::list_path() }}" class="card card-persons">
         <div class="badge"></div>
-        <h3>{{ candidate_list.list|list_name }}</h3>
-        <p class="statistic">
-          {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string(), &max_candidates.to_string())|safe }}
-        </p>
-        <h5>{{ "common.electoral_districts"|trans }}:</h5>
-        {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-        <p>{{ "candidate_list.districts.all"|trans }}</p>
-        {% else %}
-        <ul class="districts">
-          {% for district in candidate_list.list.electoral_districts %}
-          {% if candidate_list.duplicate_districts.contains(district) %}
-          <li class="warning"><span>{{ district.title() }}</span></li>
-          {% else %}
-          <li><span>{{ district.title() }}</span></li>
-          {% endif %}
-          {% endfor %}
-        </ul>
-        {% endif %}
-        <p>{{ "action.manage_candidate_list"|trans }}</p>
+        <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
+        <p class="statistic">{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
+        <p>{{ "action.manage_candidates"|trans }}</p>
       </a>
-      {% endfor %}
-      {% endif %}
-      {% endif %}
-
-      {# add new candidate list card #}
-      <div class="card card-add-list">
-        <a href="{{ CandidateList::create_path() }}" class="button secondary icon-plus">
-          {{ "candidate_list.actions.add"|trans }}
-        </a>
+      <div class="cards-right">
+        {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
+          {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+            {% for candidate_list in candidate_lists %}
+              <a href="{{ candidate_list.list.view_path() }}"
+                 {% if candidate_list.duplicate_districts.is_empty() %} class="card card-candidate-list" {% else %} class="card card-list-warning" {% endif %}>
+                <div class="badge"></div>
+                <h3>{{ candidate_list.list|list_name }}</h3>
+                <p class="statistic">
+                  {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
+                </p>
+                <h5>{{ "common.electoral_districts"|trans }}:</h5>
+                {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+                  <p>{{ "candidate_list.districts.all"|trans }}</p>
+                {% else %}
+                  <ul class="districts">
+                    {% for district in candidate_list.list.electoral_districts %}
+                      {% if candidate_list.duplicate_districts.contains(district) %}
+                        <li class="warning">
+                          <span>{{ district.title() }}</span>
+                        </li>
+                      {% else %}
+                        <li>
+                          <span>{{ district.title() }}</span>
+                        </li>
+                      {% endif %}
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+                <p>{{ "action.manage_candidate_list"|trans }}</p>
+              </a>
+            {% endfor %}
+          {% endif %}
+        {% endif %}
+        {# add new candidate list card #}
+        <div class="card card-add-list">
+          <a href="{{ CandidateList::create_path() }}"
+             class="button secondary icon-plus">{{ "candidate_list.actions.add"|trans }}</a>
+        </div>
       </div>
     </div>
-  </div>
-</section>
+  </section>
 {% endblock %}

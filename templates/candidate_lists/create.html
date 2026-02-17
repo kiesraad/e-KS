@@ -1,44 +1,35 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = CandidateList::list_path() %}
-
 {% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ CandidateList::create_path() }}">
-          {{ "candidate_list.fields.electoral_districts"|trans }}
-        </a>
+        <a href="{{ CandidateList::create_path() }}">{{ "candidate_list.fields.electoral_districts"|trans }}</a>
       </li>
       <li>
-        <a class="disabled">
-          {{ "candidate_list.fields.list_submitter"|trans }}
-        </a>
+        <a class="disabled">{{ "candidate_list.fields.list_submitter"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   {% if has_previous_list %}
-  <fieldset class="mb-lg">
-    <legend>
-      {{ "candidate_list.form.copy_candidates_from_previous_legend"|trans }}
-    </legend>
-    <div class="checkbox mt-sm">
-      <input type="checkbox" name="copy_candidates" id="copy_candidates" value="true" {% if form.data.copy_candidates %}checked{% endif %} />
-      <label for="copy_candidates">
-        {{ "candidate_list.form.copy_candidates_from_previous"|trans }}
-      </label>
-    </div>
-  </fieldset>
+    <fieldset class="mb-lg">
+      <legend>{{ "candidate_list.form.copy_candidates_from_previous_legend"|trans }}</legend>
+      <div class="checkbox mt-sm">
+        <input type="checkbox"
+               name="copy_candidates"
+               id="copy_candidates"
+               value="true"
+               {% if form.data.copy_candidates %}checked{% endif %} />
+        <label for="copy_candidates">{{ "candidate_list.form.copy_candidates_from_previous"|trans }}</label>
+      </div>
+    </fieldset>
   {% endif %}
   {% include "candidate_lists/components/districts_form.html" %}
 {% endblock %}
-
 {% block overlay_actions %}
-    {% set submit_label = "action.next"|trans %}
-    {% include "components/submit.html" %}
+  {% set submit_label = "action.next"|trans %}
+  {% include "components/submit.html" %}
 {% endblock %}

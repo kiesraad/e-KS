@@ -1,21 +1,16 @@
 {% extends "persons/update.html" %}
 {% import "components/macros.html" as macros %}
-
 {% block overlay_title %}
   <span class="position-badge">{{ candidate.position }}</span>
   {{ candidate.person.display_name() }}
 {% endblock %}
-
 {% set close_action = full_list.list.highlight_path(*candidate.person.id) %}
-
 {% block overlay_steps %}
   {% include "candidates/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_end %}
-  {{ macros::delete_modal(
-    candidate.delete_path(),
-    "person.actions.delete"|trans,
-    "person.form.delete_warning_text"|trans
+  {{ macros::delete_modal(candidate.delete_path() ,
+  "person.actions.delete"|trans,
+  "person.form.delete_warning_text"|trans
   ) }}
 {% endblock %}

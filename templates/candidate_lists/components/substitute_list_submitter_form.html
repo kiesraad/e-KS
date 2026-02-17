@@ -1,32 +1,29 @@
 <fieldset class="mt-xl">
-  <legend>
-    {{ "candidate_list.fields.substitute_list_submitters"|trans }}
-  </legend>
+  <legend>{{ "candidate_list.fields.substitute_list_submitters"|trans }}</legend>
   {% if substitute_submitters.is_empty() %}
     <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
   {% else %}
     <fieldset class="form-field">
       <div class="checklist">
-      {% for submitter in substitute_submitters %}
-      {% set submitter_id = submitter.id.to_string() %}
-      <label for="substitute_list_submitter_id_{{ submitter_id }}" class="checkbox radio-card">
-        <input type="checkbox" name="substitute_list_submitter_ids" value="{{ submitter_id }}" {% if
+        {% for submitter in substitute_submitters %}
+          {% set submitter_id = submitter.id.to_string() %}
+          <label for="substitute_list_submitter_id_{{ submitter_id }}"
+                 class="checkbox radio-card">
+            <input type="checkbox" name="substitute_list_submitter_ids" value="{{ submitter_id }}" {% if
               form.data.substitute_list_submitter_ids.contains(&submitter.id) %}checked{% endif %}
               id="substitute_list_submitter_id_{{ submitter_id }}"/>
-        <span>
-          <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
-          <br/>
-          {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
-          <br/>
-          {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
-          <br/>
-        </span>
-      </label>
-      {% endfor %}
-    </div>
-    {% for error in form|error("substitute_list_submitter_ids") %}
-    <span class="error">{{ error }}</span>
-    {% endfor %}
+              <span>
+                <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
+                <br />
+                {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+                <br />
+                {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+                <br />
+              </span>
+            </label>
+          {% endfor %}
+        </div>
+        {% for error in form|error("substitute_list_submitter_ids") %}<span class="error">{{ error }}</span>{% endfor %}
+      </fieldset>
+    {% endif %}
   </fieldset>
-  {% endif %}
-</fieldset>

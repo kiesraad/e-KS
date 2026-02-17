@@ -1,16 +1,12 @@
 {% extends "components/overlay.html" %}
-
 {% block overlay_title %}
   <span class="person-badge"></span>
   {{ person.display_name() }}
 {% endblock %}
-
 {% set close_action = person.highlight_path() %}
-
 {% block overlay_steps %}
   {% include "persons/components/update_steps.html" %}
 {% endblock %}
-
 {% block overlay_form %}
   <fieldset>
     <legend>
@@ -19,10 +15,9 @@
     {% include "components/address_fields.html" %}
   </fieldset>
 {% endblock %}
-
 {% block overlay_actions %}
   {% if should_warn %}
-    {% include "components/submit.html" %}  
+    {% include "components/submit.html" %}
   {% else %}
     {% set submit_label = "action.add"|trans %}
     {% include "components/submit.html" %}

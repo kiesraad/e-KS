@@ -27,11 +27,15 @@ commands:
     command: docker
     args:
       - build
-      - .
+      - --build-arg
+      - UID=__UID__
+      - --build-arg
+      - GID=__GID__
       - -f
       - development/djlint.Dockerfile
       - -t
       - djlint
+      - .
   esbuild_bundle:
     command: ./bin/esbuild
     args:

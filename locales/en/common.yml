@@ -4,6 +4,7 @@ electoral_districts: Electoral districts
 general_information: General Information
 general_information_description: Provide general information about your political group and contact details.
 home: Home
+keywords: "Kiesraad, kandidaatstelling, elections, Netherlands"
 no_label: "No"
 save_success: saved
 step: "Step {}"

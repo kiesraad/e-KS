@@ -1,46 +1,30 @@
 {% extends "layout.html" %}
-
-{% block page_title %}
-{{ "common.general_information"|trans }}
-{% endblock %}
-
-{% block header_action %}
-<a href="/" class="button secondary">
-  {{ "action.back"|trans }}
-</a>
-{% endblock %}
-
+{% block page_title %}{{ "common.general_information"|trans }}{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
-<div class="steps">
-  {% include "political_groups/components/steps.html" %}
-  <div>
-    <h2>{{ "political_group.authorised_agent_data"|trans }}</h2>
-
-    <div class="alert alert-info">
-      {{ "political_group.authorised_agent_info"|trans }}
-    </div>
-
-    {% if authorised_agents.is_empty() %}
-      <p>{{ "political_group.no_authorised_agents"|trans }}</p>
-    {% else %}
-      {% for agent in authorised_agents %}
-      <a href="{{ agent.update_path() }}" class="person-block">
-        {{ agent.name.display() }}
-      </a>
-      {% endfor %}
-    {% endif %}
-    {% if authorised_agents.len() == 0%}
+  <div class="steps">
+    {% include "political_groups/components/steps.html" %}
+    <div>
+      <h2>{{ "political_group.authorised_agent_data"|trans }}</h2>
+      <div class="alert alert-info">{{ "political_group.authorised_agent_info"|trans }}</div>
+      {% if authorised_agents.is_empty() %}
+        <p>{{ "political_group.no_authorised_agents"|trans }}</p>
+      {% else %}
+        {% for agent in authorised_agents %}
+          <a href="{{ agent.update_path() }}" class="person-block">{{ agent.name.display() }}</a>
+        {% endfor %}
+      {% endif %}
+      {% if authorised_agents.len() == 0 %}
+        <p class="mt-lg">
+          <a href="{{ AuthorisedAgent::create_path() }}"
+             class="button secondary icon-plus"
+             type="button">{{ "political_group.add_authorised_agent"|trans }}</a>
+        </p>
+      {% endif %}
       <p class="mt-lg">
-        <a href="{{ AuthorisedAgent::create_path() }}" class="button secondary icon-plus" type="button">
-          {{ "political_group.add_authorised_agent"|trans }}
-        </a>
+        <a href="{{ crate::list_submitters::ListSubmitter::list_path() }}"
+           class="button secondary">{{ "action.next"|trans }}</a>
       </p>
-    {% endif %}
-    <p class="mt-lg">
-      <a href="{{ crate::list_submitters::ListSubmitter::list_path() }}" class="button secondary">
-        {{ "action.next"|trans }}
-      </a>
-    </p>
+    </div>
   </div>
-</div>
 {% endblock %}

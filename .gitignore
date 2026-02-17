@@ -33,3 +33,4 @@ lcov.info
 /bin/dev
 /bin/setup
 /bin/update_locales
+/bin/version

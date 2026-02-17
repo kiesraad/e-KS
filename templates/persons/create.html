@@ -1,26 +1,18 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = Person::list_path() %}
-
 {% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ Person::create_path() }}" class="active">
-          {{ "person.personal_details"|trans }}
-        </a>
+        <a href="{{ Person::create_path() }}" class="active">{{ "person.personal_details"|trans }}</a>
       </li>
       <li>
-        <a class="disabled" disabled>
-          {{ "person.correspondence_address"|trans }}
-        </a>
+        <a class="disabled" disabled>{{ "person.correspondence_address"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   <fieldset>
     <legend>
@@ -30,8 +22,7 @@
     {% include "persons/components/form.html" %}
   </fieldset>
 {% endblock %}
-
 {% block overlay_actions %}
-    {% set submit_label = "action.next"|trans %}
-    {% include "components/submit.html" %}
+  {% set submit_label = "action.next"|trans %}
+  {% include "components/submit.html" %}
 {% endblock %}

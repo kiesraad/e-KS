@@ -1,20 +1,9 @@
 {% extends "layout.html" %}
-
-{% block page_title %}
-{{ "common.general_information"|trans }}
-{% endblock %}
-
-{% block header_action %}
-  <a href="/" class="button secondary">
-    {{ "action.back"|trans }}
-  </a>
-{% endblock %}
-
+{% block page_title %}{{ "common.general_information"|trans }}{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
   <div class="steps">
     {% include "political_groups/components/steps.html" %}
-    <div>
-      {% include "political_groups/components/form.html" %}
-    </div>
+    <div>{% include "political_groups/components/form.html" %}</div>
   </div>
 {% endblock %}

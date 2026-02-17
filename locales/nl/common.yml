@@ -4,6 +4,7 @@ electoral_districts: Kieskringen
 general_information: Lijstgegevens
 general_information_description: Vul hier de basisgegevens in en de gegevens van de lijstinleveraar.
 home: Start
+keywords: "Kiesraad, kandidaatstelling, verkiezingen, Nederland"
 no_label: Nee
 save_success: opgeslagen
 step: "Stap {}"

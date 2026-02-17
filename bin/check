@@ -20,7 +20,7 @@ cargo test --all-features
 ./bin/biome check --fix ./playwright/tests
 
 # html
-docker run -v ./templates:/work/templates djlint
+docker run --rm -v ./templates:/work/templates djlint
 
 # generic
 ./bin/check_newline

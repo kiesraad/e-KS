@@ -1,8 +1,8 @@
-<form method="post" action="{{ PoliticalGroup::update_path() }}" class="form mb-xl">
+<form method="post"
+      action="{{ PoliticalGroup::update_path() }}"
+      class="form mb-xl">
   <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-
   <h3>{{ "political_group.general_information"|trans }}</h3>
-
   <div class="form-row">
     <fieldset class="checklist">
       <legend>{{ "political_group.list_type"|trans }}</legend>
@@ -29,9 +29,7 @@
       </div>
     </fieldset>
   </div>
-
   <h3>{{ "political_group.title"|trans }}</h3>
-
   <fieldset>
     <div class="form-row">
       <fieldset class="checklist">
@@ -39,44 +37,37 @@
         <div class="checklist">
           <div class="checkbox">
             <input type="radio" name="long_list_allowed" value="true" {% if form.data.long_list_allowed=="true"
-              %}checked{%endif %} id="long_list_allowed_true" />
-            <label for="long_list_allowed_true">
-              {{ "common.yes_label"|trans }}
-            </label>
+              %}checked{% endif %} id="long_list_allowed_true" />
+              <label for="long_list_allowed_true">{{ "common.yes_label"|trans }}</label>
+            </div>
+            <div class="checkbox">
+              <input type="radio" name="long_list_allowed" value="false" {% if form.data.long_list_allowed=="false"
+                %}checked{% endif %} id="long_list_allowed_false" />
+                <label for="long_list_allowed_false">{{ "common.no_label"|trans }}</label>
+              </div>
+            </div>
+          </fieldset>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="display_name">{{ "political_group.display_name"|trans }}</label>
+            <input type="text"
+                   name="display_name"
+                   value="{{ form.data.display_name }}"
+                   id="display_name" />
+            {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
           </div>
-          <div class="checkbox">
-            <input type="radio" name="long_list_allowed" value="false" {% if form.data.long_list_allowed=="false"
-              %}checked{% endif %} id="long_list_allowed_false" />
-            <label for="long_list_allowed_false">
-              {{ "common.no_label"|trans }}
-            </label>
+        </div>
+        <div class="form-row">
+          <div class="form-field">
+            <label for="legal_name">{{ "political_group.legal_name"|trans }}</label>
+            <input type="text"
+                   name="legal_name"
+                   value="{{ form.data.legal_name }}"
+                   id="legal_name" />
+            {% for error in form|error("legal_name") %}<span class="error">{{ error }}</span>{% endfor %}
           </div>
         </div>
       </fieldset>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field">
-        <label for="display_name">{{ "political_group.display_name"|trans }}</label>
-        <input type="text" name="display_name" value="{{ form.data.display_name }}" id="display_name" />
-        {% for error in form|error("display_name") %}
-        <span class="error">{{ error }}</span>
-        {% endfor %}
-      </div>
-    </div>
-
-    <div class="form-row">
-      <div class="form-field">
-        <label for="legal_name">{{ "political_group.legal_name"|trans }}</label>
-        <input type="text" name="legal_name" value="{{ form.data.legal_name }}" id="legal_name" />
-        {% for error in form|error("legal_name") %}
-        <span class="error">{{ error }}</span>
-        {% endfor %}
-      </div>
-    </div>
-  </fieldset>
-
-  {% include "components/submit.html" %}
-</form>
-
-
+      {% include "components/submit.html" %}
+    </form>

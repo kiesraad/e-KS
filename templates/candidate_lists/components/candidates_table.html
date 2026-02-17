@@ -1,4 +1,7 @@
-<table class="sortable" id="candidate-table" data-sortable-update-url="{{ full_list.list.reorder_path() }}" data-max="{{ max_candidates }}">
+<table class="sortable"
+       id="candidate-table"
+       data-sortable-update-url="{{ full_list.list.reorder_path() }}"
+       data-max="{{ max_candidates }}">
   <thead>
     <tr>
       <th scope="col" colspan="2">{{ "candidate_list.fields.position"|trans }}</th>
@@ -11,39 +14,35 @@
   </thead>
   <tbody>
     {% for candidate in full_list.candidates %}
-    <tr class="clickable {% if !candidate.person.is_complete() %}warning{% endif %}" data-id="{{ candidate.person.id }}">
-      <td class="drag-handle"></td>
-      <td>
-        <span class="position-badge">{{ candidate.position }}</span>
-      </td>
-      <td>
-        <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
-        {{ candidate.person.name.initials }}
-        {% if let Some(first_name) = candidate.person.first_name %}
-          ({{ first_name }})
-        {% endif %}
-        {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-          {% if let Some(gender) = candidate.person.gender %}
-            ({{ gender.abbreviation(locale) }})
+      <tr class="clickable {% if !candidate.person.is_complete() %}warning{% endif %}"
+          data-id="{{ candidate.person.id }}">
+        <td class="drag-handle"></td>
+        <td>
+          <span class="position-badge">{{ candidate.position }}</span>
+        </td>
+        <td>
+          <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
+          {{ candidate.person.name.initials }}
+          {% if let Some(first_name) = candidate.person.first_name %}({{ first_name }}){% endif %}
+          {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+            {% if let Some(gender) = candidate.person.gender %}({{ gender.abbreviation(locale) }}){% endif %}
           {% endif %}
-        {% endif %}
-      </td>
-      <td>
-        {% if let Some(place_of_residence) = candidate.person.place_of_residence %}
-          {{ place_of_residence }}
-        {% endif %}
-      </td>
-      <td>
-        <a href="{{ candidate.update_position_path() }}" aria-label="{{ "action.edit"|trans }}">
-          <span>{{ "action.edit"|trans }}</span>
-        </a>
-      </td>
-    </tr>
+        </td>
+        <td>
+          {% if let Some(place_of_residence) = candidate.person.place_of_residence %}{{ place_of_residence }}{% endif %}
+        </td>
+        <td>
+          <a href="{{ candidate.update_position_path() }}"
+             aria-label="{{ "action.edit"|trans }}">
+            <span>{{ "action.edit"|trans }}</span>
+          </a>
+        </td>
+      </tr>
     {% endfor %}
   </tbody>
 </table>
 {% if full_list.candidates.len() > **max_candidates %}
-<p class="note-warning mt-md">
-  {{ "candidate_list.view.max_candidates_exceeded"|trans(&max_candidates.to_string()) }}
-</p>
+  <p class="note-warning mt-md">
+    {{ "candidate_list.view.max_candidates_exceeded"|trans(&max_candidates.to_string() ) }}
+  </p>
 {% endif %}

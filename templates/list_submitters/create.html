@@ -1,21 +1,15 @@
 {% extends "components/overlay.html" %}
-
 {% set close_action = ListSubmitter::list_path() %}
-
 {% block overlay_title %}{{ "political_group.add_list_submitter"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ ListSubmitter::create_path() }}">
-          {{ "political_group.add_list_submitter"|trans }}
-        </a>
+        <a href="{{ ListSubmitter::create_path() }}">{{ "political_group.add_list_submitter"|trans }}</a>
       </li>
     </ul>
   </div>
 {% endblock %}
-
 {% block overlay_form %}
   <fieldset>
     {% include "components/person_name_fields.html" %}

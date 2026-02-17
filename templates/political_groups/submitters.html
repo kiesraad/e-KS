@@ -1,70 +1,59 @@
 {% extends "layout.html" %}
-
-{% block page_title %}
-{{ "common.general_information"|trans }}
-{% endblock %}
-
-{% block header_action %}
-<a href="/" class="button secondary">
-  {{ "action.back"|trans }}
-</a>
-{% endblock %}
-
+{% block page_title %}{{ "common.general_information"|trans }}{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
-<div class="steps">
-  {% include "political_groups/components/steps.html" %}
-  <div>
-    <h2>{{ "political_group.list_submitter_data"|trans }}</h2>
-    <div class="alert alert-info">
-      {{ "political_group.select_default_list_submitter_info"|trans }}
+  <div class="steps">
+    {% include "political_groups/components/steps.html" %}
+    <div>
+      <h2>{{ "political_group.list_submitter_data"|trans }}</h2>
+      <div class="alert alert-info">{{ "political_group.select_default_list_submitter_info"|trans }}</div>
+      {% if list_submitters.is_empty() %}
+        <p>{{ "political_group.no_list_submitters"|trans }}</p>
+      {% else %}
+        <div class="list-submitters">
+          {% for submitter in list_submitters %}
+            <a href="{{ submitter.update_path() }}"
+               class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
+              {{ submitter.name.display() }}
+              <br />
+              {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+              <br />
+              {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <p class="mt-lg">
+        <a href="{{ ListSubmitter::create_path() }}"
+           class="button secondary icon-plus"
+           type="button">{{ "political_group.add_list_submitter"|trans }}</a>
+      </p>
+      <h2 class="mt-lg">{{ "political_group.substitute_submitter_data"|trans }}</h2>
+      <div class="alert alert-info">{{ "political_group.select_default_substitute_submitter_info"|trans }}</div>
+      {% if substitute_submitters.is_empty() %}
+        <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
+      {% else %}
+        <div class="substitute-list-submitters">
+          {% for submitter in substitute_submitters %}
+            <a href="{{ submitter.update_path() }}"
+               class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
+              {{ submitter.name.display() }}
+              <br />
+              {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+              <br />
+              {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+      <p class="mt-lg">
+        <a href="{{ SubstituteSubmitter::create_path() }}"
+           class="button secondary icon-plus"
+           type="button">{{ "political_group.add_substitute_submitter"|trans }}</a>
+      </p>
+      <p class="mt-lg">
+        <a href="/" class="button secondary">{{ "common.back_to_home"|trans }}</a>
+      </p>
     </div>
-    {% if list_submitters.is_empty() %}
-      <p>{{ "political_group.no_list_submitters"|trans }}</p>
-    {% else %}
-      <div class="list-submitters">
-      {% for submitter in list_submitters %}
-      <a href="{{ submitter.update_path() }}" class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
-        {{ submitter.name.display() }}<br />
-        {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}<br />
-        {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
-      </a>
-      {% endfor %}
-      </div>
-    {% endif %}
-    <p class="mt-lg">
-      <a href="{{ ListSubmitter::create_path() }}" class="button secondary icon-plus" type="button">
-        {{ "political_group.add_list_submitter"|trans }}
-      </a>
-    </p>
-
-    <h2 class="mt-lg">{{ "political_group.substitute_submitter_data"|trans }}</h2>
-    <div class="alert alert-info">
-      {{ "political_group.select_default_substitute_submitter_info"|trans }}
-    </div>
-    {% if substitute_submitters.is_empty() %}
-      <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
-    {% else %}
-    <div class="substitute-list-submitters">
-      {% for submitter in substitute_submitters %}
-        <a href="{{ submitter.update_path() }}" class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
-          {{ submitter.name.display() }}<br />
-          {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}<br />
-          {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
-        </a>
-      {% endfor %}
-      </div>
-    {% endif %}
-    <p class="mt-lg">
-      <a href="{{ SubstituteSubmitter::create_path() }}" class="button secondary icon-plus" type="button">
-        {{ "political_group.add_substitute_submitter"|trans }}
-      </a>
-    </p>
-
-    <p class="mt-lg">
-      <a href="/" class="button secondary">
-        {{ "common.back_to_home"|trans }}
-      </a>
-    </p>
   </div>
-</div>
 {% endblock %}

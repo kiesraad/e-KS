@@ -1,9 +1,7 @@
 {% extends "layout.html" %}
-
 {% block page_title %}{{ full_list.list|list_name }}{% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
 {% block main_class %}pt-sm{% endblock %}
-
 {% block page_sub_title %}
   {% if full_list.list.electoral_districts.is_empty() || full_list.list.electoral_districts.len() >= 3 %}
     {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
@@ -15,7 +13,9 @@
         {% else %}
           <ul class="districts">
             {% for district in full_list.list.electoral_districts %}
-            <li><span>{{ district.title() }}</span></li>
+              <li>
+                <span>{{ district.title() }}</span>
+              </li>
             {% endfor %}
           </ul>
         {% endif %}
@@ -23,43 +23,39 @@
     {% endif %}
   {% endif %}
 {% endblock %}
-
 {% block header_action %}
   <a href="{{ CandidateList::list_path() }}" class="button secondary">
     {{ "candidate_list.actions.back_to_list"|trans }}
   </a>
 {% endblock %}
-
 {% block content %}
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
         <p>{{ "candidate_list.actions.edit_list_details"|trans }}:</p>
-        <a href="{{ full_list.list.update_path() }}" class="button secondary icon-edit">
-          {{ "candidate_list.actions.edit"|trans }}
-        </a>
+        <a href="{{ full_list.list.update_path() }}"
+           class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
       </div>
       <div>
         <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>
         <div class="buttons">
-          <a href="{{ full_list.list.add_candidate_path() }}" class="button secondary icon-plus open-modal" type="button">
-            {{ "candidate_list.actions.add_existing"|trans }}
-          </a>
-          <a href="{{ full_list.list.create_candidate_path() }}" class="button secondary icon-plus open-modal" type="button">
-            {{ "candidate_list.actions.add_new"|trans }}
-          </a>
+          <a href="{{ full_list.list.add_candidate_path() }}"
+             class="button secondary icon-plus open-modal"
+             type="button">{{ "candidate_list.actions.add_existing"|trans }}</a>
+          <a href="{{ full_list.list.create_candidate_path() }}"
+             class="button secondary icon-plus open-modal"
+             type="button">{{ "candidate_list.actions.add_new"|trans }}</a>
         </div>
       </div>
     </div>
   </nav>
-
   <section>
-  {% if full_list.candidates.is_empty() %}
-    <p>{{ "candidate_list.view.empty"|trans }}</p>
-  {% else %}
-    {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
-      {% include "candidate_lists/components/candidates_table.html" %}
+    {% if full_list.candidates.is_empty() %}
+      <p>{{ "candidate_list.view.empty"|trans }}</p>
+    {% else %}
+      {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+        {% include "candidate_lists/components/candidates_table.html" %}
+      {% endif %}
     {% endif %}
-  {% endif %}
   </section>
 {% endblock %}

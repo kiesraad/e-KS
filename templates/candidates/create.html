@@ -1,9 +1,6 @@
 {% extends "persons/create.html" %}
-
 {% set close_action = full_list.list.view_path() %}
-
 {% block overlay_title %}{{ "person.actions.add"|trans }}{% endblock %}
-
 {% block overlay_steps %}
   {% include "candidates/components/create_steps.html" %}
 {% endblock %}
