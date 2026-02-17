@@ -146,7 +146,7 @@ impl ToolConfig {
                 .context(format!("check version of installed {}", self.name))?;
 
             let installed_version = String::from_utf8_lossy(&output.stdout).trim().to_string();
-            if installed_version != self.version {
+            if !installed_version.contains(&self.version) {
                 println!(
                     "⚠️  {} version mismatch: installed {}, expected {}",
                     self.name, installed_version, self.version

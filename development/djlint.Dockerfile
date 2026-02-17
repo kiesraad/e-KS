@@ -8,8 +8,8 @@ ENV PYTHONDONTWRITEBYTECODE=1 \
 
 WORKDIR /work/
 
-RUN addgroup --system --gid ${GID} djlint \
-    && adduser --system --uid ${UID} --ingroup djlint --home /home/djlint djlint \
+RUN addgroup --system --gid "${GID}" djlint \
+    && adduser --system --uid "${UID}" --ingroup djlint --home /home/djlint djlint \
     && chown -R djlint:djlint /work \
     && pip install --no-cache-dir djlint
 
