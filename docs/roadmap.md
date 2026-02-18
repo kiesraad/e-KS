@@ -12,11 +12,11 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - (sprint 3) e-KS wordt klaar gemaakt voor de eerste gebruikerstest
 - (sprint 4) Kandidatenlijst uitprinten, instemmingsverklaring uitprinten 
 - (sprint 5) Machtingsverklaring uitprinten
-- (sprint 6) Verkiezingsconfiguratie maken (naam, kieskringen, datums, etc.)
-- (sprint 7) Audit log & CSV. export/import functionaliteit kandidaten 
-- (sprint 8) Overzichtspagina voor politieke groeperingen (de stappen in het proces weergeven)
-- (sprint 9) Definitieve inlevering (inclusief vervolgstappenplan voor partij: Infographic)
-- (sprint 10) Ondersteuningsverklaringen fase 1
+- (sprint 6) Ondersteuningsverklaringen fase 1
+- (sprint 7) Verkiezingsconfiguratie maken (naam, kieskringen, datums, etc.)
+- (sprint 8) Audit log & CSV. export/import functionaliteit kandidaten 
+- (sprint 9) Overzichtspagina voor politieke groeperingen (de stappen in het proces weergeven)
+- (sprint 10) Definitieve inlevering (inclusief vervolgstappenplan voor partij: Infographic)
 - (sprint 11) Samengestelde lijst (aanduiding samenvoegen) + blanco lijst
 
 ### Mei t/m oktober (5 maanden: 11 sprints)
@@ -51,6 +51,9 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - To do lijst voor politieke partijen
   
 # Change log
+
+## 18-02-2026 Iris
+- moved "Ondersteuningsverklaringen fase 1" up
 
 ## 17-02-2026 Iris
 - Geschoven met epics zodat het gedeelte voor politieke partijen helemaal af is voordat we aan het gedeelte voor CSB's beginnen
