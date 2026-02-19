@@ -1,6 +1,7 @@
 .steps-nav {
   border-right: 1px solid var(--border-color-default);
-  width: 24rem;
+  min-width: 24rem;
+  width: fit-content;
   padding-right: var(--space-lg);
 
   ul {
@@ -53,6 +54,7 @@
         background-image: url("../icons/arrowNarrowRight.svg");
         background-color: var(--gray-200);
         font-weight: 600;
+        padding-right: var(--space-md);
       }
     }
   }
