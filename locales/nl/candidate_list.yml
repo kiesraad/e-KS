@@ -10,8 +10,11 @@ actions:
   select_all_districts: Selecteer alle kieskringen
 add_candidate: Kandidaat toevoegen
 all_candidates: Alle kandidaten
+all_candidates_note: Kandidaten die u heeft aangemaakt vindt u hier terug.
 candidate_count: "<strong>{}</strong> / {} kandidaten"
-description: Voeg kandidaten toe en maak kandidatenlijst(en) aan
+candidate_list_description:
+  add_candidate: Voeg kandidaten toe
+  add_candidate_list: Maak kandidatenlijst(en) aan
 districts:
   all: Alle
 edit_position: Volgorde op de lijst
@@ -19,7 +22,7 @@ fields:
   electoral_districts: Kieskringen
   list_submitter: Gegevens lijstinleveraar
   position: Positie
-  substitute_list_submitters: Vervangers voor herstel verzuimen
+  substitute_list_submitters: Vervangers voor het herstel verzuimen
 form:
   copy_candidates_from_previous: Kopieer kandidaten van de laatst aangemaakte lijst
   copy_candidates_from_previous_legend: Kopieer kandidaten

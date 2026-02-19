@@ -76,7 +76,6 @@
     margin-top: var(--space-md);
     color: var(--gray-600);
     width: 100%;
-    max-width: 20rem;
   }
 
   *:last-child {

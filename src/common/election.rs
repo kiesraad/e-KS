@@ -115,7 +115,7 @@ impl ElectionConfig {
     pub fn nomination_day_date(&self) -> NaiveDate {
         match self {
             // TODO fill in actually date (is this already known?)
-            ElectionConfig::EK2027 => NaiveDate::from_ymd_opt(2027, 04, 20).unwrap(),
+            ElectionConfig::EK2027 => NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
         }
     }
 

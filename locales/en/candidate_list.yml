@@ -10,8 +10,11 @@ actions:
   select_all_districts: Select all electoral districts
 add_candidate: Add candidate
 all_candidates: All candidates
+all_candidates_note: All created candidates can be found back here.
 candidate_count: "<strong>{}</strong> / {} candidates"
-description: Add candidates here and create candidate list(s).
+candidate_list_description:
+  add_candidate: Add candidates
+  add_candidate_list: Create candidate list(s)
 districts:
   all: All
 edit_position: Position on the list
@@ -31,7 +34,7 @@ form:
 not_found: "Candidate {} not found."
 remove_candidate: Remove candidate
 search_existing_person: Search existing person
-search_placeholder: "Search by name, initials or localitty"
+search_placeholder: "Search by name, initials or locality"
 title: Candidate lists
 title_single: Candidate list
 view:

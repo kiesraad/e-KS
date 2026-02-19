@@ -27,7 +27,7 @@ export class SubstituteSubmittersPage {
         await this.page.goto(href);
         await this.page
           .getByRole("button", {
-            name: "Vervanger voor herstel verzuimen verwijderen",
+            name: "Vervanger voor het herstel verzuimen verwijderen",
             exact: true,
           })
           .click();

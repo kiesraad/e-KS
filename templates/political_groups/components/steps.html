@@ -1,9 +1,8 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ PoliticalGroup::update_path() }}" class="{{ steps.basic_state }}">
-        {{ "political_group.basic_information_political_group"|trans }}
-      </a>
+      <a href="{{ PoliticalGroup::update_path() }}"
+         class="{{ steps.basic_state }}">{{ "political_group.basic_information_political_group"|trans }}</a>
     </li>
     <li>
       <a href="{{ AuthorisedAgent::list_path() }}"

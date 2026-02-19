@@ -36,7 +36,7 @@
 - Land
 - Kiesgerechtigd
 
-## Personalia vervangers voor herstel verzuimen
+## Personalia vervanger voor het herstel van verzuimen
 - Achternaam
 - Tussenvoegsels
 - Voorletters
