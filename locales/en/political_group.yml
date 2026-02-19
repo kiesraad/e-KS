@@ -8,6 +8,7 @@ add_substitute_submitter: Add substitute submitter
 authorised_agent_data: Authorised agent data
 authorised_agent_info: An authorized representative or deputy representative for the party designation is registered with the central electoral committee. This person grants the person submitting the list permission to place the party name above the candidate list. This is done using form H 3-1 or H 3-2.
 basic_information: Basic information
+basic_information_political_group: Information political group
 delete_authorised_agent_warning_text: Are you sure you want to delete this authorised agent? This action cannot be undone.
 delete_list_submitter_warning_text: Are you sure you want to delete this list submitter? This action cannot be undone.
 delete_substitute_submitter_warning_text: Are you sure you want to delete this substitute submitter? This action cannot be undone.

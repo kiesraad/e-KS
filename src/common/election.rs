@@ -1,3 +1,4 @@
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use sqlx::postgres::{PgHasArrayType, PgTypeInfo};
 
@@ -108,6 +109,13 @@ impl ElectionConfig {
     pub fn short_title(&self) -> &str {
         match self {
             Self::EK2027 => "Eerste Kamer 2027",
+        }
+    }
+
+    pub fn nomination_day_date(&self) -> NaiveDate {
+        match self {
+            // TODO fill in actually date (is this already known?)
+            ElectionConfig::EK2027 => NaiveDate::from_ymd_opt(2027, 04, 20).unwrap(),
         }
     }
 

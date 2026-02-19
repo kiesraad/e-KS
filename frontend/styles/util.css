@@ -70,10 +70,6 @@
   font-size: var(--font-size-sm);
 }
 
-.font-italic {
-  font-style: italic;
-}
-
 .text-muted {
   color: var(--gray-400);
 }

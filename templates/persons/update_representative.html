@@ -9,10 +9,13 @@
 {% endblock %}
 {% block overlay_form %}
   <fieldset>
-    <legend>
-      <h3>{{ "person.representative"|trans }}</h3>
-    </legend>
-    {% include "persons/components/representative_form.html" %}
+    <h3>{{ "person.representative"|trans }}</h3>
+    <div class="alert alert-info">
+      {{ "person.representative_info"|trans }}
+    </div>
+    <div class="mt-md">
+      {% include "persons/components/representative_form.html" %}
+    </div>
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}

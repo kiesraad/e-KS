@@ -90,8 +90,12 @@ a {
 }
 
 /* Font weight */
-.bold {
+.font-bold {
   font-weight: bold;
+}
+
+.font-italic {
+  font-style: italic;
 }
 
 .normal {

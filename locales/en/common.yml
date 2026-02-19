@@ -2,7 +2,9 @@ back_to_home: Back to Home
 description: Candidate nomination for elections in the Netherlands
 electoral_districts: Electoral districts
 general_information: General Information
-general_information_description: Provide general information about your political group and contact details.
+general_information_description:
+  basic: Provide information about the political group
+  submitter: Provide information about the submitter of the list
 home: Home
 keywords: "Kiesraad, kandidaatstelling, elections, Netherlands"
 no_label: "No"
@@ -10,7 +12,11 @@ save_success: saved
 step: "Step {}"
 steps: Steps
 submit: Finalize
-submit_description: Review all information and submit the candidate list(s).
+submit_description:
+  download_documents: Download all required documents
+  submit: Submit the candidate lists
+  view_follow_up_steps: View follow-up steps
+submit_instruction: Perform this step at the latest on nomination day
 title: Kiesraad - Kandidaatstelling
 version: Version
 yes_label: "Yes"

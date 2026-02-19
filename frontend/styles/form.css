@@ -3,6 +3,10 @@
     font-size: var(--font-size-xl);
     margin: var(--space-xl) 0 var(--space-lg) 0;
   }
+  
+  h3:has(+ .alert) {
+    margin-bottom: var(--space-md);
+  }
 
   .form-field {
     display: flex;

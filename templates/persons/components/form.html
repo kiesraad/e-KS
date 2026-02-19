@@ -11,7 +11,7 @@
     <datalist id="locality-suggestions"></datalist>
     {% for error in form|error("place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
-  <div class="form-field form-field-sm {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field form-field-md {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="country_of_residence" class="required">{{ "person.fields.country_of_residence"|trans }}</label>
     <div class="country-input input-icon">
       <span class="icon">🌐</span>
@@ -31,7 +31,11 @@
         {% endfor %}
       </ul>
     </div>
-    {% for error in form|error("country_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% for error in form|error("country_of_residence") %}
+      <span class="error">{{ error }}</span>
+    {% else %}
+      <span class="hint">{{ "person.hints.country_of_residence"|trans }}</span>
+    {% endfor %}
   </div>
 </div>
 <div class="form-row">
@@ -54,7 +58,7 @@
     </label>
     {% for error in form|error("bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
-  <p class="form-field form-field-sm {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field form-field-md {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
     <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
     <input type="text"
            placeholder=" "
@@ -68,11 +72,11 @@
 </div>
 <div class="form-row">
   <p class="form-field">
-    <label for="first_name">{{ "person.fields.first_name"|trans }}</label>
-    <input type="text"
-           name="first_name"
-           id="first_name"
-           value="{{ form.data.first_name }}" />
+    <label for="first_name">
+      {{ "person.fields.first_name"|trans }} 
+      <span class="hint">({{ "person.hints.optional"|trans }})</span>
+    </label>
+    <input type="text" name="first_name" id="first_name" value="{{ form.data.first_name }}" />
     {% for error in form|error("first_name") %}
       <span class="error">{{ error }}</span>
     {% else %}
@@ -80,7 +84,10 @@
     {% endfor %}
   </p>
   <p class="form-field">
-    <label for="gender">{{ "person.fields.gender"|trans }}</label>
+    <label for="gender">
+      {{ "person.fields.gender"|trans }}
+      <span class="hint">({{ "person.hints.optional"|trans }})</span>
+    </label>
     <select name="gender" id="gender">
       <option value="" {% if form.data.gender=="" %}selected{% endif %}>{{ "gender.empty"|trans }}</option>
       <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "gender.male"|trans }}</option>
