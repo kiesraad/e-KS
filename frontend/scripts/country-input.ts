@@ -11,8 +11,8 @@ export default function countryCodeInput() {
     const items = Array.from(list?.querySelectorAll("li") || []);
     const countries = items.map((i) => i.dataset.country) as string[];
     const flags = items
-      .map((i) => i.firstChild as HTMLSpanElement)
-      .map((span) => span.innerText);
+      .map((i) => i.querySelector(".icon"))
+      .map((span) => (span as HTMLElement).innerText);
     let active = 0;
     let suggestions: number[] = [];
 

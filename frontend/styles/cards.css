@@ -127,7 +127,7 @@
   &.card-persons {
     position: sticky;
     top: var(--space-lg);
-    height: 13rem;
+    height: fit-content;
 
     .badge {
       background-image: url("../icons/politician-badge.svg");

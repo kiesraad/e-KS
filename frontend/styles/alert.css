@@ -55,4 +55,5 @@
 
 .info {
   max-width: 50em;
+  margin-bottom: var(--space-md);
 }
