@@ -41,7 +41,7 @@ export class SubstituteSubmittersPage {
   async addSubstituteSubmitter(listSubmitters: ListSubmitter[]) {
     for (const listSubmitter of listSubmitters) {
       await this.page
-        .getByRole("link", { name: "Vervanger herstel verzuimen toevoegen" })
+        .getByRole("link", { name: "Vervanger voor het herstel van verzuimen" })
         .click();
       await this.page
         .getByRole("textbox", { name: "Voorletters *" })
@@ -60,7 +60,7 @@ export class SubstituteSubmittersPage {
 
   async editListSubmitter() {
     await this.page
-      .getByRole("cell", { name: "Vervanger herstel verzuimen toevoegen" })
+      .getByRole("cell", { name: "Vervanger voor het herstel van verzuimen" })
       .click();
     await this.page.getByRole("textbox", { name: "Voorletters *" }).fill("A");
     await this.page.getByRole("textbox", { name: "Voorvoegsel" }).fill("de");

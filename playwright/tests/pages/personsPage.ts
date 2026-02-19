@@ -17,7 +17,7 @@ export class PersonsPage {
 
   async addPersons(candidates: Candidate[]) {
     for (const candidate of candidates) {
-      await this.page.getByRole("link", { name: "Persoon toevoegen" }).click();
+      await this.page.getByRole("link", { name: "Kandidaat toevoegen" }).click();
       await new CreatePersonPage(this.page).setPersonalDetails(candidate);
       if (candidate.authorisedPerson) {
         await new AuthorisedPersonPage(this.page).setAuthorisedPerson(
