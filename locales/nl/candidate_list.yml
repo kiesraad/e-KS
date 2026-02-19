@@ -10,6 +10,8 @@ actions:
   select_all_districts: Selecteer alle kieskringen
 add_candidate: Kandidaat toevoegen
 all_candidates: Alle kandidaten
+candidate:
+  delete_warning_text: "Deze persoon staat op {} kandidatenlijst(en). Weet je zeker dat je deze persoon definitief wilt verwijderen?"
 candidate_count: "<strong>{}</strong> / {} kandidaten"
 description: Voeg hier kandidaten toe en maak kandidatenlijst(en) aan.
 districts:

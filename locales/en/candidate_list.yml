@@ -10,6 +10,8 @@ actions:
   select_all_districts: Select all electoral districts
 add_candidate: Add candidate
 all_candidates: All candidates
+candidate:
+  delete_warning_text: "This person is on {} candidate list(s). Are you sure you want to delete this person?"
 candidate_count: "<strong>{}</strong> / {} candidates"
 description: Add candidates here and create candidate list(s).
 districts:
