@@ -1,0 +1,35 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: typst
+  namespace: {{ .Release.Namespace }}
+  labels:
+    app.kubernetes.io/name: typst
+    app.kubernetes.io/part-of: eks
+    app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    app.kubernetes.io/component: typst
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: typst
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: typst
+        app.kubernetes.io/version: {{ .Chart.AppVersion }}
+    spec:
+      automountServiceAccountToken: false
+      containers:
+        - name: typst
+          image: "ghcr.io/kiesraad/e-ks/typst:{{ .Chart.AppVersion }}"
+          ports:
+            - containerPort: 8080
+              name: http
+          resources:
+            limits:
+              memory: "1024Mi"
+            requests:
+              cpu: "256m"
+              memory: "512Mi"
+              ephemeral-storage: "1024Mi"
+
