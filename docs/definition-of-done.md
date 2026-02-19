@@ -16,7 +16,8 @@
     - Newlines at the end of text files
     - Sigrid
     - Codecov
-    - Typescript linting
+    - Typescript/CSS linting (biome)
+    - HTML Template linting (djlint)
 - The PR should specify how the changes can be tested by users
 - All relevant code documentation has been added
 - At least one review
