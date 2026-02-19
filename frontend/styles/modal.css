@@ -15,7 +15,7 @@
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   max-width: 90%;
   width: 40rem;
-  position: relative;
+  position: fixed;
 
   /* Show scrollbar if the modal is higher than the viewport */
   max-height: calc(100% - 2rem);

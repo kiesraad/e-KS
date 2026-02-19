@@ -8,9 +8,15 @@
 {% block overlay_steps %}
   {% include "candidates/components/update_steps.html" %}
 {% endblock %}
+{% decl delete_warning -%}
+{% if on_candidate_lists > 0 -%}
+  {% let delete_warning = "candidate_list.candidate.delete_warning_text"|trans(&on_candidate_lists.to_string()) -%}
+{% else -%}
+  {% let delete_warning = "person.form.delete_warning_text"|trans -%}
+{% endif -%}
 {% block overlay_end %}
   {{ macros::delete_modal(candidate.delete_path() ,
   "person.actions.delete"|trans,
-  "person.form.delete_warning_text"|trans
+  delete_warning
   ) }}
 {% endblock %}

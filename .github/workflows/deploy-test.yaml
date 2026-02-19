@@ -127,6 +127,15 @@ jobs:
           context: target/release
           tags: "ghcr.io/kiesraad/e-ks/db:${{ needs.rust.outputs.tag }}"
 
+      - name: Build and push typst docker image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        with:
+          file: deploy/typst.Dockerfile
+          push: true
+          build-args: "version=${{ needs.rust.outputs.tag }}"
+          context: models
+          tags: "ghcr.io/kiesraad/e-ks/typst:${{ needs.rust.outputs.tag }}"
+
   helm:
     name: Install with Helm
     permissions:

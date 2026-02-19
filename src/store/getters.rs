@@ -111,6 +111,18 @@ impl AppStore {
         }
     }
 
+    pub fn count_candidate_lists(&self, person_id: PersonId) -> Result<usize, AppError> {
+        let data = self.data.read();
+
+        let count = data
+            .candidate_lists
+            .values()
+            .filter(|list| list.candidates.contains(&person_id))
+            .count();
+
+        Ok(count)
+    }
+
     pub fn get_last_event_id(&self) -> Result<usize, AppError> {
         let data = self.data.read();
 

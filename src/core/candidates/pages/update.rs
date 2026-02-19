@@ -16,12 +16,14 @@ use super::CandidateListUpdatePersonPath;
 struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
+    on_candidate_lists: usize,
     form: FormData<PersonForm>,
 }
 
 pub async fn update_person(
     _: CandidateListUpdatePersonPath,
     context: Context,
+    State(store): State<AppStore>,
     full_list: FullCandidateList,
     candidate: Candidate,
 ) -> AppResponse<impl IntoResponse> {
@@ -31,6 +33,7 @@ pub async fn update_person(
                 PersonForm::from(candidate.person.clone()),
                 &context.csrf_tokens,
             ),
+            on_candidate_lists: store.count_candidate_lists(candidate.person.id)?,
             candidate,
             full_list,
         },
@@ -49,8 +52,9 @@ pub async fn update_person_submit(
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
-                candidate,
                 full_list,
+                on_candidate_lists: store.count_candidate_lists(candidate.person.id)?,
+                candidate,
                 form: form_data,
             },
             context,
@@ -104,6 +108,7 @@ mod tests {
                 person_id: person.id,
             },
             Context::new_test_without_db(),
+            State(store),
             full_list,
             candidate,
         )

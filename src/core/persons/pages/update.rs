@@ -14,17 +14,20 @@ use crate::{
 #[template(path = "persons/update.html")]
 struct PersonUpdateTemplate {
     person: Person,
+    on_candidate_lists: usize,
     form: FormData<PersonForm>,
 }
 
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
+    State(store): State<AppStore>,
     person: Person,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
+            on_candidate_lists: store.count_candidate_lists(person.id)?,
             person,
         },
         context,
@@ -41,6 +44,7 @@ pub async fn update_person_submit(
     match form.validate_update(&person, &context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
+                on_candidate_lists: store.count_candidate_lists(person.id)?,
                 person,
                 form: form_data,
             },
@@ -79,6 +83,7 @@ mod tests {
         let response = update_person(
             UpdatePersonPath { person_id },
             Context::new_test_without_db(),
+            State(store),
             person,
         )
         .await
