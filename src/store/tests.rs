@@ -1,11 +1,14 @@
 use super::{AppEvent, AppStore, AppStoreData};
 use crate::{
-    CountryCode, Date, DutchAddress, ElectoralDistrict, FirstName, FullName, HouseNumber,
-    HouseNumberAddition, Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence,
-    PostalCode, StreetName, UtcDateTime,
+    ElectoralDistrict,
     candidate_lists::CandidateListId,
+    common::{
+        CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber,
+        HouseNumberAddition, Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence,
+        PostalCode, StreetName, UtcDateTime,
+    },
     list_submitters::ListSubmitterId,
-    persons::{Gender, PersonId, PersonalInfo, Representative},
+    persons::{PersonId, PersonalInfo, Representative},
     substitute_list_submitters::SubstituteSubmitterId,
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
 };
@@ -41,7 +44,7 @@ fn apply_update_personal_info_replaces_fields() {
     };
 
     AppStore::apply(
-        AppEvent::UpdatePersonPersonalInfo(personal_info.clone()),
+        AppEvent::UpdatePersonalInfo(personal_info.clone()),
         &mut data,
     );
 

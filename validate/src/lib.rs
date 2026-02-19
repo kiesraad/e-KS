@@ -148,8 +148,8 @@ fn build_timestamp_tokens(
 ) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
     let create_timestamps = if timestamps {
         quote! {
-            updated_at: crate::UtcDateTime::now(),
-            created_at: crate::UtcDateTime::now(),
+            updated_at: crate::common::UtcDateTime::now(),
+            created_at: crate::common::UtcDateTime::now(),
         }
     } else {
         quote! {}
@@ -157,7 +157,7 @@ fn build_timestamp_tokens(
 
     let update_timestamps = if timestamps {
         quote! {
-            updated_at: crate::UtcDateTime::now(),
+            updated_at: crate::common::UtcDateTime::now(),
         }
     } else {
         quote! {}

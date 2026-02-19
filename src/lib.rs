@@ -1,8 +1,8 @@
 /// Application specific modules
-mod core;
+mod app;
 
 /// Generic modules
-mod common;
+mod core;
 mod error;
 pub mod filters;
 mod form;
@@ -10,13 +10,16 @@ mod pages;
 mod pagination;
 pub mod router;
 mod store;
-mod structs;
 mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
 
-pub use common::{
+pub use app::{
+    authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
+    political_groups, substitute_list_submitters,
+};
+pub use core::{
     config::Config,
     constants,
     context::Context,
@@ -32,18 +35,9 @@ pub use common::{
     templates::HtmlTemplate,
     translate,
 };
-pub use core::{
-    authorised_agents, candidate_lists, candidates, list_submitters, persons, political_groups,
-    substitute_list_submitters,
-};
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
 pub use store::{AppEvent, AppStore, AppStoreData};
-pub use structs::{
-    Bsn, CountryCode, Date, DutchAddress, DutchAddressForm, FirstName, FullName, FullNameForm,
-    HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix, LegalName, Locality,
-    PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
-};
 
 #[cfg(test)]
-pub use common::test_utils;
+pub use core::test_utils;

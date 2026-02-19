@@ -1,9 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    DutchAddress, ElectoralDistrict, UtcDateTime,
+    ElectoralDistrict,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
+    common::{DutchAddress, UtcDateTime},
     list_submitters::{ListSubmitter, ListSubmitterId},
     persons::{Person, PersonId, PersonalInfo, Representative},
     political_groups::PoliticalGroup,
@@ -15,7 +16,7 @@ pub enum AppEvent {
     UpdatePoliticalGroup(PoliticalGroup),
     CreatePerson(Person),
     UpdatePerson(Person),
-    UpdatePersonPersonalInfo(PersonalInfo),
+    UpdatePersonalInfo(PersonalInfo),
     UpdatePersonAddress {
         person_id: PersonId,
         address: DutchAddress,

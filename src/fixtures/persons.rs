@@ -6,9 +6,12 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppStore, Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, HouseNumber,
-    Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
-    persons::{Gender, Person},
+    AppError, AppStore,
+    common::{
+        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber, Initials,
+        LastName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
+    },
+    persons::Person,
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");

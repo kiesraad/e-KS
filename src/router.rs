@@ -30,19 +30,18 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(locale::locale_router());
 
     #[cfg(feature = "dev-features")]
-    let bag_service_url =
-        crate::common::config::get_env("BAG_SERVICE_URL", "http://localhost:8080")
-            .expect("BAG_SERVICE_URL must be set in dev-features mode");
+    let bag_service_url = crate::core::config::get_env("BAG_SERVICE_URL", "http://localhost:8080")
+        .expect("BAG_SERVICE_URL must be set in dev-features mode");
 
     #[cfg(feature = "dev-features")]
     let router = router
         .route(
             "/lookup",
-            crate::common::proxy::proxy_handler(&bag_service_url),
+            crate::core::proxy::proxy_handler(&bag_service_url),
         )
         .route(
             "/suggest",
-            crate::common::proxy::proxy_handler(&bag_service_url),
+            crate::core::proxy::proxy_handler(&bag_service_url),
         );
 
     #[cfg(feature = "http-logging")]
@@ -53,7 +52,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     );
 
     #[cfg(feature = "livereload")]
-    let router = router.merge(crate::common::livereload::livereload_router());
+    let router = router.merge(crate::core::livereload::livereload_router());
 
     #[cfg(feature = "memory-serve")]
     let router = router.nest(
@@ -64,7 +63,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "memory-serve"))]
     let router = router.nest(
         "/static",
-        Router::new().fallback(crate::common::proxy::proxy_handler("http://localhost:8888")),
+        Router::new().fallback(crate::core::proxy::proxy_handler("http://localhost:8888")),
     );
 
     router

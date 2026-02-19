@@ -124,7 +124,7 @@ impl AppStore {
             VALUES ($1, 0)
             ON CONFLICT (stream_id) DO NOTHING"#,
         )
-        .bind(crate::common::constants::DEFAULT_STREAM_ID)
+        .bind(crate::core::constants::DEFAULT_STREAM_ID)
         .execute(pool)
         .await?;
 
@@ -190,7 +190,7 @@ impl AppStore {
             VALUES ($1, 0)
             ON CONFLICT (stream_id) DO NOTHING"#,
         )
-        .bind(crate::common::constants::DEFAULT_STREAM_ID)
+        .bind(crate::core::constants::DEFAULT_STREAM_ID)
         .execute(pool)
         .await?;
 

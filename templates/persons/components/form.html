@@ -24,7 +24,7 @@
              maxlength="2"
              required />
       <ul>
-        {% for country in crate::persons::COUNTRY_CODES %}
+        {% for country in crate::common::COUNTRY_CODES %}
           <li data-country="{{ country }}">
             <span class="icon">{{ country|flag }}</span> {{ country }}
           </li>
