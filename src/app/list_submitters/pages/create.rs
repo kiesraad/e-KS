@@ -4,6 +4,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 
+use super::ListSubmitterCreatePath;
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
@@ -11,48 +12,38 @@ use crate::{
     redirect_success,
 };
 
-use super::ListSubmitterUpdatePath;
-
 #[derive(Template)]
-#[template(path = "list_submitters/update.html")]
-struct ListSubmitterUpdateTemplate {
-    list_submitter: ListSubmitter,
+#[template(path = "list_submitters/pages/create.html")]
+struct ListSubmitterCreateTemplate {
     form: FormData<ListSubmitterForm>,
 }
 
-pub async fn update_list_submitter(
-    _: ListSubmitterUpdatePath,
+pub async fn create_list_submitter(
+    _: ListSubmitterCreatePath,
     context: Context,
-    list_submitter: ListSubmitter,
-) -> Result<Response, AppError> {
+) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
-        ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(list_submitter.clone().into(), &context.csrf_tokens),
-            list_submitter,
+        ListSubmitterCreateTemplate {
+            form: FormData::new(&context.csrf_tokens),
         },
         context,
-    )
-    .into_response())
+    ))
 }
 
-pub async fn update_list_submitter_submit(
-    _: ListSubmitterUpdatePath,
+pub async fn create_list_submitter_submit(
+    _: ListSubmitterCreatePath,
     context: Context,
-    list_submitter: ListSubmitter,
     State(store): State<AppStore>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&list_submitter, &context.csrf_tokens) {
+    match form.validate_create(&context.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterUpdateTemplate {
-                list_submitter,
-                form: form_data,
-            },
+            ListSubmitterCreateTemplate { form: form_data },
             context,
         )
         .into_response()),
         Ok(list_submitter) => {
-            list_submitter.update(&store).await?;
+            list_submitter.create(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -64,12 +55,8 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
-        list_submitters::ListSubmitterId,
         political_groups::PoliticalGroupId,
-        test_utils::{
-            response_body_string, sample_list_submitter, sample_list_submitter_form,
-            sample_political_group,
-        },
+        test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
     use axum::{
         http::{StatusCode, header},
@@ -78,52 +65,33 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     #[tokio::test]
-    async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
+    async fn create_list_submitter_renders_csrf_field() {
+        let context = Context::new_test_without_db();
 
-        political_group.create(&store).await?;
-        list_submitter.create(&store).await?;
-
-        let response = update_list_submitter(
-            ListSubmitterUpdatePath { submitter_id },
-            Context::new_test_without_db(),
-            list_submitter.clone(),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response = create_list_submitter(ListSubmitterCreatePath {}, context)
+            .await
+            .unwrap()
+            .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(list_submitter.name.last_name.as_str()));
-
-        Ok(())
+        assert!(body.contains("name=\"csrf_token\""));
     }
 
     #[tokio::test]
-    async fn update_list_submitter_persists_and_redirects() -> Result<(), AppError> {
+    async fn create_list_submitter_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
-
         political_group.create(&store).await?;
-        list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
-        let mut form = sample_list_submitter_form(&csrf_token);
-        form.name.last_name = "Updated".to_string();
+        let form = sample_list_submitter_form(&csrf_token);
 
-        let response = update_list_submitter_submit(
-            ListSubmitterUpdatePath { submitter_id },
+        let response = create_list_submitter_submit(
+            ListSubmitterCreatePath {},
             context,
-            list_submitter.clone(),
             State(store.clone()),
             Form(form),
         )
@@ -137,6 +105,8 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
+        let submitters = store.get_list_submitters()?;
+        assert_eq!(submitters.len(), 1);
         assert_eq!(
             location,
             ListSubmitter::list_path()
@@ -144,32 +114,24 @@ mod tests {
                 .to_string()
         );
 
-        let updated = store.get_list_submitter(submitter_id)?;
-        assert_eq!(updated.name.last_name.to_string(), "Updated");
-
         Ok(())
     }
 
     #[tokio::test]
-    async fn update_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
+    async fn create_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
-
         political_group.create(&store).await?;
-        list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response = update_list_submitter_submit(
-            ListSubmitterUpdatePath { submitter_id },
+        let response = create_list_submitter_submit(
+            ListSubmitterCreatePath {},
             context,
-            list_submitter.clone(),
             State(store),
             Form(form),
         )

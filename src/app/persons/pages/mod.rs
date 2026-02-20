@@ -6,11 +6,11 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-mod address;
+mod update_address;
 mod create;
 mod delete;
 mod list;
-mod representative;
+mod update_representative;
 mod update;
 
 #[derive(TypedPath, Deserialize)]
@@ -110,10 +110,10 @@ pub fn router() -> Router<AppState> {
         .typed_get(create::create_person)
         .typed_get(update::update_person)
         .typed_post(update::update_person_submit)
-        .typed_get(address::update_person_address)
-        .typed_post(address::update_person_address_submit)
-        .typed_get(representative::update_representative)
-        .typed_post(representative::update_representative_submit)
+        .typed_get(update_address::update_person_address)
+        .typed_post(update_address::update_person_address_submit)
+        .typed_get(update_representative::update_representative)
+        .typed_post(update_representative::update_representative_submit)
         .typed_post(delete::delete_person)
 }
 

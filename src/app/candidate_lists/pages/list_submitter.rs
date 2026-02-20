@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/list_submitter.html")]
+#[template(path = "candidate_lists/pages/list_submitter.html")]
 struct ListSubmitterUpdateTemplate {
     should_warn: bool,
     form: FormData<ListSubmitterForm>,

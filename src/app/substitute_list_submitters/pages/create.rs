@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "substitute_list_submitters/create.html")]
+#[template(path = "substitute_list_submitters/pages/create.html")]
 struct SubstituteSubmitterCreateTemplate {
     form: FormData<SubstituteSubmitterForm>,
 }

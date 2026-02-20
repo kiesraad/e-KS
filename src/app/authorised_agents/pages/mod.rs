@@ -10,7 +10,7 @@ use crate::{
 mod create;
 mod delete;
 mod update;
-mod authorised_agents;
+mod view;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/political-group/authorised-agents", rejection(AppError))]
@@ -58,7 +58,7 @@ impl AuthorisedAgent {
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .typed_get(authorised_agents::list_authorised_agents)
+        .typed_get(view::list_authorised_agents)
         .typed_get(create::create_authorised_agent)
         .typed_post(create::create_authorised_agent_submit)
         .typed_get(update::update_authorised_agent)

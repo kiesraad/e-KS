@@ -17,7 +17,7 @@ use crate::{
 use super::PoliticalGroupUpdatePath;
 
 #[derive(Template)]
-#[template(path = "political_groups/update.html")]
+#[template(path = "political_groups/pages/update.html")]
 struct PoliticalGroupUpdateTemplate {
     form: FormData<PoliticalGroupForm>,
     steps: PoliticalGroupSteps,

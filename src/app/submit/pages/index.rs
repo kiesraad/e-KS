@@ -6,7 +6,7 @@ use crate::{Context, HtmlTemplate, filters};
 use super::SubmitPath;
 
 #[derive(Template)]
-#[template(path = "submit/index.html")]
+#[template(path = "submit/pages/index.html")]
 pub struct IndexTemplate {}
 
 pub async fn index(_: SubmitPath, context: Context) -> impl IntoResponse {

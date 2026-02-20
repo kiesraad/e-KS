@@ -12,7 +12,7 @@ use crate::{
 
 use super::CandidateListUpdateAddressPath;
 #[derive(Template)]
-#[template(path = "candidates/update_address.html")]
+#[template(path = "candidates/pages/update_address.html")]
 struct PersonAddressUpdateTemplate {
     should_warn: bool,
     candidate: Candidate,

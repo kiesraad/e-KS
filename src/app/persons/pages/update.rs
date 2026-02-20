@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "persons/update.html")]
+#[template(path = "persons/pages/update.html")]
 struct PersonUpdateTemplate {
     person: Person,
     on_candidate_lists: usize,

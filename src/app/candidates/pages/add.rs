@@ -14,7 +14,7 @@ use crate::{
 
 use super::AddCandidatePath;
 #[derive(Template)]
-#[template(path = "candidates/add_existing.html")]
+#[template(path = "candidates/pages/add.html")]
 struct AddExistingPersonTemplate {
     full_list: FullCandidateList,
     persons: Vec<Person>,

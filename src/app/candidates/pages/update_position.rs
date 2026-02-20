@@ -14,7 +14,7 @@ use crate::{
 use super::UpdateCandidatePositionPath;
 
 #[derive(Template)]
-#[template(path = "candidates/update_position.html")]
+#[template(path = "candidates/pages/update_position.html")]
 struct UpdateCandidatePositionTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,

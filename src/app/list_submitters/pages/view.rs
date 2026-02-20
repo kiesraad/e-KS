@@ -11,7 +11,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 #[derive(Template)]
-#[template(path = "political_groups/submitters.html")]
+#[template(path = "list_submitters/pages/view.html")]
 struct ListSubmittersTemplate {
     list_submitters: Vec<ListSubmitter>,
     substitute_submitters: Vec<SubstituteSubmitter>,

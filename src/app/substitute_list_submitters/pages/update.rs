@@ -15,7 +15,7 @@ use crate::{
 use super::SubstituteSubmitterUpdatePath;
 
 #[derive(Template)]
-#[template(path = "substitute_list_submitters/update.html")]
+#[template(path = "substitute_list_submitters/pages/update.html")]
 struct SubstituteSubmitterUpdateTemplate {
     substitute_submitter: SubstituteSubmitter,
     form: FormData<SubstituteSubmitterForm>,

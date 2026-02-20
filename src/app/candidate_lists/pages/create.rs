@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/create.html")]
+#[template(path = "candidate_lists/pages/create.html")]
 struct CandidateListCreateTemplate {
     form: FormData<CandidateListCreateForm>,
     has_previous_list: bool,

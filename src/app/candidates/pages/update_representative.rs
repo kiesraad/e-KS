@@ -12,7 +12,7 @@ use crate::{
 
 use super::UpdateRepresentativePath;
 #[derive(Template)]
-#[template(path = "candidates/update_representative.html")]
+#[template(path = "candidates/pages/update_representative.html")]
 struct UpdateRepresentativeTemplate {
     should_warn: bool,
     full_list: FullCandidateList,

@@ -7,10 +7,10 @@ use crate::{
     list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
-mod list_submitter_create;
-mod list_submitter_delete;
-mod list_submitter_update;
-mod list_submitters;
+mod create;
+mod delete;
+mod update;
+mod view;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/political-group/list-submitters", rejection(AppError))]
@@ -62,12 +62,12 @@ impl ListSubmitter {
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .typed_get(list_submitters::list_submitters)
-        .typed_get(list_submitter_create::create_list_submitter)
-        .typed_post(list_submitter_create::create_list_submitter_submit)
-        .typed_get(list_submitter_update::update_list_submitter)
-        .typed_post(list_submitter_update::update_list_submitter_submit)
-        .typed_post(list_submitter_delete::delete_list_submitter)
+        .typed_get(view::list_submitters)
+        .typed_get(create::create_list_submitter)
+        .typed_post(create::create_list_submitter_submit)
+        .typed_get(update::update_list_submitter)
+        .typed_post(update::update_list_submitter_submit)
+        .typed_post(delete::delete_list_submitter)
 }
 
 #[cfg(test)]

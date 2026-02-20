@@ -10,7 +10,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 #[derive(Template)]
-#[template(path = "authorised_agents/pages/authorised_agents.html")]
+#[template(path = "authorised_agents/pages/view.html")]
 struct AuthorisedAgentsTemplate {
     authorised_agents: Vec<AuthorisedAgent>,
     steps: PoliticalGroupSteps,

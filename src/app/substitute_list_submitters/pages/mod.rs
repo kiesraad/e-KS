@@ -7,9 +7,9 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
-mod substitute_submitter_create;
-mod substitute_submitter_delete;
-mod substitute_submitter_update;
+mod create;
+mod delete;
+mod update;
 
 #[derive(TypedPath)]
 #[typed_path("/political-group/substitute-submitters/create", rejection(AppError))]
@@ -53,11 +53,11 @@ impl SubstituteSubmitter {
 
 pub fn router() -> Router<AppState> {
     Router::new()
-        .typed_get(substitute_submitter_create::create_substitute_submitter)
-        .typed_post(substitute_submitter_create::create_substitute_submitter_submit)
-        .typed_get(substitute_submitter_update::update_substitute_submitter)
-        .typed_post(substitute_submitter_update::update_substitute_submitter_submit)
-        .typed_post(substitute_submitter_delete::delete_substitute_submitter)
+        .typed_get(create::create_substitute_submitter)
+        .typed_post(create::create_substitute_submitter_submit)
+        .typed_get(update::update_substitute_submitter)
+        .typed_post(update::update_substitute_submitter_submit)
+        .typed_post(delete::delete_substitute_submitter)
 }
 
 #[cfg(test)]

@@ -12,7 +12,7 @@ use crate::{
 
 use super::CandidateListUpdatePersonPath;
 #[derive(Template)]
-#[template(path = "candidates/update.html")]
+#[template(path = "candidates/pages/update.html")]
 struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
