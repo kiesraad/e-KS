@@ -1,0 +1,19 @@
+{
+    "election_name": "de Eerste Kamer der Staten-Generaal",
+    "election_type": "EK",
+    "electoral_districts": ["Provincie Utrecht", "Gemeente Rotterdam", "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"],
+    "designation": "Test Partij (TP)",
+    "candidates": [
+        {"last_name": "Abels", "initials": "A. (Astrid) (v)", "date_of_birth": "16-12-1974", "locality": "Ede"},
+        {"last_name": "Akwasi", "initials": "M. (Maria) (v)", "date_of_birth": "01-09-1997", "locality": "Ede"},
+        {"last_name": "Altena", "initials": "J. (Jeroen) (m)", "date_of_birth": "23-06-1984", "locality": "'s-Gravenhage"},
+        {"last_name": "Bronwaßer", "initials": "I.E. (Ingeborg) (v)", "date_of_birth": "07-06-1979", "locality": "Rotterdam"},
+        {"last_name": "Jansen-de Groot", "initials": "C. (Christine) (v)", "date_of_birth": "12-07-1987", "locality": "Amsterdam"}
+    ],
+    "previously_seated": true,
+    "substitute_submitter": [
+        {"last_name": "Bronwaßer", "initials": "I.E. (Ingeborg)", "postal_address": "Grotestraat 3", "postal_code": "3000AA", "locality": "Rotterdam"},
+        {"last_name": "Jansen-de Groot", "initials": "C. (Christine)", "postal_address": "Molenweg 37", "postal_code": "4000CC", "locality": "Amsterdam"}
+    ],
+    "timestamp": "21-08-2025 11:32:21"
+}

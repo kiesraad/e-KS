@@ -23,7 +23,7 @@ pub struct Context {
     /// Whether to show the success alert based on the request query.
     pub show_success_alert: bool,
     /// Whether the request came from an overlay page (via referrer query).
-    pub overlay_refferer: bool,
+    pub overlay_referrer: bool,
     /// CSRF tokens used to protect form submissions.
     pub csrf_tokens: CsrfTokens,
 }
@@ -40,7 +40,7 @@ impl Context {
             election,
             csrf_tokens,
             show_success_alert: false,
-            overlay_refferer: false,
+            overlay_referrer: false,
         }
     }
 
@@ -68,7 +68,7 @@ impl askama::Values for Context {
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
-            "overlay_refferer" => Some(&self.overlay_refferer as &dyn std::any::Any),
+            "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -90,7 +90,7 @@ where
             .uri
             .query()
             .is_some_and(|q| q.contains("success=true"));
-        let overlay_refferer = parts
+        let overlay_referrer = parts
             .headers
             .get(axum::http::header::REFERER)
             .and_then(|value| value.to_str().ok())
@@ -104,7 +104,7 @@ where
             political_group,
             locale,
             show_success_alert,
-            overlay_refferer,
+            overlay_referrer,
             election,
             max_candidates,
             csrf_tokens,

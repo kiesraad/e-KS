@@ -34,3 +34,5 @@ lcov.info
 /bin/setup
 /bin/update_locales
 /bin/version
+
+/models/*.pdf
