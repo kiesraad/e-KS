@@ -20,7 +20,11 @@ cargo test --all-features
 ./bin/biome check --fix ./playwright/tests
 
 # html
-docker run --rm -v ./templates:/work/templates djlint
+docker run --rm \
+          -v ./src/app:/work/templates/app \
+          -v ./src/error:/work/templates/error \
+          djlint \
+          djlint --ignore=H025 --lint --extension=html --check --indent=2 templates
 
 # generic
 ./bin/check_newline
