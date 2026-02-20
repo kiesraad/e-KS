@@ -12,13 +12,13 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, authorised_agents, candidate_lists, candidates, list_submitters, locale, pages,
-    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
+    AppState, authorised_agents, candidate_lists, candidates, list_submitters, locale,
+    persons, political_groups, render_error_pages, substitute_list_submitters, common, submit
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
     let router = Router::new()
-        .route("/", get(pages::index))
+        .route("/", get(common::index))
         .merge(persons::router())
         .merge(political_groups::router())
         .merge(authorised_agents::router())
@@ -71,7 +71,7 @@ pub fn create(state: AppState) -> Router<AppState> {
             state.clone(),
             render_error_pages,
         ))
-        .fallback(get(pages::not_found))
+        .fallback(get(common::not_found))
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
             // TODO remove 'unsafe-hashes' as soon as we have implemented a login and do not require oauth-proxy anymore

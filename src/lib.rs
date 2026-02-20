@@ -6,18 +6,16 @@ mod core;
 mod error;
 pub mod filters;
 mod form;
-mod pages;
 mod pagination;
 pub mod router;
 mod store;
-mod submit;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;
 
 pub use app::{
     authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, substitute_list_submitters,
+    political_groups, substitute_list_submitters, submit
 };
 pub use core::{
     config::Config,
