@@ -11,7 +11,7 @@ use crate::{
 mod create;
 mod delete;
 mod list;
-mod list_submitter;
+mod update_list_submitter;
 mod reorder;
 mod update;
 mod view;
@@ -130,8 +130,8 @@ pub fn router() -> Router<AppState> {
         .typed_get(view::view_candidate_list)
         .typed_get(update::update_candidate_list)
         .typed_post(update::update_candidate_list_submit)
-        .typed_get(list_submitter::update_list_submitter)
-        .typed_post(list_submitter::update_list_submitter_submit)
+        .typed_get(update_list_submitter::update_list_submitter)
+        .typed_post(update_list_submitter::update_list_submitter_submit)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
 }
