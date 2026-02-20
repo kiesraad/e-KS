@@ -9,6 +9,9 @@ ingress:
 gatewayApi:
   enabled: false
 
+typst:
+  enabled: true
+
 bag:
   image: "ghcr.io/tweedegolf/bag-address-lookup"
   version: "0.3.3"

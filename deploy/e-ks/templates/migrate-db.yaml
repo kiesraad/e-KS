@@ -26,6 +26,7 @@ spec:
       containers:
         - name: migrate-db
           image: "ghcr.io/kiesraad/e-ks/apply_fixtures:{{ .Chart.AppVersion }}"
+          imagePullPolicy: Always
           env:
             - name: DATABASE_URL
               valueFrom:

@@ -1,3 +1,4 @@
+{{- if .Values.typst.enabled }}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
@@ -29,7 +30,8 @@ spec:
             limits:
               memory: "1024Mi"
             requests:
-              cpu: "256m"
-              memory: "512Mi"
-              ephemeral-storage: "1024Mi"
+              cpu: "128m"
+              memory: "128Mi"
+              ephemeral-storage: "265Mi"
 
+{{- end }}
