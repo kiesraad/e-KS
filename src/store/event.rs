@@ -6,7 +6,7 @@ use crate::{
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, UtcDateTime},
     list_submitters::{ListSubmitter, ListSubmitterId},
-    persons::{Person, PersonId, PersonalInfo, Representative},
+    persons::{Person, PersonId, Representative},
     political_groups::PoliticalGroup,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
@@ -16,7 +16,6 @@ pub enum AppEvent {
     UpdatePoliticalGroup(PoliticalGroup),
     CreatePerson(Person),
     UpdatePerson(Person),
-    UpdatePersonalInfo(PersonalInfo),
     UpdatePersonAddress {
         person_id: PersonId,
         address: DutchAddress,

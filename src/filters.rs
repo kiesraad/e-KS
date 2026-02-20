@@ -60,8 +60,8 @@ pub fn trans(
     }
 
     let mut result = match locale {
-        crate::locale::Locale::En => crate::translate::LOCALE_EN.get(key),
-        crate::locale::Locale::Nl => crate::translate::LOCALE_NL.get(key),
+        crate::Locale::En => crate::translate::LOCALE_EN.get(key),
+        crate::Locale::Nl => crate::translate::LOCALE_NL.get(key),
     }
     .map(|s| s.to_string())
     .unwrap_or_else(|| {

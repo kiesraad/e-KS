@@ -14,13 +14,6 @@ impl AppStore {
             AppEvent::UpdatePerson(person) => {
                 data.persons.entry(person.id).and_modify(|p| *p = person);
             }
-            AppEvent::UpdatePersonalInfo(personal_info) => {
-                data.persons
-                    .entry(personal_info.person_id)
-                    .and_modify(|existing| {
-                        *existing = existing.update_personal_info(personal_info);
-                    });
-            }
             AppEvent::UpdatePersonAddress {
                 person_id,
                 address,

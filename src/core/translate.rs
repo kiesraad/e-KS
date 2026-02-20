@@ -6,8 +6,8 @@ include!(concat!(env!("OUT_DIR"), "/locales.rs"));
 macro_rules! trans {
     ($key:tt, $locale:expr $(, $args:expr)* $(,)?) => {{
         match $locale {
-            $crate::locale::Locale::En => format!($crate::translate::t_en!($key) $(, $args)*),
-            $crate::locale::Locale::Nl => format!($crate::translate::t_nl!($key) $(, $args)*),
+            $crate::Locale::En => format!($crate::translate::t_en!($key) $(, $args)*),
+            $crate::Locale::Nl => format!($crate::translate::t_nl!($key) $(, $args)*),
         }
     }};
 }

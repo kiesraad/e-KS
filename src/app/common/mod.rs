@@ -1,3 +1,4 @@
+mod extractors;
 mod pages;
 mod structs;
 
@@ -8,4 +9,6 @@ pub use structs::{
     UtcDateTime,
 };
 
-pub use pages::{index, not_found};
+pub use pages::{IndexPath, SwitchLanguagePath, not_found, router};
+
+static LOCALE_COOKIE_NAME: &str = "LANGUAGE";

@@ -1,43 +1,8 @@
 //! Locale detection and formatting helpers for request handling.
 //! Extracted from Accept-Language headers and used by Context and templates.
 
-use crate::{AppError, AppState};
-use axum::{
-    Router,
-    extract::FromRequestParts,
-    http::{header, request::Parts},
-    response::Redirect,
-};
-use axum_extra::{
-    TypedHeader,
-    extract::{CookieJar, Form, cookie::Cookie},
-    headers,
-    routing::{RouterExt, TypedPath},
-};
 use serde::Deserialize;
-use std::{convert::Infallible, str::FromStr};
-
-static LOCALE_COOKIE_NAME: &str = "LANGUAGE";
-
-#[derive(Default, Deserialize, Clone, Debug)]
-struct LanguageSwitch {
-    lang: Locale,
-}
-
-#[derive(TypedPath)]
-#[typed_path("/language", rejection(AppError))]
-pub struct SwitchLanguagePath;
-
-async fn switch_language(
-    _: SwitchLanguagePath,
-    TypedHeader(referer): TypedHeader<headers::Referer>,
-    mut cookie_jar: CookieJar,
-    Form(form): Form<LanguageSwitch>,
-) -> (CookieJar, Redirect) {
-    cookie_jar = cookie_jar.add(Cookie::new(LOCALE_COOKIE_NAME, form.lang.as_str()));
-
-    (cookie_jar, Redirect::to(&referer.to_string()))
-}
+use std::str::FromStr;
 
 #[derive(Default, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
@@ -86,7 +51,7 @@ impl Locale {
         }
     }
 
-    fn from_accept_language(header_value: &str) -> Option<Self> {
+    pub fn from_accept_language(header_value: &str) -> Option<Self> {
         header_value
             .split(',')
             .find_map(|part| part.split(';').next())
@@ -100,45 +65,14 @@ impl std::fmt::Display for Locale {
     }
 }
 
-impl<S> FromRequestParts<S> for Locale
-where
-    S: Send + Sync,
-{
-    type Rejection = Infallible;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        let cookies = CookieJar::from_request_parts(parts, _state).await?;
-        let cookie: Option<Locale> = cookies
-            .get(LOCALE_COOKIE_NAME)
-            .and_then(|cookie| cookie.value().parse().ok());
-
-        if let Some(locale) = cookie {
-            return Ok(locale);
-        }
-
-        let locale = parts
-            .headers
-            .get(header::ACCEPT_LANGUAGE)
-            .and_then(|value| value.to_str().ok())
-            .and_then(Locale::from_accept_language)
-            .unwrap_or_default();
-
-        Ok(locale)
-    }
-}
-
-pub fn locale_router() -> Router<AppState> {
-    Router::new().typed_post(switch_language)
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::{
         body::Body,
-        http::{Request, StatusCode, header},
+        extract::FromRequestParts,
+        http::{Request, header},
     };
-    use tower::ServiceExt;
 
     #[test]
     fn converts_to_language_codes() {
@@ -190,32 +124,5 @@ mod tests {
         let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
 
         assert_eq!(locale, Locale::Nl);
-    }
-
-    #[tokio::test]
-    async fn switch_language_sets_cookie_and_redirects() {
-        let app = locale_router().with_state(AppState::new_for_tests().await);
-
-        let request = Request::builder()
-            .method("POST")
-            .uri("/language")
-            .header(header::REFERER, "https://example.com/return")
-            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
-            .body(Body::from("lang=en"))
-            .unwrap();
-
-        let response = app.oneshot(request).await.expect("response");
-
-        assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        assert_eq!(
-            response.headers().get(header::LOCATION).unwrap(),
-            "https://example.com/return"
-        );
-        let set_cookie = response
-            .headers()
-            .get(header::SET_COOKIE)
-            .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-        assert!(set_cookie.contains("LANGUAGE=en"));
     }
 }

@@ -24,7 +24,7 @@
         </li>
         {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
           <li>
-            <form action="{{ crate::locale::SwitchLanguagePath{}.to_string() }}"
+            <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
                   method="post"
                   class="language-switch">
               <button class="button sm {% if (**locale == crate::Locale::Nl) %}active{% endif %}"

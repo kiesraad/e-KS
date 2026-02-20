@@ -8,7 +8,7 @@ use crate::{
     },
     id_newtype,
     pagination::SortDirection,
-    persons::{PersonSort, PersonalInfo, structs::person_sort::compare_persons},
+    persons::{PersonSort, structs::person_sort::compare_persons},
 };
 
 id_newtype!(pub struct PersonId);
@@ -61,22 +61,6 @@ impl Person {
             Some(country) => country.as_str() == "NL",
             None => true, // Assume Dutch if no country is set
         }
-    }
-
-    pub fn update_personal_info(&mut self, personal_info: PersonalInfo) -> Self {
-        let mut updated = self.clone();
-
-        updated.name = personal_info.name;
-        updated.first_name = personal_info.first_name;
-        updated.gender = personal_info.gender;
-        updated.bsn = personal_info.bsn;
-        updated.no_bsn_confirmed = personal_info.no_bsn_confirmed;
-        updated.date_of_birth = personal_info.date_of_birth;
-        updated.place_of_residence = personal_info.place_of_residence;
-        updated.country_of_residence = personal_info.country_of_residence;
-        updated.updated_at = personal_info.updated_at;
-
-        updated
     }
 
     pub fn gender_key(&self) -> &'static str {

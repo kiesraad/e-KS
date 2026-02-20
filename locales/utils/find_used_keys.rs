@@ -22,11 +22,9 @@ fn find_used_keys(path: &std::path::Path) -> Vec<String> {
     let mut used_keys = Vec::new();
 
     let re = regex::Regex::new(r#""([\w\.]+)"\|trans"#).unwrap();
+    let templates_dir = path.join("src").join("app");
     let mut template_files = Vec::new();
-    let app_dir = path.join("src/app");
-    collect_files_recursively(&app_dir, "html", &mut template_files);
-    let error_dir = path.join("src/error");
-    collect_files_recursively(&error_dir, "html", &mut template_files);
+    collect_files_recursively(&templates_dir, "html", &mut template_files);
 
     for template_file in template_files {
         let haystack = std::fs::read_to_string(&template_file).unwrap();

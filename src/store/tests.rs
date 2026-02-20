@@ -3,68 +3,15 @@ use crate::{
     ElectoralDistrict,
     candidate_lists::CandidateListId,
     common::{
-        CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber,
-        HouseNumberAddition, Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence,
+        DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
         PostalCode, StreetName, UtcDateTime,
     },
     list_submitters::ListSubmitterId,
-    persons::{PersonId, PersonalInfo, Representative},
+    persons::{PersonId, Representative},
     substitute_list_submitters::SubstituteSubmitterId,
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
 };
 use chrono::{Duration, Utc};
-
-#[test]
-fn apply_update_personal_info_replaces_fields() {
-    let mut data = AppStoreData::default();
-    let person_id = PersonId::new();
-    let person = sample_person(person_id);
-    data.persons.insert(person_id, person);
-
-    let updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(30));
-    let personal_info = PersonalInfo {
-        person_id,
-        name: FullName {
-            last_name: "Smit".parse::<LastName>().expect("last name"),
-            last_name_prefix: Some("van".parse::<LastNamePrefix>().expect("prefix")),
-            initials: "A.B.".parse::<Initials>().expect("initials"),
-        },
-        first_name: Some("Anne".parse::<FirstName>().expect("first name")),
-        gender: Some(Gender::Male),
-        bsn: None,
-        no_bsn_confirmed: true,
-        date_of_birth: Some("03-04-1988".parse::<Date>().expect("date")),
-        place_of_residence: Some(
-            "Utrecht"
-                .parse::<PlaceOfResidence>()
-                .expect("place of residence"),
-        ),
-        country_of_residence: Some("BE".parse::<CountryCode>().expect("country code")),
-        updated_at,
-    };
-
-    AppStore::apply(
-        AppEvent::UpdatePersonalInfo(personal_info.clone()),
-        &mut data,
-    );
-
-    let updated = data.persons.get(&person_id).expect("person exists");
-    assert_eq!(updated.name.last_name.to_string(), "Smit");
-    assert_eq!(
-        updated
-            .name
-            .last_name_prefix
-            .as_ref()
-            .map(|v| v.to_string()),
-        Some("van".to_string())
-    );
-    assert_eq!(
-        updated.first_name.as_ref().map(|v| v.to_string()),
-        Some("Anne".to_string())
-    );
-    assert_eq!(updated.gender, Some(Gender::Male));
-    assert_eq!(updated.updated_at, personal_info.updated_at);
-}
 
 #[test]
 fn apply_update_person_address_and_representative() {

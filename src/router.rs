@@ -12,13 +12,13 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, locale,
-    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
+    AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
+    political_groups, render_error_pages, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
     let router = Router::new()
-        .route("/", get(common::index))
+        .merge(common::router())
         .merge(persons::router())
         .merge(political_groups::router())
         .merge(authorised_agents::router())
@@ -26,11 +26,10 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(substitute_list_submitters::router())
         .merge(submit::router())
         .merge(candidate_lists::router())
-        .merge(candidates::router())
-        .merge(locale::locale_router());
+        .merge(candidates::router());
 
     #[cfg(feature = "dev-features")]
-    let bag_service_url = crate::core::config::get_env("BAG_SERVICE_URL", "http://localhost:8080")
+    let bag_service_url = crate::get_env("BAG_SERVICE_URL", "http://localhost:8080")
         .expect("BAG_SERVICE_URL must be set in dev-features mode");
 
     #[cfg(feature = "dev-features")]

@@ -6,4 +6,4 @@ mod structs;
 pub use crate::QueryParamState;
 pub use forms::{AddressForm, PersonForm, RepresentativeForm};
 pub use pages::router;
-pub use structs::{Person, PersonId, PersonPagination, PersonSort, PersonalInfo, Representative};
+pub use structs::{Person, PersonId, PersonPagination, PersonSort, Representative};
