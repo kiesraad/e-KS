@@ -15,7 +15,7 @@ pub mod fixtures;
 
 pub use app::{
     authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, substitute_list_submitters, submit
+    political_groups, submit, substitute_list_submitters,
 };
 pub use core::{
     config::Config,

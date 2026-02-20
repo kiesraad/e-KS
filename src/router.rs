@@ -12,8 +12,8 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, authorised_agents, candidate_lists, candidates, list_submitters, locale,
-    persons, political_groups, render_error_pages, substitute_list_submitters, common, submit
+    AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, locale,
+    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {

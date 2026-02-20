@@ -5,5 +5,5 @@ pub mod common;
 pub mod list_submitters;
 pub mod persons;
 pub mod political_groups;
-pub mod substitute_list_submitters;
 pub mod submit;
+pub mod substitute_list_submitters;

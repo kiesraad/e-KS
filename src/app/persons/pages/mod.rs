@@ -6,12 +6,12 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-mod update_address;
 mod create;
 mod delete;
 mod list;
-mod update_representative;
 mod update;
+mod update_address;
+mod update_representative;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/persons", rejection(AppError))]

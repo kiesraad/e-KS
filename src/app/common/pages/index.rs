@@ -1,4 +1,3 @@
-
 use askama::Template;
 use axum::response::IntoResponse;
 

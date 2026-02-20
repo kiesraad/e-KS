@@ -1,5 +1,5 @@
-mod structs;
 mod pages;
+mod structs;
 
 pub use structs::{
     Bsn, COUNTRY_CODES, CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName,
@@ -8,6 +8,4 @@ pub use structs::{
     UtcDateTime,
 };
 
-pub use pages::{
-    index, not_found
-};
+pub use pages::{index, not_found};

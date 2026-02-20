@@ -1,3 +1,3 @@
 mod pages;
 
-pub use pages::{router, SubmitPath};
+pub use pages::{SubmitPath, router};
