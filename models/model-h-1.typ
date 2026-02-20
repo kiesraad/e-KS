@@ -1,6 +1,6 @@
 #import "layout.typ": checkbox, conf, enumerated_table, fill_in
 
-#let input = json("./inputs/model-h-1-example-1.json")
+#let input = json("./input.json")
 
 #show: doc => conf(
   doc,
