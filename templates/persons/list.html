@@ -34,7 +34,7 @@
     </section>
     {% if person_pagination.pagination.total_pages > 1 %}
       {% set pagination = person_pagination.pagination %}
-      {% include "components/pagination.html" %}
+      {% include "common/components/pagination.html" %}
     {% endif %}
   {% endif %}
 {% endblock %}

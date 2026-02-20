@@ -1,5 +1,4 @@
 [general]
 # Directories to search for templates, relative to the crate root.
 dirs = ["templates",
-        "src/app",
-        "src/app/common"]
+        "src/app"]

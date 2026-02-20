@@ -1,5 +1,5 @@
-{% extends "components/overlay.html" %}
-{% import "components/macros.html" as macros %}
+{% extends "common/components/overlay.html" %}
+{% import "common/components/macros.html" as macros %}
 {% set close_action = candidate_list.view_path() %}
 {% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
 {% block overlay_steps %}
@@ -20,5 +20,5 @@
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "components/submit.html" %}
+  {% include "common/components/submit.html" %}
 {% endblock %}

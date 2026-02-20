@@ -1,4 +1,4 @@
-{% extends "components/overlay.html" %}
+{% extends "common/components/overlay.html" %}
 {% block overlay_title %}
   <span class="position-badge">{{ candidate.position }}</span>
   {{ candidate.person.display_name() }}
@@ -12,5 +12,5 @@
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "components/submit.html" %}
+  {% include "common/components/submit.html" %}
 {% endblock %}

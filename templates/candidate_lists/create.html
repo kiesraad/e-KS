@@ -1,4 +1,4 @@
-{% extends "components/overlay.html" %}
+{% extends "common/components/overlay.html" %}
 {% set close_action = CandidateList::list_path() %}
 {% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
 {% block overlay_steps %}
@@ -31,5 +31,5 @@
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "components/submit.html" %}
+  {% include "common/components/submit.html" %}
 {% endblock %}

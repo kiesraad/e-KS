@@ -1,4 +1,4 @@
-{% extends "components/overlay.html" %}
+{% extends "common/components/overlay.html" %}
 {% block overlay_title %}
   <span class="person-badge"></span>
   {{ person.display_name() }}
@@ -12,14 +12,14 @@
     <legend>
       <h3>{{ "person.correspondence_address"|trans }}</h3>
     </legend>
-    {% include "components/address_fields.html" %}
+    {% include "common/components/address_fields.html" %}
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}
   {% if should_warn %}
-    {% include "components/submit.html" %}
+    {% include "common/components/submit.html" %}
   {% else %}
     {% set submit_label = "action.add"|trans %}
-    {% include "components/submit.html" %}
+    {% include "common/components/submit.html" %}
   {% endif %}
 {% endblock %}

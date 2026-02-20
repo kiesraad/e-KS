@@ -1,4 +1,4 @@
-{% extends "components/overlay.html" %}
+{% extends "common/components/overlay.html" %}
 {% set close_action = candidate_list.view_path() %}
 {% set has_next = false %}
 {% block overlay_title %}{{ "candidate_list.fields.list_submitter"|trans }}{% endblock %}
@@ -12,8 +12,8 @@
 {% block overlay_actions %}
   {% if !should_warn %}
     {% set submit_label = "action.add"|trans %}
-    {% include "components/submit.html" %}
+    {% include "common/components/submit.html" %}
   {% else %}
-    {% include "components/submit.html" %}
+    {% include "common/components/submit.html" %}
   {% endif %}
 {% endblock %}

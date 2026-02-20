@@ -1,5 +1,5 @@
-{% extends "components/overlay.html" %}
-{% import "components/macros.html" as macros %}
+{% extends "common/components/overlay.html" %}
+{% import "common/components/macros.html" as macros %}
 {% set close_action = ListSubmitter::list_path() %}
 {% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
 {% block overlay_steps %}
@@ -14,8 +14,8 @@
 {% block overlay_form %}
   {% set should_warn = true %}
   <fieldset>
-    {% include "components/person_name_fields.html" %}
-    {% include "components/address_fields.html" %}
+    {% include "common/components/person_name_fields.html" %}
+    {% include "common/components/address_fields.html" %}
   </fieldset>
   <button class="button tertiary-destructive icon-trash open-modal mb-lg"
           type="button">{{ "political_group.actions.delete_list_submitter"|trans }}</button>
