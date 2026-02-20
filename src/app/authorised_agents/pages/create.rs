@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "authorised_agents/create.html")]
+#[template(path = "authorised_agents/pages/create.html")]
 struct AuthorisedAgentCreateTemplate {
     form: FormData<AuthorisedAgentForm>,
 }

@@ -15,7 +15,7 @@ use crate::{
 use super::AuthorisedAgentUpdatePath;
 
 #[derive(Template)]
-#[template(path = "authorised_agents/update.html")]
+#[template(path = "authorised_agents/pages/update.html")]
 struct AuthorisedAgentUpdateTemplate {
     authorised_agent: AuthorisedAgent,
     form: FormData<AuthorisedAgentForm>,

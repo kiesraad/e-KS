@@ -10,7 +10,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 #[derive(Template)]
-#[template(path = "authorised_agents/authorised_agents.html")]
+#[template(path = "authorised_agents/pages/authorised_agents.html")]
 struct AuthorisedAgentsTemplate {
     authorised_agents: Vec<AuthorisedAgent>,
     steps: PoliticalGroupSteps,
@@ -22,7 +22,6 @@ pub async fn list_authorised_agents(
     State(store): State<AppStore>,
 ) -> Result<impl IntoResponse, AppError> {
     let steps = PoliticalGroupSteps::new(store.clone())?;
-
     Ok(HtmlTemplate(
         AuthorisedAgentsTemplate {
             authorised_agents: steps.authorised_agents.clone(),

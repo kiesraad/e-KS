@@ -7,9 +7,9 @@
     {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
       <span class="subtitle">
         {% if full_list.list.contains_all_districts(election) %}
-          <!-- skip -->
+          {# skip #}
         {% else if full_list.list.electoral_districts.is_empty() %}
-          <!-- skip -->
+          {# skip #}
         {% else %}
           <ul class="districts">
             {% for district in full_list.list.electoral_districts %}

@@ -7,9 +7,9 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
 };
 
-mod authorised_agent_create;
-mod authorised_agent_delete;
-mod authorised_agent_update;
+mod create;
+mod delete;
+mod update;
 mod authorised_agents;
 
 #[derive(TypedPath, Deserialize)]
@@ -59,11 +59,11 @@ impl AuthorisedAgent {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(authorised_agents::list_authorised_agents)
-        .typed_get(authorised_agent_create::create_authorised_agent)
-        .typed_post(authorised_agent_create::create_authorised_agent_submit)
-        .typed_get(authorised_agent_update::update_authorised_agent)
-        .typed_post(authorised_agent_update::update_authorised_agent_submit)
-        .typed_post(authorised_agent_delete::delete_authorised_agent)
+        .typed_get(create::create_authorised_agent)
+        .typed_post(create::create_authorised_agent_submit)
+        .typed_get(update::update_authorised_agent)
+        .typed_post(update::update_authorised_agent_submit)
+        .typed_post(delete::delete_authorised_agent)
 }
 
 #[cfg(test)]
