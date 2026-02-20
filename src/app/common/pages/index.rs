@@ -5,7 +5,7 @@ use axum::response::IntoResponse;
 use crate::{Context, ElectionConfig, HtmlTemplate, filters};
 
 #[derive(Template)]
-#[template(path = "index.html")]
+#[template(path = "common/pages/index.html")]
 pub struct IndexTemplate {}
 
 pub async fn index(context: Context) -> impl IntoResponse {

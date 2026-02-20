@@ -4,7 +4,7 @@ use axum::{extract::OriginalUri, http::StatusCode, response::IntoResponse};
 use crate::{AppError, Context, HtmlTemplate, filters};
 
 #[derive(Template)]
-#[template(path = "not_found.html")]
+#[template(path = "common/pages/not_found.html")]
 pub struct NotFoundTemplate {
     path: String,
 }

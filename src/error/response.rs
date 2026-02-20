@@ -47,7 +47,7 @@ pub struct ErrorResponse {
 }
 
 #[derive(Template, Clone)]
-#[template(path = "error.html")]
+#[template(path = "common/pages/error.html")]
 pub struct ErrorTemplate {
     pub status_code: StatusCode,
     pub title: String,

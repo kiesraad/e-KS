@@ -1,4 +1,4 @@
-{% extends "layout.html" %}
+{% extends "common/components/layout.html" %}
 {% block page_title %}{{ "person.title"|trans }}{% endblock %}
 {% block header_action %}
   <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
