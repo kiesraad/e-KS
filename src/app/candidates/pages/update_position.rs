@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, Store,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     common::FormAction,
@@ -30,7 +30,6 @@ pub async fn update_candidate_position(
     let candidate_position = CandidatePosition {
         position: candidate.position,
         action: FormAction::Save,
-        ..Default::default()
     };
 
     let form = FormData::new_with_data(
@@ -54,13 +53,12 @@ pub async fn update_candidate_position_submit(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
         position: candidate.position,
         action: FormAction::Save,
-        ..Default::default()
     };
 
     match form.validate_update(&candidate_position, &context.csrf_tokens) {
@@ -95,7 +93,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, TokenValue,
+        Context, Form, Store, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -119,7 +117,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_renders_form() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -153,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_moves_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -202,7 +200,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_removes_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -250,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_invalid_csrf_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");

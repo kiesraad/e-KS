@@ -6,7 +6,7 @@ use axum::{
 
 use super::SubstituteSubmitterCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, Store, filters,
     form::FormData,
     list_submitters::ListSubmitter,
     redirect_success,
@@ -34,7 +34,7 @@ pub async fn create_substitute_submitter(
 pub async fn create_substitute_submitter_submit(
     _: SubstituteSubmitterCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -62,7 +62,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, AppStore, Context,
+        AppError, Context, Store,
         political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_political_group, sample_substitute_submitter_form,
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
@@ -124,7 +124,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;

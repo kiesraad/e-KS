@@ -1,7 +1,7 @@
 use axum::{extract::State, response::Response};
 
 use crate::{
-    AppError, AppStore, Context, Form,
+    AppError, Context, Form, Store,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
     redirect_success,
@@ -11,7 +11,7 @@ pub async fn delete_person(
     _: DeletePersonPath,
     context: Context,
     person: Person,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -30,13 +30,13 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState, persons::PersonId,
+        AppError, Context, Form, QueryParamState, Store, persons::PersonId,
         test_utils::sample_person,
     };
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

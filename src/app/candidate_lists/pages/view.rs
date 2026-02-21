@@ -28,7 +28,7 @@ pub async fn view_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        Context, Store,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -37,7 +37,7 @@ mod tests {
 
     #[tokio::test]
     async fn view_candidate_list_renders_candidates() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

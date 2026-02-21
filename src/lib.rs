@@ -15,8 +15,8 @@ pub mod router;
 pub mod fixtures;
 
 pub use app::{
-    Context, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, submit, substitute_list_submitters,
+    AppEvent, AppStoreData, Context, authorised_agents, candidate_lists, candidates, common,
+    list_submitters, persons, political_groups, submit, substitute_list_submitters,
 };
 pub use core::{
     AppState, Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, OptionStringExt,
@@ -24,7 +24,8 @@ pub use core::{
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
-pub use store::{AppEvent, AppStore, AppStoreData};
 
 #[cfg(test)]
 pub use core::test_utils;
+
+pub type Store = store::Store<AppStoreData>;

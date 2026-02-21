@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, Store,
     candidate_lists::{CandidateList, FullCandidateList},
     filters,
     persons::{Person, PersonId},
@@ -24,7 +24,7 @@ pub async fn add_existing_person(
     _: AddCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
 ) -> Result<impl IntoResponse, AppError> {
     let persons = full_list.list.persons_not_on_list(&store)?;
 
@@ -42,7 +42,7 @@ pub struct AddPersonForm {
 pub async fn add_person_to_candidate_list(
     _: AddCandidatePath,
     mut list: CandidateList,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let person_exists = store
@@ -61,7 +61,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form,
+        Context, Form, Store,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn view_candidate_list_renders_persons() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -104,7 +104,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_person_to_candidate_list_adds_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Bakker");
@@ -142,7 +142,7 @@ mod tests {
     #[tokio::test]
     async fn add_person_to_candidate_list_redirects_when_person_not_on_list() -> Result<(), AppError>
     {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let existing_person = sample_person_with_last_name(PersonId::new(), "Jansen");

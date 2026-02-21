@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, Store,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::RepresentativeForm,
 };
@@ -48,7 +48,7 @@ pub async fn update_representative_submit(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
@@ -84,7 +84,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, Context, Form, QueryParamState, Store,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -100,7 +100,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_valid_csrf_token() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -180,7 +180,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -236,7 +236,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

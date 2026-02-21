@@ -1,5 +1,5 @@
 use crate::{
-    AppError,
+    AppError, Store,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -8,9 +8,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
-use super::AppStore;
-
-impl AppStore {
+impl Store {
     pub fn get_candidate_lists(&self) -> Result<Vec<CandidateList>, AppError> {
         let data = self.data.read();
 
@@ -127,11 +125,5 @@ impl AppStore {
             .count();
 
         Ok(count)
-    }
-
-    pub fn get_last_event_id(&self) -> Result<usize, AppError> {
-        let data = self.data.read();
-
-        Ok(data.last_event_id)
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore,
+    AppError, Store,
     candidate_lists::{CandidateList, pages::CandidateListReorderPath},
     persons::PersonId,
 };
@@ -14,7 +14,7 @@ pub struct CandidateListReorderPayload {
 pub async fn reorder_candidate_list(
     _: CandidateListReorderPath,
     mut candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
     candidate_list
@@ -28,7 +28,7 @@ pub async fn reorder_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore,
+        Store,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person_with_last_name},
@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn reorder_candidate_list_updates_positions() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");

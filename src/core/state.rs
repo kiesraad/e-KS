@@ -1,12 +1,12 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
-use crate::{AppError, AppStore, Config, CsrfTokens};
+use crate::{AppError, Config, CsrfTokens, Store};
 use axum::extract::FromRef;
 
 #[derive(FromRef, Clone)]
 pub struct AppState {
-    pub store: AppStore,
+    pub store: Store,
     pub config: Config,
     pub csrf_tokens: CsrfTokens,
 }
@@ -15,7 +15,7 @@ impl AppState {
     pub async fn new() -> Result<Self, AppError> {
         let config = Config::from_env()?;
         let csrf_tokens = CsrfTokens::default();
-        let store = AppStore::new(config.storage_url).await?;
+        let store = Store::new(config.storage_url).await?;
 
         Ok(Self {
             config,
@@ -28,7 +28,7 @@ impl AppState {
     pub async fn new_for_tests() -> Self {
         Self {
             config: Config::new_test(),
-            store: AppStore::new_for_test().await,
+            store: Store::new_for_test().await,
             csrf_tokens: CsrfTokens::default(),
         }
     }

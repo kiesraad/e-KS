@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    AppStore, CsrfTokens, OptionStringExt, TokenValue,
+    CsrfTokens, OptionStringExt, Store, TokenValue,
     common::{Bsn, CountryCode, Date, FirstName, FullNameForm, Gender, PlaceOfResidence},
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, ValidationError},
@@ -57,7 +57,7 @@ impl PersonForm {
     pub fn validate_create_unique(
         self,
         csrf_tokens: &CsrfTokens,
-        store: &AppStore,
+        store: &Store,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons().unwrap_or_default();
         let person = self.clone().validate_create(csrf_tokens)?;
@@ -111,8 +111,6 @@ impl PersonForm {
 
 #[cfg(test)]
 mod tests {
-    use chrono::TimeZone;
-
     use super::*;
     use crate::{
         CsrfTokens,
@@ -122,10 +120,6 @@ mod tests {
     };
 
     fn base_person() -> Person {
-        let timestamp = chrono::Utc
-            .with_ymd_and_hms(2026, 1, 6, 7, 8, 9)
-            .single()
-            .unwrap();
         Person {
             id: PersonId::new(),
             gender: Some(Gender::Female),
@@ -148,8 +142,7 @@ mod tests {
                 street_name: Some("Spoorstraat".parse().expect("street name")),
             },
             representative: Default::default(),
-            created_at: UtcDateTime::from(timestamp),
-            updated_at: UtcDateTime::from(timestamp),
+            updated_at: UtcDateTime::default(),
         }
     }
 
@@ -239,7 +232,6 @@ mod tests {
                 .map(|v| v.to_string()),
             Some("Spoorstraat".to_string())
         );
-        assert_eq!(updated.created_at, current.created_at);
         assert!(updated.updated_at >= current.updated_at);
     }
 

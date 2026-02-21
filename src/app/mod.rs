@@ -9,5 +9,13 @@ pub mod submit;
 pub mod substitute_list_submitters;
 
 mod context;
+mod event;
+mod getters;
+mod store;
 
 pub use context::Context;
+pub use event::AppEvent;
+pub use store::AppStoreData;
+
+#[cfg(test)]
+mod store_tests;

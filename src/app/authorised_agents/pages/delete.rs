@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    AppError, Context, Form, Store, authorised_agents::AuthorisedAgent, form::EmptyForm,
     redirect_success,
 };
 use axum::{extract::State, response::Response};
@@ -10,7 +10,7 @@ pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,
     authorized_agent: AuthorisedAgent,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -29,7 +29,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState, TokenValue,
+        AppError, Context, Form, QueryParamState, Store, TokenValue,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{sample_authorised_agent, sample_political_group},
@@ -37,7 +37,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -81,7 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_authorised_agent_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();

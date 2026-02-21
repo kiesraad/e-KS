@@ -6,7 +6,6 @@ correspondence_address: Correspondentieadres
 fields:
   bsn: Burgerservicenummer (BSN)
   country_of_residence: Landcode
-  created_at: Aangemaakt
   date_of_birth: Geboortedatum
   first_name: Roepnaam
   gender: Geslacht
@@ -21,6 +20,7 @@ fields:
   place_of_residence: Woonplaats
   postal_code: Postcode
   street_name: Straatnaam
+  updated_at: Laatst aangepast
 form:
   create:
     title: Kandidaat toevoegen

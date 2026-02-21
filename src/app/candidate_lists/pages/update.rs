@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState,
+    AppError, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState, Store,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
@@ -44,7 +44,7 @@ pub async fn update_candidate_list_submit(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
@@ -59,7 +59,7 @@ pub async fn update_candidate_list_submit(
         )
         .into_response()),
         Ok(candidate_list) => {
-            candidate_list.update(&store).await?;
+            candidate_list.update_districts(&store).await?;
 
             Ok(redirect_success(
                 candidate_list.update_list_submitter_path(),
@@ -72,9 +72,8 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        Context, ElectoralDistrict, Form, QueryParamState, Store, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
-        common::UtcDateTime,
         test_utils::{response_body_string, sample_candidate_list},
     };
     use axum::{
@@ -82,11 +81,10 @@ mod tests {
         http::{StatusCode, header},
     };
     use axum_extra::routing::TypedPath;
-    use chrono::{Duration, Utc};
 
     #[tokio::test]
     async fn update_candidate_list_renders_existing_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         candidate_list.create(&store).await?;
@@ -113,12 +111,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
-            updated_at: UtcDateTime::now(),
             ..Default::default()
         };
         candidate_list.create(&store).await?;
@@ -168,26 +165,14 @@ mod tests {
             updated_list.electoral_districts
         );
 
-        assert!(
-            Utc::now() - chrono::DateTime::<Utc>::from(candidate_list.updated_at)
-                < Duration::seconds(10)
-        );
-
-        // we don't know the exact update date
-        // best we can do is to check it at least got updated (i.e. not equal to creation_date)
-        assert_ne!(candidate_list.created_at, updated_list.updated_at);
-
         Ok(())
     }
 
     #[tokio::test]
     async fn update_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let creation_date = UtcDateTime::now();
+        let store = Store::new_for_test().await;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: creation_date,
-            updated_at: creation_date,
             ..Default::default()
         };
         candidate_list.create(&store).await?;

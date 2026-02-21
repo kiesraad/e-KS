@@ -11,7 +11,6 @@ pub enum PersonSort {
     Initials,
     Gender,
     PlaceOfResidence,
-    CreatedAt,
     UpdatedAt,
 }
 
@@ -52,10 +51,6 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .cmp(b.place_of_residence.as_str_or_empty())
             .then_with(|| a.name.last_name.cmp(&b.name.last_name))
             .then_with(|| a.id.cmp(&b.id)),
-        PersonSort::CreatedAt => a
-            .created_at
-            .cmp(&b.created_at)
-            .then_with(|| a.id.cmp(&b.id)),
         PersonSort::UpdatedAt => a
             .updated_at
             .cmp(&b.updated_at)
@@ -92,8 +87,6 @@ mod tests {
                 last_name_prefix: None,
                 initials: "A.B.".parse::<Initials>().expect("initials"),
             },
-            created_at: timestamp(1),
-            updated_at: timestamp(1),
             ..Default::default()
         }
     }
@@ -262,19 +255,6 @@ mod tests {
     fn compare_created_at_and_updated_at_use_id_tiebreaker() {
         let mut a = base_person(1);
         let mut b = base_person(2);
-
-        a.created_at = timestamp(1);
-        b.created_at = timestamp(2);
-        assert_eq!(
-            compare_persons(&a, &b, &PersonSort::CreatedAt),
-            Ordering::Less
-        );
-
-        b.created_at = timestamp(1);
-        assert_eq!(
-            compare_persons(&a, &b, &PersonSort::CreatedAt),
-            Ordering::Less
-        );
 
         a.updated_at = timestamp(3);
         b.updated_at = timestamp(4);

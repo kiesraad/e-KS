@@ -7,7 +7,7 @@ use crate::{
     common::{
         CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName, FullName,
         FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
-        LegalName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
+        LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonForm, PersonId, Representative, RepresentativeForm},
@@ -73,8 +73,7 @@ pub fn sample_person(id: PersonId) -> Person {
             street_name: Some("Stationsstraat".parse::<StreetName>().expect("street name")),
         },
         representative: Representative::default(),
-        created_at: UtcDateTime::now(),
-        updated_at: UtcDateTime::now(),
+        ..Default::default()
     }
 }
 
@@ -147,8 +146,6 @@ pub fn sample_political_group(id: PoliticalGroupId) -> PoliticalGroup {
                 .parse::<DisplayName>()
                 .expect("display name"),
         ),
-        created_at: UtcDateTime::now(),
-        updated_at: UtcDateTime::now(),
     }
 }
 
@@ -160,8 +157,6 @@ pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
             last_name_prefix: Some("de".parse::<LastNamePrefix>().expect("last name prefix")),
             initials: "A.B.".parse::<Initials>().expect("initials"),
         },
-        created_at: UtcDateTime::now(),
-        updated_at: UtcDateTime::now(),
     }
 }
 
@@ -194,8 +189,6 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
             ),
             street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
         },
-        created_at: UtcDateTime::now(),
-        updated_at: UtcDateTime::now(),
     }
 }
 
@@ -235,8 +228,6 @@ pub fn sample_substitute_submitter(id: SubstituteSubmitterId) -> SubstituteSubmi
             ),
             street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
         },
-        created_at: UtcDateTime::now(),
-        updated_at: UtcDateTime::now(),
     }
 }
 

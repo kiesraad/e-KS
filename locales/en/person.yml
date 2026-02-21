@@ -6,7 +6,6 @@ correspondence_address: Correspondence address
 fields:
   bsn: Social security number (BSN)
   country_of_residence: Country code
-  created_at: Created
   date_of_birth: Date of birth
   first_name: First name
   gender: Gender
@@ -21,6 +20,7 @@ fields:
   place_of_residence: Place of residence
   postal_code: Postal code
   street_name: Street name
+  updated_at: Updated at
 form:
   create:
     title: Add person

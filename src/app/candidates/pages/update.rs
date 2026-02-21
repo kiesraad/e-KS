@@ -5,9 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
-    candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
-    persons::PersonForm,
+    AppError, AppResponse, Context, Form, HtmlTemplate, Store, candidate_lists::FullCandidateList,
+    candidates::Candidate, filters, form::FormData, persons::PersonForm,
 };
 
 use super::CandidateListUpdatePersonPath;
@@ -23,7 +22,7 @@ struct PersonUpdateTemplate {
 pub async fn update_person(
     _: CandidateListUpdatePersonPath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     full_list: FullCandidateList,
     candidate: Candidate,
 ) -> AppResponse<impl IntoResponse> {
@@ -46,7 +45,7 @@ pub async fn update_person_submit(
     context: Context,
     full_list: FullCandidateList,
     mut candidate: Candidate,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate.person, &context.csrf_tokens) {
@@ -73,7 +72,7 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form,
+        Context, Form, Store,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -87,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_renders_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -124,7 +123,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -179,7 +178,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

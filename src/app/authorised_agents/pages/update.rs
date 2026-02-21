@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, Store,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -40,7 +40,7 @@ pub async fn update_authorised_agent_submit(
     _: AuthorisedAgentUpdatePath,
     context: Context,
     authorised_agent: AuthorisedAgent,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&authorised_agent, &context.csrf_tokens) {
@@ -64,7 +64,7 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, Context, Form, QueryParamState, Store,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -80,7 +80,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_renders_existing_agent() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -107,7 +107,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -153,7 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();

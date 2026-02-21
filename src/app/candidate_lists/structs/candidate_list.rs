@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict,
+    AppError, AppEvent, ElectionConfig, ElectoralDistrict, Store,
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     common::UtcDateTime,
@@ -22,7 +22,6 @@ pub struct CandidateList {
     pub list_submitter_id: Option<ListSubmitterId>,
     pub substitute_list_submitter_ids: Vec<SubstituteSubmitterId>,
     pub created_at: UtcDateTime,
-    pub updated_at: UtcDateTime,
 }
 
 impl CandidateList {
@@ -39,7 +38,7 @@ impl CandidateList {
     }
 
     pub fn used_districts(
-        store: &AppStore,
+        store: &Store,
         exclude_list_ids: Vec<CandidateListId>,
     ) -> Result<Vec<ElectoralDistrict>, AppError> {
         let exclude: BTreeSet<CandidateListId> = exclude_list_ids.into_iter().collect();
@@ -60,7 +59,7 @@ impl CandidateList {
 
     pub async fn update_order(
         &mut self,
-        store: &AppStore,
+        store: &Store,
         person_ids: &[PersonId],
     ) -> Result<(), AppError> {
         let existing_person_ids = store
@@ -74,23 +73,23 @@ impl CandidateList {
             return Err(AppError::GenericNotFound);
         }
 
-        let mut updated = store.get_candidate_list(self.id)?;
-
-        updated.candidates = person_ids.to_vec();
-        updated.updated_at = UtcDateTime::now();
+        store.get_candidate_list(self.id)?;
 
         store
-            .update(AppEvent::UpdateCandidateList(updated.clone()))
+            .update(AppEvent::UpdateCandidateListOrder {
+                list_id: self.id,
+                candidates: person_ids.to_vec(),
+            })
             .await?;
 
-        *self = updated;
+        *self = store.get_candidate_list(self.id)?;
 
         Ok(())
     }
 
     pub async fn update_position(
         &mut self,
-        store: &AppStore,
+        store: &Store,
         id: PersonId,
         position: usize,
     ) -> Result<(), AppError> {
@@ -112,15 +111,20 @@ impl CandidateList {
 
     pub async fn append_candidate(
         &mut self,
-        store: &AppStore,
+        store: &Store,
         person_id: PersonId,
     ) -> Result<(), AppError> {
         let person = store.get_person(person_id)?;
 
         if !self.candidates.contains(&person.id) {
-            self.candidates.push(person.id);
-            self.updated_at = UtcDateTime::now();
-            self.update(store).await?;
+            store
+                .update(AppEvent::AddCandidateToCandidateList {
+                    list_id: self.id,
+                    person_id: person.id,
+                })
+                .await?;
+
+            *self = store.get_candidate_list(self.id)?;
         }
 
         Ok(())
@@ -128,13 +132,18 @@ impl CandidateList {
 
     pub async fn remove_candidate(
         &mut self,
-        store: &AppStore,
+        store: &Store,
         person_id: PersonId,
     ) -> Result<(), AppError> {
         if self.candidates.contains(&person_id) {
-            self.candidates.retain(|id| *id != person_id);
-            self.updated_at = UtcDateTime::now();
-            self.update(store).await?;
+            store
+                .update(AppEvent::RemoveCandidateFromCandidateList {
+                    list_id: self.id,
+                    person_id,
+                })
+                .await?;
+
+            *self = store.get_candidate_list(self.id)?;
         }
 
         Ok(())
@@ -142,7 +151,7 @@ impl CandidateList {
 
     pub async fn get_candidate(
         &self,
-        store: &AppStore,
+        store: &Store,
         person_id: PersonId,
     ) -> Result<Candidate, AppError> {
         let list = store.get_candidate_list(self.id)?;
@@ -163,7 +172,7 @@ impl CandidateList {
         })
     }
 
-    pub fn persons_not_on_list(&self, store: &AppStore) -> Result<Vec<Person>, AppError> {
+    pub fn persons_not_on_list(&self, store: &Store) -> Result<Vec<Person>, AppError> {
         let list = store.get_candidate_list(self.id)?;
         let existing: BTreeMap<PersonId, ()> =
             list.candidates.into_iter().map(|id| (id, ())).collect();
@@ -175,24 +184,37 @@ impl CandidateList {
             .collect())
     }
 
-    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
+    pub async fn create(&self, store: &Store) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateCandidateList(self.clone()))
             .await
     }
 
-    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
+    pub async fn update_districts(&self, store: &Store) -> Result<(), AppError> {
         store
-            .update(AppEvent::UpdateCandidateList(self.clone()))
+            .update(AppEvent::UpdateCandidateListDistricts {
+                list_id: self.id,
+                electoral_districts: self.electoral_districts.clone(),
+            })
             .await
     }
 
-    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
+    pub async fn update_submitters(&self, store: &Store) -> Result<(), AppError> {
+        store
+            .update(AppEvent::UpdateCandidateListSubmitters {
+                list_id: self.id,
+                list_submitter_id: self.list_submitter_id,
+                substitute_list_submitter_ids: self.substitute_list_submitter_ids.clone(),
+            })
+            .await
+    }
+
+    pub async fn delete(&self, store: &Store) -> Result<(), AppError> {
         store.update(AppEvent::DeleteCandidateList(self.id)).await
     }
 
     pub(crate) fn build_full_candidate_list(
-        store: &AppStore,
+        store: &Store,
         list: CandidateList,
     ) -> Result<FullCandidateList, AppError> {
         let candidates = list
@@ -217,7 +239,7 @@ impl CandidateList {
 mod tests {
     use super::*;
     use crate::{
-        AppStore,
+        Store,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person_with_last_name},
@@ -251,7 +273,7 @@ mod tests {
     }
 
     async fn insert_list(
-        store: &AppStore,
+        store: &Store,
         electoral_districts: Vec<ElectoralDistrict>,
     ) -> Result<CandidateList, AppError> {
         let list = CandidateList {
@@ -266,7 +288,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_and_list_candidate_lists() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list = sample_candidate_list(CandidateListId::new());
 
         list.create(&store).await?;
@@ -282,7 +304,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_candidate_list_summaries_with_duplicate_districts() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         // setup
         let list1 = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
         let list2 = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::GR]).await?;
@@ -329,10 +351,9 @@ mod tests {
 
     #[tokio::test]
     async fn list_candidate_list_orders_by_created_at() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_early = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
-            created_at: UtcDateTime::now(),
             ..Default::default()
         };
         list_early.create(&store).await?;
@@ -342,7 +363,6 @@ mod tests {
 
         let list_late = CandidateList {
             electoral_districts: vec![ElectoralDistrict::OV],
-            created_at: UtcDateTime::now(),
             ..Default::default()
         };
         list_late.create(&store).await?;
@@ -357,7 +377,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_candidate_list_returns_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list = sample_candidate_list(CandidateListId::new());
 
         list.create(&store).await?;
@@ -371,7 +391,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_updates_districts() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list = sample_candidate_list(CandidateListId::new());
 
         list.create(&store).await?;
@@ -381,7 +401,7 @@ mod tests {
             ..list.clone()
         };
 
-        updated_list.update(&store).await?;
+        updated_list.update_districts(&store).await?;
 
         assert_eq!(updated_list.id, list.id);
         assert_eq!(
@@ -394,7 +414,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_get_used_districts() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         // setup
         let expected = BTreeSet::from([
             ElectoralDistrict::UT,
@@ -418,7 +438,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_used_districts_no_lists() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let result = CandidateList::used_districts(&store, vec![])?;
 
         assert_eq!(Vec::<ElectoralDistrict>::new(), result);
@@ -428,7 +448,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_used_districts_double_districts() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let expected = BTreeSet::from([
             ElectoralDistrict::UT,
             ElectoralDistrict::DR,
@@ -451,7 +471,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_used_district_with_exclude() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let expected = BTreeSet::from([
             ElectoralDistrict::UT,
             ElectoralDistrict::DR,
@@ -481,7 +501,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_remove_candidate_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         // setup
         let list_a = sample_candidate_list(CandidateListId::new());
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -512,7 +532,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_candidate_list_includes_candidates() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -535,7 +555,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_order_returns_not_found() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let mut missing_list = sample_candidate_list(CandidateListId::new());
         let err = missing_list.update_order(&store, &[]).await.unwrap_err();
         assert!(matches!(err, AppError::GenericNotFound));
@@ -545,7 +565,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_full_candidate_list_returns_none_for_missing_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let missing = FullCandidateList::get(&store, CandidateListId::new());
         assert!(missing.is_err());
 
@@ -554,7 +574,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_append_candidate_to_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -580,7 +600,7 @@ mod tests {
 
     #[tokio::test]
     async fn append_candidate_to_list_returns_not_found() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let mut missing_list = sample_candidate_list(CandidateListId::new());
         let err = missing_list
             .append_candidate(&store, PersonId::new())
@@ -593,7 +613,7 @@ mod tests {
 
     #[tokio::test]
     async fn remove_candidate_removes_from_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -617,7 +637,7 @@ mod tests {
 
     #[tokio::test]
     async fn get_candidate_returns_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");

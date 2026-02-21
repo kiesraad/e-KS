@@ -1,7 +1,7 @@
 use axum::{extract::State, response::Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
+    AppError, Context, Form, Store, form::EmptyForm, list_submitters::ListSubmitter,
     redirect_success, substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -11,7 +11,7 @@ pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
     context: Context,
     substitute_submitter: SubstituteSubmitter,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -32,7 +32,7 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, TokenValue,
+        AppError, Context, Store, TokenValue,
         political_groups::PoliticalGroupId,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{sample_political_group, sample_substitute_submitter},
@@ -40,7 +40,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_substitute_submitter_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();

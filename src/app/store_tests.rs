@@ -1,6 +1,5 @@
-use super::{AppEvent, AppStore, AppStoreData};
 use crate::{
-    ElectoralDistrict,
+    AppError, AppEvent, AppStoreData, ElectoralDistrict, Store,
     candidate_lists::CandidateListId,
     common::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
@@ -8,6 +7,7 @@ use crate::{
     },
     list_submitters::ListSubmitterId,
     persons::{PersonId, Representative},
+    store::{StoreData, StoreEvent},
     substitute_list_submitters::SubstituteSubmitterId,
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
 };
@@ -20,7 +20,7 @@ fn apply_update_person_address_and_representative() {
     let person = sample_person(person_id);
     data.persons.insert(person_id, person);
 
-    let address_updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(20));
+    let address_event_time = Utc::now() - Duration::seconds(20);
     let new_address = DutchAddress {
         locality: Some("Utrecht".parse::<Locality>().expect("locality")),
         postal_code: Some("3511 AA".parse::<PostalCode>().expect("postal code")),
@@ -39,24 +39,24 @@ fn apply_update_person_address_and_representative() {
         .representative
         .clone();
 
-    AppStore::apply(
+    data.apply(StoreEvent::new_at(
+        1,
         AppEvent::UpdatePersonAddress {
             person_id,
             address: new_address.clone(),
-            updated_at: address_updated_at,
         },
-        &mut data,
-    );
+        address_event_time,
+    ));
 
     let updated = data.persons.get(&person_id).expect("person exists");
     assert_eq!(updated.address.postal_code, new_address.postal_code);
-    assert_eq!(updated.updated_at, address_updated_at);
+    assert_eq!(updated.updated_at, UtcDateTime::from(address_event_time));
     assert_eq!(
         updated.representative.name.initials,
         original_representative.name.initials
     );
 
-    let rep_updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(10));
+    let rep_event_time = Utc::now() - Duration::seconds(10);
     let representative = Representative {
         name: FullName {
             last_name: "Bakker".parse::<LastName>().expect("last name"),
@@ -72,14 +72,14 @@ fn apply_update_person_address_and_representative() {
         },
     };
 
-    AppStore::apply(
+    data.apply(StoreEvent::new_at(
+        2,
         AppEvent::UpdatePersonRepresentative {
             person_id,
             representative: representative.clone(),
-            updated_at: rep_updated_at,
         },
-        &mut data,
-    );
+        rep_event_time,
+    ));
 
     let updated = data.persons.get(&person_id).expect("person exists");
     assert_eq!(updated.representative.name.last_name.to_string(), "Bakker");
@@ -87,46 +87,42 @@ fn apply_update_person_address_and_representative() {
         updated.representative.address.street_name,
         representative.address.street_name
     );
-    assert_eq!(updated.updated_at, rep_updated_at);
+    assert_eq!(updated.updated_at, UtcDateTime::from(rep_event_time));
 }
 
 #[test]
 fn apply_add_candidate_to_list_deduplicates() {
     let mut data = AppStoreData::default();
     let list_id = CandidateListId::new();
-    let mut list = sample_candidate_list(list_id);
-    list.updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(60));
+    let list = sample_candidate_list(list_id);
 
-    AppStore::apply(AppEvent::CreateCandidateList(list.clone()), &mut data);
+    let created_at = Utc::now() - Duration::seconds(60);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list.clone()),
+        created_at,
+    ));
 
     let person_id = PersonId::new();
-    let added_at = UtcDateTime::from(Utc::now() - Duration::seconds(30));
-    AppStore::apply(
-        AppEvent::AddCandidateToCandidateList {
-            list_id,
-            person_id,
-            updated_at: added_at,
-        },
-        &mut data,
-    );
+    let added_at = Utc::now() - Duration::seconds(30);
+    data.apply(StoreEvent::new_at(
+        2,
+        AppEvent::AddCandidateToCandidateList { list_id, person_id },
+        added_at,
+    ));
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.candidates, vec![person_id]);
-    assert_eq!(updated.updated_at, added_at);
 
-    let ignored_at = UtcDateTime::from(Utc::now() - Duration::seconds(5));
-    AppStore::apply(
-        AppEvent::AddCandidateToCandidateList {
-            list_id,
-            person_id,
-            updated_at: ignored_at,
-        },
-        &mut data,
-    );
+    let ignored_at = Utc::now() - Duration::seconds(5);
+    data.apply(StoreEvent::new_at(
+        3,
+        AppEvent::AddCandidateToCandidateList { list_id, person_id },
+        ignored_at,
+    ));
 
     let updated_again = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated_again.candidates, vec![person_id]);
-    assert_eq!(updated_again.updated_at, added_at);
 }
 
 #[test]
@@ -138,40 +134,39 @@ fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
     let list_id_with = CandidateListId::new();
     let mut list_with = sample_candidate_list(list_id_with);
     list_with.candidates = vec![person_id];
-    list_with.updated_at = UtcDateTime::from(base_time - Duration::seconds(50));
 
     let list_id_without = CandidateListId::new();
-    let mut list_without = sample_candidate_list(list_id_without);
-    list_without.updated_at = UtcDateTime::from(base_time - Duration::seconds(40));
+    let list_without = sample_candidate_list(list_id_without);
 
-    AppStore::apply(AppEvent::CreateCandidateList(list_with), &mut data);
-    AppStore::apply(AppEvent::CreateCandidateList(list_without), &mut data);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list_with),
+        base_time - Duration::seconds(50),
+    ));
+    data.apply(StoreEvent::new_at(
+        2,
+        AppEvent::CreateCandidateList(list_without),
+        base_time - Duration::seconds(40),
+    ));
 
-    let removed_at = UtcDateTime::from(base_time - Duration::seconds(10));
-    AppStore::apply(
-        AppEvent::DeletePerson {
-            person_id,
-            updated_at: removed_at,
-        },
-        &mut data,
-    );
+    let removed_at = base_time - Duration::seconds(10);
+    data.apply(StoreEvent::new_at(
+        3,
+        AppEvent::DeletePerson { person_id },
+        removed_at,
+    ));
 
     let updated_with = data
         .candidate_lists
         .get(&list_id_with)
         .expect("list with person exists");
     assert!(updated_with.candidates.is_empty());
-    assert_eq!(updated_with.updated_at, removed_at);
 
     let updated_without = data
         .candidate_lists
         .get(&list_id_without)
         .expect("list without person exists");
     assert!(updated_without.candidates.is_empty());
-    assert_eq!(
-        updated_without.updated_at,
-        UtcDateTime::from(base_time - Duration::seconds(40))
-    );
 }
 
 #[test]
@@ -184,23 +179,22 @@ fn apply_remove_candidate_from_candidate_list_updates_list() {
 
     let mut list = sample_candidate_list(list_id);
     list.candidates = vec![person_id, other_person_id];
-    list.updated_at = UtcDateTime::from(base_time - Duration::seconds(45));
 
-    AppStore::apply(AppEvent::CreateCandidateList(list), &mut data);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list),
+        base_time - Duration::seconds(45),
+    ));
 
-    let removed_at = UtcDateTime::from(base_time - Duration::seconds(5));
-    AppStore::apply(
-        AppEvent::RemoveCandidateFromCandidateList {
-            list_id,
-            person_id,
-            updated_at: removed_at,
-        },
-        &mut data,
-    );
+    let removed_at = base_time - Duration::seconds(5);
+    data.apply(StoreEvent::new_at(
+        2,
+        AppEvent::RemoveCandidateFromCandidateList { list_id, person_id },
+        removed_at,
+    ));
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.candidates, vec![other_person_id]);
-    assert_eq!(updated.updated_at, removed_at);
 }
 
 #[test]
@@ -211,24 +205,26 @@ fn apply_update_candidate_list_districts_replaces_districts() {
 
     let mut list = sample_candidate_list(list_id);
     list.electoral_districts = vec![ElectoralDistrict::UT];
-    list.updated_at = UtcDateTime::from(base_time - Duration::seconds(50));
 
-    AppStore::apply(AppEvent::CreateCandidateList(list), &mut data);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list),
+        base_time - Duration::seconds(50),
+    ));
 
-    let updated_at = UtcDateTime::from(base_time - Duration::seconds(15));
+    let updated_at = base_time - Duration::seconds(15);
     let districts = vec![ElectoralDistrict::NH, ElectoralDistrict::ZH];
-    AppStore::apply(
+    data.apply(StoreEvent::new_at(
+        2,
         AppEvent::UpdateCandidateListDistricts {
             list_id,
             electoral_districts: districts.clone(),
-            updated_at,
         },
-        &mut data,
-    );
+        updated_at,
+    ));
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.electoral_districts, districts);
-    assert_eq!(updated.updated_at, updated_at);
 }
 
 #[test]
@@ -241,24 +237,26 @@ fn apply_update_candidate_list_order_replaces_candidates() {
 
     let mut list = sample_candidate_list(list_id);
     list.candidates = vec![person_id, other_person_id];
-    list.updated_at = UtcDateTime::from(base_time - Duration::seconds(40));
 
-    AppStore::apply(AppEvent::CreateCandidateList(list), &mut data);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list),
+        base_time - Duration::seconds(40),
+    ));
 
-    let updated_at = UtcDateTime::from(base_time - Duration::seconds(10));
+    let updated_at = base_time - Duration::seconds(10);
     let new_order = vec![other_person_id, person_id];
-    AppStore::apply(
+    data.apply(StoreEvent::new_at(
+        2,
         AppEvent::UpdateCandidateListOrder {
             list_id,
             candidates: new_order.clone(),
-            updated_at,
         },
-        &mut data,
-    );
+        updated_at,
+    ));
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.candidates, new_order);
-    assert_eq!(updated.updated_at, updated_at);
 }
 
 #[test]
@@ -269,31 +267,35 @@ fn apply_update_candidate_list_submitters_sets_ids() {
     list.list_submitter_id = None;
     list.substitute_list_submitter_ids = Vec::new();
 
-    AppStore::apply(AppEvent::CreateCandidateList(list), &mut data);
+    let created_at = Utc::now() - Duration::seconds(30);
+    data.apply(StoreEvent::new_at(
+        1,
+        AppEvent::CreateCandidateList(list),
+        created_at,
+    ));
 
     let list_submitter_id = Some(ListSubmitterId::new());
     let substitute_ids = vec![SubstituteSubmitterId::new(), SubstituteSubmitterId::new()];
-    let updated_at = UtcDateTime::from(Utc::now() - Duration::seconds(15));
+    let updated_at = Utc::now() - Duration::seconds(15);
 
-    AppStore::apply(
+    data.apply(StoreEvent::new_at(
+        2,
         AppEvent::UpdateCandidateListSubmitters {
             list_id,
             list_submitter_id,
             substitute_list_submitter_ids: substitute_ids.clone(),
-            updated_at,
         },
-        &mut data,
-    );
+        updated_at,
+    ));
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.list_submitter_id, list_submitter_id);
     assert_eq!(updated.substitute_list_submitter_ids, substitute_ids);
-    assert_eq!(updated.updated_at, updated_at);
 }
 
 #[tokio::test]
-async fn store_update_applies_event_in_memory() -> Result<(), crate::AppError> {
-    let store = AppStore::new_for_test().await;
+async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
+    let store = Store::new_for_test().await;
     let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
     let agent = sample_authorised_agent(agent_id);
 
@@ -303,4 +305,75 @@ async fn store_update_applies_event_in_memory() -> Result<(), crate::AppError> {
     assert_eq!(loaded.id, agent.id);
 
     Ok(())
+}
+
+#[cfg(feature = "database")]
+mod database_tests {
+    use super::*;
+    use crate::{constants::DEFAULT_STREAM_ID, persons::PersonId, test_utils::sample_person};
+    use chrono::Utc;
+    use sqlx::PgPool;
+
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn update_persists_and_load_replays(pool: PgPool) -> Result<(), AppError> {
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        person.create(&store).await?;
+
+        let loaded = store.get_person(person_id)?;
+        assert_eq!(loaded.id, person_id);
+
+        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        fresh_store.load().await?;
+
+        let reloaded = fresh_store.get_person(person_id)?;
+        assert_eq!(reloaded.id, person_id);
+
+        Ok(())
+    }
+
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn load_skips_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        person.create(&store).await?;
+
+        let invalid_payload = serde_json::json!({"not": "an app event"});
+        sqlx::query(
+            r#"INSERT INTO events (stream_id, event_id, created_at, payload)
+            VALUES ($1, $2, $3, $4)"#,
+        )
+        .bind(DEFAULT_STREAM_ID)
+        .bind(2_i64)
+        .bind(Utc::now())
+        .bind(invalid_payload)
+        .execute(&pool)
+        .await?;
+
+        sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
+            .bind(DEFAULT_STREAM_ID)
+            .bind(2_i64)
+            .execute(&pool)
+            .await?;
+
+        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        fresh_store.load().await?;
+
+        let reloaded = fresh_store.get_person(person_id)?;
+        assert_eq!(reloaded.id, person_id);
+
+        Ok(())
+    }
 }

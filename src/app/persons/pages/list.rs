@@ -27,7 +27,7 @@ pub async fn list_persons(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, Context, Store,
         pagination::Pagination,
         persons::PersonId,
         test_utils::{response_body_string, sample_person},
@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_persons_shows_created_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let id = PersonId::new();
         let person = sample_person(id);
 

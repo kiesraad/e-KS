@@ -4,7 +4,7 @@ use crate::{
     ElectoralDistrict,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
-    common::{DutchAddress, UtcDateTime},
+    common::DutchAddress,
     list_submitters::{ListSubmitter, ListSubmitterId},
     persons::{Person, PersonId, Representative},
     political_groups::PoliticalGroup,
@@ -19,44 +19,35 @@ pub enum AppEvent {
     UpdatePersonAddress {
         person_id: PersonId,
         address: DutchAddress,
-        updated_at: UtcDateTime,
     },
     UpdatePersonRepresentative {
         person_id: PersonId,
         representative: Representative,
-        updated_at: UtcDateTime,
     },
     DeletePerson {
         person_id: PersonId,
-        updated_at: UtcDateTime,
     },
     CreateCandidateList(CandidateList),
-    UpdateCandidateList(CandidateList),
     UpdateCandidateListDistricts {
         list_id: CandidateListId,
         electoral_districts: Vec<ElectoralDistrict>,
-        updated_at: UtcDateTime,
     },
     UpdateCandidateListOrder {
         list_id: CandidateListId,
         candidates: Vec<PersonId>,
-        updated_at: UtcDateTime,
     },
     UpdateCandidateListSubmitters {
         list_id: CandidateListId,
         list_submitter_id: Option<ListSubmitterId>,
         substitute_list_submitter_ids: Vec<SubstituteSubmitterId>,
-        updated_at: UtcDateTime,
     },
     AddCandidateToCandidateList {
         list_id: CandidateListId,
         person_id: PersonId,
-        updated_at: UtcDateTime,
     },
     RemoveCandidateFromCandidateList {
         list_id: CandidateListId,
         person_id: PersonId,
-        updated_at: UtcDateTime,
     },
     DeleteCandidateList(CandidateListId),
 
@@ -68,13 +59,11 @@ pub enum AppEvent {
     UpdateListSubmitter(ListSubmitter),
     DeleteListSubmitter {
         list_submitter_id: ListSubmitterId,
-        updated_at: UtcDateTime,
     },
 
     CreateSubstituteSubmitter(SubstituteSubmitter),
     UpdateSubstituteSubmitter(SubstituteSubmitter),
     DeleteSubstituteSubmitter {
         substitute_submitter_id: SubstituteSubmitterId,
-        updated_at: UtcDateTime,
     },
 }

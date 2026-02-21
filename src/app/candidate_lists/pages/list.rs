@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, Store,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters,
     persons::Person,
@@ -18,7 +18,7 @@ struct CandidateListIndexTemplate {
 pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = CandidateListSummary::list(&store)?;
     let total_persons = store.get_person_count()?;
@@ -36,7 +36,7 @@ pub async fn list_candidate_lists(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        Context, Store,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -44,7 +44,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_candidate_lists_shows_created_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 

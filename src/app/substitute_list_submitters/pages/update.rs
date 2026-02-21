@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, Store, filters,
     form::FormData,
     list_submitters::ListSubmitter,
     redirect_success,
@@ -43,7 +43,7 @@ pub async fn update_substitute_submitter_submit(
     _: SubstituteSubmitterUpdatePath,
     context: Context,
     substitute_submitter: SubstituteSubmitter,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&substitute_submitter, &context.csrf_tokens) {
@@ -74,7 +74,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, AppStore, Context,
+        AppError, Context, Store,
         political_groups::PoliticalGroupId,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -112,7 +112,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -158,7 +158,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();

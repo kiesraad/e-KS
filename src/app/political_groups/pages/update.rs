@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, Store,
     authorised_agents::AuthorisedAgent,
     filters,
     form::{Form, FormData},
@@ -26,7 +26,7 @@ struct PoliticalGroupUpdateTemplate {
 pub async fn update_political_group(
     _: PoliticalGroupUpdatePath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     political_group: PoliticalGroup,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(store.clone())?;
@@ -45,7 +45,7 @@ pub async fn update_political_group_submit(
     _: PoliticalGroupUpdatePath,
     context: Context,
     political_group: PoliticalGroup,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(store.clone())?;
@@ -71,7 +71,7 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, Context, Form, QueryParamState, Store,
         authorised_agents::AuthorisedAgentId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -87,7 +87,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
 
@@ -113,7 +113,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -166,7 +166,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();

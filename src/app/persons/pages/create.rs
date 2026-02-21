@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, Store, filters,
     form::FormData,
     persons::{Person, PersonForm, pages::PersonsCreatePath},
 };
@@ -31,7 +31,7 @@ pub async fn create_person(
 pub async fn create_person_submit(
     _: PersonsCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.csrf_tokens, &store) {
@@ -51,7 +51,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, Context, Form, Store,
         test_utils::{response_body_string, sample_person_form},
     };
     use axum::{
@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
@@ -110,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
@@ -130,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_duplicate_name_renders_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let existing = crate::test_utils::sample_person(crate::persons::PersonId::new());
         existing.create(&store).await?;
 

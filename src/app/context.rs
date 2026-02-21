@@ -7,7 +7,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, CsrfTokens, ElectionConfig, Locale, political_groups::PoliticalGroup,
+    AppError, CsrfTokens, ElectionConfig, Locale, Store, political_groups::PoliticalGroup,
 };
 
 #[derive(Clone)]
@@ -78,7 +78,7 @@ impl<S> FromRequestParts<S> for Context
 where
     S: Clone + Send + Sync + 'static,
     CsrfTokens: FromRef<S>,
-    AppStore: FromRef<S>,
+    Store: FromRef<S>,
 {
     type Rejection = AppError;
 

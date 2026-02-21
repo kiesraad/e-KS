@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, Context, Form, HtmlTemplate, Store, filters,
     form::FormData,
     persons::{Person, PersonForm, pages::UpdatePersonPath},
 };
@@ -21,7 +21,7 @@ struct PersonUpdateTemplate {
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     person: Person,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
@@ -37,7 +37,7 @@ pub async fn update_person(
 pub async fn update_person_submit(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<AppStore>,
+    State(store): State<Store>,
     person: Person,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
@@ -63,7 +63,7 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, Context, Form, Store,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -74,7 +74,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_renders_existing_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -99,7 +99,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

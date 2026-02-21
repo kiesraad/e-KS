@@ -6,10 +6,10 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppStore,
+    AppError, Store,
     common::{
         Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber, Initials,
-        LastName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
+        LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     persons::Person,
 };
@@ -106,13 +106,12 @@ impl PersonRecord {
                 )?),
             },
             representative: Default::default(),
-            created_at: UtcDateTime::now(),
-            updated_at: UtcDateTime::now(),
+            ..Default::default()
         })
     }
 }
 
-pub async fn load(store: &AppStore) -> Result<(), AppError> {
+pub async fn load(store: &Store) -> Result<(), AppError> {
     let mut reader = ReaderBuilder::new()
         .trim(Trim::All)
         .from_reader(PERSONS_CSV.as_bytes());
@@ -139,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = AppStore::new_for_test().await;
+        let store = Store::new_for_test().await;
         load(&store).await.unwrap();
 
         let persons =
