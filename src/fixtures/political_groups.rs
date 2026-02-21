@@ -131,12 +131,10 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use sqlx::PgPool;
 
-    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
-    #[sqlx::test]
-    async fn test_load(pool: PgPool) {
-        let store = AppStore::new(pool);
+    #[tokio::test]
+    async fn test_load() {
+        let store = AppStore::new_for_test().await;
         load(&store).await.unwrap();
 
         let list_submitters = store.get_list_submitters().unwrap();

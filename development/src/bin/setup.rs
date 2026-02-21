@@ -51,17 +51,8 @@ async fn main() -> Result<()> {
 
     println!("📚 Installing cargo-watch (if it is not yet installed)...");
     config.commands.install_cargo_watch.run().await?;
-
-    println!("📚 Installing cargo-sqlx (if it is not yet installed)...");
-    config.commands.install_cargo_sqlx.run().await?;
-
+    
     wait_for_postgres().await?;
-
-    println!("🛠️  Running database migrations...");
-    config.commands.migrate_database.run().await?;
-
-    println!("🚚 Loading database fixtures...");
-    config.commands.load_fixtures.run().await?;
 
     println!("✅ Yay, setup complete!");
 
@@ -89,10 +80,7 @@ struct CommandsConfig {
     docker_compose_up: CommandConfig,
     build_djlint_docker_image: CommandConfig,
     install_cargo_watch: CommandConfig,
-    install_cargo_sqlx: CommandConfig,
-    migrate_database: CommandConfig,
     esbuild_bundle: CommandConfig,
-    load_fixtures: CommandConfig,
 }
 
 #[derive(Deserialize)]

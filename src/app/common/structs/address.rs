@@ -32,7 +32,7 @@ impl DutchAddress {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "DutchAddress", timestamps = false)]
+#[validate(target = "DutchAddress")]
 #[serde(default)]
 pub struct DutchAddressForm {
     #[validate(parse = "Locality", optional)]

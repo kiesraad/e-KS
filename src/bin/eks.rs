@@ -29,18 +29,13 @@ async fn run(listener: TcpListener) -> Result<(), AppError> {
     logging::init();
 
     // Create application state
-    let state = AppState::new()?;
-
-    // Load fixtures, used for playwright tests
-    #[cfg(feature = "fixtures")]
-    {
-        if std::env::var("LOAD_FIXTURES").is_ok() {
-            // Load fixtures
-            eks::fixtures::load(&state.store).await?;
-        }
-    }
+    let state = AppState::new().await?;
 
     state.store.load().await?;
+
+    // Load fixtures
+    #[cfg(feature = "fixtures")]
+    eks::fixtures::load(&state.store).await?;
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());

@@ -1,6 +1,5 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
-use sqlx::postgres::{PgHasArrayType, PgTypeInfo};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ElectoralDistrict {
@@ -20,12 +19,6 @@ pub enum ElectoralDistrict {
     SE,
     SA,
     KN,
-}
-
-impl PgHasArrayType for ElectoralDistrict {
-    fn array_type_info() -> PgTypeInfo {
-        PgTypeInfo::array_of("electoral_district")
-    }
 }
 
 impl ElectoralDistrict {

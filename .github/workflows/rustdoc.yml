@@ -8,9 +8,6 @@ concurrency:
   group: "pages"
   cancel-in-progress: true
 
-env:
-  SQLX_OFFLINE: "true"
-
 jobs:
   # Build Job
   build:

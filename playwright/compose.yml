@@ -12,16 +12,6 @@ services:
       - application
     networks: [pw_network]
     
-  psql:
-    image: ghcr.io/tweedegolf/postgres:18
-    command: ["postgres", "-c", "log_min_messages=fatal"]
-    environment:
-      POSTGRES_USER: eks
-      POSTGRES_DB: eks
-      POSTGRES_HOST_AUTH_METHOD: trust
-      TZ: Europe/Amsterdam
-    networks: [pw_network]
-
   application:
     image: debian:bookworm-slim
     working_dir: /app
@@ -29,11 +19,10 @@ services:
       - ../target/release/eks:/app/eks:ro
     command: ["/app/eks"]
     environment:
-      DATABASE_URL: postgres://eks@psql:5432/eks
+      STORAGE_URL: memory://ephemeral
       BAG_SERVICE_URL: http://bag-service:8080
       LOAD_FIXTURES: "true"
     depends_on:
-      - psql
       - bag-service
     networks: [pw_network]
 

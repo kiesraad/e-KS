@@ -562,6 +562,7 @@ dependencies = [
  "tower-http",
  "tracing",
  "tracing-subscriber",
+ "url",
  "uuid",
  "validate",
 ]
@@ -1190,9 +1191,9 @@ checksum = "f8ca58f447f06ed17d5fc4043ce1b10dd205e060fb3ce5b979b8ed8e59ff3f79"
 
 [[package]]
 name = "memory-serve"
-version = "2.0.0-beta.0"
+version = "2.0.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
-checksum = "89db2ae8613e9b76c32f8d27d517a504fa787f67159044e0f681c2a4a52a8ba0"
+checksum = "716a3c3ddd0c59144eaf292a9447207f9ef71157d1707aa595ff23e7cf1620fb"
 dependencies = [
  "axum",
  "brotli",

@@ -3,7 +3,6 @@
 set -euo pipefail
 
 export MEMORY_SERVE_QUIET=1
-export SQLX_OFFLINE=true
 
 ./bin/esbuild --bundle frontend/index.ts \
     --outdir=frontend/static \

@@ -51,36 +51,9 @@ commands:
       - --loader:.woff2=file
       - --loader:.svg=file
       - --public-path=/static/
-  load_fixtures:
-    command: cargo
-    args:
-      - run
-      - --features
-      - fixtures
-      - --bin
-      - fixtures
   install_cargo_watch:
     command: cargo
     args:
       - install
       - cargo-watch
       - --locked
-  install_cargo_sqlx:
-    command: cargo
-    args:
-      - install
-      - sqlx-cli
-      - --no-default-features
-      - --features
-      - postgres
-      - --locked
-  migrate_database:
-    command: cargo
-    args:
-      - sqlx
-      - database
-      - reset
-      - -y
-      - --force
-      - --database-url
-      - postgres://eks@localhost/eks

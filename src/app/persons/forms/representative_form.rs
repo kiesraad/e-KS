@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "Representative", timestamps = false)]
+#[validate(target = "Representative")]
 #[serde(default)]
 pub struct RepresentativeForm {
     #[validate(flatten)]

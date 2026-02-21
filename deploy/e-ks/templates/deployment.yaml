@@ -28,7 +28,7 @@ spec:
             - containerPort: 3000
               name: http
           env:
-            - name: DATABASE_URL
+            - name: STORAGE_URL
               valueFrom:
                 secretKeyRef:
                   name: secrets

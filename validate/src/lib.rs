@@ -6,7 +6,6 @@ use syn::{Data, DeriveInput, Fields, LitStr, Type, parse_macro_input};
 ///
 /// Supported annotations:
 /// - `#[validate(target = "Type")]` on the struct.
-/// - `#[validate(target = "Type", timestamps = false)]` to skip auto timestamps.
 /// - `#[validate(parse = "Type")]` to parse via `Type::from_str`.
 /// - `#[validate(optional)]` to treat empty strings as `None`.
 /// - `#[validate(csrf)]` to validate CSRF tokens.
@@ -23,7 +22,6 @@ pub fn derive_validate(input: TokenStream) -> TokenStream {
 
 struct StructOptions {
     target: Type,
-    timestamps: bool,
 }
 
 #[derive(Default)]
@@ -47,20 +45,11 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
     let struct_options = parse_struct_options(input)?;
     let struct_name = &input.ident;
     let target = struct_options.target;
-    let timestamps = struct_options.timestamps;
 
     let fields = collect_named_fields(input)?;
     let field_blocks = build_field_blocks(&fields)?;
-    let (create_timestamps, update_timestamps) = build_timestamp_tokens(timestamps);
     let with_csrf_impl = build_with_csrf_impl(struct_name, field_blocks.has_csrf);
-    let tokens = build_validate_impl(
-        struct_name,
-        &target,
-        &field_blocks,
-        &create_timestamps,
-        &update_timestamps,
-        with_csrf_impl,
-    );
+    let tokens = build_validate_impl(struct_name, &target, &field_blocks, with_csrf_impl);
 
     Ok(tokens.into())
 }
@@ -143,29 +132,6 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
     })
 }
 
-fn build_timestamp_tokens(
-    timestamps: bool,
-) -> (proc_macro2::TokenStream, proc_macro2::TokenStream) {
-    let create_timestamps = if timestamps {
-        quote! {
-            updated_at: crate::common::UtcDateTime::now(),
-            created_at: crate::common::UtcDateTime::now(),
-        }
-    } else {
-        quote! {}
-    };
-
-    let update_timestamps = if timestamps {
-        quote! {
-            updated_at: crate::common::UtcDateTime::now(),
-        }
-    } else {
-        quote! {}
-    };
-
-    (create_timestamps, update_timestamps)
-}
-
 fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
     if has_csrf {
         quote! {
@@ -194,8 +160,6 @@ fn build_validate_impl(
     struct_name: &syn::Ident,
     target: &Type,
     field_blocks: &FieldBlocks,
-    create_timestamps: &proc_macro2::TokenStream,
-    update_timestamps: &proc_macro2::TokenStream,
     with_csrf_impl: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
     let field_inits = &field_blocks.field_inits;
@@ -226,7 +190,6 @@ fn build_validate_impl(
                 #[allow(clippy::needless_update)]
                 Ok(#target {
                     #(#field_inits,)*
-                    #create_timestamps
                     ..Default::default()
                 })
             }
@@ -252,7 +215,6 @@ fn build_validate_impl(
                 #[allow(clippy::needless_update)]
                 Ok(#target {
                     #(#field_inits,)*
-                    #update_timestamps
                     ..current.clone()
                 })
             }
@@ -263,10 +225,9 @@ fn build_validate_impl(
 /// Parse struct-level `#[validate(...)]` options.
 ///
 /// Example:
-/// - `#[validate(target = "Person", timestamps = false)]` -> target `Person`, timestamps disabled.
+/// - `#[validate(target = "Person")]` -> target `Person`, timestamps disabled.
 fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
     let mut target = None;
-    let mut timestamps = true;
 
     for attr in &input.attrs {
         if !attr.path().is_ident("validate") {
@@ -279,11 +240,6 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
                 target = Some(lit.parse::<Type>()?);
                 return Ok(());
             }
-            if meta.path.is_ident("timestamps") {
-                let lit: syn::LitBool = meta.value()?.parse()?;
-                timestamps = lit.value;
-                return Ok(());
-            }
 
             Err(meta.error("unsupported validate attribute on struct"))
         })?;
@@ -293,7 +249,7 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
         syn::Error::new_spanned(input, "missing #[validate(target = \"Type\")] on struct")
     })?;
 
-    Ok(StructOptions { target, timestamps })
+    Ok(StructOptions { target })
 }
 
 /// Parse field-level `#[validate(...)]` options.

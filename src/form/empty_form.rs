@@ -7,7 +7,7 @@ use crate::TokenValue;
 pub struct EmptyFormValue;
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "EmptyFormValue", timestamps = false)]
+#[validate(target = "EmptyFormValue")]
 #[serde(default)]
 pub struct EmptyForm {
     #[validate(csrf)]

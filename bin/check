@@ -4,11 +4,6 @@ set -euo pipefail
 
 export MEMORY_SERVE_QUIET=1
 
-# check postgres is running
-if docker compose exec -T psql pg_isready -U eks; then
-    cargo sqlx migrate run --database-url postgres://eks@localhost/eks
-fi
-
 # rust
 cargo check --all-features
 cargo +nightly fmt --all -- --config imports_granularity="Crate"
@@ -21,10 +16,9 @@ cargo test --all-features
 
 # html
 docker run --rm \
-          -v ./src/app:/work/templates/app \
-          -v ./src/error:/work/templates/error \
-          djlint \
-          djlint --ignore=H025 --lint --extension=html --check --indent=2 templates
+    -v ./src/app:/work/templates \
+    djlint \
+    djlint --ignore=H025 --lint --extension=html --check --indent=2 templates
 
 # generic
 ./bin/check_newline

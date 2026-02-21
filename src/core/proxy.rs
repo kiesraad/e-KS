@@ -57,6 +57,7 @@ pub fn proxy_handler(upstream: impl Into<String>) -> axum::routing::MethodRouter
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::AppError;
     use axum::{
         Router,
         body::Body,
@@ -70,7 +71,7 @@ mod tests {
 
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
-    async fn proxy_forwards_requests_to_upstream() -> Result<(), sqlx::Error> {
+    async fn proxy_forwards_requests_to_upstream() -> Result<(), AppError> {
         let upstream_router = Router::new().route("/up", get(|| async { "ok" }));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();

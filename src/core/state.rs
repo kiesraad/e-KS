@@ -1,13 +1,8 @@
 //! Application state container and request extractors.
-//! Holds, among others: configuration, database pool, and CSRF tokens for handlers.
-
-use axum::{
-    extract::{FromRef, FromRequestParts},
-    http::request::Parts,
-};
-use sqlx::PgPool;
+//! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
 use crate::{AppError, AppStore, Config, CsrfTokens};
+use axum::extract::FromRef;
 
 #[derive(FromRef, Clone)]
 pub struct AppState {
@@ -17,11 +12,10 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new() -> Result<Self, AppError> {
+    pub async fn new() -> Result<Self, AppError> {
         let config = Config::from_env()?;
-        let pool = PgPool::connect_lazy(config.database_url)?;
         let csrf_tokens = CsrfTokens::default();
-        let store = AppStore::new(pool.clone());
+        let store = AppStore::new(config.storage_url).await?;
 
         Ok(Self {
             config,
@@ -40,48 +34,19 @@ impl AppState {
     }
 }
 
-impl<S> FromRequestParts<S> for Config
-where
-    S: Send + Sync,
-    Config: FromRef<S>,
-{
-    type Rejection = AppError;
-
-    async fn from_request_parts(_: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let config = Config::from_ref(state);
-
-        Ok(config)
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::Request;
 
     #[tokio::test]
-    async fn new_for_tests_sets_config_and_tokens() -> Result<(), sqlx::Error> {
+    async fn new_for_tests_sets_config_and_tokens() -> Result<(), AppError> {
         let state = AppState::new_for_tests().await;
         let config = Config::new_test();
 
-        assert_eq!(state.config.database_url, config.database_url);
+        assert_eq!(state.config.storage_url, config.storage_url);
 
         let token = state.csrf_tokens.issue();
         assert!(state.csrf_tokens.consume(&token.value));
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn config_from_request_parts_matches_state_config() -> Result<(), sqlx::Error> {
-        let state = AppState::new_for_tests().await;
-        let (mut parts, _) = Request::new(()).into_parts();
-
-        let config = Config::from_request_parts(&mut parts, &state)
-            .await
-            .expect("config");
-
-        assert_eq!(config.database_url, state.config.database_url);
 
         Ok(())
     }

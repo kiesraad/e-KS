@@ -8,7 +8,6 @@ on:
 
 env:
   TZ: "Europe/Amsterdam"
-  SQLX_OFFLINE: "true"
 
 jobs:
   changes:
@@ -60,7 +59,6 @@ jobs:
     runs-on: ubuntu-24.04
     env:
       CARGO_TERM_COLOR: always
-      SQLX_OFFLINE: "true"
       RUSTDOCFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
@@ -102,8 +100,7 @@ jobs:
       - name: Lint HTML with djlint
         run: |
           docker run --rm \
-          -v ./src/app:/work/templates/app \
-          -v ./src/error:/work/templates/error \
+          -v ./src/app:/work/templates \
           djlint \
           djlint --ignore=H025 --lint --extension=html --check --indent=2 templates
 

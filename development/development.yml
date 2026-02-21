@@ -32,8 +32,6 @@ children:
       - --watch
       - src
       - --watch
-      - templates
-      - --watch
       - locales
       - --exec
       - run

@@ -57,6 +57,12 @@ impl AppStore {
         Ok(data.persons.len())
     }
 
+    pub fn get_candidate_list_count(&self) -> Result<usize, AppError> {
+        let data = self.data.read();
+
+        Ok(data.candidate_lists.len())
+    }
+
     pub fn get_candidate_list(&self, list_id: CandidateListId) -> Result<CandidateList, AppError> {
         let data = self.data.read();
 

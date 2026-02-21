@@ -152,12 +152,16 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
+            #[cfg(feature = "database")]
+            AppError::DatabaseError(_) => ErrorResponse {
+                error: ErrorResponseVariant::InternalServerError,
+                message: "An internal server error occurred.".to_string(),
+            },
             AppError::InternalServerError
             | AppError::NoStorageConfigured
             | AppError::IntegrityViolation
             | AppError::MissingEnvVar(_)
             | AppError::ConfigLoadError(_)
-            | AppError::DatabaseError(_)
             | AppError::TemplateError(_)
             | AppError::ServerError(_) => ErrorResponse {
                 error: ErrorResponseVariant::InternalServerError,
@@ -223,6 +227,7 @@ mod tests {
         assert!(body.contains("Validation error"));
     }
 
+    #[cfg(feature = "database")]
     #[tokio::test]
     async fn database_error_maps_to_internal_server_error() {
         let state = AppState::new_for_tests().await;

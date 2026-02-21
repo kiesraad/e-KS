@@ -1,15 +1,15 @@
 //! Loads runtime configuration from environment variables for AppState.
-//! Used by AppState::new to construct service URLs, database settings, etc.
+//! Used by AppState::new to construct service URLs and storage settings.
 
 use std::env;
 
 use crate::AppError;
 
-const DEFAULT_DATABASE_URL: &str = "postgres://eks@localhost/eks";
+const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
 
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
-    pub database_url: &'static str,
+    pub storage_url: &'static str,
 }
 
 /// Helper function to get environment variable or return an error
@@ -33,14 +33,14 @@ impl Config {
         F: Fn(&'static str, &'static str) -> Result<String, AppError>,
     {
         Ok(Self {
-            database_url: Box::leak(get("DATABASE_URL", DEFAULT_DATABASE_URL)?.into_boxed_str()),
+            storage_url: Box::leak(get("STORAGE_URL", DEFAULT_STORAGE_URL)?.into_boxed_str()),
         })
     }
 
     #[cfg(test)]
     pub fn new_test() -> Self {
         Self {
-            database_url: DEFAULT_DATABASE_URL,
+            storage_url: DEFAULT_STORAGE_URL,
         }
     }
 }
@@ -50,19 +50,19 @@ mod tests {
     use super::*;
 
     #[test]
-    fn loads_database_url_from_provider() {
+    fn loads_storage_url_from_provider() {
         let config = Config::from_env_with(|key, _default| match key {
-            "DATABASE_URL" => Ok("postgres://example".to_string()),
+            "STORAGE_URL" => Ok("postgres://example".to_string()),
             _ => Err(AppError::MissingEnvVar(key)),
         })
         .unwrap();
 
-        assert_eq!(config.database_url, "postgres://example");
+        assert_eq!(config.storage_url, "postgres://example");
     }
 
     #[test]
     fn returns_error_when_env_missing() {
-        let key: &'static str = "DATABASE_URL";
+        let key: &'static str = "STORAGE_URL";
 
         let err =
             Config::from_env_with(|_, _default| Err(AppError::MissingEnvVar(key))).unwrap_err();

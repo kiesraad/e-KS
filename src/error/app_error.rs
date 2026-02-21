@@ -23,6 +23,7 @@ pub enum AppError {
     GenericNotFound,
     CsrfTokenInvalid,
     NotFound(String),
+    #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
@@ -49,6 +50,7 @@ impl Display for AppError {
         match self {
             AppError::ConfigLoadError(err) => write!(f, "Configuration load error: {err}"),
             AppError::CsrfTokenInvalid => write!(f, "CSRF token is invalid"),
+            #[cfg(feature = "database")]
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
@@ -72,6 +74,7 @@ impl Display for AppError {
 
 impl std::error::Error for AppError {}
 
+#[cfg(feature = "database")]
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
         AppError::DatabaseError(err)
@@ -156,17 +159,17 @@ mod tests {
 
     #[test]
     fn displays_missing_env_var() {
-        let err = AppError::MissingEnvVar("DATABASE_URL");
-        assert_eq!(
-            err.to_string(),
-            "Missing environment variable: DATABASE_URL"
-        );
+        let err = AppError::MissingEnvVar("STORAGE_URL");
+        assert_eq!(err.to_string(), "Missing environment variable: STORAGE_URL");
     }
 
     #[test]
     fn displays_database_error() {
-        let err = AppError::DatabaseError(sqlx::Error::RowNotFound);
-        assert!(err.to_string().contains("Database error"));
+        #[cfg(feature = "database")]
+        {
+            let err = AppError::DatabaseError(sqlx::Error::RowNotFound);
+            assert!(err.to_string().contains("Database error"));
+        }
     }
 
     fn get_multipart_error_request() -> Request<Body> {
@@ -224,7 +227,6 @@ mod tests {
             AppError::GenericNotFound,
             AppError::CsrfTokenInvalid,
             AppError::NotFound("missing".to_string()),
-            AppError::from(sqlx::Error::RowNotFound),
             AppError::from(askama::Error::Fmt),
             AppError::from(multipart_rejection),
             AppError::from(multipart_error),
@@ -232,9 +234,11 @@ mod tests {
             AppError::from(json_rejection),
             AppError::from(path_rejection),
             AppError::ValidationError(vec![("name".to_string(), ValidationError::InvalidValue)]),
-            AppError::MissingEnvVar("DATABASE_URL"),
+            AppError::MissingEnvVar("STORAGE_URL"),
             AppError::ConfigLoadError("bad".to_string()),
             AppError::ServerError(std::io::Error::other("oh nooo")),
+            #[cfg(feature = "database")]
+            AppError::from(sqlx::Error::RowNotFound),
         ];
 
         for error in errors {
