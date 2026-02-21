@@ -61,15 +61,11 @@ jobs:
       - name: Build e-ks
         run: ./bin/build
 
-      - name: Build fixtures
-        run: cargo build --release --bin fixtures --features fixtures,dev-features
-
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6
         with:
           name: target
           path: |
             target/release/eks
-            target/release/fixtures
 
 
   build-docker:
@@ -97,25 +93,14 @@ jobs:
           name: target
           path: target/release
 
-      - name: Build and push eks-core docker image
+      - name: Build and push eks docker image
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
         with:
-          file: deploy/ci.Dockerfile
-          target: eks_core
+          file: deploy/eks.Dockerfile
           push: true
           build-args: "version=${{ needs.rust.outputs.tag }}"
           context: target/release
-          tags: "ghcr.io/kiesraad/e-ks/eks-core:${{ needs.rust.outputs.tag }}"
-
-      - name: Build and push apply_fixtures docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
-        with:
-          file: deploy/ci.Dockerfile
-          target: apply_fixtures
-          push: true
-          build-args: "version=${{ needs.rust.outputs.tag }}"
-          context: target/release
-          tags: "ghcr.io/kiesraad/e-ks/apply_fixtures:${{ needs.rust.outputs.tag }}"
+          tags: "ghcr.io/kiesraad/e-ks/eks:${{ needs.rust.outputs.tag }}"
 
       - name: Build and push db docker image
         uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6

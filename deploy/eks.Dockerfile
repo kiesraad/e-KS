@@ -1,4 +1,4 @@
-FROM ubuntu:24.04 AS final-base
+FROM ubuntu:24.04
 RUN apt-get update && apt-get --no-install-recommends install -y adduser && apt-get upgrade -y && apt-get clean
 
 # create a non root user to run the binary
@@ -12,20 +12,10 @@ RUN addgroup --gid "${gid}" "${group}" && \
 WORKDIR /home/${user}
 USER $user
 
-FROM final-base AS eks_core
 ARG version=dev
 
-COPY --chown=root:root --chmod=755 ./eks ./eks_core
+COPY --chown=root:root --chmod=755 ./eks ./eks
 
 EXPOSE 3000
 ENV VERSION=${version}
-ENTRYPOINT ["./eks_core"]
-
-FROM final-base AS apply_fixtures
-ARG version=dev
-
-COPY --chown=root:root --chmod=755 ./fixtures ./apply_fixtures
-
-EXPOSE 3000
-ENV VERSION=${version}
-ENTRYPOINT ["./apply_fixtures"]
+ENTRYPOINT ["./eks"]
