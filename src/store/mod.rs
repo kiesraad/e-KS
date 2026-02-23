@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 use url::Url;
 
 use crate::AppError;
@@ -7,6 +7,7 @@ use crate::AppError;
 #[cfg(feature = "database")]
 pub(crate) mod database;
 
+mod filesystem;
 mod persistance;
 
 #[derive(Debug, Clone)]
@@ -51,6 +52,7 @@ pub trait StoreData: Default + Send + Sync + 'static {
 pub enum StorePersistence {
     #[cfg(feature = "database")]
     Database(sqlx::PgPool),
+    Local(PathBuf),
     None,
 }
 
@@ -109,9 +111,18 @@ impl StorePersistence {
 
         match url.scheme() {
             "memory" => Ok(StorePersistence::None),
-            "local" => Err(AppError::ConfigLoadError(
-                "Local storage is not implemented yet".to_string(),
-            )),
+            "local" => {
+                let path_string = storage_url.strip_prefix("local://").unwrap_or("");
+                let path = PathBuf::from(path_string);
+
+                if !path.exists() || !path.is_dir() {
+                    return Err(AppError::ConfigLoadError(format!(
+                        "Local storage requires a directory path, got: {path_string}"
+                    )));
+                }
+
+                Ok(StorePersistence::Local(path))
+            }
             "postgres" | "postgresql" => {
                 #[cfg(feature = "database")]
                 {
@@ -138,6 +149,9 @@ impl StorePersistence {
             StorePersistence::Database(pool) => {
                 #[cfg(feature = "migrations")]
                 database::migrate(pool).await?;
+            }
+            StorePersistence::Local(dir) => {
+                filesystem::init_local(dir)?;
             }
             StorePersistence::None => {}
         }
