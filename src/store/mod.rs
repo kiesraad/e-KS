@@ -1,4 +1,5 @@
 use chrono::{DateTime, Utc};
+use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, sync::Arc};
 use url::Url;
 
@@ -10,7 +11,7 @@ pub(crate) mod database;
 mod filesystem;
 mod persistance;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoreEvent<E> {
     pub event_id: usize,
     pub payload: E,
@@ -73,7 +74,7 @@ impl<D> Clone for Store<D> {
 
 impl<D> Store<D>
 where
-    D: Default,
+    D: StoreData,
 {
     /// Create a new store and initialize persistence from the provided storage URL.
     pub async fn new(storage_url: &str) -> Result<Self, AppError> {
@@ -100,6 +101,21 @@ where
         store.persistence.init().await?;
 
         Ok(store)
+    }
+
+    /// Synchronize the in-memory store with the persistence by replaying any missing events.
+    pub fn apply_event(&self, next_id: usize, store_event: StoreEvent<D::Event>) {
+        let mut data = self.data.write();
+
+        if data.last_event_id() >= next_id {
+            // This can happen if another instance of the application processed events concurrently
+            // and updated the store before this instance could acquire the write lock. In that case,
+            // the store is already up-to-date and we can skip applying the event again.
+            return;
+        }
+
+        data.apply(store_event);
+        data.set_last_event_id(next_id);
     }
 }
 
@@ -151,7 +167,7 @@ impl StorePersistence {
                 database::migrate(pool).await?;
             }
             StorePersistence::Local(dir) => {
-                filesystem::init_local(dir)?;
+                filesystem::init_local(dir).await?;
             }
             StorePersistence::None => {}
         }

@@ -14,10 +14,10 @@ typst:
 
 bag:
   image: "ghcr.io/tweedegolf/bag-address-lookup"
-  version: "0.3.3"
+  version: "0.3.5"
 
 eks:
-  image: "ghcr.io/kiesraad/e-ks/eks-core"
+  image: "ghcr.io/kiesraad/e-ks/eks"
 
 db:
   setup: false

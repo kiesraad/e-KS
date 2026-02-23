@@ -33,6 +33,8 @@ spec:
                 secretKeyRef:
                   name: secrets
                   key: database_url
+            - name: TYPST_URL
+              value: "http://typst:80"
           resources:
             limits:
               memory: "50Mi"

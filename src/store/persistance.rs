@@ -4,7 +4,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 #[cfg(feature = "database")]
 use super::database::{load_from_database, update_in_database};
-use super::filesystem::{load_from_filesystem, update_in_filesystem};
+use super::filesystem::{replay_from_file, update_in_filesystem};
 
 impl<D> Store<D>
 where
@@ -15,10 +15,16 @@ where
     pub async fn load(&self) -> Result<(), AppError> {
         match &self.persistence {
             #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => load_from_database(self, pool).await,
-            StorePersistence::Local(dir) => load_from_filesystem(self, dir).await,
-            StorePersistence::None => Ok(()),
+            StorePersistence::Database(pool) => {
+                load_from_database(self, pool).await?;
+            }
+            StorePersistence::Local(dir) => {
+                replay_from_file(self, dir).await?;
+            }
+            StorePersistence::None => {}
         }
+
+        Ok(())
     }
 
     /// Persist an event and apply it to the in-memory store.

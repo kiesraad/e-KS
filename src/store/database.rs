@@ -114,17 +114,7 @@ where
 
     tx.commit().await?;
 
-    let mut data = store.data.write();
-
-    if data.last_event_id() >= next_id {
-        // This can happen if another instance of the application processed events concurrently
-        // and updated the store before this instance could acquire the write lock. In that case,
-        // the store is already up-to-date and we can skip applying the event again.
-        return Ok(());
-    }
-
-    data.apply(store_event);
-    data.set_last_event_id(next_id);
+    store.apply_event(next_id, store_event);
 
     Ok(())
 }
