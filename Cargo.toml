@@ -41,7 +41,7 @@ serde_urlencoded = "0.7"
 # blessed.rs
 chrono = { version = "0.4.43", features = ["alloc", "std", "serde"] }
 parking_lot = "0.12.5"
-rand = "0.9.2"
+rand = "0.10.0"
 sqlx = { version = "0.8.6", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
 uuid = { version = "1.11.0", features = ["serde", "v4", "v5"] }
 url = "2.5.7"

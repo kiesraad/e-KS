@@ -1,5 +1,5 @@
 use chrono::{DateTime, Duration, Utc};
-use rand::{Rng, distr::Alphanumeric};
+use rand::{RngExt, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
 use std::{
     collections::HashMap,
