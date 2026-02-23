@@ -15,7 +15,7 @@ jobs:
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@c0fdc7ff036170d6b39216620b9ac5259532a2cf # main
+        uses: Software-Improvement-Group/sigridci@e93d88a980ff32a67101c070afe1f57c03edb19c # main
         with:
           customer: kiesraad
           system: e-ks
