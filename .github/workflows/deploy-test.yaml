@@ -99,7 +99,7 @@ jobs:
           path: target/release
 
       - name: Build and push eks-core docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           file: deploy/ci.Dockerfile
           target: eks_core
@@ -109,7 +109,7 @@ jobs:
           tags: "ghcr.io/kiesraad/e-ks/eks-core:${{ needs.rust.outputs.tag }}"
 
       - name: Build and push apply_fixtures docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           file: deploy/ci.Dockerfile
           target: apply_fixtures
@@ -119,7 +119,7 @@ jobs:
           tags: "ghcr.io/kiesraad/e-ks/apply_fixtures:${{ needs.rust.outputs.tag }}"
 
       - name: Build and push db docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           file: deploy/db.Dockerfile
           push: true
@@ -128,7 +128,7 @@ jobs:
           tags: "ghcr.io/kiesraad/e-ks/db:${{ needs.rust.outputs.tag }}"
 
       - name: Build and push typst docker image
-        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6
+        uses: docker/build-push-action@10e90e3645eae34f1e60eeb005ba3a3d33f178e8 # v6
         with:
           file: deploy/typst.Dockerfile
           push: true
@@ -159,7 +159,7 @@ jobs:
         run: echo "${KUBECONFIG_CONTENT}" > ${{ github.workspace }}/kubeconfig
 
       - name: Set the current version in the Helm chart
-        uses: mikefarah/yq@2be0094729a1006f61e8339ce9934bfb3cbb549f # v4
+        uses: mikefarah/yq@5a7e72a743649b1b3a47d1a1d8214f3453173c51 # v4
         with:
           cmd: yq -i '.appVersion="${{ needs.rust.outputs.tag }}"' deploy/e-ks/Chart.yaml
 
