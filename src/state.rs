@@ -9,22 +9,28 @@ use axum::extract::FromRef;
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
 pub struct AppState {
-    pub config: Config,
+    pub config: &'static Config,
     pub store_registry: StoreRegistry<AppStoreData>,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
 }
 
 impl AppState {
-    pub async fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
+    pub fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
         let config = Config::from_env_with_typst_url(typst_url)?;
         let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
 
-        Ok(Self {
-            config,
+        Ok(Self::new_with_config(config))
+    }
+
+    pub fn new_with_config(config: Config) -> Self {
+        let store_registry = StoreRegistry::new(config.storage_url.to_string());
+
+        Self {
+            config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
-        })
+        }
     }
 
     pub async fn store_for_political_group(
@@ -47,10 +53,8 @@ impl AppState {
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string())
-                .await
-                .expect("test StoreRegistry must initialize"),
-            config,
+            store_registry: StoreRegistry::new(config.storage_url.to_string()),
+            config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
         }
     }

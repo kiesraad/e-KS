@@ -38,3 +38,6 @@ lcov.info
 
 /models/*.pdf
 /models/input.json
+
+/offline/gen/
+/offline/target/
