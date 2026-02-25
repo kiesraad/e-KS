@@ -15,7 +15,7 @@ pub enum Gender {
 }
 
 impl Gender {
-    pub fn abbreviation(&self, locale: &Locale) -> String {
+    pub fn abbreviation(&self, locale: Locale) -> String {
         match self {
             Gender::Female => trans!("gender.f", locale),
             Gender::Male => trans!("gender.m", locale),

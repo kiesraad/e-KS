@@ -1,15 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    AppError, AppEvent, Store,
-    common::{
-        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
-        UtcDateTime,
-    },
-    id_newtype,
-    pagination::SortDirection,
-    persons::{PersonSort, structs::person_sort::compare_persons},
-};
+use crate::{AppError, AppEvent, Locale, Store, common::{
+    Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
+    UtcDateTime,
+}, id_newtype, pagination::SortDirection, persons::{PersonSort, structs::person_sort::compare_persons}};
 
 id_newtype!(pub struct PersonId);
 
@@ -53,6 +47,28 @@ impl Person {
         } else {
             self.name.display()
         }
+    }
+
+    /// Returns the initials as printed on the candidate list,
+    /// i.e., optionally with the first name and gender.
+    ///
+    /// **Examples:**
+    /// - H. (Hubertus) (m)
+    /// - H. (m)
+    /// - H. (Hubertus)
+    /// - H.
+    pub fn initials_as_printed_on_list(&self, locale: Locale) -> String {
+        let mut initials = self.name.initials.to_string();
+        if let Some(first_name) = &self.first_name {
+            initials.push_str(&format!(" ({})", first_name));
+        }
+        if let Some(gender) = &self.gender {
+            initials.push_str(&format!(
+                " ({})",
+                &gender.abbreviation(locale)
+            ));
+        }
+        initials
     }
 
     pub fn lives_in_nl(&self) -> bool {

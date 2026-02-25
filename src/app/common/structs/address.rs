@@ -29,6 +29,26 @@ impl DutchAddress {
             && self.postal_code.is_empty_or_none()
             && self.locality.is_empty_or_none()
     }
+
+    /// The street name, house number, and house number addition, e.g. "Hoofdstraat 123a"
+    ///
+    /// Returns `None` if the street name or house number are `None`
+    pub fn address_line_1(&self) -> Option<String> {
+        match (
+            self.street_name.as_ref(),
+            self.house_number.as_ref(),
+            self.house_number_addition.as_ref(),
+        ) {
+            (Some(street_name), Some(house_number), Some(house_number_addition)) => Some(format!(
+                "{} {}{}",
+                street_name, house_number, house_number_addition
+            )),
+            (Some(street_name), Some(house_number), None) => {
+                Some(format!("{} {}", street_name, house_number))
+            }
+            _ => None,
+        }
+    }
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]

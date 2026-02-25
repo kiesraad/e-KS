@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists//pages/list.html")]
+#[template(path = "candidate_lists/pages/list.html")]
 struct CandidateListIndexTemplate {
     candidate_lists: Vec<CandidateListSummary>,
     total_persons: usize,

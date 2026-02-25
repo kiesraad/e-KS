@@ -29,7 +29,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(candidates::router());
 
     #[cfg(feature = "dev-features")]
-    let bag_service_url = crate::get_env("BAG_SERVICE_URL", "http://localhost:8080")
+    let bag_service_url = crate::get_env("BAG_SERVICE_URL", "http://localhost:8090")
         .expect("BAG_SERVICE_URL must be set in dev-features mode");
 
     #[cfg(feature = "dev-features")]

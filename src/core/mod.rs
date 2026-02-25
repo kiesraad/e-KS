@@ -21,12 +21,14 @@ pub mod proxy;
 
 #[cfg(test)]
 pub mod test_utils;
+mod pdf;
 
 pub use config::{Config, get_env};
-pub use election::{ElectionConfig, ElectoralDistrict};
+pub use election::{ElectionConfig, ElectoralDistrict, ElectionType};
 pub use locale::Locale;
 pub use option_string_ext::OptionStringExt;
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;
 pub use state::AppState;
 pub use templates::HtmlTemplate;
+pub use pdf::Pdf;

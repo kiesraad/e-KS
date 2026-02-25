@@ -162,6 +162,7 @@ impl ToolConfig {
             "esbuild" => install_esbuild(platform, target, self).await,
             "biome" => install_biome(platform, target, self).await,
             "bag-service" => install_bag_service(platform, target, self).await,
+            "typst-webservice" => install_typst_service(platform, target, self).await,
             _ => anyhow::bail!("unknown tool: {}", self.name),
         }
     }
@@ -244,6 +245,24 @@ async fn install_bag_service(platform: &str, target: &Path, tool: &ToolConfig) -
     run("chmod", &["+x", pts(target)?])
         .await
         .context("mark bag-service as executable")?;
+
+    Ok(())
+}
+
+async fn install_typst_service(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
+    let platform_suffix = match platform {
+        "Darwin arm64" => "typst-webservice-apple-aarch64",
+        "Linux x86_64" => "typst-webservice-linux-x64",
+        _ => anyhow::bail!("unsupported platform: {platform}"),
+    };
+    let url = format!("{}/{}/{}", tool.base_url, tool.version, platform_suffix);
+
+    run("curl", &["-Lfo", pts(target)?, &url])
+        .await
+        .context("download typst-webservice")?;
+    run("chmod", &["+x", pts(target)?])
+        .await
+        .context("mark typst-webservice as executable")?;
 
     Ok(())
 }

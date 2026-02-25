@@ -85,6 +85,12 @@ impl ElectoralDistrict {
         }
     }
 }
+#[derive(Debug, Serialize)]
+#[serde(rename_all = "UPPERCASE")]
+pub enum ElectionType {
+    Ek,
+    Tk,
+}
 
 #[derive(Default, Debug, Clone, Copy)]
 pub enum ElectionConfig {
@@ -93,6 +99,12 @@ pub enum ElectionConfig {
 }
 
 impl ElectionConfig {
+    pub fn election_type(&self) -> ElectionType {
+        match self {
+            Self::EK2027 => ElectionType::Ek,
+        }
+    }
+
     pub fn title(&self) -> &str {
         match self {
             Self::EK2027 => "Eerste Kamerverkiezing der Staten-Generaal 2027",
