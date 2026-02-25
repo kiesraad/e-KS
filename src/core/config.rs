@@ -6,10 +6,12 @@ use std::env;
 use crate::AppError;
 
 const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
+const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
 
 #[derive(Debug, Clone, Copy)]
 pub struct Config {
     pub storage_url: &'static str,
+    pub typst_url: &'static str,
 }
 
 /// Helper function to get environment variable or return an error
@@ -34,6 +36,7 @@ impl Config {
     {
         Ok(Self {
             storage_url: Box::leak(get("STORAGE_URL", DEFAULT_STORAGE_URL)?.into_boxed_str()),
+            typst_url: Box::leak(get("TYPST_URL", DEFAULT_TYPST_URL)?.into_boxed_str()),
         })
     }
 
@@ -41,6 +44,7 @@ impl Config {
     pub fn new_test() -> Self {
         Self {
             storage_url: DEFAULT_STORAGE_URL,
+            typst_url: DEFAULT_TYPST_URL,
         }
     }
 }

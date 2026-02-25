@@ -17,10 +17,10 @@ Het gaat om de verkiezing van: *#input.election_name*
 
 == 2. Kieskringen
 De kandidatenlijst wordt ingeleverd voor:
-#if input.electoral_districts == none {
+#if input.electoral_districts.tag == "All" {
   [*alle kieskringen*]
 } else {
-  block(above: 1em, list(tight: true, ..input.electoral_districts))
+  block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
 }
 
 
@@ -32,7 +32,7 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
 #enumerated_table(
   columns: (1fr, 1fr, 1fr, 1fr),
   headers: ("naam", "voorletters", "geboortedatum", "woonplaats"),
-  values: input.candidates.map(c => (c.last_name, c.initials, c.date_of_birth, c.locality)),
+  values: input.candidates.map(c => (c.last_name, c.initials, text(number-width: "tabular", datetime(..c.date_of_birth).display("[day]-[month]-[year]")), c.locality)),
 )
 
 
@@ -85,14 +85,15 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 
 
 == 7. Ondertekening door de inleveraar
+#let submitter = input.list_submitter
 
 #table(
   stroke: none,
   inset: 0.75em,
   align: horizon,
   columns: (auto, 1fr),
-  "Naam en voorletters", fill_in,
-  "Postadres, postcode en plaats", fill_in,
+  "Naam en voorletters", [#submitter.last_name, #submitter.initials],
+  "Postadres, postcode en plaats", [#submitter.postal_address, #submitter.postal_code #submitter.locality],
   "Datum", fill_in,
   "Handtekening", fill_in,
 )

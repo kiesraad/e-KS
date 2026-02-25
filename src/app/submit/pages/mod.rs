@@ -2,11 +2,10 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-use crate::{AppError, AppState};
-use crate::candidate_lists::CandidateListId;
+use crate::{AppError, AppState, candidate_lists::CandidateListId};
 
-mod index;
 mod h1;
+mod index;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/submit", rejection(AppError))]
