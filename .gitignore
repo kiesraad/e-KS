@@ -37,3 +37,4 @@ lcov.info
 /bin/version
 
 /models/*.pdf
+/models/input.json
