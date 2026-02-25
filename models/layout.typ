@@ -1,3 +1,5 @@
+#let mono(content) = text(font: "Geist Mono", content)
+
 #let conf(doc, model, name, explanation, input) = [
   #set text(
     lang: "nl",
@@ -8,12 +10,13 @@
 
   #let footer = grid(
     columns: 1fr,
-    gutter: .5em,
-    align(left, if "sha_hash" in input [ SHA-256 hash code:#h(.5em) #input.sha_hash ]),
+    gutter: .75em,
     context grid(
       columns: (1fr, auto),
-      [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")], [Pagina #counter(page).display((n, m) => [#n van #m], both: true)],
+      [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")],
+      [Pagina #counter(page).display((n, m) => [#n van #m], both: true)],
     ),
+    align(left, if "sha_hash" in input [ SHA-256:#h(.5em) #mono(input.sha_hash) ]),
   )
 
   #set page(

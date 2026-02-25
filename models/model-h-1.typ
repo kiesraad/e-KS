@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, conf, enumerated_table, fill_in
+#import "layout.typ": checkbox, conf, enumerated_table, fill_in, mono
 
 #let input = json("./input.json")
 
@@ -32,7 +32,12 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
 #enumerated_table(
   columns: (1fr, 1fr, 1fr, 1fr),
   headers: ("naam", "voorletters", "geboortedatum", "woonplaats"),
-  values: input.candidates.map(c => (c.last_name, c.initials, text(number-width: "tabular", datetime(..c.date_of_birth).display("[day]-[month]-[year]")), c.locality)),
+  values: input.candidates.map(c => (
+    c.last_name,
+    c.initials,
+    mono(datetime(..c.date_of_birth).display("[day]-[month]-[year]")),
+    c.locality,
+  )),
 )
 
 
@@ -47,11 +52,12 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
       s.last_name,
       s.initials,
       s.postal_address,
-      s.postal_code,
+      mono(s.postal_code),
       s.locality,
-  )),
-)
+    )),
+  )
 }
+
 
 == 6. In te leveren bij de kandidatenlijst
 Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
