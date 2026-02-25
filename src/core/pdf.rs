@@ -19,7 +19,9 @@ pub trait Pdf: Sized + Serialize {
             self.typst_template_name(),
             self.filename()
         );
+
         debug!("Sending PDF generation request to {url}");
+
         let typst_response = reqwest::Client::new()
             .request(Method::GET, url)
             .json(&self)
@@ -35,12 +37,22 @@ pub trait Pdf: Sized + Serialize {
         );
         headers.insert(
             header::CONTENT_DISPOSITION,
-            HeaderValue::from_str(&format!(
-                r#"attachment; filename="{}""#,
-                self.filename()
-            ))
-            .expect("Must be valid header value"),
+            HeaderValue::from_str(&format!(r#"attachment; filename="{}""#, self.filename()))
+                .map_err(|_| {
+                    tracing::error!(
+                        "invalid filename for content disposition: {}",
+                        self.filename()
+                    );
+
+                    AppError::InternalServerError
+                })?,
         );
+        headers.insert(
+            header::CACHE_CONTROL,
+            HeaderValue::from_static("no-store, no-cache, must-revalidate, max-age=0"),
+        );
+        headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
+        headers.insert(header::EXPIRES, HeaderValue::from_static("0"));
 
         Ok((headers, Body::from_stream(typst_response)).into_response())
     }

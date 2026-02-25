@@ -1,30 +1,122 @@
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::State, response::IntoResponse};
 
-use crate::{Context, HtmlTemplate, filters};
+use crate::{
+    AppError, Context, ElectoralDistrict, HtmlTemplate, Store,
+    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+    filters,
+    submit::H1,
+};
 
 use super::SubmitPath;
 
+struct SubmitCandidateList {
+    list: CandidateList,
+    download_path: String,
+    person_count: usize,
+    duplicate_districts: Vec<ElectoralDistrict>,
+    can_download: bool,
+}
+
 #[derive(Template)]
 #[template(path = "submit/pages/index.html")]
-pub struct IndexTemplate {}
+pub struct IndexTemplate {
+    candidate_lists: Vec<SubmitCandidateList>,
+}
 
-pub async fn index(_: SubmitPath, context: Context) -> impl IntoResponse {
-    HtmlTemplate(IndexTemplate {}, context)
+pub async fn index(
+    _: SubmitPath,
+    context: Context,
+    State(store): State<Store>,
+) -> Result<impl IntoResponse, AppError> {
+    let election = context.election;
+    let locale = context.locale;
+
+    let candidate_lists = CandidateListSummary::list(&store)?
+        .into_iter()
+        .map(|summary| {
+            let has_required_list_data =
+                summary.person_count > 0 && !summary.list.electoral_districts.is_empty();
+            let can_download = if has_required_list_data {
+                let full_list = FullCandidateList::get(&store, summary.list.id)?;
+                H1::new(&store, full_list, &election, locale).is_ok()
+            } else {
+                false
+            };
+
+            Ok(SubmitCandidateList {
+                download_path: super::DownloadH1Path {
+                    list_id: summary.list.id,
+                }
+                .to_string(),
+                list: summary.list,
+                person_count: summary.person_count,
+                duplicate_districts: summary.duplicate_districts,
+                can_download,
+            })
+        })
+        .collect::<Result<Vec<_>, AppError>>()?;
+
+    Ok(HtmlTemplate(IndexTemplate { candidate_lists }, context))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::test_utils::response_body_string;
-    use axum::response::IntoResponse;
+    use crate::{
+        Context, Store,
+        candidate_lists::CandidateListId,
+        list_submitters::ListSubmitterId,
+        persons::PersonId,
+        test_utils::{
+            response_body_string, sample_candidate_list, sample_list_submitter, sample_person,
+        },
+    };
+    use axum::{extract::State, response::IntoResponse};
 
     #[tokio::test]
-    async fn index_renders_under_construction() {
-        let response = index(SubmitPath, Context::new_test().await)
-            .await
+    async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
+        let store = Store::new_for_test().await;
+        let complete_list_id = CandidateListId::new();
+        let incomplete_list_id = CandidateListId::new();
+        let list_submitter_id = ListSubmitterId::new();
+        let person_id = PersonId::new();
+
+        sample_list_submitter(list_submitter_id)
+            .create(&store)
+            .await?;
+        sample_person(person_id).create(&store).await?;
+
+        let mut complete_list = sample_candidate_list(complete_list_id);
+        complete_list.list_submitter_id = Some(list_submitter_id);
+        complete_list.create(&store).await?;
+        complete_list.append_candidate(&store, person_id).await?;
+
+        let incomplete_list = sample_candidate_list(incomplete_list_id);
+        incomplete_list.create(&store).await?;
+
+        let response = index(SubmitPath, Context::new_test_without_db(), State(store))
+            .await?
             .into_response();
         let body = response_body_string(response).await;
-        assert!(body.contains("Under construction"));
+
+        assert!(
+            body.contains(
+                &super::super::DownloadH1Path {
+                    list_id: complete_list_id
+                }
+                .to_string()
+            )
+        );
+        assert!(
+            !body.contains(
+                &super::super::DownloadH1Path {
+                    list_id: incomplete_list_id
+                }
+                .to_string()
+            )
+        );
+
+        Ok(())
     }
 }

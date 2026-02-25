@@ -15,4 +15,4 @@ RUN addgroup --system --gid "${GID}" djlint \
 
 USER djlint
 
-CMD ["djlint", "--ignore=H025", "--reformat", "--lint", "--indent=2", "templates"]
+CMD ["djlint", "--ignore=H025", "--reformat", "--lint", "--extension=html", "--indent=2", "templates"]

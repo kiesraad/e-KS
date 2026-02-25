@@ -26,6 +26,7 @@
   grid-column: span 3;
   flex-direction: column;
   max-width: 100%;
+  position: relative;
   background-color: var(--base-white);
   padding: var(--space-lg);
   padding-top: 2.5rem;

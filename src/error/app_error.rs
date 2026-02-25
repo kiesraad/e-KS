@@ -40,6 +40,7 @@ pub enum AppError {
     ConfigLoadError(String),
     ServerError(std::io::Error),
     UpstreamError(reqwest::Error),
+
     /// Missing data when generating a PDF.
     IncompleteData(&'static str),
 
@@ -71,7 +72,7 @@ impl Display for AppError {
             AppError::Unauthorised => write!(f, "Unauthorised"),
             AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::UpstreamError(err) => write!(f, "Upstream error: {err}"),
-            AppError::IncompleteData(err) =>  write!(f, "Missing data when generating PDF: {err}"),
+            AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
         }
     }
 }

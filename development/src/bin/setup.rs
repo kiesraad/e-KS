@@ -51,7 +51,7 @@ async fn main() -> Result<()> {
 
     println!("📚 Installing cargo-watch (if it is not yet installed)...");
     config.commands.install_cargo_watch.run().await?;
-    
+
     wait_for_postgres().await?;
 
     println!("✅ Yay, setup complete!");
@@ -99,18 +99,24 @@ async fn load_config() -> Result<SetupConfig> {
 impl CommandConfig {
     async fn run(&self) -> Result<()> {
         // replace __UID__ and __GID__ in args with the current user's UID and GID
-        let uid: u16 = std::env::var("UID").ok().and_then(|s| s.parse().ok()).unwrap_or_else(|| 1000);
-        let gid: u16 = std::env::var("GID").ok().and_then(|s| s.parse().ok()).unwrap_or_else(|| 1000);
+        let uid: u16 = std::env::var("UID")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_else(|| 1000);
+        let gid: u16 = std::env::var("GID")
+            .ok()
+            .and_then(|s| s.parse().ok())
+            .unwrap_or_else(|| 1000);
         let args: Vec<String> = self
             .args
             .iter()
-            .map(|arg| arg.replace("__UID__", &uid.to_string()).replace("__GID__", &gid.to_string()))
+            .map(|arg| {
+                arg.replace("__UID__", &uid.to_string())
+                    .replace("__GID__", &gid.to_string())
+            })
             .collect();
 
-        let status = Command::new(&self.command)
-            .args(&args)
-            .status()
-            .await?;
+        let status = Command::new(&self.command).args(&args).status().await?;
 
         if !status.success() {
             anyhow::bail!("command failed: {:?}", self.command);
@@ -171,13 +177,7 @@ impl ToolConfig {
 async fn install_esbuild(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
     let temp_dir = temp_dir().await.context("create temp dir")?;
     let temp_esbuild = temp_dir.join(format!("esbuild-{}.tgz", tool.version));
-    let platform_suffix = match platform {
-        "Darwin arm64" => "darwin-arm64",
-        "Darwin x86_64" => "darwin-x64",
-        "Linux arm64" | "Linux aarch64" => "linux-arm64",
-        "Linux x86_64" => "linux-x64",
-        _ => anyhow::bail!("unsupported platform: {platform}"),
-    };
+    let platform_suffix = platform_suffix(platform, &ESBUILD_SUFFIXES)?;
     let url = format!(
         "{}/{}/-/{platform_suffix}-{}.tgz",
         tool.base_url, platform_suffix, tool.version
@@ -210,59 +210,72 @@ async fn install_esbuild(platform: &str, target: &Path, tool: &ToolConfig) -> Re
 }
 
 async fn install_biome(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
-    let platform_suffix = match platform {
-        "Darwin arm64" => "biome-darwin-arm64",
-        "Darwin x86_64" => "biome-darwin-x64",
-        "Linux arm64" | "Linux aarch64" => "biome-linux-arm64-musl",
-        "Linux x86_64" => "biome-linux-x64-musl",
-        _ => anyhow::bail!("unsupported platform: {platform}"),
-    };
+    let platform_suffix = platform_suffix(platform, &BIOME_SUFFIXES)?;
     let url = format!("{}{}/{}", tool.base_url, tool.version, platform_suffix);
 
-    run("curl", &["-Lfo", pts(target)?, &url])
-        .await
-        .context("download biome")?;
-    run("chmod", &["+x", pts(target)?])
-        .await
-        .context("mark biome as executable")?;
-
-    Ok(())
+    download_executable(&url, target, &tool.name).await
 }
 
 async fn install_bag_service(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
-    let platform_suffix = match platform {
-        "Darwin arm64" => "bag-service-macos-arm64",
-        "Darwin x86_64" => "bag-service-macos-x64",
-        "Linux arm64" | "Linux aarch64" => "bag-service-linux-arm64",
-        "Linux x86_64" => "bag-service-linux-x64",
-        _ => anyhow::bail!("unsupported platform: {platform}"),
-    };
+    let platform_suffix = platform_suffix(platform, &BAG_SERVICE_SUFFIXES)?;
     let url = format!("{}/{}/{}", tool.base_url, tool.version, platform_suffix);
 
-    run("curl", &["-Lfo", pts(target)?, &url])
-        .await
-        .context("download bag-service")?;
-    run("chmod", &["+x", pts(target)?])
-        .await
-        .context("mark bag-service as executable")?;
-
-    Ok(())
+    download_executable(&url, target, &tool.name).await
 }
 
 async fn install_typst_service(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
-    let platform_suffix = match platform {
-        "Darwin arm64" => "typst-webservice-apple-aarch64",
-        "Linux x86_64" => "typst-webservice-linux-x64",
-        _ => anyhow::bail!("unsupported platform: {platform}"),
-    };
+    let platform_suffix = platform_suffix(platform, &TYPST_SUFFIXES)?;
     let url = format!("{}/{}/{}", tool.base_url, tool.version, platform_suffix);
 
-    run("curl", &["-Lfo", pts(target)?, &url])
+    download_executable(&url, target, &tool.name).await
+}
+
+const ESBUILD_SUFFIXES: [(&str, &str); 5] = [
+    ("Darwin arm64", "darwin-arm64"),
+    ("Darwin x86_64", "darwin-x64"),
+    ("Linux arm64", "linux-arm64"),
+    ("Linux aarch64", "linux-arm64"),
+    ("Linux x86_64", "linux-x64"),
+];
+
+const BIOME_SUFFIXES: [(&str, &str); 5] = [
+    ("Darwin arm64", "biome-darwin-arm64"),
+    ("Darwin x86_64", "biome-darwin-x64"),
+    ("Linux arm64", "biome-linux-arm64-musl"),
+    ("Linux aarch64", "biome-linux-arm64-musl"),
+    ("Linux x86_64", "biome-linux-x64-musl"),
+];
+
+const BAG_SERVICE_SUFFIXES: [(&str, &str); 5] = [
+    ("Darwin arm64", "bag-service-macos-arm64"),
+    ("Darwin x86_64", "bag-service-macos-x64"),
+    ("Linux arm64", "bag-service-linux-arm64"),
+    ("Linux aarch64", "bag-service-linux-arm64"),
+    ("Linux x86_64", "bag-service-linux-x64"),
+];
+
+const TYPST_SUFFIXES: [(&str, &str); 5] = [
+    ("Darwin arm64", "typst-webservice-apple-arm64"),
+    ("Darwin x86_64", "typst-webservice-apple-x64"),
+    ("Linux arm64", "typst-webservice-linux-arm64"),
+    ("Linux aarch64", "typst-webservice-linux-arm64"),
+    ("Linux x86_64", "typst-webservice-linux-x64"),
+];
+
+fn platform_suffix<'a>(platform: &str, suffixes: &'a [(&str, &'a str)]) -> Result<&'a str> {
+    suffixes
+        .iter()
+        .find_map(|(key, suffix)| (*key == platform).then_some(*suffix))
+        .ok_or_else(|| anyhow::anyhow!("unsupported platform: {platform}"))
+}
+
+async fn download_executable(url: &str, target: &Path, tool_name: &str) -> Result<()> {
+    run("curl", &["-Lfo", pts(target)?, url])
         .await
-        .context("download typst-webservice")?;
+        .with_context(|| format!("download {tool_name}"))?;
     run("chmod", &["+x", pts(target)?])
         .await
-        .context("mark typst-webservice as executable")?;
+        .with_context(|| format!("mark {tool_name} as executable"))?;
 
     Ok(())
 }

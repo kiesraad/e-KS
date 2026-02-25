@@ -177,10 +177,10 @@ fn ordered_candidates(
         }
     }
 
-    Ok(candidates
+    candidates
         .iter()
         .map(|c| Candidate::try_from(&c.person, locale))
-        .collect::<Result<Vec<_>, _>>()?)
+        .collect::<Result<Vec<_>, _>>()
 }
 
 #[derive(Debug, Serialize)]
@@ -234,9 +234,7 @@ impl TryFrom<ListSubmitter> for BasicTypstPerson {
             postal_address: submitter
                 .address
                 .address_line_1()
-                .ok_or(AppError::IncompleteData(
-                    "Missing list submitter address",
-                ))?,
+                .ok_or(AppError::IncompleteData("Missing list submitter address"))?,
             postal_code: submitter
                 .address
                 .postal_code
@@ -248,9 +246,7 @@ impl TryFrom<ListSubmitter> for BasicTypstPerson {
                 .address
                 .locality
                 .clone()
-                .ok_or(AppError::IncompleteData(
-                    "Missing list submitter locality",
-                ))?
+                .ok_or(AppError::IncompleteData("Missing list submitter locality"))?
                 .to_string(),
         })
     }
@@ -271,19 +267,217 @@ fn substitute_submitter_from_ids(
 
 #[cfg(test)]
 mod tests {
-    use crate::submit::structs::h1::ElectoralDistricts;
+    use super::*;
+    use crate::{
+        AppError, ElectionConfig, ElectoralDistrict, Locale, Store,
+        candidate_lists::{CandidateList, CandidateListId},
+        candidates::Candidate as AppCandidate,
+        common::{Initials, LastName, PostalCode},
+        list_submitters::ListSubmitterId,
+        persons::PersonId,
+        substitute_list_submitters::SubstituteSubmitterId,
+        test_utils::{
+            sample_list_submitter, sample_person, sample_person_with_last_name,
+            sample_substitute_submitter,
+        },
+    };
 
     #[test]
-    fn test() {
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&ElectoralDistricts::All).unwrap()
-        );
+    fn date_from_common_date_copies_components() {
+        let input: crate::common::Date = "15-03-2001".parse().expect("date");
+        let date = Date::from(input);
 
-        println!(
-            "{}",
-            serde_json::to_string_pretty(&ElectoralDistricts::Some(vec!["asd".to_string()]))
-                .unwrap()
+        assert_eq!(date.year, 2001);
+        assert_eq!(date.month, 3);
+        assert_eq!(date.day, 15);
+    }
+
+    #[test]
+    fn electoral_districts_from_full_list_returns_all() {
+        let election = ElectionConfig::EK2027;
+        let list = CandidateList {
+            electoral_districts: election.electoral_districts().to_vec(),
+            ..Default::default()
+        };
+
+        assert!(matches!(
+            ElectoralDistricts::from(&list, &election),
+            ElectoralDistricts::All
+        ));
+    }
+
+    #[test]
+    fn electoral_districts_from_partial_list_returns_titles() {
+        let election = ElectionConfig::EK2027;
+        let list = CandidateList {
+            electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::NH],
+            ..Default::default()
+        };
+
+        match ElectoralDistricts::from(&list, &election) {
+            ElectoralDistricts::Some(districts) => {
+                assert_eq!(
+                    districts,
+                    vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
+                );
+            }
+            ElectoralDistricts::All => panic!("expected Some districts"),
+        }
+    }
+
+    #[test]
+    fn ordered_candidates_sorts_and_maps_people() -> Result<(), AppError> {
+        let list_id = CandidateListId::new();
+        let person_a = sample_person_with_last_name(PersonId::new(), "Alpha");
+        let person_b = sample_person_with_last_name(PersonId::new(), "Beta");
+
+        let mut candidates = vec![
+            AppCandidate {
+                list_id,
+                position: 2,
+                person: person_a,
+            },
+            AppCandidate {
+                list_id,
+                position: 1,
+                person: person_b,
+            },
+        ];
+
+        let ordered = ordered_candidates(&mut candidates, Locale::Nl)?;
+
+        assert_eq!(ordered.len(), 2);
+        assert_eq!(ordered[0].last_name, "Henk Beta");
+        assert_eq!(ordered[1].last_name, "Henk Alpha");
+        assert_eq!(ordered[0].date_of_birth.year, 1990);
+        assert_eq!(ordered[0].date_of_birth.month, 2);
+        assert_eq!(ordered[0].date_of_birth.day, 1);
+        assert_eq!(ordered[0].locality, "Juinen");
+
+        Ok(())
+    }
+
+    #[test]
+    fn ordered_candidates_returns_error_on_hole() {
+        let list_id = CandidateListId::new();
+        let mut candidates = vec![
+            AppCandidate {
+                list_id,
+                position: 1,
+                person: sample_person(PersonId::new()),
+            },
+            AppCandidate {
+                list_id,
+                position: 3,
+                person: sample_person(PersonId::new()),
+            },
+        ];
+
+        let err = ordered_candidates(&mut candidates, Locale::Nl).unwrap_err();
+        assert!(matches!(err, AppError::IntegrityViolation));
+    }
+
+    #[test]
+    fn candidate_requires_birth_date() {
+        let mut person = sample_person(PersonId::new());
+        person.date_of_birth = None;
+
+        let err = Candidate::try_from(&person, Locale::Nl).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::IncompleteData("Missing birth date for candidate")
+        ));
+    }
+
+    #[test]
+    fn candidate_requires_locality() {
+        let mut person = sample_person(PersonId::new());
+        person.place_of_residence = None;
+
+        let err = Candidate::try_from(&person, Locale::Nl).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::IncompleteData("Missing locality for candidate")
+        ));
+    }
+
+    #[test]
+    fn basic_typst_person_from_list_submitter_maps_fields() -> Result<(), AppError> {
+        let submitter = sample_list_submitter(ListSubmitterId::new());
+        let basic = BasicTypstPerson::try_from(submitter)?;
+
+        assert_eq!(basic.last_name, "Bos");
+        assert_eq!(
+            basic.initials,
+            "E.F.".parse::<Initials>().expect("initials")
         );
+        assert_eq!(basic.postal_address, "Coolsingel 5B");
+        assert_eq!(
+            basic.postal_code,
+            "3011 CC".parse::<PostalCode>().expect("postal code")
+        );
+        assert_eq!(basic.locality, "Rotterdam");
+
+        Ok(())
+    }
+
+    #[test]
+    fn basic_typst_person_from_list_submitter_requires_postal_code() {
+        let mut submitter = sample_list_submitter(ListSubmitterId::new());
+        submitter.address.postal_code = None;
+
+        let err = BasicTypstPerson::try_from(submitter).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::IncompleteData("Missing list submitter postal code")
+        ));
+    }
+
+    #[test]
+    fn basic_typst_person_from_substitute_submitter_requires_address_line() {
+        let mut submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
+        submitter.address.street_name = None;
+
+        let err = BasicTypstPerson::try_from(submitter).unwrap_err();
+        assert!(matches!(
+            err,
+            AppError::IncompleteData("Missing substitute submitter address")
+        ));
+    }
+
+    #[tokio::test]
+    async fn substitute_submitter_from_ids_resolves_submitters() -> Result<(), AppError> {
+        let store = Store::new_for_test().await;
+        let submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let mut submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
+        submitter_b.name.last_name = "Janssen".parse::<LastName>().expect("last name");
+
+        submitter_a.create(&store).await?;
+        submitter_b.create(&store).await?;
+
+        let list = CandidateList {
+            substitute_list_submitter_ids: vec![submitter_a.id, submitter_b.id],
+            ..Default::default()
+        };
+
+        let resolved = substitute_submitter_from_ids(&list, store)?;
+
+        assert_eq!(resolved.len(), 2);
+        assert_eq!(resolved[0].last_name, "Bakker");
+        assert_eq!(resolved[1].last_name, "Janssen");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn substitute_submitter_from_ids_returns_integrity_error_on_missing() {
+        let store = Store::new_for_test().await;
+        let list = CandidateList {
+            substitute_list_submitter_ids: vec![SubstituteSubmitterId::new()],
+            ..Default::default()
+        };
+
+        let err = substitute_submitter_from_ids(&list, store).unwrap_err();
+        assert!(matches!(err, AppError::IntegrityViolation));
     }
 }

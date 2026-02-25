@@ -57,6 +57,7 @@ mod tests {
     fn loads_storage_url_from_provider() {
         let config = Config::from_env_with(|key, _default| match key {
             "STORAGE_URL" => Ok("postgres://example".to_string()),
+            "TYPST_URL" => Ok("http://127.0.0.1:8080".to_string()),
             _ => Err(AppError::MissingEnvVar(key)),
         })
         .unwrap();

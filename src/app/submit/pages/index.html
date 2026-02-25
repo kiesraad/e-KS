@@ -1,4 +1,45 @@
 {% extends "common/components/layout.html" %}
 {% block page_title %}{{ "common.submit"|trans }}{% endblock %}
 {% block overview_nav_class %}active{% endblock %}
-{% block content %}<h4>Under construction...</h4>{% endblock %}
+{% block content %}
+  <section>
+    <div class="cards cards-candidate-lists">
+      {% for candidate_list in candidate_lists %}
+        <div class="{% if candidate_list.duplicate_districts.is_empty() %}card card-candidate-list{% else %}card card-list-warning{% endif %}">
+          <div class="badge"></div>
+          <h3>{{ candidate_list.list|list_name }}</h3>
+          {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
+            <p class="statistic">
+              {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
+            </p>
+          {% endif %}
+          <h5>{{ "common.electoral_districts"|trans }}:</h5>
+          {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
+            {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+              <p>{{ "candidate_list.districts.all"|trans }}</p>
+            {% else %}
+              <ul class="districts">
+                {% for district in candidate_list.list.electoral_districts %}
+                  {% if candidate_list.duplicate_districts.contains(district) %}
+                    <li class="warning">
+                      <span>{{ district.title() }}</span>
+                    </li>
+                  {% else %}
+                    <li>
+                      <span>{{ district.title() }}</span>
+                    </li>
+                  {% endif %}
+                {% endfor %}
+              </ul>
+            {% endif %}
+          {% endif %}
+          {% if candidate_list.can_download %}
+            <a href="{{ candidate_list.download_path }}" class="button primary">{{ "action.download_h1"|trans }}</a>
+          {% else %}
+            <a class="button primary disabled" disabled aria-disabled="true">{{ "action.download_h1"|trans }}</a>
+          {% endif %}
+        </div>
+      {% endfor %}
+    </div>
+  </section>
+{% endblock %}

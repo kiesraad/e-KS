@@ -1,9 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, AppEvent, Locale, Store, common::{
-    Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
-    UtcDateTime,
-}, id_newtype, pagination::SortDirection, persons::{PersonSort, structs::person_sort::compare_persons}};
+use crate::{
+    AppError, AppEvent, Locale, Store,
+    common::{
+        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
+        UtcDateTime,
+    },
+    id_newtype,
+    pagination::SortDirection,
+    persons::{PersonSort, structs::person_sort::compare_persons},
+};
 
 id_newtype!(pub struct PersonId);
 
@@ -63,10 +69,7 @@ impl Person {
             initials.push_str(&format!(" ({})", first_name));
         }
         if let Some(gender) = &self.gender {
-            initials.push_str(&format!(
-                " ({})",
-                &gender.abbreviation(locale)
-            ));
+            initials.push_str(&format!(" ({})", &gender.abbreviation(locale)));
         }
         initials
     }
