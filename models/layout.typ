@@ -1,6 +1,6 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
-#let conf(doc, model, name, explanation, input) = [
+#let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], input) = [
   #set text(
     lang: "nl",
     region: "nl",
@@ -14,7 +14,7 @@
     context grid(
       columns: (1fr, auto),
       [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")],
-      [Pagina #counter(page).display((n, m) => [#n van #m], both: true)],
+      counter(page).display(page-label, both: true),
     ),
     align(left, if "sha_hash" in input [ SHA-256:#h(.5em) #mono(input.sha_hash) ]),
   )
@@ -52,6 +52,16 @@
     columns: (auto, ..columns),
     table.header([], ..headers.map(value => { text(style: "italic", value) })),
     ..values.enumerate().map(((i, value)) => (str(i + 1), value)).flatten(),
+  )
+]
+
+#let label_table(values: ()) = [
+  #table(
+    stroke: none,
+    inset: 0.75em,
+    align: horizon,
+    columns: (auto, 1fr),
+    ..values.flatten(),
   )
 ]
 
