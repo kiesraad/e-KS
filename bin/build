@@ -2,6 +2,12 @@
 
 set -euo pipefail
 
+TARGET_ARGS=()
+if [[ "${1:-}" == "--target" ]]; then
+  TARGET_ARGS=(--target "${2:?missing value for --target}")
+  shift 2
+fi
+
 ./bin/esbuild --bundle frontend/index.ts \
     --outdir=frontend/static \
     --minify \
@@ -17,4 +23,5 @@ cargo build \
     --features "${CARGO_SET_FEATURES:-memory-serve,database,migrations,fixtures}" \
     --no-default-features \
     --release \
-    --bin eks
+    --bin eks \
+    "${TARGET_ARGS[@]}"
