@@ -37,18 +37,21 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
 
 
 == 5. Vervanger(s) voor het herstel van verzuimen
-#enumerated_table(
-  columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
-  headers: ("naam", "voorletters", "postadres", "postcode", "plaats"),
-  values: input.substitute_submitter.map(s => (
-    s.last_name,
-    s.initials,
-    s.postal_address,
-    s.postal_code,
-    s.locality,
+#if input.substitute_submitter.len() == 0 {
+  [_geen_]
+} else {
+  enumerated_table(
+    columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
+    headers: ("naam", "voorletters", "postadres", "postcode", "plaats"),
+    values: input.substitute_submitter.map(s => (
+      s.last_name,
+      s.initials,
+      s.postal_address,
+      s.postal_code,
+      s.locality,
   )),
 )
-
+}
 
 == 6. In te leveren bij de kandidatenlijst
 Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
