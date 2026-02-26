@@ -4249,8 +4249,8 @@ dependencies = [
 
 [[package]]
 name = "typst-webservice"
-version = "0.5.0"
-source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.5.0#bd82b44d884582b9969f957f51e3badaed7f3327"
+version = "0.5.1"
+source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.5.1#4f148da96f519df690d4f958e2808bf042cbc1b8"
 dependencies = [
  "async_zip",
  "axum",

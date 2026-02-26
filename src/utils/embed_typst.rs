@@ -36,7 +36,7 @@ pub async fn start() -> Result<String, std::io::Error> {
 
     // Start the typst webservice in the background
     tokio::spawn(async move {
-        let context = PdfContext::from_assets(TYPST_FILES.into()).unwrap();
+        let context = PdfContext::from_assets(TYPST_FILES).unwrap();
         start_server(listener, context).await.unwrap();
     });
 
