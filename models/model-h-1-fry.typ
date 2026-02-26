@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, conf, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, conf, date, enumerated_table, fill_in, label_table, mono
 
 #let input = json("./input.json")
 
@@ -12,46 +12,55 @@
 )
 
 
-== 1. Ferkiezing
+= Ferkiezing
 It giet om de ferkiezing fan: *#input.election_name*
 
 
-== 2. Kiesrûnten
+= Kiesrûnten
 De kandidatelist wurdt ynlevere foar:
-#if input.electoral_districts == none {
+#if input.electoral_districts.tag == "All" {
   [*alle kiesrûnten*]
 } else {
-  block(above: 1em, list(tight: true, ..input.electoral_districts))
+  block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
 }
 
 
-== 3. De politike groepearring
+= De politike groepearring
 De politike groepearring dêr’t jo de kandidatelist fan stypje: *#input.designation*
 
 
-== 4. Kandidaten op de list
+= Kandidaten op de list
 #enumerated_table(
   columns: (1fr, 1fr, 1fr, 1fr),
   headers: ("namme", "foarletters", "bertedatum", "wenplak"),
-  values: input.candidates.map(c => (c.last_name, c.initials, mono(c.date_of_birth), c.locality)),
-)
-
-
-== 5. Ferfanger(s) foar it ferhelpen fan fersommen
-#enumerated_table(
-  columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
-  headers: ("namme", "foarletters", "postadres", "postkoade", "plak"),
-  values: input.substitute_submitter.map(s => (
-    s.last_name,
-    s.initials,
-    s.postal_address,
-    mono(s.postal_code),
-    s.locality,
+  values: input.candidates.map(c => (
+    c.last_name,
+    c.initials,
+    date(c.date_of_birth),
+    c.locality,
   )),
 )
 
 
-== 6. Yn te leverjen by de kandidatelist
+= Ferfanger(s) foar it ferhelpen fan fersommen
+#if input.substitute_submitter.len() == 0 {
+  [_geen_]
+} else {
+  enumerated_table(
+    columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
+    headers: ("namme", "foarletters", "postadres", "postkoade", "plak"),
+    values: input.substitute_submitter.map(s => (
+      s.last_name,
+      s.initials,
+      s.postal_address,
+      mono(s.postal_code),
+      s.locality,
+    )),
+  )
+}
+
+
+= Yn te leverjen by de kandidatelist
 Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
 
 #checkbox(checked: true)[
@@ -85,11 +94,11 @@ Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
 ]
 
 
-== 7. Undertekening troch dejinge dy’t ynleveret
-
+= Undertekening troch dejinge dy’t ynleveret
+#let submitter = input.list_submitter
 #label_table(values: (
-  ("Namme en foarletters", fill_in),
-  ("Postadres, postkoade en plak", fill_in),
+  ("Namme en foarletters", [#submitter.last_name, #submitter.initials]),
+  ("Postadres, postkoade en plak", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),
   ("Datum", fill_in),
   ("Hantekening", fill_in),
 ))

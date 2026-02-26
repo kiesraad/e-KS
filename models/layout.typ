@@ -26,7 +26,8 @@
     footer: footer,
   )
 
-  #show heading.where(level: 2): set block(above: 3em, below: 1em)
+  #set heading(numbering: "1.")
+  #show heading.where(level: 1): set block(above: 3em, below: 1em)
 
   #set table(stroke: none, inset: 0.75em, align: horizon)
 
@@ -66,6 +67,8 @@
 
 /// Line with space to fill in later
 #let fill_in = box(width: 100%, height: 1.5em, stroke: (bottom: 1pt + black), inset: 0pt)[]
+
+#let date(date) = mono(datetime(..date).display("[day]-[month]-[year]"))
 
 /// Display a checkmark for usage in a checkbox
 #let checkmark() = {

@@ -1,37 +1,91 @@
 {
-  "election_name": "de Tweede Kamer der Staten-Generaal",
-  "election_type": "TK",
-  "electoral_districts": null,
-  "designation": "Een Andere Partij (EAP)",
+  "election_name": "de Eerste Kamer der Staten-Generaal",
+  "election_type": "EK",
+  "electoral_districts": {
+    "tag": "Some",
+    "districts": [
+      "Provincie Utrecht",
+      "Gemeente Rotterdam",
+      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
+    ]
+  },
+  "designation": "Test Partij (TP)",
   "candidates": [
     {
+      "last_name": "Abels",
+      "initials": "A. (Astrid) (v)",
+      "date_of_birth": {
+        "year": 1976,
+        "month": 2,
+        "day": 1
+      },
+      "locality": "Ede"
+    },
+    {
       "last_name": "Akwasi",
-      "initials": "M. (v)",
+      "initials": "M. (Maria) (v)",
+      "date_of_birth": {
+        "year": 1997,
+        "month": 12,
+        "day": 25
+      },
       "locality": "Ede"
     },
     {
       "last_name": "Altena",
-      "initials": "J. (m)",
+      "initials": "J. (Jeroen) (m)",
+      "date_of_birth": {
+        "year": 2001,
+        "month": 10,
+        "day": 30
+      },
       "locality": "'s-Gravenhage"
     },
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E. (v)",
+      "initials": "I.E. (Ingeborg) (v)",
+      "date_of_birth": {
+        "year": 2005,
+        "month": 3,
+        "day": 5
+      },
       "locality": "Rotterdam"
+    },
+    {
+      "last_name": "Jansen-de Groot",
+      "initials": "C. (Christine) (v)",
+      "date_of_birth": {
+        "year": 1960,
+        "month": 5,
+        "day": 9
+      },
+      "locality": "Amsterdam"
     }
   ],
-  "candidate": {
-    "last_name": "Akwasi",
-    "initials": "M. (v)",
-    "locality": "Ede",
-    "bsn": "999999321",
-    "authorized_agent": null,
-    "postal_address": {
-      "postal_address": "Molenweg 37",
-      "postal_code": "1111AA",
-      "locality": "Ede"
-    }
+  "previously_seated": true,
+  "list_submitter": {
+    "last_name": "van Smit",
+    "initials": "G.H.",
+    "postal_address": "Grotestraat 3",
+    "postal_code": "3000AA",
+    "locality": "Rotterdam"
   },
+  "substitute_submitter": [
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E.",
+      "postal_address": "Grotestraat 3",
+      "postal_code": "3000AA",
+      "locality": "Rotterdam"
+    },
+    {
+      "last_name": "Jansen-de Groot",
+      "initials": "C.",
+      "postal_address": "Molenweg 37",
+      "postal_code": "4000CC",
+      "locality": "Amsterdam"
+    }
+  ],
   "timestamp": {
     "year": 2025,
     "month": 8,
@@ -39,6 +93,5 @@
     "hour": 11,
     "minute": 32,
     "second": 21
-  },
-  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A"
+  }
 }

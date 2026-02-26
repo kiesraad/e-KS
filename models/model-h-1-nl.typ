@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, conf, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, conf, date, enumerated_table, fill_in, label_table, mono
 
 #let input = json("./input.json")
 
@@ -12,11 +12,11 @@
 )
 
 
-== 1. Verkiezing
+= Verkiezing
 Het gaat om de verkiezing van: *#input.election_name*
 
 
-== 2. Kieskringen
+= Kieskringen
 De kandidatenlijst wordt ingeleverd voor:
 #if input.electoral_districts.tag == "All" {
   [*alle kieskringen*]
@@ -25,24 +25,24 @@ De kandidatenlijst wordt ingeleverd voor:
 }
 
 
-== 3. Aanduiding van de politieke groepering
+= Aanduiding van de politieke groepering
 Aanduiding boven de kandidatenlijst: *#input.designation*
 
 
-== 4. Kandidaten op de lijst
+= Kandidaten op de lijst
 #enumerated_table(
   columns: (1fr, 1fr, 1fr, 1fr),
   headers: ("naam", "voorletters", "geboortedatum", "woonplaats"),
   values: input.candidates.map(c => (
     c.last_name,
     c.initials,
-    mono(datetime(..c.date_of_birth).display("[day]-[month]-[year]")),
+    date(c.date_of_birth),
     c.locality,
   )),
 )
 
 
-== 5. Vervanger(s) voor het herstel van verzuimen
+= Vervanger(s) voor het herstel van verzuimen
 #if input.substitute_submitter.len() == 0 {
   [_geen_]
 } else {
@@ -60,7 +60,7 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
 }
 
 
-== 6. In te leveren bij de kandidatenlijst
+= In te leveren bij de kandidatenlijst
 Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 
 #checkbox(checked: true)[
@@ -94,9 +94,8 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 ]
 
 
-== 7. Ondertekening door de inleveraar
+= Ondertekening door de inleveraar
 #let submitter = input.list_submitter
-
 #label_table(values: (
   ("Naam en voorletters", [#submitter.last_name, #submitter.initials]),
   ("Postadres, postcode en plaats", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),

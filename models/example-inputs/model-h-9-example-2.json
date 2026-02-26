@@ -1,7 +1,9 @@
 {
   "election_name": "de Tweede Kamer der Staten-Generaal",
   "election_type": "TK",
-  "electoral_districts": null,
+  "electoral_districts": {
+    "tag": "All"
+  },
   "designation": "Een Andere Partij (EAP)",
   "candidates": [
     {

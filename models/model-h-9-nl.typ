@@ -16,24 +16,25 @@
 )
 
 
-== 1. Verkiezing
+= Verkiezing
 Het gaat om de verkiezing van: *#input.election_name*
 
 
-== 2. Kieskringen
-De kandidatenlijst wordt ingeleverd voor:
-#if input.electoral_districts == none {
+= Kieskringen
+// TODO: this is slightly different from the h1, should we allow people to only agree for certain electoral districts?
+Mijn instemming geldt voor:
+#if input.electoral_districts.tag == "All" {
   [*alle kieskringen*]
 } else {
-  block(above: 1em, list(tight: true, ..input.electoral_districts))
+  block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
 }
 
 
-== 3. Politieke groepering
+= Politieke groepering
 De aanduiding van de politieke groepering waarvan de kandidatenlijst is: *#input.designation*
 
 
-== 4. Kandidaten op de lijst
+= Kandidaten op de lijst
 #enumerated_table(
   columns: (1fr, 1fr, 1fr),
   headers: ("naam", "voorletters", "woonplaats"),
@@ -41,7 +42,7 @@ De aanduiding van de politieke groepering waarvan de kandidatenlijst is: *#input
 )
 
 
-== 5. Gemachtigde voor het aannemen van uw benoeming
+= Gemachtigde voor het aannemen van uw benoeming
 #if input.candidate.authorized_agent == none {
   [_niet van toepassing_]
 } else {
@@ -59,33 +60,32 @@ De aanduiding van de politieke groepering waarvan de kandidatenlijst is: *#input
 }
 
 
-== 6. Adres voor de kennisgeving van mijn benoeming
-// deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
-#if input.candidate.postal_address == none {
-  [_niet van toepassing_]
-} else {
-  column_table(
-    columns: (1fr, 0.5fr, 1fr),
-    headers: ("postadres", "postcode", "plaats"),
-    values: (
-      input.candidate.postal_address.postal_address,
-      mono(input.candidate.postal_address.postal_code),
-      input.candidate.postal_address.locality,
-    ),
-  )
-}
+#if input.election_type != "KNCI" [
+  = Adres voor de kennisgeving van mijn benoeming
+  // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
+  #if input.candidate.postal_address == none {
+    [_niet van toepassing_]
+  } else {
+    column_table(
+      columns: (1fr, 0.5fr, 1fr),
+      headers: ("postadres", "postcode", "plaats"),
+      values: (
+        input.candidate.postal_address.postal_address,
+        mono(input.candidate.postal_address.postal_code),
+        input.candidate.postal_address.locality,
+      ),
+    )
+  }
+]
 
-== 7. Kennisgeving van mijn benoeming ontvangen langs digitale weg
-// deze rubriek is alleen van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
-#if input.candidate.authorized_agent == none {
-  checkbox(checked: false)[
+#if input.election_type == "KCNI" and input.candidate.authorized_agent == none [
+  = Kennisgeving van mijn benoeming ontvangen langs digitale weg
+  #checkbox(checked: false)[
     Ik stem ermee in de kennisgeving van mijn benoeming te ontvangen via een digitale berichtenbox waartoe ik toegang kan krijgen met gebruikmaking van een DigiD. Hierbij bevestig ik tevens dat ik een DigiD zal aanvragen indien ik hier nog niet over beschik.
   ]
-} else {
-  [_niet van toepassing_]
-}
+]
 
-== 8. Ondertekening door de kandidaat
+= Ondertekening door de kandidaat
 #label_table(values: (
   ("Naam", [#input.candidate.last_name, #input.candidate.initials]),
   ("Woonplaats", input.candidate.locality),
