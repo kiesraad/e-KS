@@ -26,10 +26,6 @@ pub fn get_env(name: &'static str, _dev_default: &'static str) -> Result<String,
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, AppError> {
-        Self::from_env_with_typst_url(None)
-    }
-
     pub fn from_env_with<F>(get: F) -> Result<Self, AppError>
     where
         F: Fn(&'static str, &'static str) -> Result<String, AppError>,
