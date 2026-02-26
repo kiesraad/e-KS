@@ -28,6 +28,8 @@
 
   #show heading.where(level: 2): set block(above: 3em, below: 1em)
 
+  #set table(stroke: none, inset: 0.75em, align: horizon)
+
   #grid(
     columns: 1fr,
     gutter: 1.33em,
@@ -43,27 +45,24 @@
   #doc
 ]
 
-/// Table with numbers in the first column
-#let enumerated_table(columns: (), headers: (), values: ()) = [
-  #table(
-    stroke: none,
-    inset: 0.75em,
-    align: horizon,
-    columns: (auto, ..columns),
-    table.header([], ..headers.map(value => { text(style: "italic", value) })),
-    ..values.enumerate().map(((i, value)) => (str(i + 1), value)).flatten(),
-  )
-]
+#let column_table(columns: (), headers: (), values: ()) = table(
+  columns: columns,
+  table.header(..headers.map(value => { text(style: "italic", value) })),
+  ..values.flatten(),
+)
 
-#let label_table(values: ()) = [
-  #table(
-    stroke: none,
-    inset: 0.75em,
-    align: horizon,
-    columns: (auto, 1fr),
-    ..values.flatten(),
-  )
-]
+/// Table with numbers in the first column
+#let enumerated_table(columns: (), headers: (), values: ()) = column_table(
+  columns: (auto, ..columns),
+  headers: ([], ..headers),
+  values: values.enumerate().map(((i, value)) => (str(i + 1), value)),
+)
+
+/// Table with two columns, with labels on the left
+#let label_table(values: ()) = table(
+  columns: (auto, 1fr),
+  ..values.flatten(),
+)
 
 /// Line with space to fill in later
 #let fill_in = box(width: 100%, height: 1.5em, stroke: (bottom: 1pt + black), inset: 0pt)[]

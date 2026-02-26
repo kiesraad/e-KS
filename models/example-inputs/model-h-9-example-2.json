@@ -7,7 +7,7 @@
     {
       "last_name": "Akwasi",
       "initials": "M. (v)",
-      "locality": "Ede"
+      "locality": "Berlin"
     },
     {
       "last_name": "Altena",
@@ -23,14 +23,16 @@
   "candidate": {
     "last_name": "Akwasi",
     "initials": "M. (v)",
-    "locality": "Ede",
+    "locality": "Berlin",
     "bsn": "999999321",
-    "authorized_agent": null,
-    "postal_address": {
+    "authorized_agent": {
+      "last_name": "Akwasi",
+      "initials": "T.J.",
       "postal_address": "Molenweg 37",
       "postal_code": "1111AA",
       "locality": "Ede"
-    }
+    },
+    "postal_address": null
   },
   "timestamp": {
     "year": 2025,

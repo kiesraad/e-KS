@@ -6,9 +6,24 @@
     },
     "designation": "Een Andere Partij (EAP)",
     "candidates": [
-        {"last_name": "Akwasi", "initials": "M. (v)", "date_of_birth": "01-09-1997", "locality": "Ede"},
-        {"last_name": "Altena", "initials": "J. (m)", "date_of_birth": "23-06-1984", "locality": "'s-Gravenhage"},
-        {"last_name": "Bronwaßer", "initials": "I.E. (v)", "date_of_birth": "07-06-1979", "locality": "Rotterdam"}
+        {
+            "last_name": "Akwasi",
+            "initials": "M. (v)",
+            "date_of_birth": "01-09-1997",
+            "locality": "Ede"
+        },
+        {
+            "last_name": "Altena",
+            "initials": "J. (m)",
+            "date_of_birth": "23-06-1984",
+            "locality": "'s-Gravenhage"
+        },
+        {
+            "last_name": "Bronwaßer",
+            "initials": "I.E. (v)",
+            "date_of_birth": "07-06-1979",
+            "locality": "Rotterdam"
+        }
     ],
     "previously_seated": false,
     "list_submitter": {
@@ -19,7 +34,13 @@
         "locality": "Rotterdam"
     },
     "substitute_submitter": [
-        {"last_name": "Bronwaßer", "initials": "I.E.", "postal_address": "Grotestraat 3", "postal_code": "3000AA", "locality": "Rotterdam"}
+        {
+            "last_name": "Bronwaßer",
+            "initials": "I.E.",
+            "postal_address": "Grotestraat 3",
+            "postal_code": "3000AA",
+            "locality": "Rotterdam"
+        }
     ],
     "timestamp": {
         "year": 2025,
