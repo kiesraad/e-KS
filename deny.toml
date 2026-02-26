@@ -41,5 +41,6 @@ multiple-versions = "allow"
 [advisories]
 ignore = [
     { id = "RUSTSEC-2024-0320", reason = "yaml-rust is transitively used by Typst, see https://github.com/trishume/syntect/issues/537" },
-    { id = "RUSTSEC-2024-0436", reason = "paste is used by Typst, see https://github.com/typst/biblatex/issues/87" }
+    { id = "RUSTSEC-2024-0436", reason = "paste is used by Typst, see https://github.com/typst/biblatex/issues/87" },
+    { id = "RUSTSEC-2025-0141", reason = "bincode is used by Typst, see https://github.com/trishume/syntect/issues/606" },
 ]

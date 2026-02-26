@@ -1,4 +1,4 @@
-FROM ghcr.io/tweedegolf/typst-webservice:0.2.3
+FROM ghcr.io/tweedegolf/typst-webservice:0.5.1
 
 ENV VERSION=dev
 
