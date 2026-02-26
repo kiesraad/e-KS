@@ -59,6 +59,8 @@ jobs:
         run: bin/init esbuild
 
       - name: Build e-ks
+        env:
+          CARGO_SET_FEATURES: memory-serve,database,migrations,fixtures
         run: ./bin/build
 
       - uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6

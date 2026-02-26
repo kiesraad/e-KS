@@ -13,7 +13,11 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new() -> Result<Self, AppError> {
-        let config = Config::from_env()?;
+        Self::new_with_typst_url(None).await
+    }
+
+    pub async fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
+        let config = Config::from_env_with_typst_url(typst_url)?;
         let csrf_tokens = CsrfTokens::default();
         let store = Store::new(config.storage_url).await?;
 

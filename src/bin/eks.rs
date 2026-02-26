@@ -17,19 +17,32 @@ async fn main() {
         }
     };
 
+    // Start embedded typst webservice if the feature is enabled
+    #[cfg(feature = "embed-typst")]
+    let typst_url = match eks::utils::embed_typst::start().await {
+        Ok(url) => Some(url),
+        Err(err) => {
+            eprintln!("Failed to start typst webservice: {err}");
+            std::process::exit(1);
+        }
+    };
+
+    #[cfg(not(feature = "embed-typst"))]
+    let typst_url = None;
+
     // Run the application
-    if let Err(err) = run(listener).await {
+    if let Err(err) = run(listener, typst_url).await {
         eprintln!("Application error: {}", err);
         std::process::exit(1);
     }
 }
 
-async fn run(listener: TcpListener) -> Result<(), AppError> {
+async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), AppError> {
     // Initialize tracing subscriber (logging)
     logging::init();
 
     // Create application state
-    let state = AppState::new().await?;
+    let state = AppState::new_with_typst_url(typst_url).await?;
 
     state.store.load().await?;
 
@@ -82,7 +95,7 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
-            run(listener).await.unwrap();
+            run(listener, None).await.unwrap();
         });
 
         let (status, body) = fetch(format!("http://{addr}/").parse().unwrap()).await;
