@@ -4,7 +4,7 @@ use axum::{extract::State, response::IntoResponse};
 use crate::{
     AppError, Context, ElectoralDistrict, HtmlTemplate, Store,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    core::ModelLocale,
+    core::{AnyLocale, ModelLocale},
     filters,
     submit::H1,
 };

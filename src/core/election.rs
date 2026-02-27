@@ -45,24 +45,47 @@ impl ElectoralDistrict {
         ]
     }
 
-    pub fn title(&self) -> &str {
-        match self {
-            Self::DR => "Drenthe",
-            Self::FL => "Flevoland",
-            Self::FR => "Friesland",
-            Self::GE => "Gelderland",
-            Self::GR => "Groningen",
-            Self::LI => "Limburg",
-            Self::NB => "Noord-Brabant",
-            Self::NH => "Noord-Holland",
-            Self::OV => "Overijssel",
-            Self::UT => "Utrecht",
-            Self::ZE => "Zeeland",
-            Self::ZH => "Zuid-Holland",
-            Self::BO => "Kiescollege Bonaire",
-            Self::SE => "Kiescollege Sint Eustatius",
-            Self::SA => "Kiescollege Saba",
-            Self::KN => "Kiescollege Niet-Ingezetenen",
+    pub fn title(&self, locale: AnyLocale) -> &str {
+        match (self, locale) {
+            (Self::DR, AnyLocale::Nl | AnyLocale::En) => "Drenthe",
+            (Self::DR, AnyLocale::Fry) => "Drinte",
+            (Self::FL, AnyLocale::Nl | AnyLocale::En) => "Flevoland",
+            (Self::FL, AnyLocale::Fry) => "Flevolân",
+            (Self::FR, AnyLocale::Nl | AnyLocale::En) => "Friesland",
+            (Self::FR, AnyLocale::Fry) => "Fryslân",
+            (Self::GE, AnyLocale::Nl | AnyLocale::En) => "Gelderland",
+            (Self::GE, AnyLocale::Fry) => "Gelderlân",
+            (Self::GR, AnyLocale::Nl | AnyLocale::En) => "Groningen",
+            (Self::GR, AnyLocale::Fry) => "Grinslân",
+            (Self::LI, AnyLocale::Nl | AnyLocale::En) => "Limburg",
+            (Self::LI, AnyLocale::Fry) => "Limboarch",
+            (Self::NB, AnyLocale::Nl) => "Noord-Brabant",
+            (Self::NB, AnyLocale::En) => "North Brabant",
+            (Self::NB, AnyLocale::Fry) => "Noard-Brabân",
+            (Self::NH, AnyLocale::Nl) => "Noord-Holland",
+            (Self::NH, AnyLocale::En) => "North Holland",
+            (Self::NH, AnyLocale::Fry) => "Noard-Hollân",
+            (Self::OV, AnyLocale::Nl | AnyLocale::En) => "Overijssel",
+            (Self::OV, AnyLocale::Fry) => "Oerisel",
+            (Self::UT, AnyLocale::Nl | AnyLocale::En) => "Utrecht",
+            (Self::UT, AnyLocale::Fry) => "Utert",
+            (Self::ZE, AnyLocale::Nl | AnyLocale::En) => "Zeeland",
+            (Self::ZE, AnyLocale::Fry) => "Seelân",
+            (Self::ZH, AnyLocale::Nl) => "Zuid-Holland",
+            (Self::ZH, AnyLocale::En) => "South Holland",
+            (Self::ZH, AnyLocale::Fry) => "Súd-Hollân",
+            (Self::BO, AnyLocale::Nl) => "Kiescollege Bonaire",
+            (Self::BO, AnyLocale::En) => "Electoral College Bonaire",
+            (Self::BO, AnyLocale::Fry) => "Kieskolleezje Bonêre",
+            (Self::SE, AnyLocale::Nl) => "Kiescollege Sint Eustatius",
+            (Self::SE, AnyLocale::En) => "Electoral College Sint Eustatius",
+            (Self::SE, AnyLocale::Fry) => "Kieskolleezje Sint-Eustasius",
+            (Self::SA, AnyLocale::Nl) => "Kiescollege Saba",
+            (Self::SA, AnyLocale::En) => "Electoral College Saba",
+            (Self::SA, AnyLocale::Fry) => "Kieskolleezje Saba",
+            (Self::KN, AnyLocale::Nl) => "Kiescollege Niet-Ingezetenen",
+            (Self::KN, AnyLocale::En) => "Electoral College Non-Residents",
+            (Self::KN, AnyLocale::Fry) => "Kieskolleezje Net-Ynwenners",
         }
     }
 
@@ -184,7 +207,7 @@ mod tests {
     #[test]
     fn district_title_and_code_match() {
         assert_eq!(ElectoralDistrict::UT.code(), "UT");
-        assert_eq!(ElectoralDistrict::UT.title(), "Utrecht");
+        assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Nl), "Utrecht");
     }
 
     #[test]

@@ -33,14 +33,14 @@ enum ElectoralDistricts {
 }
 
 impl ElectoralDistricts {
-    fn from(list: &CandidateList, election_config: &ElectionConfig) -> Self {
+    fn from(list: &CandidateList, election_config: &ElectionConfig, locale: ModelLocale) -> Self {
         if list.contains_all_districts(election_config) {
             ElectoralDistricts::All
         } else {
             ElectoralDistricts::Some(
                 list.electoral_districts
                     .iter()
-                    .map(|d| d.title().to_string())
+                    .map(|d| d.title(locale.into()).to_string())
                     .collect(),
             )
         }
@@ -70,7 +70,7 @@ impl H1 {
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(&list, election),
+            electoral_districts: ElectoralDistricts::from(&list, election, locale),
             designation: store
                 .get_political_group()?
                 .display_name
@@ -261,7 +261,7 @@ mod tests {
         };
 
         assert!(matches!(
-            ElectoralDistricts::from(&list, &election),
+            ElectoralDistricts::from(&list, &election, ModelLocale::Fry),
             ElectoralDistricts::All
         ));
     }
@@ -274,11 +274,20 @@ mod tests {
             ..Default::default()
         };
 
-        match ElectoralDistricts::from(&list, &election) {
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
             ElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
+                );
+            }
+            ElectoralDistricts::All => panic!("expected Some districts"),
+        }
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
+            ElectoralDistricts::Some(districts) => {
+                assert_eq!(
+                    districts,
+                    vec!["Utert".to_string(), "Noard-Hollân".to_string()]
                 );
             }
             ElectoralDistricts::All => panic!("expected Some districts"),
