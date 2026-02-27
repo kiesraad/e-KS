@@ -14,7 +14,7 @@ set -euo pipefail
 cp frontend/favicon.svg frontend/static/favicon.svg
 
 cargo build \
-    --features "$CARGO_SET_FEATURES" \
+    --features "${CARGO_SET_FEATURES:-memory-serve,database,migrations,fixtures}" \
     --no-default-features \
     --release \
     --bin eks
