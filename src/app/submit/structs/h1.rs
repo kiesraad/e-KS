@@ -89,11 +89,11 @@ impl ElectoralDistricts {
 
 impl Pdf for H1 {
     fn typst_template_name(&self) -> &'static str {
-        "model-h-1.typ"
+        "model-h1-nl.typ"
     }
 
     fn filename(&self) -> &'static str {
-        "h1.pdf"
+        "model-h1-nl.pdf"
     }
 }
 
@@ -119,7 +119,6 @@ impl H1 {
                 ))?
                 .to_string(),
             candidates: ordered_candidates(&mut candidates, locale)?,
-            // TODO
             previously_seated: true,
             list_submitter: store
                 .get_list_submitter(

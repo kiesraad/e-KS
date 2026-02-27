@@ -84,8 +84,10 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
-        let router =
-            Router::new().route("/render-pdf/model-h-1.typ/h1.pdf", get(|| async { "pdf" }));
+        let router = Router::new().route(
+            "/render-pdf/model-h1-nl.typ/h1.pdf",
+            get(|| async { "pdf" }),
+        );
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
