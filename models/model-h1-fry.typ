@@ -67,7 +67,7 @@ Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
   In ferklearring fan de lêsthawwer(s) fan de politike groepearring(s) dêr’t my tastimming mei jûn wurdt om de oantsjutting boppe de kandidatelist te pleatsen, want ik haw in oantsjutting boppe de list pleatst (model H 3-1 of H 3-2).
 ]
 #checkbox(checked: not input.previously_seated)[
-  Ferklearrings fan kiezers dat hja de list stypje, want de list komt net yn oanmerking foar de ûntheffing fan dy ferplichtings (model H 4).
+  Ferklearrings fan kiezers dat hja de list stypje, want de list komt net yn oanmerking foar de ûntheffing fan dy ferplichtings (#if input.election_type == "KCNI" [model Pa 11] else [model H 4]).
 ]
 #checkbox(checked: true)[
   In ferklearring fan alle op de list foarkommende kandidaten dat se ynstimme mei harren kandidaatstelling op de list (model H 9).
@@ -99,6 +99,6 @@ Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
 #label_table(values: (
   ("Namme en foarletters", [#submitter.last_name, #submitter.initials]),
   ("Postadres, postkoade en plak", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),
-  ("Datum", fill_in),
-  ("Hantekening", fill_in),
+  ("Datum", fill_in()),
+  ("Hantekening", fill_in(height: 4em)),
 ))

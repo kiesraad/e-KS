@@ -67,7 +67,7 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
   Een verklaring van de gemachtigde(n) van de politieke groepering(en) waarmee aan mij toestemming wordt gegeven om de aanduiding boven de kandidatenlijst te plaatsen, want ik heb een aanduiding boven de lijst geplaatst (model H 3-1 of H 3-2).
 ]
 #checkbox(checked: not input.previously_seated)[
-  Verklaringen van kiezers dat zij de lijst ondersteunen, want de lijst komt niet in aanmerking voor de ontheffing van deze verplichting (model H 4 dan wel model Pa 11; model Pa 11 wordt alleen gebruikt bij de verkiezing van het kiescollege voor niet-ingezetenen).
+  Verklaringen van kiezers dat zij de lijst ondersteunen, want de lijst komt niet in aanmerking voor de ontheffing van deze verplichting (#if input.election_type == "KCNI" [model Pa 11] else [model H 4]).
 ]
 #checkbox(checked: true)[
   Een verklaring van iedere op de lijst voorkomende kandidaat dat hij instemt met zijn kandidaatstelling op de lijst (model H 9).
@@ -99,6 +99,6 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 #label_table(values: (
   ("Naam en voorletters", [#submitter.last_name, #submitter.initials]),
   ("Postadres, postcode en plaats", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),
-  ("Datum", fill_in),
-  ("Handtekening", fill_in),
+  ("Datum", fill_in()),
+  ("Handtekening", fill_in(height: 4em)),
 ))

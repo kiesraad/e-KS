@@ -89,6 +89,6 @@ De oantsjutting fan de politike groepearring dêr’t de kandidatelist fan is: *
   ("Namme", [#input.candidate.last_name, #input.candidate.initials]),
   ("Wenplak", input.candidate.locality),
   ("Boargerservicenûmer", input.candidate.bsn),
-  ("Datum", fill_in),
-  ("Hantekening", fill_in),
+  ("Datum", fill_in()),
+  ("Hantekening", fill_in(height: 4em)),
 ))

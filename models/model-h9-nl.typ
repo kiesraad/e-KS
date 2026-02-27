@@ -90,6 +90,6 @@ De aanduiding van de politieke groepering waarvan de kandidatenlijst is: *#input
   ("Naam", [#input.candidate.last_name, #input.candidate.initials]),
   ("Woonplaats", input.candidate.locality),
   ("Burgerservicenummer", input.candidate.bsn),
-  ("Datum", fill_in),
-  ("Handtekening", fill_in),
+  ("Datum", fill_in()),
+  ("Handtekening", fill_in(height: 4em)),
 ))

@@ -23,7 +23,8 @@
         <td>
           <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
           {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-            {{ candidate.person.initials_as_printed_on_list(***locale) }}
+            {% let any_locale = AnyLocale::from(***locale) %}
+            {{ candidate.person.initials_as_printed_on_list(*any_locale) }}
           {% endif %}
         </td>
         <td>

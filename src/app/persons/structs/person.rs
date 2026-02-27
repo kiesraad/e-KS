@@ -1,11 +1,12 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppEvent, Locale, Store,
+    AppError, AppEvent, Store,
     common::{
         Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
         UtcDateTime,
     },
+    core::AnyLocale,
     id_newtype,
     pagination::SortDirection,
     persons::{PersonSort, structs::person_sort::compare_persons},
@@ -63,7 +64,7 @@ impl Person {
     /// - H. (m)
     /// - H. (Hubertus)
     /// - H.
-    pub fn initials_as_printed_on_list(&self, locale: Locale) -> String {
+    pub fn initials_as_printed_on_list(&self, locale: AnyLocale) -> String {
         let mut initials = self.name.initials.to_string();
         if let Some(first_name) = &self.first_name {
             initials.push_str(&format!(" ({})", first_name));
@@ -84,8 +85,8 @@ impl Person {
     pub fn gender_key(&self) -> &'static str {
         self.gender
             .map(|g| match g {
-                Gender::Male => "gender.male",
-                Gender::Female => "gender.female",
+                Gender::Male => "common.gender.male",
+                Gender::Female => "common.gender.female",
             })
             .unwrap_or("")
     }
@@ -349,10 +350,10 @@ mod tests {
         assert_eq!(person.gender_key(), "");
 
         person.gender = Some(Gender::Male);
-        assert_eq!(person.gender_key(), "gender.male");
+        assert_eq!(person.gender_key(), "common.gender.male");
 
         person.gender = Some(Gender::Female);
-        assert_eq!(person.gender_key(), "gender.female");
+        assert_eq!(person.gender_key(), "common.gender.female");
     }
 
     fn complete_address() -> DutchAddress {

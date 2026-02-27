@@ -33,10 +33,13 @@
               </ul>
             {% endif %}
           {% endif %}
+          Tijdelijke download knopjes:
           {% if candidate_list.can_download %}
-            <a href="{{ candidate_list.download_path }}" class="button primary">{{ "action.download_h1"|trans }}</a>
+            <a href="{{ candidate_list.download_path_nl }}" class="button primary">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+            <a href="{{ candidate_list.download_path_fry }}" class="button primary">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
           {% else %}
-            <a class="button primary disabled" disabled aria-disabled="true">{{ "action.download_h1"|trans }}</a>
+            <a class="button primary disabled" disabled aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+            <a class="button primary disabled" disabled aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
           {% endif %}
         </div>
       {% endfor %}

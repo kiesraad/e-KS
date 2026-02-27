@@ -36,8 +36,8 @@
     gutter: 1.33em,
     grid.hline(stroke: 1pt),
     v(0.5em),
-    text(size: 1.5em, weight: "semibold", model),
-    text(size: 2em, weight: "semibold", name),
+    text(size: 1.5em, weight: "bold", model),
+    text(size: 2em, weight: "bold", name),
     text(explanation),
     v(0.5em),
     grid.hline(stroke: 1pt),
@@ -66,7 +66,7 @@
 )
 
 /// Line with space to fill in later
-#let fill_in = box(width: 100%, height: 1.5em, stroke: (bottom: 1pt + black), inset: 0pt)[]
+#let fill_in(height: 2em) = box(width: 100%, height: height, stroke: (bottom: 1pt + black), inset: 0pt)[]
 
 #let date(date) = mono(datetime(..date).display("[day]-[month]-[year]"))
 

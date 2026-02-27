@@ -1,6 +1,8 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
+use crate::core::AnyLocale;
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ElectoralDistrict {
     DR,
@@ -105,15 +107,23 @@ impl ElectionConfig {
         }
     }
 
-    pub fn title(&self) -> &str {
+    pub fn title(&self, locale: AnyLocale) -> &str {
         match self {
-            Self::EK2027 => "Eerste Kamerverkiezing der Staten-Generaal 2027",
+            Self::EK2027 => match locale {
+                AnyLocale::En => "Election of the Senate of the States General 2027",
+                AnyLocale::Fry => "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
+                AnyLocale::Nl => "Eerste Kamerverkiezing der Staten-Generaal 2027",
+            },
         }
     }
 
-    pub fn short_title(&self) -> &str {
+    pub fn short_title(&self, locale: AnyLocale) -> &str {
         match self {
-            Self::EK2027 => "Eerste Kamer 2027",
+            Self::EK2027 => match locale {
+                AnyLocale::En => "Election of the Senate 2027",
+                AnyLocale::Fry => "Earste Keamer 2027",
+                AnyLocale::Nl => "Eerste Kamer 2027",
+            },
         }
     }
 
@@ -160,8 +170,8 @@ mod tests {
 
     #[test]
     fn election_titles_are_correct() {
-        assert!(ElectionConfig::EK2027.title().len() > 20);
-        assert!(ElectionConfig::EK2027.short_title().len() > 10);
+        assert!(ElectionConfig::EK2027.title(AnyLocale::Nl).len() > 20);
+        assert!(ElectionConfig::EK2027.short_title(AnyLocale::Nl).len() > 10);
     }
 
     #[test]
