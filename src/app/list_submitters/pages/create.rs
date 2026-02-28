@@ -6,7 +6,7 @@ use axum::{
 
 use super::ListSubmitterCreatePath;
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -33,7 +33,7 @@ pub async fn create_list_submitter(
 pub async fn create_list_submitter_submit(
     _: ListSubmitterCreatePath,
     context: Context,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -54,7 +54,7 @@ pub async fn create_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, QueryParamState,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
@@ -80,7 +80,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
@@ -119,7 +119,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;

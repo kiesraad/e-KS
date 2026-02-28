@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState, Store,
+    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     core::AnyLocale,
     filters,
@@ -45,7 +45,7 @@ pub async fn update_candidate_list_submit(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
@@ -73,7 +73,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        Context, ElectoralDistrict, Form, QueryParamState, Store, TokenValue,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -85,7 +85,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_renders_existing_list() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         candidate_list.create(&store).await?;
@@ -112,7 +112,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = context.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
@@ -171,7 +171,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()

@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, Context, ElectoralDistrict, HtmlTemplate, Store,
+    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
     core::{AnyLocale, ModelLocale},
     filters,
@@ -29,7 +29,7 @@ pub struct IndexTemplate {
 pub async fn index(
     _: SubmitPath,
     context: Context,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = context.election;
 
@@ -71,7 +71,7 @@ pub async fn index(
 mod tests {
     use super::*;
     use crate::{
-        Context, Store,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
@@ -83,7 +83,7 @@ mod tests {
 
     #[tokio::test]
     async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let complete_list_id = CandidateListId::new();
         let incomplete_list_id = CandidateListId::new();
         let list_submitter_id = ListSubmitterId::new();

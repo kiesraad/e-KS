@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, candidate_lists::FullCandidateList, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, candidate_lists::FullCandidateList, filters,
     form::FormData, persons::PersonForm,
 };
 
@@ -36,7 +36,7 @@ pub async fn create_person_candidate_list_submit(
     _: CreateCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.csrf_tokens, &store) {
@@ -65,7 +65,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        Context, Form, Store,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
@@ -76,7 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_renders_form() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -101,7 +101,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -139,7 +139,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;

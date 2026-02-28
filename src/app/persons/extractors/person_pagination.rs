@@ -1,7 +1,7 @@
 use axum::extract::{FromRef, FromRequestParts};
 
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     pagination::Pagination,
     persons::{self, PersonPagination, PersonSort},
 };
@@ -9,7 +9,7 @@ use crate::{
 impl<S> FromRequestParts<S> for PersonPagination
 where
     S: Send + Sync,
-    Store: FromRef<S>,
+    AppStore: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -17,7 +17,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_ref(state);
         let pagination: Pagination<PersonSort> =
             Pagination::from_request_parts(parts, state).await?;
 

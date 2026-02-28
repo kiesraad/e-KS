@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    CsrfTokens, OptionStringExt, Store, TokenValue,
+    AppStore, CsrfTokens, OptionStringExt, TokenValue,
     common::{Bsn, CountryCode, Date, FirstName, FullNameForm, Gender, PlaceOfResidence},
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, ValidationError},
@@ -57,7 +57,7 @@ impl PersonForm {
     pub fn validate_create_unique(
         self,
         csrf_tokens: &CsrfTokens,
-        store: &Store,
+        store: &AppStore,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons().unwrap_or_default();
         let person = self.clone().validate_create(csrf_tokens)?;

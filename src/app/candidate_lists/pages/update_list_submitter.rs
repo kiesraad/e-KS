@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, QueryParamState, Store,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, ListSubmitterForm, pages::UpdateListSubmitterPath},
     filters,
     form::FormData,
@@ -27,7 +27,7 @@ struct ListSubmitterUpdateTemplate {
 fn render_submitter_form(
     context: Context,
     candidate_list: CandidateList,
-    store: &Store,
+    store: &AppStore,
     should_warn: bool,
     form: FormData<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
@@ -51,7 +51,7 @@ pub async fn update_list_submitter(
     _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let form = FormData::new_with_data(
@@ -66,7 +66,7 @@ pub async fn update_list_submitter_submit(
     _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
@@ -96,7 +96,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        Context, CsrfTokens, ElectoralDistrict, Locale, QueryParamState, Store, TokenValue,
+        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, QueryParamState, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
         political_groups::PoliticalGroupId,
@@ -109,7 +109,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_renders_submitter_form() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
         let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
@@ -150,7 +150,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitters_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let political_group = sample_political_group(PoliticalGroupId::new());
         political_group.create(&store).await?;
         let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
@@ -225,7 +225,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitters_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let political_group = sample_political_group(PoliticalGroupId::new());
         political_group.create(&store).await?;
         let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());

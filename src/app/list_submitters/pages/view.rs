@@ -1,6 +1,6 @@
 use super::ListSubmittersPath;
 use crate::{
-    AppError, Context, HtmlTemplate, Store,
+    AppError, AppStore, Context, HtmlTemplate,
     authorised_agents::AuthorisedAgent,
     filters,
     list_submitters::ListSubmitter,
@@ -21,9 +21,9 @@ struct ListSubmittersTemplate {
 pub async fn list_submitters(
     _: ListSubmittersPath,
     context: Context,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(store.clone())?;
+    let steps = PoliticalGroupSteps::new(&store)?;
 
     Ok(HtmlTemplate(
         ListSubmittersTemplate {
@@ -39,7 +39,7 @@ pub async fn list_submitters(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Store,
+        AppError, AppStore, Context,
         list_submitters::ListSubmitterId,
         political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter, sample_political_group},
@@ -48,7 +48,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_submitters_shows_created_submitter() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -75,7 +75,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_submitters_shows_edit_link() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();

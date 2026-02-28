@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, Store, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
 };
@@ -38,7 +38,7 @@ pub async fn update_person_address_submit(
     _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
@@ -66,7 +66,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, QueryParamState,
         common::DutchAddressForm,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_renders_existing_person() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id: PersonId = PersonId::new();
         let person = sample_person(person_id);
 
@@ -104,7 +104,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -147,7 +147,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -179,7 +179,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_dutch_xor_non_dutch() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

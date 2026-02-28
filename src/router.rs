@@ -13,7 +13,7 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
     AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, render_error_pages, submit, substitute_list_submitters,
+    political_groups, render_error_pages, submit, substitute_list_submitters, utils,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -34,14 +34,8 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     #[cfg(feature = "dev-features")]
     let router = router
-        .route(
-            "/lookup",
-            crate::core::proxy::proxy_handler(&bag_service_url),
-        )
-        .route(
-            "/suggest",
-            crate::core::proxy::proxy_handler(&bag_service_url),
-        );
+        .route("/lookup", utils::proxy::proxy_handler(&bag_service_url))
+        .route("/suggest", utils::proxy::proxy_handler(&bag_service_url));
 
     #[cfg(feature = "http-logging")]
     let router = router.layer(
@@ -51,7 +45,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     );
 
     #[cfg(feature = "livereload")]
-    let router = router.merge(crate::core::livereload::livereload_router());
+    let router = router.merge(utils::livereload::livereload_router());
 
     #[cfg(feature = "memory-serve")]
     let router = router.nest(
@@ -62,7 +56,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "memory-serve"))]
     let router = router.nest(
         "/static",
-        Router::new().fallback(crate::core::proxy::proxy_handler("http://localhost:8888")),
+        Router::new().fallback(utils::proxy::proxy_handler("http://localhost:8888")),
     );
 
     router

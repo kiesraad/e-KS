@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppEvent, Store,
+    AppError, AppEvent, AppStore,
     common::{
         Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
         UtcDateTime,
@@ -113,17 +113,17 @@ impl Person {
             && (self.lives_in_nl() || self.is_representative_complete())
     }
 
-    pub async fn create(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store.update(AppEvent::CreatePerson(self.clone())).await
     }
 
-    pub async fn update(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store.update(AppEvent::UpdatePerson(self.clone())).await
     }
 
     pub async fn update_representative(
         &self,
-        store: &Store,
+        store: &AppStore,
         representative: Representative,
     ) -> Result<(), AppError> {
         store
@@ -136,7 +136,7 @@ impl Person {
 
     pub async fn update_address(
         &self,
-        store: &Store,
+        store: &AppStore,
         address: DutchAddress,
     ) -> Result<(), AppError> {
         store
@@ -147,14 +147,14 @@ impl Person {
             .await
     }
 
-    pub async fn delete(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::DeletePerson { person_id: self.id })
             .await
     }
 
     pub fn list(
-        store: &Store,
+        store: &AppStore,
         limit: usize,
         offset: usize,
         sort_field: &PersonSort,
@@ -178,7 +178,7 @@ impl Person {
 mod tests {
     use super::*;
     use crate::{
-        Store,
+        AppStore,
         pagination::SortDirection,
         persons::PersonSort,
         test_utils::{sample_person, sample_person_with_last_name},
@@ -197,7 +197,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_and_get_person() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let id = PersonId::new();
         let person = sample_person(id);
 
@@ -212,7 +212,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_overwrites_fields() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let id = PersonId::new();
         let mut person = sample_person(id);
 
@@ -229,7 +229,7 @@ mod tests {
 
     #[tokio::test]
     async fn remove_person_deletes_record() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let id = PersonId::new();
         let person = sample_person(id);
 
@@ -244,7 +244,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_address_overwrites_fields() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let id = PersonId::new();
         let mut person = sample_person(id);
 
@@ -292,7 +292,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_and_count_persons() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         sample_person_with_last_name(PersonId::new(), "Jansen")
             .create(&store)
             .await?;

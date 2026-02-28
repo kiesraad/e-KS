@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStoreData, ElectoralDistrict, Store,
+    AppError, AppEvent, AppStore, AppStoreData, ElectoralDistrict,
     candidate_lists::CandidateListId,
     common::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
@@ -295,7 +295,7 @@ fn apply_update_candidate_list_submitters_sets_ids() {
 
 #[tokio::test]
 async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
-    let store = Store::new_for_test().await;
+    let store = AppStore::new_for_test().await;
     let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
     let agent = sample_authorised_agent(agent_id);
 
@@ -320,7 +320,7 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let store = AppStore::new_with_pool(pool.clone()).await.unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -329,7 +329,7 @@ mod database_tests {
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
 
-        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        let fresh_store = AppStore::new_with_pool(pool).await.unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;
@@ -344,7 +344,7 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let store = AppStore::new_with_pool(pool.clone()).await.unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -368,7 +368,7 @@ mod database_tests {
             .execute(&pool)
             .await?;
 
-        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        let fresh_store = AppStore::new_with_pool(pool).await.unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;

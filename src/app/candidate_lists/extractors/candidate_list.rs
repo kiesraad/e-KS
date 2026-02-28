@@ -1,13 +1,13 @@
 use axum::extract::{FromRef, FromRequestParts, Path};
 
-use crate::{AppError, Context, CsrfTokens, Store, candidate_lists::CandidateList, trans};
+use crate::{AppError, AppStore, Context, CsrfTokens, candidate_lists::CandidateList, trans};
 
 use super::CandidateListPathParams;
 
 impl<S> FromRequestParts<S> for CandidateList
 where
     S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
+    AppStore: FromRef<S>,
     CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
@@ -16,7 +16,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_ref(state);
         let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;

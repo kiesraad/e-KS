@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -39,7 +39,7 @@ pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
     context: Context,
     list_submitter: ListSubmitter,
-    State(store): State<Store>,
+    State(store): State<AppStore>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&list_submitter, &context.csrf_tokens) {
@@ -63,7 +63,7 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, QueryParamState,
         list_submitters::ListSubmitterId,
         political_groups::PoliticalGroupId,
         test_utils::{
@@ -79,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -106,7 +106,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -152,7 +152,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();

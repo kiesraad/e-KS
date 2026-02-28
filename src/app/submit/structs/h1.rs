@@ -1,5 +1,5 @@
 use crate::{
-    AppError, ElectionConfig, Store,
+    AppError, AppStore, ElectionConfig,
     candidate_lists::{CandidateList, FullCandidateList},
     common::{Initials, PostalCode},
     core::{ElectionType, ModelLocale, Pdf},
@@ -59,7 +59,7 @@ impl Pdf for H1 {
 
 impl H1 {
     pub fn new(
-        store: &Store,
+        store: &AppStore,
         FullCandidateList {
             list,
             mut candidates,
@@ -214,7 +214,7 @@ impl TryFrom<ListSubmitter> for TypstPerson {
 
 fn substitute_submitter_from_ids(
     list: &CandidateList,
-    store: Store,
+    store: AppStore,
 ) -> Result<Vec<TypstPerson>, AppError> {
     list.substitute_list_submitter_ids
         .iter()
@@ -229,7 +229,7 @@ fn substitute_submitter_from_ids(
 mod tests {
     use super::*;
     use crate::{
-        AppError, ElectionConfig, ElectoralDistrict, Store,
+        AppError, AppStore, ElectionConfig, ElectoralDistrict,
         candidate_lists::{CandidateList, CandidateListId},
         candidates::Candidate as AppCandidate,
         common::{Initials, LastName, PostalCode},
@@ -416,7 +416,7 @@ mod tests {
 
     #[tokio::test]
     async fn substitute_submitter_from_ids_resolves_submitters() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
         let mut submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
         submitter_b.name.last_name = "Janssen".parse::<LastName>().expect("last name");
@@ -440,7 +440,7 @@ mod tests {
 
     #[tokio::test]
     async fn substitute_submitter_from_ids_returns_integrity_error_on_missing() {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list = CandidateList {
             substitute_list_submitter_ids: vec![SubstituteSubmitterId::new()],
             ..Default::default()

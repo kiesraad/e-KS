@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     common::{
         DisplayName, DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName,
@@ -12,7 +12,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
-pub async fn load(store: &Store) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let political_group_id: PoliticalGroupId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_political_group").into();
 
@@ -124,7 +124,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         load(&store).await.unwrap();
 
         let list_submitters = store.get_list_submitters().unwrap();

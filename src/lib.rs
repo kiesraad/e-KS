@@ -6,6 +6,7 @@ mod core;
 mod error;
 mod form;
 mod pagination;
+mod state;
 mod store;
 
 pub mod filters;
@@ -20,13 +21,15 @@ pub use app::{
     list_submitters, persons, political_groups, submit, substitute_list_submitters,
 };
 pub use core::{
-    AppState, Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, OptionStringExt,
-    QueryParamState, constants, get_env, logging, new_type, redirect_success, server, translate,
+    Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, constants, get_env, logging,
+    server, translate,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
+pub use state::AppState;
+pub use utils::{OptionStringExt, QueryParamState, new_type, redirect_success};
 
 #[cfg(test)]
-pub use core::test_utils;
+pub use utils::test_utils;
 
-pub type Store = store::Store<AppStoreData>;
+pub type AppStore = store::Store<AppStoreData>;
