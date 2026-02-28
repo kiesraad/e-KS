@@ -13,7 +13,7 @@ repository = "https://github.com/kiesraad/e-KS"
 
 [features]
 # Default development-oriented feature set.
-default = ["migrations", "fixtures", "livereload", "dev-features", "http-logging"]
+default = ["database", "migrations", "fixtures", "livereload", "dev-features", "http-logging", "db-tests", "net-tests"]
 # Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
 # Enable database-backed storage via Postgres / SQLx.

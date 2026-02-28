@@ -33,7 +33,7 @@ impl PoliticalGroupSteps {
                 && authorised_agents.iter().all(AuthorisedAgent::is_complete)
             {
                 "ok"
-            } else if authorised_agents.is_empty() {
+            } else if authorised_agents.is_empty() && political_group.is_basic_info_empty() {
                 "empty"
             } else {
                 "warning"
@@ -45,7 +45,7 @@ impl PoliticalGroupSteps {
                     .all(SubstituteSubmitter::is_complete)
             {
                 "ok"
-            } else if list_submitters.is_empty() {
+            } else if list_submitters.is_empty() && political_group.is_basic_info_empty() {
                 "empty"
             } else {
                 "warning"

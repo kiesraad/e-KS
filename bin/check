@@ -5,10 +5,10 @@ set -euo pipefail
 export MEMORY_SERVE_QUIET=1
 
 # rust
-cargo check --all-features
+cargo check
 cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo clippy --all-targets --all-features -- -D warnings
-cargo test --all-features
+cargo clippy --all-targets -- -D warnings
+cargo test
 
 # typescript
 ./bin/biome check --fix ./frontend

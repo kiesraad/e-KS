@@ -50,10 +50,15 @@ fn render_submitter_form(
 pub async fn update_list_submitter(
     _: UpdateListSubmitterPath,
     context: Context,
-    candidate_list: CandidateList,
+    mut candidate_list: CandidateList,
     store: AppStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
+    // When adding a new candidate list, select the default submitter and substitute submitters
+    if query.is_initial() {
+        candidate_list.select_default_submitters(&store)?;
+    }
+
     let form = FormData::new_with_data(
         ListSubmitterForm::from(candidate_list.clone()),
         &context.session.csrf_tokens,

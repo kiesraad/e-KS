@@ -214,6 +214,25 @@ impl CandidateList {
         store.update(AppEvent::DeleteCandidateList(self.id)).await
     }
 
+    pub fn select_default_submitters(&mut self, store: &AppStore) -> Result<(), AppError> {
+        if self.list_submitter_id.is_none() {
+            self.list_submitter_id = store
+                .get_list_submitters()?
+                .first()
+                .map(|submitter| submitter.id);
+        }
+
+        if self.substitute_list_submitter_ids.is_empty() {
+            self.substitute_list_submitter_ids = store
+                .get_substitute_submitters()?
+                .iter()
+                .map(|submitter| submitter.id)
+                .collect();
+        }
+
+        Ok(())
+    }
+
     pub(crate) fn build_full_candidate_list(
         store: &AppStore,
         list: CandidateList,

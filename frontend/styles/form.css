@@ -242,33 +242,6 @@
   resize: none;
 }
 
-.form .obfuscate {
-  position: relative;
-  width: 100%;
-
-  &::after {
-    content: " ";
-    display: block;
-    position: absolute;
-    top: 2px;
-    right: 2px;
-    bottom: 2px;
-    left: 2px;
-    backdrop-filter: blur(5px) opacity(1);
-    transition: backdrop-filter 0.3s ease-in-out;
-    user-select: none;
-    pointer-events: none;
-  }
-
-  &:focus-within,
-  &:focus,
-  &:hover {
-    &::after {
-      backdrop-filter: blur(0) opacity(0);
-    }
-  }
-}
-
 .form .input-icon {
   position: relative;
   display: inline-block;
@@ -330,23 +303,6 @@
   align-items: center;
   gap: var(--space-sm);
   margin-top: var(--space-lg);
-
-  .key-shift,
-  .key-enter {
-    display: inline-block;
-    width: 4rem;
-    height: 1.75rem;
-    background-repeat: no-repeat;
-  }
-
-  .key-shift {
-    background-image: url("../icons/shift.svg");
-    margin-left: var(--space-xl);
-  }
-
-  .key-enter {
-    background-image: url("../icons/enter.svg");
-  }
 }
 
 #gender option:first-child {
