@@ -1,7 +1,7 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
-use crate::{AppError, AppStore, Config, CsrfTokens};
+use crate::{AppError, AppStore, Config, CsrfTokens, SessionStore};
 use axum::extract::FromRef;
 
 #[derive(FromRef, Clone)]
@@ -9,6 +9,8 @@ pub struct AppState {
     pub store: AppStore,
     pub config: Config,
     pub csrf_tokens: CsrfTokens,
+    /// Active in-memory sessions for this application instance.
+    pub sessions: SessionStore,
 }
 
 impl AppState {
@@ -21,6 +23,7 @@ impl AppState {
             config,
             store,
             csrf_tokens,
+            sessions: SessionStore::new(),
         })
     }
 
@@ -30,6 +33,7 @@ impl AppState {
             config: Config::new_test(),
             store: AppStore::new_for_test().await,
             csrf_tokens: CsrfTokens::default(),
+            sessions: SessionStore::new(),
         }
     }
 }

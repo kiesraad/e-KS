@@ -1,5 +1,6 @@
 /// Application specific modules
 mod app;
+mod auth;
 
 /// Generic modules
 mod core;
@@ -19,6 +20,11 @@ pub mod fixtures;
 pub use app::{
     AppEvent, AppStoreData, Context, authorised_agents, candidate_lists, candidates, common,
     list_submitters, persons, political_groups, submit, substitute_list_submitters,
+};
+pub use auth::{
+    session::{SESSION_IDLE_TIMEOUT, Session},
+    session_extractor::{SESSION_COOKIE_NAME, session_middleware},
+    session_store::SessionStore,
 };
 pub use core::{
     Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, constants, get_env, logging,

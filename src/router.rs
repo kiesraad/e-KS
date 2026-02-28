@@ -13,7 +13,8 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
     AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, render_error_pages, submit, substitute_list_submitters, utils,
+    political_groups, render_error_pages, session_middleware, submit, substitute_list_submitters,
+    utils,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -63,6 +64,10 @@ pub fn create(state: AppState) -> Router<AppState> {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             render_error_pages,
+        ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
         ))
         .fallback(get(common::not_found))
         .layer(SetResponseHeaderLayer::if_not_present(
