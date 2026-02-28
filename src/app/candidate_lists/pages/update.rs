@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Response},
 };
 
@@ -45,7 +45,7 @@ pub async fn update_candidate_list_submit(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
@@ -131,7 +131,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -188,7 +188,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )

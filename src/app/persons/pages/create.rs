@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
@@ -31,7 +28,7 @@ pub async fn create_person(
 pub async fn create_person_submit(
     _: PersonsCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.csrf_tokens, &store) {
@@ -81,14 +78,10 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let response = create_person_submit(
-            PersonsCreatePath {},
-            context,
-            State(store.clone()),
-            Form(form),
-        )
-        .await
-        .unwrap();
+        let response =
+            create_person_submit(PersonsCreatePath {}, context, store.clone(), Form(form))
+                .await
+                .unwrap();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         let location = response
@@ -116,10 +109,9 @@ mod tests {
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response =
-            create_person_submit(PersonsCreatePath {}, context, State(store), Form(form))
-                .await
-                .unwrap();
+        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
+            .await
+            .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -138,10 +130,9 @@ mod tests {
         let csrf_token = context.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let response =
-            create_person_submit(PersonsCreatePath {}, context, State(store), Form(form))
-                .await
-                .unwrap();
+        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
+            .await
+            .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

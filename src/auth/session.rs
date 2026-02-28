@@ -1,7 +1,9 @@
 //! Session model and token generation.
 
-use std::time::{Duration, Instant};
 use rand::{RngExt, distr::Alphanumeric};
+use std::time::{Duration, Instant};
+
+use crate::PoliticalGroupId;
 
 /// Idle timeout after which a session is considered expired.
 pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -13,6 +15,8 @@ pub struct Session {
     pub token: String,
     /// Timestamp of the last activity for idle-timeout validation.
     pub last_activity: Instant,
+    /// Political group associated with this session (set on login).
+    pub political_group_id: Option<PoliticalGroupId>,
 }
 
 impl Session {
@@ -21,7 +25,13 @@ impl Session {
         Self {
             token: generate_session_token(),
             last_activity: Instant::now(),
+            political_group_id: None,
         }
+    }
+
+    /// Assigns the political group for this session.
+    pub fn set_political_group(&mut self, political_group_id: PoliticalGroupId) {
+        self.political_group_id = Some(political_group_id);
     }
 
     /// Returns the session token as a string slice.
@@ -32,6 +42,12 @@ impl Session {
     /// Returns true when the session has been idle past the configured timeout.
     pub fn is_expired(&self) -> bool {
         self.last_activity.elapsed() >= SESSION_IDLE_TIMEOUT
+    }
+}
+
+impl Default for Session {
+    fn default() -> Self {
+        Self::new()
     }
 }
 

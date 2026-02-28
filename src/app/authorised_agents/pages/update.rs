@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
@@ -40,7 +37,7 @@ pub async fn update_authorised_agent_submit(
     _: AuthorisedAgentUpdatePath,
     context: Context,
     authorised_agent: AuthorisedAgent,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&authorised_agent, &context.csrf_tokens) {
@@ -64,9 +61,8 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_authorised_agent, sample_authorised_agent_form,
             sample_political_group,
@@ -125,7 +121,7 @@ mod tests {
             AuthorisedAgentUpdatePath { agent_id },
             context,
             authorised_agent.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -171,7 +167,7 @@ mod tests {
             AuthorisedAgentUpdatePath { agent_id },
             context,
             authorised_agent.clone(),
-            State(store),
+            store,
             Form(form),
         )
         .await

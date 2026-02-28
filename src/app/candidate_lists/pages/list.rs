@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
@@ -19,7 +19,7 @@ struct CandidateListIndexTemplate {
 pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = CandidateListSummary::list(&store)?;
     let total_persons = store.get_person_count()?;
@@ -49,13 +49,10 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 
-        let response = list_candidate_lists(
-            CandidateListsPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await?
-        .into_response();
+        let response =
+            list_candidate_lists(CandidateListsPath {}, Context::new_test_without_db(), store)
+                .await?
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

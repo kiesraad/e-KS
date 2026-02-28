@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
@@ -29,7 +29,7 @@ pub struct IndexTemplate {
 pub async fn index(
     _: SubmitPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let election = context.election;
 
@@ -79,7 +79,7 @@ mod tests {
             response_body_string, sample_candidate_list, sample_list_submitter, sample_person,
         },
     };
-    use axum::{extract::State, response::IntoResponse};
+    use axum::response::IntoResponse;
 
     #[tokio::test]
     async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
@@ -102,7 +102,7 @@ mod tests {
         let incomplete_list = sample_candidate_list(incomplete_list_id);
         incomplete_list.create(&store).await?;
 
-        let response = index(SubmitPath, Context::new_test_without_db(), State(store))
+        let response = index(SubmitPath, Context::new_test_without_db(), store)
             .await?
             .into_response();
         let body = response_body_string(response).await;

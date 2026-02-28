@@ -7,4 +7,4 @@ mod structs;
 pub use forms::PoliticalGroupForm;
 pub use pages::router;
 pub use steps::PoliticalGroupSteps;
-pub use structs::{PoliticalGroup, PoliticalGroupId};
+pub use structs::PoliticalGroup;

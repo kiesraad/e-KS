@@ -1,8 +1,7 @@
 //! In-memory session storage for the application.
 
-use std::{collections::HashMap, sync::Arc};
-
 use parking_lot::RwLock;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::Session;
 

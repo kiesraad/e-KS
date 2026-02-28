@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Response},
 };
 
@@ -51,7 +51,7 @@ pub async fn update_list_submitter(
     _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let form = FormData::new_with_data(
@@ -66,7 +66,7 @@ pub async fn update_list_submitter_submit(
     _: UpdateListSubmitterPath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
@@ -96,10 +96,10 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, QueryParamState, TokenValue,
+        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, PoliticalGroupId,
+        QueryParamState, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
-        political_groups::PoliticalGroupId,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_list_submitter,
@@ -128,7 +128,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store),
+            store,
             Query(QueryParamState::default()),
         )
         .await
@@ -182,7 +182,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -248,7 +248,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )

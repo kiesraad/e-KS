@@ -3,7 +3,7 @@ use crate::{
     candidate_lists::{CandidateList, pages::CandidateListReorderPath},
     persons::PersonId,
 };
-use axum::{Json, extract::State, http::StatusCode, response::IntoResponse};
+use axum::{Json, http::StatusCode, response::IntoResponse};
 use serde::Deserialize;
 
 #[derive(Deserialize)]
@@ -14,7 +14,7 @@ pub struct CandidateListReorderPayload {
 pub async fn reorder_candidate_list(
     _: CandidateListReorderPath,
     mut candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Json(payload): Json<CandidateListReorderPayload>,
 ) -> Result<impl IntoResponse, AppError> {
     candidate_list
@@ -52,7 +52,7 @@ mod tests {
         let response = reorder_candidate_list(
             CandidateListReorderPath { list_id },
             list.clone(),
-            State(store.clone()),
+            store.clone(),
             Json(CandidateListReorderPayload {
                 person_ids: vec![person_b.id, person_a.id],
             }),

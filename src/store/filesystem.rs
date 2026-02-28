@@ -13,7 +13,7 @@ use tokio::{
 };
 
 use super::{Store, StoreData, StoreEvent};
-use crate::{AppError, constants::DEFAULT_STREAM_ID};
+use crate::AppError;
 
 /// Ensure the filesystem storage directory exists.
 pub async fn init_local(dir: &Path) -> Result<(), AppError> {
@@ -39,7 +39,7 @@ where
         created_at: Utc::now(),
     };
 
-    append_once(dir, &store_event).await?;
+    append_once(dir, store.stream_id, &store_event).await?;
 
     store.apply_event(next_id, store_event);
 
@@ -51,7 +51,7 @@ where
     D: StoreData,
     D::Event: DeserializeOwned,
 {
-    let path = stream_path(dir);
+    let path = stream_path(dir, store.stream_id);
     let file = match File::open(&path).await {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(0),
@@ -108,8 +108,12 @@ where
     Ok(last_file_id)
 }
 
-async fn append_once<E: Serialize>(dir: &Path, event: &StoreEvent<E>) -> Result<(), AppError> {
-    let path = stream_path(dir);
+async fn append_once<E: Serialize>(
+    dir: &Path,
+    stream_id: uuid::Uuid,
+    event: &StoreEvent<E>,
+) -> Result<(), AppError> {
+    let path = stream_path(dir, stream_id);
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -139,8 +143,8 @@ async fn append_once<E: Serialize>(dir: &Path, event: &StoreEvent<E>) -> Result<
     Ok(())
 }
 
-fn stream_path(dir: &Path) -> PathBuf {
-    dir.join(format!("{DEFAULT_STREAM_ID}.json"))
+fn stream_path(dir: &Path, stream_id: uuid::Uuid) -> PathBuf {
+    dir.join(format!("{stream_id}.json"))
 }
 
 #[cfg(test)]
@@ -184,8 +188,9 @@ mod tests {
         dir
     }
 
-    fn test_store() -> Store<TestData> {
+    fn test_store(stream_id: uuid::Uuid) -> Store<TestData> {
         Store {
+            stream_id,
             persistence: super::super::StorePersistence::None,
             data: Arc::new(RwLock::new(TestData::default())),
         }
@@ -203,7 +208,8 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let store = test_store();
+        let stream_id = uuid::Uuid::new_v4();
+        let store = test_store(stream_id);
         update_in_filesystem(
             &store,
             &dir,
@@ -221,11 +227,11 @@ mod tests {
         )
         .await?;
 
-        let path = stream_path(&dir);
+        let path = stream_path(&dir, store.stream_id);
         let file_contents = fs::read_to_string(&path).await.expect("read log");
         assert_eq!(file_contents.lines().count(), 2);
 
-        let fresh = test_store();
+        let fresh = test_store(stream_id);
         replay_from_file(&fresh, &dir).await?;
 
         let data = fresh.data.read();
@@ -256,6 +262,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
+        let store = test_store(uuid::Uuid::new_v4());
         let first = StoreEvent::new_at(
             5,
             TestEvent {
@@ -263,9 +270,7 @@ mod tests {
             },
             Utc::now(),
         );
-        append_once(&dir, &first).await?;
-
-        let store = test_store();
+        append_once(&dir, store.stream_id, &first).await?;
         update_in_filesystem(
             &store,
             &dir,
@@ -275,7 +280,7 @@ mod tests {
         )
         .await?;
 
-        let file_contents = fs::read_to_string(stream_path(&dir))
+        let file_contents = fs::read_to_string(stream_path(&dir, store.stream_id))
             .await
             .expect("read log");
         let last_line = file_contents.lines().last().expect("last line");
@@ -290,7 +295,8 @@ mod tests {
     async fn load_skips_invalid_lines() -> Result<(), AppError> {
         let dir = temp_dir().await;
         init_local(&dir).await?;
-        let path = stream_path(&dir);
+        let store = test_store(uuid::Uuid::new_v4());
+        let path = stream_path(&dir, store.stream_id);
 
         let valid = serde_json::to_string(&StoreEvent {
             event_id: 1,
@@ -312,7 +318,6 @@ mod tests {
         file.write_all(b"\n").await.expect("write valid");
         file.write_all(b"not json\n").await.expect("write invalid");
 
-        let store = test_store();
         replay_from_file(&store, &dir).await?;
 
         let data = store.data.read();

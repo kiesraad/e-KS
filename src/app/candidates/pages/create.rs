@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, candidate_lists::FullCandidateList, filters,
@@ -36,7 +33,7 @@ pub async fn create_person_candidate_list_submit(
     _: CreateCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.csrf_tokens, &store) {
@@ -116,7 +113,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;
@@ -155,7 +152,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            State(store),
+            store,
             Form(form),
         )
         .await?

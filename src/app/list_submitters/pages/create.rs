@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use super::ListSubmitterCreatePath;
 use crate::{
@@ -33,7 +30,7 @@ pub async fn create_list_submitter(
 pub async fn create_list_submitter_submit(
     _: ListSubmitterCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -54,8 +51,7 @@ pub async fn create_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
     use axum::{
@@ -92,7 +88,7 @@ mod tests {
         let response = create_list_submitter_submit(
             ListSubmitterCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -129,15 +125,11 @@ mod tests {
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response = create_list_submitter_submit(
-            ListSubmitterCreatePath {},
-            context,
-            State(store),
-            Form(form),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            create_list_submitter_submit(ListSubmitterCreatePath {}, context, store, Form(form))
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

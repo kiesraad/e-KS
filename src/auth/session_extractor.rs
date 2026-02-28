@@ -42,7 +42,9 @@ pub async fn session_middleware(
         None => {
             // TODO: only create a new session after a successfull login
             state.sessions.cleanup_expired();
-            let new_session = state.sessions.create_new();
+            let mut new_session = Session::new();
+            new_session.set_political_group(crate::PoliticalGroupId::new());
+            state.sessions.insert(new_session.clone());
             request.extensions_mut().insert(new_session.clone());
             let response = next.run(request).await;
             let jar = jar.add(build_session_cookie(&new_session));
@@ -54,6 +56,30 @@ pub async fn session_middleware(
     session.last_activity = Instant::now();
     state.sessions.insert(session.clone());
     request.extensions_mut().insert(session.clone());
+
+    next.run(request).await
+}
+
+/// Middleware that resolves the scoped store for the session's political group.
+pub async fn store_middleware(
+    State(state): State<AppState>,
+    mut request: Request,
+    next: Next,
+) -> Response {
+    let Some(political_group_id) = request
+        .extensions()
+        .get::<Session>()
+        .and_then(|session| session.political_group_id)
+    else {
+        return next.run(request).await;
+    };
+
+    let store = match state.store_for_political_group(political_group_id).await {
+        Ok(store) => store,
+        Err(err) => return err.into_response(),
+    };
+
+    request.extensions_mut().insert(store);
 
     next.run(request).await
 }

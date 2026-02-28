@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
@@ -39,7 +36,7 @@ pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
     context: Context,
     list_submitter: ListSubmitter,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&list_submitter, &context.csrf_tokens) {
@@ -63,9 +60,8 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         list_submitters::ListSubmitterId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_list_submitter, sample_list_submitter_form,
             sample_political_group,
@@ -124,7 +120,7 @@ mod tests {
             ListSubmitterUpdatePath { submitter_id },
             context,
             list_submitter.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -170,7 +166,7 @@ mod tests {
             ListSubmitterUpdatePath { submitter_id },
             context,
             list_submitter.clone(),
-            State(store),
+            store,
             Form(form),
         )
         .await

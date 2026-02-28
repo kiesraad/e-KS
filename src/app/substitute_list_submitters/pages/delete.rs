@@ -1,4 +1,4 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
     AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
@@ -11,7 +11,7 @@ pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
     context: Context,
     substitute_submitter: SubstituteSubmitter,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -32,8 +32,7 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, TokenValue,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, PoliticalGroupId, TokenValue,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{sample_political_group, sample_substitute_submitter},
     };
@@ -57,7 +56,7 @@ mod tests {
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
             substitute_submitter,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -101,7 +100,7 @@ mod tests {
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
             substitute_submitter.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

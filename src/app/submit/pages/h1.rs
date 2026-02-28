@@ -9,7 +9,7 @@ use axum::{extract::State, response::IntoResponse};
 pub async fn gen_h1(
     path: DownloadH1Path,
     list: FullCandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     State(config): State<Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
@@ -52,7 +52,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            State(store),
+            store,
             State(Config::new_test()),
             Context::new_test_without_db(),
         )
@@ -110,7 +110,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            State(store),
+            store,
             State(config),
             Context::new_test_without_db(),
         )

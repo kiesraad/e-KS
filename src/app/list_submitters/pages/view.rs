@@ -8,7 +8,7 @@ use crate::{
     substitute_list_submitters::SubstituteSubmitter,
 };
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 #[derive(Template)]
 #[template(path = "list_submitters/pages/view.html")]
@@ -21,7 +21,7 @@ struct ListSubmittersTemplate {
 pub async fn list_submitters(
     _: ListSubmittersPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
 
@@ -39,9 +39,8 @@ pub async fn list_submitters(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, PoliticalGroupId,
         list_submitters::ListSubmitterId,
-        political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter, sample_political_group},
     };
     use axum::{http::StatusCode, response::IntoResponse};
@@ -57,14 +56,11 @@ mod tests {
         political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
-        let response = list_submitters(
-            ListSubmittersPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -84,14 +80,11 @@ mod tests {
         political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
-        let response = list_submitters(
-            ListSubmittersPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

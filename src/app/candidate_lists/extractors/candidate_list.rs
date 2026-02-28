@@ -7,7 +7,7 @@ use super::CandidateListPathParams;
 impl<S> FromRequestParts<S> for CandidateList
 where
     S: Clone + Send + Sync + 'static,
-    AppStore: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
     CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
@@ -16,7 +16,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListPathParams { list_id }) =
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
@@ -42,7 +42,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale,
+        AppState, AppStore, Locale,
         candidate_lists::CandidateListId,
         render_error_pages,
         test_utils::{response_body_string, sample_candidate_list},
@@ -54,9 +54,8 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
 
         let app_state = AppState::new_for_tests().await;
-        list.create(&app_state.store)
-            .await
-            .expect("create candidate list");
+        let store = AppStore::new_for_test().await;
+        list.create(&store).await.expect("create candidate list");
 
         let app = Router::new()
             .route(
@@ -65,15 +64,13 @@ mod tests {
             )
             .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!("/candidate-lists/{}", list.id))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!("/candidate-lists/{}", list.id))
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -84,6 +81,7 @@ mod tests {
     async fn candidate_list_extractor_returns_not_found() {
         let state = AppState::new_for_tests().await;
         let list_id = CandidateListId::new();
+        let store = AppStore::new_for_test().await;
 
         let app = Router::new()
             .route(
@@ -97,13 +95,15 @@ mod tests {
             .with_state(state);
 
         let response = app
-            .oneshot(
-                Request::builder()
+            .oneshot({
+                let mut request = Request::builder()
                     .uri(format!("/candidate-lists/{}", list_id))
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
-                    .unwrap(),
-            )
+                    .unwrap();
+                request.extensions_mut().insert(store.clone());
+                request
+            })
             .await
             .expect("response");
 

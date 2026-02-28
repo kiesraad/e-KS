@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
@@ -21,7 +18,7 @@ struct PersonUpdateTemplate {
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     person: Person,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
@@ -37,7 +34,7 @@ pub async fn update_person(
 pub async fn update_person_submit(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     person: Person,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
@@ -83,7 +80,7 @@ mod tests {
         let response = update_person(
             UpdatePersonPath { person_id },
             Context::new_test_without_db(),
-            State(store),
+            store,
             person,
         )
         .await
@@ -114,7 +111,7 @@ mod tests {
         let response = update_person_submit(
             UpdatePersonPath { person_id },
             context,
-            State(store.clone()),
+            store.clone(),
             person,
             Form(form),
         )
@@ -152,7 +149,7 @@ mod tests {
         let response = update_person_submit(
             UpdatePersonPath { person_id },
             context,
-            State(store),
+            store,
             person,
             Form(form),
         )

@@ -6,9 +6,7 @@ use axum::{
     http::request::Parts,
 };
 
-use crate::{
-    AppError, AppStore, CsrfTokens, ElectionConfig, Locale, political_groups::PoliticalGroup,
-};
+use crate::{AppError, CsrfTokens, ElectionConfig, Locale, political_groups::PoliticalGroup};
 
 #[derive(Clone)]
 pub struct Context {
@@ -78,7 +76,6 @@ impl<S> FromRequestParts<S> for Context
 where
     S: Clone + Send + Sync + 'static,
     CsrfTokens: FromRef<S>,
-    AppStore: FromRef<S>,
 {
     type Rejection = AppError;
 

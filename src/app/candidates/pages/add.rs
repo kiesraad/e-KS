@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 use serde::Deserialize;
 
 use crate::{
@@ -24,7 +21,7 @@ pub async fn add_existing_person(
     _: AddCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let persons = full_list.list.persons_not_on_list(&store)?;
 
@@ -42,7 +39,7 @@ pub struct AddPersonForm {
 pub async fn add_person_to_candidate_list(
     _: AddCandidatePath,
     mut list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let person_exists = store
@@ -90,7 +87,7 @@ mod tests {
             AddCandidatePath { list_id },
             Context::new_test_without_db(),
             full_list,
-            State(store),
+            store,
         )
         .await?
         .into_response();
@@ -115,7 +112,7 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(AddPersonForm {
                 person_id: person.id,
             }),
@@ -156,7 +153,7 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(AddPersonForm {
                 person_id: new_person.id,
             }),

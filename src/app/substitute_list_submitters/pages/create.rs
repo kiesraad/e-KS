@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use super::SubstituteSubmitterCreatePath;
 use crate::{
@@ -34,7 +31,7 @@ pub async fn create_substitute_submitter(
 pub async fn create_substitute_submitter_submit(
     _: SubstituteSubmitterCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -62,8 +59,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, AppStore, Context,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, PoliticalGroupId,
         test_utils::{
             response_body_string, sample_political_group, sample_substitute_submitter_form,
         },
@@ -97,7 +93,7 @@ mod tests {
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -137,7 +133,7 @@ mod tests {
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
             context,
-            State(store),
+            store,
             Form(form),
         )
         .await

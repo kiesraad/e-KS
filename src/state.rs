@@ -1,13 +1,16 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
-use crate::{AppError, AppStore, Config, CsrfTokens, SessionStore};
+use crate::{
+    AppError, AppStore, AppStoreData, Config, CsrfTokens, PoliticalGroupId, SessionStore, fixtures,
+    store::registry::StoreRegistry,
+};
 use axum::extract::FromRef;
 
 #[derive(FromRef, Clone)]
 pub struct AppState {
-    pub store: AppStore,
     pub config: Config,
+    pub store_registry: StoreRegistry<AppStoreData>,
     pub csrf_tokens: CsrfTokens,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
@@ -17,21 +20,38 @@ impl AppState {
     pub async fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
         let config = Config::from_env_with_typst_url(typst_url)?;
         let csrf_tokens = CsrfTokens::default();
-        let store = AppStore::new(config.storage_url).await?;
+        let store_registry = StoreRegistry::new(config.storage_url.to_string());
 
         Ok(Self {
             config,
-            store,
+            store_registry,
             csrf_tokens,
             sessions: SessionStore::new(),
         })
     }
 
+    pub async fn store_for_political_group(
+        &self,
+        political_group_id: PoliticalGroupId,
+    ) -> Result<AppStore, AppError> {
+        self.store_registry
+            .get_or_create_with_init(political_group_id.uuid(), |store| async move {
+                let needs_init = store.data.read().last_event_id == 0;
+                if needs_init {
+                    #[cfg(feature = "fixtures")]
+                    fixtures::load(&store, political_group_id).await?;
+                }
+                Ok(())
+            })
+            .await
+    }
+
     #[cfg(test)]
     pub async fn new_for_tests() -> Self {
+        let config = Config::new_test();
         Self {
-            config: Config::new_test(),
-            store: AppStore::new_for_test().await,
+            store_registry: StoreRegistry::new(config.storage_url.to_string()),
+            config,
             csrf_tokens: CsrfTokens::default(),
             sessions: SessionStore::new(),
         }

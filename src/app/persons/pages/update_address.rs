@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 
@@ -38,7 +38,7 @@ pub async fn update_person_address_submit(
     _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    State(store): State<AppStore>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
@@ -119,7 +119,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -162,7 +162,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(store),
+            store,
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -192,7 +192,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context.clone(),
             person.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(AddressForm {
                 address: DutchAddressForm {

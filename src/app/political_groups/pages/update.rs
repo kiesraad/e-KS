@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
@@ -26,7 +23,7 @@ struct PoliticalGroupUpdateTemplate {
 pub async fn update_political_group(
     _: PoliticalGroupUpdatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     political_group: PoliticalGroup,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
@@ -45,7 +42,7 @@ pub async fn update_political_group_submit(
     _: PoliticalGroupUpdatePath,
     context: Context,
     political_group: PoliticalGroup,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
@@ -71,9 +68,8 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_authorised_agent, sample_political_group,
             sample_political_group_form,
@@ -96,7 +92,7 @@ mod tests {
         let response = update_political_group(
             PoliticalGroupUpdatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
             political_group,
         )
         .await
@@ -130,7 +126,7 @@ mod tests {
             PoliticalGroupUpdatePath {},
             context,
             political_group,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -185,7 +181,7 @@ mod tests {
             PoliticalGroupUpdatePath {},
             context,
             political_group,
-            State(store),
+            store,
             Form(form),
         )
         .await

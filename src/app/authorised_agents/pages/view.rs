@@ -7,7 +7,7 @@ use crate::{
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
 };
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 #[derive(Template)]
 #[template(path = "authorised_agents/pages/view.html")]
@@ -19,7 +19,7 @@ struct AuthorisedAgentsTemplate {
 pub async fn list_authorised_agents(
     _: AuthorisedAgentsPath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
     Ok(HtmlTemplate(
@@ -35,9 +35,8 @@ pub async fn list_authorised_agents(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, PoliticalGroupId,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_authorised_agent, sample_political_group},
     };
     use axum::{http::StatusCode, response::IntoResponse};
@@ -56,7 +55,7 @@ mod tests {
         let response = list_authorised_agents(
             AuthorisedAgentsPath {},
             Context::new_test_without_db(),
-            State(store.clone()),
+            store.clone(),
         )
         .await
         .unwrap()
@@ -83,7 +82,7 @@ mod tests {
         let response = list_authorised_agents(
             AuthorisedAgentsPath {},
             Context::new_test_without_db(),
-            State(store.clone()),
+            store.clone(),
         )
         .await
         .unwrap()

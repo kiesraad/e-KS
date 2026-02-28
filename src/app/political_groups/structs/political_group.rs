@@ -1,11 +1,8 @@
 use crate::{
-    AppError, AppEvent, AppStore, OptionStringExt,
+    AppError, AppEvent, AppStore, OptionStringExt, PoliticalGroupId,
     common::{DisplayName, LegalName},
-    id_newtype,
 };
 use serde::{Deserialize, Serialize};
-
-id_newtype!(pub struct PoliticalGroupId);
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PoliticalGroup {

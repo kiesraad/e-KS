@@ -1,7 +1,7 @@
 use http_body_util::BodyExt;
 
 use crate::{
-    ElectoralDistrict, TokenValue,
+    ElectoralDistrict, PoliticalGroupId, TokenValue,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
@@ -11,7 +11,7 @@ use crate::{
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonForm, PersonId, Representative, RepresentativeForm},
-    political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupId},
+    political_groups::{PoliticalGroup, PoliticalGroupForm},
     substitute_list_submitters::{
         SubstituteSubmitter, SubstituteSubmitterForm, SubstituteSubmitterId,
     },

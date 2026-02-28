@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
     AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate,
@@ -22,7 +19,7 @@ struct CandidateListCreateTemplate {
 pub async fn create_candidate_list(
     _: CandidateListCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let used_districts = CandidateList::used_districts(&store, vec![])?;
     let available_districts = context.election.available_districts(used_districts);
@@ -49,7 +46,7 @@ pub async fn create_candidate_list(
 pub async fn create_candidate_list_submit(
     _: CandidateListCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
     let should_copy_candidates = form.copy_candidates;
@@ -101,7 +98,7 @@ mod test {
         let response = create_candidate_list(
             CandidateListCreatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
         )
         .await?
         .into_response();
@@ -127,7 +124,7 @@ mod test {
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;
@@ -161,7 +158,7 @@ mod test {
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
             Form(form),
         )
         .await?;
@@ -197,7 +194,7 @@ mod test {
         create_candidate_list_submit(
             CandidateListCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;

@@ -1,8 +1,5 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use super::AuthorisedAgentCreatePath;
 use crate::{
@@ -34,7 +31,7 @@ pub async fn create_authorised_agent(
 pub async fn create_authorised_agent_submit(
     _: AuthorisedAgentCreatePath,
     context: Context,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -55,8 +52,7 @@ pub async fn create_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
     };
     use axum::{
@@ -99,7 +95,7 @@ mod tests {
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -139,7 +135,7 @@ mod tests {
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
             context,
-            State(store),
+            store,
             Form(form),
         )
         .await

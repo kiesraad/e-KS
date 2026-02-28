@@ -1,4 +1,4 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
     AppError, AppStore, Context, Form,
@@ -11,7 +11,7 @@ pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.csrf_tokens) {
@@ -51,7 +51,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await?;
@@ -96,7 +96,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await

@@ -5,7 +5,7 @@ use std::env;
 
 use crate::AppError;
 
-const DEFAULT_STORAGE_URL: &str = "memory://ephemeral";
+const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
 const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
 
 #[derive(Debug, Clone, Copy)]

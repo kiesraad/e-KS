@@ -13,8 +13,8 @@ use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
     AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, render_error_pages, session_middleware, submit, substitute_list_submitters,
-    utils,
+    political_groups, render_error_pages, session_middleware, store_middleware, submit,
+    substitute_list_submitters, utils,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -37,6 +37,37 @@ pub fn create(state: AppState) -> Router<AppState> {
     let router = router
         .route("/lookup", utils::proxy::proxy_handler(&bag_service_url))
         .route("/suggest", utils::proxy::proxy_handler(&bag_service_url));
+
+    let router = router
+        .fallback(get(common::not_found))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            render_error_pages,
+        ))
+                .layer(middleware::from_fn_with_state(
+            state.clone(),
+            store_middleware,
+        ))
+                .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::CONTENT_SECURITY_POLICY,
+            HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::X_FRAME_OPTIONS,
+            HeaderValue::from_static("DENY"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::X_CONTENT_TYPE_OPTIONS,
+            HeaderValue::from_static("nosniff"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            header::REFERRER_POLICY,
+            HeaderValue::from_static("same-origin"),
+        ));
 
     #[cfg(feature = "http-logging")]
     let router = router.layer(
@@ -61,31 +92,6 @@ pub fn create(state: AppState) -> Router<AppState> {
     );
 
     router
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            render_error_pages,
-        ))
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            session_middleware,
-        ))
-        .fallback(get(common::not_found))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::X_FRAME_OPTIONS,
-            HeaderValue::from_static("DENY"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::X_CONTENT_TYPE_OPTIONS,
-            HeaderValue::from_static("nosniff"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::REFERRER_POLICY,
-            HeaderValue::from_static("same-origin"),
-        ))
 }
 
 #[cfg(test)]
@@ -104,7 +110,12 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let app: Router = create(state.clone()).with_state(state);
 
-        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let mut session = crate::Session::new();
+        session.set_political_group(crate::PoliticalGroupId::new());
+        let store = crate::AppStore::new_for_test().await;
+        request.extensions_mut().insert(session);
+        request.extensions_mut().insert(store);
         let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
@@ -117,10 +128,15 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let app: Router = create(state.clone()).with_state(state);
 
-        let request = Request::builder()
+        let mut request = Request::builder()
             .uri("/missing")
             .body(Body::empty())
             .unwrap();
+        let mut session = crate::Session::new();
+        session.set_political_group(crate::PoliticalGroupId::new());
+        let store = crate::AppStore::new_for_test().await;
+        request.extensions_mut().insert(session);
+        request.extensions_mut().insert(store);
         let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);

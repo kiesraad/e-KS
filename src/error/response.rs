@@ -192,6 +192,7 @@ mod tests {
     #[tokio::test]
     async fn not_found_renders_template_with_message() {
         let state = AppState::new_for_tests().await;
+        let store = crate::AppStore::new_for_test().await;
         let app = Router::new()
             .route(
                 "/",
@@ -199,10 +200,9 @@ mod tests {
             )
             .layer(middleware::from_fn_with_state(state, render_error_pages));
 
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .expect("response");
+        let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        request.extensions_mut().insert(store);
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
@@ -213,6 +213,7 @@ mod tests {
     #[tokio::test]
     async fn validation_error_maps_to_bad_request() {
         let state = AppState::new_for_tests().await;
+        let store = crate::AppStore::new_for_test().await;
         let app = Router::new()
             .route(
                 "/",
@@ -222,10 +223,9 @@ mod tests {
                 }),
             )
             .layer(middleware::from_fn_with_state(state, render_error_pages));
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .expect("response");
+        let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        request.extensions_mut().insert(store);
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::BAD_REQUEST);
         let body = response_body_string(response).await;
@@ -236,16 +236,16 @@ mod tests {
     #[tokio::test]
     async fn database_error_maps_to_internal_server_error() {
         let state = AppState::new_for_tests().await;
+        let store = crate::AppStore::new_for_test().await;
         let app = Router::new()
             .route(
                 "/",
                 get(|| async { AppError::DatabaseError(sqlx::Error::RowNotFound) }),
             )
             .layer(middleware::from_fn_with_state(state, render_error_pages));
-        let response = app
-            .oneshot(Request::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .expect("response");
+        let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        request.extensions_mut().insert(store);
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }

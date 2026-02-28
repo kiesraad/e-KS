@@ -1,6 +1,6 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 
@@ -48,7 +48,7 @@ pub async fn update_representative_submit(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    State(store): State<AppStore>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
@@ -212,7 +212,7 @@ mod tests {
             context,
             full_list,
             candidate.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -264,7 +264,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store),
+            store,
             Query(QueryParamState::default()),
             Form(form),
         )

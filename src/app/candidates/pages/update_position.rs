@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
@@ -53,7 +53,7 @@ pub async fn update_candidate_position_submit(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    State(store): State<AppStore>,
+    store: AppStore,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
@@ -182,7 +182,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?
@@ -231,7 +231,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?
@@ -279,7 +279,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?
