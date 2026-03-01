@@ -13,7 +13,7 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
 };
 
-use crate::{AppError, AppState, Session};
+use crate::{AppError, AppState, Locale, Session};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
@@ -42,7 +42,13 @@ pub async fn session_middleware(
         None => {
             // TODO: only create a new session after a successfull login
             state.sessions.cleanup_expired();
-            let mut new_session = Session::new();
+            let locale = request
+                .headers()
+                .get(axum::http::header::ACCEPT_LANGUAGE)
+                .and_then(|value| value.to_str().ok())
+                .and_then(Locale::from_accept_language)
+                .unwrap_or_default();
+            let mut new_session = Session::new_with_locale(locale);
             new_session.set_political_group(crate::PoliticalGroupId::new());
             state.sessions.insert(new_session.clone());
             request.extensions_mut().insert(new_session.clone());

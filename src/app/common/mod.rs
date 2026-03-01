@@ -10,5 +10,3 @@ pub use structs::{
 };
 
 pub use pages::{IndexPath, SwitchLanguagePath, not_found, router};
-
-static LOCALE_COOKIE_NAME: &str = "LANGUAGE";

@@ -108,6 +108,20 @@ where
     Ok(last_file_id)
 }
 
+/// Ensure a stream file exists for local storage.
+pub async fn ensure_stream_file(dir: &Path, stream_id: uuid::Uuid) -> Result<(), AppError> {
+    let path = stream_path(dir, stream_id);
+    OpenOptions::new()
+        .create(true)
+        .write(true)
+        .truncate(false)
+        .open(&path)
+        .await
+        .map_err(AppError::ServerError)?;
+
+    Ok(())
+}
+
 async fn append_once<E: Serialize>(
     dir: &Path,
     stream_id: uuid::Uuid,
@@ -253,6 +267,21 @@ mod tests {
                 ),
             ]
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn ensure_stream_creates_empty_file() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        ensure_stream_file(&dir, stream_id).await?;
+
+        let path = stream_path(&dir, stream_id);
+        let metadata = fs::metadata(&path).await.map_err(AppError::ServerError)?;
+        assert_eq!(metadata.len(), 0);
 
         Ok(())
     }

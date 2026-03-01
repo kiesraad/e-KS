@@ -3,7 +3,7 @@
 use rand::{RngExt, distr::Alphanumeric};
 use std::time::{Duration, Instant};
 
-use crate::PoliticalGroupId;
+use crate::{Locale, PoliticalGroupId};
 
 /// Idle timeout after which a session is considered expired.
 pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -17,15 +17,23 @@ pub struct Session {
     pub last_activity: Instant,
     /// Political group associated with this session (set on login).
     pub political_group_id: Option<PoliticalGroupId>,
+    /// Active locale for the session.
+    pub locale: Locale,
 }
 
 impl Session {
     /// Creates a new session with a cryptographically strong random token.
     pub fn new() -> Self {
+        Self::new_with_locale(Locale::default())
+    }
+
+    /// Creates a new session using the provided locale.
+    pub fn new_with_locale(locale: Locale) -> Self {
         Self {
             token: generate_session_token(),
             last_activity: Instant::now(),
             political_group_id: None,
+            locale,
         }
     }
 

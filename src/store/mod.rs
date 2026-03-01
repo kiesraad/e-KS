@@ -203,7 +203,10 @@ impl StorePersistence {
             StorePersistence::Database(pool) => {
                 database::ensure_stream(pool, stream_id).await?;
             }
-            StorePersistence::Local(_) | StorePersistence::None => {}
+            StorePersistence::Local(dir) => {
+                filesystem::ensure_stream_file(dir, stream_id).await?;
+            }
+            StorePersistence::None => {}
         }
 
         Ok(())
