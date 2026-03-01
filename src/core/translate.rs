@@ -2,6 +2,7 @@
 //! Used in rust sources with the `trans!` macro, and in templates with the `|trans` filter.
 include!(concat!(env!("OUT_DIR"), "/locales.rs"));
 
+/// Translate a key for the given locale and format with optional arguments.
 #[macro_export]
 macro_rules! trans {
     ($key:tt, $locale:expr $(, $args:expr)* $(,)?) => {{

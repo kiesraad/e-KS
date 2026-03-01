@@ -1,3 +1,4 @@
+// Sync a "select all" checkbox with a list of item checkboxes.
 export default function setupSelectAllCheckbox() {
   const determineSelectAllState = (
     selectAllCheckbox: HTMLInputElement,

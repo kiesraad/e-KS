@@ -13,6 +13,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
+/// Event-sourced domain projection for a single political group.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,

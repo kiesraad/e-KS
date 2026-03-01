@@ -1,3 +1,4 @@
+//! Convenience helpers for working with `Option<String>` values.
 pub trait OptionStringExt {
     fn as_str_or_empty(&self) -> &str;
     fn to_string_or_default(&self) -> String;

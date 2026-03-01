@@ -47,6 +47,7 @@ impl std::hash::Hash for SessionToken {
     }
 }
 
+/// Server-side session data persisted in memory.
 #[derive(Clone)]
 pub struct Session {
     /// Opaque, random token that identifies the session.

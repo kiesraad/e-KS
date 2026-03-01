@@ -1,3 +1,4 @@
+//! Redirect helpers for common UI flows.
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::routing::TypedPath;
 

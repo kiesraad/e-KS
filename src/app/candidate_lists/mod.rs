@@ -1,3 +1,7 @@
+//! Candidate lists management.
+//!
+//! Scope: forms, extractors, pages, and structs that manage candidate lists,
+//! their ordering, submitters, and related list summaries.
 mod extractors;
 mod forms;
 mod pages;

@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use std::str::FromStr;
 
+/// Supported UI locales for requests and templates.
 #[derive(Default, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Locale {

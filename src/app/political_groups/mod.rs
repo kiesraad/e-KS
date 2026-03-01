@@ -1,3 +1,4 @@
+//! Political group setup and maintenance flows.
 mod extractors;
 mod forms;
 mod pages;

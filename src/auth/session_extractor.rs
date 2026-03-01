@@ -50,7 +50,7 @@ pub async fn session_middleware(
                 .and_then(Locale::from_accept_language)
                 .unwrap_or_default();
             let mut new_session = Session::new_with_locale(locale);
-            new_session.set_political_group(crate::PoliticalGroupId::new());
+            new_session.set_political_group(uuid::Uuid::nil().into());
             state.sessions.insert(new_session.clone());
             request.extensions_mut().insert(new_session.clone());
             let response = next.run(request).await;

@@ -1,3 +1,4 @@
+// Filter table rows based on the search input value.
 export default function setupTextSearch() {
   const search = document.getElementById("search") as HTMLInputElement | null;
   const tableIds = ["add-candidate-table", "persons-table"];

@@ -1,3 +1,4 @@
+// Auto-fill address fields using postal code and house number lookups.
 export default function addressLookup() {
   const postalCodeInput = document.getElementById(
     "postal_code",

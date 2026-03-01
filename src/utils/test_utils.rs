@@ -1,3 +1,4 @@
+//! Test helpers for building sample domain data and reading responses.
 use http_body_util::BodyExt;
 
 use crate::{

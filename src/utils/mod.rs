@@ -1,3 +1,4 @@
+//! Utilities and small helpers shared across the application.
 mod option_string_ext;
 mod query_param_state;
 mod redirect;

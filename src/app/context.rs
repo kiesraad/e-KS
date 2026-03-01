@@ -8,6 +8,7 @@ use crate::{AppError, Session, political_groups::PoliticalGroup};
 #[cfg(test)]
 use crate::Locale;
 
+/// Request-scoped template context used by Askama.
 #[derive(Clone)]
 pub struct Context {
     /// Political group tied to the session / request.

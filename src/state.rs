@@ -7,6 +7,7 @@ use crate::{
 };
 use axum::extract::FromRef;
 
+/// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
 pub struct AppState {
     pub config: Config,

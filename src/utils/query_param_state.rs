@@ -1,3 +1,4 @@
+//! Query parameter state for UI feedback and highlighting.
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
