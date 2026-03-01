@@ -157,6 +157,44 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn update_list_submitter_selects_defaults_on_initial_query() -> Result<(), AppError> {
+        let store = Store::new_for_test().await;
+        let candidate_list = sample_candidate_list(CandidateListId::new());
+        let list_submitter = sample_list_submitter(ListSubmitterId::new());
+        let substitute_submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let political_group = sample_political_group(PoliticalGroupId::new());
+
+        candidate_list.create(&store).await?;
+        political_group.create(&store).await?;
+        list_submitter.create(&store).await?;
+        substitute_submitter_a.create(&store).await?;
+        substitute_submitter_b.create(&store).await?;
+
+        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
+
+        let response = update_list_submitter(
+            UpdateListSubmitterPath {
+                list_id: candidate_list.id,
+            },
+            context,
+            candidate_list.clone(),
+            State(store),
+            Query(QueryParamState::created()),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&format!("value=\"{}\" checked", list_submitter.id)));
+        assert!(body.contains(&format!("value=\"{}\" checked", substitute_submitter_a.id)));
+        assert!(body.contains(&format!("value=\"{}\" checked", substitute_submitter_b.id)));
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn update_list_submitters_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let political_group = sample_political_group(PoliticalGroupId::new());

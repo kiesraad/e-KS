@@ -44,13 +44,13 @@ export class ListSubmittersPage {
         .getByRole("link", { name: "Lijstinleveraar toevoegen" })
         .click();
       await this.page
-        .getByRole("textbox", { name: "Voorletters *" })
+        .getByRole("textbox", { name: "Voorletters" })
         .fill(listSubmitter.initials);
       await this.page
         .getByRole("textbox", { name: "Voorvoegsel" })
         .fill(listSubmitter.lastNamePrefix ?? "");
       await this.page
-        .getByRole("textbox", { name: "Achternaam *" })
+        .getByRole("textbox", { name: "Achternaam" })
         .fill(listSubmitter.lastName);
       await this.page.locator("body").click();
 
@@ -62,11 +62,9 @@ export class ListSubmittersPage {
     await this.page
       .getByRole("cell", { name: "Gemachtigde toevoegen" })
       .click();
-    await this.page.getByRole("textbox", { name: "Voorletters *" }).fill("A");
+    await this.page.getByRole("textbox", { name: "Voorletters" }).fill("A");
     await this.page.getByRole("textbox", { name: "Voorvoegsel" }).fill("de");
-    await this.page
-      .getByRole("textbox", { name: "Achternaam *" })
-      .fill("Tester");
+    await this.page.getByRole("textbox", { name: "Achternaam" }).fill("Tester");
     await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 }

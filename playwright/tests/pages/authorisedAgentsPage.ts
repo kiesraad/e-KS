@@ -40,13 +40,13 @@ export class AuthorisedAgentsPage {
       .getByRole("link", { name: "Gemachtigde toevoegen" })
       .click();
     await this.page
-      .getByRole("textbox", { name: "Voorletters *" })
+      .getByRole("textbox", { name: "Voorletters" })
       .fill(authorisedAgent.initials);
     await this.page
       .getByRole("textbox", { name: "Voorvoegsel" })
       .fill(authorisedAgent.lastNamePrefix ?? "");
     await this.page
-      .getByRole("textbox", { name: "Achternaam *" })
+      .getByRole("textbox", { name: "Achternaam" })
       .fill(authorisedAgent.lastName);
     await this.page.locator("body").click();
 
@@ -59,13 +59,13 @@ export class AuthorisedAgentsPage {
         .getByRole("cell", { name: authorisedAgent.lastName })
         .click();
       await this.page
-        .getByRole("textbox", { name: "Voorletters *" })
+        .getByRole("textbox", { name: "Voorletters" })
         .fill(authorisedAgent.initials);
       await this.page
         .getByRole("textbox", { name: "Voorvoegsel" })
         .fill(authorisedAgent.lastNamePrefix ?? "");
       await this.page
-        .getByRole("textbox", { name: "Achternaam *" })
+        .getByRole("textbox", { name: "Achternaam" })
         .fill(authorisedAgent.lastName);
       await this.page.locator("body").click();
 

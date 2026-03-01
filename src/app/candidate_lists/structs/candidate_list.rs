@@ -262,7 +262,10 @@ mod tests {
         AppStore,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
-        test_utils::{sample_candidate_list, sample_person_with_last_name},
+        test_utils::{
+            sample_candidate_list, sample_list_submitter, sample_person_with_last_name,
+            sample_substitute_submitter,
+        },
     };
     fn base_candidate_list(electoral_districts: Vec<ElectoralDistrict>) -> CandidateList {
         CandidateList {
@@ -412,6 +415,44 @@ mod tests {
         let loaded = store.get_candidate_list(list.id)?;
 
         assert_eq!(loaded.id, list.id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn select_default_submitters_uses_store_defaults() -> Result<(), AppError> {
+        let store = Store::new_for_test().await;
+
+        let list_submitter_a =
+            sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        let list_submitter_b =
+            sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        list_submitter_a.create(&store).await?;
+        list_submitter_b.create(&store).await?;
+
+        let substitute_a = sample_substitute_submitter(
+            crate::substitute_list_submitters::SubstituteSubmitterId::new(),
+        );
+        let substitute_b = sample_substitute_submitter(
+            crate::substitute_list_submitters::SubstituteSubmitterId::new(),
+        );
+        substitute_a.create(&store).await?;
+        substitute_b.create(&store).await?;
+
+        let mut list = sample_candidate_list(CandidateListId::new());
+
+        list.select_default_submitters(&store)?;
+
+        let chosen_list_submitter = list
+            .list_submitter_id
+            .expect("default list submitter selected");
+        assert!([list_submitter_a.id, list_submitter_b.id].contains(&chosen_list_submitter));
+
+        let chosen_substitutes: BTreeSet<_> =
+            list.substitute_list_submitter_ids.iter().copied().collect();
+        let expected_substitutes: BTreeSet<_> =
+            [substitute_a.id, substitute_b.id].into_iter().collect();
+        assert_eq!(expected_substitutes, chosen_substitutes);
 
         Ok(())
     }
