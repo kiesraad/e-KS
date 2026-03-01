@@ -23,7 +23,10 @@ pub async fn update_person(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
-            form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                PersonForm::from(person.clone()),
+                &context.session.csrf_tokens,
+            ),
             on_candidate_lists: store.count_candidate_lists(person.id)?,
             person,
         },
@@ -38,7 +41,7 @@ pub async fn update_person_submit(
     person: Person,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.csrf_tokens) {
+    match form.validate_update(&person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 on_candidate_lists: store.count_candidate_lists(person.id)?,
@@ -103,7 +106,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
         let expected_path = person.after_update_path();
@@ -142,7 +145,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

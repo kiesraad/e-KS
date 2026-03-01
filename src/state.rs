@@ -2,7 +2,7 @@
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, CsrfTokens, PoliticalGroupId, SessionStore, fixtures,
+    AppError, AppStore, AppStoreData, Config, PoliticalGroupId, SessionStore,
     store::registry::StoreRegistry,
 };
 use axum::extract::FromRef;
@@ -11,7 +11,6 @@ use axum::extract::FromRef;
 pub struct AppState {
     pub config: Config,
     pub store_registry: StoreRegistry<AppStoreData>,
-    pub csrf_tokens: CsrfTokens,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
 }
@@ -19,13 +18,11 @@ pub struct AppState {
 impl AppState {
     pub async fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
         let config = Config::from_env_with_typst_url(typst_url)?;
-        let csrf_tokens = CsrfTokens::default();
         let store_registry = StoreRegistry::new(config.storage_url.to_string());
 
         Ok(Self {
             config,
             store_registry,
-            csrf_tokens,
             sessions: SessionStore::new(),
         })
     }
@@ -39,7 +36,7 @@ impl AppState {
                 let needs_init = store.data.read().last_event_id == 0;
                 if needs_init {
                     #[cfg(feature = "fixtures")]
-                    fixtures::load(&store, political_group_id).await?;
+                    crate::fixtures::load(&store, political_group_id).await?;
                 }
                 Ok(())
             })
@@ -52,7 +49,6 @@ impl AppState {
         Self {
             store_registry: StoreRegistry::new(config.storage_url.to_string()),
             config,
-            csrf_tokens: CsrfTokens::default(),
             sessions: SessionStore::new(),
         }
     }
@@ -68,9 +64,6 @@ mod tests {
         let config = Config::new_test();
 
         assert_eq!(state.config.storage_url, config.storage_url);
-
-        let token = state.csrf_tokens.issue();
-        assert!(state.csrf_tokens.consume(&token.value));
 
         Ok(())
     }

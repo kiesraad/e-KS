@@ -30,7 +30,10 @@ pub async fn update_political_group(
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
-            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                political_group.clone().into(),
+                &context.session.csrf_tokens,
+            ),
             steps,
         },
         context,
@@ -47,7 +50,7 @@ pub async fn update_political_group_submit(
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
 
-    match form.validate_update(&political_group, &context.csrf_tokens) {
+    match form.validate_update(&political_group, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PoliticalGroupUpdateTemplate {
                 form: form_data,
@@ -119,7 +122,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_political_group_form(&csrf_token);
 
         let response = update_political_group_submit(
@@ -172,7 +175,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_political_group_form(&csrf_token);
 
         form.display_name = "!".to_string(); // Invalid value

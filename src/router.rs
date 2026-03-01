@@ -99,7 +99,7 @@ mod tests {
     use super::*;
     use axum::{
         body::Body,
-        http::{Request, StatusCode},
+        http::{Request, StatusCode, header},
     };
     use tower::ServiceExt;
 
@@ -108,13 +108,19 @@ mod tests {
     #[tokio::test]
     async fn index_route_renders_index() {
         let state = AppState::new_for_tests().await;
-        let app: Router = create(state.clone()).with_state(state);
+        let app: Router = create(state.clone()).with_state(state.clone());
 
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let mut session = crate::Session::new();
-        session.set_political_group(crate::PoliticalGroupId::new());
+        let session = crate::Session::new();
+        let token = session.token().to_exposed_string();
+        state.sessions.insert(session);
         let store = crate::AppStore::new_for_test().await;
-        request.extensions_mut().insert(session);
+        request.headers_mut().insert(
+            header::COOKIE,
+            format!("{}={}", crate::SESSION_COOKIE_NAME, token)
+                .parse()
+                .unwrap(),
+        );
         request.extensions_mut().insert(store);
         let response = app.oneshot(request).await.expect("response");
 
@@ -126,16 +132,22 @@ mod tests {
     #[tokio::test]
     async fn fallback_route_renders_not_found() {
         let state = AppState::new_for_tests().await;
-        let app: Router = create(state.clone()).with_state(state);
+        let app: Router = create(state.clone()).with_state(state.clone());
 
         let mut request = Request::builder()
             .uri("/missing")
             .body(Body::empty())
             .unwrap();
-        let mut session = crate::Session::new();
-        session.set_political_group(crate::PoliticalGroupId::new());
+        let session = crate::Session::new();
+        let token = session.token().to_exposed_string();
+        state.sessions.insert(session);
         let store = crate::AppStore::new_for_test().await;
-        request.extensions_mut().insert(session);
+        request.headers_mut().insert(
+            header::COOKIE,
+            format!("{}={}", crate::SESSION_COOKIE_NAME, token)
+                .parse()
+                .unwrap(),
+        );
         request.extensions_mut().insert(store);
         let response = app.oneshot(request).await.expect("response");
 

@@ -22,7 +22,7 @@ pub async fn create_person_candidate_list(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     )
@@ -36,7 +36,7 @@ pub async fn create_person_candidate_list_submit(
     store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_unique(&context.csrf_tokens, &store) {
+    match form.validate_create_unique(&context.session.csrf_tokens, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
@@ -104,7 +104,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -142,7 +142,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

@@ -22,7 +22,7 @@ pub async fn create_substitute_submitter(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     ))
@@ -34,7 +34,7 @@ pub async fn create_substitute_submitter_submit(
     store: AppStore,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterCreateTemplate { form: form_data },
             context,
@@ -87,7 +87,7 @@ mod tests {
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_substitute_submitter_form(&csrf_token);
 
         let response = create_substitute_submitter_submit(
@@ -126,7 +126,7 @@ mod tests {
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_substitute_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

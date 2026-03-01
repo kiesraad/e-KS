@@ -1,6 +1,6 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 
-use crate::{AppError, AppStore, Context, CsrfTokens, candidates::Candidate, trans};
+use crate::{AppError, AppStore, Context, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
@@ -8,7 +8,6 @@ impl<S> FromRequestParts<S> for Candidate
 where
     S: Clone + Send + Sync + 'static,
     AppStore: FromRequestParts<S, Rejection = AppError>,
-    CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -23,7 +22,7 @@ where
 
         let candidate_list = store.get_candidate_list(list_id).map_err(|err| match err {
             AppError::NotFound(_) => AppError::NotFound(
-                trans!("person.not_found_in_candidate_list", context.locale).to_string(),
+                trans!("person.not_found_in_candidate_list", context.session.locale).to_string(),
             ),
             _ => err,
         })?;
@@ -32,7 +31,8 @@ where
             .await
             .map_err(|err| match err {
                 AppError::NotFound(_) => AppError::NotFound(
-                    trans!("person.not_found_in_candidate_list", context.locale).to_string(),
+                    trans!("person.not_found_in_candidate_list", context.session.locale)
+                        .to_string(),
                 ),
                 _ => err,
             })?;
@@ -54,7 +54,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, AppStore,
+        AppState, AppStore, Locale,
         candidate_lists::CandidateListId,
         persons::PersonId,
         render_error_pages,
@@ -90,6 +90,9 @@ mod tests {
             .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
             .body(Body::empty())
             .unwrap();
+        let mut session = crate::Session::new_with_locale(Locale::En);
+        session.set_political_group(crate::PoliticalGroupId::new());
+        request.extensions_mut().insert(session);
         request.extensions_mut().insert(store.clone());
 
         let response = app.oneshot(request).await.expect("response");
@@ -129,6 +132,9 @@ mod tests {
             .header(header::ACCEPT_LANGUAGE, "en")
             .body(Body::empty())
             .unwrap();
+        let mut session = crate::Session::new_with_locale(Locale::En);
+        session.set_political_group(crate::PoliticalGroupId::new());
+        request.extensions_mut().insert(session);
         request.extensions_mut().insert(store.clone());
 
         let response = app.oneshot(request).await.expect("response");

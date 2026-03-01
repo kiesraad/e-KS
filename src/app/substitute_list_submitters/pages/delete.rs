@@ -14,7 +14,7 @@ pub async fn delete_substitute_submitter(
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             substitute_submitter.delete(&store).await?;
@@ -50,7 +50,7 @@ mod tests {
         political_group.update(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },

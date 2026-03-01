@@ -20,11 +20,12 @@ pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 
 /// Builds a secure, HTTP-only cookie that carries the session token.
 fn build_session_cookie(session: &Session) -> Cookie<'static> {
-    let mut cookie = Cookie::new(SESSION_COOKIE_NAME, session.token.clone());
+    let mut cookie = Cookie::new(SESSION_COOKIE_NAME, session.token().to_exposed_string());
     cookie.set_http_only(true);
     cookie.set_secure(true);
     cookie.set_same_site(SameSite::Lax);
     cookie.set_path("/");
+
     cookie
 }
 
@@ -128,7 +129,7 @@ mod tests {
         let app = Router::new()
             .route(
                 "/",
-                get(|session: Session| async move { session.token().to_string() }),
+                get(|session: Session| async move { session.token().to_exposed_string() }),
             )
             .layer(middleware::from_fn_with_state(
                 state.clone(),
@@ -157,7 +158,7 @@ mod tests {
         let app = Router::new()
             .route(
                 "/",
-                get(|session: Session| async move { session.token().to_string() }),
+                get(|session: Session| async move { session.token().to_exposed_string() }),
             )
             .layer(middleware::from_fn_with_state(
                 state.clone(),

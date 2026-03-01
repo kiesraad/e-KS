@@ -22,7 +22,7 @@ pub async fn create_candidate_list(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let used_districts = CandidateList::used_districts(&store, vec![])?;
-    let available_districts = context.election.available_districts(used_districts);
+    let available_districts = context.session.election.available_districts(used_districts);
     let has_previous_list = !store.get_candidate_lists()?.is_empty();
 
     let form = FormData::new_with_data(
@@ -30,7 +30,7 @@ pub async fn create_candidate_list(
             electoral_districts: available_districts,
             ..Default::default()
         },
-        &context.csrf_tokens,
+        &context.session.csrf_tokens,
     );
 
     Ok(HtmlTemplate(
@@ -50,7 +50,7 @@ pub async fn create_candidate_list_submit(
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
     let should_copy_candidates = form.copy_candidates;
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
                 form: form_data,
@@ -114,7 +114,7 @@ mod test {
     async fn create_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             copy_candidates: false,
@@ -174,7 +174,7 @@ mod test {
     async fn create_candidate_list_copies_previous_candidates() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person_a = sample_person(PersonId::new());

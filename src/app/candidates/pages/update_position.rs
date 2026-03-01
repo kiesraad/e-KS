@@ -34,7 +34,7 @@ pub async fn update_candidate_position(
 
     let form = FormData::new_with_data(
         CandidatePositionForm::from(candidate_position.clone()),
-        &context.csrf_tokens,
+        &context.session.csrf_tokens,
     );
 
     // Implementation for editing candidate position goes here
@@ -61,7 +61,7 @@ pub async fn update_candidate_position_submit(
         action: FormAction::Save,
     };
 
-    match form.validate_update(&candidate_position, &context.csrf_tokens) {
+    match form.validate_update(&candidate_position, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateCandidatePositionTemplate {
                 candidate,
@@ -171,7 +171,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 2, "save");
 
         let response = update_candidate_position_submit(
@@ -220,7 +220,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_position_form(&csrf_token, 1, "remove");
 
         let response = update_candidate_position_submit(

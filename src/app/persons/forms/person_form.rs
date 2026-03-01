@@ -44,7 +44,11 @@ impl From<Person> for PersonForm {
                 .date_of_birth
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
-            bsn: person.bsn.to_string_or_default(),
+            bsn: person
+                .bsn
+                .as_ref()
+                .map(|bsn| bsn.to_exposed_string())
+                .unwrap_or_default(),
             no_bsn_confirmed: person.no_bsn_confirmed,
             place_of_residence: person.place_of_residence.to_string_or_default(),
             country_of_residence: person.country_of_residence.to_string_or_default(),

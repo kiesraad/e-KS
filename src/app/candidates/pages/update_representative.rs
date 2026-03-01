@@ -29,7 +29,7 @@ pub async fn update_representative(
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
         RepresentativeForm::from(candidate.person.representative.clone()),
-        &context.csrf_tokens,
+        &context.session.csrf_tokens,
     );
 
     Ok(HtmlTemplate(
@@ -52,7 +52,10 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person.representative, &context.csrf_tokens) {
+    match form.validate_update(
+        &candidate.person.representative,
+        &context.session.csrf_tokens,
+    ) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
@@ -154,7 +157,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_tokens = context.csrf_tokens.clone();
+        let csrf_tokens = context.session.csrf_tokens.clone();
 
         let response = update_representative(
             UpdateRepresentativePath {
@@ -196,7 +199,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
 
@@ -252,7 +255,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 

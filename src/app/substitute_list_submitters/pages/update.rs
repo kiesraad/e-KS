@@ -27,7 +27,7 @@ pub async fn update_substitute_submitter(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
                 substitute_submitter.clone().into(),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             substitute_submitter,
         },
@@ -43,7 +43,7 @@ pub async fn update_substitute_submitter_submit(
     store: AppStore,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&substitute_submitter, &context.csrf_tokens) {
+    match form.validate_update(&substitute_submitter, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
@@ -118,7 +118,7 @@ mod tests {
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_substitute_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -164,7 +164,7 @@ mod tests {
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_substitute_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

@@ -29,7 +29,9 @@ impl SessionStore {
 
     /// Inserts a session into the store.
     pub fn insert(&self, session: Session) {
-        self.inner.write().insert(session.token.clone(), session);
+        self.inner
+            .write()
+            .insert(session.token().to_exposed_string(), session);
     }
 
     /// Returns an existing session if it is still valid.
@@ -61,7 +63,7 @@ mod tests {
     fn get_existing_returns_session() {
         let store = SessionStore::new();
         let session = Session::new();
-        let token = session.token.clone();
+        let token = session.token().to_exposed_string();
         store.insert(session.clone());
 
         let loaded = store.get_existing(Some(&token));
@@ -75,7 +77,7 @@ mod tests {
         let store = SessionStore::new();
         let session = store.create_new();
 
-        let loaded = store.get(&session.token);
+        let loaded = store.get(session.token().expose());
 
         assert_eq!(loaded, Some(session));
     }
@@ -87,7 +89,7 @@ mod tests {
         let mut session = Session::new();
         session.last_activity =
             Instant::now() - crate::SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
-        let token = session.token.clone();
+        let token = session.token().to_exposed_string();
         store.insert(session);
 
         let loaded = store.get(&token);
@@ -103,8 +105,8 @@ mod tests {
         expired.last_activity =
             Instant::now() - crate::SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
         let active = Session::new();
-        let expired_token = expired.token.clone();
-        let active_token = active.token.clone();
+        let expired_token = expired.token().to_exposed_string();
+        let active_token = active.token().to_exposed_string();
         store.insert(expired);
         store.insert(active);
 

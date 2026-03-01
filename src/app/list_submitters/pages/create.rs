@@ -21,7 +21,7 @@ pub async fn create_list_submitter(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         ListSubmitterCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     ))
@@ -33,7 +33,7 @@ pub async fn create_list_submitter_submit(
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterCreateTemplate { form: form_data },
             context,
@@ -82,7 +82,7 @@ mod tests {
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_list_submitter_form(&csrf_token);
 
         let response = create_list_submitter_submit(
@@ -121,7 +121,7 @@ mod tests {
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

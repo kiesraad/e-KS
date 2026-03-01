@@ -15,7 +15,7 @@ pub async fn delete_person(
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate.person.delete(&store).await?;
@@ -56,7 +56,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_person(
             CandidateListDeletePersonPath {

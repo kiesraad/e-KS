@@ -19,7 +19,7 @@ pub async fn create_person(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     ))
@@ -31,7 +31,7 @@ pub async fn create_person_submit(
     store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_unique(&context.csrf_tokens, &store) {
+    match form.validate_create_unique(&context.session.csrf_tokens, &store) {
         Err(form_data) => {
             Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }
@@ -75,7 +75,7 @@ mod tests {
     async fn create_person_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let response =
@@ -105,7 +105,7 @@ mod tests {
     async fn create_person_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -127,7 +127,7 @@ mod tests {
         existing.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))

@@ -31,7 +31,7 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let election = context.election;
+    let election = context.session.election;
 
     let candidate_lists = CandidateListSummary::list(&store)?
         .into_iter()

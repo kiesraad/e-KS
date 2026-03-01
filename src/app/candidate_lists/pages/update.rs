@@ -31,7 +31,7 @@ pub async fn update_candidate_list(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
                 CandidateListForm::from(candidate_list.clone()),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             should_warn: query.should_warn(),
             candidate_list,
@@ -49,7 +49,7 @@ pub async fn update_candidate_list_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -114,7 +114,7 @@ mod tests {
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()

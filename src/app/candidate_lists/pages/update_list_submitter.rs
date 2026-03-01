@@ -56,7 +56,7 @@ pub async fn update_list_submitter(
 ) -> Result<Response, AppError> {
     let form = FormData::new_with_data(
         ListSubmitterForm::from(candidate_list.clone()),
-        &context.csrf_tokens,
+        &context.session.csrf_tokens,
     );
 
     render_submitter_form(context, candidate_list, &store, query.should_warn(), form)
@@ -70,7 +70,7 @@ pub async fn update_list_submitter_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => render_submitter_form(
             context,
             candidate_list,
@@ -96,8 +96,8 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, CsrfTokens, ElectoralDistrict, Locale, PoliticalGroupId,
-        QueryParamState, TokenValue,
+        AppStore, Context, ElectoralDistrict, Locale, PoliticalGroupId, QueryParamState, Session,
+        TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
         substitute_list_submitters::SubstituteSubmitterId,
@@ -120,7 +120,10 @@ mod tests {
         list_submitter.create(&store).await?;
         substitute_submitter.create(&store).await?;
 
-        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
+        let context = Context::new(
+            political_group.clone(),
+            Session::new_with_locale(Locale::En),
+        );
 
         let response = update_list_submitter(
             UpdateListSubmitterPath {
@@ -153,8 +156,11 @@ mod tests {
         let store = AppStore::new_for_test().await;
         let political_group = sample_political_group(PoliticalGroupId::new());
         political_group.create(&store).await?;
-        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
-        let csrf_token = context.csrf_tokens.issue().value;
+        let context = Context::new(
+            political_group.clone(),
+            Session::new_with_locale(Locale::En),
+        );
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -228,7 +234,10 @@ mod tests {
         let store = AppStore::new_for_test().await;
         let political_group = sample_political_group(PoliticalGroupId::new());
         political_group.create(&store).await?;
-        let context = Context::new(political_group.clone(), Locale::En, CsrfTokens::default());
+        let context = Context::new(
+            political_group.clone(),
+            Session::new_with_locale(Locale::En),
+        );
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
         let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());

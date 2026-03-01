@@ -13,7 +13,7 @@ pub async fn gen_h1(
     State(config): State<Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H1::new(&store, list, &context.election, path.locale)?;
+    let h1 = H1::new(&store, list, &context.session.election, path.locale)?;
 
     h1.generate(config.typst_url).await
 }

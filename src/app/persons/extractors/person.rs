@@ -107,6 +107,9 @@ mod tests {
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap();
+                let mut session = crate::Session::new_with_locale(Locale::En);
+                session.set_political_group(crate::PoliticalGroupId::new());
+                request.extensions_mut().insert(session);
                 request.extensions_mut().insert(store.clone());
                 request
             })

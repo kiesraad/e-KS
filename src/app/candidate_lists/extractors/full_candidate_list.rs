@@ -1,6 +1,6 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 
-use crate::{AppError, AppStore, Context, CsrfTokens, candidate_lists::FullCandidateList, trans};
+use crate::{AppError, AppStore, Context, candidate_lists::FullCandidateList, trans};
 
 use super::CandidateListPathParams;
 
@@ -8,7 +8,6 @@ impl<S> FromRequestParts<S> for FullCandidateList
 where
     S: Clone + Send + Sync + 'static,
     AppStore: FromRequestParts<S, Rejection = AppError>,
-    CsrfTokens: FromRef<S>,
 {
     type Rejection = AppError;
 
@@ -22,7 +21,11 @@ where
             Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).map_err(|_| {
-            AppError::NotFound(trans!("candidate_list.not_found", context.locale, list_id))
+            AppError::NotFound(trans!(
+                "candidate_list.not_found",
+                context.session.locale,
+                list_id
+            ))
         })?;
 
         Ok(full_list)
@@ -79,6 +82,9 @@ mod tests {
             .uri(format!("/candidate-lists/{list_id}/full"))
             .body(Body::empty())
             .unwrap();
+        let mut session = crate::Session::new_with_locale(Locale::En);
+        session.set_political_group(crate::PoliticalGroupId::new());
+        request.extensions_mut().insert(session);
         request.extensions_mut().insert(store.clone());
 
         let response = app.oneshot(request).await.expect("response");
@@ -112,6 +118,9 @@ mod tests {
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap();
+                let mut session = crate::Session::new_with_locale(Locale::En);
+                session.set_political_group(crate::PoliticalGroupId::new());
+                request.extensions_mut().insert(session);
                 request.extensions_mut().insert(store.clone());
                 request
             })

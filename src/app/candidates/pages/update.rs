@@ -28,7 +28,7 @@ pub async fn update_person(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
                 PersonForm::from(candidate.person.clone()),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             on_candidate_lists: store.count_candidate_lists(candidate.person.id)?,
             candidate,
@@ -46,7 +46,7 @@ pub async fn update_person_submit(
     store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &context.csrf_tokens) {
+    match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,
@@ -137,7 +137,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
         let expected_path = candidate.after_update_path();
@@ -192,7 +192,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

@@ -14,7 +14,7 @@ pub async fn delete_candidate_list(
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate_list.delete(&store).await?;
@@ -38,7 +38,7 @@ mod tests {
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
         let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
