@@ -1,11 +1,11 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, Store, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     persons::{Person, RepresentativeForm, pages::UpdateRepresentativePath},
 };
@@ -29,7 +29,7 @@ pub async fn update_representative(
             should_warn: query.should_warn(),
             form: FormData::new_with_data(
                 RepresentativeForm::from(person.representative.clone()),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             person,
         },
@@ -41,11 +41,11 @@ pub async fn update_representative_submit(
     _: UpdateRepresentativePath,
     context: Context,
     person: Person,
-    State(store): State<Store>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person.representative, &context.csrf_tokens) {
+    match form.validate_update(&person.representative, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -67,7 +67,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, QueryParamState,
         persons::PersonId,
         test_utils::{
             extract_csrf_token, response_body_string, sample_person, sample_representative_form,
@@ -81,7 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_existing_person() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -106,14 +106,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_valid_csrf_token() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_tokens = context.csrf_tokens.clone();
+        let csrf_tokens = context.session.csrf_tokens.clone();
 
         let response = update_representative(
             UpdateRepresentativePath { person_id },
@@ -135,14 +135,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
         let expected_path = person.highlight_success_path().to_string();
@@ -151,7 +151,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             context,
             person,
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -175,14 +175,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 
@@ -190,7 +190,7 @@ mod tests {
             UpdateRepresentativePath { person_id },
             context,
             person,
-            State(store),
+            store,
             Query(QueryParamState::default()),
             Form(form),
         )

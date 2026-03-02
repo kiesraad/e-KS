@@ -2,7 +2,7 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, ElectoralDistrict, Store, candidate_lists::CandidateList};
+use crate::{AppError, AppStore, ElectoralDistrict, candidate_lists::CandidateList};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CandidateListSummary {
@@ -12,7 +12,7 @@ pub struct CandidateListSummary {
 }
 
 impl CandidateListSummary {
-    pub fn list(store: &Store) -> Result<Vec<CandidateListSummary>, AppError> {
+    pub fn list(store: &AppStore) -> Result<Vec<CandidateListSummary>, AppError> {
         let lists = store.get_candidate_lists()?;
 
         let mut district_count = BTreeMap::<ElectoralDistrict, usize>::new();

@@ -1,3 +1,4 @@
+// Enhance country code inputs with flag icons and keyboard navigation.
 const COUNTRY_INPUT_SELECTOR = ".country-input";
 
 export default function countryCodeInput() {

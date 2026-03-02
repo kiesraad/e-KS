@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::AnyLocale;
 
+/// Electoral districts used for nomination and submission flows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ElectoralDistrict {
     DR,
@@ -117,6 +118,7 @@ pub enum ElectionType {
     Tk,
 }
 
+/// Active election configuration and ruleset for the application.
 #[derive(Default, Debug, Clone, Copy)]
 pub enum ElectionConfig {
     #[default]

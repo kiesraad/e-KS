@@ -1,19 +1,18 @@
-use axum::extract::{FromRef, FromRequestParts};
+use axum::extract::FromRequestParts;
 
-use crate::{AppError, Store, political_groups::PoliticalGroup};
+use crate::{AppError, AppStore, political_groups::PoliticalGroup};
 
 impl<S> FromRequestParts<S> for PoliticalGroup
 where
-    S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
+    S: Send + Sync,
 {
     type Rejection = AppError;
 
     async fn from_request_parts(
-        _parts: &mut axum::http::request::Parts,
+        parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
 
         store.get_political_group()
     }

@@ -1,3 +1,4 @@
+// Toggle sticky navigation styles when the header is stuck.
 export default function setupStickyNav() {
   const sticky = document.querySelector(".sticky-nav");
 

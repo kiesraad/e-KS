@@ -1,8 +1,8 @@
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, HtmlTemplate, Store,
+    AppError, AppStore, Context, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
     core::AnyLocale,
     filters,
@@ -19,7 +19,7 @@ struct CandidateListIndexTemplate {
 pub async fn list_candidate_lists(
     _: CandidateListsPath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = CandidateListSummary::list(&store)?;
     let total_persons = store.get_person_count()?;
@@ -37,7 +37,7 @@ pub async fn list_candidate_lists(
 mod tests {
     use super::*;
     use crate::{
-        Context, Store,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -45,17 +45,14 @@ mod tests {
 
     #[tokio::test]
     async fn list_candidate_lists_shows_created_list() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 
-        let response = list_candidate_lists(
-            CandidateListsPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await?
-        .into_response();
+        let response =
+            list_candidate_lists(CandidateListsPath {}, Context::new_test_without_db(), store)
+                .await?
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

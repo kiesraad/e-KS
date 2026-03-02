@@ -1,3 +1,4 @@
+// Highlight active navigation links based on the current URL.
 export default function highlightActiveLinks() {
   document.querySelectorAll("a").forEach((link) => {
     const current = globalThis.location.pathname;

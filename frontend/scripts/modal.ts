@@ -1,3 +1,4 @@
+// Wire up modal dialog open/close controls.
 export default function setupModal() {
   const modal: HTMLDialogElement | null =
     document.querySelector("dialog.modal");

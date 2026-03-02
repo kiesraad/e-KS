@@ -2,7 +2,7 @@ use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StoreEvent};
-use crate::{AppError, constants::DEFAULT_STREAM_ID};
+use crate::AppError;
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<serde_json::Value> {
@@ -51,12 +51,17 @@ pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
     .execute(pool)
     .await?;
 
+    Ok(())
+}
+
+/// Ensure a stream row exists for the given stream ID.
+pub async fn ensure_stream(pool: &sqlx::PgPool, stream_id: uuid::Uuid) -> Result<(), AppError> {
     sqlx::query(
         r#"INSERT INTO streams (stream_id, last_event_id)
         VALUES ($1, 0)
         ON CONFLICT (stream_id) DO NOTHING"#,
     )
-    .bind(crate::constants::DEFAULT_STREAM_ID)
+    .bind(stream_id)
     .execute(pool)
     .await?;
 
@@ -107,7 +112,7 @@ where
         created_at: Utc::now(),
     };
 
-    if let Err(err) = append_once(next_id, &store_event, &mut tx).await {
+    if let Err(err) = append_once(store.stream_id, next_id, &store_event, &mut tx).await {
         tx.rollback().await?;
         return Err(err);
     }
@@ -136,7 +141,7 @@ where
         WHERE stream_id = $1
         FOR UPDATE"#,
     )
-    .bind(DEFAULT_STREAM_ID)
+    .bind(store.stream_id)
     .fetch_one(&mut **tx)
     .await?;
 
@@ -149,7 +154,7 @@ where
         ORDER BY event_id ASC
         "#,
         )
-        .bind(DEFAULT_STREAM_ID)
+        .bind(store.stream_id)
         .bind(last_id as i64)
         .fetch_all(&mut **tx)
         .await?;
@@ -192,6 +197,7 @@ where
 
 /// Append a single event to the database within an open transaction.
 async fn append_once<E: Serialize>(
+    stream_id: uuid::Uuid,
     next_id: usize,
     event: &StoreEvent<E>,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
@@ -203,7 +209,7 @@ async fn append_once<E: Serialize>(
         r#"INSERT INTO events (stream_id, event_id, created_at, payload)
         VALUES ($1, $2, $3, $4)"#,
     )
-    .bind(DEFAULT_STREAM_ID)
+    .bind(stream_id)
     .bind(next_id as i64)
     .bind(event.created_at)
     .bind(new_payload)
@@ -211,7 +217,7 @@ async fn append_once<E: Serialize>(
     .await?;
 
     sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-        .bind(DEFAULT_STREAM_ID)
+        .bind(stream_id)
         .bind(next_id as i64)
         .execute(&mut **tx)
         .await?;

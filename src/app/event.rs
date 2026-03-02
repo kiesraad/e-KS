@@ -11,6 +11,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
+/// Domain events that mutate the application store.
 #[derive(Debug, Serialize, Deserialize)]
 pub enum AppEvent {
     UpdatePoliticalGroup(PoliticalGroup),

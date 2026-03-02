@@ -12,6 +12,7 @@ mod context;
 mod event;
 mod getters;
 mod store;
+mod store_extractor;
 
 pub use context::Context;
 pub use event::AppEvent;

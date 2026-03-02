@@ -1,3 +1,6 @@
+//! Macro for defining UUID-backed ID newtypes with common trait impls.
+
+/// Define a UUID-backed ID newtype with common trait implementations.
 #[macro_export]
 macro_rules! id_newtype {
     (

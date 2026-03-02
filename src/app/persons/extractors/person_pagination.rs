@@ -1,7 +1,7 @@
-use axum::extract::{FromRef, FromRequestParts};
+use axum::extract::FromRequestParts;
 
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     pagination::Pagination,
     persons::{self, PersonPagination, PersonSort},
 };
@@ -9,7 +9,7 @@ use crate::{
 impl<S> FromRequestParts<S> for PersonPagination
 where
     S: Send + Sync,
-    Store: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
 {
     type Rejection = AppError;
 
@@ -17,7 +17,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let pagination: Pagination<PersonSort> =
             Pagination::from_request_parts(parts, state).await?;
 
@@ -51,7 +51,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState,
+        AppState, AppStore,
         persons::PersonId,
         test_utils::{response_body_string, sample_person_with_last_name},
     };
@@ -59,12 +59,13 @@ mod tests {
     #[tokio::test]
     async fn person_pagination_extractor_slices_and_orders() {
         let app_state = AppState::new_for_tests().await;
+        let store = AppStore::new_for_test().await;
         sample_person_with_last_name(PersonId::new(), "Bakker")
-            .create(&app_state.store)
+            .create(&store)
             .await
             .unwrap();
         sample_person_with_last_name(PersonId::new(), "Jansen")
-            .create(&app_state.store)
+            .create(&store)
             .await
             .unwrap();
 
@@ -82,15 +83,13 @@ mod tests {
             )
             .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/persons?page=2&per_page=1&sort=last_name&order=asc")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri("/persons?page=2&per_page=1&sort=last_name&order=asc")
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

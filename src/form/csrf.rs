@@ -1,16 +1,14 @@
 use chrono::{DateTime, Duration, Utc};
+use parking_lot::RwLock;
 use rand::{RngExt, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::Display,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 use tracing::info;
 
 /// Number of minutes a CSRF token remains valid.
 pub const CSRF_TOKEN_TTL_MINUTES: i64 = 30;
 
+/// Opaque CSRF token value stored in forms and sessions.
 #[derive(Clone, Debug, PartialEq, Eq, Hash, Default, Serialize, Deserialize)]
 pub struct TokenValue(pub String);
 
@@ -20,12 +18,14 @@ impl Display for TokenValue {
     }
 }
 
+/// Issued CSRF token with an expiry timestamp.
 #[derive(Clone, Debug)]
 pub struct CsrfToken {
     pub value: TokenValue,
     pub expires_at: DateTime<Utc>,
 }
 
+/// In-memory CSRF token store for a session.
 #[derive(Default, Clone)]
 pub struct CsrfTokens {
     tokens: Arc<RwLock<HashMap<TokenValue, DateTime<Utc>>>>,
@@ -49,7 +49,7 @@ impl CsrfTokens {
             expires_at,
         };
 
-        let mut tokens = self.tokens.write().expect("csrf token store poisoned");
+        let mut tokens = self.tokens.write();
         Self::purge_locked(&mut tokens);
         tokens.insert(token.value.clone(), expires_at);
 
@@ -62,7 +62,7 @@ impl CsrfTokens {
     }
 
     pub fn consume(&self, value: &TokenValue) -> bool {
-        let mut tokens = self.tokens.write().expect("csrf token store poisoned");
+        let mut tokens = self.tokens.write();
         Self::purge_locked(&mut tokens);
         info!("verifying CSRF token {}", value.0);
 

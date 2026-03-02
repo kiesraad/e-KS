@@ -1,11 +1,8 @@
 use crate::{
-    AppError, AppEvent, OptionStringExt, Store,
+    AppError, AppEvent, AppStore, OptionStringExt, PoliticalGroupId,
     common::{DisplayName, LegalName},
-    id_newtype,
 };
 use serde::{Deserialize, Serialize};
-
-id_newtype!(pub struct PoliticalGroupId);
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PoliticalGroup {
@@ -29,13 +26,13 @@ impl PoliticalGroup {
             && self.display_name.is_empty_or_none()
     }
 
-    pub async fn create(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdatePoliticalGroup(self.clone()))
             .await
     }
 
-    pub async fn update(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdatePoliticalGroup(self.clone()))
             .await

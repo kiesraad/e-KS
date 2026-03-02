@@ -1,7 +1,7 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
-    AppError, Context, Form, Store,
+    AppError, AppStore, Context, Form,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     form::EmptyForm,
     redirect_success,
@@ -11,10 +11,10 @@ pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate_list.delete(&store).await?;
@@ -28,7 +28,7 @@ pub async fn delete_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        ElectoralDistrict, Form, QueryParamState, Store, TokenValue,
+        AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::CandidateListSummary,
     };
     use axum::http::{StatusCode, header};
@@ -36,9 +36,9 @@ mod tests {
 
     #[tokio::test]
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -51,7 +51,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await?;
@@ -81,7 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_candidate_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());
         let candidate_list = CandidateList {
@@ -96,7 +96,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await

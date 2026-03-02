@@ -1,3 +1,4 @@
+// Toggle BSN input availability when "no BSN" is confirmed.
 export default function bsnInput() {
   const bsnInput = document.getElementById("bsn") as HTMLInputElement | null;
   const noBsnConfirmedInput = document.getElementById(

@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::ListSubmitter,
     redirect_success,
@@ -30,7 +27,7 @@ pub async fn update_substitute_submitter(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
                 substitute_submitter.clone().into(),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             substitute_submitter,
         },
@@ -43,10 +40,10 @@ pub async fn update_substitute_submitter_submit(
     _: SubstituteSubmitterUpdatePath,
     context: Context,
     substitute_submitter: SubstituteSubmitter,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<SubstituteSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&substitute_submitter, &context.csrf_tokens) {
+    match form.validate_update(&substitute_submitter, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
@@ -74,8 +71,7 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, Context, Store,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, PoliticalGroupId,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{
             response_body_string, sample_political_group, sample_substitute_submitter,
@@ -85,7 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -112,7 +108,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -122,7 +118,7 @@ mod tests {
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_substitute_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -130,7 +126,7 @@ mod tests {
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
             substitute_submitter.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -158,7 +154,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -168,7 +164,7 @@ mod tests {
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_substitute_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -176,7 +172,7 @@ mod tests {
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
             substitute_submitter.clone(),
-            State(store),
+            store,
             Form(form),
         )
         .await

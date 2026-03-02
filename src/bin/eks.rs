@@ -50,12 +50,7 @@ async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), App
     // Create application state
     let state = AppState::new_with_typst_url(typst_url).await?;
 
-    // Load initial data into the store
-    state.store.load().await?;
-
-    // Load fixtures
-    #[cfg(feature = "fixtures")]
-    eks::fixtures::load(&state.store).await?;
+    // Stores are loaded per political group on demand via StoreRegistry.
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());

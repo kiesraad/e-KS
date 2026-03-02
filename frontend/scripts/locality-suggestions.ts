@@ -1,3 +1,4 @@
+// Fetch and populate locality suggestions as the user types.
 export default function localitySuggestions() {
   const input = document.getElementById("locality") as HTMLInputElement | null;
   const datalist = document.getElementById("locality-suggestions");

@@ -1,3 +1,4 @@
+//! Embedded Typst webservice helpers for local PDF generation.
 use typst_webservice::{PdfContext, start_server};
 
 const TYPST_FILES: &[(&str, &[u8])] = &[

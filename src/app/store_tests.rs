@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStoreData, ElectoralDistrict, Store,
+    AppError, AppEvent, AppStore, AppStoreData, ElectoralDistrict,
     candidate_lists::CandidateListId,
     common::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
@@ -295,7 +295,7 @@ fn apply_update_candidate_list_submitters_sets_ids() {
 
 #[tokio::test]
 async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
-    let store = Store::new_for_test().await;
+    let store = AppStore::new_for_test().await;
     let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
     let agent = sample_authorised_agent(agent_id);
 
@@ -310,7 +310,7 @@ async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
 #[cfg(feature = "database")]
 mod database_tests {
     use super::*;
-    use crate::{constants::DEFAULT_STREAM_ID, persons::PersonId, test_utils::sample_person};
+    use crate::{PoliticalGroupId, persons::PersonId, test_utils::sample_person};
     use chrono::Utc;
     use sqlx::PgPool;
 
@@ -320,7 +320,10 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let group_id = PoliticalGroupId::new();
+        let store = AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid())
+            .await
+            .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -329,7 +332,9 @@ mod database_tests {
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
 
-        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        let fresh_store = AppStore::new_with_pool_for_stream(pool, group_id.uuid())
+            .await
+            .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;
@@ -344,7 +349,10 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let store = Store::new_with_pool(pool.clone()).await.unwrap();
+        let group_id = PoliticalGroupId::new();
+        let store = AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid())
+            .await
+            .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -355,7 +363,7 @@ mod database_tests {
             r#"INSERT INTO events (stream_id, event_id, created_at, payload)
             VALUES ($1, $2, $3, $4)"#,
         )
-        .bind(DEFAULT_STREAM_ID)
+        .bind(store.stream_id)
         .bind(2_i64)
         .bind(Utc::now())
         .bind(invalid_payload)
@@ -363,12 +371,14 @@ mod database_tests {
         .await?;
 
         sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-            .bind(DEFAULT_STREAM_ID)
+            .bind(store.stream_id)
             .bind(2_i64)
             .execute(&pool)
             .await?;
 
-        let fresh_store = Store::new_with_pool(pool).await.unwrap();
+        let fresh_store = AppStore::new_with_pool_for_stream(pool, group_id.uuid())
+            .await
+            .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;

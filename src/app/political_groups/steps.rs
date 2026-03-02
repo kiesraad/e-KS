@@ -1,5 +1,5 @@
 use crate::{
-    AppError, Store, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
+    AppError, AppStore, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
     substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -15,7 +15,7 @@ pub struct PoliticalGroupSteps {
 }
 
 impl PoliticalGroupSteps {
-    pub fn new(store: Store) -> Result<Self, AppError> {
+    pub fn new(store: &AppStore) -> Result<Self, AppError> {
         let political_group = store.get_political_group()?;
         let authorised_agents = store.get_authorised_agents()?;
         let list_submitters = store.get_list_submitters()?;

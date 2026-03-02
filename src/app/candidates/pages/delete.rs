@@ -1,7 +1,7 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
-    AppError, Context, Form, Store, candidate_lists::CandidateList, candidates::Candidate,
+    AppError, AppStore, Context, Form, candidate_lists::CandidateList, candidates::Candidate,
     form::EmptyForm, redirect_success,
 };
 
@@ -12,10 +12,10 @@ pub async fn delete_person(
     candidate: Candidate,
     candidate_list: CandidateList,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             candidate.person.delete(&store).await?;
@@ -29,7 +29,7 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        Form, QueryParamState, Store,
+        AppStore, Form, QueryParamState,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -39,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -56,7 +56,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_person(
             CandidateListDeletePersonPath {
@@ -66,7 +66,7 @@ mod tests {
             candidate,
             list.clone(),
             context,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await?;

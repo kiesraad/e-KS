@@ -69,6 +69,7 @@ askama = "0.15.4" # 31M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 136M downloads (Andrew Gallant)
 phf = { version = "0.13.1", default-features = false } # 247M downloads (Steven Fackler)
 derive_more = { version = "2.1.1", features = ["display", "from_str", "as_ref", "deref", "into", "from"] } # 251M downloads (Jelte Fennema-Nio)
+secrecy = "0.10.3"
 
 # tweedegolf
 memory-serve = { version = "2.0.0", optional = true }

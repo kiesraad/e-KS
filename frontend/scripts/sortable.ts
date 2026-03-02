@@ -1,3 +1,4 @@
+// Enable drag-and-drop sorting for table rows.
 export default function setupSortable() {
   /**
    * Holds the state of a single drag interaction and exposes helpers to update it.

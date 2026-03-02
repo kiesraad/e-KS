@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     persons::{Person, PersonForm, pages::UpdatePersonPath},
 };
@@ -21,12 +18,15 @@ struct PersonUpdateTemplate {
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     person: Person,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
-            form: FormData::new_with_data(PersonForm::from(person.clone()), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                PersonForm::from(person.clone()),
+                &context.session.csrf_tokens,
+            ),
             on_candidate_lists: store.count_candidate_lists(person.id)?,
             person,
         },
@@ -37,11 +37,11 @@ pub async fn update_person(
 pub async fn update_person_submit(
     _: UpdatePersonPath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     person: Person,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.csrf_tokens) {
+    match form.validate_update(&person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 on_candidate_lists: store.count_candidate_lists(person.id)?,
@@ -63,7 +63,7 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, Store,
+        AppError, AppStore, Context, Form,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -74,7 +74,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_renders_existing_person() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -83,7 +83,7 @@ mod tests {
         let response = update_person(
             UpdatePersonPath { person_id },
             Context::new_test_without_db(),
-            State(store),
+            store,
             person,
         )
         .await
@@ -99,14 +99,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
         let expected_path = person.after_update_path();
@@ -114,7 +114,7 @@ mod tests {
         let response = update_person_submit(
             UpdatePersonPath { person_id },
             context,
-            State(store.clone()),
+            store.clone(),
             person,
             Form(form),
         )
@@ -138,21 +138,21 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
             context,
-            State(store),
+            store,
             person,
             Form(form),
         )

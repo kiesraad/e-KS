@@ -1,11 +1,11 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, Store,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::AddressForm,
 };
@@ -29,7 +29,7 @@ pub async fn update_person_address(
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
         AddressForm::from(candidate.person.clone()),
-        &context.csrf_tokens,
+        &context.session.csrf_tokens,
     );
 
     Ok(HtmlTemplate(
@@ -48,11 +48,11 @@ pub async fn update_person_address_submit(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    State(store): State<Store>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &context.csrf_tokens) {
+    match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -83,7 +83,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        Context, Form, QueryParamState, Store,
+        AppStore, Context, Form, QueryParamState,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -99,7 +99,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_renders_candidate() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -152,7 +152,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.locality = "Rotterdam".to_string();
         let expected_path = full_list
@@ -168,7 +168,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -198,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -214,7 +214,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 
@@ -226,7 +226,7 @@ mod tests {
             context,
             full_list,
             candidate,
-            State(store),
+            store,
             Query(QueryParamState::default()),
             Form(form),
         )
