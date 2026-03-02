@@ -15,15 +15,11 @@ type CountryInputElements = {
  * Returns null when required structure is missing.
  */
 function getCountryInputElements(input: Element): CountryInputElements | null {
-  const textInput = input.querySelector("input") as HTMLInputElement | null;
-  const hint =
-    (input.parentNode?.querySelector(".hint") as HTMLSpanElement | null) ||
-    null;
-  const flagIcon = input.querySelector(".icon") as HTMLSpanElement | null;
-  const list = input.querySelector("ul") as HTMLElement | null;
-  const items = Array.from(
-    list?.querySelectorAll("li") || [],
-  ) as HTMLLIElement[];
+  const textInput = input.querySelector("input");
+  const hint = input.parentNode?.querySelector(".hint") || null;
+  const flagIcon = input.querySelector(".icon");
+  const list = input.querySelector("ul");
+  const items = Array.from(list?.querySelectorAll("li") || []);
   const nlIndex = items.findIndex((item) => item.dataset.country === "NL");
 
   if (!textInput || !flagIcon || !hint || !list || items.length === 0) {
@@ -38,8 +34,8 @@ function getCountryInputElements(input: Element): CountryInputElements | null {
 
   return {
     textInput,
-    hint,
-    flagIcon,
+    hint: hint as HTMLSpanElement,
+    flagIcon: flagIcon as HTMLSpanElement,
     list,
     items,
     nlIndex,
@@ -86,7 +82,7 @@ function setFlagIcon(
 ) {
   const inputValue = textInput.value.toUpperCase();
   const match = items.find((item) => item.dataset.country === inputValue);
-  const icon = match?.querySelector(".icon") as HTMLElement | null;
+  const icon: HTMLElement | null | undefined = match?.querySelector(".icon");
   flagIcon.innerText = icon?.innerText || "🌐";
 }
 
@@ -129,14 +125,8 @@ function findActiveIndex(
 /**
  * Wires up all behaviors for a single country input instance.
  */
-function initCountryInput({
-  textInput,
-  hint,
-  flagIcon,
-  list,
-  items,
-  nlIndex,
-}: CountryInputElements) {
+function initCountryInput(elements: CountryInputElements) {
+  const { textInput, hint, flagIcon, list, items, nlIndex } = elements;
   let active = 0;
 
   // hide hint

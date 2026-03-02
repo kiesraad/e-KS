@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import { formatDateValue } from "../../../frontend/scripts/date-input";
+import { formatDateValue } from "../../../frontend/scripts/form-inputs/date-input";
 
 test.describe("formatDateValue", () => {
   test("formats 8 digits into DD-MM-YYYY", () => {
