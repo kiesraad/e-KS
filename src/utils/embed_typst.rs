@@ -3,28 +3,40 @@ use typst_webservice::{PdfContext, start_server};
 const TYPST_FILES: &[(&str, &[u8])] = &[
     (
         "DMSans-Bold.ttf",
-        include_bytes!("../../models/fonts/DMSans-Bold.ttf"),
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-Bold.ttf"),
     ),
     (
         "DMSans-BoldItalic.ttf",
-        include_bytes!("../../models/fonts/DMSans-BoldItalic.ttf"),
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-BoldItalic.ttf"),
     ),
     (
-        "DMSans-Regular.ttf",
-        include_bytes!("../../models/fonts/DMSans-Regular.ttf"),
+        "DMSans-ExtraBold.ttf",
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-ExtraBold.ttf"),
+    ),
+    (
+        "DMSans-ExtraBoldItalic.ttf",
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-ExtraBoldItalic.ttf"),
     ),
     (
         "DMSans-Italic.ttf",
-        include_bytes!("../../models/fonts/DMSans-Italic.ttf"),
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-Italic.ttf"),
+    ),
+    (
+        "DMSans-Regular.ttf",
+        include_bytes!("../../models/fonts/DM_Sans/DMSans-Regular.ttf"),
     ),
     (
         "GeistMono-Regular.otf",
-        include_bytes!("../../models/fonts/GeistMono-Regular.otf"),
+        include_bytes!("../../models/fonts/Geist_Mono/GeistMono-Regular.otf"),
     ),
     ("layout.typ", include_bytes!("../../models/layout.typ")),
     (
-        "model-h-1.typ",
-        include_bytes!("../../models/model-h-1.typ"),
+        "model-h1-fry.typ",
+        include_bytes!("../../models/model-h1-fry.typ"),
+    ),
+    (
+        "model-h1-nl.typ",
+        include_bytes!("../../models/model-h1-nl.typ"),
     ),
 ];
 

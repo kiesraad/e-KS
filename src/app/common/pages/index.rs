@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use super::IndexPath;
-use crate::{Context, ElectionConfig, HtmlTemplate, filters};
+use crate::{Context, ElectionConfig, HtmlTemplate, core::AnyLocale, filters};
 
 #[derive(Template)]
 #[template(path = "common/pages/index.html")]
@@ -24,6 +24,6 @@ mod tests {
             .await
             .into_response();
         let body = response_body_string(body).await;
-        assert!(body.contains(ElectionConfig::default().title()));
+        assert!(body.contains(ElectionConfig::default().title(AnyLocale::En)));
     }
 }

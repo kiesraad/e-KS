@@ -1,6 +1,7 @@
 mod config;
 mod election;
 mod locale;
+mod model_locale;
 mod option_string_ext;
 mod query_param_state;
 mod redirect;
@@ -26,6 +27,7 @@ pub mod test_utils;
 pub use config::{Config, get_env};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict};
 pub use locale::Locale;
+pub use model_locale::{AnyLocale, ModelLocale};
 pub use option_string_ext::OptionStringExt;
 pub use pdf::Pdf;
 pub use query_param_state::QueryParamState;

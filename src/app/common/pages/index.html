@@ -1,6 +1,9 @@
 {% extends "common/components/layout.html" %}
 {% block page_title %}
-  {% if let Ok(election) = "election"|value::<ElectionConfig> %}{{ election.title() }}{% endif %}
+  {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+    {% let any_locale = AnyLocale::from(***locale) %}
+    {% if let Ok(election) = "election"|value::<ElectionConfig> %}{{ election.title(*any_locale) }}{% endif %}
+  {% endif %}
 {% endblock %}
 {% block content %}
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>

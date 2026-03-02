@@ -7,6 +7,7 @@ use axum::{
 use crate::{
     AppError, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState, Store,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
+    core::AnyLocale,
     filters,
     form::FormData,
     redirect_success,

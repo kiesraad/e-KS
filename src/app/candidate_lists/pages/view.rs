@@ -4,11 +4,12 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, Context, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
+    core::AnyLocale,
     filters,
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/pages/view.html")]
+#[template(path = "candidate_lists/pages/view.html", print = "code")]
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
 }

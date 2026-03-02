@@ -291,7 +291,7 @@ mod tests {
         person.gender = Some(Gender::Male);
 
         assert_eq!(person.display_name(), "Evert Klaas Smit");
-        assert_eq!(person.gender_key(), "gender.male");
+        assert_eq!(person.gender_key(), "common.gender.male");
 
         person.first_name = None;
         assert_eq!(person.first_name.as_str_or_empty(), "");

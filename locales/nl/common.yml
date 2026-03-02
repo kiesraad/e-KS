@@ -1,12 +1,19 @@
 back_to_home: Terug naar het startscherm
 description: Kandidaatstellen voor verkiezingen in Nederland
 electoral_districts: Kieskringen
+gender:
+  empty: (leeg)
+  female: vrouw
+  male: man
 general_information: Basisgegevens
 general_information_description:
   basic: Vul gegevens van de politieke groepering in
   submitter: Vul gegevens van de lijstinleveraar in
 home: Start
 keywords: "Kiesraad, kandidaatstelling, verkiezingen, Nederland"
+languages:
+  dutch: Nederlands
+  frisian: Fries
 no_label: Nee
 save_success: opgeslagen
 step: "Stap {}"

@@ -29,17 +29,14 @@
                   <p>{{ "candidate_list.districts.all"|trans }}</p>
                 {% else %}
                   <ul class="districts">
-                    {% for district in candidate_list.list.electoral_districts %}
-                      {% if candidate_list.duplicate_districts.contains(district) %}
-                        <li class="warning">
-                          <span>{{ district.title() }}</span>
+                    {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+                      {% let any_locale = AnyLocale::from(***locale) %}
+                      {% for district in candidate_list.list.electoral_districts %}
+                        <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
+                          <span>{{ district.title(*any_locale) }}</span>
                         </li>
-                      {% else %}
-                        <li>
-                          <span>{{ district.title() }}</span>
-                        </li>
-                      {% endif %}
-                    {% endfor %}
+                      {% endfor %}
+                    {% endif %}
                   </ul>
                 {% endif %}
                 <p>{{ "action.manage_candidate_list"|trans }}</p>
