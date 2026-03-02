@@ -1,5 +1,12 @@
 name: SonarQube
 
+permissions:
+  contents: read
+concurrency:
+  group: 
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-sonarqube
+  cancel-in-progress: true
+
 on:
   push:
     branches:
