@@ -1,16 +1,20 @@
 name: Deploy Rustdocs to GitHub Pages
+
+permissions: {}
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - main
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
 
 jobs:
   # Build Job
   build:
+    name: build pages
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -46,13 +50,14 @@ jobs:
           path: './target/doc'
 
   deploy:
+    name: deploy pages
     environment:
       name: github-pages
       url: ${{ steps.deployment.outputs.page_url }}e_ks
     runs-on: ubuntu-24.04
     permissions:
-      pages: write
-      id-token: write
+      pages: write # to publish docs to the pages url of the repo
+      id-token: write # to verify the source of the pages deployment
     needs: build
     steps:
       - name: Deploy to GitHub Pages
