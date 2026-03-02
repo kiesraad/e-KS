@@ -7,13 +7,13 @@ use crate::{
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h1(
-    _: DownloadH1Path,
+    path: DownloadH1Path,
     list: FullCandidateList,
     State(store): State<Store>,
     State(config): State<Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H1::new(&store, list, &context.election, context.locale)?;
+    let h1 = H1::new(&store, list, &context.election, path.locale)?;
 
     h1.generate(config.typst_url).await
 }
@@ -24,6 +24,7 @@ mod tests {
     use crate::{
         Context, Store,
         candidate_lists::CandidateListId,
+        core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_list_submitter, sample_person},
@@ -46,7 +47,10 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
         let result = gen_h1(
-            DownloadH1Path { list_id },
+            DownloadH1Path {
+                list_id,
+                locale: ModelLocale::Nl,
+            },
             full_list,
             State(store),
             State(Config::new_test()),
@@ -84,8 +88,10 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
-        let router =
-            Router::new().route("/render-pdf/model-h-1.typ/h1.pdf", get(|| async { "pdf" }));
+        let router = Router::new().route(
+            "/render-pdf/model-h1-nl.typ/model-h1-nl.pdf",
+            get(|| async { "pdf" }),
+        );
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
@@ -99,7 +105,10 @@ mod tests {
         };
 
         let response = gen_h1(
-            DownloadH1Path { list_id },
+            DownloadH1Path {
+                list_id,
+                locale: ModelLocale::Nl,
+            },
             full_list,
             State(store),
             State(config),
@@ -120,7 +129,7 @@ mod tests {
             headers
                 .get(header::CONTENT_DISPOSITION)
                 .expect("content disposition header"),
-            "attachment; filename=\"h1.pdf\""
+            "attachment; filename=\"model-h1-nl.pdf\""
         );
         assert_eq!(
             headers

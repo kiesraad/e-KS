@@ -1,6 +1,6 @@
 [package]
 name = "eks"
-version = "0.1.0"
+version = "0.2.0"
 edition = "2024"
 license = "EUPL-1.2"
 rust-version = "1.91"
@@ -12,16 +12,28 @@ documentation = "https://kiesraad.github.io/e-KS/e_ks/"
 repository = "https://github.com/kiesraad/e-KS"
 
 [features]
+# Default development-oriented feature set.
 default = ["migrations", "fixtures", "livereload", "dev-features", "http-logging"]
-database = ["dep:sqlx"]
-db-tests = ["database"]
+# Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
-fixtures = []
-http-logging = ["tower-http/trace"]
-livereload = []
-memory-serve = ["dep:memory-serve"]
+# Enable database-backed storage via Postgres / SQLx.
+database = ["dep:sqlx"]
+# Run database migrations on startup.
 migrations = ["database"]
+# Load fixture data on startup (dev/test).
+fixtures = []
+# Enable database-dependent tests.
+db-tests = ["database"]
+# Enable network-dependent tests.
 net-tests = []
+# Enable HTTP request/response tracing via tower-http.
+http-logging = ["tower-http/trace"]
+# Live-reload assets/templates during development.
+livereload = []
+# Serve embedded static assets from memory.
+memory-serve = ["dep:memory-serve"]
+# Run the embedded Typst webservice in-process.
+embed-typst = ["dep:typst-webservice"]
 
 [dependencies]
 # tokio universe
@@ -60,10 +72,11 @@ derive_more = { version = "2.1.1", features = ["display", "from_str", "as_ref", 
 
 # tweedegolf
 memory-serve = { version = "2.0.0", optional = true }
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.5.1", optional = true }
 validate = { path = "validate" }
 
 [build-dependencies]
-memory-serve = { version = "2.0.0-beta.0", optional = true }
+memory-serve = { version = "2.0.0", optional = true }
 phf_codegen = "0.13.1"
 
 [dev-dependencies]

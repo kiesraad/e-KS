@@ -9,9 +9,9 @@ use serde::Serialize;
 use tracing::debug;
 
 pub trait Pdf: Sized + Serialize {
-    fn typst_template_name(&self) -> &'static str;
+    fn typst_template_name(&self) -> String;
 
-    fn filename(&self) -> &str;
+    fn filename(&self) -> String;
 
     async fn generate(self, typst_url: &str) -> Result<Response<Body>, AppError> {
         let url = format!(

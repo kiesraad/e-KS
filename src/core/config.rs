@@ -5,7 +5,7 @@ use std::env;
 
 use crate::AppError;
 
-const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
+const DEFAULT_STORAGE_URL: &str = "memory://ephemeral";
 const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
 
 #[derive(Debug, Clone, Copy)]
@@ -26,10 +26,6 @@ pub fn get_env(name: &'static str, _dev_default: &'static str) -> Result<String,
 }
 
 impl Config {
-    pub fn from_env() -> Result<Self, AppError> {
-        Self::from_env_with(get_env)
-    }
-
     pub fn from_env_with<F>(get: F) -> Result<Self, AppError>
     where
         F: Fn(&'static str, &'static str) -> Result<String, AppError>,
@@ -37,6 +33,19 @@ impl Config {
         Ok(Self {
             storage_url: Box::leak(get("STORAGE_URL", DEFAULT_STORAGE_URL)?.into_boxed_str()),
             typst_url: Box::leak(get("TYPST_URL", DEFAULT_TYPST_URL)?.into_boxed_str()),
+        })
+    }
+
+    pub fn from_env_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
+        let storage_url = get_env("STORAGE_URL", DEFAULT_STORAGE_URL)?;
+        let typst_url = match typst_url {
+            Some(value) => value,
+            None => get_env("TYPST_URL", DEFAULT_TYPST_URL)?,
+        };
+
+        Ok(Self {
+            storage_url: Box::leak(storage_url.into_boxed_str()),
+            typst_url: Box::leak(typst_url.into_boxed_str()),
         })
     }
 

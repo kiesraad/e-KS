@@ -11,13 +11,16 @@
         {% else if full_list.list.electoral_districts.is_empty() %}
           {# skip #}
         {% else %}
-          <ul class="districts">
-            {% for district in full_list.list.electoral_districts %}
-              <li>
-                <span>{{ district.title() }}</span>
-              </li>
-            {% endfor %}
-          </ul>
+          {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+            {% let any_locale = AnyLocale::from(***locale) %}
+            <ul class="districts">
+              {% for district in full_list.list.electoral_districts %}
+                <li>
+                  <span>{{ district.title(*any_locale) }}</span>
+                </li>
+              {% endfor %}
+            </ul>
+          {% endif %}
         {% endif %}
       </span>
     {% endif %}

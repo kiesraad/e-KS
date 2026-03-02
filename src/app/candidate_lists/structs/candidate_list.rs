@@ -5,6 +5,7 @@ use crate::{
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     common::UtcDateTime,
+    core::AnyLocale,
     id_newtype,
     list_submitters::ListSubmitterId,
     persons::{Person, PersonId},
@@ -25,10 +26,10 @@ pub struct CandidateList {
 }
 
 impl CandidateList {
-    pub fn districts_name(&self) -> String {
+    pub fn districts_name(&self, locale: AnyLocale) -> String {
         self.electoral_districts
             .iter()
-            .map(|d| d.title())
+            .map(|d| d.title(locale))
             .collect::<Vec<&str>>()
             .join(", ")
     }
@@ -259,7 +260,14 @@ mod tests {
             ElectoralDistrict::DR,
         ]);
 
-        assert_eq!(list.districts_name(), "Utrecht, Noord-Holland, Drenthe");
+        assert_eq!(
+            list.districts_name(AnyLocale::Nl),
+            "Utrecht, Noord-Holland, Drenthe"
+        );
+        assert_eq!(
+            list.districts_name(AnyLocale::En),
+            "Utrecht, North Holland, Drenthe"
+        );
     }
 
     #[tokio::test]

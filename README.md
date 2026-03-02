@@ -45,7 +45,7 @@ bin/dev
 
 ## Development tools
 
-- `bin/esbuild`: transpile and bundle Typsescript and CSS, also services frontend assets in development
+- `bin/esbuild`: transpile and bundle Typescript and CSS, also services frontend assets in development
 - `bin/biome`: format and lint Typescript
 - `bin/setup`: download tools, setup database, load fixtures, etc.
 - `bin/dev`: start development environment (postgres, esbuild, cargo watch, etc.)

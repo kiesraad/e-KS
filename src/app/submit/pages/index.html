@@ -19,25 +19,32 @@
               <p>{{ "candidate_list.districts.all"|trans }}</p>
             {% else %}
               <ul class="districts">
-                {% for district in candidate_list.list.electoral_districts %}
-                  {% if candidate_list.duplicate_districts.contains(district) %}
-                    <li class="warning">
-                      <span>{{ district.title() }}</span>
+                {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
+                  {% let any_locale = AnyLocale::from(***locale) %}
+                  {% for district in candidate_list.list.electoral_districts %}
+                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
+                      <span>{{ district.title(*any_locale) }}</span>
                     </li>
-                  {% else %}
-                    <li>
-                      <span>{{ district.title() }}</span>
-                    </li>
-                  {% endif %}
-                {% endfor %}
+                  {% endfor %}
+                {% endif %}
               </ul>
             {% endif %}
           {% endif %}
-          {% if candidate_list.can_download %}
-            <a href="{{ candidate_list.download_path }}" class="button primary">{{ "action.download_h1"|trans }}</a>
-          {% else %}
-            <a class="button primary disabled" disabled aria-disabled="true">{{ "action.download_h1"|trans }}</a>
-          {% endif %}
+          <div class="card-actions">
+            {% if candidate_list.can_download %}
+              <a href="{{ candidate_list.download_path_nl }}"
+                 class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+              <a href="{{ candidate_list.download_path_fry }}"
+                 class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+            {% else %}
+              <a class="button secondary icon-print disabled"
+                 disabled
+                 aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+              <a class="button secondary icon-print disabled"
+                 disabled
+                 aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+            {% endif %}
+          </div>
         </div>
       {% endfor %}
     </div>

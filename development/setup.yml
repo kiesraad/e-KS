@@ -13,7 +13,7 @@ tools:
     base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
   - name: typst-webservice
     # https://github.com/tweedegolf/typst-webservice/releases
-    version: "0.3.1"
+    version: "0.5.1"
     base_url: "https://github.com/tweedegolf/typst-webservice/releases/download"
 commands:
   docker_compose_rm:

@@ -4,6 +4,7 @@ use axum::{extract::State, response::IntoResponse};
 use crate::{
     AppError, Context, ElectoralDistrict, HtmlTemplate, Store,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+    core::{AnyLocale, ModelLocale},
     filters,
     submit::H1,
 };
@@ -12,7 +13,8 @@ use super::SubmitPath;
 
 struct SubmitCandidateList {
     list: CandidateList,
-    download_path: String,
+    download_path_nl: String,
+    download_path_fry: String,
     person_count: usize,
     duplicate_districts: Vec<ElectoralDistrict>,
     can_download: bool,
@@ -30,7 +32,6 @@ pub async fn index(
     State(store): State<Store>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = context.election;
-    let locale = context.locale;
 
     let candidate_lists = CandidateListSummary::list(&store)?
         .into_iter()
@@ -39,14 +40,20 @@ pub async fn index(
                 summary.person_count > 0 && !summary.list.electoral_districts.is_empty();
             let can_download = if has_required_list_data {
                 let full_list = FullCandidateList::get(&store, summary.list.id)?;
-                H1::new(&store, full_list, &election, locale).is_ok()
+                H1::new(&store, full_list, &election, ModelLocale::Nl).is_ok()
             } else {
                 false
             };
 
             Ok(SubmitCandidateList {
-                download_path: super::DownloadH1Path {
+                download_path_nl: super::DownloadH1Path {
                     list_id: summary.list.id,
+                    locale: ModelLocale::Nl,
+                }
+                .to_string(),
+                download_path_fry: super::DownloadH1Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Fry,
                 }
                 .to_string(),
                 list: summary.list,
@@ -103,7 +110,8 @@ mod tests {
         assert!(
             body.contains(
                 &super::super::DownloadH1Path {
-                    list_id: complete_list_id
+                    list_id: complete_list_id,
+                    locale: ModelLocale::Nl,
                 }
                 .to_string()
             )
@@ -111,7 +119,8 @@ mod tests {
         assert!(
             !body.contains(
                 &super::super::DownloadH1Path {
-                    list_id: incomplete_list_id
+                    list_id: incomplete_list_id,
+                    locale: ModelLocale::Nl,
                 }
                 .to_string()
             )

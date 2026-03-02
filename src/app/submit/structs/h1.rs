@@ -1,13 +1,13 @@
 use crate::{
-    AppError, ElectionConfig, Locale, Store,
+    AppError, ElectionConfig, Store,
     candidate_lists::{CandidateList, FullCandidateList},
     common::{Initials, PostalCode},
-    core::{ElectionType, Pdf},
+    core::{ElectionType, ModelLocale, Pdf},
     list_submitters::ListSubmitter,
     persons::Person,
+    submit::structs::{TypstDate, TypstDatetime},
     substitute_list_submitters::SubstituteSubmitter,
 };
-use chrono::{Datelike, Timelike, Utc};
 use serde::Serialize;
 use tracing::error;
 
@@ -17,52 +17,12 @@ pub struct H1 {
     election_type: ElectionType,
     electoral_districts: ElectoralDistricts,
     designation: String,
-    candidates: Vec<Candidate>,
+    candidates: Vec<TypstCandidate>,
     previously_seated: bool,
-    list_submitter: BasicTypstPerson,
-    substitute_submitter: Vec<BasicTypstPerson>,
-    timestamp: Timestamp,
-}
-
-#[derive(Debug, Serialize)]
-struct Timestamp {
-    year: i32,
-    month: u32,
-    day: u32,
-    hour: u32,
-    minute: u32,
-    second: u32,
-}
-
-#[derive(Debug, Serialize)]
-struct Date {
-    year: i32,
-    month: u32,
-    day: u32,
-}
-
-impl From<crate::common::Date> for Date {
-    fn from(date: crate::common::Date) -> Self {
-        Self {
-            year: date.year(),
-            month: date.month(),
-            day: date.day(),
-        }
-    }
-}
-
-impl Timestamp {
-    fn now() -> Self {
-        let now = Utc::now();
-        Self {
-            year: now.year(),
-            month: now.month(),
-            day: now.day(),
-            hour: now.hour(),
-            minute: now.minute(),
-            second: now.second(),
-        }
-    }
+    list_submitter: TypstPerson,
+    substitute_submitter: Vec<TypstPerson>,
+    timestamp: TypstDatetime,
+    locale: ModelLocale,
 }
 
 #[derive(Debug, Serialize)]
@@ -73,14 +33,14 @@ enum ElectoralDistricts {
 }
 
 impl ElectoralDistricts {
-    fn from(list: &CandidateList, election_config: &ElectionConfig) -> Self {
+    fn from(list: &CandidateList, election_config: &ElectionConfig, locale: ModelLocale) -> Self {
         if list.contains_all_districts(election_config) {
             ElectoralDistricts::All
         } else {
             ElectoralDistricts::Some(
                 list.electoral_districts
                     .iter()
-                    .map(|d| d.title().to_string())
+                    .map(|d| d.title(locale.into()).to_string())
                     .collect(),
             )
         }
@@ -88,12 +48,12 @@ impl ElectoralDistricts {
 }
 
 impl Pdf for H1 {
-    fn typst_template_name(&self) -> &'static str {
-        "model-h-1.typ"
+    fn typst_template_name(&self) -> String {
+        format!("model-h1-{}.typ", self.locale)
     }
 
-    fn filename(&self) -> &'static str {
-        "h1.pdf"
+    fn filename(&self) -> String {
+        format!("model-h1-{}.pdf", self.locale)
     }
 }
 
@@ -105,12 +65,12 @@ impl H1 {
             mut candidates,
         }: FullCandidateList,
         election: &ElectionConfig,
-        locale: Locale,
+        locale: ModelLocale,
     ) -> Result<Self, AppError> {
         Ok(Self {
-            election_name: election.title().to_string(),
+            election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(&list, election),
+            electoral_districts: ElectoralDistricts::from(&list, election, locale),
             designation: store
                 .get_political_group()?
                 .display_name
@@ -119,7 +79,6 @@ impl H1 {
                 ))?
                 .to_string(),
             candidates: ordered_candidates(&mut candidates, locale)?,
-            // TODO
             previously_seated: true,
             list_submitter: store
                 .get_list_submitter(
@@ -128,25 +87,26 @@ impl H1 {
                 )?
                 .try_into()?,
             substitute_submitter: substitute_submitter_from_ids(&list, store.clone())?,
-            timestamp: Timestamp::now(),
+            timestamp: TypstDatetime::now(),
+            locale,
         })
     }
 }
 
 #[derive(Debug, Serialize)]
-struct Candidate {
+struct TypstCandidate {
     last_name: String,
     /// Initials as printed on the model, e.g., optionally including the gender and first name
     initials: String,
-    date_of_birth: Date,
+    date_of_birth: TypstDate,
     locality: String,
 }
 
-impl Candidate {
-    fn try_from(person: &Person, locale: Locale) -> Result<Self, AppError> {
+impl TypstCandidate {
+    fn try_from(person: &Person, locale: ModelLocale) -> Result<Self, AppError> {
         Ok(Self {
-            last_name: person.display_name(),
-            initials: person.initials_as_printed_on_list(locale),
+            last_name: person.name.last_name_with_prefix(),
+            initials: person.initials_as_printed_on_list(locale.into()),
             date_of_birth: person
                 .date_of_birth
                 .ok_or(AppError::IncompleteData("Missing birth date for candidate"))?
@@ -162,8 +122,8 @@ impl Candidate {
 
 fn ordered_candidates(
     candidates: &mut [crate::candidates::Candidate],
-    locale: Locale,
-) -> Result<Vec<Candidate>, AppError> {
+    locale: ModelLocale,
+) -> Result<Vec<TypstCandidate>, AppError> {
     candidates.sort_by(|a, b| a.position.cmp(&b.position));
     for (i, candidate) in candidates.iter().enumerate() {
         if candidate.position != i + 1 {
@@ -179,12 +139,12 @@ fn ordered_candidates(
 
     candidates
         .iter()
-        .map(|c| Candidate::try_from(&c.person, locale))
+        .map(|c| TypstCandidate::try_from(&c.person, locale))
         .collect::<Result<Vec<_>, _>>()
 }
 
 #[derive(Debug, Serialize)]
-struct BasicTypstPerson {
+struct TypstPerson {
     last_name: String,
     initials: Initials,
     postal_address: String,
@@ -192,11 +152,11 @@ struct BasicTypstPerson {
     locality: String,
 }
 
-impl TryFrom<SubstituteSubmitter> for BasicTypstPerson {
+impl TryFrom<SubstituteSubmitter> for TypstPerson {
     type Error = AppError;
 
     fn try_from(submitter: SubstituteSubmitter) -> Result<Self, Self::Error> {
-        Ok(BasicTypstPerson {
+        Ok(TypstPerson {
             last_name: submitter.name.last_name.to_string(),
             initials: submitter.name.initials,
             postal_address: submitter
@@ -224,11 +184,11 @@ impl TryFrom<SubstituteSubmitter> for BasicTypstPerson {
     }
 }
 
-impl TryFrom<ListSubmitter> for BasicTypstPerson {
+impl TryFrom<ListSubmitter> for TypstPerson {
     type Error = AppError;
 
     fn try_from(submitter: ListSubmitter) -> Result<Self, Self::Error> {
-        Ok(BasicTypstPerson {
+        Ok(TypstPerson {
             last_name: submitter.name.last_name.to_string(),
             initials: submitter.name.initials,
             postal_address: submitter
@@ -255,7 +215,7 @@ impl TryFrom<ListSubmitter> for BasicTypstPerson {
 fn substitute_submitter_from_ids(
     list: &CandidateList,
     store: Store,
-) -> Result<Vec<BasicTypstPerson>, AppError> {
+) -> Result<Vec<TypstPerson>, AppError> {
     list.substitute_list_submitter_ids
         .iter()
         .map(|id| match store.get_substitute_submitter(*id) {
@@ -269,7 +229,7 @@ fn substitute_submitter_from_ids(
 mod tests {
     use super::*;
     use crate::{
-        AppError, ElectionConfig, ElectoralDistrict, Locale, Store,
+        AppError, ElectionConfig, ElectoralDistrict, Store,
         candidate_lists::{CandidateList, CandidateListId},
         candidates::Candidate as AppCandidate,
         common::{Initials, LastName, PostalCode},
@@ -285,7 +245,7 @@ mod tests {
     #[test]
     fn date_from_common_date_copies_components() {
         let input: crate::common::Date = "15-03-2001".parse().expect("date");
-        let date = Date::from(input);
+        let date = TypstDate::from(input);
 
         assert_eq!(date.year, 2001);
         assert_eq!(date.month, 3);
@@ -301,7 +261,7 @@ mod tests {
         };
 
         assert!(matches!(
-            ElectoralDistricts::from(&list, &election),
+            ElectoralDistricts::from(&list, &election, ModelLocale::Fry),
             ElectoralDistricts::All
         ));
     }
@@ -314,11 +274,20 @@ mod tests {
             ..Default::default()
         };
 
-        match ElectoralDistricts::from(&list, &election) {
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
             ElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
+                );
+            }
+            ElectoralDistricts::All => panic!("expected Some districts"),
+        }
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
+            ElectoralDistricts::Some(districts) => {
+                assert_eq!(
+                    districts,
+                    vec!["Utert".to_string(), "Noard-Hollân".to_string()]
                 );
             }
             ElectoralDistricts::All => panic!("expected Some districts"),
@@ -344,11 +313,11 @@ mod tests {
             },
         ];
 
-        let ordered = ordered_candidates(&mut candidates, Locale::Nl)?;
+        let ordered = ordered_candidates(&mut candidates, ModelLocale::Nl)?;
 
         assert_eq!(ordered.len(), 2);
-        assert_eq!(ordered[0].last_name, "Henk Beta");
-        assert_eq!(ordered[1].last_name, "Henk Alpha");
+        assert_eq!(ordered[0].last_name, "Beta");
+        assert_eq!(ordered[1].last_name, "Alpha");
         assert_eq!(ordered[0].date_of_birth.year, 1990);
         assert_eq!(ordered[0].date_of_birth.month, 2);
         assert_eq!(ordered[0].date_of_birth.day, 1);
@@ -373,7 +342,7 @@ mod tests {
             },
         ];
 
-        let err = ordered_candidates(&mut candidates, Locale::Nl).unwrap_err();
+        let err = ordered_candidates(&mut candidates, ModelLocale::Nl).unwrap_err();
         assert!(matches!(err, AppError::IntegrityViolation));
     }
 
@@ -382,7 +351,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         person.date_of_birth = None;
 
-        let err = Candidate::try_from(&person, Locale::Nl).unwrap_err();
+        let err = TypstCandidate::try_from(&person, ModelLocale::Nl).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing birth date for candidate")
@@ -394,7 +363,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         person.place_of_residence = None;
 
-        let err = Candidate::try_from(&person, Locale::Nl).unwrap_err();
+        let err = TypstCandidate::try_from(&person, ModelLocale::Nl).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing locality for candidate")
@@ -402,31 +371,31 @@ mod tests {
     }
 
     #[test]
-    fn basic_typst_person_from_list_submitter_maps_fields() -> Result<(), AppError> {
+    fn typst_person_from_list_submitter_maps_fields() -> Result<(), AppError> {
         let submitter = sample_list_submitter(ListSubmitterId::new());
-        let basic = BasicTypstPerson::try_from(submitter)?;
+        let person = TypstPerson::try_from(submitter)?;
 
-        assert_eq!(basic.last_name, "Bos");
+        assert_eq!(person.last_name, "Bos");
         assert_eq!(
-            basic.initials,
+            person.initials,
             "E.F.".parse::<Initials>().expect("initials")
         );
-        assert_eq!(basic.postal_address, "Coolsingel 5B");
+        assert_eq!(person.postal_address, "Coolsingel 5B");
         assert_eq!(
-            basic.postal_code,
+            person.postal_code,
             "3011 CC".parse::<PostalCode>().expect("postal code")
         );
-        assert_eq!(basic.locality, "Rotterdam");
+        assert_eq!(person.locality, "Rotterdam");
 
         Ok(())
     }
 
     #[test]
-    fn basic_typst_person_from_list_submitter_requires_postal_code() {
+    fn typst_person_from_list_submitter_requires_postal_code() {
         let mut submitter = sample_list_submitter(ListSubmitterId::new());
         submitter.address.postal_code = None;
 
-        let err = BasicTypstPerson::try_from(submitter).unwrap_err();
+        let err = TypstPerson::try_from(submitter).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing list submitter postal code")
@@ -434,11 +403,11 @@ mod tests {
     }
 
     #[test]
-    fn basic_typst_person_from_substitute_submitter_requires_address_line() {
+    fn typst_person_from_substitute_submitter_requires_address_line() {
         let mut submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
         submitter.address.street_name = None;
 
-        let err = BasicTypstPerson::try_from(submitter).unwrap_err();
+        let err = TypstPerson::try_from(submitter).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing substitute submitter address")

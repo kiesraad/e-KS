@@ -1,7 +1,7 @@
 use derive_more::{Display, FromStr};
 use serde::{Deserialize, Serialize};
 
-use crate::{Locale, trans};
+use crate::core::AnyLocale;
 
 #[derive(
     Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Display, FromStr,
@@ -15,10 +15,15 @@ pub enum Gender {
 }
 
 impl Gender {
-    pub fn abbreviation(&self, locale: Locale) -> String {
+    pub fn abbreviation(&self, locale: AnyLocale) -> &'static str {
         match self {
-            Gender::Female => trans!("gender.f", locale),
-            Gender::Male => trans!("gender.m", locale),
+            Gender::Female => match locale {
+                AnyLocale::En | AnyLocale::Fry => "f",
+                AnyLocale::Nl => "v",
+            },
+            Gender::Male => match locale {
+                AnyLocale::En | AnyLocale::Fry | AnyLocale::Nl => "m",
+            },
         }
     }
 }

@@ -79,6 +79,13 @@
     width: 100%;
   }
 
+  .card-actions {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-top: auto;
+  }
+
   *:last-child {
     margin-top: auto;
     margin-bottom: 0;

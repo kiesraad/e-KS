@@ -255,8 +255,8 @@ const BAG_SERVICE_SUFFIXES: [(&str, &str); 5] = [
 ];
 
 const TYPST_SUFFIXES: [(&str, &str); 5] = [
-    ("Darwin arm64", "typst-webservice-apple-arm64"),
-    ("Darwin x86_64", "typst-webservice-apple-x64"),
+    ("Darwin arm64", "typst-webservice-macos-arm64"),
+    ("Darwin x86_64", "typst-webservice-macos-x64"),
     ("Linux arm64", "typst-webservice-linux-arm64"),
     ("Linux aarch64", "typst-webservice-linux-arm64"),
     ("Linux x86_64", "typst-webservice-linux-x64"),

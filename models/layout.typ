@@ -1,4 +1,6 @@
-#let conf(doc, model, name, explanation, input) = [
+#let mono(content) = text(font: "Geist Mono", content)
+
+#let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], input) = [
   #set text(
     lang: "nl",
     region: "nl",
@@ -8,12 +10,13 @@
 
   #let footer = grid(
     columns: 1fr,
-    gutter: .5em,
-    align(left, if "sha_hash" in input [ SHA-256 hash code:#h(.5em) #input.sha_hash ]),
+    gutter: .75em,
     context grid(
       columns: (1fr, auto),
-      [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")], [Pagina #counter(page).display((n, m) => [#n van #m], both: true)],
+      [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")],
+      counter(page).display(page-label, both: true),
     ),
+    align(left, if "sha_hash" in input [ SHA-256:#h(.5em) #mono(input.sha_hash) ]),
   )
 
   #set page(
@@ -23,15 +26,18 @@
     footer: footer,
   )
 
-  #show heading.where(level: 2): set block(above: 3em, below: 1em)
+  #set heading(numbering: "1.")
+  #show heading.where(level: 1): set block(above: 3em, below: 1em)
+
+  #set table(stroke: none, inset: 0.75em, align: horizon)
 
   #grid(
     columns: 1fr,
     gutter: 1.33em,
     grid.hline(stroke: 1pt),
     v(0.5em),
-    text(size: 1.5em, weight: "semibold", model),
-    text(size: 2em, weight: "semibold", name),
+    text(size: 1.5em, weight: "bold", model),
+    text(size: 2em, weight: "bold", name),
     text(explanation),
     v(0.5em),
     grid.hline(stroke: 1pt),
@@ -40,20 +46,29 @@
   #doc
 ]
 
+#let column_table(columns: (), headers: (), values: ()) = table(
+  columns: columns,
+  table.header(..headers.map(value => { text(style: "italic", value) })),
+  ..values.flatten(),
+)
+
 /// Table with numbers in the first column
-#let enumerated_table(columns: (), headers: (), values: ()) = [
-  #table(
-    stroke: none,
-    inset: 0.75em,
-    align: horizon,
-    columns: (auto, ..columns),
-    table.header([], ..headers.map(value => { text(style: "italic", value) })),
-    ..values.enumerate().map(((i, value)) => (str(i + 1), value)).flatten(),
-  )
-]
+#let enumerated_table(columns: (), headers: (), values: ()) = column_table(
+  columns: (auto, ..columns),
+  headers: ([], ..headers),
+  values: values.enumerate().map(((i, value)) => (str(i + 1), value)),
+)
+
+/// Table with two columns, with labels on the left
+#let label_table(values: ()) = table(
+  columns: (auto, 1fr),
+  ..values.flatten(),
+)
 
 /// Line with space to fill in later
-#let fill_in = box(width: 100%, height: 1.5em, stroke: (bottom: 1pt + black), inset: 0pt)[]
+#let fill_in(height: 2em) = box(width: 100%, height: height, stroke: (bottom: 1pt + black), inset: 0pt)[]
+
+#let date(date) = mono(datetime(..date).display("[day]-[month]-[year]"))
 
 /// Display a checkmark for usage in a checkbox
 #let checkmark() = {

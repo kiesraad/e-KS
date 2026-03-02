@@ -73,8 +73,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .fallback(get(common::not_found))
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
-            // TODO remove 'unsafe-hashes' as soon as we have implemented a login and do not require oauth-proxy anymore
-            HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self' https://github.com/login/oauth/authorize; script-src 'self'; style-src 'self' 'unsafe-hashes' 'sha256-f5JbnZ2wnky3B/YgIC+GaLDK8cBvQj7OEOASYhBjUYA=' 'sha256-be2laphxFXcKr/3rNHrcGPm2jpf+OrcryYe8Gxt//J8='; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
+            HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
         ))
         .layer(SetResponseHeaderLayer::if_not_present(
             header::X_FRAME_OPTIONS,

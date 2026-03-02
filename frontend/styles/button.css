@@ -202,4 +202,12 @@ label.button {
     padding-left: var(--space-xl);
     background-size: 20px;
   }
+
+  &.icon-print {
+    background-image: url("../icons/printer.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: 2.6rem;
+    background-size: 18px;
+  }
 }

@@ -4,6 +4,7 @@ use axum::{extract::State, response::IntoResponse};
 use crate::{
     AppError, Context, HtmlTemplate, Store,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
+    core::AnyLocale,
     filters,
     persons::Person,
 };

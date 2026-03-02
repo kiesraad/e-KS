@@ -10,6 +10,7 @@ mod store;
 
 pub mod filters;
 pub mod router;
+pub mod utils;
 
 #[cfg(feature = "fixtures")]
 pub mod fixtures;

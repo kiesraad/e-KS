@@ -1,33 +1,54 @@
 {
-    "election_name": "de Tweede Kamer der Staten-Generaal",
-    "election_type": "TK",
-    "electoral_districts": {
-        "tag": "All"
+  "election_name": "de Tweede Kamer der Staten-Generaal",
+  "election_type": "TK",
+  "electoral_districts": {
+    "tag": "All"
+  },
+  "designation": "Een Andere Partij (EAP)",
+  "candidates": [
+    {
+      "last_name": "Akwasi",
+      "initials": "M. (v)",
+      "date_of_birth": "01-09-1997",
+      "locality": "Ede"
     },
-    "designation": "Een Andere Partij (EAP)",
-    "candidates": [
-        {"last_name": "Akwasi", "initials": "M. (v)", "date_of_birth": "01-09-1997", "locality": "Ede"},
-        {"last_name": "Altena", "initials": "J. (m)", "date_of_birth": "23-06-1984", "locality": "'s-Gravenhage"},
-        {"last_name": "Bronwaßer", "initials": "I.E. (v)", "date_of_birth": "07-06-1979", "locality": "Rotterdam"}
-    ],
-    "previously_seated": false,
-    "list_submitter": {
-        "last_name": "van Smit",
-        "initials": "G.H.",
-        "postal_address": "Grotestraat 3",
-        "postal_code": "3000AA",
-        "locality": "Rotterdam"
+    {
+      "last_name": "Altena",
+      "initials": "J. (m)",
+      "date_of_birth": "23-06-1984",
+      "locality": "'s-Gravenhage"
     },
-    "substitute_submitter": [
-        {"last_name": "Bronwaßer", "initials": "I.E.", "postal_address": "Grotestraat 3", "postal_code": "3000AA", "locality": "Rotterdam"}
-    ],
-    "timestamp": {
-        "year": 2025,
-        "month": 8,
-        "day": 21,
-        "hour": 11,
-        "minute": 32,
-        "second": 21
-    },
-    "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A"
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E. (v)",
+      "date_of_birth": "07-06-1979",
+      "locality": "Rotterdam"
+    }
+  ],
+  "previously_seated": false,
+  "list_submitter": {
+    "last_name": "van Smit",
+    "initials": "G.H.",
+    "postal_address": "Grotestraat 3",
+    "postal_code": "3000AA",
+    "locality": "Rotterdam"
+  },
+  "substitute_submitter": [
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E.",
+      "postal_address": "Grotestraat 3",
+      "postal_code": "3000AA",
+      "locality": "Rotterdam"
+    }
+  ],
+  "timestamp": {
+    "year": 2025,
+    "month": 8,
+    "day": 21,
+    "hour": 11,
+    "minute": 32,
+    "second": 21
+  },
+  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A"
 }

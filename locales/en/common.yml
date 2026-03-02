@@ -1,12 +1,19 @@
 back_to_home: Back to Home
 description: Candidate nomination for elections in the Netherlands
 electoral_districts: Electoral districts
+gender:
+  empty: (empty)
+  female: Female
+  male: Male
 general_information: General Information
 general_information_description:
   basic: Provide information about the political group
   submitter: Provide information about the submitter of the list
 home: Home
 keywords: "Kiesraad, kandidaatstelling, elections, Netherlands"
+languages:
+  dutch: Dutch
+  frisian: Frisian
 no_label: "No"
 save_success: saved
 step: "Step {}"

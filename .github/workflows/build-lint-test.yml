@@ -113,6 +113,8 @@ jobs:
         run: cargo doc --workspace --no-deps --all-features
 
       - name: Build
+        env:
+          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst"
         run: bin/build
 
       - name: Strip debug symbols
