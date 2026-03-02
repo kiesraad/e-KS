@@ -1,5 +1,11 @@
 name: Create release on version bump
 
+permissions: {}
+concurrency:
+  group: 
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-create-release
+  cancel-in-progress: true
+
 on:
   push:
     branches:
@@ -7,6 +13,7 @@ on:
 
 jobs:
   check-version:
+    name: check current version
     permissions:
       contents: read
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
@@ -31,7 +38,7 @@ jobs:
         uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7
         with:
           script: |
-            const tag = `${{ steps.version.outputs.version }}`;
+            const tag = `${CURRENT_VERSION}`;
             try {
               await github.rest.repos.getReleaseByTag({
                 owner: context.repo.owner,
@@ -46,6 +53,8 @@ jobs:
                 throw error;
               }
             }
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.version }}
 
       - name: Decide run
         id: decide
@@ -59,8 +68,9 @@ jobs:
           STEPS_RELEASE_CHECK_OUTPUTS_RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
   
   release:
+    name: determine whether to release, and release
     permissions:
-      contents: write
+      contents: write # needs write permission to create a release in the repo
     needs:
       - check-version
     if: needs.check-version.outputs.should_run == 'true'
