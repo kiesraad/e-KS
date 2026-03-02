@@ -4,10 +4,8 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     Locale,
-    candidate_lists::CandidateList,
     constants::DEFAULT_DATE_TIME_FORMAT,
     form::{FormData, WithCsrfToken},
-    trans,
 };
 
 #[askama::filter_fn]
@@ -94,17 +92,6 @@ pub fn error<T: WithCsrfToken>(
     let locale: Locale = *askama::get_value(values, "locale")?;
 
     Ok(form.error(name, locale))
-}
-
-#[askama::filter_fn]
-pub fn list_name(list: &CandidateList, values: &dyn askama::Values) -> askama::Result<String> {
-    let locale: Locale = *askama::get_value(values, "locale")?;
-
-    if !list.electoral_districts.is_empty() && list.electoral_districts.len() < 3 {
-        Ok(list.districts_name(locale.into()))
-    } else {
-        Ok(trans!("candidate_list.title_single", locale).to_string())
-    }
 }
 
 /// Returns a cache buster string based on the current git commit hash (set during build on github).

@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
     core::AnyLocale,
     filters,
@@ -13,6 +13,7 @@ use crate::{
 #[template(path = "candidate_lists/pages/create.html")]
 struct CandidateListCreateTemplate {
     form: FormData<CandidateListCreateForm>,
+    available_districts: Vec<ElectoralDistrict>,
     has_previous_list: bool,
 }
 
@@ -21,21 +22,13 @@ pub async fn create_candidate_list(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let used_districts = CandidateList::used_districts(&store, vec![])?;
-    let available_districts = context.session.election.available_districts(used_districts);
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     let has_previous_list = !store.get_candidate_lists()?.is_empty();
-
-    let form = FormData::new_with_data(
-        CandidateListCreateForm {
-            electoral_districts: available_districts,
-            ..Default::default()
-        },
-        &context.session.csrf_tokens,
-    );
 
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
-            form,
+            form: FormData::new(&context.session.csrf_tokens),
+            available_districts,
             has_previous_list,
         },
         context,
@@ -49,12 +42,14 @@ pub async fn create_candidate_list_submit(
     store: AppStore,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     let should_copy_candidates = form.copy_candidates;
     match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
                 form: form_data,
                 has_previous_list: !store.get_candidate_lists()?.is_empty(),
+                available_districts,
             },
             context,
         )

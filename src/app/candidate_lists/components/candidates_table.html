@@ -32,7 +32,8 @@
         </td>
         <td>
           <a href="{{ candidate.update_position_path() }}"
-             aria-label="{{ "action.edit"|trans }}">
+             aria-label="{{ "action.edit"|trans }}"
+             title="{% if !candidate.person.is_complete() %}{{ "person.missing_information"|trans }}{% endif %}">
             <span>{{ "action.edit"|trans }}</span>
           </a>
         </td>

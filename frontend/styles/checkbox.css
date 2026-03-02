@@ -197,4 +197,13 @@
       max-width: 32rem;
     }
   }
+
+  &.disabled {
+    cursor: default;
+
+    label {
+      color: var(--gray-500);
+      cursor: default;
+    }
+  }
 }

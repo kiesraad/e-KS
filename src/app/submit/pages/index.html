@@ -7,7 +7,7 @@
       {% for candidate_list in candidate_lists %}
         <div class="{% if candidate_list.duplicate_districts.is_empty() %}card card-candidate-list{% else %}card card-list-warning{% endif %}">
           <div class="badge"></div>
-          <h3>{{ candidate_list.list|list_name }}</h3>
+          <h3>{{ "candidate_list.title_single"|trans }}</h3>
           {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
             <p class="statistic">
               {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}

@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
+    QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     core::AnyLocale,
     filters,
@@ -19,14 +20,17 @@ struct CandidateListUpdateTemplate {
     should_warn: bool,
     form: FormData<CandidateListForm>,
     candidate_list: CandidateList,
+    available_districts: Vec<ElectoralDistrict>,
 }
 
 pub async fn update_candidate_list(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -35,6 +39,7 @@ pub async fn update_candidate_list(
             ),
             should_warn: query.should_warn(),
             candidate_list,
+            available_districts,
         },
         context,
     )
@@ -49,12 +54,14 @@ pub async fn update_candidate_list_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
                 form: form_data,
                 candidate_list,
+                available_districts,
             },
             context,
         )
@@ -96,6 +103,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
+            store,
             Query(QueryParamState::default()),
         )
         .await?;
