@@ -1,5 +1,10 @@
 name: Build, lint & test
 
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 on:
   pull_request:
   push:
@@ -129,12 +134,14 @@ jobs:
       - name: Upload binary to test server
         env:
           ETES_API_KEY: ${{ secrets.ETES_API_KEY }}
+          SHA_PR: ${{ github.event.pull_request.head.sha || github.sha }}
+          SHA_GH: ${{ github.sha }}
         run: |
           curl -s -v \
           --fail \
           -H "Authorization: Bearer $ETES_API_KEY" \
           -T ./target/release/eks \
-          https://eks-test.nl/etes/api/v1/executable/${{ github.event.pull_request.head.sha || github.sha }}/${{ github.sha }}
+          https://eks-test.nl/etes/api/v1/executable/${SHA_PR}/${SHA_GH}
 
   playwright:
     name: Playwright tests
