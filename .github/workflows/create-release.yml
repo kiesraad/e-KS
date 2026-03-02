@@ -1,10 +1,7 @@
-name: Release
+name: Create release on version bump
+
 on:
-  workflow_run:
-    workflows:
-      - ["Build, lint & test"]
-    types:
-      - completed
+  push:
     branches:
       - main
 
@@ -18,7 +15,7 @@ jobs:
         should_run: ${{ steps.decide.outputs.should_run }}
       steps:
         - name: Checkout
-          uses: actions/checkout@v4
+          uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
           with:
             ref: ${{ github.event.workflow_run.head_sha || github.sha }}
 
@@ -30,7 +27,7 @@ jobs:
 
         - name: Check release existence
           id: release_check
-          uses: actions/github-script@v7
+          uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7
           with:
             script: |
               const tag = `${{ steps.version.outputs.version }}`;
