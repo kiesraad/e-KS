@@ -14,7 +14,7 @@ on:
 jobs:
   # Build Job
   build:
-    name: build pages
+    name: Build pages
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -50,9 +50,9 @@ jobs:
           path: './target/doc'
 
   deploy:
-    name: deploy pages
+    name: Deploy pages
     environment:
-      name: github-pages
+      name: GitHub pages
       url: ${{ steps.deployment.outputs.page_url }}e_ks
     runs-on: ubuntu-24.04
     permissions:

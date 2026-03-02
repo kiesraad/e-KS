@@ -13,7 +13,7 @@ on:
 
 jobs:
   check-version:
-    name: check current version
+    name: Check current version
     permissions:
       contents: read
     if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
@@ -68,7 +68,7 @@ jobs:
           STEPS_RELEASE_CHECK_OUTPUTS_RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
   
   release:
-    name: determine whether to release, and release
+    name: Make release if necessary
     permissions:
       contents: write # needs write permission to create a release in the repo
     needs:

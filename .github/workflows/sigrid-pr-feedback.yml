@@ -1,15 +1,22 @@
 name: Sigrid PR Feedback
 
+permissions: {}
+concurrency:
+  group: 
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-sigrid-pr-feedback
+  cancel-in-progress: true
+
 on:
   pull_request:
 
 jobs:
   sigridci:
+    name: Sigrid CI
     if: "!github.event.pull_request.head.repo.fork"
     runs-on: ubuntu-latest
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # to add a comment with the sigrid results
     steps:
       - name: Check out repository
         uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
