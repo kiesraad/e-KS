@@ -21,10 +21,11 @@ jobs:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
         with:
           fetch-depth: '0'
+          persist-credentials: false
       - name: Filter changes for non-Markdown files
         id: filter
         run: | 
-          if [[ "${{ github.ref_name }}" == "main" ]] || [[ $(git diff --name-only "origin/${{ github.base_ref }}" HEAD | grep -v "\.md$") ]]  ; then 
+          if [[ "${GITHUB_REF_NAME}" == "main" ]] || [[ $(git diff --name-only "origin/${GITHUB_BASE_REF}" HEAD | grep -v "\.md$") ]]  ; then 
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -39,6 +40,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -62,6 +65,8 @@ jobs:
       RUSTDOCFLAGS: "-D warnings"
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -143,6 +148,8 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -183,6 +190,8 @@ jobs:
     runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - uses: EmbarkStudios/cargo-deny-action@3fd3802e88374d3fe9159b834c7714ec57d6c979
         with:
