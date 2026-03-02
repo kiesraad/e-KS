@@ -17,6 +17,8 @@ jobs:
       CARGO_TERM_COLOR: always
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Create version tag
         id: create-tag
@@ -79,6 +81,8 @@ jobs:
     needs: rust
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Login to GitHub Container Registry
         uses: docker/login-action@c94ce9fb468520275223c153574b00df6fe4bcc9 # v3
@@ -137,6 +141,8 @@ jobs:
     needs: [ build-docker, rust ]
     steps:
       - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        with:
+          persist-credentials: false
 
       - name: Install Helm
         run: "curl https://raw.githubusercontent.com/helm/helm/main/scripts/get-helm-4 | bash"
@@ -147,22 +153,28 @@ jobs:
       - name: Set the current version in the Helm chart
         uses: mikefarah/yq@5a7e72a743649b1b3a47d1a1d8214f3453173c51 # v4
         with:
-          cmd: yq -i '.appVersion="${{ needs.rust.outputs.tag }}"' deploy/e-ks/Chart.yaml
+          cmd: yq -i '.appVersion="${NEEDS_RUST_OUTPUT_TAG}"' deploy/e-ks/Chart.yaml
+        env:
+          NEEDS_RUST_OUTPUT_TAG: ${{ needs.rust.outputs.tag }}
 
       - name: Create namespace
         shell: bash
         run: |
           # create new namespace if it does not exist already
-          kubectl get namespace ${{ needs.rust.outputs.branch-name }} || {
-            kubectl create ns ${{ needs.rust.outputs.branch-name }}
+          kubectl get namespace ${NEEDS_RUST_OUTPUTS_BRANCH_NAME} || {
+            kubectl create ns ${NEEDS_RUST_OUTPUTS_BRANCH_NAME}
           }
+        env:
+          NEEDS_RUST_OUTPUTS_BRANCH_NAME: ${{ needs.rust.outputs.branch-name }}
       - name: Install application
         working-directory: deploy
         run: |
-          helm upgrade --install e-ks ./e-ks --namespace ${{ needs.rust.outputs.branch-name }} \
-            --set subdomain="${{ needs.rust.outputs.branch-name }}" \
+          helm upgrade --install e-ks ./e-ks --namespace ${NEEDS_RUST_OUTPUTS_BRANCH_NAME} \
+            --set subdomain="${NEEDS_RUST_OUTPUTS_BRANCH_NAME}" \
             --set db.setup=true \
             --set db.erase=true \
             --set db.runMigrations=true \
             --set db.password=${PGPASSWORD} \
             --set gatewayApi.enabled=true
+        env:
+          NEEDS_RUST_OUTPUTS_BRANCH_NAME: ${{ needs.rust.outputs.branch-name }}
