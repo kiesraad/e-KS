@@ -1,34 +1,49 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import type { Candidate } from "../models/candidate";
 
 export class CorrespondenceAddressPage {
-  private readonly page: Page;
+  readonly textfieldPostalCode: Locator;
+  readonly textfieldHouseNumber: Locator;
+  readonly textfieldHouseNumberAddition: Locator;
+  readonly textfieldStreetName: Locator;
+  readonly selectLocality: Locator;
+  readonly buttonAdd: Locator;
 
-  constructor(page: Page) {
-    this.page = page;
+  constructor(protected readonly page: Page) {
+    this.textfieldPostalCode = this.page.getByRole("textbox", {
+      name: "Postcode",
+    });
+    this.textfieldHouseNumber = this.page.getByRole("textbox", {
+      name: "Huisnummer",
+      exact: true,
+    });
+    this.textfieldHouseNumberAddition = this.page.getByRole("textbox", {
+      name: "Huisnummer toevoeging",
+      exact: true,
+    });
+    this.textfieldStreetName = this.page.getByRole("textbox", {
+      name: "Straatnaam",
+    });
+    this.selectLocality = this.page.getByRole("combobox", {
+      name: "Woonplaats",
+    });
+    this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });
   }
 
   async setCorrespondenceAddress(candidate: Candidate) {
-    await this.page
-      .getByRole("textbox", { name: "Postcode" })
-      .fill(candidate.postalCode ?? "");
-    await this.page
-      .getByRole("textbox", { name: "Huisnummer", exact: true })
-      .pressSequentially(candidate.houseNumber ?? "");
-    await this.page
-      .getByRole("textbox", {
-        name: "Huisnummer toevoeging",
-        exact: true,
-      })
-      .pressSequentially(candidate.houseNumberAddition ?? "");
-    await this.page.locator("body").click();
-    await expect(
-      this.page.getByRole("textbox", { name: "Straatnaam" }),
-    ).toHaveValue(candidate.streetName ?? "");
-    await expect(
-      this.page.getByRole("combobox", { name: "Woonplaats" }),
-    ).toHaveValue(candidate.locality ?? "");
+    await this.textfieldPostalCode.fill(candidate.postalCode ?? "");
+    await this.textfieldHouseNumber.pressSequentially(
+      candidate.houseNumber ?? "",
+    );
+    await this.textfieldHouseNumberAddition.pressSequentially(
+      candidate.houseNumberAddition ?? "",
+    );
+    //await this.page.locator("body").click();
+    await expect(this.textfieldStreetName).toHaveValue(
+      candidate.streetName ?? "",
+    );
+    await expect(this.selectLocality).toHaveValue(candidate.locality ?? "");
 
-    await this.page.getByRole("button", { name: "Toevoegen" }).click();
+    await this.buttonAdd.click();
   }
 }

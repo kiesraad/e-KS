@@ -1,4 +1,4 @@
-import { expect, Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 import type { Candidate } from "../models/candidate";
 
 export class ManageCandidateListPage {
@@ -16,9 +16,15 @@ export class ManageCandidateListPage {
   readonly buttonConfirmRemoveList: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonAddExistingCandidate = this.page.getByRole("link", { name: "Bestaande" });
-    this.buttonAddNewCandidate = this.page.getByRole("link", { name: "Nieuwe" });
-    this.buttonSearchExistingCandidate = this.page.getByLabel("Zoek bestaande kandidaat");
+    this.buttonAddExistingCandidate = this.page.getByRole("link", {
+      name: "Bestaande",
+    });
+    this.buttonAddNewCandidate = this.page.getByRole("link", {
+      name: "Nieuwe",
+    });
+    this.buttonSearchExistingCandidate = this.page.getByLabel(
+      "Zoek bestaande kandidaat",
+    );
     this.textfieldInitials = this.page.getByLabel("Voorletters");
     this.textfieldLastName = this.page.getByLabel("Achternaam");
     this.textfieldFirstName = this.page.getByLabel("Roepnaam");
@@ -26,8 +32,13 @@ export class ManageCandidateListPage {
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
     this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });
     this.buttonEditList = this.page.getByRole("link", { name: "Aanpassen" });
-    this.buttonRemoveList = this.page.getByRole("link", { name: "Kandidatenlijst verwijderen" });
-    this.buttonConfirmRemoveList = this.page.getByRole("button", { name: "Verwijderen", exact: true });
+    this.buttonRemoveList = this.page.getByRole("button", {
+      name: "Kandidatenlijst verwijderen",
+    });
+    this.buttonConfirmRemoveList = this.page.getByRole("button", {
+      name: "Verwijderen",
+      exact: true,
+    });
   }
 
   async getCandidateLocator(candidateName: string) {
@@ -43,13 +54,14 @@ export class ManageCandidateListPage {
       await this.buttonAddExistingCandidate.click();
 
       // search first part of the name
-      await this.buttonSearchExistingCandidate.pressSequentially(candidate.slice(0, 5));
+      await this.buttonSearchExistingCandidate.pressSequentially(
+        candidate.slice(0, 5),
+      );
 
       await this.page
         .getByRole("row", { name: candidate })
         .getByRole("button")
         .click();
-
     }
   }
 

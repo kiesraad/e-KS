@@ -1,34 +1,56 @@
-import { expect, type Page } from "@playwright/test";
+import { expect, type Locator, type Page } from "@playwright/test";
 import type { AuthorisedPerson } from "../models/authorisedPerson";
 
 export class AuthorisedPersonPage {
-  private readonly page: Page;
+  readonly textfieldInitials: Locator;
+  readonly textfieldLastNamePrefix: Locator;
+  readonly textfieldLastName: Locator;
+  readonly textfieldPostalCode: Locator;
+  readonly textfieldHouseNumber: Locator;
+  readonly textfieldHouseNumberAddition: Locator;
+  readonly textfieldStreetName: Locator;
+  readonly selectLocality: Locator;
+  readonly buttonAdd: Locator;
 
-  constructor(page: Page) {
-    this.page = page;
+  constructor(protected readonly page: Page) {
+    this.textfieldInitials = this.page.getByLabel("Voorletters");
+    this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
+    this.textfieldLastName = this.page.getByLabel("Achternaam");
+    this.textfieldPostalCode = this.page.getByRole("textbox", {
+      name: "Postcode",
+    });
+    this.textfieldHouseNumber = this.page.getByRole("textbox", {
+      name: "Huisnummer",
+      exact: true,
+    });
+    this.textfieldHouseNumberAddition = this.page.getByRole("textbox", {
+      name: "Huisnummer toevoeging",
+      exact: true,
+    });
+    this.textfieldStreetName = this.page.getByRole("textbox", {
+      name: "Straatnaam",
+    });
+    this.selectLocality = this.page.getByRole("combobox", {
+      name: "Woonplaats",
+    });
+    this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });
   }
 
   async setAuthorisedPerson(authorisedPerson: AuthorisedPerson) {
-    await this.page.getByLabel("Voorletters").fill(authorisedPerson.initials);
-    await this.page
-      .getByLabel("Voorvoegsel")
-      .fill(authorisedPerson.lastNamePrefix ?? "");
-    await this.page.getByLabel("Achternaam").fill(authorisedPerson.lastName);
-    await this.page
-      .getByRole("textbox", { name: "Postcode" })
-      .fill(authorisedPerson.postalCode ?? "");
-    await this.page
-      .getByRole("textbox", { name: "Huisnummer", exact: true })
-      .pressSequentially(authorisedPerson.houseNumber ?? "");
-    await this.page
-      .getByRole("textbox", { name: "Huisnummer toevoeging", exact: true })
-      .press("Tab");
-    await expect(
-      this.page.getByRole("textbox", { name: "Straatnaam" }),
-    ).toHaveValue(authorisedPerson.streetName ?? "");
-    await expect(
-      this.page.getByRole("combobox", { name: "Woonplaats" }),
-    ).toHaveValue(authorisedPerson.locality ?? "");
-    await this.page.getByRole("button", { name: "Toevoegen" }).click();
+    await this.textfieldInitials.fill(authorisedPerson.initials);
+    await this.textfieldLastNamePrefix.fill(
+      authorisedPerson.lastNamePrefix ?? "",
+    );
+    await this.textfieldLastName.fill(authorisedPerson.lastName);
+    await this.textfieldPostalCode.fill(authorisedPerson.postalCode ?? "");
+    await this.textfieldHouseNumber.fill(authorisedPerson.houseNumber ?? "");
+    await this.textfieldHouseNumberAddition.press("Tab");
+    await expect(this.textfieldStreetName).toHaveValue(
+      authorisedPerson.streetName ?? "",
+    );
+    await expect(this.selectLocality).toHaveValue(
+      authorisedPerson.locality ?? "",
+    );
+    await this.buttonAdd.click();
   }
 }

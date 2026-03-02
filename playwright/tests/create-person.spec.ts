@@ -1,17 +1,15 @@
-import { test } from "@playwright/test";
+import { expect, test } from "@playwright/test";
 import type { AuthorisedPerson } from "./models/authorisedPerson";
 import type { Candidate } from "./models/candidate";
+import { AuthorisedPersonPage } from "./pages/authorisedPersonPage";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
+import { CorrespondenceAddressPage } from "./pages/correspondenceAddressPage";
+import { CreatePersonPage } from "./pages/createPersonPage";
 import { PersonsPage } from "./pages/personsPage";
 import { randomName } from "./utils/random";
 
-test("create new person", async ({ page }) => {
-  const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
-  await candidateListsOverviewPage.open();
-  await candidateListsOverviewPage.managePersons();
-
-  const personsPage = new PersonsPage(page);
-  const candidate: Candidate = {
+test.describe("create new person", async () => {
+  const candidateAllFields: Candidate = {
     initials: "H",
     lastName: `Jansen ${randomName()}`,
     lastNamePrefix: "van",
@@ -23,35 +21,57 @@ test("create new person", async ({ page }) => {
     streetName: "Castellastraat",
     locality: "Nijmegen",
   };
-  const candidateTwo: Candidate = {
+
+  const candidateMinimalFields: Candidate = {
     initials: "D",
     lastName: `Duif ${randomName()}`,
   };
-  await personsPage.addPersons([candidate, candidateTwo]);
+  const candidates = [
+    { candidate: candidateAllFields, description: "with all fields" },
+    {
+      candidate: candidateMinimalFields,
+      description: "with minimal required fields",
+    },
+  ];
+  for (const { candidate, description } of candidates) {
+    test(description, async ({ page }) => {
+      await page.goto("/candidate-lists");
+      await new CandidateListsOverviewPage(page).headingAllCandidates.click();
+      const personsPage = new PersonsPage(page);
+      await new PersonsPage(page).linkAddPerson.click();
+      await new CreatePersonPage(page).setPersonalDetails(candidate);
+      await new CorrespondenceAddressPage(page).setCorrespondenceAddress(
+        candidate,
+      );
+      await expect(
+        await personsPage.getCellLastName(candidate.lastName),
+      ).toBeVisible();
+    });
+  }
 
-  await personsPage.checkPerson([candidate, candidateTwo]);
-});
+  test("living outside NL requires authorised person", async ({ page }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).headingAllCandidates.click();
 
-test("create new person living outside NL requires authorised person", async ({
-  page,
-}) => {
-  const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
-  await candidateListsOverviewPage.open();
-  await candidateListsOverviewPage.managePersons();
+    const authorisedPerson: AuthorisedPerson = {
+      initials: "C",
+      lastName: "Winter",
+    };
+    const candidate: Candidate = {
+      initials: "H",
+      lastName: `Jansen ${randomName()}`,
+      countryCode: "VA",
+      authorisedPerson: authorisedPerson,
+    };
 
-  const personsPage = new PersonsPage(page);
-  const authorisedPerson: AuthorisedPerson = {
-    initials: "C",
-    lastName: "Winter",
-  };
-  const candidate: Candidate = {
-    initials: "H",
-    lastName: `Jansen ${randomName()}`,
-    countryCode: "VA",
-    authorisedPerson: authorisedPerson,
-  };
-
-  await personsPage.addPersons([candidate]);
-
-  await personsPage.checkPerson([candidate]);
+    const personsPage = new PersonsPage(page);
+    await personsPage.linkAddPerson.click();
+    await new CreatePersonPage(page).setPersonalDetails(candidate);
+    await new AuthorisedPersonPage(page).setAuthorisedPerson(
+      candidate.authorisedPerson!,
+    );
+    await expect(
+      await personsPage.getCellLastName(candidate.lastName),
+    ).toBeVisible();
+  });
 });

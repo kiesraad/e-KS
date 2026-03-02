@@ -14,16 +14,23 @@ export class AuthorisedAgentsPage {
     this.textfieldInitials = this.page.getByLabel("Voorletters");
     this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
     this.textfieldLastName = this.page.getByLabel("Achternaam");
-    this.buttonDelete = this.page.getByRole("button", { name: "Gemachtigde verwijderen", exact: true });
-    this.buttonConfirmDelete = this.page.getByRole("button", { name: "Verwijderen", exact: true });
-    this.buttonAdd = this.page.getByRole("link", { name: "Gemachtigde toevoegen" });
+    this.buttonDelete = this.page.getByRole("button", {
+      name: "Gemachtigde verwijderen",
+      exact: true,
+    });
+    this.buttonConfirmDelete = this.page.getByRole("button", {
+      name: "Verwijderen",
+      exact: true,
+    });
+    this.buttonAdd = this.page.getByRole("link", {
+      name: "Gemachtigde toevoegen",
+    });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
   }
 
   getAgentLocator(lastName: string) {
     return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
-
 
   async deleteExistingAuthorisedAgents() {
     //takes all links from table and saves href attributes of each link in list
@@ -41,20 +48,22 @@ export class AuthorisedAgentsPage {
   }
 
   async addAuthorisedAgent(authorisedAgent: AuthorisedAgent) {
-    await this.buttonAdd.click(); 
+    await this.buttonAdd.click();
     await this.textfieldInitials.fill(authorisedAgent.initials);
-    await this.textfieldLastNamePrefix.fill(authorisedAgent.lastNamePrefix ?? "");
+    await this.textfieldLastNamePrefix.fill(
+      authorisedAgent.lastNamePrefix ?? "",
+    );
     await this.textfieldLastName.fill(authorisedAgent.lastName);
-    //await this.page.locator("body").click();
     await this.buttonSave.click();
   }
 
   async editAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
     for (const authorisedAgent of authorisedAgents) {
       await this.textfieldInitials.fill(authorisedAgent.initials);
-      await this.textfieldLastNamePrefix.fill(authorisedAgent.lastNamePrefix ?? "" );
+      await this.textfieldLastNamePrefix.fill(
+        authorisedAgent.lastNamePrefix ?? "",
+      );
       await this.textfieldLastName.fill(authorisedAgent.lastName);
-      //await this.page.locator("body").click();
       await this.buttonSave.click();
     }
   }

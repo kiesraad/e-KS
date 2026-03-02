@@ -1,19 +1,18 @@
-import { expect, test } from "@playwright/test";
-import type { AuthorisedAgent } from "./models/authorisedAgent";
-import type { ListSubmitter } from "./models/listSubmitter";
-import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage";
-import { ListSubmittersPage } from "./pages/listSubmittersPage";
-import { PoliticalGroupPage } from "./pages/politicalGroupPage";
-import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
-import { randomName } from "./utils/random";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
+import type { AuthorisedAgent } from "./models/authorisedAgent.ts";
+import type { ListSubmitter } from "./models/listSubmitter.ts";
+import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage.ts";
+import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
+import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
+import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
+import { randomName } from "./utils/random.ts";
 
 test.describe("provide general information for political group", async () => {
-  test.beforeEach("start application and login", async () => {
-    //this will later be added when login is enabled
-  });
-
-  test("provide general information for political group", async ({ page }) => {
-    const politicalGroupPage = new PoliticalGroupPage(page);
+  test("provide general information for political group", async ({
+    deleteExistingData,
+  }) => {
+    const politicalGroupPage = new PoliticalGroupPage(deleteExistingData);
     await politicalGroupPage.open();
     await politicalGroupPage.selectHasMoreThan16Seats("Ja");
     await politicalGroupPage.open();
@@ -22,15 +21,14 @@ test.describe("provide general information for political group", async () => {
     await politicalGroupPage.setStatutoryName("De Testpartij");
   });
 
-  test("provide authorised agent", async ({ page }) => {
-    const authorisedAgentsPage = new AuthorisedAgentsPage(page);
-    await authorisedAgentsPage.open();
-    await authorisedAgentsPage.deleteExistingAuthorisedAgents();
+  test("provide authorised agent", async ({ deleteExistingData }) => {
+    await deleteExistingData.goto("/political-group/authorised-agents");
     const agent: AuthorisedAgent = {
       initials: "K",
       lastNamePrefix: "van",
-      lastName: "Jansen",
+      lastName: `Jansen ${randomName()}`,
     };
+    const authorisedAgentsPage = new AuthorisedAgentsPage(deleteExistingData);
     await authorisedAgentsPage.addAuthorisedAgent(agent);
 
     const agentLastName = agent.lastNamePrefix
@@ -42,10 +40,8 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
   });
 
-  test("provide list submitter", async ({ page }) => {
-    const listSubmittersPage = new ListSubmittersPage(page);
-    await listSubmittersPage.open();
-    await listSubmittersPage.deleteExistingListSubmitters();
+  test("provide multiple list submitters", async ({ deleteExistingData }) => {
+    await deleteExistingData.goto("/political-group/list-submitters");
     const submitterOne: ListSubmitter = {
       initials: "C",
       lastNamePrefix: "de",
@@ -55,8 +51,11 @@ test.describe("provide general information for political group", async () => {
       initials: "Z",
       lastName: `Zeeman ${randomName()}`,
     };
-    await listSubmittersPage.addListSubmitter([submitterOne, submitterTwo]);
+    const listSubmittersPage = new ListSubmittersPage(deleteExistingData);
 
+    for (const submitter of [submitterOne, submitterTwo]) {
+      await listSubmittersPage.addListSubmitter(submitter);
+    }
     for (const submitter of [submitterOne, submitterTwo]) {
       const submitterLastName = submitter.lastNamePrefix
         ? `${submitter.lastNamePrefix} ${submitter.lastName}`
@@ -67,10 +66,8 @@ test.describe("provide general information for political group", async () => {
     }
   });
 
-  test("provide substitute list submitter", async ({ page }) => {
-    const substituteSubmittersPage = new SubstituteSubmittersPage(page);
-    await substituteSubmittersPage.open();
-    await substituteSubmittersPage.deleteExistingSubstituteSubmitters();
+  test("provide substitute list submitter", async ({ deleteExistingData }) => {
+    await deleteExistingData.goto("/political-group/list-submitters");
     const submitterOne: ListSubmitter = {
       initials: "B",
       lastNamePrefix: "van",
@@ -80,10 +77,13 @@ test.describe("provide general information for political group", async () => {
       initials: "O",
       lastName: `Smit ${randomName()}`,
     };
-    await substituteSubmittersPage.addSubstituteSubmitter([
-      submitterOne,
-      submitterTwo,
-    ]);
+    const substituteSubmittersPage = new SubstituteSubmittersPage(
+      deleteExistingData,
+    );
+
+    for (const submitter of [submitterOne, submitterTwo]) {
+      await substituteSubmittersPage.addSubstituteSubmitter(submitter);
+    }
 
     for (const submitter of [submitterOne, submitterTwo]) {
       const submitterLastName = submitter.lastNamePrefix

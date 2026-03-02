@@ -11,9 +11,17 @@ export class ListSubmittersPage {
   readonly textfieldLastName: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonDelete = this.page.getByRole("button", { name: "Lijstinleveraar verwijderen", exact: true });
-    this.buttonConfirmDelete = this.page.getByRole("button", { name: "Verwijderen", exact: true });
-    this.buttonAdd = this.page.getByRole("link", { name: "Lijstinleveraar toevoegen" });
+    this.buttonDelete = this.page.getByRole("button", {
+      name: "Lijstinleveraar verwijderen",
+      exact: true,
+    });
+    this.buttonConfirmDelete = this.page.getByRole("button", {
+      name: "Verwijderen",
+      exact: true,
+    });
+    this.buttonAdd = this.page.getByRole("link", {
+      name: "Lijstinleveraar toevoegen",
+    });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
     this.textfieldInitials = this.page.getByLabel("Voorletters");
     this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
@@ -23,8 +31,6 @@ export class ListSubmittersPage {
   getSubmitterLocator(lastName: string) {
     return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
-
-
 
   async deleteExistingListSubmitters() {
     //takes all links from table and saves href attributes of each link in list
@@ -48,6 +54,5 @@ export class ListSubmittersPage {
     await this.textfieldLastName.fill(listSubmitter.lastName);
     //await this.page.locator("body").click();
     await this.buttonSave.click();
-  }  
-    
+  }
 }

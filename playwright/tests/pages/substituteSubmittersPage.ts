@@ -15,20 +15,28 @@ export class SubstituteSubmittersPage {
       name: "Vervanger voor het herstel van verzuimen verwijderen",
       exact: true,
     });
-    this.buttonConfirmDelete = this.page.getByRole("button", { name: "Verwijderen", exact: true });
-    this.buttonAdd = this.page.getByRole("link", { name: "Vervanger voor het herstel van verzuimen" });
+    this.buttonConfirmDelete = this.page.getByRole("button", {
+      name: "Verwijderen",
+      exact: true,
+    });
+    this.buttonAdd = this.page.getByRole("link", {
+      name: "Vervanger voor het herstel van verzuimen",
+    });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
-    this.textfieldInitials = this.page.getByRole("textbox", { name: "Voorletters *" });
-    this.textfieldLastNamePrefix = this.page.getByRole("textbox", { name: "Voorvoegsel" });
-    this.textfieldLastName = this.page.getByRole("textbox", { name: "Achternaam *" });
+    this.textfieldInitials = this.page.getByRole("textbox", {
+      name: "Voorletters *",
+    });
+    this.textfieldLastNamePrefix = this.page.getByRole("textbox", {
+      name: "Voorvoegsel",
+    });
+    this.textfieldLastName = this.page.getByRole("textbox", {
+      name: "Achternaam *",
+    });
   }
-
 
   getSubmitterLocator(lastName: string) {
     return this.page.getByRole("link", { name: new RegExp(lastName) });
   }
-
-
 
   async deleteExistingSubstituteSubmitters() {
     //takes all links from table and saves href attributes of each link in list
@@ -53,7 +61,6 @@ export class SubstituteSubmittersPage {
     //await this.page.locator("body").click();
     await this.buttonSave.click();
   }
-      
 
   async editListSubmitter() {
     await this.buttonAdd.click();
