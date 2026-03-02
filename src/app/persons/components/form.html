@@ -12,7 +12,7 @@
     {% for error in form|error("place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
   <div class="form-field form-field-md {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
-    <label for="country_of_residence" class="required">{{ "person.fields.country_of_residence"|trans }}</label>
+    <label for="country_of_residence">{{ "person.fields.country_of_residence"|trans }}</label>
     <div class="country-input input-icon">
       <span class="icon">🌐</span>
       <input type="text"
@@ -39,23 +39,23 @@
   </div>
 </div>
 <div class="form-row">
-  <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.bsn.is_empty() && !form.data.no_bsn_confirmed && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
-    <div class="obfuscate">
-      <input type="text"
-             placeholder=" "
-             name="bsn"
-             id="bsn"
-             value="{{ form.data.bsn }}" />
-    </div>
-    <label for="no_bsn_confirmed" class="no_bsn_confirmed">
-      <input type="checkbox"
-             name="no_bsn_confirmed"
-             id="no_bsn_confirmed"
-             value="true"
-             {% if form.data.no_bsn_confirmed %}checked{% endif %} />
-      <span>{{ "person.no_bsn_confirm"|trans }}</span>
-    </label>
+    <input type="text"
+           placeholder=" "
+           name="bsn"
+           id="bsn"
+           value="{{ form.data.bsn }}" />
+    {% if form.data.bsn.is_empty() && should_warn %}
+      <label for="no_bsn_confirmed" class="no_bsn_confirmed">
+        <input type="checkbox"
+               name="no_bsn_confirmed"
+               id="no_bsn_confirmed"
+               value="true"
+               {% if form.data.no_bsn_confirmed %}checked{% endif %} />
+        <span>{{ "person.no_bsn_confirm"|trans }}</span>
+      </label>
+    {% endif %}
     {% for error in form|error("bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
   <p class="form-field form-field-md {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">

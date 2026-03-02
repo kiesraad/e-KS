@@ -1,6 +1,6 @@
 <div class="form-row">
   <p class="form-field form-field-sm {% if form.data.name.initials.is_empty() && should_warn|default(false) %}warning{% endif %}">
-    <label for="initials" class="required">{{ "person.fields.initials"|trans }}</label>
+    <label for="initials">{{ "person.fields.initials"|trans }}</label>
     <input type="text"
            name="initials"
            id="initials"
@@ -8,7 +8,7 @@
            class="initials-input"
            required />
     <label class="autoformat">
-      <input type="checkbox" checked />
+      <input type="checkbox" checked  tabindex="-1" />
       <span>{{ "person.autoformat_initials"|trans }}</span>
     </label>
     {% for error in form|error("name.initials") %}<span class="error">{{ error }}</span>{% endfor %}
@@ -22,7 +22,7 @@
     {% for error in form|error("name.last_name_prefix") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
   <div class="form-field {% if form.data.name.last_name.is_empty() && should_warn|default(false) %}warning{% endif %}">
-    <label for="last_name" class="required">{{ "person.fields.last_name"|trans }}</label>
+    <label for="last_name">{{ "person.fields.last_name"|trans }}</label>
     <input type="text"
            name="last_name"
            id="last_name"
@@ -31,13 +31,15 @@
     {% for error in form|error("name.last_name") %}
       <span class="error">{{ error }}</span>
     {% else %}
-      <details class="hint">
-        <summary>{{ "action.note"|trans }}</summary>
-        <div class="hint-popover">
-          {# sonar Web:S5247: static string translation which is trusted #}
-          {{ "person.fields.last_name_info"|trans|safe }}
-        </div>
-      </details>
+      {% if show_last_name_info|default(false) %}
+        <details class="hint" tabindex="-1">
+          <summary>{{ "action.information"|trans }}</summary>
+          <div class="hint-popover">
+            {# sonar Web:S5247: static string translation which is trusted #}
+            {{ "person.fields.last_name_info"|trans|safe }}
+          </div>
+        </details>
+      {% endif %}
     {% endfor %}
   </div>
 </div>

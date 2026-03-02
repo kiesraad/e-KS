@@ -19,6 +19,7 @@
       <h2>{{ "person.form.create.title"|trans }}</h2>
     </legend>
     {% let should_warn = false %}
+    {% let show_last_name_info = true %}
     {% include "persons/components/form.html" %}
   </fieldset>
 {% endblock %}

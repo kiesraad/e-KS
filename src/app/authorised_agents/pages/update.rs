@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store,
+    AppError, AppStore, Context, Form, HtmlTemplate,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -28,7 +25,10 @@ pub async fn update_authorised_agent(
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         AuthorisedAgentUpdateTemplate {
-            form: FormData::new_with_data(authorised_agent.clone().into(), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                authorised_agent.clone().into(),
+                &context.session.csrf_tokens,
+            ),
             authorised_agent,
         },
         context,
@@ -40,10 +40,10 @@ pub async fn update_authorised_agent_submit(
     _: AuthorisedAgentUpdatePath,
     context: Context,
     authorised_agent: AuthorisedAgent,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&authorised_agent, &context.csrf_tokens) {
+    match form.validate_update(&authorised_agent, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentUpdateTemplate {
                 authorised_agent,
@@ -64,9 +64,8 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_authorised_agent, sample_authorised_agent_form,
             sample_political_group,
@@ -80,7 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_renders_existing_agent() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -107,7 +106,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -117,7 +116,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_authorised_agent_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -125,7 +124,7 @@ mod tests {
             AuthorisedAgentUpdatePath { agent_id },
             context,
             authorised_agent.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -153,7 +152,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -163,7 +162,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_authorised_agent_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -171,7 +170,7 @@ mod tests {
             AuthorisedAgentUpdatePath { agent_id },
             context,
             authorised_agent.clone(),
-            State(store),
+            store,
             Form(form),
         )
         .await

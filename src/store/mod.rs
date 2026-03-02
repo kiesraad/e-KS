@@ -2,6 +2,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use std::{path::PathBuf, sync::Arc};
 use url::Url;
+use uuid::Uuid;
 
 use crate::AppError;
 
@@ -10,6 +11,7 @@ pub(crate) mod database;
 
 mod filesystem;
 mod persistance;
+pub mod registry;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct StoreEvent<E> {
@@ -58,6 +60,7 @@ pub enum StorePersistence {
 }
 
 pub struct Store<D> {
+    pub stream_id: Uuid,
     pub persistence: StorePersistence,
     pub(crate) data: Arc<parking_lot::RwLock<D>>,
 }
@@ -66,6 +69,7 @@ impl<D> Clone for Store<D> {
     /// Clone the store handle, sharing the same underlying data and persistence.
     fn clone(&self) -> Self {
         Self {
+            stream_id: self.stream_id,
             persistence: self.persistence.clone(),
             data: self.data.clone(),
         }
@@ -78,14 +82,21 @@ where
 {
     /// Create a new store and initialize persistence from the provided storage URL.
     pub async fn new(storage_url: &str) -> Result<Self, AppError> {
+        Self::new_for_stream(storage_url, Uuid::new_v4()).await
+    }
+
+    /// Create a new store scoped to a specific stream ID.
+    pub async fn new_for_stream(storage_url: &str, stream_id: Uuid) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
 
         let store = Store {
+            stream_id,
             persistence,
             data: Default::default(),
         };
 
         store.persistence.init().await?;
+        store.persistence.ensure_stream(stream_id).await?;
 
         Ok(store)
     }
@@ -93,12 +104,23 @@ where
     #[cfg(feature = "database")]
     /// Create a new store backed by the provided database pool.
     pub async fn new_with_pool(pool: sqlx::PgPool) -> Result<Self, AppError> {
+        Self::new_with_pool_for_stream(pool, Uuid::new_v4()).await
+    }
+
+    #[cfg(feature = "database")]
+    /// Create a new store backed by the provided database pool for a stream.
+    pub async fn new_with_pool_for_stream(
+        pool: sqlx::PgPool,
+        stream_id: Uuid,
+    ) -> Result<Self, AppError> {
         let store = Store {
+            stream_id,
             persistence: StorePersistence::Database(pool),
             data: Default::default(),
         };
 
         store.persistence.init().await?;
+        store.persistence.ensure_stream(store.stream_id).await?;
 
         Ok(store)
     }
@@ -168,6 +190,21 @@ impl StorePersistence {
             }
             StorePersistence::Local(dir) => {
                 filesystem::init_local(dir).await?;
+            }
+            StorePersistence::None => {}
+        }
+
+        Ok(())
+    }
+
+    pub async fn ensure_stream(&self, stream_id: Uuid) -> Result<(), AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                database::ensure_stream(pool, stream_id).await?;
+            }
+            StorePersistence::Local(dir) => {
+                filesystem::ensure_stream_file(dir, stream_id).await?;
             }
             StorePersistence::None => {}
         }

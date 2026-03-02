@@ -32,6 +32,7 @@ hints:
   optional: optional
 list:
   empty: No persons found.
+missing_information: Not all required information has been provided for this person.
 no_bsn_confirm: I confirm this person does not have a BSN.
 not_found: "Person {} not found."
 not_found_in_candidate_list: Person not found in candidate list.

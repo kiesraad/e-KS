@@ -1,8 +1,8 @@
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, ElectoralDistrict, HtmlTemplate, Store,
+    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
     core::{AnyLocale, ModelLocale},
     filters,
@@ -29,9 +29,9 @@ pub struct IndexTemplate {
 pub async fn index(
     _: SubmitPath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let election = context.election;
+    let election = context.session.election;
 
     let candidate_lists = CandidateListSummary::list(&store)?
         .into_iter()
@@ -71,7 +71,7 @@ pub async fn index(
 mod tests {
     use super::*;
     use crate::{
-        Context, Store,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
@@ -79,11 +79,11 @@ mod tests {
             response_body_string, sample_candidate_list, sample_list_submitter, sample_person,
         },
     };
-    use axum::{extract::State, response::IntoResponse};
+    use axum::response::IntoResponse;
 
     #[tokio::test]
     async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let complete_list_id = CandidateListId::new();
         let incomplete_list_id = CandidateListId::new();
         let list_submitter_id = ListSubmitterId::new();
@@ -102,7 +102,7 @@ mod tests {
         let incomplete_list = sample_candidate_list(incomplete_list_id);
         incomplete_list.create(&store).await?;
 
-        let response = index(SubmitPath, Context::new_test_without_db(), State(store))
+        let response = index(SubmitPath, Context::new_test_without_db(), store)
             .await?
             .into_response();
         let body = response_body_string(response).await;

@@ -1,7 +1,7 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
-    AppError, Context, Form, Store, form::EmptyForm, list_submitters::ListSubmitter,
+    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
     redirect_success, substitute_list_submitters::SubstituteSubmitter,
 };
 
@@ -11,10 +11,10 @@ pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
     context: Context,
     substitute_submitter: SubstituteSubmitter,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             substitute_submitter.delete(&store).await?;
@@ -32,15 +32,14 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, Context, Store, TokenValue,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, PoliticalGroupId, TokenValue,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{sample_political_group, sample_substitute_submitter},
     };
 
     #[tokio::test]
     async fn delete_substitute_submitter_removes_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -51,13 +50,13 @@ mod tests {
         political_group.update(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
             substitute_submitter,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -85,7 +84,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let sub_submitter_id = SubstituteSubmitterId::new();
@@ -101,7 +100,7 @@ mod tests {
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
             substitute_submitter.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

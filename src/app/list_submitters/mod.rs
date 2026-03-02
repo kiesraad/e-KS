@@ -1,3 +1,4 @@
+//! List submitter management and related routes.
 mod extractors;
 mod forms;
 mod pages;

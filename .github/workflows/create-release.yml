@@ -1,0 +1,84 @@
+name: Create release on version bump
+
+permissions: {}
+concurrency:
+  group: 
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-create-release
+  cancel-in-progress: true
+
+on:
+  push:
+    branches:
+      - main
+
+jobs:
+  check-version:
+    name: Check current version
+    permissions:
+      contents: read
+    if: github.event_name != 'workflow_run' || github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      release_exists: ${{ steps.release_check.outputs.release_exists }}
+      should_run: ${{ steps.decide.outputs.should_run }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
+          persist-credentials: false
+      - name: Read version
+        id: version
+        run: |
+          version=$(awk -F' *= *' '$1 == "version" { gsub(/"/, "", $2); print $2; exit }' Cargo.toml)
+          echo "version=$version" >> "$GITHUB_OUTPUT"
+      - name: Check release existence
+        id: release_check
+        uses: actions/github-script@e69ef5462fd455e02edcaf4dd7708eda96b9eda0 # v7.0.0
+        with:
+          script: |
+            const tag = `${CURRENT_VERSION}`;
+            try {
+              await github.rest.repos.getReleaseByTag({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                tag,
+              });
+              core.setOutput('release_exists', 'true');
+            } catch (error) {
+              if (error.status === 404) {
+                core.setOutput('release_exists', 'false');
+              } else {
+                throw error;
+              }
+            }
+        env:
+          CURRENT_VERSION: ${{ steps.version.outputs.version }}
+
+      - name: Decide run
+        id: decide
+        run: |
+          if [[ "${STEPS_RELEASE_CHECK_OUTPUTS_RELEASE_EXISTS}" == "false" ]]; then
+            echo "should_run=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "should_run=false" >> "$GITHUB_OUTPUT"
+          fi
+        env:
+          STEPS_RELEASE_CHECK_OUTPUTS_RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
+  
+  release:
+    name: Make release if necessary
+    permissions:
+      contents: write # needs write permission to create a release in the repo
+    needs:
+      - check-version
+    if: needs.check-version.outputs.should_run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Create release
+        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
+        with:
+          tag_name: ${{ needs.check-version.outputs.version }}
+          name: Version ${{ needs.check-version.outputs.version }}
+          generate_release_notes: true

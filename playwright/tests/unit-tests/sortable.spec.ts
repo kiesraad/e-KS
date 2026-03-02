@@ -1,6 +1,10 @@
 import { expect, test } from "@playwright/test";
 
-import setupSortable from "../../../frontend/scripts/sortable";
+import setupSortable, {
+  DragSession,
+  reorderList,
+  SortableTable,
+} from "../../../frontend/scripts/generic-ui/sortable";
 
 declare global {
   interface Window {
@@ -8,6 +12,7 @@ declare global {
       input: string,
       init: { method?: string; body?: string },
     ) => void;
+    setupSortable?: () => unknown;
   }
 }
 
@@ -45,6 +50,14 @@ test.describe("sortable", () => {
         </tbody>
       </table>
     `);
+
+    const injectedSource = `
+${DragSession.toString()}
+${SortableTable.toString()}
+${reorderList.toString()}
+window.setupSortable = ${setupSortable.toString()};
+`;
+    await page.addScriptTag({ content: injectedSource });
 
     await page.evaluate(() => {
       window.fetch = (input: RequestInfo | URL, init?: RequestInit) => {
@@ -90,7 +103,12 @@ test.describe("sortable", () => {
       });
     });
 
-    await page.evaluate(setupSortable);
+    await page.evaluate(() => {
+      if (!window.setupSortable) {
+        throw new Error("Missing setupSortable");
+      }
+      window.setupSortable();
+    });
 
     const dragDistance = 30;
     await page.evaluate((distance) => {

@@ -1,10 +1,10 @@
-use crate::{AppError, Store};
+use crate::{AppError, AppStore, PoliticalGroupId};
 
 mod candidate_list;
 mod persons;
 mod political_groups;
 
-pub async fn load(store: &Store) -> Result<(), AppError> {
+pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Result<(), AppError> {
     let person_count = store.get_person_count()?;
     let candidate_list_count = store.get_candidate_list_count()?;
 
@@ -16,19 +16,20 @@ pub async fn load(store: &Store) -> Result<(), AppError> {
 
     persons::load(store).await?;
     candidate_list::load(store).await?;
-    political_groups::load(store).await?;
+    political_groups::load(store, political_group_id).await?;
 
     Ok(())
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Store, fixtures::load};
+    use crate::{AppStore, PoliticalGroupId, fixtures::load};
 
     #[tokio::test]
     async fn test_load_all_fixtures() {
-        let store = Store::new_for_test().await;
-        load(&store).await.unwrap();
+        let store = AppStore::new_for_test().await;
+        let political_group_id = PoliticalGroupId::new();
+        load(&store, political_group_id).await.unwrap();
         let persons = crate::persons::Person::list(
             &store,
             50,

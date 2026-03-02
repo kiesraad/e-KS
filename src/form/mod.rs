@@ -18,6 +18,7 @@ use crate::AppError;
 
 pub type FieldErrors = Vec<(String, ValidationError)>;
 
+/// Wrapper that extracts and validates form data from requests.
 #[derive(Debug)]
 pub struct Form<T>(pub T);
 

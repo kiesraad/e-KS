@@ -1,7 +1,7 @@
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use crate::{
-    AppError, Context, Form, Store,
+    AppError, AppStore, Context, Form,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
     redirect_success,
@@ -11,10 +11,10 @@ pub async fn delete_person(
     _: DeletePersonPath,
     context: Context,
     person: Person,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             person.delete(&store).await?;
@@ -30,26 +30,26 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store, persons::PersonId,
+        AppError, AppStore, Context, Form, QueryParamState, persons::PersonId,
         test_utils::sample_person,
     };
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_person(
             DeletePersonPath { person_id },
             context,
             person,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await

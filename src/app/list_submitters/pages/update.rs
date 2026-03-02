@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -27,7 +24,10 @@ pub async fn update_list_submitter(
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(list_submitter.clone().into(), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                list_submitter.clone().into(),
+                &context.session.csrf_tokens,
+            ),
             list_submitter,
         },
         context,
@@ -39,10 +39,10 @@ pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
     context: Context,
     list_submitter: ListSubmitter,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&list_submitter, &context.csrf_tokens) {
+    match form.validate_update(&list_submitter, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
                 list_submitter,
@@ -63,9 +63,8 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         list_submitters::ListSubmitterId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_list_submitter, sample_list_submitter_form,
             sample_political_group,
@@ -79,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -106,7 +105,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -116,7 +115,7 @@ mod tests {
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -124,7 +123,7 @@ mod tests {
             ListSubmitterUpdatePath { submitter_id },
             context,
             list_submitter.clone(),
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -152,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -162,7 +161,7 @@ mod tests {
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -170,7 +169,7 @@ mod tests {
             ListSubmitterUpdatePath { submitter_id },
             context,
             list_submitter.clone(),
-            State(store),
+            store,
             Form(form),
         )
         .await

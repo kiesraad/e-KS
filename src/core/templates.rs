@@ -6,6 +6,7 @@ use axum::response::{Html, IntoResponse, Response};
 
 use crate::{AppError, Context};
 
+/// Askama template wrapper that renders with a request context.
 pub struct HtmlTemplate<T>(pub T, pub Context);
 
 impl<T> IntoResponse for HtmlTemplate<T>

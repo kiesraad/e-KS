@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, Context, ElectionConfig, Form, HtmlTemplate, Store,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
     core::AnyLocale,
     filters,
@@ -16,29 +13,22 @@ use crate::{
 #[template(path = "candidate_lists/pages/create.html")]
 struct CandidateListCreateTemplate {
     form: FormData<CandidateListCreateForm>,
+    available_districts: Vec<ElectoralDistrict>,
     has_previous_list: bool,
 }
 
 pub async fn create_candidate_list(
     _: CandidateListCreatePath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let used_districts = CandidateList::used_districts(&store, vec![])?;
-    let available_districts = context.election.available_districts(used_districts);
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     let has_previous_list = !store.get_candidate_lists()?.is_empty();
-
-    let form = FormData::new_with_data(
-        CandidateListCreateForm {
-            electoral_districts: available_districts,
-            ..Default::default()
-        },
-        &context.csrf_tokens,
-    );
 
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
-            form,
+            form: FormData::new(&context.session.csrf_tokens),
+            available_districts,
             has_previous_list,
         },
         context,
@@ -49,15 +39,17 @@ pub async fn create_candidate_list(
 pub async fn create_candidate_list_submit(
     _: CandidateListCreatePath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     let should_copy_candidates = form.copy_candidates;
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
                 form: form_data,
                 has_previous_list: !store.get_candidate_lists()?.is_empty(),
+                available_districts,
             },
             context,
         )
@@ -89,7 +81,7 @@ mod test {
     };
 
     use crate::{
-        Context, ElectoralDistrict, Store, TokenValue,
+        AppStore, Context, ElectoralDistrict, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -97,11 +89,11 @@ mod test {
 
     #[tokio::test]
     async fn create_candidate_list_renders_csrf_field() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let response = create_candidate_list(
             CandidateListCreatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
         )
         .await?
         .into_response();
@@ -115,9 +107,9 @@ mod test {
 
     #[tokio::test]
     async fn create_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             copy_candidates: false,
@@ -127,7 +119,7 @@ mod test {
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;
@@ -151,7 +143,7 @@ mod test {
 
     #[tokio::test]
     async fn create_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             copy_candidates: false,
@@ -161,7 +153,7 @@ mod test {
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
             Form(form),
         )
         .await?;
@@ -175,9 +167,9 @@ mod test {
 
     #[tokio::test]
     async fn create_candidate_list_copies_previous_candidates() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person_a = sample_person(PersonId::new());
@@ -197,7 +189,7 @@ mod test {
         create_candidate_list_submit(
             CandidateListCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;

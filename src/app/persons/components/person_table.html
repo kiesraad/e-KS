@@ -53,7 +53,8 @@
         <td>{{ person.updated_at|datetime }}</td>
         <td>
           <a href="{{ person.update_path() }}"
-             aria-label="{{ "action.edit"|trans }}">
+             aria-label="{{ "action.edit"|trans }}"
+             title="{% if !person.is_complete() %}{{ "person.missing_information"|trans }}{% endif %}">
             <span>{{ "action.edit"|trans }}</span>
           </a>
         </td>

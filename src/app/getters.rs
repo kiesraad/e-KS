@@ -1,5 +1,5 @@
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -8,7 +8,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
-impl Store {
+impl AppStore {
     pub fn get_candidate_lists(&self) -> Result<Vec<CandidateList>, AppError> {
         let data = self.data.read();
 

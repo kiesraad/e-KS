@@ -1,3 +1,4 @@
+// Preview candidate list positions relative to the current selection.
 export default function setupPositionPreview() {
   const container = document.getElementById("position-preview-container");
   const preview = document.getElementById("position-preview");

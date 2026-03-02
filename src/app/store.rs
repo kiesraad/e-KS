@@ -13,6 +13,7 @@ use crate::{
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
+/// Event-sourced domain projection for a single political group.
 #[derive(Default, Debug, Serialize, Deserialize)]
 pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,
@@ -187,13 +188,13 @@ impl StoreData for AppStoreData {
     }
 }
 
+#[cfg(test)]
 impl crate::store::Store<AppStoreData> {
-    #[cfg(test)]
     pub async fn new_for_test() -> Self {
-        let political_group_id = crate::political_groups::PoliticalGroupId::new();
+        let political_group_id = crate::PoliticalGroupId::new();
         let political_group = crate::test_utils::sample_political_group(political_group_id);
 
-        let store = crate::store::Store::new("memory:")
+        let store = crate::store::Store::new_for_stream("memory:", political_group_id.uuid())
             .await
             .expect("create in-memory store");
 

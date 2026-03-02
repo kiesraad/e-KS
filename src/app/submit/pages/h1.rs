@@ -1,5 +1,5 @@
 use crate::{
-    AppError, Config, Context, Store,
+    AppError, AppStore, Config, Context,
     candidate_lists::FullCandidateList,
     core::Pdf,
     submit::{H1, pages::DownloadH1Path},
@@ -9,11 +9,11 @@ use axum::{extract::State, response::IntoResponse};
 pub async fn gen_h1(
     path: DownloadH1Path,
     list: FullCandidateList,
-    State(store): State<Store>,
+    store: AppStore,
     State(config): State<Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H1::new(&store, list, &context.election, path.locale)?;
+    let h1 = H1::new(&store, list, &context.session.election, path.locale)?;
 
     h1.generate(config.typst_url).await
 }
@@ -22,7 +22,7 @@ pub async fn gen_h1(
 mod tests {
     use super::*;
     use crate::{
-        Context, Store,
+        AppStore, Context,
         candidate_lists::CandidateListId,
         core::ModelLocale,
         list_submitters::ListSubmitterId,
@@ -39,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn gen_h1_missing_list_submitter_returns_error() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -52,7 +52,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            State(store),
+            store,
             State(Config::new_test()),
             Context::new_test_without_db(),
         )
@@ -71,7 +71,7 @@ mod tests {
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
     async fn gen_h1_returns_pdf_response() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list_submitter_id = ListSubmitterId::new();
         let person_id = PersonId::new();
@@ -110,7 +110,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            State(store),
+            store,
             State(config),
             Context::new_test_without_db(),
         )

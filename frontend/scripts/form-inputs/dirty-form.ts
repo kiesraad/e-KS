@@ -1,3 +1,4 @@
+// Track dirty forms and enable the save button only when changes are valid.
 export default function setupDirtyForms() {
   const forms = document.querySelectorAll("form");
   const dirtyForms = new Set<HTMLFormElement>();

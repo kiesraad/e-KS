@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import initialsInput from "../../../frontend/scripts/initials-input";
+import initialsInput from "../../../frontend/scripts/form-inputs/initials-input";
 
 test.describe("initials-input", () => {
   test("formats initials when autoformat is enabled", async ({ page }) => {

@@ -1,8 +1,8 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 use serde::Deserialize;
 
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
 };
 
@@ -15,7 +15,7 @@ struct AuthorisedAgentPathParams {
 impl<S> FromRequestParts<S> for AuthorisedAgent
 where
     S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
 {
     type Rejection = AppError;
 
@@ -23,7 +23,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let Path(AuthorisedAgentPathParams { agent_id }) =
             Path::<AuthorisedAgentPathParams>::from_request_parts(parts, state).await?;
 
@@ -43,7 +43,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState,
+        AppState, AppStore,
         test_utils::{response_body_string, sample_authorised_agent},
     };
 
@@ -52,8 +52,9 @@ mod tests {
         let authorised_agent = sample_authorised_agent(AuthorisedAgentId::new());
 
         let app_state = AppState::new_for_tests().await;
+        let store = AppStore::new_for_test().await;
         authorised_agent
-            .create(&app_state.store)
+            .create(&store)
             .await
             .expect("create authorised agent");
 
@@ -66,18 +67,16 @@ mod tests {
             )
             .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!(
-                        "/political-group/authorised-agents/{}",
-                        authorised_agent.id
-                    ))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!(
+                "/political-group/authorised-agents/{}",
+                authorised_agent.id
+            ))
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    AppError, ElectoralDistrict, Store,
+    AppError, AppStore, ElectoralDistrict,
     candidate_lists::CandidateList,
     list_submitters::ListSubmitterId,
     pagination::SortDirection,
@@ -15,7 +15,7 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
     persons.into_iter().map(|person| person.id).collect()
 }
 
-pub async fn load(store: &Store) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let persons = persons::Person::list(
         store,
         FIXTURE_CANDIDATE_LIST_SIZE,
@@ -90,7 +90,7 @@ mod tests {
     use crate::candidate_lists::CandidateListSummary;
     #[tokio::test]
     async fn test_load() {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 

@@ -1,3 +1,4 @@
+// Assist date-of-birth inputs with numeric formatting and dash handling.
 const DATE_INPUT_SELECTOR = 'input[name="date_of_birth"]';
 const MAX_DATE_DIGITS = 8;
 

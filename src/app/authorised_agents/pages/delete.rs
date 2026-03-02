@@ -1,8 +1,8 @@
 use crate::{
-    AppError, Context, Form, Store, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
     redirect_success,
 };
-use axum::{extract::State, response::Response};
+use axum::response::Response;
 
 use super::AuthorisedAgentDeletePath;
 
@@ -10,10 +10,10 @@ pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,
     authorized_agent: AuthorisedAgent,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             authorized_agent.delete(&store).await?;
@@ -29,15 +29,14 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store, TokenValue,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState, TokenValue,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{sample_authorised_agent, sample_political_group},
     };
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -47,13 +46,13 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
 
         let response = delete_authorised_agent(
             AuthorisedAgentDeletePath { agent_id },
             authorised_agent,
             context,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -81,7 +80,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_authorised_agent_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -96,7 +95,7 @@ mod tests {
             AuthorisedAgentDeletePath { agent_id },
             authorised_agent.clone(),
             context,
-            State(store.clone()),
+            store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

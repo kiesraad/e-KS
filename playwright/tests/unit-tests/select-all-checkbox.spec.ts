@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import setupSelectAllCheckbox from "../../../frontend/scripts/select-all-checkbox";
+import setupSelectAllCheckbox from "../../../frontend/scripts/form-inputs/select-all-checkbox";
 
 test.describe("select-all-checkbox", () => {
   test("initializes to indeterminate when some items are checked", async ({

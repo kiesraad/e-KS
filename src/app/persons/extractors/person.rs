@@ -1,8 +1,8 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 use serde::Deserialize;
 
 use crate::{
-    AppError, Locale, Store,
+    AppError, AppStore, Locale,
     persons::{Person, PersonId},
     trans,
 };
@@ -16,7 +16,7 @@ struct PersonPathParams {
 impl<S> FromRequestParts<S> for Person
 where
     S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
 {
     type Rejection = AppError;
 
@@ -24,7 +24,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let locale = Locale::from_request_parts(parts, state).await?;
         let Path(PersonPathParams { person_id }) =
             Path::<PersonPathParams>::from_request_parts(parts, state).await?;
@@ -50,7 +50,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState, Locale, render_error_pages,
+        AppState, AppStore, Locale, render_error_pages,
         test_utils::{response_body_string, sample_person},
     };
 
@@ -59,7 +59,8 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        person.create(&app_state.store).await.unwrap();
+        let store = AppStore::new_for_test().await;
+        person.create(&store).await.unwrap();
 
         let app = Router::new()
             .route(
@@ -68,15 +69,13 @@ mod tests {
             )
             .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!("/persons/{}", person.id))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!("/persons/{}", person.id))
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -88,6 +87,7 @@ mod tests {
         let person_id = PersonId::new();
 
         let app_state = AppState::new_for_tests().await;
+        let store = AppStore::new_for_test().await;
 
         let app = Router::new()
             .route(
@@ -101,13 +101,18 @@ mod tests {
             .with_state(app_state);
 
         let response = app
-            .oneshot(
-                Request::builder()
+            .oneshot({
+                let mut request = Request::builder()
                     .uri(format!("/persons/{}", person_id))
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
-                    .unwrap(),
-            )
+                    .unwrap();
+                let mut session = crate::Session::new_with_locale(Locale::En);
+                session.set_political_group(crate::PoliticalGroupId::new());
+                request.extensions_mut().insert(session);
+                request.extensions_mut().insert(store.clone());
+                request
+            })
             .await
             .expect("response");
 

@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, HtmlTemplate, Store,
+    AppError, AppStore, Context, HtmlTemplate,
     authorised_agents::AuthorisedAgent,
     filters,
     form::{Form, FormData},
@@ -26,14 +23,17 @@ struct PoliticalGroupUpdateTemplate {
 pub async fn update_political_group(
     _: PoliticalGroupUpdatePath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     political_group: PoliticalGroup,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(store.clone())?;
+    let steps = PoliticalGroupSteps::new(&store)?;
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
-            form: FormData::new_with_data(political_group.clone().into(), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                political_group.clone().into(),
+                &context.session.csrf_tokens,
+            ),
             steps,
         },
         context,
@@ -45,12 +45,12 @@ pub async fn update_political_group_submit(
     _: PoliticalGroupUpdatePath,
     context: Context,
     political_group: PoliticalGroup,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(store.clone())?;
+    let steps = PoliticalGroupSteps::new(&store)?;
 
-    match form.validate_update(&political_group, &context.csrf_tokens) {
+    match form.validate_update(&political_group, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PoliticalGroupUpdateTemplate {
                 form: form_data,
@@ -71,9 +71,8 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        political_groups::PoliticalGroupId,
         test_utils::{
             response_body_string, sample_authorised_agent, sample_political_group,
             sample_political_group_form,
@@ -87,7 +86,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
 
@@ -96,7 +95,7 @@ mod tests {
         let response = update_political_group(
             PoliticalGroupUpdatePath {},
             Context::new_test_without_db(),
-            State(store),
+            store,
             political_group,
         )
         .await
@@ -113,7 +112,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -123,14 +122,14 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_political_group_form(&csrf_token);
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
             context,
             political_group,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -166,7 +165,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let agent_id = AuthorisedAgentId::new();
@@ -176,7 +175,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_political_group_form(&csrf_token);
 
         form.display_name = "!".to_string(); // Invalid value
@@ -185,7 +184,7 @@ mod tests {
             PoliticalGroupUpdatePath {},
             context,
             political_group,
-            State(store),
+            store,
             Form(form),
         )
         .await

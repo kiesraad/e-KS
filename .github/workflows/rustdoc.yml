@@ -1,22 +1,28 @@
 name: Deploy Rustdocs to GitHub Pages
+
+permissions: {}
+concurrency:
+  group: "pages"
+  cancel-in-progress: true
+
 on:
   push:
     branches:
       - main
 
-concurrency:
-  group: "pages"
-  cancel-in-progress: true
 
 jobs:
   # Build Job
   build:
+    name: Build pages
     runs-on: ubuntu-24.04
     permissions:
       contents: read
     steps:
       - name: Checkout repository
-        uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -35,19 +41,23 @@ jobs:
           RUSTDOCFLAGS: "-D warnings"
         run: cargo doc --workspace --no-deps --all-features
 
+      - name: Add redirect to main crate docs
+        run: echo '<meta http-equiv="refresh" content="0; url=eks/index.html">' > target/doc/index.html
+
       - name: Upload artifact
-        uses: actions/upload-pages-artifact@v4
+        uses: actions/upload-pages-artifact@7b1f4a764d45c48632c6b24a0339c27f5614fb0b # v4
         with:
           path: './target/doc'
 
   deploy:
+    name: Deploy pages
     environment:
-      name: github-pages
+      name: GitHub pages
       url: ${{ steps.deployment.outputs.page_url }}e_ks
     runs-on: ubuntu-24.04
     permissions:
-      pages: write
-      id-token: write
+      pages: write # to publish docs to the pages url of the repo
+      id-token: write # to verify the source of the pages deployment
     needs: build
     steps:
       - name: Deploy to GitHub Pages

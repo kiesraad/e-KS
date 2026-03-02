@@ -234,6 +234,10 @@ ul.districts {
     &.warning {
       border-color: var(--orange-200);
       color: var(--orange-800);
+      padding-left: 2rem;
+      background: url("../icons/warning.svg") no-repeat left var(--space-sm)
+        bottom var(--space-sm);
+      background-size: 1.1rem;
     }
   }
 }

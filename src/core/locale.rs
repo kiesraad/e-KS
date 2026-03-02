@@ -4,6 +4,7 @@
 use serde::Deserialize;
 use std::str::FromStr;
 
+/// Supported UI locales for requests and templates.
 #[derive(Default, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum Locale {
@@ -68,6 +69,7 @@ impl std::fmt::Display for Locale {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::Session;
     use axum::{
         body::Body,
         extract::FromRequestParts,
@@ -97,13 +99,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn request_locale_prefers_cookie() {
-        let request = Request::builder()
+    async fn request_locale_prefers_session() {
+        let mut request = Request::builder()
             .uri("/")
-            .header(header::COOKIE, "LANGUAGE=en")
             .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
             .body(Body::empty())
             .unwrap();
+        request
+            .extensions_mut()
+            .insert(Session::new_with_locale(Locale::En));
         let (mut parts, _body) = request.into_parts();
 
         let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
@@ -115,7 +119,6 @@ mod tests {
     async fn request_locale_falls_back_to_accept_language() {
         let request = Request::builder()
             .uri("/")
-            .header(header::COOKIE, "LANGUAGE=fr")
             .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
             .body(Body::empty())
             .unwrap();

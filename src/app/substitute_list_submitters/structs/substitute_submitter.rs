@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, Store,
+    AppError, AppEvent, AppStore,
     common::{DutchAddress, FullName},
     id_newtype,
 };
@@ -19,19 +19,19 @@ impl SubstituteSubmitter {
         self.name.is_complete() && self.address.is_complete()
     }
 
-    pub async fn create(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateSubstituteSubmitter(self.clone()))
             .await
     }
 
-    pub async fn update(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdateSubstituteSubmitter(self.clone()))
             .await
     }
 
-    pub async fn delete(&self, store: &Store) -> Result<(), AppError> {
+    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::DeleteSubstituteSubmitter {
                 substitute_submitter_id: self.id,

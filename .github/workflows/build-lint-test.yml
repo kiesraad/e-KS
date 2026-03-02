@@ -1,5 +1,11 @@
 name: Build, lint & test
 
+permissions: {}
+concurrency:
+  group: 
+    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-build-lint-test
+  cancel-in-progress: true
+
 on:
   pull_request:
   push:
@@ -18,13 +24,14 @@ jobs:
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
     steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: '0'
+          persist-credentials: false
       - name: Filter changes for non-Markdown files
         id: filter
         run: | 
-          if [[ "${{ github.ref_name }}" == "main" ]] || [[ $(git diff --name-only "origin/${{ github.base_ref }}" HEAD | grep -v "\.md$") ]]  ; then 
+          if [[ "${GITHUB_REF_NAME}" == "main" ]] || [[ $(git diff --name-only "origin/${GITHUB_BASE_REF}" HEAD | grep -v "\.md$") ]]  ; then 
             echo "changed=true" >> "$GITHUB_OUTPUT"
           else
             echo "changed=false" >> "$GITHUB_OUTPUT"
@@ -38,7 +45,9 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -61,7 +70,9 @@ jobs:
       CARGO_TERM_COLOR: always
       RUSTDOCFLAGS: "-D warnings"
     steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -96,9 +107,10 @@ jobs:
       - name: Lint HTML with djlint
         run: |
           docker run --rm \
-          -v ./src/app:/work/templates \
+          -v ./templates:/work/templates \
+          -v ./djlint.toml:/work/djlint.toml \
           djlint \
-          djlint --ignore=H025 --lint --extension=html --check --indent=2 templates
+          djlint --lint --check --configuration=djlint.toml templates
 
       - name: Check Clippy with all features
         run: cargo --locked clippy --all-targets --all-features -- -D warnings
@@ -123,12 +135,14 @@ jobs:
       - name: Upload binary to test server
         env:
           ETES_API_KEY: ${{ secrets.ETES_API_KEY }}
+          SHA_PR: ${{ github.event.pull_request.head.sha || github.sha }}
+          SHA_GH: ${{ github.sha }}
         run: |
           curl -s -v \
           --fail \
           -H "Authorization: Bearer $ETES_API_KEY" \
           -T ./target/release/eks \
-          https://eks-test.nl/etes/api/v1/executable/${{ github.event.pull_request.head.sha || github.sha }}/${{ github.sha }}
+          https://eks-test.nl/etes/api/v1/executable/${SHA_PR}/${SHA_GH}
 
   playwright:
     name: Playwright tests
@@ -141,7 +155,9 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - name: Setup Rust
         shell: bash
@@ -181,8 +197,23 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@0c366fd6a839edf440554fa01a7085ccba70ac98 # v6
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
 
       - uses: EmbarkStudios/cargo-deny-action@3fd3802e88374d3fe9159b834c7714ec57d6c979
         with:
           arguments: --workspace --all-features
+  zizmor:
+    name: Lint workflow files with zizmor
+    runs-on: ubuntu-24.04
+    permissions:
+      security-events: write # Required for upload-sarif (used by zizmor-action) to upload SARIF files.
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+
+      - name: Run zizmor
+        uses: zizmorcore/zizmor-action@0dce2577a4760a2749d8cfb7a84b7d5585ebcb7d # v0.5.0

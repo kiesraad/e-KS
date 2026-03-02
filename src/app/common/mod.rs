@@ -1,3 +1,7 @@
+//! Shared domain primitives and common pages.
+//!
+//! Scope: reusable value types (names, addresses, dates), shared extractors,
+//! and common pages such as index and language switching.
 mod extractors;
 mod pages;
 mod structs;
@@ -10,5 +14,3 @@ pub use structs::{
 };
 
 pub use pages::{IndexPath, SwitchLanguagePath, not_found, router};
-
-static LOCALE_COOKIE_NAME: &str = "LANGUAGE";

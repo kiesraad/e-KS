@@ -1,8 +1,8 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 use serde::Deserialize;
 
 use crate::{
-    AppError, Store,
+    AppError, AppStore,
     substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
@@ -15,7 +15,7 @@ struct SubstituteSubmitterPathParams {
 impl<S> FromRequestParts<S> for SubstituteSubmitter
 where
     S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
 {
     type Rejection = AppError;
 
@@ -23,7 +23,7 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let Path(SubstituteSubmitterPathParams { submitter_id }) =
             Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
 
@@ -43,7 +43,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState,
+        AppState, AppStore,
         test_utils::{response_body_string, sample_substitute_submitter},
     };
 
@@ -52,7 +52,8 @@ mod tests {
         let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
-        substitute_submitter.create(&app_state.store).await.unwrap();
+        let store = AppStore::new_for_test().await;
+        substitute_submitter.create(&store).await.unwrap();
 
         let app = Router::new()
             .route(
@@ -63,18 +64,16 @@ mod tests {
             )
             .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!(
-                        "/political-group/substitute-submitters/{}",
-                        substitute_submitter.id
-                    ))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!(
+                "/political-group/substitute-submitters/{}",
+                substitute_submitter.id
+            ))
+            .body(Body::empty())
+            .unwrap();
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

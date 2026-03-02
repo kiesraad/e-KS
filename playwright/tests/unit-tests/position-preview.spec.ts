@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-import setupPositionPreview from "../../../frontend/scripts/position-preview";
+import setupPositionPreview from "../../../frontend/scripts/form-inputs/position-preview";
 
 test.describe("position-preview", () => {
   test("updates row position, visibility, and fades", async ({ page }) => {

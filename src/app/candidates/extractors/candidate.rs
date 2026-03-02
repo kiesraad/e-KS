@@ -1,14 +1,13 @@
-use axum::extract::{FromRef, FromRequestParts, Path};
+use axum::extract::{FromRequestParts, Path};
 
-use crate::{AppError, Context, CsrfTokens, Store, candidates::Candidate, trans};
+use crate::{AppError, AppStore, Context, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
 impl<S> FromRequestParts<S> for Candidate
 where
     S: Clone + Send + Sync + 'static,
-    Store: FromRef<S>,
-    CsrfTokens: FromRef<S>,
+    AppStore: FromRequestParts<S, Rejection = AppError>,
 {
     type Rejection = AppError;
 
@@ -16,14 +15,14 @@ where
         parts: &mut axum::http::request::Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        let store = Store::from_ref(state);
+        let store = AppStore::from_request_parts(parts, state).await?;
         let context = Context::from_request_parts(parts, state).await?;
         let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
             Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
 
         let candidate_list = store.get_candidate_list(list_id).map_err(|err| match err {
             AppError::NotFound(_) => AppError::NotFound(
-                trans!("person.not_found_in_candidate_list", context.locale).to_string(),
+                trans!("person.not_found_in_candidate_list", context.session.locale).to_string(),
             ),
             _ => err,
         })?;
@@ -32,7 +31,8 @@ where
             .await
             .map_err(|err| match err {
                 AppError::NotFound(_) => AppError::NotFound(
-                    trans!("person.not_found_in_candidate_list", context.locale).to_string(),
+                    trans!("person.not_found_in_candidate_list", context.session.locale)
+                        .to_string(),
                 ),
                 _ => err,
             })?;
@@ -54,7 +54,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{
-        AppState,
+        AppState, AppStore, Locale,
         candidate_lists::CandidateListId,
         persons::PersonId,
         render_error_pages,
@@ -68,10 +68,11 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        list.create(&app_state.store).await.unwrap();
-        person.create(&app_state.store).await.unwrap();
+        let store = AppStore::new_for_test().await;
+        list.create(&store).await.unwrap();
+        person.create(&store).await.unwrap();
         list.clone()
-            .update_order(&app_state.store, &[person.id])
+            .update_order(&store, &[person.id])
             .await
             .unwrap();
 
@@ -85,15 +86,16 @@ mod tests {
                 )
                 .with_state(app_state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
+            .body(Body::empty())
+            .unwrap();
+        let mut session = crate::Session::new_with_locale(Locale::En);
+        session.set_political_group(crate::PoliticalGroupId::new());
+        request.extensions_mut().insert(session);
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -103,12 +105,13 @@ mod tests {
     #[tokio::test]
     async fn candidate_extractor_returns_not_found() {
         let state = AppState::new_for_tests().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
 
-        list.create(&state.store).await.unwrap();
-        person.create(&state.store).await.unwrap();
+        list.create(&store).await.unwrap();
+        person.create(&store).await.unwrap();
 
         let app =
             Router::new()
@@ -124,16 +127,17 @@ mod tests {
                 ))
                 .with_state(state);
 
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
-                    .header(header::ACCEPT_LANGUAGE, "en")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let mut request = Request::builder()
+            .uri(format!("/candidate-lists/{list_id}/persons/{}", person.id))
+            .header(header::ACCEPT_LANGUAGE, "en")
+            .body(Body::empty())
+            .unwrap();
+        let mut session = crate::Session::new_with_locale(Locale::En);
+        session.set_political_group(crate::PoliticalGroupId::new());
+        request.extensions_mut().insert(session);
+        request.extensions_mut().insert(store.clone());
+
+        let response = app.oneshot(request).await.expect("response");
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;

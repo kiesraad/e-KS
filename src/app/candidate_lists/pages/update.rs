@@ -1,11 +1,12 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Response},
 };
 
 use crate::{
-    AppError, Context, ElectionConfig, Form, HtmlTemplate, QueryParamState, Store,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
+    QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     core::AnyLocale,
     filters,
@@ -19,22 +20,26 @@ struct CandidateListUpdateTemplate {
     should_warn: bool,
     form: FormData<CandidateListForm>,
     candidate_list: CandidateList,
+    available_districts: Vec<ElectoralDistrict>,
 }
 
 pub async fn update_candidate_list(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
                 CandidateListForm::from(candidate_list.clone()),
-                &context.csrf_tokens,
+                &context.session.csrf_tokens,
             ),
             should_warn: query.should_warn(),
             candidate_list,
+            available_districts,
         },
         context,
     )
@@ -45,16 +50,18 @@ pub async fn update_candidate_list_submit(
     _: CandidateListUpdatePath,
     context: Context,
     candidate_list: CandidateList,
-    State(store): State<Store>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate_list, &context.csrf_tokens) {
+    let available_districts = CandidateList::available_districts(&store, &context.session.election);
+    match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
                 form: form_data,
                 candidate_list,
+                available_districts,
             },
             context,
         )
@@ -73,7 +80,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        Context, ElectoralDistrict, Form, QueryParamState, Store, TokenValue,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -85,7 +92,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_renders_existing_list() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         candidate_list.create(&store).await?;
@@ -96,6 +103,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
+            store,
             Query(QueryParamState::default()),
         )
         .await?;
@@ -112,9 +120,9 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -131,7 +139,7 @@ mod tests {
             },
             context,
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -171,7 +179,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -188,7 +196,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )

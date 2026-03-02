@@ -1,12 +1,9 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use super::ListSubmitterCreatePath;
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -24,7 +21,7 @@ pub async fn create_list_submitter(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         ListSubmitterCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     ))
@@ -33,10 +30,10 @@ pub async fn create_list_submitter(
 pub async fn create_list_submitter_submit(
     _: ListSubmitterCreatePath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterCreateTemplate { form: form_data },
             context,
@@ -54,8 +51,7 @@ pub async fn create_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
     };
     use axum::{
@@ -80,19 +76,19 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_list_submitter_form(&csrf_token);
 
         let response = create_list_submitter_submit(
             ListSubmitterCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -119,25 +115,21 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response = create_list_submitter_submit(
-            ListSubmitterCreatePath {},
-            context,
-            State(store),
-            Form(form),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            create_list_submitter_submit(ListSubmitterCreatePath {}, context, store, Form(form))
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

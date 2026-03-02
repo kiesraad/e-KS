@@ -24,13 +24,13 @@ export class SubstituteSubmittersPage {
     });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
     this.textfieldInitials = this.page.getByRole("textbox", {
-      name: "Voorletters *",
+      name: "Voorletters",
     });
     this.textfieldLastNamePrefix = this.page.getByRole("textbox", {
       name: "Voorvoegsel",
     });
     this.textfieldLastName = this.page.getByRole("textbox", {
-      name: "Achternaam *",
+      name: "Achternaam",
     });
   }
 

@@ -1,13 +1,6 @@
-use crate::{
-    Locale,
-    common::{LOCALE_COOKIE_NAME, SwitchLanguagePath},
-};
-use axum::response::Redirect;
-use axum_extra::{
-    TypedHeader,
-    extract::{CookieJar, Form, cookie::Cookie},
-    headers,
-};
+use crate::{AppState, Locale, Session, common::SwitchLanguagePath};
+use axum::{extract::State, response::Redirect};
+use axum_extra::{TypedHeader, extract::Form, headers};
 use serde::Deserialize;
 
 #[derive(Default, Deserialize, Clone, Debug)]
@@ -18,12 +11,14 @@ pub struct LanguageSwitch {
 pub async fn switch_language(
     _: SwitchLanguagePath,
     TypedHeader(referer): TypedHeader<headers::Referer>,
-    mut cookie_jar: CookieJar,
+    State(state): State<AppState>,
+    mut session: Session,
     Form(form): Form<LanguageSwitch>,
-) -> (CookieJar, Redirect) {
-    cookie_jar = cookie_jar.add(Cookie::new(LOCALE_COOKIE_NAME, form.lang.as_str()));
+) -> Redirect {
+    session.locale = form.lang;
+    state.sessions.insert(session);
 
-    (cookie_jar, Redirect::to(&referer.to_string()))
+    Redirect::to(&referer.to_string())
 }
 
 #[cfg(test)]
@@ -32,6 +27,7 @@ mod tests {
         Router,
         body::Body,
         http::{Request, StatusCode, header},
+        middleware,
     };
     use axum_extra::routing::RouterExt;
     use tower::ServiceExt;
@@ -41,10 +37,15 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn switch_language_sets_cookie_and_redirects() {
+    async fn switch_language_updates_session_and_redirects() {
+        let state = AppState::new_for_tests().await;
         let app = Router::new()
             .typed_post(switch_language)
-            .with_state(AppState::new_for_tests().await);
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                crate::session_middleware,
+            ))
+            .with_state(state.clone());
 
         let request = Request::builder()
             .method("POST")
@@ -65,7 +66,16 @@ mod tests {
             .headers()
             .get(header::SET_COOKIE)
             .and_then(|value| value.to_str().ok())
-            .unwrap_or_default();
-        assert!(set_cookie.contains("LANGUAGE=en"));
+            .expect("set-cookie header");
+        assert!(set_cookie.contains(crate::SESSION_COOKIE_NAME));
+
+        let token = set_cookie
+            .split(';')
+            .next()
+            .and_then(|pair| pair.split_once('='))
+            .map(|(_, value)| value)
+            .expect("session token");
+        let session = state.sessions.get(token).expect("session");
+        assert_eq!(session.locale, Locale::En);
     }
 }

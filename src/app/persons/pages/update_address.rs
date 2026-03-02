@@ -1,11 +1,11 @@
 use askama::Template;
 use axum::{
-    extract::{Query, State},
+    extract::Query,
     response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
-    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, Store, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
 };
@@ -27,7 +27,10 @@ pub async fn update_person_address(
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
-            form: FormData::new_with_data(AddressForm::from(person.clone()), &context.csrf_tokens),
+            form: FormData::new_with_data(
+                AddressForm::from(person.clone()),
+                &context.session.csrf_tokens,
+            ),
             person,
         },
         context,
@@ -38,11 +41,11 @@ pub async fn update_person_address_submit(
     _: UpdatePersonAddressPath,
     context: Context,
     person: Person,
-    State(store): State<Store>,
+    store: AppStore,
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.csrf_tokens) {
+    match form.validate_update(&person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
@@ -66,7 +69,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
+        AppError, AppStore, Context, Form, QueryParamState,
         common::DutchAddressForm,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
@@ -79,7 +82,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_renders_existing_person() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id: PersonId = PersonId::new();
         let person = sample_person(person_id);
 
@@ -104,14 +107,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_address_form(&csrf_token);
         let expected_path = person.highlight_success_path().to_string();
 
@@ -119,7 +122,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -147,14 +150,14 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_address_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 
@@ -162,7 +165,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context,
             person,
-            State(store),
+            store,
             Query(QueryParamState::default()),
             Form(form),
         )
@@ -179,7 +182,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_dutch_xor_non_dutch() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -192,7 +195,7 @@ mod tests {
             UpdatePersonAddressPath { person_id },
             context.clone(),
             person.clone(),
-            State(store.clone()),
+            store.clone(),
             Query(QueryParamState::default()),
             Form(AddressForm {
                 address: DutchAddressForm {
@@ -202,7 +205,7 @@ mod tests {
                     house_number_addition: "A".to_string(),
                     street_name: "Stationsstraat".to_string(),
                 },
-                csrf_token: context.csrf_tokens.issue().value,
+                csrf_token: context.session.csrf_tokens.issue().value,
             }),
         )
         .await

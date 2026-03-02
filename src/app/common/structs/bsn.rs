@@ -1,26 +1,59 @@
-use derive_more::{Deref, Display, Into};
+use secrecy::{ExposeSecret, SecretString};
 use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
 use crate::form::ValidationError;
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct Bsn(String);
+#[derive(Default, Clone)]
+pub struct Bsn(SecretString);
+
+impl Bsn {
+    pub fn expose(&self) -> &str {
+        self.0.expose_secret()
+    }
+
+    pub fn to_exposed_string(&self) -> String {
+        self.expose().to_string()
+    }
+}
+
+impl std::fmt::Debug for Bsn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("Bsn([REDACTED])")
+    }
+}
+
+impl std::fmt::Display for Bsn {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("[REDACTED]")
+    }
+}
+
+impl PartialEq for Bsn {
+    fn eq(&self, other: &Self) -> bool {
+        self.expose() == other.expose()
+    }
+}
+
+impl Eq for Bsn {}
+
+impl std::hash::Hash for Bsn {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        self.expose().hash(state);
+    }
+}
+
+impl PartialOrd for Bsn {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Bsn {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.expose().cmp(other.expose())
+    }
+}
 
 impl FromStr for Bsn {
     type Err = ValidationError;
@@ -50,6 +83,25 @@ impl FromStr for Bsn {
             return Err(ValidationError::InvalidChecksum);
         }
 
-        Ok(Bsn(trimmed_value.to_string()))
+        Ok(Bsn(SecretString::from(trimmed_value.to_string())))
+    }
+}
+
+impl Serialize for Bsn {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        serializer.serialize_str(self.expose())
+    }
+}
+
+impl<'de> Deserialize<'de> for Bsn {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let value = String::deserialize(deserializer)?;
+        value.parse().map_err(serde::de::Error::custom)
     }
 }

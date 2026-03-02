@@ -1,12 +1,9 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use super::AuthorisedAgentCreatePath;
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store,
+    AppError, AppStore, Context, Form, HtmlTemplate,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -25,7 +22,7 @@ pub async fn create_authorised_agent(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         AuthorisedAgentCreateTemplate {
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     ))
@@ -34,10 +31,10 @@ pub async fn create_authorised_agent(
 pub async fn create_authorised_agent_submit(
     _: AuthorisedAgentCreatePath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentCreateTemplate { form: form_data },
             context,
@@ -55,8 +52,7 @@ pub async fn create_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Form, QueryParamState, Store,
-        political_groups::PoliticalGroupId,
+        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
         test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
     };
     use axum::{
@@ -67,7 +63,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_renders_csrf_field() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
@@ -87,19 +83,19 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_authorised_agent_form(&csrf_token);
 
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
             context,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await
@@ -126,20 +122,20 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         political_group.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_authorised_agent_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
             context,
-            State(store),
+            store,
             Form(form),
         )
         .await

@@ -13,7 +13,12 @@ pub fn load_locales(out_dir: &str) {
         let locale_dir = std::path::Path::new("./locales").join(lang);
         let locale_files = collect_locale_files(&locale_dir);
 
-        writeln!(file, "#[macro_export]\nmacro_rules! inner_t_{} {{\n", lang).unwrap();
+        writeln!(
+            file,
+            "/// Translate a literal key to a raw localized string for `{lang}`.\n#[macro_export]\nmacro_rules! inner_t_{} {{\n",
+            lang
+        )
+        .unwrap();
 
         for locale_path in locale_files {
             println!("cargo:rerun-if-changed={}", locale_path.display());

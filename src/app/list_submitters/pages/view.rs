@@ -1,6 +1,6 @@
 use super::ListSubmittersPath;
 use crate::{
-    AppError, Context, HtmlTemplate, Store,
+    AppError, AppStore, Context, HtmlTemplate,
     authorised_agents::AuthorisedAgent,
     filters,
     list_submitters::ListSubmitter,
@@ -8,7 +8,7 @@ use crate::{
     substitute_list_submitters::SubstituteSubmitter,
 };
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 #[derive(Template)]
 #[template(path = "list_submitters/pages/view.html")]
@@ -21,9 +21,9 @@ struct ListSubmittersTemplate {
 pub async fn list_submitters(
     _: ListSubmittersPath,
     context: Context,
-    State(store): State<Store>,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(store.clone())?;
+    let steps = PoliticalGroupSteps::new(&store)?;
 
     Ok(HtmlTemplate(
         ListSubmittersTemplate {
@@ -39,16 +39,15 @@ pub async fn list_submitters(
 mod tests {
     use super::*;
     use crate::{
-        AppError, Context, Store,
+        AppError, AppStore, Context, PoliticalGroupId,
         list_submitters::ListSubmitterId,
-        political_groups::PoliticalGroupId,
         test_utils::{response_body_string, sample_list_submitter, sample_political_group},
     };
     use axum::{http::StatusCode, response::IntoResponse};
 
     #[tokio::test]
     async fn list_submitters_shows_created_submitter() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -57,14 +56,11 @@ mod tests {
         political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
-        let response = list_submitters(
-            ListSubmittersPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -75,7 +71,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_submitters_shows_edit_link() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let group_id = PoliticalGroupId::new();
         let political_group = sample_political_group(group_id);
         let submitter_id = ListSubmitterId::new();
@@ -84,14 +80,11 @@ mod tests {
         political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
-        let response = list_submitters(
-            ListSubmittersPath {},
-            Context::new_test_without_db(),
-            State(store),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

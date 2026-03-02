@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::State,
-    response::{IntoResponse, Redirect, Response},
-};
+use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, Context, Form, HtmlTemplate, Store, candidate_lists::FullCandidateList, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, candidate_lists::FullCandidateList, filters,
     form::FormData, persons::PersonForm,
 };
 
@@ -25,7 +22,7 @@ pub async fn create_person_candidate_list(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&context.csrf_tokens),
+            form: FormData::new(&context.session.csrf_tokens),
         },
         context,
     )
@@ -36,10 +33,10 @@ pub async fn create_person_candidate_list_submit(
     _: CreateCandidatePath,
     context: Context,
     full_list: FullCandidateList,
-    State(store): State<Store>,
+    store: AppStore,
     Form(form): Form<PersonForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_unique(&context.csrf_tokens, &store) {
+    match form.validate_create_unique(&context.session.csrf_tokens, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
@@ -65,7 +62,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        Context, Form, Store,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
@@ -76,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_renders_form() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -101,13 +98,13 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -116,7 +113,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            State(store.clone()),
+            store.clone(),
             Form(form),
         )
         .await?;
@@ -139,13 +136,13 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = Store::new_for_test().await;
+        let store = AppStore::new_for_test().await;
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -155,7 +152,7 @@ mod tests {
             CreateCandidatePath { list_id },
             context,
             full_list,
-            State(store),
+            store,
             Form(form),
         )
         .await?
