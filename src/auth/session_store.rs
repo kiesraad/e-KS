@@ -39,6 +39,12 @@ impl SessionStore {
         token.and_then(|token| self.get(token))
     }
 
+    /// TEMPORARY (pre-auth): returns any active session when no cookie exists.
+    pub fn get_any_active_for_dev(&self) -> Option<Session> {
+        self.cleanup_expired();
+        self.inner.read().values().next().cloned()
+    }
+
     /// Creates, stores, and returns a new session.
     pub fn create_new(&self) -> Session {
         let session = Session::new();

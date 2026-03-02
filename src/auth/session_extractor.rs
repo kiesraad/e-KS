@@ -41,6 +41,20 @@ pub async fn session_middleware(
     let mut session = match state.sessions.get_existing(token) {
         Some(existing) => existing,
         None => {
+            // TEMPORARY (pre-auth): reuse any existing session when the cookie is missing.
+            // This must be removed once login/auth flows own session creation.
+            if token.is_none()
+                && let Some(mut existing) = state.sessions.get_any_active_for_dev()
+            {
+                existing.last_activity = Instant::now();
+                state.sessions.insert(existing.clone());
+                request.extensions_mut().insert(existing.clone());
+                let response = next.run(request).await;
+                let jar = jar.add(build_session_cookie(&existing));
+
+                return (jar, response).into_response();
+            }
+
             // TODO: only create a new session after a successfull login
             state.sessions.cleanup_expired();
             let locale = request

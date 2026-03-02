@@ -1,11 +1,8 @@
 use chrono::{DateTime, Duration, Utc};
+use parking_lot::RwLock;
 use rand::{RngExt, distr::Alphanumeric};
 use serde::{Deserialize, Serialize};
-use std::{
-    collections::HashMap,
-    fmt::Display,
-    sync::{Arc, RwLock},
-};
+use std::{collections::HashMap, fmt::Display, sync::Arc};
 use tracing::info;
 
 /// Number of minutes a CSRF token remains valid.
@@ -52,7 +49,7 @@ impl CsrfTokens {
             expires_at,
         };
 
-        let mut tokens = self.tokens.write().expect("csrf token store poisoned");
+        let mut tokens = self.tokens.write();
         Self::purge_locked(&mut tokens);
         tokens.insert(token.value.clone(), expires_at);
 
@@ -65,7 +62,7 @@ impl CsrfTokens {
     }
 
     pub fn consume(&self, value: &TokenValue) -> bool {
-        let mut tokens = self.tokens.write().expect("csrf token store poisoned");
+        let mut tokens = self.tokens.write();
         Self::purge_locked(&mut tokens);
         info!("verifying CSRF token {}", value.0);
 
