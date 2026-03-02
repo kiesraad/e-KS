@@ -17,7 +17,7 @@ export default function setupOverlay() {
 
       if (closeLink) {
         event.preventDefault();
-        window.location.href = closeLink.href;
+        globalThis.location.href = closeLink.href;
       }
     };
 

@@ -39,7 +39,7 @@
   </div>
 </div>
 <div class="form-row">
-  <div class="form-field {% if form.data.bsn.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.bsn.is_empty() && !form.data.no_bsn_confirmed && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <input type="text"
            placeholder=" "

@@ -94,7 +94,7 @@ impl Person {
     pub fn is_personal_info_complete(&self) -> bool {
         self.name.is_complete()
             && self.date_of_birth.is_some()
-            && self.bsn.is_some()
+            && (self.bsn.is_some() || self.no_bsn_confirmed)
             && self.place_of_residence.is_some()
             && self.country_of_residence.is_some()
     }
