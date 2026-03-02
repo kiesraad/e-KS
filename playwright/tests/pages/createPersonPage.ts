@@ -36,7 +36,6 @@ export class CreatePersonPage {
     }
     await this.selectGender.selectOption(candidate.gender ?? "");
     await this.textfieldDateOfBirth.fill(candidate.dateOfBirth ?? "");
-    // await this.page.locator("body").click();
 
     await this.buttonNext.click();
   }

@@ -58,7 +58,6 @@ export class SubstituteSubmittersPage {
     await this.textfieldInitials.fill(listSubmitter.initials);
     await this.textfieldLastNamePrefix.fill(listSubmitter.lastNamePrefix ?? "");
     await this.textfieldLastName.fill(listSubmitter.lastName);
-    //await this.page.locator("body").click();
     await this.buttonSave.click();
   }
 

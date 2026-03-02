@@ -38,7 +38,6 @@ export class CorrespondenceAddressPage {
     await this.textfieldHouseNumberAddition.pressSequentially(
       candidate.houseNumberAddition ?? "",
     );
-    //await this.page.locator("body").click();
     await expect(this.textfieldStreetName).toHaveValue(
       candidate.streetName ?? "",
     );

@@ -68,6 +68,7 @@ test.describe("create new person", async () => {
     await personsPage.linkAddPerson.click();
     await new CreatePersonPage(page).setPersonalDetails(candidate);
     await new AuthorisedPersonPage(page).setAuthorisedPerson(
+      // biome-ignore lint/style/noNonNullAssertion: the test should fail if the authorised person is not set
       candidate.authorisedPerson!,
     );
     await expect(
