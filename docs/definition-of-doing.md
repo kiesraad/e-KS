@@ -23,4 +23,3 @@
    - Post a link to the PR in Mattermost ([#e-KS reviews](https://digilab.overheid.nl/chat/kiesraad/channels/e-ks-reviews)).
 6. Iterate improvements and reviews until [DoD](https://github.com/kiesraad/e-ks/blob/main/docs/definition-of-done.md) and acceptance criteria have been met.
 7. Merge the PR into `main`.
-8. Extra step for PR
