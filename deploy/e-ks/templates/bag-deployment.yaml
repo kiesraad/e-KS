@@ -23,6 +23,7 @@ spec:
       containers:
         - name: bag-lookup
           image: "{{ .Values.bag.image }}:{{ .Values.bag.version }}"
+          imagePullPolicy: Always
           ports:
             - containerPort: 8080
               name: http
