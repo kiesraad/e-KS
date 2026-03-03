@@ -9,56 +9,56 @@ use crate::{
 };
 
 impl AppStore {
-    pub fn get_candidate_lists(&self) -> Result<Vec<CandidateList>, AppError> {
+    pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
         let data = self.data.read();
 
         let mut lists: Vec<CandidateList> = data.candidate_lists.values().cloned().collect();
 
         lists.sort_unstable_by(|a, b| a.created_at.cmp(&b.created_at));
 
-        Ok(lists)
+        lists
     }
 
-    pub fn get_political_group(&self) -> Result<PoliticalGroup, AppError> {
+    pub fn get_political_group(&self) -> PoliticalGroup {
         let data = self.data.read();
 
-        Ok(data.political_group.clone())
+        data.political_group.clone()
     }
 
-    pub fn get_persons(&self) -> Result<Vec<Person>, AppError> {
+    pub fn get_persons(&self) -> Vec<Person> {
         let data = self.data.read();
 
-        Ok(data.persons.values().cloned().collect())
+        data.persons.values().cloned().collect()
     }
 
-    pub fn get_authorised_agents(&self) -> Result<Vec<AuthorisedAgent>, AppError> {
+    pub fn get_authorised_agents(&self) -> Vec<AuthorisedAgent> {
         let data = self.data.read();
 
-        Ok(data.authorised_agents.values().cloned().collect())
+        data.authorised_agents.values().cloned().collect()
     }
 
-    pub fn get_list_submitters(&self) -> Result<Vec<ListSubmitter>, AppError> {
+    pub fn get_list_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        Ok(data.list_submitters.values().cloned().collect())
+        data.list_submitters.values().cloned().collect()
     }
 
-    pub fn get_substitute_submitters(&self) -> Result<Vec<SubstituteSubmitter>, AppError> {
+    pub fn get_substitute_submitters(&self) -> Vec<SubstituteSubmitter> {
         let data = self.data.read();
 
-        Ok(data.substitute_submitters.values().cloned().collect())
+        data.substitute_submitters.values().cloned().collect()
     }
 
-    pub fn get_person_count(&self) -> Result<usize, AppError> {
+    pub fn get_person_count(&self) -> usize {
         let data = self.data.read();
 
-        Ok(data.persons.len())
+        data.persons.len()
     }
 
-    pub fn get_candidate_list_count(&self) -> Result<usize, AppError> {
+    pub fn get_candidate_list_count(&self) -> usize {
         let data = self.data.read();
 
-        Ok(data.candidate_lists.len())
+        data.candidate_lists.len()
     }
 
     pub fn get_candidate_list(&self, list_id: CandidateListId) -> Result<CandidateList, AppError> {
@@ -115,15 +115,12 @@ impl AppStore {
         }
     }
 
-    pub fn count_candidate_lists(&self, person_id: PersonId) -> Result<usize, AppError> {
+    pub fn count_candidate_lists(&self, person_id: PersonId) -> usize {
         let data = self.data.read();
 
-        let count = data
-            .candidate_lists
+        data.candidate_lists
             .values()
             .filter(|list| list.candidates.contains(&person_id))
-            .count();
-
-        Ok(count)
+            .count()
     }
 }

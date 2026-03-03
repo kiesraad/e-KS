@@ -52,7 +52,7 @@ mod tests {
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         list_submitter.create(&store).await.unwrap();
 
         let app = Router::new()

@@ -21,7 +21,7 @@ where
         let pagination: Pagination<PersonSort> =
             Pagination::from_request_parts(parts, state).await?;
 
-        let total_items = store.get_person_count()?;
+        let total_items = store.get_person_count();
         let pagination = pagination.set_total(total_items);
 
         let persons = persons::Person::list(
@@ -59,7 +59,7 @@ mod tests {
     #[tokio::test]
     async fn person_pagination_extractor_slices_and_orders() {
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         sample_person_with_last_name(PersonId::new(), "Bakker")
             .create(&store)
             .await

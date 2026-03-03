@@ -117,7 +117,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_renders_form() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -151,7 +151,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_moves_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -200,7 +200,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_removes_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -248,7 +248,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_position_invalid_csrf_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");

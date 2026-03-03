@@ -59,10 +59,8 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, AppStore, Context, PoliticalGroupId,
-        test_utils::{
-            response_body_string, sample_political_group, sample_substitute_submitter_form,
-        },
+        AppError, AppStore, Context,
+        test_utils::{response_body_string, sample_substitute_submitter_form},
     };
 
     #[tokio::test]
@@ -81,11 +79,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
-
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_substitute_submitter_form(&csrf_token);
@@ -106,7 +100,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let submitters = store.get_substitute_submitters()?;
+        let submitters = store.get_substitute_submitters();
         assert_eq!(submitters.len(), 1);
         assert_eq!(
             location,
@@ -120,10 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;

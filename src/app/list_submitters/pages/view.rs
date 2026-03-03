@@ -39,21 +39,18 @@ pub async fn list_submitters(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, PoliticalGroupId,
+        AppError, AppStore, Context,
         list_submitters::ListSubmitterId,
-        test_utils::{response_body_string, sample_list_submitter, sample_political_group},
+        test_utils::{response_body_string, sample_list_submitter},
     };
     use axum::{http::StatusCode, response::IntoResponse};
 
     #[tokio::test]
     async fn list_submitters_shows_created_submitter() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let response =
@@ -71,13 +68,10 @@ mod tests {
 
     #[tokio::test]
     async fn list_submitters_shows_edit_link() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let response =

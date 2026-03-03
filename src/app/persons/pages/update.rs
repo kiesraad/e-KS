@@ -27,7 +27,7 @@ pub async fn update_person(
                 PersonForm::from(person.clone()),
                 &context.session.csrf_tokens,
             ),
-            on_candidate_lists: store.count_candidate_lists(person.id)?,
+            on_candidate_lists: store.count_candidate_lists(person.id),
             person,
         },
         context,
@@ -44,7 +44,7 @@ pub async fn update_person_submit(
     match form.validate_update(&person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
-                on_candidate_lists: store.count_candidate_lists(person.id)?,
+                on_candidate_lists: store.count_candidate_lists(person.id),
                 person,
                 form: form_data,
             },
@@ -74,7 +74,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_renders_existing_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -99,7 +99,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

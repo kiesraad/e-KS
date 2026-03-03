@@ -4,7 +4,7 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    core::{AnyLocale, ModelLocale},
+    core::ModelLocale,
     filters,
     submit::H1,
 };
@@ -83,7 +83,7 @@ mod tests {
 
     #[tokio::test]
     async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let complete_list_id = CandidateListId::new();
         let incomplete_list_id = CandidateListId::new();
         let list_submitter_id = ListSubmitterId::new();

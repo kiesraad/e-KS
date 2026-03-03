@@ -22,10 +22,7 @@
         </td>
         <td>
           <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
-          {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-            {% let any_locale = AnyLocale::from(***locale) %}
-            {{ candidate.person.initials_as_printed_on_list(*any_locale) }}
-          {% endif %}
+          {{ candidate.person|initials_as_printed_on_list }}
         </td>
         <td>
           {% if let Some(place_of_residence) = candidate.person.place_of_residence %}{{ place_of_residence }}{% endif %}
@@ -41,7 +38,7 @@
     {% endfor %}
   </tbody>
 </table>
-{% if full_list.candidates.len() > **max_candidates %}
+{% if full_list.candidates.len() > max_candidates %}
   <p class="note-warning mt-md">
     {{ "candidate_list.view.max_candidates_exceeded"|trans(&max_candidates.to_string() ) }}
   </p>

@@ -14,6 +14,6 @@ where
     ) -> Result<Self, Self::Rejection> {
         let store = AppStore::from_request_parts(parts, state).await?;
 
-        store.get_political_group()
+        Ok(store.get_political_group())
     }
 }

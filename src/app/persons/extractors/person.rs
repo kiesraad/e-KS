@@ -59,7 +59,7 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         person.create(&store).await.unwrap();
 
         let app = Router::new()
@@ -87,7 +87,7 @@ mod tests {
         let person_id = PersonId::new();
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
 
         let app = Router::new()
             .route(

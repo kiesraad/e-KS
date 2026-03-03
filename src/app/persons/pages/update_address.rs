@@ -82,7 +82,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_renders_existing_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id: PersonId = PersonId::new();
         let person = sample_person(person_id);
 
@@ -107,7 +107,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -150,7 +150,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -182,7 +182,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_dutch_xor_non_dutch() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

@@ -33,7 +33,7 @@ mod tests {
     async fn not_found_renders_html() {
         let into_response = not_found(
             OriginalUri("/not_found".parse().unwrap()),
-            Context::new_test().await,
+            Context::new_test_without_db(),
         )
         .await
         .unwrap();

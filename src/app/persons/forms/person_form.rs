@@ -63,7 +63,7 @@ impl PersonForm {
         csrf_tokens: &CsrfTokens,
         store: &AppStore,
     ) -> Result<Person, Box<FormData<Self>>> {
-        let existing = store.get_persons().unwrap_or_default();
+        let existing = store.get_persons();
         let person = self.clone().validate_create(csrf_tokens)?;
         let errors = PersonForm::uniqueness_errors(&person, &existing);
 

@@ -43,7 +43,7 @@ pub async fn add_person_to_candidate_list(
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
     let person_exists = store
-        .get_persons()?
+        .get_persons()
         .iter()
         .any(|person| person.id == form.person_id);
 
@@ -73,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn view_candidate_list_renders_persons() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -101,7 +101,7 @@ mod tests {
 
     #[tokio::test]
     async fn add_person_to_candidate_list_adds_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Bakker");
@@ -139,7 +139,7 @@ mod tests {
     #[tokio::test]
     async fn add_person_to_candidate_list_redirects_when_person_not_on_list() -> Result<(), AppError>
     {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let existing_person = sample_person_with_last_name(PersonId::new(), "Jansen");

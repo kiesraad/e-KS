@@ -90,7 +90,7 @@ mod tests {
     use crate::candidate_lists::CandidateListSummary;
     #[tokio::test]
     async fn test_load() {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 

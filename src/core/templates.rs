@@ -41,7 +41,7 @@ mod tests {
 
     #[tokio::test]
     async fn html_template_returns_500_when_render_fails() {
-        let context = Context::new_test().await;
+        let context = Context::new_test_without_db();
         let response = HtmlTemplate(MyTemplate, context).into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);

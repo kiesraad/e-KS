@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, Context, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
-    core::AnyLocale,
     filters,
 };
 
@@ -38,7 +37,7 @@ mod tests {
 
     #[tokio::test]
     async fn view_candidate_list_renders_candidates() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

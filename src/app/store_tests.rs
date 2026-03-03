@@ -295,7 +295,7 @@ fn apply_update_candidate_list_submitters_sets_ids() {
 
 #[tokio::test]
 async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
-    let store = AppStore::new_for_test().await;
+    let store = AppStore::new_for_test();
     let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
     let agent = sample_authorised_agent(agent_id);
 

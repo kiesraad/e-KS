@@ -71,23 +71,19 @@ mod tests {
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppError, AppStore, Context, PoliticalGroupId,
+        AppError, AppStore, Context,
         substitute_list_submitters::SubstituteSubmitterId,
         test_utils::{
-            response_body_string, sample_political_group, sample_substitute_submitter,
-            sample_substitute_submitter_form,
+            response_body_string, sample_substitute_submitter, sample_substitute_submitter_form,
         },
     };
 
     #[tokio::test]
     async fn update_substitute_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let sub_submitter_id = SubstituteSubmitterId::new();
         let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-
-        political_group.create(&store).await?;
         substitute_submitter.create(&store).await?;
 
         let response = update_substitute_submitter(
@@ -108,13 +104,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let sub_submitter_id = SubstituteSubmitterId::new();
         let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-
-        political_group.create(&store).await?;
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -154,13 +147,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let sub_submitter_id = SubstituteSubmitterId::new();
         let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-
-        political_group.create(&store).await?;
         substitute_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();

@@ -32,22 +32,17 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, PoliticalGroupId, TokenValue,
-        substitute_list_submitters::SubstituteSubmitterId,
-        test_utils::{sample_political_group, sample_substitute_submitter},
+        AppError, AppStore, Context, TokenValue, substitute_list_submitters::SubstituteSubmitterId,
+        test_utils::sample_substitute_submitter,
     };
 
     #[tokio::test]
     async fn delete_substitute_submitter_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let sub_submitter_id = SubstituteSubmitterId::new();
         let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-
-        political_group.create(&store).await?;
         substitute_submitter.create(&store).await?;
-        political_group.update(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
@@ -76,7 +71,7 @@ mod tests {
                 .to_string()
         );
 
-        let submitters = store.get_substitute_submitters()?;
+        let submitters = store.get_substitute_submitters();
         assert!(submitters.is_empty());
 
         Ok(())
@@ -84,15 +79,11 @@ mod tests {
 
     #[tokio::test]
     async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let sub_submitter_id = SubstituteSubmitterId::new();
         let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-
-        political_group.create(&store).await?;
         substitute_submitter.create(&store).await?;
-        political_group.update(&store).await?;
 
         let context = Context::new_test_without_db();
 
@@ -108,7 +99,7 @@ mod tests {
 
         assert!(matches!(response, AppError::CsrfTokenInvalid));
 
-        let submitters = store.get_substitute_submitters()?;
+        let submitters = store.get_substitute_submitters();
         assert_eq!(submitters.len(), 1);
 
         Ok(())

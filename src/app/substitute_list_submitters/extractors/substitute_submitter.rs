@@ -52,7 +52,7 @@ mod tests {
         let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         substitute_submitter.create(&store).await.unwrap();
 
         let app = Router::new()

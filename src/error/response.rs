@@ -192,7 +192,7 @@ mod tests {
     #[tokio::test]
     async fn not_found_renders_template_with_message() {
         let state = AppState::new_for_tests().await;
-        let store = crate::AppStore::new_for_test().await;
+        let store = crate::AppStore::new_for_test();
         let app = Router::new()
             .route(
                 "/",
@@ -216,7 +216,7 @@ mod tests {
     #[tokio::test]
     async fn validation_error_maps_to_bad_request() {
         let state = AppState::new_for_tests().await;
-        let store = crate::AppStore::new_for_test().await;
+        let store = crate::AppStore::new_for_test();
         let app = Router::new()
             .route(
                 "/",
@@ -242,7 +242,7 @@ mod tests {
     #[tokio::test]
     async fn database_error_maps_to_internal_server_error() {
         let state = AppState::new_for_tests().await;
-        let store = crate::AppStore::new_for_test().await;
+        let store = crate::AppStore::new_for_test();
         let app = Router::new()
             .route(
                 "/",

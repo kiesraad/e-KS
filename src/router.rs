@@ -114,7 +114,7 @@ mod tests {
         let session = crate::Session::new();
         let token = session.token().to_exposed_string();
         state.sessions.insert(session);
-        let store = crate::AppStore::new_for_test().await;
+        let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,
             format!("{}={}", crate::SESSION_COOKIE_NAME, token)
@@ -141,7 +141,7 @@ mod tests {
         let session = crate::Session::new();
         let token = session.token().to_exposed_string();
         state.sessions.insert(session);
-        let store = crate::AppStore::new_for_test().await;
+        let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,
             format!("{}={}", crate::SESSION_COOKIE_NAME, token)

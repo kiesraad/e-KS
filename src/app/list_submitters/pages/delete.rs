@@ -30,20 +30,17 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState, TokenValue,
+        AppError, AppStore, Context, Form, QueryParamState, TokenValue,
         list_submitters::{ListSubmitter, ListSubmitterId},
-        test_utils::{sample_list_submitter, sample_political_group},
+        test_utils::sample_list_submitter,
     };
 
     #[tokio::test]
     async fn delete_list_submitter_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -73,7 +70,7 @@ mod tests {
                 .to_string()
         );
 
-        let submitters = store.get_list_submitters()?;
+        let submitters = store.get_list_submitters();
         assert!(submitters.is_empty());
 
         Ok(())
@@ -81,13 +78,10 @@ mod tests {
 
     #[tokio::test]
     async fn delete_list_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -104,7 +98,7 @@ mod tests {
 
         assert!(matches!(response, AppError::CsrfTokenInvalid));
 
-        let submitters = store.get_list_submitters()?;
+        let submitters = store.get_list_submitters();
         assert_eq!(submitters.len(), 1);
 
         Ok(())

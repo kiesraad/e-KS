@@ -261,7 +261,7 @@ mod tests {
             let response = error_response.into_response();
             let error_template = response.extensions().get::<ErrorTemplate>().unwrap();
             let content = error_template.title.clone();
-            let context = Context::new_test().await;
+            let context = Context::new_test_without_db();
             let html_response = (
                 error_template.status_code,
                 HtmlTemplate(error_template, context),

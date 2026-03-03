@@ -121,15 +121,15 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let political_group_id: PoliticalGroupId =
             Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_political_group").into();
         load(&store, political_group_id).await.unwrap();
 
-        let list_submitters = store.get_list_submitters().unwrap();
+        let list_submitters = store.get_list_submitters();
         assert_eq!(list_submitters.len(), 1);
 
-        let substitute_submitters = store.get_substitute_submitters().unwrap();
+        let substitute_submitters = store.get_substitute_submitters();
         assert_eq!(substitute_submitters.len(), 2);
     }
 }

@@ -30,7 +30,7 @@ pub async fn update_person(
                 PersonForm::from(candidate.person.clone()),
                 &context.session.csrf_tokens,
             ),
-            on_candidate_lists: store.count_candidate_lists(candidate.person.id)?,
+            on_candidate_lists: store.count_candidate_lists(candidate.person.id),
             candidate,
             full_list,
         },
@@ -50,7 +50,7 @@ pub async fn update_person_submit(
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,
-                on_candidate_lists: store.count_candidate_lists(candidate.person.id)?,
+                on_candidate_lists: store.count_candidate_lists(candidate.person.id),
                 candidate,
                 form: form_data,
             },
@@ -84,7 +84,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_renders_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -121,7 +121,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -165,7 +165,7 @@ mod tests {
         assert_eq!(location, expected_path);
 
         let updated = store
-            .get_persons()?
+            .get_persons()
             .into_iter()
             .find(|p| p.id == person.id)
             .expect("updated person");
@@ -176,7 +176,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

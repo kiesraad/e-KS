@@ -64,12 +64,9 @@ pub async fn update_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        test_utils::{
-            response_body_string, sample_authorised_agent, sample_authorised_agent_form,
-            sample_political_group,
-        },
+        test_utils::{response_body_string, sample_authorised_agent, sample_authorised_agent_form},
     };
     use axum::{
         http::{StatusCode, header},
@@ -79,13 +76,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_renders_existing_agent() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
 
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let response = update_authorised_agent(
@@ -106,13 +101,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
-
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -152,13 +144,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_authorised_agent_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
-
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();

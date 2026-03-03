@@ -71,12 +71,9 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState,
         authorised_agents::AuthorisedAgentId,
-        test_utils::{
-            response_body_string, sample_authorised_agent, sample_political_group,
-            sample_political_group_form,
-        },
+        test_utils::{response_body_string, sample_authorised_agent, sample_political_group_form},
     };
     use axum::{
         http::{StatusCode, header},
@@ -86,11 +83,8 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_renders_existing_data() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
+        let political_group = store.get_political_group();
 
         let response = update_political_group(
             PoliticalGroupUpdatePath {},
@@ -112,13 +106,11 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+        let political_group = store.get_political_group();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
-
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -149,7 +141,7 @@ mod tests {
                 .to_string()
         );
 
-        let updated = store.get_political_group()?;
+        let updated = store.get_political_group();
         assert_eq!(updated.long_list_allowed, Some(true));
         assert_eq!(
             updated.legal_name.as_deref().map(|v| v.to_string()),
@@ -165,13 +157,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_political_group_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
-
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -183,7 +172,7 @@ mod tests {
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
             context,
-            political_group,
+            store.get_political_group(),
             store,
             Form(form),
         )

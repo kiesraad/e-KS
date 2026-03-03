@@ -37,7 +37,7 @@ not_found: "Candidate {} not found."
 remove_candidate: Remove candidate
 search_existing_person: Search existing person
 search_placeholder: "Search by name, initials or locality"
-title: Candidate lists
+title_plural: Candidate lists
 title_single: Candidate list
 view:
   empty: This candidate list has no persons yet.

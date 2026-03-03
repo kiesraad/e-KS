@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 

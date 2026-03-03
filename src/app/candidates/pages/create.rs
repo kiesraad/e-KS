@@ -73,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_renders_form() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -98,7 +98,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;

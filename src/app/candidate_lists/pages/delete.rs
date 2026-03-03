@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
@@ -81,7 +81,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_candidate_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = TokenValue("invalid".to_string());
         let candidate_list = CandidateList {

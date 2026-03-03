@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn reorder_candidate_list_updates_positions() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");

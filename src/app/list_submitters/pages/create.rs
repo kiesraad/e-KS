@@ -51,8 +51,8 @@ pub async fn create_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
-        test_utils::{response_body_string, sample_list_submitter_form, sample_political_group},
+        AppError, AppStore, Context, Form, QueryParamState,
+        test_utils::{response_body_string, sample_list_submitter_form},
     };
     use axum::{
         http::{StatusCode, header},
@@ -76,10 +76,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
@@ -101,7 +98,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let submitters = store.get_list_submitters()?;
+        let submitters = store.get_list_submitters();
         assert_eq!(submitters.len(), 1);
         assert_eq!(
             location,
@@ -115,10 +112,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;

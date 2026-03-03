@@ -73,7 +73,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
@@ -90,12 +90,12 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let persons = store.get_persons()?;
+        let persons = store.get_persons();
         assert_eq!(persons.len(), 1);
         let created = persons.first().expect("person");
         assert_eq!(location, created.after_create_path());
 
-        let count = store.get_person_count()?;
+        let count = store.get_person_count();
         assert_eq!(count, 1);
 
         Ok(())
@@ -103,7 +103,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
@@ -122,7 +122,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_person_duplicate_name_renders_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let existing = crate::test_utils::sample_person(crate::persons::PersonId::new());
         existing.create(&store).await?;
 

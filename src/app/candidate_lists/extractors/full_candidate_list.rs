@@ -59,7 +59,7 @@ mod tests {
         let person = sample_person(PersonId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         list.create(&store).await.expect("create candidate list");
         person.create(&store).await.expect("create person");
         list.clone()
@@ -98,7 +98,7 @@ mod tests {
     async fn full_candidate_list_extractor_returns_not_found() {
         let state = AppState::new_for_tests().await;
         let list_id = CandidateListId::new();
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
 
         let app = Router::new()
             .route(

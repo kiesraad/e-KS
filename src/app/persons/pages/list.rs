@@ -36,7 +36,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_persons_shows_created_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let id = PersonId::new();
         let person = sample_person(id);
 

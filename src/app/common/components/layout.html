@@ -12,7 +12,13 @@
           <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}">{{ "common.general_information"|trans }}</a>
         </li>
         <li>
-          <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">{{ "candidate_list.title"|trans }}</a>
+          <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
+            {% if "multiple_candidate_lists"|value_true %}
+              {{ "candidate_list.title_plural"|trans }}
+            {% else %}
+              {{ "candidate_list.title_single"|trans }}
+            {% endif %}
+          </a>
         </li>
         <li>
           <a href="{{ crate::submit::SubmitPath{}.to_string() }}">{{ "common.submit"|trans }}</a>
@@ -22,22 +28,21 @@
         <li>
           <a href="/" class="logout">{{ "action.signout"|trans }}</a>
         </li>
-        {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-          <li>
-            <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
-                  method="post"
-                  class="language-switch">
-              <button class="button sm {% if (**locale == crate::Locale::Nl) %}active{% endif %}"
-                      type="submit"
-                      name="lang"
-                      value="nl">NL</button>
-              <button class="button sm {% if (**locale == crate::Locale::En) %}active{% endif %}"
-                      type="submit"
-                      name="lang"
-                      value="en">EN</button>
-            </form>
-          </li>
-        {% endif %}
+        {% let locale = "locale"|locale_value %}
+        <li>
+          <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
+                method="post"
+                class="language-switch">
+            <button class="button sm {% if locale == crate::Locale::Nl %}active{% endif %}"
+                    type="submit"
+                    name="lang"
+                    value="nl">NL</button>
+            <button class="button sm {% if locale == crate::Locale::En %}active{% endif %}"
+                    type="submit"
+                    name="lang"
+                    value="en">EN</button>
+          </form>
+        </li>
       </ul>
     </nav>
     <div class="header-content">
@@ -58,9 +63,7 @@
     <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
   </footer>
   {% block overlay %}{% endblock %}
-  {% if let Ok(show_success_alert) = "show_success_alert"|value::<bool> %}
-    {% if show_success_alert %}
-      <div class="alert alert-success alert-floating">{{ "common.save_success"|trans }}</div>
-    {% endif %}
+  {% if "show_success_alert"|value_true %}
+    <div class="alert alert-success alert-floating">{{ "common.save_success"|trans }}</div>
   {% endif %}
 {% endblock %}

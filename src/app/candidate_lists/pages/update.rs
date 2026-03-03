@@ -5,10 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
-    QueryParamState,
+    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
-    core::AnyLocale,
     filters,
     form::FormData,
     redirect_success,
@@ -92,7 +90,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_renders_existing_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         candidate_list.create(&store).await?;
@@ -120,7 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let candidate_list = CandidateList {
@@ -179,7 +177,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()

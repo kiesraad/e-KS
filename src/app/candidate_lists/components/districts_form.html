@@ -8,20 +8,17 @@
       {{ "candidate_list.actions.select_all_districts"|trans }}
     </label>
   </div>
-  {% if let Ok(election) = "election"|value::<ElectionConfig> %}
+  {% let election = "election"|election_value %}
     <div class="checklist grid" id="district_list">
       {% for d in election.electoral_districts() %}
       <div class="checkbox {% if !available_districts.contains(&d) %}disabled{% endif %}">
         <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.code() }}"
           {% if form.data.electoral_districts.contains(&d) %}checked{% endif %} />
         <label for="electoral_district_{{ d.code() }}">
-          {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-            {% let any_locale = AnyLocale::from(***locale) %}
-            {{ d.title(*any_locale) }}
-          {% endif %}
+          {{ d|district_name }}
         </label>
       </div>
       {% endfor %}
     </div>
-  {% endif %}
+
 </fieldset>

@@ -39,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn gen_h1_missing_list_submitter_returns_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
@@ -71,7 +71,7 @@ mod tests {
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
     async fn gen_h1_returns_pdf_response() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list_submitter_id = ListSubmitterId::new();
         let person_id = PersonId::new();

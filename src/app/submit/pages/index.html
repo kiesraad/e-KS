@@ -2,33 +2,28 @@
 {% block page_title %}{{ "common.submit"|trans }}{% endblock %}
 {% block overview_nav_class %}active{% endblock %}
 {% block content %}
+  {% let max_candidates = "max_candidates"|integer_value %}
+  {% let election = "election"|election_value %}
   <section>
     <div class="cards cards-candidate-lists">
       {% for candidate_list in candidate_lists %}
         <div class="{% if candidate_list.duplicate_districts.is_empty() %}card card-candidate-list{% else %}card card-list-warning{% endif %}">
           <div class="badge"></div>
           <h3>{{ "candidate_list.title_single"|trans }}</h3>
-          {% if let Ok(max_candidates) = "max_candidates"|value::<usize> %}
-            <p class="statistic">
-              {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
-            </p>
-          {% endif %}
+          <p class="statistic">
+            {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
+          </p>
           <h5>{{ "common.electoral_districts"|trans }}:</h5>
-          {% if let Ok(election) = "election"|value::<crate::ElectionConfig> %}
-            {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-              <p>{{ "candidate_list.districts.all"|trans }}</p>
-            {% else %}
-              <ul class="districts">
-                {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-                  {% let any_locale = AnyLocale::from(***locale) %}
-                  {% for district in candidate_list.list.electoral_districts %}
-                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
-                      <span>{{ district.title(*any_locale) }}</span>
-                    </li>
-                  {% endfor %}
-                {% endif %}
-              </ul>
-            {% endif %}
+          {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+            <p>{{ "candidate_list.districts.all"|trans }}</p>
+          {% else %}
+            <ul class="districts">
+              {% for district in candidate_list.list.electoral_districts %}
+                <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
+                  <span>{{ district|district_name }}</span>
+                </li>
+              {% endfor %}
+            </ul>
           {% endif %}
           <div class="card-actions">
             {% if candidate_list.can_download %}

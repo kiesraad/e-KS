@@ -99,7 +99,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_renders_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -136,7 +136,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");
@@ -184,7 +184,7 @@ mod tests {
         assert_eq!(location, expected_path);
 
         let updated = store
-            .get_persons()?
+            .get_persons()
             .into_iter()
             .find(|p| p.id == person.id)
             .expect("updated person");
@@ -198,7 +198,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_address_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person_with_last_name(PersonId::new(), "Jansen");

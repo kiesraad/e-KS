@@ -52,8 +52,8 @@ pub async fn create_authorised_agent_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
-        test_utils::{response_body_string, sample_authorised_agent_form, sample_political_group},
+        AppError, AppStore, Context, Form, QueryParamState,
+        test_utils::{response_body_string, sample_authorised_agent_form},
     };
     use axum::{
         http::{StatusCode, header},
@@ -63,11 +63,6 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_renders_csrf_field() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
-
         let response =
             create_authorised_agent(AuthorisedAgentCreatePath {}, Context::new_test_without_db())
                 .await
@@ -83,10 +78,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
@@ -108,7 +100,7 @@ mod tests {
             .expect("location header")
             .to_str()
             .expect("location header value");
-        let agents = store.get_authorised_agents()?;
+        let agents = store.get_authorised_agents();
         assert_eq!(agents.len(), 1);
         assert_eq!(
             location,
@@ -122,10 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_authorised_agent_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
-        political_group.create(&store).await?;
+        let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;

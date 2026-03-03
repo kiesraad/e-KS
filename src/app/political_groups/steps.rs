@@ -16,10 +16,10 @@ pub struct PoliticalGroupSteps {
 
 impl PoliticalGroupSteps {
     pub fn new(store: &AppStore) -> Result<Self, AppError> {
-        let political_group = store.get_political_group()?;
-        let authorised_agents = store.get_authorised_agents()?;
-        let list_submitters = store.get_list_submitters()?;
-        let substitute_submitters = store.get_substitute_submitters()?;
+        let political_group = store.get_political_group();
+        let authorised_agents = store.get_authorised_agents();
+        let list_submitters = store.get_list_submitters();
+        let substitute_submitters = store.get_substitute_submitters();
 
         Ok(Self {
             basic_state: if political_group.is_basic_info_complete() {

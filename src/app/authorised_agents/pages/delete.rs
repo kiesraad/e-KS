@@ -29,20 +29,16 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState, TokenValue,
-        authorised_agents::AuthorisedAgentId,
-        test_utils::{sample_authorised_agent, sample_political_group},
+        AppError, AppStore, Context, Form, QueryParamState, TokenValue,
+        authorised_agents::AuthorisedAgentId, test_utils::sample_authorised_agent,
     };
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
 
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -72,7 +68,7 @@ mod tests {
                 .to_string()
         );
 
-        let agents = store.get_authorised_agents()?;
+        let agents = store.get_authorised_agents();
         assert!(agents.is_empty());
 
         Ok(())
@@ -80,13 +76,10 @@ mod tests {
 
     #[tokio::test]
     async fn delete_authorised_agent_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let agent_id = AuthorisedAgentId::new();
         let authorised_agent = sample_authorised_agent(agent_id);
-
-        political_group.create(&store).await?;
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -103,7 +96,7 @@ mod tests {
 
         assert!(matches!(response, AppError::CsrfTokenInvalid));
 
-        let agents = store.get_authorised_agents()?;
+        let agents = store.get_authorised_agents();
         assert_eq!(agents.len(), 1);
 
         Ok(())

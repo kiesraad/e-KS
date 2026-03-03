@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
-    core::AnyLocale,
     filters,
     persons::Person,
 };
@@ -22,7 +21,7 @@ pub async fn list_candidate_lists(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = CandidateListSummary::list(&store)?;
-    let total_persons = store.get_person_count()?;
+    let total_persons = store.get_person_count();
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
@@ -45,7 +44,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_candidate_lists_shows_created_list() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 

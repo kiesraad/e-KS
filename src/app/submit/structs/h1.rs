@@ -72,7 +72,7 @@ impl H1 {
             election_type: election.election_type(),
             electoral_districts: ElectoralDistricts::from(&list, election, locale),
             designation: store
-                .get_political_group()?
+                .get_political_group()
                 .display_name
                 .ok_or(AppError::IncompleteData(
                     "Missing registered designation from political group",
@@ -416,7 +416,7 @@ mod tests {
 
     #[tokio::test]
     async fn substitute_submitter_from_ids_resolves_submitters() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
         let mut submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
         submitter_b.name.last_name = "Janssen".parse::<LastName>().expect("last name");
@@ -440,7 +440,7 @@ mod tests {
 
     #[tokio::test]
     async fn substitute_submitter_from_ids_returns_integrity_error_on_missing() {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list = CandidateList {
             substitute_list_submitter_ids: vec![SubstituteSubmitterId::new()],
             ..Default::default()

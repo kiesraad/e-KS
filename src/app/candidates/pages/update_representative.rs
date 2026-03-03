@@ -103,7 +103,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_candidate() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -141,7 +141,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_renders_valid_csrf_token() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -183,7 +183,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());
@@ -239,7 +239,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_representative_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

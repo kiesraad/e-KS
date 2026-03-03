@@ -37,7 +37,7 @@ not_found: "Kandidatenlijst {} niet gevonden."
 remove_candidate: Uit deze lijst verwijderen
 search_existing_person: Zoek bestaande kandidaat
 search_placeholder: "Zoek op naam, voorletters of woonplaats"
-title: Kandidatenlijsten
+title_plural: Kandidatenlijsten
 title_single: Kandidatenlijst
 view:
   empty: Deze kandidatenlijst heeft nog geen kandidaten.

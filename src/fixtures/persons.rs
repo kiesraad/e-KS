@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         load(&store).await.unwrap();
 
         let persons =

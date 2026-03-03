@@ -39,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person = sample_person(PersonId::new());

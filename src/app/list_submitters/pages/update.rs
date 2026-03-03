@@ -63,12 +63,9 @@ pub async fn update_list_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, PoliticalGroupId, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState,
         list_submitters::ListSubmitterId,
-        test_utils::{
-            response_body_string, sample_list_submitter, sample_list_submitter_form,
-            sample_political_group,
-        },
+        test_utils::{response_body_string, sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{
         http::{StatusCode, header},
@@ -78,13 +75,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let response = update_list_submitter(
@@ -105,13 +99,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_persists_and_redirects() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
@@ -151,13 +142,10 @@ mod tests {
 
     #[tokio::test]
     async fn update_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
-        let group_id = PoliticalGroupId::new();
-        let political_group = sample_political_group(group_id);
+        let store = AppStore::new_for_test();
+
         let submitter_id = ListSubmitterId::new();
         let list_submitter = sample_list_submitter(submitter_id);
-
-        political_group.create(&store).await?;
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();

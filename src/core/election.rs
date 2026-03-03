@@ -46,7 +46,7 @@ impl ElectoralDistrict {
         ]
     }
 
-    pub fn title(&self, locale: AnyLocale) -> &str {
+    pub fn title(&self, locale: AnyLocale) -> &'static str {
         match (self, locale) {
             (Self::DR, AnyLocale::Nl | AnyLocale::En) => "Drenthe",
             (Self::DR, AnyLocale::Fry) => "Drinte",
@@ -132,7 +132,7 @@ impl ElectionConfig {
         }
     }
 
-    pub fn title(&self, locale: AnyLocale) -> &str {
+    pub fn title(&self, locale: AnyLocale) -> &'static str {
         match self {
             Self::EK2027 => match locale {
                 AnyLocale::En => "Election of the Senate of the States General 2027",
@@ -142,7 +142,7 @@ impl ElectionConfig {
         }
     }
 
-    pub fn short_title(&self, locale: AnyLocale) -> &str {
+    pub fn short_title(&self, locale: AnyLocale) -> &'static str {
         match self {
             Self::EK2027 => match locale {
                 AnyLocale::En => "Election of the Senate 2027",

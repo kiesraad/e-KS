@@ -13,7 +13,7 @@ pub struct CandidateListSummary {
 
 impl CandidateListSummary {
     pub fn list(store: &AppStore) -> Result<Vec<CandidateListSummary>, AppError> {
-        let lists = store.get_candidate_lists()?;
+        let lists = store.get_candidate_lists();
 
         let mut district_count = BTreeMap::<ElectoralDistrict, usize>::new();
         for list in &lists {

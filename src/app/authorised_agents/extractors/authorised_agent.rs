@@ -52,7 +52,7 @@ mod tests {
         let authorised_agent = sample_authorised_agent(AuthorisedAgentId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         authorised_agent
             .create(&store)
             .await

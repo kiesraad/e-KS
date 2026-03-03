@@ -1,9 +1,7 @@
 {% extends "common/components/layout.html" %}
 {% block page_title %}
-  {% if let Ok(locale) = "locale"|value::<crate::Locale> %}
-    {% let any_locale = AnyLocale::from(***locale) %}
-    {% if let Ok(election) = "election"|value::<ElectionConfig> %}{{ election.title(*any_locale) }}{% endif %}
-  {% endif %}
+  {% let election = "election"|election_value %}
+  {{ (&election)|election_title }}
 {% endblock %}
 {% block content %}
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>
@@ -23,7 +21,13 @@
        class="card card-candidate-list">
       <div class="badge"></div>
       <h3>{{ "common.step"|trans("2") }}</h3>
-      <h4>{{ "candidate_list.title"|trans }}</h4>
+      <h4>
+        {% if "multiple_candidate_lists"|value_true %}
+          {{ "candidate_list.title_plural"|trans }}
+        {% else %}
+          {{ "candidate_list.title_single"|trans }}
+        {% endif %}
+      </h4>
       <ul class="instruction">
         <li>{{ "candidate_list.candidate_list_description.add_candidate"|trans }}</li>
         <li>{{ "candidate_list.candidate_list_description.add_candidate_list"|trans }}</li>
@@ -43,9 +47,8 @@
       <div class="alert alert-info">
         <span class="instruction">{{ "common.submit_instruction"|trans }}:</span>
         <p class="font-bold mt-md">
-          {% if let Ok(election) = "election"|value::<ElectionConfig> %}
-            {{ election.nomination_day_date().format("%d-%m-%Y") }}
-          {% endif %}
+          {% let election = "election"|election_value %}
+          {{ election.nomination_day_date().format("%d-%m-%Y") }}
         </p>
       </div>
       <p>{{ "action.review_and_submit"|trans }}</p>

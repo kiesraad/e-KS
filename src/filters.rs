@@ -3,9 +3,11 @@
 use chrono::{DateTime, Utc};
 
 use crate::{
-    Locale,
+    ElectionConfig, ElectoralDistrict, Locale,
     constants::DEFAULT_DATE_TIME_FORMAT,
+    core::AnyLocale,
     form::{FormData, WithCsrfToken},
+    persons::Person,
 };
 
 #[askama::filter_fn]
@@ -19,6 +21,70 @@ pub fn display<T: std::fmt::Display>(
 #[askama::filter_fn]
 pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
     Ok(value.format(DEFAULT_DATE_TIME_FORMAT).to_string())
+}
+
+#[askama::filter_fn]
+pub fn value_true(value_name: &str, values: &dyn askama::Values) -> askama::Result<bool> {
+    let value = askama::get_value::<bool>(values, value_name)?;
+
+    Ok(*value)
+}
+
+#[askama::filter_fn]
+pub fn locale_value(value_name: &str, values: &dyn askama::Values) -> askama::Result<Locale> {
+    let value = askama::get_value::<Locale>(values, value_name)?;
+
+    Ok(*value)
+}
+
+#[askama::filter_fn]
+pub fn election_value(
+    value_name: &str,
+    values: &dyn askama::Values,
+) -> askama::Result<ElectionConfig> {
+    let value = askama::get_value::<ElectionConfig>(values, value_name)?;
+
+    Ok(*value)
+}
+
+#[askama::filter_fn]
+pub fn integer_value(value_name: &str, values: &dyn askama::Values) -> askama::Result<usize> {
+    let value = askama::get_value::<usize>(values, value_name)?;
+
+    Ok(*value)
+}
+
+#[askama::filter_fn]
+pub fn initials_as_printed_on_list(
+    value: &Person,
+    values: &dyn askama::Values,
+) -> askama::Result<String> {
+    let locale: &Locale = askama::get_value(values, "locale")?;
+    let any_locale = AnyLocale::from(*locale);
+
+    Ok(value.initials_as_printed_on_list(any_locale))
+}
+
+#[askama::filter_fn]
+pub fn district_name(
+    value: &ElectoralDistrict,
+    values: &dyn askama::Values,
+) -> askama::Result<&'static str> {
+    let locale: &Locale = askama::get_value(values, "locale")?;
+    let any_locale = AnyLocale::from(*locale);
+
+    Ok(value.title(any_locale))
+}
+
+#[askama::filter_fn]
+pub fn election_title(
+    value: &ElectionConfig,
+    values: &dyn askama::Values,
+) -> askama::Result<&'static str> {
+    let locale: &Locale = askama::get_value(values, "locale")?;
+    let any_locale = AnyLocale::from(*locale);
+
+    Ok(value.title(any_locale))
 }
 
 #[askama::filter_fn]

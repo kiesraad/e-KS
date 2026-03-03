@@ -160,7 +160,7 @@ impl Person {
         sort_field: &PersonSort,
         sort_direction: &SortDirection,
     ) -> Result<Vec<Person>, AppError> {
-        let mut persons = store.get_persons()?;
+        let mut persons = store.get_persons();
         persons.sort_by(|a, b| compare_persons(a, b, sort_field));
 
         if matches!(sort_direction, SortDirection::Desc) {
@@ -197,7 +197,7 @@ mod tests {
 
     #[tokio::test]
     async fn create_and_get_person() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let id = PersonId::new();
         let person = sample_person(id);
 
@@ -212,7 +212,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_person_overwrites_fields() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let id = PersonId::new();
         let mut person = sample_person(id);
 
@@ -229,7 +229,7 @@ mod tests {
 
     #[tokio::test]
     async fn remove_person_deletes_record() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let id = PersonId::new();
         let person = sample_person(id);
 
@@ -244,7 +244,7 @@ mod tests {
 
     #[tokio::test]
     async fn update_address_overwrites_fields() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         let id = PersonId::new();
         let mut person = sample_person(id);
 
@@ -292,7 +292,7 @@ mod tests {
 
     #[tokio::test]
     async fn list_and_count_persons() -> Result<(), AppError> {
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         sample_person_with_last_name(PersonId::new(), "Jansen")
             .create(&store)
             .await?;
@@ -300,7 +300,7 @@ mod tests {
             .create(&store)
             .await?;
 
-        let total = store.get_person_count()?;
+        let total = store.get_person_count();
         assert_eq!(total, 2);
 
         let persons = Person::list(&store, 10, 0, &PersonSort::LastName, &SortDirection::Asc)?;

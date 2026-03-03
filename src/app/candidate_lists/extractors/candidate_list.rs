@@ -57,7 +57,7 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
 
         let app_state = AppState::new_for_tests().await;
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
         list.create(&store).await.expect("create candidate list");
 
         let app = Router::new()
@@ -87,7 +87,7 @@ mod tests {
     async fn candidate_list_extractor_returns_not_found() {
         let state = AppState::new_for_tests().await;
         let list_id = CandidateListId::new();
-        let store = AppStore::new_for_test().await;
+        let store = AppStore::new_for_test();
 
         let app = Router::new()
             .route(

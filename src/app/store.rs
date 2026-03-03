@@ -190,16 +190,17 @@ impl StoreData for AppStoreData {
 
 #[cfg(test)]
 impl crate::store::Store<AppStoreData> {
-    pub async fn new_for_test() -> Self {
-        let political_group_id = crate::PoliticalGroupId::new();
-        let political_group = crate::test_utils::sample_political_group(political_group_id);
+    pub fn new_for_test() -> Self {
+        let political_group =
+            crate::test_utils::sample_political_group(crate::PoliticalGroupId::new());
 
-        let store = crate::store::Store::new_for_stream("memory:", political_group_id.uuid())
-            .await
-            .expect("create in-memory store");
-
-        political_group.update(&store).await.expect("store update");
-
-        store
+        crate::store::Store {
+            stream_id: uuid::Uuid::new_v4(),
+            persistence: crate::store::StorePersistence::None,
+            data: std::sync::Arc::new(parking_lot::RwLock::new(AppStoreData {
+                political_group,
+                ..Default::default()
+            })),
+        }
     }
 }
