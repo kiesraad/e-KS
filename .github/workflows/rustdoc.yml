@@ -52,8 +52,8 @@ jobs:
   deploy:
     name: Deploy pages
     environment:
-      name: GitHub pages
-      url: ${{ steps.deployment.outputs.page_url }}e_ks
+      name: Rust crate documentation
+      url: ${{ steps.deployment.outputs.page_url }}eks
     runs-on: ubuntu-24.04
     permissions:
       pages: write # to publish docs to the pages url of the repo
