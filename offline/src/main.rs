@@ -29,7 +29,8 @@ fn main() {
                 let state = eks::AppState::new_with_config(eks::Config {
                     storage_url: "memory://".to_string(),
                     typst_url,
-                });
+                })
+                .await?;
 
                 // Start the server
                 let router = eks::router::create(state.clone()).with_state(state);

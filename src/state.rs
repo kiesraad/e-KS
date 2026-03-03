@@ -16,21 +16,20 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
-        let config = Config::from_env_with_typst_url(typst_url)?;
-        let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
+    pub async fn new(typst_url: Option<String>) -> Result<Self, AppError> {
+        let config = Config::from_env(typst_url)?;
 
-        Ok(Self::new_with_config(config))
+        Self::new_with_config(config).await
     }
 
-    pub fn new_with_config(config: Config) -> Self {
-        let store_registry = StoreRegistry::new(config.storage_url.to_string());
+    pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
+        let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
 
-        Self {
+        Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
-        }
+        })
     }
 
     pub async fn store_for_political_group(
@@ -52,8 +51,11 @@ impl AppState {
     #[cfg(test)]
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
+
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string()),
+            store_registry: StoreRegistry::new(config.storage_url.to_string())
+                .await
+                .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
         }
