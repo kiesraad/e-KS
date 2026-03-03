@@ -1,30 +1,14 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use crate::form::ValidationError;
+use crate::{form::ValidationError, transparent_string};
 
 /// Max characters according to the BAG specification
 /// See https://catalogus.kadaster.nl/bag/nl/page/Huisnummertoevoeging
 const MAX_HOUSE_NUMBER_ADDITION_LENGTH: usize = 4;
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct HouseNumberAddition(String);
+transparent_string! {
+    pub struct HouseNumberAddition(String);
+}
 
 impl FromStr for HouseNumberAddition {
     type Err = ValidationError;

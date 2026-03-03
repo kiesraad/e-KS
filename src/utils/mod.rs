@@ -3,7 +3,8 @@ mod option_string_ext;
 mod query_param_state;
 mod redirect;
 
-pub mod new_type;
+pub mod id_newtype;
+pub mod transparent_string;
 
 #[cfg(feature = "livereload")]
 pub mod livereload;
@@ -18,6 +19,5 @@ pub mod embed_typst;
 pub mod test_utils;
 
 pub use option_string_ext::OptionStringExt;
-
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;

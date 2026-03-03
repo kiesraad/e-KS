@@ -4,6 +4,20 @@ use std::str::FromStr;
 
 use crate::form::ValidationError;
 
+/// BSN value stored as a secret to reduce accidental exposure.
+///
+/// Validation (via `FromStr`) is strict and deterministic:
+/// - Input is trimmed and must be non-empty.
+/// - Length must be exactly 9 characters.
+/// - All characters must be digits.
+/// - It must pass the 11-test checksum (weighted sum from the right:
+///   weights 2..=9 for the first 8 digits, and -1 for the last digit;
+///   the total must be divisible by 11).
+///
+/// We store BSNs as `SecretString` as a defense-in-depth measure: Debug/Display
+/// are redacted and callers must explicitly expose the value. This is not
+/// watertight security. The value still exists in memory and can be exposed
+/// or serialized when needed, so treat it as sensitive throughout the codebase.
 #[derive(Default, Clone)]
 pub struct Bsn(SecretString);
 

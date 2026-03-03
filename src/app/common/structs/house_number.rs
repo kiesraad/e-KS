@@ -1,29 +1,13 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use crate::form::ValidationError;
+use crate::{form::ValidationError, transparent_string};
 
 /// Max practical length - currently there are no house numbers in the bag with more than 5 digits
 const MAX_HOUSE_NUMBER_LENGTH: usize = 7;
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct HouseNumber(String);
+transparent_string! {
+    pub struct HouseNumber(String);
+}
 
 impl FromStr for HouseNumber {
     type Err = ValidationError;

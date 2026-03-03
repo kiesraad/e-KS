@@ -1,14 +1,17 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+//! Postal code in normalized Dutch format `1234AB`.
+//!
+//! Validation rules (via `FromStr`):
+//! - Whitespace is ignored.
+//! - Exactly 6 characters after whitespace removal.
+//! - First 4 are ASCII digits, last 2 are ASCII letters.
+//! - Letters are uppercased for normalization.
+use crate::{form::ValidationError, transparent_string};
 
-use crate::form::ValidationError;
+transparent_string! {
+    pub struct PostalCode(String);
+}
 
-#[derive(Default, Debug, Deref, Clone, Into, Display, PartialEq, Eq, Serialize, Deserialize)]
-#[serde(transparent)]
-pub struct PostalCode(String);
-
-impl FromStr for PostalCode {
+impl std::str::FromStr for PostalCode {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {

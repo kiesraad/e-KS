@@ -1,4 +1,3 @@
-use derive_more::Display;
 use serde::{Deserialize, Serialize};
 
 use crate::Locale;
@@ -21,13 +20,20 @@ impl From<Locale> for AnyLocale {
 }
 
 /// Locales for the model templates
-#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq, Display)]
+#[derive(Serialize, Deserialize, Clone, Copy, Debug, Eq, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum ModelLocale {
-    #[display("fry")]
     Fry,
-    #[display("nl")]
     Nl,
+}
+
+impl std::fmt::Display for ModelLocale {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            ModelLocale::Fry => write!(f, "fry"),
+            ModelLocale::Nl => write!(f, "nl"),
+        }
+    }
 }
 
 impl From<ModelLocale> for AnyLocale {

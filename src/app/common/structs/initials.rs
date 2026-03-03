@@ -1,28 +1,20 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+//! Initials in normalized dotted form (e.g. `A.B.`).
+//!
+//! Accepted format rules (see `FromStr`):
+//! - Whitespace is ignored.
+//! - One or more parts, each exactly one alphanumeric teletex character.
+//! - Parts are separated by dots and normalized to a trailing dot.
+//! - Maximum length is 20 characters after whitespace is removed.
+use crate::{
+    form::{ValidationError, is_teletex_char},
+    transparent_string,
+};
 
-use crate::form::{ValidationError, is_teletex_char};
+transparent_string! {
+    pub struct Initials(String);
+}
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct Initials(String);
-
-impl FromStr for Initials {
+impl std::str::FromStr for Initials {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {

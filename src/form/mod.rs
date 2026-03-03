@@ -58,12 +58,6 @@ impl IntoValidationError for std::str::ParseBoolError {
     }
 }
 
-impl IntoValidationError for derive_more::FromStrError {
-    fn into_validation_error(self) -> ValidationError {
-        ValidationError::InvalidValue
-    }
-}
-
 impl IntoValidationError for uuid::Error {
     fn into_validation_error(self) -> ValidationError {
         ValidationError::InvalidValue

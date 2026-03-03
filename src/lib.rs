@@ -77,7 +77,9 @@ pub use core::{
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
 pub use state::AppState;
-pub use utils::{OptionStringExt, QueryParamState, new_type, redirect_success};
+pub use utils::{
+    OptionStringExt, QueryParamState, id_newtype, redirect_success, transparent_string,
+};
 
 #[cfg(test)]
 pub use utils::test_utils;

@@ -190,8 +190,10 @@ mod tests {
         );
         assert_eq!(updated.name.initials.to_string(), "E.D.");
         assert_eq!(
-            updated.date_of_birth,
-            Some("01-02-2020".parse::<Date>().unwrap())
+            updated
+                .date_of_birth
+                .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string()),
+            Some("01-02-2020".to_string())
         );
         assert_eq!(
             updated.place_of_residence.as_deref().map(|v| v.to_string()),

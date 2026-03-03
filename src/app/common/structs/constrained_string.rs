@@ -1,8 +1,9 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use crate::form::{ValidationError, validate_length, validate_teletex_chars};
+use crate::{
+    form::{ValidationError, validate_length, validate_teletex_chars},
+    transparent_string,
+};
 
 pub type FirstName = ConstrainedString;
 pub type LegalName = ConstrainedString;
@@ -10,23 +11,9 @@ pub type StreetName = ConstrainedString;
 pub type Locality = ConstrainedString;
 pub type PlaceOfResidence = ConstrainedString;
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct ConstrainedString(String);
+transparent_string! {
+    pub struct ConstrainedString(String);
+}
 
 impl FromStr for ConstrainedString {
     type Err = ValidationError;

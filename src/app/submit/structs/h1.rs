@@ -109,6 +109,7 @@ impl TypstCandidate {
             initials: person.initials_as_printed_on_list(locale.into()),
             date_of_birth: person
                 .date_of_birth
+                .clone()
                 .ok_or(AppError::IncompleteData("Missing birth date for candidate"))?
                 .into(),
             locality: person

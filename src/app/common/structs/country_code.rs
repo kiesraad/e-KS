@@ -1,26 +1,10 @@
-use derive_more::{Deref, Display, Into};
-use serde::{Deserialize, Serialize};
 use std::str::FromStr;
 
-use crate::form::ValidationError;
+use crate::{form::ValidationError, transparent_string};
 
-#[derive(
-    Default,
-    Debug,
-    Deref,
-    Clone,
-    Into,
-    Display,
-    PartialEq,
-    Eq,
-    PartialOrd,
-    Ord,
-    Hash,
-    Serialize,
-    Deserialize,
-)]
-#[serde(transparent)]
-pub struct CountryCode(String);
+transparent_string! {
+    pub struct CountryCode(String);
+}
 
 impl FromStr for CountryCode {
     type Err = ValidationError;

@@ -1,11 +1,22 @@
-use derive_more::{Deref, Display};
 use serde::{Deserialize, Serialize};
 
-#[derive(
-    Debug, Deref, Clone, Copy, Display, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize,
-)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct UtcDateTime(chrono::DateTime<chrono::Utc>);
+
+impl std::ops::Deref for UtcDateTime {
+    type Target = chrono::DateTime<chrono::Utc>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.0
+    }
+}
+
+impl std::fmt::Display for UtcDateTime {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
+    }
+}
 
 impl Default for UtcDateTime {
     fn default() -> Self {
