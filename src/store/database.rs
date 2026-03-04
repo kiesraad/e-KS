@@ -1,3 +1,5 @@
+//! Database-backed persistence for the event store.
+
 use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 
@@ -26,32 +28,50 @@ impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<serde_json::Val
 /// Initialize the database schema for event persistence.
 #[cfg(feature = "migrations")]
 pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS streams (
-          stream_id UUID PRIMARY KEY,
-          last_event_id BIGINT NOT NULL
-        )
-        "#,
-    )
-    .execute(pool)
-    .await?;
+    const MIGRATION_LOCK_KEY: i64 = 0x454B53544F52454E; // "EKSTOREN" advisory lock key
 
-    sqlx::query(
-        r#"
-        CREATE TABLE IF NOT EXISTS events (
-          stream_id UUID NOT NULL,
-          event_id BIGINT NOT NULL,
-          created_at timestamp with time zone NOT NULL,
-          payload jsonb NOT NULL,
-          PRIMARY KEY (stream_id, event_id)
-        )
-        "#,
-    )
-    .execute(pool)
-    .await?;
+    let mut conn = pool.acquire().await?;
+    sqlx::query("SELECT pg_advisory_lock($1)")
+        .bind(MIGRATION_LOCK_KEY)
+        .execute(&mut *conn)
+        .await?;
 
-    Ok(())
+    let result = async {
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS streams (
+              stream_id UUID PRIMARY KEY,
+              last_event_id BIGINT NOT NULL
+            )
+            "#,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        sqlx::query(
+            r#"
+            CREATE TABLE IF NOT EXISTS events (
+              stream_id UUID NOT NULL,
+              event_id BIGINT NOT NULL,
+              created_at timestamp with time zone NOT NULL,
+              payload jsonb NOT NULL,
+              PRIMARY KEY (stream_id, event_id)
+            )
+            "#,
+        )
+        .execute(&mut *conn)
+        .await?;
+
+        Ok::<(), AppError>(())
+    }
+    .await;
+
+    let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
+        .bind(MIGRATION_LOCK_KEY)
+        .execute(&mut *conn)
+        .await;
+
+    result
 }
 
 /// Ensure a stream row exists for the given stream ID.

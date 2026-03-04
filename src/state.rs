@@ -2,8 +2,7 @@
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, PoliticalGroupId, SessionStore,
-    store::registry::StoreRegistry,
+    AppError, AppStore, AppStoreData, Config, PoliticalGroupId, SessionStore, store::StoreRegistry,
 };
 use axum::extract::FromRef;
 
@@ -19,7 +18,7 @@ pub struct AppState {
 impl AppState {
     pub async fn new_with_typst_url(typst_url: Option<String>) -> Result<Self, AppError> {
         let config = Config::from_env_with_typst_url(typst_url)?;
-        let store_registry = StoreRegistry::new(config.storage_url.to_string());
+        let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
 
         Ok(Self {
             config,
@@ -48,7 +47,9 @@ impl AppState {
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string()),
+            store_registry: StoreRegistry::new(config.storage_url.to_string())
+                .await
+                .expect("test StoreRegistry must initialize"),
             config,
             sessions: SessionStore::new(),
         }

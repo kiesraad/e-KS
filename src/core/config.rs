@@ -53,7 +53,7 @@ impl Config {
     #[cfg(test)]
     pub fn new_test() -> Self {
         Self {
-            storage_url: DEFAULT_STORAGE_URL,
+            storage_url: "memory://",
             typst_url: DEFAULT_TYPST_URL,
         }
     }
