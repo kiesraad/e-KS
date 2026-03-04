@@ -5,7 +5,6 @@ use crate::{
     list_submitters::{ListSubmitter, ListSubmitterId},
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
 impl AppStore {
@@ -43,7 +42,7 @@ impl AppStore {
         data.list_submitters.values().cloned().collect()
     }
 
-    pub fn get_substitute_submitters(&self) -> Vec<SubstituteSubmitter> {
+    pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
         data.substitute_submitters.values().cloned().collect()
@@ -105,8 +104,8 @@ impl AppStore {
 
     pub fn get_substitute_submitter(
         &self,
-        substitute_submitter_id: SubstituteSubmitterId,
-    ) -> Result<SubstituteSubmitter, AppError> {
+        substitute_submitter_id: ListSubmitterId,
+    ) -> Result<ListSubmitter, AppError> {
         let data = self.data.read();
 
         match data.substitute_submitters.get(&substitute_submitter_id) {

@@ -9,7 +9,6 @@ use crate::{
     },
     list_submitters::{ListSubmitter, ListSubmitterId},
     political_groups::PoliticalGroup,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
 pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Result<(), AppError> {
@@ -19,9 +18,9 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     let submitter_id: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter").into();
 
-    let substitute_submitter_id_1: SubstituteSubmitterId =
+    let substitute_submitter_id_1: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_1").into();
-    let substitute_submitter_id_2: SubstituteSubmitterId =
+    let substitute_submitter_id_2: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_2").into();
 
     let political_group = PoliticalGroup {
@@ -73,7 +72,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     .create(store)
     .await?;
 
-    SubstituteSubmitter {
+    ListSubmitter {
         id: substitute_submitter_id_1,
         name: FullName {
             last_name: "Smit".parse::<LastName>().expect("last name"),
@@ -88,10 +87,10 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
             street_name: Some("Spui".parse::<StreetName>().expect("street name")),
         },
     }
-    .create(store)
+    .create_substitute(store)
     .await?;
 
-    SubstituteSubmitter {
+    ListSubmitter {
         id: substitute_submitter_id_2,
         name: FullName {
             last_name: "Jong".parse::<LastName>().expect("last name"),
@@ -109,7 +108,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
             street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
         },
     }
-    .create(store)
+    .create_substitute(store)
     .await?;
 
     Ok(())

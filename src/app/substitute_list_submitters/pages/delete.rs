@@ -2,7 +2,7 @@ use axum::response::Response;
 
 use crate::{
     AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
-    redirect_success, substitute_list_submitters::SubstituteSubmitter,
+    redirect_success,
 };
 
 use super::SubstituteSubmitterDeletePath;
@@ -10,14 +10,14 @@ use super::SubstituteSubmitterDeletePath;
 pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
     context: Context,
-    substitute_submitter: SubstituteSubmitter,
+    substitute_submitter: ListSubmitter,
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            substitute_submitter.delete(&store).await?;
+            substitute_submitter.delete_substitute(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -32,17 +32,17 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, TokenValue, substitute_list_submitters::SubstituteSubmitterId,
-        test_utils::sample_substitute_submitter,
+        AppError, AppStore, Context, TokenValue, list_submitters::ListSubmitterId,
+        test_utils::sample_list_submitter,
     };
 
     #[tokio::test]
     async fn delete_substitute_submitter_removes_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let sub_submitter_id = SubstituteSubmitterId::new();
-        let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-        substitute_submitter.create(&store).await?;
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+        substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
@@ -81,9 +81,9 @@ mod tests {
     async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let sub_submitter_id = SubstituteSubmitterId::new();
-        let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-        substitute_submitter.create(&store).await?;
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+        substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
 

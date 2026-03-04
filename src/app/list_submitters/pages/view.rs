@@ -5,7 +5,6 @@ use crate::{
     filters,
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
-    substitute_list_submitters::SubstituteSubmitter,
 };
 use askama::Template;
 use axum::response::IntoResponse;
@@ -14,7 +13,7 @@ use axum::response::IntoResponse;
 #[template(path = "list_submitters/pages/view.html")]
 struct ListSubmittersTemplate {
     list_submitters: Vec<ListSubmitter>,
-    substitute_submitters: Vec<SubstituteSubmitter>,
+    substitute_submitters: Vec<ListSubmitter>,
     steps: PoliticalGroupSteps,
 }
 

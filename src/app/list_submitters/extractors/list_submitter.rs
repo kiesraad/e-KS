@@ -12,6 +12,12 @@ struct ListSubmitterPathParams {
     submitter_id: ListSubmitterId,
 }
 
+#[derive(Deserialize)]
+struct SubstituteSubmitterPathParams {
+    #[serde(alias = "sub_submitter_id")]
+    submitter_id: ListSubmitterId,
+}
+
 impl<S> FromRequestParts<S> for ListSubmitter
 where
     S: Clone + Send + Sync + 'static,
@@ -24,8 +30,19 @@ where
         state: &S,
     ) -> Result<Self, Self::Rejection> {
         let store = AppStore::from_request_parts(parts, state).await?;
-        let Path(ListSubmitterPathParams { submitter_id }) =
-            Path::<ListSubmitterPathParams>::from_request_parts(parts, state).await?;
+
+        let submitter_id = match Path::<ListSubmitterPathParams>::from_request_parts(parts, state)
+            .await
+        {
+            Ok(Path(params)) => params.submitter_id,
+            Err(_) => {
+                // Try to extract substitute submitter path params if regular submitter params are not present
+                let Path(params) =
+                    Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
+
+                return store.get_substitute_submitter(params.submitter_id);
+            }
+        };
 
         store.get_list_submitter(submitter_id)
     }

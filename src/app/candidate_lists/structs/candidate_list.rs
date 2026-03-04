@@ -9,7 +9,6 @@ use crate::{
     id_newtype,
     list_submitters::ListSubmitterId,
     persons::{Person, PersonId},
-    substitute_list_submitters::SubstituteSubmitterId,
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,7 +20,7 @@ pub struct CandidateList {
     pub electoral_districts: Vec<ElectoralDistrict>,
     pub candidates: Vec<PersonId>,
     pub list_submitter_id: Option<ListSubmitterId>,
-    pub substitute_list_submitter_ids: Vec<SubstituteSubmitterId>,
+    pub substitute_list_submitter_ids: Vec<ListSubmitterId>,
     pub created_at: UtcDateTime,
 }
 
@@ -261,10 +260,7 @@ mod tests {
         AppStore,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
-        test_utils::{
-            sample_candidate_list, sample_list_submitter, sample_person_with_last_name,
-            sample_substitute_submitter,
-        },
+        test_utils::{sample_candidate_list, sample_list_submitter, sample_person_with_last_name},
     };
     fn base_candidate_list(electoral_districts: Vec<ElectoralDistrict>) -> CandidateList {
         CandidateList {
@@ -429,14 +425,10 @@ mod tests {
         list_submitter_a.create(&store).await?;
         list_submitter_b.create(&store).await?;
 
-        let substitute_a = sample_substitute_submitter(
-            crate::substitute_list_submitters::SubstituteSubmitterId::new(),
-        );
-        let substitute_b = sample_substitute_submitter(
-            crate::substitute_list_submitters::SubstituteSubmitterId::new(),
-        );
-        substitute_a.create(&store).await?;
-        substitute_b.create(&store).await?;
+        let substitute_a = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        let substitute_b = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        substitute_a.create_substitute(&store).await?;
+        substitute_b.create_substitute(&store).await?;
 
         let mut list = sample_candidate_list(CandidateListId::new());
 

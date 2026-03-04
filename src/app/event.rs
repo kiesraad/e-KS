@@ -8,7 +8,6 @@ use crate::{
     list_submitters::{ListSubmitter, ListSubmitterId},
     persons::{Person, PersonId, Representative},
     political_groups::PoliticalGroup,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
 /// Domain events that mutate the application store.
@@ -40,7 +39,7 @@ pub enum AppEvent {
     UpdateCandidateListSubmitters {
         list_id: CandidateListId,
         list_submitter_id: Option<ListSubmitterId>,
-        substitute_list_submitter_ids: Vec<SubstituteSubmitterId>,
+        substitute_list_submitter_ids: Vec<ListSubmitterId>,
     },
     AddCandidateToCandidateList {
         list_id: CandidateListId,
@@ -62,9 +61,9 @@ pub enum AppEvent {
         list_submitter_id: ListSubmitterId,
     },
 
-    CreateSubstituteSubmitter(SubstituteSubmitter),
-    UpdateSubstituteSubmitter(SubstituteSubmitter),
+    CreateSubstituteSubmitter(ListSubmitter),
+    UpdateSubstituteSubmitter(ListSubmitter),
     DeleteSubstituteSubmitter {
-        substitute_submitter_id: SubstituteSubmitterId,
+        substitute_submitter_id: ListSubmitterId,
     },
 }

@@ -10,7 +10,6 @@ use crate::{
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
     store::{StoreData, StoreEvent},
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
 };
 
 /// Event-sourced domain projection for a single political group.
@@ -21,7 +20,7 @@ pub struct AppStoreData {
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
     pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
     pub(crate) list_submitters: HashMap<ListSubmitterId, ListSubmitter>,
-    pub(crate) substitute_submitters: HashMap<SubstituteSubmitterId, SubstituteSubmitter>,
+    pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
     // Track the last event ID applied to this store instance for synchronization purposes
     pub(crate) last_event_id: usize,
 }

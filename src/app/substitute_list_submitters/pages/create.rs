@@ -5,15 +5,14 @@ use super::SubstituteSubmitterCreatePath;
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
-    list_submitters::ListSubmitter,
+    list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterForm},
 };
 
 #[derive(Template)]
 #[template(path = "substitute_list_submitters/pages/create.html")]
 struct SubstituteSubmitterCreateTemplate {
-    form: FormData<SubstituteSubmitterForm>,
+    form: FormData<ListSubmitterForm>,
 }
 
 pub async fn create_substitute_submitter(
@@ -32,7 +31,7 @@ pub async fn create_substitute_submitter_submit(
     _: SubstituteSubmitterCreatePath,
     context: Context,
     store: AppStore,
-    Form(form): Form<SubstituteSubmitterForm>,
+    Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -41,7 +40,7 @@ pub async fn create_substitute_submitter_submit(
         )
         .into_response()),
         Ok(substitute_submitter) => {
-            substitute_submitter.create(&store).await?;
+            substitute_submitter.create_substitute(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -60,7 +59,7 @@ mod tests {
 
     use crate::{
         AppError, AppStore, Context,
-        test_utils::{response_body_string, sample_substitute_submitter_form},
+        test_utils::{response_body_string, sample_list_submitter_form},
     };
 
     #[tokio::test]
@@ -82,7 +81,7 @@ mod tests {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
-        let form = sample_substitute_submitter_form(&csrf_token);
+        let form = sample_list_submitter_form(&csrf_token);
 
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
@@ -118,7 +117,7 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
-        let mut form = sample_substitute_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
         let response = create_substitute_submitter_submit(

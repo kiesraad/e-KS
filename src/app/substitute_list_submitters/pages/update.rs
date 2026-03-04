@@ -4,9 +4,8 @@ use axum::response::{IntoResponse, Response};
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
-    list_submitters::ListSubmitter,
+    list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterForm},
 };
 
 use super::SubstituteSubmitterUpdatePath;
@@ -14,14 +13,14 @@ use super::SubstituteSubmitterUpdatePath;
 #[derive(Template)]
 #[template(path = "substitute_list_submitters/pages/update.html")]
 struct SubstituteSubmitterUpdateTemplate {
-    substitute_submitter: SubstituteSubmitter,
-    form: FormData<SubstituteSubmitterForm>,
+    substitute_submitter: ListSubmitter,
+    form: FormData<ListSubmitterForm>,
 }
 
 pub async fn update_substitute_submitter(
     _: SubstituteSubmitterUpdatePath,
     context: Context,
-    substitute_submitter: SubstituteSubmitter,
+    substitute_submitter: ListSubmitter,
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
@@ -39,9 +38,9 @@ pub async fn update_substitute_submitter(
 pub async fn update_substitute_submitter_submit(
     _: SubstituteSubmitterUpdatePath,
     context: Context,
-    substitute_submitter: SubstituteSubmitter,
+    substitute_submitter: ListSubmitter,
     store: AppStore,
-    Form(form): Form<SubstituteSubmitterForm>,
+    Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&substitute_submitter, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -53,7 +52,7 @@ pub async fn update_substitute_submitter_submit(
         )
         .into_response()),
         Ok(substitute_submitter) => {
-            substitute_submitter.update(&store).await?;
+            substitute_submitter.update_substitute(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -63,28 +62,26 @@ pub async fn update_substitute_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::QueryParamState;
+    use crate::{
+        QueryParamState,
+        list_submitters::ListSubmitterId,
+        test_utils::{sample_list_submitter, sample_list_submitter_form},
+    };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
     use axum_extra::routing::TypedPath;
 
-    use crate::{
-        AppError, AppStore, Context,
-        substitute_list_submitters::SubstituteSubmitterId,
-        test_utils::{
-            response_body_string, sample_substitute_submitter, sample_substitute_submitter_form,
-        },
-    };
+    use crate::{AppError, AppStore, Context, test_utils::response_body_string};
 
     #[tokio::test]
     async fn update_substitute_submitter_renders_existing_submitter() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let sub_submitter_id = SubstituteSubmitterId::new();
-        let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-        substitute_submitter.create(&store).await?;
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+        substitute_submitter.create_substitute(&store).await?;
 
         let response = update_substitute_submitter(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
@@ -106,13 +103,13 @@ mod tests {
     async fn update_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let sub_submitter_id = SubstituteSubmitterId::new();
-        let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-        substitute_submitter.create(&store).await?;
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+        substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
-        let mut form = sample_substitute_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
         let response = update_substitute_submitter_submit(
@@ -149,13 +146,13 @@ mod tests {
     async fn update_substitute_submitter_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let sub_submitter_id = SubstituteSubmitterId::new();
-        let substitute_submitter = sample_substitute_submitter(sub_submitter_id);
-        substitute_submitter.create(&store).await?;
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+        substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
-        let mut form = sample_substitute_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
         let response = update_substitute_submitter_submit(

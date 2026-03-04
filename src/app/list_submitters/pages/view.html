@@ -36,7 +36,7 @@
       {% else %}
         <div class="substitute-list-submitters">
           {% for submitter in substitute_submitters %}
-            <a href="{{ submitter.update_path() }}"
+            <a href="{{ submitter.substitute_update_path() }}"
                class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
               {{ submitter.name.display() }}
               <br />
@@ -48,7 +48,7 @@
         </div>
       {% endif %}
       <p class="mt-lg">
-        <a href="{{ SubstituteSubmitter::create_path() }}"
+        <a href="{{ ListSubmitter::substitute_create_path() }}"
            class="button secondary icon-plus"
            type="button">{{ "political_group.add_substitute_submitter"|trans }}</a>
       </p>

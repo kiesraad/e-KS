@@ -6,7 +6,7 @@
   <div class="steps-nav">
     <ul>
       <li>
-        <a href="{{ substitute_submitter.update_path() }}">{{ "political_group.edit_substitute_submitter"|trans }}</a>
+        <a href="{{ substitute_submitter.substitute_update_path() }}">{{ "political_group.edit_substitute_submitter"|trans }}</a>
       </li>
     </ul>
   </div>
@@ -21,7 +21,7 @@
           type="button">{{ "political_group.actions.delete_substitute_submitter"|trans }}</button>
 {% endblock %}
 {% block overlay_end %}
-  {{ macros::delete_modal(substitute_submitter.delete_path() ,
+  {{ macros::delete_modal(substitute_submitter.substitute_delete_path() ,
   "political_group.actions.delete_substitute_submitter"|trans,
   "political_group.delete_substitute_submitter_warning_text"|trans
   ) }}

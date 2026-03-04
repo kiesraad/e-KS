@@ -8,7 +8,6 @@ use crate::{
     list_submitters::ListSubmitterId,
     persons::{PersonId, Representative},
     store::{StoreData, StoreEvent},
-    substitute_list_submitters::SubstituteSubmitterId,
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
 };
 use chrono::{Duration, Utc};
@@ -275,7 +274,7 @@ fn apply_update_candidate_list_submitters_sets_ids() {
     ));
 
     let list_submitter_id = Some(ListSubmitterId::new());
-    let substitute_ids = vec![SubstituteSubmitterId::new(), SubstituteSubmitterId::new()];
+    let substitute_ids = vec![ListSubmitterId::new(), ListSubmitterId::new()];
     let updated_at = Utc::now() - Duration::seconds(15);
 
     data.apply(StoreEvent::new_at(

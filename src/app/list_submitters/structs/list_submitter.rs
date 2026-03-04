@@ -38,4 +38,24 @@ impl ListSubmitter {
             })
             .await
     }
+
+    pub async fn create_substitute(&self, store: &AppStore) -> Result<(), AppError> {
+        store
+            .update(AppEvent::CreateSubstituteSubmitter(self.clone()))
+            .await
+    }
+
+    pub async fn update_substitute(&self, store: &AppStore) -> Result<(), AppError> {
+        store
+            .update(AppEvent::UpdateSubstituteSubmitter(self.clone()))
+            .await
+    }
+
+    pub async fn delete_substitute(&self, store: &AppStore) -> Result<(), AppError> {
+        store
+            .update(AppEvent::DeleteSubstituteSubmitter {
+                substitute_submitter_id: self.id,
+            })
+            .await
+    }
 }

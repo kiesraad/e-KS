@@ -1,13 +1,12 @@
 use crate::{
     AppError, AppStore, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
-    substitute_list_submitters::SubstituteSubmitter,
 };
 
 #[derive(Clone, Debug)]
 pub struct PoliticalGroupSteps {
     pub authorised_agents: Vec<AuthorisedAgent>,
     pub list_submitters: Vec<ListSubmitter>,
-    pub substitute_submitters: Vec<SubstituteSubmitter>,
+    pub substitute_submitters: Vec<ListSubmitter>,
 
     pub basic_state: &'static str,
     pub authorised_agents_state: &'static str,
@@ -40,9 +39,7 @@ impl PoliticalGroupSteps {
             },
             submitters_state: if !list_submitters.is_empty()
                 && list_submitters.iter().all(ListSubmitter::is_complete)
-                && substitute_submitters
-                    .iter()
-                    .all(SubstituteSubmitter::is_complete)
+                && substitute_submitters.iter().all(ListSubmitter::is_complete)
             {
                 "ok"
             } else if list_submitters.is_empty() && political_group.is_basic_info_empty() {

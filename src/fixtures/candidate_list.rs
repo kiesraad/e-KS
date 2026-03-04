@@ -6,7 +6,6 @@ use crate::{
     list_submitters::ListSubmitterId,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
-    substitute_list_submitters::SubstituteSubmitterId,
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
@@ -40,7 +39,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let submitter_id: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter").into();
 
-    let substitute_submitter_id: SubstituteSubmitterId =
+    let substitute_submitter_id: ListSubmitterId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_1").into();
 
     let candidate_list = CandidateList {

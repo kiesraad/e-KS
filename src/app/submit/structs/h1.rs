@@ -6,7 +6,6 @@ use crate::{
     list_submitters::ListSubmitter,
     persons::Person,
     submit::structs::{TypstDate, TypstDatetime},
-    substitute_list_submitters::SubstituteSubmitter,
 };
 use serde::Serialize;
 use tracing::error;
@@ -152,38 +151,6 @@ struct TypstPerson {
     locality: String,
 }
 
-impl TryFrom<SubstituteSubmitter> for TypstPerson {
-    type Error = AppError;
-
-    fn try_from(submitter: SubstituteSubmitter) -> Result<Self, Self::Error> {
-        Ok(TypstPerson {
-            last_name: submitter.name.last_name.to_string(),
-            initials: submitter.name.initials,
-            postal_address: submitter
-                .address
-                .address_line_1()
-                .ok_or(AppError::IncompleteData(
-                    "Missing substitute submitter address",
-                ))?,
-            postal_code: submitter
-                .address
-                .postal_code
-                .clone()
-                .ok_or(AppError::IncompleteData(
-                    "Missing substitute submitter postal code",
-                ))?,
-            locality: submitter
-                .address
-                .locality
-                .clone()
-                .ok_or(AppError::IncompleteData(
-                    "Missing substitute submitter locality",
-                ))?
-                .to_string(),
-        })
-    }
-}
-
 impl TryFrom<ListSubmitter> for TypstPerson {
     type Error = AppError;
 
@@ -235,11 +202,7 @@ mod tests {
         common::{Initials, LastName, PostalCode},
         list_submitters::ListSubmitterId,
         persons::PersonId,
-        substitute_list_submitters::SubstituteSubmitterId,
-        test_utils::{
-            sample_list_submitter, sample_person, sample_person_with_last_name,
-            sample_substitute_submitter,
-        },
+        test_utils::{sample_list_submitter, sample_person, sample_person_with_last_name},
     };
 
     #[test]
@@ -404,25 +367,25 @@ mod tests {
 
     #[test]
     fn typst_person_from_substitute_submitter_requires_address_line() {
-        let mut submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let mut submitter = sample_list_submitter(ListSubmitterId::new());
         submitter.address.street_name = None;
 
         let err = TypstPerson::try_from(submitter).unwrap_err();
         assert!(matches!(
             err,
-            AppError::IncompleteData("Missing substitute submitter address")
+            AppError::IncompleteData("Missing list submitter address")
         ));
     }
 
     #[tokio::test]
     async fn substitute_submitter_from_ids_resolves_submitters() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        let submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
-        let mut submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let submitter_a = sample_list_submitter(ListSubmitterId::new());
+        let mut submitter_b = sample_list_submitter(ListSubmitterId::new());
         submitter_b.name.last_name = "Janssen".parse::<LastName>().expect("last name");
 
-        submitter_a.create(&store).await?;
-        submitter_b.create(&store).await?;
+        submitter_a.create_substitute(&store).await?;
+        submitter_b.create_substitute(&store).await?;
 
         let list = CandidateList {
             substitute_list_submitter_ids: vec![submitter_a.id, submitter_b.id],
@@ -432,7 +395,7 @@ mod tests {
         let resolved = substitute_submitter_from_ids(&list, store)?;
 
         assert_eq!(resolved.len(), 2);
-        assert_eq!(resolved[0].last_name, "Bakker");
+        assert_eq!(resolved[0].last_name, "Bos");
         assert_eq!(resolved[1].last_name, "Janssen");
 
         Ok(())
@@ -442,7 +405,7 @@ mod tests {
     async fn substitute_submitter_from_ids_returns_integrity_error_on_missing() {
         let store = AppStore::new_for_test();
         let list = CandidateList {
-            substitute_list_submitter_ids: vec![SubstituteSubmitterId::new()],
+            substitute_list_submitter_ids: vec![ListSubmitterId::new()],
             ..Default::default()
         };
 

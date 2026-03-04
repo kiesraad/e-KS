@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState,
-    substitute_list_submitters::{SubstituteSubmitter, SubstituteSubmitterId},
+    list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
 mod create;
@@ -21,7 +21,7 @@ pub struct SubstituteSubmitterCreatePath;
     rejection(AppError)
 )]
 pub struct SubstituteSubmitterUpdatePath {
-    pub sub_submitter_id: SubstituteSubmitterId,
+    pub sub_submitter_id: ListSubmitterId,
 }
 
 #[derive(TypedPath, Deserialize)]
@@ -30,21 +30,21 @@ pub struct SubstituteSubmitterUpdatePath {
     rejection(AppError)
 )]
 pub struct SubstituteSubmitterDeletePath {
-    pub sub_submitter_id: SubstituteSubmitterId,
+    pub sub_submitter_id: ListSubmitterId,
 }
 
-impl SubstituteSubmitter {
-    pub fn create_path() -> impl TypedPath {
+impl ListSubmitter {
+    pub fn substitute_create_path() -> impl TypedPath {
         SubstituteSubmitterCreatePath {}
     }
 
-    pub fn update_path(&self) -> impl TypedPath {
+    pub fn substitute_update_path(&self) -> impl TypedPath {
         SubstituteSubmitterUpdatePath {
             sub_submitter_id: self.id,
         }
     }
 
-    pub fn delete_path(&self) -> impl TypedPath {
+    pub fn substitute_delete_path(&self) -> impl TypedPath {
         SubstituteSubmitterDeletePath {
             sub_submitter_id: self.id,
         }
@@ -63,27 +63,25 @@ pub fn router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{
-        substitute_list_submitters::SubstituteSubmitterId, test_utils::sample_substitute_submitter,
-    };
+    use crate::test_utils::sample_list_submitter;
 
     #[test]
     fn substitute_submitter_paths_match_expected_routes() {
-        let submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let submitter = sample_list_submitter(ListSubmitterId::new());
 
         assert_eq!(
-            SubstituteSubmitter::create_path().to_string(),
+            ListSubmitter::substitute_create_path().to_string(),
             "/political-group/substitute-submitters/create"
         );
         assert_eq!(
-            submitter.update_path().to_string(),
+            submitter.substitute_update_path().to_string(),
             format!(
                 "/political-group/substitute-submitters/{}/update",
                 submitter.id
             )
         );
         assert_eq!(
-            submitter.delete_path().to_string(),
+            submitter.substitute_delete_path().to_string(),
             format!(
                 "/political-group/substitute-submitters/{}/delete",
                 submitter.id

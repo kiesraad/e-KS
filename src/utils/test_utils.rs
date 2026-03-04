@@ -13,9 +13,6 @@ use crate::{
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonForm, PersonId, Representative, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
-    substitute_list_submitters::{
-        SubstituteSubmitter, SubstituteSubmitterForm, SubstituteSubmitterId,
-    },
 };
 
 pub async fn response_body_string(response: axum::response::Response) -> String {
@@ -196,22 +193,6 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
     ListSubmitterForm {
         name: sample_full_name_form("Bos", "", "E.F."),
         address: sample_dutch_address_form("Rotterdam", "3011 CC", "5", "B", "Coolsingel"),
-        csrf_token: csrf_token.clone(),
-    }
-}
-
-pub fn sample_substitute_submitter(id: SubstituteSubmitterId) -> SubstituteSubmitter {
-    SubstituteSubmitter {
-        id,
-        name: sample_full_name("Bakker", None, "I.J."),
-        address: sample_dutch_address("Utrecht", "3511 AA", "21", "C", "Oudegracht"),
-    }
-}
-
-pub fn sample_substitute_submitter_form(csrf_token: &TokenValue) -> SubstituteSubmitterForm {
-    SubstituteSubmitterForm {
-        name: sample_full_name_form("Bakker", "", "I.J."),
-        address: sample_dutch_address_form("Utrecht", "3511 AA", "21", "C", "Oudegracht"),
         csrf_token: csrf_token.clone(),
     }
 }

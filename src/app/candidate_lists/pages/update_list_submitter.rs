@@ -11,7 +11,6 @@ use crate::{
     form::FormData,
     list_submitters::ListSubmitter,
     redirect_success,
-    substitute_list_submitters::SubstituteSubmitter,
 };
 
 #[derive(Template)]
@@ -21,7 +20,7 @@ struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
     candidate_list: CandidateList,
     list_submitters: Vec<ListSubmitter>,
-    substitute_submitters: Vec<SubstituteSubmitter>,
+    substitute_submitters: Vec<ListSubmitter>,
 }
 
 fn render_submitter_form(
@@ -104,11 +103,7 @@ mod tests {
         AppStore, Context, ElectoralDistrict, Locale, QueryParamState, Session, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
-        substitute_list_submitters::SubstituteSubmitterId,
-        test_utils::{
-            response_body_string, sample_candidate_list, sample_list_submitter,
-            sample_substitute_submitter,
-        },
+        test_utils::{response_body_string, sample_candidate_list, sample_list_submitter},
     };
 
     #[tokio::test]
@@ -116,7 +111,7 @@ mod tests {
         let store = AppStore::new_for_test();
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter = sample_list_submitter(ListSubmitterId::new());
 
         candidate_list.create(&store).await?;
         list_submitter.create(&store).await?;
@@ -157,13 +152,13 @@ mod tests {
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let substitute_submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
-        let substitute_submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter_a = sample_list_submitter(ListSubmitterId::new());
+        let substitute_submitter_b = sample_list_submitter(ListSubmitterId::new());
 
         candidate_list.create(&store).await?;
         list_submitter.create(&store).await?;
-        substitute_submitter_a.create(&store).await?;
-        substitute_submitter_b.create(&store).await?;
+        substitute_submitter_a.create_substitute(&store).await?;
+        substitute_submitter_b.create_substitute(&store).await?;
 
         let response = update_list_submitter(
             UpdateListSubmitterPath {
@@ -197,8 +192,8 @@ mod tests {
             ..Default::default()
         };
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let substitute_submitter_a = sample_substitute_submitter(SubstituteSubmitterId::new());
-        let substitute_submitter_b = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter_a = sample_list_submitter(ListSubmitterId::new());
+        let substitute_submitter_b = sample_list_submitter(ListSubmitterId::new());
 
         candidate_list.create(&store).await?;
         list_submitter.create(&store).await?;
@@ -267,7 +262,7 @@ mod tests {
         let context = Context::new(&store, Session::new_with_locale(Locale::En));
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
-        let substitute_submitter = sample_substitute_submitter(SubstituteSubmitterId::new());
+        let substitute_submitter = sample_list_submitter(ListSubmitterId::new());
 
         candidate_list.create(&store).await?;
         list_submitter.create(&store).await?;
