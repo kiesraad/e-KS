@@ -9,6 +9,7 @@ pub enum ValidationError {
     InvalidValue,
     InvalidEmail,
     ValueShouldNotBeEmpty,
+    ChooseAtLeastOneOption,
     InvalidCsrfToken,
     ValueTooLong(ActualLength, MaxLength),
     ValueTooShort(ActualLength, MinLength),
@@ -32,6 +33,9 @@ impl ValidationError {
             ValidationError::InvalidEmail => trans!("validation.invalid_email", locale),
             ValidationError::ValueShouldNotBeEmpty => {
                 trans!("validation.value_should_not_be_empty", locale)
+            }
+            ValidationError::ChooseAtLeastOneOption => {
+                trans!("validation.choose_at_least_one_option", locale)
             }
             ValidationError::ValueTooLong(actual, max) => {
                 trans!("validation.value_too_long", locale, actual, max)
@@ -77,6 +81,10 @@ mod tests {
         assert_eq!(
             ValidationError::ValueShouldNotBeEmpty.message(Locale::En),
             "This field must not be empty."
+        );
+        assert_eq!(
+            ValidationError::ChooseAtLeastOneOption.message(Locale::En),
+            "Please choose at least one option."
         );
         assert_eq!(
             ValidationError::ValueTooLong(10, 5).message(Locale::En),

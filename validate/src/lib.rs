@@ -8,6 +8,7 @@ use syn::{Data, DeriveInput, Fields, LitStr, Type, parse_macro_input};
 /// - `#[validate(target = "Type")]` on the struct.
 /// - `#[validate(parse = "Type")]` to parse via `Type::from_str`.
 /// - `#[validate(optional)]` to treat empty strings as `None`.
+/// - `#[validate(not_empty)]` to reject empty values via `is_empty`.
 /// - `#[validate(csrf)]` to validate CSRF tokens.
 /// - `#[validate(ignore)]` to skip validation and mapping for a field.
 /// - `#[validate(flatten)]` to validate a nested form and prefix its errors with `field[child]`.
@@ -31,6 +32,7 @@ struct FieldOptions {
     ignore: bool,
     validator: Option<Validator>,
     flatten: bool,
+    not_empty: bool,
 }
 
 enum Validator {
@@ -61,7 +63,7 @@ struct FieldBlocks {
     has_csrf: bool,
 }
 
-fn collect_named_fields<'a>(input: &'a DeriveInput) -> syn::Result<Vec<&'a syn::Field>> {
+fn collect_named_fields(input: &DeriveInput) -> syn::Result<Vec<&syn::Field>> {
     match &input.data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => Ok(fields.named.iter().collect::<Vec<_>>()),
@@ -109,6 +111,17 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
             continue;
         }
 
+        if opts.not_empty {
+            let error = if is_vec_type(&field.ty) {
+                quote!(crate::form::ValidationError::ChooseAtLeastOneOption)
+            } else {
+                quote!(crate::form::ValidationError::ValueShouldNotBeEmpty)
+            };
+            let block = build_not_empty_block(ident, &field_name, &error);
+            field_blocks_create.push(block.clone());
+            field_blocks_update.push(block);
+        }
+
         let validation = build_field_validation(ident, &field_name, &opts)?;
 
         field_blocks_create.push(build_field_block(ident, &validation.create_expr));
@@ -130,6 +143,32 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         field_blocks_update,
         has_csrf,
     })
+}
+
+fn is_vec_type(ty: &Type) -> bool {
+    let Type::Path(type_path) = ty else {
+        return false;
+    };
+    type_path
+        .path
+        .segments
+        .last()
+        .is_some_and(|segment| segment.ident == "Vec")
+}
+
+fn build_not_empty_block(
+    ident: &syn::Ident,
+    field_name: &str,
+    error: &proc_macro2::TokenStream,
+) -> proc_macro2::TokenStream {
+    quote! {
+        if self.#ident.is_empty() {
+            errors.push((
+                #field_name.to_string(),
+                #error,
+            ));
+        }
+    }
 }
 
 fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
@@ -272,9 +311,23 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 opts.optional = true;
                 return Ok(());
             }
+            if meta.path.is_ident("not_empty") {
+                if opts.not_empty {
+                    return Err(meta.error("not_empty can only be set once"));
+                }
+                if opts.flatten || opts.ignore || opts.csrf {
+                    return Err(
+                        meta.error("not_empty cannot be combined with flatten, ignore, or csrf")
+                    );
+                }
+                opts.not_empty = true;
+                return Ok(());
+            }
             if meta.path.is_ident("csrf") {
-                if opts.flatten || opts.ignore {
-                    return Err(meta.error("csrf cannot be combined with flatten or ignore"));
+                if opts.flatten || opts.ignore || opts.not_empty {
+                    return Err(
+                        meta.error("csrf cannot be combined with flatten, ignore, or not_empty")
+                    );
                 }
                 opts.csrf = true;
                 return Ok(());
@@ -283,7 +336,12 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 if opts.ignore {
                     return Err(meta.error("ignore can only be set once"));
                 }
-                if opts.optional || opts.csrf || opts.validator.is_some() || opts.flatten {
+                if opts.optional
+                    || opts.csrf
+                    || opts.validator.is_some()
+                    || opts.flatten
+                    || opts.not_empty
+                {
                     return Err(
                         meta.error("ignore cannot be combined with other validation options")
                     );
@@ -295,7 +353,12 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 if opts.flatten {
                     return Err(meta.error("flatten can only be set once"));
                 }
-                if opts.optional || opts.csrf || opts.validator.is_some() || opts.ignore {
+                if opts.optional
+                    || opts.csrf
+                    || opts.validator.is_some()
+                    || opts.ignore
+                    || opts.not_empty
+                {
                     return Err(
                         meta.error("flatten cannot be combined with other validation options")
                     );

@@ -1,4 +1,5 @@
 bsn_already_exists: Dit BSN is al in gebruik.
+choose_at_least_one_option: Kies ten minste één optie.
 invalid_bsn: Ongeldig BSN.
 invalid_csrf_token: De CSRF-token is ongeldig.
 invalid_email: Ongeldig e-mailadres.
