@@ -39,6 +39,14 @@ const TYPST_FILES: &[(&str, &[u8])] = &[
         "model-h1-nl.typ",
         include_bytes!("../../models/model-h1-nl.typ"),
     ),
+    (
+        "model-h9-fry.typ",
+        include_bytes!("../../models/model-h9-fry.typ"),
+    ),
+    (
+        "model-h9-nl.typ",
+        include_bytes!("../../models/model-h9-nl.typ"),
+    ),
 ];
 
 pub async fn start() -> Result<String, std::io::Error> {

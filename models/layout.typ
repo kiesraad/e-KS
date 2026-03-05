@@ -46,11 +46,16 @@
   #doc
 ]
 
-#let column_table(columns: (), headers: (), values: ()) = table(
-  columns: columns,
-  table.header(..headers.map(value => { text(style: "italic", value) })),
-  ..values.flatten(),
-)
+#let column_table(columns: (), headers: (), values: ()) = {
+  assert.eq(columns.len(), headers.len())
+  assert.eq(columns.len(), values.at(0).len())
+
+  table(
+    columns: columns,
+    table.header(..headers.map(value => { text(style: "italic", value) })),
+    ..values.flatten(),
+  )
+}
 
 /// Table with numbers in the first column
 #let enumerated_table(columns: (), headers: (), values: ()) = column_table(

@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, conf, date, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono
 
 #let input = json("./input.json")
 
@@ -30,10 +30,11 @@ De politike groepearring dêr’t jo de kandidatelist fan stypje: *#input.design
 
 
 = Kandidaten op de list
-#enumerated_table(
-  columns: (1fr, 1fr, 1fr, 1fr),
-  headers: ("namme", "foarletters", "bertedatum", "wenplak"),
+#column_table(
+  columns: (auto, 1fr, 1fr, 1fr, 1fr),
+  headers: ("", "namme", "foarletters", "bertedatum", "wenplak"),
   values: input.candidates.map(c => (
+    [#c.position],
     c.last_name,
     c.initials,
     date(c.date_of_birth),
@@ -52,9 +53,9 @@ De politike groepearring dêr’t jo de kandidatelist fan stypje: *#input.design
     values: input.substitute_submitter.map(s => (
       s.last_name,
       s.initials,
-      s.postal_address,
-      mono(s.postal_code),
-      s.locality,
+      s.postal_address.street_address,
+      mono(s.postal_address.postal_code),
+      s.postal_address.locality,
     )),
   )
 }
@@ -98,7 +99,10 @@ Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
 #let submitter = input.list_submitter
 #label_table(values: (
   ("Namme en foarletters", [#submitter.last_name, #submitter.initials]),
-  ("Postadres, postkoade en plak", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),
+  (
+    "Postadres, postkoade en plak",
+    [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
+  ),
   ("Datum", fill_in()),
   ("Hantekening", fill_in(height: 4em)),
 ))

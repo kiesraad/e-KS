@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, conf, date, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono
 
 #let input = json("./input.json")
 
@@ -30,10 +30,11 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
 
 
 = Kandidaten op de lijst
-#enumerated_table(
-  columns: (1fr, 1fr, 1fr, 1fr),
-  headers: ("naam", "voorletters", "geboortedatum", "woonplaats"),
+#column_table(
+  columns: (auto, 1fr, 1fr, 1fr, 1fr),
+  headers: ("", "naam", "voorletters", "geboortedatum", "woonplaats"),
   values: input.candidates.map(c => (
+    [#c.position],
     c.last_name,
     c.initials,
     date(c.date_of_birth),
@@ -52,9 +53,9 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
     values: input.substitute_submitter.map(s => (
       s.last_name,
       s.initials,
-      s.postal_address,
-      mono(s.postal_code),
-      s.locality,
+      s.postal_address.street_address,
+      mono(s.postal_address.postal_code),
+      s.postal_address.locality,
     )),
   )
 }
@@ -98,7 +99,10 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 #let submitter = input.list_submitter
 #label_table(values: (
   ("Naam en voorletters", [#submitter.last_name, #submitter.initials]),
-  ("Postadres, postcode en plaats", [#submitter.postal_address, #submitter.postal_code #submitter.locality]),
+  (
+    "Postadres, postcode en plaats",
+    [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
+  ),
   ("Datum", fill_in()),
   ("Handtekening", fill_in(height: 4em)),
 ))

@@ -2,13 +2,18 @@
   "election_name": "de Tweede Kamer der Staten-Generaal",
   "election_type": "TK",
   "electoral_districts": {
-    "tag": "All"
+    "tag": "Some",
+    "districts": [
+      "Provincie Utrecht",
+      "Gemeente Rotterdam",
+      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
+    ]
   },
   "designation": "Een Andere Partij (EAP)",
   "candidates": [
     {
       "last_name": "Akwasi",
-      "initials": "M. (Maria) (v)",
+      "initials": "M. (v)",
       "date_of_birth": {
         "year": 1997,
         "month": 12,
@@ -19,7 +24,7 @@
     },
     {
       "last_name": "Altena",
-      "initials": "J. (Jeroen) (m)",
+      "initials": "J. (m)",
       "date_of_birth": {
         "year": 2001,
         "month": 10,
@@ -30,7 +35,7 @@
     },
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E. (Ingeborg) (v)",
+      "initials": "I.E. (v)",
       "date_of_birth": {
         "year": 2005,
         "month": 3,
@@ -40,27 +45,22 @@
       "position": 3
     }
   ],
-  "previously_seated": false,
-  "list_submitter": {
-    "last_name": "van Smit",
-    "initials": "G.H.",
+  "detailed_candidate": {
+    "candidate": {
+      "last_name": "Akwasi",
+      "initials": "M. (v)",
+      "date_of_birth": "1997-09-01",
+      "locality": "Ede",
+      "position": 1
+    },
+    "bsn": "999999321",
+    "representative": null,
     "postal_address": {
-      "street_address": "Grotestraat 3",
-      "postal_code": "3000AA",
-      "locality": "Rotterdam"
+      "street_address": "Molenweg 37",
+      "postal_code": "1111AA",
+      "locality": "Ede"
     }
   },
-  "substitute_submitter": [
-    {
-      "last_name": "Bronwaßer",
-      "initials": "I.E.",
-      "postal_address": {
-        "street_address": "Grotestraat 3",
-        "postal_code": "3000AA",
-        "locality": "Rotterdam"
-      }
-    }
-  ],
   "timestamp": {
     "year": 2025,
     "month": 8,

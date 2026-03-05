@@ -19,7 +19,8 @@
         "month": 2,
         "day": 1
       },
-      "locality": "Ede"
+      "locality": "Ede",
+      "position": 1
     },
     {
       "last_name": "Akwasi",
@@ -29,7 +30,8 @@
         "month": 12,
         "day": 25
       },
-      "locality": "Ede"
+      "locality": "Ede",
+      "position": 2
     },
     {
       "last_name": "Altena",
@@ -39,7 +41,8 @@
         "month": 10,
         "day": 30
       },
-      "locality": "'s-Gravenhage"
+      "locality": "'s-Gravenhage",
+      "position": 3
     },
     {
       "last_name": "Bronwaßer",
@@ -49,7 +52,8 @@
         "month": 3,
         "day": 5
       },
-      "locality": "Rotterdam"
+      "locality": "Rotterdam",
+      "position": 4
     },
     {
       "last_name": "Jansen-de Groot",
@@ -59,31 +63,38 @@
         "month": 5,
         "day": 9
       },
-      "locality": "Amsterdam"
+      "locality": "Amsterdam",
+      "position": 5
     }
   ],
   "previously_seated": true,
   "list_submitter": {
     "last_name": "van Smit",
     "initials": "G.H.",
-    "postal_address": "Grotestraat 3",
-    "postal_code": "3000AA",
-    "locality": "Rotterdam"
+    "postal_address": {
+      "street_address": "Grotestraat 3",
+      "postal_code": "3000AA",
+      "locality": "Rotterdam"
+    }
   },
   "substitute_submitter": [
     {
       "last_name": "Bronwaßer",
       "initials": "I.E.",
-      "postal_address": "Grotestraat 3",
-      "postal_code": "3000AA",
-      "locality": "Rotterdam"
+      "postal_address": {
+        "street_address": "Grotestraat 3",
+        "postal_code": "3000AA",
+        "locality": "Rotterdam"
+      }
     },
     {
       "last_name": "Jansen-de Groot",
       "initials": "C.",
-      "postal_address": "Molenweg 37",
-      "postal_code": "4000CC",
-      "locality": "Amsterdam"
+      "postal_address": {
+        "street_address": "Molenweg 37",
+        "postal_code": "4000CC",
+        "locality": "Amsterdam"
+      }
     }
   ],
   "timestamp": {

@@ -8,18 +8,18 @@
   "candidates": [
     {
       "last_name": "Akwasi",
-      "initials": "M. (Maria) (v)",
+      "initials": "M. (v)",
       "date_of_birth": {
         "year": 1997,
         "month": 12,
         "day": 25
       },
-      "locality": "Ede",
+      "locality": "Berlin",
       "position": 1
     },
     {
       "last_name": "Altena",
-      "initials": "J. (Jeroen) (m)",
+      "initials": "J. (m)",
       "date_of_birth": {
         "year": 2001,
         "month": 10,
@@ -30,7 +30,7 @@
     },
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E. (Ingeborg) (v)",
+      "initials": "I.E. (v)",
       "date_of_birth": {
         "year": 2005,
         "month": 3,
@@ -40,27 +40,30 @@
       "position": 3
     }
   ],
-  "previously_seated": false,
-  "list_submitter": {
-    "last_name": "van Smit",
-    "initials": "G.H.",
-    "postal_address": {
-      "street_address": "Grotestraat 3",
-      "postal_code": "3000AA",
-      "locality": "Rotterdam"
-    }
-  },
-  "substitute_submitter": [
-    {
-      "last_name": "Bronwaßer",
-      "initials": "I.E.",
+  "detailed_candidate": {
+    "candidate": {
+      "last_name": "Akwasi",
+      "initials": "M. (v)",
+      "date_of_birth": {
+        "year": 1997,
+        "month": 12,
+        "day": 25
+      },
+      "locality": "Berlin",
+      "position": 1
+    },
+    "bsn": "999999321",
+    "representative": {
+      "last_name": "Akwasi",
+      "initials": "T.J.",
       "postal_address": {
-        "street_address": "Grotestraat 3",
-        "postal_code": "3000AA",
-        "locality": "Rotterdam"
+        "street_address": "Molenweg 37",
+        "postal_code": "1111AA",
+        "locality": "Ede"
       }
-    }
-  ],
+    },
+    "postal_address": null
+  },
   "timestamp": {
     "year": 2025,
     "month": 8,

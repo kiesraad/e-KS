@@ -102,7 +102,7 @@ pub fn sample_person(id: PersonId) -> Person {
         first_name: Some("Henk".parse::<FirstName>().expect("first name")),
         date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
         bsn: None,
-        no_bsn_confirmed: false,
+        no_bsn_confirmed: true,
         place_of_residence: Some(
             "Juinen"
                 .parse::<PlaceOfResidence>()
