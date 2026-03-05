@@ -62,6 +62,8 @@ export class ManageCandidateListPage {
         .getByRole("row", { name: candidate })
         .getByRole("button")
         .click();
+
+      await this.page.getByRole("link", { name: "Sluiten" }).first().click();
     }
   }
 

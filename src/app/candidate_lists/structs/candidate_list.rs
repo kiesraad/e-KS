@@ -171,15 +171,19 @@ impl CandidateList {
         })
     }
 
-    pub fn persons_not_on_list(&self, store: &AppStore) -> Result<Vec<Person>, AppError> {
+    pub fn persons_not_on_list(
+        &self,
+        store: &AppStore,
+        include: &[PersonId],
+    ) -> Result<Vec<Person>, AppError> {
         let list = store.get_candidate_list(self.id)?;
         let existing: BTreeMap<PersonId, ()> =
             list.candidates.into_iter().map(|id| (id, ())).collect();
 
         Ok(store
-            .get_persons()
+            .get_sorted_persons()
             .into_iter()
-            .filter(|person| !existing.contains_key(&person.id))
+            .filter(|person| !existing.contains_key(&person.id) || include.contains(&person.id))
             .collect())
     }
 

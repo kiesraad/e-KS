@@ -1,13 +1,13 @@
 //! Convenience helpers for working with `Option<String>` values.
-pub trait OptionStringExt {
+
+pub trait OptionAsStrExt {
     fn as_str_or_empty(&self) -> &str;
-    fn to_string_or_default(&self) -> String;
     fn is_empty_or_none(&self) -> bool {
         self.as_str_or_empty().is_empty()
     }
 }
 
-impl<T> OptionStringExt for Option<T>
+impl<T> OptionAsStrExt for Option<T>
 where
     T: std::ops::Deref<Target = String>,
 {
@@ -16,10 +16,17 @@ where
             .map(|value| value.as_str())
             .unwrap_or_default()
     }
+}
 
-    fn to_string_or_default(&self) -> String {
-        self.as_deref()
-            .map(|value| value.to_string())
-            .unwrap_or_default()
+pub trait OptionStringExt {
+    fn to_string_or_default(self) -> String;
+}
+
+impl<T> OptionStringExt for Option<T>
+where
+    T: std::fmt::Display,
+{
+    fn to_string_or_default(self) -> String {
+        self.map(|value| value.to_string()).unwrap_or_default()
     }
 }

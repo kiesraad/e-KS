@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, OptionStringExt, PoliticalGroupId,
+    AppError, AppEvent, AppStore, OptionAsStrExt, PoliticalGroupId,
     common::{DisplayName, LegalName},
 };
 use serde::{Deserialize, Serialize};

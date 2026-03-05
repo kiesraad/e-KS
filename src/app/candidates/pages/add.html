@@ -15,6 +15,9 @@
                id="search"
                autofocus />
       </p>
+      <input type="hidden"
+             name="added_position"
+             value="{{ form.data.added_position }}" />
       {% include "candidates/components/add_table.html" %}
     {% endif %}
   </div>

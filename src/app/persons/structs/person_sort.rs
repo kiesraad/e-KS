@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{OptionStringExt, persons::Person};
+use crate::{OptionAsStrExt, persons::Person};
 
 #[derive(Default, Clone, Copy, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -16,18 +16,7 @@ pub enum PersonSort {
 
 pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::cmp::Ordering {
     match sort_field {
-        PersonSort::LastName => a
-            .name
-            .last_name
-            .cmp(&b.name.last_name)
-            .then_with(|| {
-                a.name
-                    .last_name_prefix
-                    .as_str_or_empty()
-                    .cmp(b.name.last_name_prefix.as_str_or_empty())
-            })
-            .then_with(|| a.name.initials.cmp(&b.name.initials))
-            .then_with(|| a.id.cmp(&b.id)),
+        PersonSort::LastName => a.name.cmp(&b.name),
         PersonSort::FirstName => a
             .first_name
             .as_str_or_empty()
@@ -55,6 +44,21 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .updated_at
             .cmp(&b.updated_at)
             .then_with(|| a.id.cmp(&b.id)),
+    }
+}
+
+impl PartialOrd for Person {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for Person {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.name
+            .cmp(&other.name)
+            .then_with(|| self.place_of_residence.cmp(&other.place_of_residence))
+            .then_with(|| self.id.cmp(&other.id))
     }
 }
 
@@ -122,7 +126,7 @@ mod tests {
         b.name.initials = "A.A.".parse::<Initials>().expect("initials");
         assert_eq!(
             compare_persons(&a, &b, &PersonSort::LastName),
-            Ordering::Less
+            Ordering::Equal
         );
     }
 

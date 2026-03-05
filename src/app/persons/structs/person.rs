@@ -14,7 +14,7 @@ use crate::{
 
 id_newtype!(pub struct PersonId);
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub struct Person {
     pub id: PersonId,
     pub name: FullName,
@@ -35,7 +35,7 @@ pub struct Person {
     pub updated_at: UtcDateTime,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Representative {
     pub name: FullName,
     pub address: DutchAddress,
