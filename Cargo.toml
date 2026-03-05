@@ -72,7 +72,7 @@ secrecy = "0.10.3" # 89M downloads (Tony Arcieri)
 
 # tweedegolf
 memory-serve = { version = "2.0.0", optional = true }
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.5.1", optional = true }
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.5.2", optional = true }
 validate = { path = "validate" }
 
 [build-dependencies]

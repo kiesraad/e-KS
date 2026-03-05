@@ -4221,8 +4221,8 @@ dependencies = [
 
 [[package]]
 name = "typst-webservice"
-version = "0.5.1"
-source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.5.1#4f148da96f519df690d4f958e2808bf042cbc1b8"
+version = "0.5.2"
+source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.5.2#1a30583887ad65b3a2ca7ca7b748b1e51fc99af8"
 dependencies = [
  "async_zip",
  "axum",
@@ -4696,7 +4696,7 @@ version = "0.1.11"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "c2a7b1c03c876122aa43f3020e6c3c3ee5c05081c9a00739faf7503aeba10d22"
 dependencies = [
- "windows-sys 0.61.2",
+ "windows-sys 0.48.0",
 ]
 
 [[package]]
