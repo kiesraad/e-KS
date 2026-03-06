@@ -26,6 +26,18 @@ impl ElectoralDistricts {
             )
         }
     }
+
+    pub fn to_string(&self) -> String {
+        match self {
+            ElectoralDistricts::All => "*".to_string(),
+            ElectoralDistricts::Some(districts) => districts
+                    .iter()
+                    .map(|d| d.get(..2))
+                    .filter_map(|d| d)
+                    .collect::<Vec<_>>()
+                    .join("-"),
+        }
+    }
 }
 
 #[cfg(test)]

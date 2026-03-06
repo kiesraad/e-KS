@@ -2,8 +2,11 @@ use crate::{
     AppError, AppStore, Config, Context,
     candidate_lists::FullCandidateList,
     core::PdfZip,
-    submit::structs::typst_candidate::ordered_candidates,
-    submit::{H9, pages::DownloadH9Path},
+    submit::{
+        H9,
+        pages::DownloadH9Path,
+        structs::{electoral_districts::ElectoralDistricts, typst_candidate::ordered_candidates},
+    },
 };
 use axum::{extract::State, response::IntoResponse};
 
@@ -27,8 +30,14 @@ pub async fn gen_h9(
         )?;
         h9s.push(h9_model);
     }
+    let district_name = if h9s.is_empty() {
+        ElectoralDistricts::Some(vec![]).to_string()
+    } else {
+        h9s[0].electoral_districts.to_string()
+    };
+    dbg!(&district_name);
     PdfZip {
-        filename: path.filename(),
+        filename: path.filename(district_name),
         pdfs: h9s,
     }
     .generate(config.typst_url)

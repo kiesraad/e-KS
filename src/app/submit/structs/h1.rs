@@ -29,7 +29,7 @@ impl Pdf for H1 {
     }
 
     fn filename(&self) -> String {
-        format!("model-h1-{}.pdf", self.locale)
+        format!("model-h1-{}-({}).pdf", self.locale, self.electoral_districts.to_string())
     }
 }
 

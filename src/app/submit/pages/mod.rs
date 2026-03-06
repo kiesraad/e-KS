@@ -27,8 +27,8 @@ pub struct DownloadH9Path {
 }
 
 impl DownloadH9Path {
-    pub fn filename(&self) -> String {
-        self.to_string().split("/").last().unwrap().to_string()
+    pub fn filename(&self, district_name: String) -> String {
+    format!("model-h9-{}-({}).zip", self.locale, district_name) 
     }
 }
 

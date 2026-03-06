@@ -1,4 +1,4 @@
-mod electoral_districts;
+pub mod electoral_districts;
 pub mod h1;
 pub mod h9;
 pub mod typst_candidate;

@@ -15,7 +15,7 @@ use crate::{
 pub struct H9<'a> {
     election_name: String,
     election_type: ElectionType,
-    electoral_districts: ElectoralDistricts,
+    pub electoral_districts: ElectoralDistricts,
     designation: String,
     candidates: &'a Vec<TypstCandidate>,
     detailed_candidate: TypstDetailedCandidate,
@@ -30,7 +30,7 @@ impl<'a> Pdf for H9<'a> {
 
     fn filename(&self) -> String {
         format!(
-            "model-h9-{}-{}-({}).pdf",
+            "model-h9-{}-{}-(#{}).pdf",
             self.locale,
             self.detailed_candidate
                 .candidate
