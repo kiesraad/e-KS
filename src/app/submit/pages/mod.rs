@@ -26,6 +26,12 @@ pub struct DownloadH9Path {
     locale: ModelLocale,
 }
 
+impl DownloadH9Path {
+    pub fn filename(&self) -> String {
+        self.to_string().split("/").last().unwrap().to_string()
+    }
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)

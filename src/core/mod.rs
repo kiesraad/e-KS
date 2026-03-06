@@ -14,5 +14,5 @@ pub use config::{Config, get_env};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict};
 pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
-pub use pdf::Pdf;
+pub use pdf::{Pdf, PdfZip};
 pub use templates::HtmlTemplate;

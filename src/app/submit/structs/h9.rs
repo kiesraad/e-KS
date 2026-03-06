@@ -2,28 +2,28 @@ use serde::Serialize;
 
 use crate::{
     AppError, AppStore, ElectionConfig,
-    candidate_lists::FullCandidateList,
+    candidate_lists::CandidateList,
     candidates::Candidate,
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
-        ElectoralDistricts, TypstCandidate, TypstDatetime, typst_candidate::ordered_candidates,
+        ElectoralDistricts, TypstCandidate, TypstDatetime,
         typst_detailed_candidate::TypstDetailedCandidate,
     },
 };
 
 #[derive(Debug, Serialize)]
-pub struct H9 {
+pub struct H9<'a> {
     election_name: String,
     election_type: ElectionType,
     electoral_districts: ElectoralDistricts,
     designation: String,
-    candidates: Vec<TypstCandidate>,
+    candidates: &'a Vec<TypstCandidate>,
     detailed_candidate: TypstDetailedCandidate,
     timestamp: TypstDatetime,
     locale: ModelLocale,
 }
 
-impl Pdf for H9 {
+impl<'a> Pdf for H9<'a> {
     fn typst_template_name(&self) -> String {
         format!("model-h9-{}.typ", self.locale)
     }
@@ -41,13 +41,11 @@ impl Pdf for H9 {
     }
 }
 
-impl H9 {
+impl<'a> H9<'a> {
     pub fn new(
         store: &AppStore,
-        FullCandidateList {
-            list,
-            mut candidates,
-        }: FullCandidateList,
+        candidate_list: &CandidateList,
+        ordered_candidates: &'a Vec<TypstCandidate>,
         candidate: Candidate,
         election: &ElectionConfig,
         locale: ModelLocale,
@@ -55,7 +53,7 @@ impl H9 {
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(&list, election, locale),
+            electoral_districts: ElectoralDistricts::from(&candidate_list, election, locale),
             designation: store
                 .get_political_group()
                 .display_name
@@ -63,7 +61,7 @@ impl H9 {
                     "Missing registered designation from political group",
                 ))?
                 .to_string(),
-            candidates: ordered_candidates(&mut candidates, locale)?,
+            candidates: ordered_candidates,
             detailed_candidate: TypstDetailedCandidate::try_from(&candidate, locale)?,
             timestamp: TypstDatetime::now(),
             locale,

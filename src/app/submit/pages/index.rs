@@ -13,8 +13,10 @@ use super::SubmitPath;
 
 struct SubmitCandidateList {
     list: CandidateList,
-    download_path_nl: String,
-    download_path_fry: String,
+    download_h1_path_nl: String,
+    download_h1_path_fry: String,
+    download_h9_path_nl: String,
+    download_h9_path_fry: String,
     person_count: usize,
     duplicate_districts: Vec<ElectoralDistrict>,
     can_download: bool,
@@ -46,16 +48,24 @@ pub async fn index(
             };
 
             Ok(SubmitCandidateList {
-                download_path_nl: super::DownloadH1Path {
+                download_h1_path_nl: super::DownloadH1Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Nl,
                 }
                 .to_string(),
-                download_path_fry: super::DownloadH1Path {
+                download_h1_path_fry: super::DownloadH1Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Fry,
                 }
                 .to_string(),
+                download_h9_path_nl: super::DownloadH9Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Nl
+                }.to_string(),
+                download_h9_path_fry: super::DownloadH9Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Fry
+                }.to_string(),
                 list: summary.list,
                 person_count: summary.person_count,
                 duplicate_districts: summary.duplicate_districts,

@@ -146,6 +146,12 @@ impl From<reqwest::Error> for AppError {
     }
 }
 
+impl From<serde_json::Error> for AppError {
+    fn from(_: serde_json::Error) -> Self {
+        AppError::InternalServerError
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
