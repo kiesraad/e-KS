@@ -8,7 +8,7 @@ gender:
 general_information: Basisgegevens
 general_information_description:
   basic: Vul gegevens van de politieke groepering in
-  submitter: Vul gegevens van de lijstinleveraar in
+  submitter: Vul gegevens van de lijstinleveraar(s) in
 home: Start
 keywords: "Kiesraad, kandidaatstelling, verkiezingen, Nederland"
 languages:
@@ -21,7 +21,7 @@ steps: Stappen
 submit: Afronden
 submit_description:
   download_documents: Download alle benodigde documenten
-  submit: Lever de kandidatenlijst in
+  submit: Lever de kandidatenlijst(en) in
   view_follow_up_steps: Bekijk de vervolgstappen
 submit_instruction: Doe dit uiterlijk op de dag van kandidaatstelling
 title: Kiesraad - Kandidaatstelling

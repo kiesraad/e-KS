@@ -8,7 +8,7 @@ gender:
 general_information: General Information
 general_information_description:
   basic: Provide information about the political group
-  submitter: Provide information about the submitter of the list
+  submitter: Provide information about the submitter(s) of the list
 home: Home
 keywords: "Kiesraad, kandidaatstelling, elections, Netherlands"
 languages:
@@ -21,7 +21,7 @@ steps: Steps
 submit: Finalize
 submit_description:
   download_documents: Download all required documents
-  submit: Submit the candidate lists
+  submit: Submit the candidate list(s)
   view_follow_up_steps: View follow-up steps
 submit_instruction: Perform this step at the latest on nomination day
 title: Kiesraad - Kandidaatstelling
