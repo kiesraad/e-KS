@@ -18,7 +18,7 @@ use super::AddCandidatePath;
 struct AddExistingPersonTemplate {
     full_list: FullCandidateList,
     persons: Vec<Person>,
-    candidates: HashMap<PersonId, usize>,
+    added_candidates: HashMap<PersonId, usize>,
     form: FormData<AddPersonForm>,
     show_add_all: bool,
 }
@@ -33,7 +33,7 @@ impl AddExistingPersonTemplate {
         form: FormData<AddPersonForm>,
     ) -> Result<Self, AppError> {
         let full_list = FullCandidateList::get(store, list_id)?;
-        let candidates = match added_position {
+        let added_candidates = match added_position {
             Some(pos) => full_list
                 .candidates
                 .iter()
@@ -42,14 +42,14 @@ impl AddExistingPersonTemplate {
                 .collect::<HashMap<PersonId, usize>>(),
             None => HashMap::new(),
         };
-        let candidate_ids = candidates.keys().cloned().collect::<Vec<_>>();
+        let candidate_ids = added_candidates.keys().cloned().collect::<Vec<_>>();
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
 
         Ok(Self {
             show_add_all: persons.len() != candidate_ids.len(),
             full_list,
             persons,
-            candidates,
+            added_candidates,
             form,
         })
     }

@@ -9,9 +9,9 @@
   </thead>
   <tbody>
     {% for person in persons %}
-      <tr class="clickable {% if candidates.contains_key(&person.id) %}remove-candidate{% else %}add-candidate{% endif %}">
+      <tr class="clickable {% if added_candidates.contains_key(&person.id) %}remove-candidate{% else %}add-candidate{% endif %}">
         <td>
-          {% if let Some(position) = candidates.get(&person.id) %}
+          {% if let Some(position) = added_candidates.get(&person.id) %}
             <span class="position-badge">{{ position }}</span>
           {% else %}
             <span class="person-badge">&nbsp;</span>
@@ -26,7 +26,7 @@
           {% if let Some(place_of_residence) = person.place_of_residence %}{{ place_of_residence }}{% endif %}
         </td>
         <td>
-          {% if candidates.contains_key(&person.id) %}
+          {% if added_candidates.contains_key(&person.id) %}
             <button type="submit" name="remove_person_id" value="{{ person.id }}">
               <span>{{ "action.remove"|trans }}</span>
             </button>
