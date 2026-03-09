@@ -71,9 +71,14 @@ async fn handle_add_candidate_form(
         }
 
         let persons_not_on_list = full_list.list.persons_not_on_list(store, &[])?;
-        for person in persons_not_on_list {
-            full_list.list.append_candidate(store, person.id).await?;
-        }
+        let person_ids = persons_not_on_list
+            .iter()
+            .map(|person| person.id)
+            .collect::<Vec<_>>();
+        let mut all_persons = full_list.list.candidates.clone();
+        all_persons.extend(person_ids);
+
+        full_list.list.update_order(store, &all_persons).await?;
     }
 
     // If the person is not already on the list, add them.
