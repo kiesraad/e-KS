@@ -10,7 +10,7 @@ export default function setupRememberScroll() {
   // on page load, check if there is a stored scroll position for the current url and scroll to it
   const storedScrollY = localStorage.getItem(globalThis.location.href);
   if (storedScrollY) {
-    window.scrollTo(0, parseInt(storedScrollY, 10));
+    window.scrollTo(0, Number.parseInt(storedScrollY, 10));
   }
 
   // on form submit, store current scroll position in local storage, given the current url as key

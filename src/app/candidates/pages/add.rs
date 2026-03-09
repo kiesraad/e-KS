@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::{CandidateListId, FullCandidateList},
-    candidates::AddPersonForm,
+    candidates::{AddPersonAction, AddPersonForm},
     filters,
     form::FormData,
     persons::{Person, PersonId},
@@ -20,6 +20,7 @@ struct AddExistingPersonTemplate {
     persons: Vec<Person>,
     candidates: HashMap<PersonId, usize>,
     form: FormData<AddPersonForm>,
+    show_add_all: bool,
 }
 
 impl AddExistingPersonTemplate {
@@ -45,6 +46,7 @@ impl AddExistingPersonTemplate {
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
 
         Ok(Self {
+            show_add_all: persons.len() != candidate_ids.len(),
             full_list,
             persons,
             candidates,
@@ -90,6 +92,21 @@ pub async fn add_person_to_candidate_list(
         )
         .into_response()),
         Ok(mut add_person) => {
+            // Add all candidates to the list if the "add all" button was clicked.
+            if let Some(action) = add_person.action
+                && action == AddPersonAction::AddAll
+            {
+                // Enable showing the newly added candidate as already added to the list in the template.
+                if add_person.added_position.is_none() {
+                    add_person.added_position = Some(full_list.list.candidates.len() + 1);
+                }
+
+                let persons_not_on_list = full_list.list.persons_not_on_list(&store, &[])?;
+                for person in persons_not_on_list {
+                    full_list.list.append_candidate(&store, person.id).await?;
+                }
+            }
+
             // If the person is not already on the list, add them.
             if let Some(person_id) = add_person.person_id
                 && !full_list.list.candidates.contains(&person_id)
@@ -176,6 +193,7 @@ mod tests {
             person_id: person.id.to_string(),
             remove_person_id: String::new(),
             added_position: String::new(),
+            action: String::new(),
             csrf_token,
         };
 
@@ -218,6 +236,7 @@ mod tests {
             person_id: new_person.id.to_string(),
             remove_person_id: String::new(),
             added_position: String::new(),
+            action: String::new(),
             csrf_token,
         };
 
@@ -243,6 +262,53 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn add_person_to_candidate_list_add_all_adds_missing_persons() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        let existing_person = sample_person_with_last_name(PersonId::new(), "Adams");
+        let person_one = sample_person_with_last_name(PersonId::new(), "Bakker");
+        let person_two = sample_person_with_last_name(PersonId::new(), "Jansen");
+
+        existing_person.create(&store).await?;
+        person_one.create(&store).await?;
+        person_two.create(&store).await?;
+        list.candidates = vec![existing_person.id];
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_tokens.issue().value;
+        let form = AddPersonForm {
+            person_id: String::new(),
+            remove_person_id: String::new(),
+            added_position: String::new(),
+            action: AddPersonAction::AddAll.to_string(),
+            csrf_token,
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            context,
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 3);
+        assert!(full_list.contains(existing_person.id));
+        assert!(full_list.contains(person_one.id));
+        assert!(full_list.contains(person_two.id));
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn add_person_to_candidate_list_invalid_csrf_does_not_add() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
@@ -257,6 +323,7 @@ mod tests {
             person_id: person.id.to_string(),
             remove_person_id: String::new(),
             added_position: String::new(),
+            action: String::new(),
             csrf_token: TokenValue("invalid".to_string()),
         };
 
@@ -298,6 +365,7 @@ mod tests {
             person_id: String::new(),
             remove_person_id: remove_person.id.to_string(),
             added_position: String::new(),
+            action: String::new(),
             csrf_token,
         };
 
