@@ -39,20 +39,20 @@
   </div>
 </div>
 <div class="form-row">
-  <div class="form-field {% if form.data.bsn.is_empty() && !form.data.no_bsn_confirmed && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.bsn.is_empty() && form.data.bsn != crate::common::BSN_NONE_CONFIRMATION_STR && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="bsn"
            id="bsn"
-           value="{{ form.data.bsn }}" />
-    {% if form.data.bsn.is_empty() && should_warn %}
+           value="{% if form.data.bsn != crate::common::BSN_NONE_CONFIRMATION_STR %}{{ form.data.bsn }}{% endif %}" />
+    {% if (form.data.bsn.is_empty() || form.data.bsn == crate::common::BSN_NONE_CONFIRMATION_STR) && should_warn %}
       <label for="no_bsn_confirmed" class="no_bsn_confirmed">
         <input type="checkbox"
-               name="no_bsn_confirmed"
+               name="bsn"
                id="no_bsn_confirmed"
-               value="true"
-               {% if form.data.no_bsn_confirmed %}checked{% endif %} />
+               value="{{ crate::common::BSN_NONE_CONFIRMATION_STR }}"
+               {% if form.data.bsn == crate::common::BSN_NONE_CONFIRMATION_STR %}checked{% endif %} />
         <span>{{ "person.no_bsn_confirm"|trans }}</span>
       </label>
     {% endif %}

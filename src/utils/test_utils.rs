@@ -6,9 +6,9 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
-        CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName, FullName,
-        FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
-        LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
+        BsnOrNoneConfirmed, CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm,
+        FirstName, FullName, FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials,
+        LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonForm, PersonId, Representative, RepresentativeForm},
@@ -101,8 +101,7 @@ pub fn sample_person(id: PersonId) -> Person {
         name: sample_full_name("Jansen", None, "H.A.H.A."),
         first_name: Some("Henk".parse::<FirstName>().expect("first name")),
         date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
-        bsn: None,
-        no_bsn_confirmed: false,
+        bsn: BsnOrNoneConfirmed::None,
         place_of_residence: Some(
             "Juinen"
                 .parse::<PlaceOfResidence>()
@@ -127,8 +126,7 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
         name: sample_full_name_form("Jansen", "", "H.A.H.A."),
         first_name: "Henk".to_string(),
         date_of_birth: "01-02-1990".to_string(),
-        bsn: "".to_string(),
-        no_bsn_confirmed: false,
+        bsn: "none-confirmed".to_string(),
         place_of_residence: "Juinen".to_string(),
         country_of_residence: "NL".to_string(),
         csrf_token: csrf_token.clone(),

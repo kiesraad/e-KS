@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppError, AppEvent, AppStore,
     common::{
-        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
-        UtcDateTime,
+        BsnOrNoneConfirmed, CountryCode, Date, DutchAddress, FirstName, FullName, Gender,
+        PlaceOfResidence, UtcDateTime,
     },
     core::AnyLocale,
     id_newtype,
@@ -22,8 +22,7 @@ pub struct Person {
     pub first_name: Option<FirstName>,
     pub gender: Option<Gender>,
 
-    pub bsn: Option<Bsn>,
-    pub no_bsn_confirmed: bool,
+    pub bsn: BsnOrNoneConfirmed,
     pub date_of_birth: Option<Date>,
 
     pub place_of_residence: Option<PlaceOfResidence>,
@@ -94,7 +93,7 @@ impl Person {
     pub fn is_personal_info_complete(&self) -> bool {
         self.name.is_complete()
             && self.date_of_birth.is_some()
-            && (self.bsn.is_some() || self.no_bsn_confirmed)
+            && self.bsn.is_some()
             && self.place_of_residence.is_some()
             && self.country_of_residence.is_some()
     }
@@ -391,7 +390,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         assert!(!person.is_personal_info_complete());
 
-        person.bsn = Some("999995972".parse().expect("bsn"));
+        person.bsn = BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
         assert!(person.is_personal_info_complete());
 
         person.date_of_birth = None;
@@ -413,11 +412,11 @@ mod tests {
     #[test]
     fn person_complete_handles_dutch_and_non_dutch_requirements() {
         let mut dutch_person = sample_person(PersonId::new());
-        dutch_person.bsn = Some("999995972".parse().expect("bsn"));
+        dutch_person.bsn = BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
         assert!(dutch_person.is_complete());
 
         let mut non_dutch_person = sample_person(PersonId::new());
-        non_dutch_person.bsn = Some("999995972".parse().expect("bsn"));
+        non_dutch_person.bsn = BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
         non_dutch_person.country_of_residence = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
         assert!(!non_dutch_person.is_complete());

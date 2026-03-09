@@ -9,9 +9,10 @@ mod structs;
 
 pub use forms::{DutchAddressForm, FullNameForm};
 pub use structs::{
-    Bsn, COUNTRY_CODES, CountryCode, Date, DisplayName, DutchAddress, FirstName, FormAction,
-    FullName, Gender, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
-    LegalName, Locality, PlaceOfResidence, PostalCode, StreetName, UtcDateTime,
+    BSN_NONE_CONFIRMATION_STR, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode, Date,
+    DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,
+    HouseNumberAddition, Initials, LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence,
+    PostalCode, StreetName, UtcDateTime,
 };
 
 pub use pages::{IndexPath, SwitchLanguagePath, not_found, router};

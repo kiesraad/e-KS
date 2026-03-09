@@ -17,7 +17,7 @@ mod postal_code;
 mod utc_date_time;
 
 pub use address::DutchAddress;
-pub use bsn::Bsn;
+pub use bsn::{BSN_NONE_CONFIRMATION_STR, Bsn, BsnOrNoneConfirmed};
 pub use constrained_string::{FirstName, LegalName, Locality, PlaceOfResidence, StreetName};
 pub use countries::COUNTRY_CODES;
 pub use country_code::CountryCode;
