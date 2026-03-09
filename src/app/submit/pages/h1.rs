@@ -22,12 +22,7 @@ pub async fn gen_h1(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
-        candidate_lists::CandidateListId,
-        core::ModelLocale,
-        list_submitters::ListSubmitterId,
-        persons::PersonId,
-        test_utils::{sample_candidate_list, sample_list_submitter, sample_person},
+        AppStore, Context, candidate_lists::CandidateListId, core::ModelLocale, list_submitters::ListSubmitterId, persons::PersonId, submit::pages::tests::setup_typst_webservice_stub, test_utils::{sample_candidate_list, sample_list_submitter, sample_person}
     };
     use axum::{
         Router,
@@ -89,21 +84,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
-        let router = Router::new().route(
-            "/render-pdf/model-h1-nl.typ/{file_name}",
-            get(|file_name: String| async { file_name }),
-        );
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let server = tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str());
-        let config = Config {
-            storage_url: "memory:",
-            typst_url,
-        };
+        let (server, config) = setup_typst_webservice_stub().await;
 
         let response = gen_h1(
             DownloadH1Path {
