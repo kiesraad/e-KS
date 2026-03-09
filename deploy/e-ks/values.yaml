@@ -25,7 +25,8 @@ db:
   erase: false
 
   # connection parameters
-  host: postgresql.postgresql.svc.cluster.local
+  host: postgres-cluster-rw
   port: 5432
-  user: postgres
+  user: eks
+  database: eks
   password: "supersecurepassword"

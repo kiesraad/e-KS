@@ -1,0 +1,12 @@
+{{ range .Values.users }}
+kind: Secret
+type: kubernetes.io/basic-auth
+metadata:
+  name: "eks-db-password-{{ .name }}"
+  labels:
+    cnpg.io/reload: "true"
+apiVersion: v1
+stringData:
+  username: {{ .name | quote }}
+  password: {{ .passwordHash | quote }}
+{{ end }}

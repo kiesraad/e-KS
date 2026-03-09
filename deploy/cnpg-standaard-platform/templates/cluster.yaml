@@ -1,0 +1,30 @@
+apiVersion: postgresql.cnpg.io/v1
+kind: Cluster
+metadata:
+  name: postgres-cluster
+spec:
+  instances: {{ .Values.instances }}
+
+  managed:
+    roles:
+    {{- range .Values.users }}
+      - name: {{ .name }}
+        login: true
+        passwordSecret:
+          name: "eks-db-password-{{ .name }}"
+    {{- end }}
+
+  storage:
+    size: 1Gi
+    storageClass: encrypted-csi
+
+  affinity: # Postgres instances to run on different Kubernetes nodes - https://cloudnative-pg.io/documentation/current/api_reference/#affinityconfiguration
+    enablePodAntiAffinity: true
+    podAntiAffinityType: preferred
+    topologyKey: kubernetes.io/hostname
+
+  inheritedMetadata: # Defines which labels are to be inherited from Cluster to pods etc.
+    labels:
+      app: database
+      tier: zeer-vertrouwd # Partition database in separate tier - https://www.noraonline.nl/wiki/Beschouwingsmodel_zonering
+      egress-frontoffice-policy: allow
