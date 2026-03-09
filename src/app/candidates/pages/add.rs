@@ -5,7 +5,7 @@ use std::collections::HashMap;
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::{CandidateListId, FullCandidateList},
-    candidates::{AddPersonAction, AddPersonForm},
+    candidates::{AddPerson, AddPersonAction, AddPersonForm},
     filters,
     form::FormData,
     persons::{Person, PersonId},
@@ -55,6 +55,47 @@ impl AddExistingPersonTemplate {
     }
 }
 
+/// Handles the logic for adding a person to the candidate list based on the submitted form data.
+async fn handle_add_candidate_form(
+    add_person: &mut AddPerson,
+    full_list: &mut FullCandidateList,
+    store: &AppStore,
+) -> Result<(), AppError> {
+    // Add all candidates to the list if the "add all" button was clicked.
+    if let Some(action) = add_person.action
+        && action == AddPersonAction::AddAll
+    {
+        // Enable showing the newly added candidate as already added to the list in the template.
+        if add_person.added_position.is_none() {
+            add_person.added_position = Some(full_list.list.candidates.len() + 1);
+        }
+
+        let persons_not_on_list = full_list.list.persons_not_on_list(store, &[])?;
+        for person in persons_not_on_list {
+            full_list.list.append_candidate(store, person.id).await?;
+        }
+    }
+
+    // If the person is not already on the list, add them.
+    if let Some(person_id) = add_person.person_id
+        && !full_list.list.candidates.contains(&person_id)
+    {
+        full_list.list.append_candidate(store, person_id).await?;
+
+        // Enable showing the newly added candidate as already added to the list in the template.
+        if add_person.added_position.is_none() {
+            add_person.added_position = Some(full_list.list.candidates.len());
+        }
+    }
+
+    // If the person is on the list, delete the person
+    if let Some(person_id) = add_person.remove_person_id {
+        full_list.list.remove_candidate(store, person_id).await?;
+    }
+
+    Ok(())
+}
+
 pub async fn add_existing_person(
     AddCandidatePath { list_id }: AddCandidatePath,
     context: Context,
@@ -92,37 +133,7 @@ pub async fn add_person_to_candidate_list(
         )
         .into_response()),
         Ok(mut add_person) => {
-            // Add all candidates to the list if the "add all" button was clicked.
-            if let Some(action) = add_person.action
-                && action == AddPersonAction::AddAll
-            {
-                // Enable showing the newly added candidate as already added to the list in the template.
-                if add_person.added_position.is_none() {
-                    add_person.added_position = Some(full_list.list.candidates.len() + 1);
-                }
-
-                let persons_not_on_list = full_list.list.persons_not_on_list(&store, &[])?;
-                for person in persons_not_on_list {
-                    full_list.list.append_candidate(&store, person.id).await?;
-                }
-            }
-
-            // If the person is not already on the list, add them.
-            if let Some(person_id) = add_person.person_id
-                && !full_list.list.candidates.contains(&person_id)
-            {
-                full_list.list.append_candidate(&store, person_id).await?;
-
-                // Enable showing the newly added candidate as already added to the list in the template.
-                if add_person.added_position.is_none() {
-                    add_person.added_position = Some(full_list.list.candidates.len());
-                }
-            }
-
-            // If the person is on the list, delete the person
-            if let Some(person_id) = add_person.remove_person_id {
-                full_list.list.remove_candidate(&store, person_id).await?;
-            }
+            handle_add_candidate_form(&mut add_person, &mut full_list, &store).await?;
 
             Ok(HtmlTemplate(
                 AddExistingPersonTemplate::from(
