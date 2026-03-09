@@ -25,7 +25,9 @@
           {{ candidate.person|initials_as_printed_on_list }}
         </td>
         <td>
-          {% if let Some(place_of_residence) = candidate.person.place_of_residence %}{{ place_of_residence }}{% endif %}
+          {% if let Some(place_of_residence) = candidate.person.personal_data.place_of_residence %}
+            {{ place_of_residence }}
+          {% endif %}
         </td>
         <td>
           <a href="{{ candidate.update_position_path() }}"

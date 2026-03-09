@@ -149,9 +149,11 @@ mod tests {
     #[test]
     fn person_after_create_path_depends_on_residence() {
         let mut dutch = sample_person(PersonId::new());
-        dutch.country_of_residence = Some("NL".parse::<CountryCode>().expect("country code"));
+        dutch.personal_data.country_of_residence =
+            Some("NL".parse::<CountryCode>().expect("country code"));
         let mut foreign = sample_person(PersonId::new());
-        foreign.country_of_residence = Some("BE".parse::<CountryCode>().expect("country code"));
+        foreign.personal_data.country_of_residence =
+            Some("BE".parse::<CountryCode>().expect("country code"));
 
         let expected_dutch = format!("/persons/{}/address?&initial=true&success=true", dutch.id);
         let expected_foreign = format!(

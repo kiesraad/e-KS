@@ -8,6 +8,7 @@ use axum::{
     routing::get,
 };
 use tower_http::set_header::SetResponseHeaderLayer;
+
 #[cfg(feature = "http-logging")]
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 

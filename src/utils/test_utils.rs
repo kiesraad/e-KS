@@ -11,7 +11,9 @@ use crate::{
         LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
-    persons::{AddressForm, Person, PersonForm, PersonId, Representative, RepresentativeForm},
+    persons::{
+        AddressForm, Person, PersonId, PersonalDataForm, Representative, RepresentativeForm,
+    },
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
 
@@ -33,13 +35,42 @@ pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
         .map(|token| TokenValue(token.to_string()))
 }
 
-fn sample_full_name(last_name: &str, last_name_prefix: Option<&str>, initials: &str) -> FullName {
+pub fn sample_full_name(
+    last_name: &str,
+    last_name_prefix: Option<&str>,
+    initials: &str,
+) -> FullName {
     FullName {
-        last_name: last_name.parse::<LastName>().expect("last name"),
-        last_name_prefix: last_name_prefix
-            .map(|prefix| prefix.parse::<LastNamePrefix>().expect("last name prefix")),
-        initials: initials.parse::<Initials>().expect("initials"),
+        last_name: parse_last_name(last_name),
+        last_name_prefix: last_name_prefix.map(parse_last_name_prefix),
+        initials: parse_initials(initials),
     }
+}
+
+pub fn parse_last_name(value: &str) -> LastName {
+    value.parse::<LastName>().expect("last name")
+}
+
+pub fn parse_last_name_prefix(value: &str) -> LastNamePrefix {
+    value.parse::<LastNamePrefix>().expect("last name prefix")
+}
+
+pub fn parse_initials(value: &str) -> Initials {
+    value.parse::<Initials>().expect("initials")
+}
+
+pub fn parse_first_name(value: &str) -> FirstName {
+    value.parse::<FirstName>().expect("first name")
+}
+
+pub fn parse_place_of_residence(value: &str) -> PlaceOfResidence {
+    value
+        .parse::<PlaceOfResidence>()
+        .expect("place of residence")
+}
+
+pub fn parse_country_code(value: &str) -> CountryCode {
+    value.parse::<CountryCode>().expect("country code")
 }
 
 fn sample_full_name_form(last_name: &str, last_name_prefix: &str, initials: &str) -> FullNameForm {
@@ -97,17 +128,15 @@ pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
 pub fn sample_person(id: PersonId) -> Person {
     Person {
         id,
-        gender: Some(Gender::Female),
         name: sample_full_name("Jansen", None, "H.A.H.A."),
-        first_name: Some("Henk".parse::<FirstName>().expect("first name")),
-        date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
-        bsn: BsnOrNoneConfirmed::None,
-        place_of_residence: Some(
-            "Juinen"
-                .parse::<PlaceOfResidence>()
-                .expect("place of residence"),
-        ),
-        country_of_residence: Some("NL".parse::<CountryCode>().expect("country code")),
+        personal_data: crate::persons::PersonalData {
+            gender: Some(Gender::Female),
+            first_name: Some(parse_first_name("Henk")),
+            date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
+            bsn: BsnOrNoneConfirmed::None,
+            place_of_residence: Some(parse_place_of_residence("Juinen")),
+            country_of_residence: Some(parse_country_code("NL")),
+        },
         address: sample_dutch_address("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
         representative: Representative::default(),
         ..Default::default()
@@ -115,20 +144,31 @@ pub fn sample_person(id: PersonId) -> Person {
 }
 
 pub fn sample_person_with_last_name(id: PersonId, last_name: &str) -> Person {
-    let mut sample = sample_person(id);
-    sample.name.last_name = last_name.parse::<LastName>().expect("last name");
-    sample
+    sample_person_with(id, last_name, None, "H.A.H.A.")
 }
 
-pub fn sample_person_form(csrf_token: &TokenValue) -> PersonForm {
-    PersonForm {
-        gender: "male".to_string(),
+pub fn sample_person_with(
+    id: PersonId,
+    last_name: &str,
+    last_name_prefix: Option<&str>,
+    initials: &str,
+) -> Person {
+    let mut person = sample_person(id);
+    person.name = sample_full_name(last_name, last_name_prefix, initials);
+    person
+}
+
+pub fn sample_person_form(csrf_token: &TokenValue) -> PersonalDataForm {
+    PersonalDataForm {
         name: sample_full_name_form("Jansen", "", "H.A.H.A."),
-        first_name: "Henk".to_string(),
-        date_of_birth: "01-02-1990".to_string(),
-        bsn: "none-confirmed".to_string(),
-        place_of_residence: "Juinen".to_string(),
-        country_of_residence: "NL".to_string(),
+        personal_data: crate::persons::PersonalDataFieldsForm {
+            gender: "male".to_string(),
+            first_name: "Henk".to_string(),
+            date_of_birth: "01-02-1990".to_string(),
+            bsn: "none-confirmed".to_string(),
+            place_of_residence: "Juinen".to_string(),
+            country_of_residence: "NL".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }

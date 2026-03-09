@@ -47,9 +47,9 @@
           data-id="{{ person.id }}">
         <td>{{ person.name.last_name_with_prefix_appended() }}</td>
         <td>{{ person.name.initials }}</td>
-        <td>{{ person.first_name|display }}</td>
+        <td>{{ person.personal_data.first_name|display }}</td>
         <td>{{ person.gender_key() |trans }}</td>
-        <td>{{ person.place_of_residence|display }}</td>
+        <td>{{ person.personal_data.place_of_residence|display }}</td>
         <td>{{ person.updated_at|datetime }}</td>
         <td>
           <a href="{{ person.update_path() }}"

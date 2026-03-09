@@ -4,9 +4,9 @@ use crate::{
     ElectoralDistrict,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
-    common::DutchAddress,
+    common::{DutchAddress, FullName},
     list_submitters::{ListSubmitter, ListSubmitterId},
-    persons::{Person, PersonId, Representative},
+    persons::{Person, PersonId, PersonalData, Representative},
     political_groups::PoliticalGroup,
 };
 
@@ -15,7 +15,17 @@ use crate::{
 pub enum AppEvent {
     UpdatePoliticalGroup(PoliticalGroup),
     CreatePerson(Person),
+    CreatePersonPersonalData {
+        person_id: PersonId,
+        name: FullName,
+        personal_data: PersonalData,
+    },
     UpdatePerson(Person),
+    UpdatePersonPersonalData {
+        person_id: PersonId,
+        name: FullName,
+        personal_data: PersonalData,
+    },
     UpdatePersonAddress {
         person_id: PersonId,
         address: DutchAddress,

@@ -2,8 +2,11 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, candidate_lists::FullCandidateList, filters,
-    form::FormData, persons::PersonForm,
+    AppError, AppStore, Context, Form, HtmlTemplate,
+    candidate_lists::FullCandidateList,
+    filters,
+    form::FormData,
+    persons::{Person, PersonalDataForm},
 };
 
 use super::CreateCandidatePath;
@@ -11,7 +14,7 @@ use super::CreateCandidatePath;
 #[template(path = "candidates/pages/create.html")]
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
-    form: FormData<PersonForm>,
+    form: FormData<PersonalDataForm>,
 }
 
 pub async fn create_person_candidate_list(
@@ -34,7 +37,7 @@ pub async fn create_person_candidate_list_submit(
     context: Context,
     full_list: FullCandidateList,
     store: AppStore,
-    Form(form): Form<PersonForm>,
+    Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.session.csrf_tokens, &store) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -46,7 +49,9 @@ pub async fn create_person_candidate_list_submit(
         )
         .into_response()),
         Ok(person) => {
-            person.create(&store).await?;
+            let person =
+                Person::create_from_personal_data(&store, person.name, person.personal_data)
+                    .await?;
 
             let mut list = full_list.list;
             list.append_candidate(&store, person.id).await?;

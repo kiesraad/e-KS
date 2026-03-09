@@ -107,11 +107,13 @@ impl TypstCandidate {
             last_name: person.name.last_name_with_prefix(),
             initials: person.initials_as_printed_on_list(locale.into()),
             date_of_birth: person
+                .personal_data
                 .date_of_birth
                 .clone()
                 .ok_or(AppError::IncompleteData("Missing birth date for candidate"))?
                 .into(),
             locality: person
+                .personal_data
                 .place_of_residence
                 .clone()
                 .ok_or(AppError::IncompleteData("Missing locality for candidate"))?
@@ -313,7 +315,7 @@ mod tests {
     #[test]
     fn candidate_requires_birth_date() {
         let mut person = sample_person(PersonId::new());
-        person.date_of_birth = None;
+        person.personal_data.date_of_birth = None;
 
         let err = TypstCandidate::try_from(&person, ModelLocale::Nl).unwrap_err();
         assert!(matches!(
@@ -325,7 +327,7 @@ mod tests {
     #[test]
     fn candidate_requires_locality() {
         let mut person = sample_person(PersonId::new());
-        person.place_of_residence = None;
+        person.personal_data.place_of_residence = None;
 
         let err = TypstCandidate::try_from(&person, ModelLocale::Nl).unwrap_err();
         assert!(matches!(

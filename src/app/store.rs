@@ -45,11 +45,36 @@ impl StoreData for AppStoreData {
                 person.updated_at = event_time;
                 self.persons.insert(person.id, person);
             }
+            AppEvent::CreatePersonPersonalData {
+                person_id,
+                name,
+                personal_data,
+            } => {
+                let person = Person {
+                    id: person_id,
+                    name,
+                    personal_data,
+                    updated_at: event_time,
+                    ..Default::default()
+                };
+                self.persons.insert(person_id, person);
+            }
             AppEvent::UpdatePerson(mut person) => {
                 person.updated_at = event_time;
                 let person_id = person.id;
                 self.persons.entry(person_id).and_modify(|existing| {
                     *existing = person;
+                });
+            }
+            AppEvent::UpdatePersonPersonalData {
+                person_id,
+                name,
+                personal_data,
+            } => {
+                self.persons.entry(person_id).and_modify(|existing| {
+                    existing.name = name;
+                    existing.personal_data = personal_data;
+                    existing.updated_at = event_time;
                 });
             }
             AppEvent::UpdatePersonAddress { person_id, address } => {
