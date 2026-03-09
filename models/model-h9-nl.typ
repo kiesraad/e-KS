@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, column_table, conf, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, column_table, conf, fill_in, label_table, mono
 
 #let input = json("./input.json")
 

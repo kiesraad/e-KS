@@ -12,18 +12,18 @@ use crate::{
 };
 
 #[derive(Debug, Serialize)]
-pub struct H9<'a> {
+pub struct H9<'zip> {
     election_name: String,
     election_type: ElectionType,
     pub electoral_districts: ElectoralDistricts,
     designation: String,
-    candidates: &'a Vec<TypstCandidate>,
+    candidates: &'zip Vec<TypstCandidate>,
     detailed_candidate: TypstDetailedCandidate,
     timestamp: TypstDatetime,
     locale: ModelLocale,
 }
 
-impl<'a> Pdf for H9<'a> {
+impl<'zip> Pdf for H9<'zip> {
     fn typst_template_name(&self) -> String {
         format!("model-h9-{}.typ", self.locale)
     }
@@ -41,11 +41,11 @@ impl<'a> Pdf for H9<'a> {
     }
 }
 
-impl<'a> H9<'a> {
+impl<'zip> H9<'zip> {
     pub fn new(
         store: &AppStore,
         candidate_list: &CandidateList,
-        ordered_candidates: &'a Vec<TypstCandidate>,
+        ordered_candidates: &'zip Vec<TypstCandidate>,
         candidate: Candidate,
         election: &ElectionConfig,
         locale: ModelLocale,

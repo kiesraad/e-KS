@@ -35,6 +35,7 @@ mod tests {
         response::IntoResponse,
         routing::get,
     };
+    use regex::Regex;
     use tokio::net::TcpListener;
 
     #[tokio::test]
@@ -89,8 +90,8 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
         let router = Router::new().route(
-            "/render-pdf/model-h1-nl.typ/model-h1-nl.pdf",
-            get(|| async { "pdf" }),
+            "/render-pdf/model-h1-nl.typ/{file_name}",
+            get(|file_name: String| async { file_name }),
         );
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
@@ -125,11 +126,16 @@ mod tests {
                 .expect("content type header"),
             "application/pdf"
         );
-        assert_eq!(
-            headers
-                .get(header::CONTENT_DISPOSITION)
-                .expect("content disposition header"),
-            "attachment; filename=\"model-h1-nl.pdf\""
+        assert!(
+            Regex::new("attachment; filename=\"model-h1-nl-\\((.{2}-)*(.{2})\\)\\.pdf\"")
+                .unwrap()
+                .is_match(
+                    headers
+                        .get(header::CONTENT_DISPOSITION)
+                        .expect("content disposition header")
+                        .to_str()
+                        .unwrap()
+                )
         );
         assert_eq!(
             headers

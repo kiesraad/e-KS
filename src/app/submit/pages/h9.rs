@@ -35,7 +35,7 @@ pub async fn gen_h9(
     } else {
         h9s[0].electoral_districts.to_string()
     };
-    dbg!(&district_name);
+    
     PdfZip {
         filename: path.filename(district_name),
         pdfs: h9s,
