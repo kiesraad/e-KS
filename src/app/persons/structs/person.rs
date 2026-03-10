@@ -97,7 +97,7 @@ impl Person {
     }
 
     pub fn lives_in_nl(&self) -> bool {
-        match &self.personal_data.country_of_residence {
+        match &self.personal_data.country {
             Some(country) => country.as_str() == "NL",
             None => true, // Assume Dutch if no country is set
         }
@@ -118,7 +118,7 @@ impl Person {
             && self.personal_data.date_of_birth.is_some()
             && self.personal_data.bsn.is_some()
             && self.personal_data.place_of_residence.is_some()
-            && self.personal_data.country_of_residence.is_some()
+            && self.personal_data.country.is_some()
     }
 
     pub fn is_representative_complete(&self) -> bool {
@@ -350,13 +350,13 @@ mod tests {
     #[test]
     fn lives_in_nl_defaults_to_true_and_accepts_variants() {
         let mut person = sample_person(PersonId::new());
-        person.personal_data.country_of_residence = None;
+        person.personal_data.country = None;
         assert!(person.lives_in_nl());
 
-        person.personal_data.country_of_residence = Some(parse_country_code("NL"));
+        person.personal_data.country = Some(parse_country_code("NL"));
         assert!(person.lives_in_nl());
 
-        person.personal_data.country_of_residence = Some(parse_country_code("BE"));
+        person.personal_data.country = Some(parse_country_code("BE"));
         assert!(!person.lives_in_nl());
     }
 
@@ -421,7 +421,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         assert!(person.is_representative_complete());
 
-        person.personal_data.country_of_residence = Some("BE".parse().expect("country code"));
+        person.personal_data.country = Some("BE".parse().expect("country code"));
         assert!(!person.is_representative_complete());
 
         person.representative = complete_representative();
@@ -438,8 +438,7 @@ mod tests {
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        non_dutch_person.personal_data.country_of_residence =
-            Some("BE".parse().expect("country code"));
+        non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
         assert!(!non_dutch_person.is_complete());
 

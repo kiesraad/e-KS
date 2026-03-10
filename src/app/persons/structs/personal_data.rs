@@ -11,5 +11,5 @@ pub struct PersonalData {
     pub date_of_birth: Option<Date>,
 
     pub place_of_residence: Option<PlaceOfResidence>,
-    pub country_of_residence: Option<CountryCode>,
+    pub country: Option<CountryCode>,
 }

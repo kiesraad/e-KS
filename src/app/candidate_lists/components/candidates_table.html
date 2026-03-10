@@ -28,6 +28,9 @@
           {% if let Some(place_of_residence) = candidate.person.personal_data.place_of_residence %}
             {{ place_of_residence }}
           {% endif %}
+          {% if let Some(country) = candidate.person.personal_data.country && !candidate.person.lives_in_nl() %}
+            ({{ country }})
+          {% endif %}
         </td>
         <td>
           <a href="{{ candidate.update_position_path() }}"

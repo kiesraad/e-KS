@@ -11,30 +11,14 @@
     <datalist id="locality-suggestions"></datalist>
     {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
-  <div class="form-field form-field-md {% if form.data.personal_data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
-    <label for="country_of_residence">{{ "person.fields.country_of_residence"|trans }}</label>
-    <div class="country-input input-icon">
-      <span class="icon">🌐</span>
-      <input type="text"
-             placeholder=" "
-             name="country_of_residence"
-             id="country_of_residence"
-             value="{{ form.data.personal_data.country_of_residence }}"
-             minlength="2"
-             maxlength="2"
-             required />
-      <ul>
-        {% for country in crate::common::COUNTRY_CODES %}
-          <li data-country="{{ country }}">
-            <span class="icon">{{ country|flag }}</span> {{ country }}
-          </li>
-        {% endfor %}
-      </ul>
-    </div>
-    {% for error in form|error("personal_data.country_of_residence") %}
+  <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">
+    <label for="country">{{ "person.fields.country"|trans }}</label>
+    {% let country_value = form.data.personal_data.country %}
+    {% include "common/components/country_input.html" %}
+    {% for error in form|error("personal_data.country") %}
       <span class="error">{{ error }}</span>
     {% else %}
-      <span class="hint">{{ "person.hints.country_of_residence"|trans }}</span>
+      <span class="hint">{{ "person.hints.country"|trans }}</span>
     {% endfor %}
   </div>
 </div>

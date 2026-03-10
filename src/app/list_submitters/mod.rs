@@ -6,4 +6,4 @@ mod structs;
 
 pub use forms::ListSubmitterForm;
 pub use pages::router;
-pub use structs::{ListSubmitter, ListSubmitterId};
+pub use structs::{ListSubmitter, ListSubmitterData, ListSubmitterId};

@@ -1,0 +1,12 @@
+<div class="form-row">
+  <div class="form-field form-field-md">
+    <label for="country">
+      {{ "person.fields.country"|trans }}
+      <span class="hint">({{ "person.hints.optional"|trans }})</span>
+    </label>
+    {% let country_value = form.data.address.country %}
+    {% include "common/components/country_input.html" %}
+    {% for error in form|error("address.country") %}<span class="error">{{ error }}</span>{% endfor %}
+  </div>
+</div>
+{% include "common/components/address_fields.html" %}

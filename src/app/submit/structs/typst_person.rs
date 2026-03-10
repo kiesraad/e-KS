@@ -1,8 +1,11 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, AppStore, candidate_lists::CandidateList, common::Initials,
-    list_submitters::ListSubmitter, persons::Representative,
+    AppError, AppStore,
+    candidate_lists::CandidateList,
+    common::{Address, Initials},
+    list_submitters::ListSubmitter,
+    persons::Representative,
     submit::structs::typst_postal_address::TypstPostalAddress,
 };
 
@@ -32,7 +35,7 @@ impl TryFrom<&Representative> for TypstPerson {
         Ok(TypstPerson {
             last_name: representative.name.last_name_with_prefix(),
             initials: representative.name.initials.clone(),
-            postal_address: (&representative.address).try_into()?,
+            postal_address: (&Address::Dutch(representative.address.clone())).try_into()?,
         })
     }
 }
@@ -54,9 +57,7 @@ pub fn substitute_submitter_from_ids(
 mod tests {
     use super::*;
     use crate::{
-        common::{LastName, PostalCode},
-        list_submitters::ListSubmitterId,
-        test_utils::sample_list_submitter,
+        common::LastName, list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
     };
 
     #[test]
@@ -70,10 +71,7 @@ mod tests {
             "E.F.".parse::<Initials>().expect("initials")
         );
         assert_eq!(person.postal_address.street_address, "Coolsingel 5B");
-        assert_eq!(
-            person.postal_address.postal_code,
-            "3011 CC".parse::<PostalCode>().expect("postal code")
-        );
+        assert_eq!(person.postal_address.postal_code, "3011CC".to_string());
         assert_eq!(person.postal_address.locality, "Rotterdam");
 
         Ok(())

@@ -53,9 +53,9 @@ De politike groepearring dêr’t jo de kandidatelist fan stypje: *#input.design
     values: input.substitute_submitter.map(s => (
       s.last_name,
       s.initials,
-      s.postal_address.street_address,
-      mono(s.postal_address.postal_code),
-      s.postal_address.locality,
+      s.address_line_1,
+      mono(s.postal_code),
+      s.locality,
     )),
   )
 }
@@ -99,10 +99,7 @@ Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:
 #let submitter = input.list_submitter
 #label_table(values: (
   ("Namme en foarletters", [#submitter.last_name, #submitter.initials]),
-  (
-    "Postadres, postkoade en plak",
-    [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
-  ),
+  ("Postadres, postkoade en plak", [#submitter.address_line_1#linebreak()#submitter.address_line_2]),
   ("Datum", fill_in()),
   ("Hantekening", fill_in(height: 4em)),
 ))

@@ -39,7 +39,8 @@ pub async fn create_list_submitter_submit(
             context,
         )
         .into_response()),
-        Ok(list_submitter) => {
+        Ok(list_submitter_data) => {
+            let list_submitter: ListSubmitter = list_submitter_data.into();
             list_submitter.create(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))

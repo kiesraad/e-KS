@@ -53,9 +53,9 @@ Aanduiding boven de kandidatenlijst: *#input.designation*
     values: input.substitute_submitter.map(s => (
       s.last_name,
       s.initials,
-      s.postal_address.street_address,
-      mono(s.postal_address.postal_code),
-      s.postal_address.locality,
+      s.address_line_1,
+      mono(s.postal_code),
+      s.locality,
     )),
   )
 }
@@ -99,10 +99,7 @@ Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:
 #let submitter = input.list_submitter
 #label_table(values: (
   ("Naam en voorletters", [#submitter.last_name, #submitter.initials]),
-  (
-    "Postadres, postcode en plaats",
-    [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
-  ),
+  ("Postadres, postcode en plaats", [#submitter.address_line_1#linebreak()#submitter.address_line_2]),
   ("Datum", fill_in()),
   ("Handtekening", fill_in(height: 4em)),
 ))

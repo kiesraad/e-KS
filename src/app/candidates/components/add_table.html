@@ -24,6 +24,7 @@
         </td>
         <td>
           {% if let Some(place_of_residence) = person.personal_data.place_of_residence %}{{ place_of_residence }}{% endif %}
+          {% if let Some(country) = person.personal_data.country && !person.lives_in_nl() %}({{ country }}){% endif %}
         </td>
         <td>
           <button type="submit" name="action" value="{{ person.id }}"></button>

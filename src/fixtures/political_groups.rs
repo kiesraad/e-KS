@@ -4,8 +4,8 @@ use crate::{
     AppError, AppStore, PoliticalGroupId,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     common::{
-        DisplayName, DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName,
-        LastNamePrefix, LegalName, Locality, PostalCode, StreetName,
+        Address, DisplayName, DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials,
+        LastName, LastNamePrefix, LegalName, Locality, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterId},
     political_groups::PoliticalGroup,
@@ -58,7 +58,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
             last_name_prefix: None,
             initials: "E.F.".parse::<Initials>().expect("initials"),
         },
-        address: DutchAddress {
+        address: Address::Dutch(DutchAddress {
             locality: Some("Rotterdam".parse::<Locality>().expect("locality")),
             postal_code: Some("3011 CC".parse::<PostalCode>().expect("postal code")),
             house_number: Some("5".parse::<HouseNumber>().expect("house number")),
@@ -67,7 +67,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
                     .expect("house number addition"),
             ),
             street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
-        },
+        }),
     }
     .create(store)
     .await?;
@@ -79,13 +79,13 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
             last_name_prefix: Some("van".parse::<LastNamePrefix>().expect("last name prefix")),
             initials: "G.H.".parse::<Initials>().expect("initials"),
         },
-        address: DutchAddress {
+        address: Address::Dutch(DutchAddress {
             locality: Some("Den Haag".parse::<Locality>().expect("locality")),
             postal_code: Some("2511 DD".parse::<PostalCode>().expect("postal code")),
             house_number: Some("18".parse::<HouseNumber>().expect("house number")),
             house_number_addition: None,
             street_name: Some("Spui".parse::<StreetName>().expect("street name")),
-        },
+        }),
     }
     .create_substitute(store)
     .await?;
@@ -97,7 +97,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
             last_name_prefix: None,
             initials: "I.J.".parse::<Initials>().expect("initials"),
         },
-        address: DutchAddress {
+        address: Address::Dutch(DutchAddress {
             locality: Some("Utrecht".parse::<Locality>().expect("locality")),
             postal_code: Some("3511 AA".parse::<PostalCode>().expect("postal code")),
             house_number: Some("21".parse::<HouseNumber>().expect("house number")),
@@ -106,7 +106,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
                     .expect("house number addition"),
             ),
             street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
-        },
+        }),
     }
     .create_substitute(store)
     .await?;

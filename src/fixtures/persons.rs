@@ -86,7 +86,7 @@ impl PersonRecord {
                     .as_deref()
                     .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
                     .transpose()?,
-                country_of_residence: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+                country: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
             },
             address: DutchAddress {
                 locality,
