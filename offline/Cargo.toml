@@ -1,0 +1,16 @@
+[package]
+name = "eks-offline"
+version = "0.1.0"
+license = "EUPL-1.2"
+publish = false
+edition = "2024"
+
+[build-dependencies]
+tauri-build = { version = "2", features = [] }
+
+[dependencies]
+tauri = { version = "2.10.2", features = [] }
+tokio = { version = "1.49.0", features = ["rt-multi-thread", "net"] }
+eks = { path = "../", default-features = false, features = ["memory-serve", "embed-typst", "fixtures"] }
+tracing = "0.1.44"
+url = "2.5.8"

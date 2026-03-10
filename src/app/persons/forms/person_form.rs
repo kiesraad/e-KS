@@ -117,7 +117,7 @@ impl PersonForm {
 mod tests {
     use super::*;
     use crate::{
-        CsrfTokens,
+        CsrfTokens, OptionAsStrExt,
         common::{DutchAddress, FullName, UtcDateTime},
         form::ValidationError,
         persons::PersonId,

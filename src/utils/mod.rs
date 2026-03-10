@@ -18,6 +18,6 @@ pub mod embed_typst;
 #[cfg(test)]
 pub mod test_utils;
 
-pub use option_string_ext::OptionStringExt;
+pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;

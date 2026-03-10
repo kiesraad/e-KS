@@ -11,6 +11,7 @@ manage_candidate_lists: Kandidatenlijsten beheren
 manage_candidates: Kandidaten beheren
 manage_data: Basisgegevens beheren
 next: Volgende
+remove: Verwijderen
 review_and_submit: Controleren en inleveren
 save: Opslaan
 save_and_continue: Opslaan en volgende

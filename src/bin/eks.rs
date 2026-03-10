@@ -48,7 +48,7 @@ async fn start(address: String) {
 /// Runs the application with the given TCP listener and optional typst URL. Initializes logging, application state, loads data, and starts the server.
 async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), AppError> {
     // Create application state
-    let state = AppState::new_with_typst_url(typst_url).await?;
+    let state = AppState::new(typst_url).await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
 

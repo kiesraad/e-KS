@@ -122,23 +122,27 @@
 
   td:first-child {
     width: 2.5rem;
-
-    background-image: url("../icons/politician-badge.svg");
-    background-repeat: no-repeat;
-    background-position: left center;
-    background-size: 2.25rem;
   }
 
   td:nth-child(2) {
     border-left: 1px solid var(--gray-300);
   }
 
-  tr.clickable {
-    td:last-child {
-      a,
-      button {
-        background-image: url("../icons/plus.svg");
-      }
+  tr.add-candidate {
+    button {
+      background-image: url("../icons/plus.svg");
+    }
+  }
+
+  tr.remove-candidate {
+    background-color: var(--green-100);
+
+    button {
+      background-image: url("../icons/trash.svg");
+    }
+
+    .position-badge {
+      background-color: var(--green-200);
     }
   }
 }

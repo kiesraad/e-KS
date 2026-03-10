@@ -10,12 +10,12 @@ pub async fn gen_h1(
     path: DownloadH1Path,
     list: FullCandidateList,
     store: AppStore,
-    State(config): State<Config>,
+    State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     let h1 = H1::new(&store, list, &context.session.election, path.locale)?;
 
-    h1.generate(config.typst_url).await
+    h1.generate(&config.typst_url).await
 }
 
 #[cfg(test)]
@@ -45,6 +45,7 @@ mod tests {
         list.create(&store).await?;
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let config = Config::new_test();
 
         let result = gen_h1(
             DownloadH1Path {
@@ -53,7 +54,7 @@ mod tests {
             },
             full_list,
             store,
-            State(Config::new_test()),
+            State(&config),
             Context::new_test_without_db(),
         )
         .await;
@@ -98,10 +99,9 @@ mod tests {
             axum::serve(listener, router).await.unwrap();
         });
 
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str());
         let config = Config {
-            storage_url: "memory:",
-            typst_url,
+            storage_url: "memory:".to_string(),
+            typst_url: format!("http://{addr}"),
         };
 
         let response = gen_h1(
@@ -111,7 +111,7 @@ mod tests {
             },
             full_list,
             store,
-            State(config),
+            State(&config),
             Context::new_test_without_db(),
         )
         .await?

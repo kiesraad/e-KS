@@ -8,6 +8,7 @@ actions:
   edit: List details
   edit_list_details: Edit the list details here
   select_all_districts: Select all electoral districts
+add_all: Add all candidates
 add_candidate: Add candidate
 all_candidates: All candidates
 all_candidates_note: All created candidates can be found back here
