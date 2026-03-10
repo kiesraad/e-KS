@@ -123,7 +123,6 @@ impl<'de> Deserialize<'de> for Bsn {
 pub const BSN_NONE_CONFIRMATION: &str = "none-confirmed";
 
 /// This enum represents the state of a person's BSN (Dutch social security number):
-/// - `None`: No BSN provided yet.
 /// - `Bsn`: A BSN has been provided and confirmed valid.
 /// - `NoneConfirmed`: It is confirmed that this person does not have a BSN.
 #[derive(Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
@@ -147,12 +146,6 @@ impl FromStr for BsnOrNoneConfirmed {
 }
 
 impl BsnOrNoneConfirmed {
-    pub fn is_some(&self) -> bool {
-        match self {
-            BsnOrNoneConfirmed::NoneConfirmed | BsnOrNoneConfirmed::Bsn(_) => true,
-        }
-    }
-
     pub fn to_exposed_string(&self) -> String {
         match self {
             BsnOrNoneConfirmed::NoneConfirmed => BSN_NONE_CONFIRMATION.to_string(),
