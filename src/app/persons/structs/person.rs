@@ -408,7 +408,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         assert!(!person.is_personal_info_complete());
 
-        person.personal_data.bsn = BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
+        person.personal_data.bsn = Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         assert!(person.is_personal_info_complete());
 
         person.personal_data.date_of_birth = None;
@@ -430,12 +430,13 @@ mod tests {
     #[test]
     fn person_complete_handles_dutch_and_non_dutch_requirements() {
         let mut dutch_person = sample_person(PersonId::new());
-        dutch_person.personal_data.bsn = BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
+        dutch_person.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         assert!(dutch_person.is_complete());
 
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
-            BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn"));
+            Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         non_dutch_person.personal_data.country_of_residence =
             Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();

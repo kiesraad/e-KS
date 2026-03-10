@@ -7,7 +7,7 @@ pub struct PersonalData {
     pub first_name: Option<FirstName>,
     pub gender: Option<Gender>,
 
-    pub bsn: BsnOrNoneConfirmed,
+    pub bsn: Option<BsnOrNoneConfirmed>,
     pub date_of_birth: Option<Date>,
 
     pub place_of_residence: Option<PlaceOfResidence>,

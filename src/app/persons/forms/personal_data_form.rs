@@ -21,7 +21,7 @@ pub struct PersonalDataFieldsForm {
     pub first_name: String,
     #[validate(parse = "Date", optional)]
     pub date_of_birth: String,
-    #[validate(parse = "BsnOrNoneConfirmed")]
+    #[validate(parse = "BsnOrNoneConfirmed", optional)]
     pub bsn: String,
     #[validate(parse = "PlaceOfResidence", optional)]
     pub place_of_residence: String,
@@ -55,7 +55,10 @@ impl From<PersonalData> for PersonalDataFieldsForm {
                 .date_of_birth
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
                 .unwrap_or_default(),
-            bsn: personal_data.bsn.to_exposed_string(),
+            bsn: personal_data
+                .bsn
+                .map(|s| s.to_exposed_string())
+                .unwrap_or_default(),
             place_of_residence: personal_data.place_of_residence.to_string_or_default(),
             country_of_residence: personal_data.country_of_residence.to_string_or_default(),
         }
@@ -98,9 +101,9 @@ impl PersonalDataForm {
         let mut errors = Vec::new();
 
         // If a BSN is set, validate BSN uniqueness and skip name uniqueness checks
-        if let BsnOrNoneConfirmed::Bsn(bsn) = &person.personal_data.bsn {
+        if let Some(BsnOrNoneConfirmed::Bsn(bsn)) = &person.personal_data.bsn {
             if existing.iter().any(|existing_person| {
-                existing_person.personal_data.bsn == BsnOrNoneConfirmed::Bsn(bsn.clone())
+                existing_person.personal_data.bsn == Some(BsnOrNoneConfirmed::Bsn(bsn.clone()))
             }) {
                 errors.push((
                     "personal_data.bsn".to_string(),
@@ -149,8 +152,6 @@ mod tests {
         let mut current = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
         current.personal_data.gender = Some(Gender::Female);
         current.personal_data.first_name = Some(parse_first_name("Evert"));
-        current.personal_data.date_of_birth = None;
-        current.personal_data.bsn = BsnOrNoneConfirmed::None;
         current.personal_data.place_of_residence = Some(parse_place_of_residence("Waterdam"));
         current.personal_data.country_of_residence = Some(parse_country_code("NL"));
         current.address = DutchAddress {
@@ -285,7 +286,7 @@ mod tests {
         };
 
         let errors = data.errors();
-        assert_eq!(errors.len(), 9);
+        assert_eq!(errors.len(), 8);
         assert!(errors.contains(&(
             "personal_data.gender".to_string(),
             ValidationError::InvalidValue
@@ -334,10 +335,11 @@ mod tests {
     #[test]
     fn uniqueness_errors_for_duplicate_name_without_bsn() {
         let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        existing.personal_data.bsn = BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn"));
+        existing.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
         let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        incoming.personal_data.bsn = BsnOrNoneConfirmed::None;
+        incoming.personal_data.bsn = None;
 
         let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
 
@@ -354,11 +356,13 @@ mod tests {
     #[test]
     fn uniqueness_errors_for_duplicate_bsn() {
         let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        existing.personal_data.bsn = BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn"));
+        existing.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
         let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
         incoming.name.last_name = parse_last_name("Other");
-        incoming.personal_data.bsn = BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn"));
+        incoming.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
         let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
 
@@ -374,10 +378,12 @@ mod tests {
     #[test]
     fn uniqueness_allows_duplicate_name_with_unique_bsn() {
         let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        existing.personal_data.bsn = BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn"));
+        existing.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
         let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        incoming.personal_data.bsn = BsnOrNoneConfirmed::Bsn("111222333".parse().expect("bsn"));
+        incoming.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("111222333".parse().expect("bsn")));
 
         let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
 

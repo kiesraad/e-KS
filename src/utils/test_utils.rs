@@ -6,9 +6,9 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
-        BsnOrNoneConfirmed, CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm,
-        FirstName, FullName, FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials,
-        LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
+        CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName, FullName,
+        FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
+        LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{
@@ -133,7 +133,7 @@ pub fn sample_person(id: PersonId) -> Person {
             gender: Some(Gender::Female),
             first_name: Some(parse_first_name("Henk")),
             date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
-            bsn: BsnOrNoneConfirmed::None,
+            bsn: None,
             place_of_residence: Some(parse_place_of_residence("Juinen")),
             country_of_residence: Some(parse_country_code("NL")),
         },

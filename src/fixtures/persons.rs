@@ -81,8 +81,7 @@ impl PersonRecord {
                 date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
                     .ok()
                     .map(Date::from),
-                bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn")
-                    .unwrap_or_default(),
+                bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn").ok(),
                 place_of_residence: locality
                     .as_deref()
                     .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
