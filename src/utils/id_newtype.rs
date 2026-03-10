@@ -28,9 +28,10 @@ macro_rules! id_newtype {
         }
 
         impl std::str::FromStr for $name {
-            type Err = uuid::Error;
+            type Err = $crate::form::ValidationError;
+
             fn from_str(s: &str) -> Result<Self, Self::Err> {
-                Ok(Self(uuid::Uuid::parse_str(s)?))
+                Ok(Self(uuid::Uuid::parse_str(s).map_err(|_| $crate::form::ValidationError::InvalidValue)?))
             }
         }
 

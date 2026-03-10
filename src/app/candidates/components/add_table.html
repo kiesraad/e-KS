@@ -26,17 +26,15 @@
           {% if let Some(place_of_residence) = person.personal_data.place_of_residence %}{{ place_of_residence }}{% endif %}
         </td>
         <td>
+          <button type="submit" name="action" value="{{ person.id }}"></button>
           {% if added_candidates.contains_key(&person.id) %}
-            <button type="submit" name="remove_person_id" value="{{ person.id }}">
-              <span>{{ "action.remove"|trans }}</span>
-            </button>
+            <span>{{ "action.remove"|trans }}</span>
           {% else %}
-            <button type="submit" name="person_id" value="{{ person.id }}">
-              <span>{{ "action.add"|trans }}</span>
-            </button>
+            <span>{{ "action.add"|trans }}</span>
           {% endif %}
-        </td>
-      </tr>
-    {% endfor %}
-  </tbody>
+        </button>
+      </td>
+    </tr>
+  {% endfor %}
+</tbody>
 </table>

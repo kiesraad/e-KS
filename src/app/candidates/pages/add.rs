@@ -61,41 +61,38 @@ async fn handle_add_candidate_form(
     full_list: &mut FullCandidateList,
     store: &AppStore,
 ) -> Result<(), AppError> {
-    // Add all candidates to the list if the "add all" button was clicked.
-    if let Some(action) = add_person.action
-        && action == AddPersonAction::AddAll
-    {
-        // Enable showing the newly added candidate as already added to the list in the template.
-        if add_person.added_position.is_none() {
-            add_person.added_position = Some(full_list.list.candidates.len() + 1);
+    match add_person.action {
+        AddPersonAction::None => {
+            // No action, do nothing.
         }
+        AddPersonAction::AddAll => {
+            // Enable showing the newly added candidate as already added to the list in the template.
+            if add_person.added_position.is_none() {
+                add_person.added_position = Some(full_list.list.candidates.len() + 1);
+            }
 
-        let persons_not_on_list = full_list.list.persons_not_on_list(store, &[])?;
-        let person_ids = persons_not_on_list
-            .iter()
-            .map(|person| person.id)
-            .collect::<Vec<_>>();
-        let mut all_persons = full_list.list.candidates.clone();
-        all_persons.extend(person_ids);
+            let persons_not_on_list = full_list.list.persons_not_on_list(store, &[])?;
+            let person_ids = persons_not_on_list
+                .iter()
+                .map(|person| person.id)
+                .collect::<Vec<_>>();
+            let mut all_persons = full_list.list.candidates.clone();
+            all_persons.extend(person_ids);
 
-        full_list.list.update_order(store, &all_persons).await?;
-    }
-
-    // If the person is not already on the list, add them.
-    if let Some(person_id) = add_person.person_id
-        && !full_list.list.candidates.contains(&person_id)
-    {
-        full_list.list.append_candidate(store, person_id).await?;
-
-        // Enable showing the newly added candidate as already added to the list in the template.
-        if add_person.added_position.is_none() {
-            add_person.added_position = Some(full_list.list.candidates.len());
+            full_list.list.update_order(store, &all_persons).await?;
         }
-    }
+        AddPersonAction::TogglePerson(person_id) => {
+            if full_list.list.candidates.contains(&person_id) {
+                full_list.list.remove_candidate(store, person_id).await?;
+            } else {
+                full_list.list.append_candidate(store, person_id).await?;
 
-    // If the person is on the list, delete the person
-    if let Some(person_id) = add_person.remove_person_id {
-        full_list.list.remove_candidate(store, person_id).await?;
+                // Enable showing the newly added candidate as already added to the list in the template.
+                if add_person.added_position.is_none() {
+                    add_person.added_position = Some(full_list.list.candidates.len());
+                }
+            }
+        }
     }
 
     Ok(())
@@ -206,10 +203,8 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = AddPersonForm {
-            person_id: person.id.to_string(),
-            remove_person_id: String::new(),
+            action: person.id.to_string(),
             added_position: String::new(),
-            action: String::new(),
             csrf_token,
         };
 
@@ -249,10 +244,8 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = AddPersonForm {
-            person_id: new_person.id.to_string(),
-            remove_person_id: String::new(),
+            action: new_person.id.to_string(),
             added_position: String::new(),
-            action: String::new(),
             csrf_token,
         };
 
@@ -295,10 +288,8 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = AddPersonForm {
-            person_id: String::new(),
-            remove_person_id: String::new(),
-            added_position: String::new(),
             action: AddPersonAction::AddAll.to_string(),
+            added_position: String::new(),
             csrf_token,
         };
 
@@ -336,10 +327,8 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let form = AddPersonForm {
-            person_id: person.id.to_string(),
-            remove_person_id: String::new(),
+            action: person.id.to_string(),
             added_position: String::new(),
-            action: String::new(),
             csrf_token: TokenValue("invalid".to_string()),
         };
 
@@ -378,10 +367,8 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = AddPersonForm {
-            person_id: String::new(),
-            remove_person_id: remove_person.id.to_string(),
+            action: remove_person.id.to_string(),
             added_position: String::new(),
-            action: String::new(),
             csrf_token,
         };
 

@@ -4,9 +4,7 @@ use crate::{form::ValidationError, persons::PersonId};
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug)]
 pub struct AddPerson {
-    pub person_id: Option<PersonId>,
-    pub remove_person_id: Option<PersonId>,
-    pub action: Option<AddPersonAction>,
+    pub action: AddPersonAction,
     pub added_position: Option<usize>,
 }
 
@@ -15,6 +13,7 @@ pub enum AddPersonAction {
     #[default]
     None,
     AddAll,
+    TogglePerson(PersonId),
 }
 
 impl std::str::FromStr for AddPersonAction {
@@ -24,7 +23,7 @@ impl std::str::FromStr for AddPersonAction {
         match s {
             "" => Ok(AddPersonAction::None),
             "add-all" => Ok(AddPersonAction::AddAll),
-            _ => Err(ValidationError::InvalidValue),
+            value => Ok(AddPersonAction::TogglePerson(value.parse()?)),
         }
     }
 }
@@ -34,6 +33,7 @@ impl std::fmt::Display for AddPersonAction {
         match self {
             AddPersonAction::None => write!(f, ""),
             AddPersonAction::AddAll => write!(f, "add-all"),
+            AddPersonAction::TogglePerson(person_id) => write!(f, "{}", person_id),
         }
     }
 }
