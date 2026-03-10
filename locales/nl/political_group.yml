@@ -33,5 +33,9 @@ type:
   blank_name_hint: Er is geen geregistreerde aanduiding.
   name_combination: Combinatie van meerdere geregistreerde namen
   name_combination_hint: De partij heeft een samenwerkingsverband met één of meer andere geregistreerde partijen. Samen leveren zij alle kandidaten voor de kandidatenlijst.
+  long_list_allowed_hint: Dit bepaalt of u 50 of 80 kandidaten per lijst op mag voeren.
   registered_name: Op zichzelf staande geregistreerde naam
   registered_name_hint: De partij neemt als één eenduidige partij deel aan de verkiezing.
+  display_name_hint: De naam die is geregistreerd bij het centraal stembureau. Deze komt op het stembiljet te staan.
+  legal_name_hint: De naam die is vastgelegd in de notariële akte en bij de Kamer van Koophandel.
+  

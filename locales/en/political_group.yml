@@ -33,5 +33,9 @@ type:
   blank_name_hint: There is no registered designation.
   name_combination: Combination of multiple registered names
   name_combination_hint: "The party has formed an alliance with one or more other registered parties. Together, they nominate all candidates for the candidate list."
+  long_list_allowed_hint: This determines whether you may include 50 or 80 candidates on each list.
   registered_name: Standalone registered name
   registered_name_hint: "The party participates in the election as a single, unified party."
+  display_name_hint: "The name that is registered with the central electoral committee. This name will be displayed on the ballot paper."
+  legal_name_hint: The name registered in the notarial deed and with the Chamber of Commerce.
+  
