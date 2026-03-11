@@ -53,7 +53,7 @@ impl<'zip> H9<'zip> {
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(&candidate_list, election, locale),
+            electoral_districts: ElectoralDistricts::from(candidate_list, election, locale),
             designation: store
                 .get_political_group()
                 .display_name

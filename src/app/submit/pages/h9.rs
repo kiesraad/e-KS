@@ -51,7 +51,8 @@ pub async fn gen_h9(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, candidate_lists::CandidateListId,
+        AppStore, Context,
+        candidate_lists::CandidateListId,
         candidates::Candidate,
         core::ModelLocale,
         persons::PersonId,
@@ -97,7 +98,7 @@ mod tests {
         // test
         let result = gen_h9(
             DownloadH9Path {
-                list_id: list_id,
+                list_id,
                 locale: ModelLocale::Nl,
             },
             full_list,
@@ -162,7 +163,7 @@ mod tests {
         // test
         let response = gen_h9(
             DownloadH9Path {
-                list_id: list_id,
+                list_id,
                 locale: ModelLocale::Nl,
             },
             full_list,

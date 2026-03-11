@@ -42,7 +42,7 @@ pub fn router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use axum::{
-        Json, Router,
+        Router,
         routing::{get, post},
     };
     use serde_json::Value;

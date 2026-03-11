@@ -22,16 +22,19 @@ pub async fn gen_h1(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, candidate_lists::CandidateListId, core::ModelLocale, list_submitters::ListSubmitterId, persons::PersonId, submit::pages::tests::setup_typst_webservice_stub, test_utils::{sample_candidate_list, sample_list_submitter, sample_person}
+        AppStore, Context,
+        candidate_lists::CandidateListId,
+        core::ModelLocale,
+        list_submitters::ListSubmitterId,
+        persons::PersonId,
+        submit::pages::tests::setup_typst_webservice_stub,
+        test_utils::{sample_candidate_list, sample_list_submitter, sample_person},
     };
     use axum::{
-        Router,
         http::{StatusCode, header},
         response::IntoResponse,
-        routing::get,
     };
     use regex::Regex;
-    use tokio::net::TcpListener;
 
     #[tokio::test]
     async fn gen_h1_missing_list_submitter_returns_error() -> Result<(), AppError> {

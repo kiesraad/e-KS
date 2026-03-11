@@ -1,3 +1,5 @@
+use std::fmt::{self, Display, Formatter};
+
 use serde::Serialize;
 
 use crate::{ElectionConfig, candidate_lists::CandidateList, core::ModelLocale};
@@ -26,16 +28,22 @@ impl ElectoralDistricts {
             )
         }
     }
+}
 
-    pub fn to_string(&self) -> String {
+impl Display for ElectoralDistricts {
+    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
         match self {
-            ElectoralDistricts::All => "*".to_string(),
-            ElectoralDistricts::Some(districts) => districts
+            ElectoralDistricts::All => write!(f, "*"),
+            ElectoralDistricts::Some(districts) => write!(
+                f,
+                "{}",
+                districts
                     .iter()
-                    .map(|d| d.get(..2))
-                    .filter_map(|d| d)
+                    .flat_map(|d| d.get(..2))
                     .collect::<Vec<_>>()
-                    .join("-"),
+                    .join("-")
+                    .as_str()
+            ),
         }
     }
 }
