@@ -30,6 +30,16 @@ impl AppStore {
         data.persons.values().cloned().collect()
     }
 
+    pub fn get_sorted_persons(&self) -> Vec<Person> {
+        let data = self.data.read();
+
+        let mut persons: Vec<Person> = data.persons.values().cloned().collect();
+
+        persons.sort();
+
+        persons
+    }
+
     pub fn get_authorised_agents(&self) -> Vec<AuthorisedAgent> {
         let data = self.data.read();
 

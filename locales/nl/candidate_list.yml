@@ -8,6 +8,7 @@ actions:
   edit: Aanpassen
   edit_list_details: Kieskringen en lijstinleveraar aanpassen
   select_all_districts: Selecteer alle kieskringen
+add_all: Alle kandidaten toevoegen
 add_candidate: Kandidaat toevoegen
 all_candidates: Alle kandidaten
 all_candidates_note: Kandidaten die u heeft aangemaakt vindt u hier terug

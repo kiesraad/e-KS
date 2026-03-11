@@ -4,7 +4,7 @@ use std::str::FromStr;
 
 use crate::{constants::DEFAULT_DATE_FORMAT, form::ValidationError};
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
 pub struct Date(NaiveDate);
 

@@ -14,8 +14,9 @@ import setupOverlay from "./scripts/generic-ui/overlay";
 import setupPositionPreview from "./scripts/form-inputs/position-preview";
 import setupTextSearch from "./scripts/generic-ui/search";
 import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
-import setupSortable from "./scripts/generic-ui/sortable";
+import setupSortable from "./scripts/table-interaction/sortable";
 import setupStickyNav from "./scripts/generic-ui/sticky-nav";
+import setupRememberScroll from "./scripts/generic-ui/remember-scroll";
 
 import "./styles/index.css";
 
@@ -44,3 +45,4 @@ setupModal();
 setupOverlay();
 setupTextSearch();
 setupSortable();
+setupRememberScroll();

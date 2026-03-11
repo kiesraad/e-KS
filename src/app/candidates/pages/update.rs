@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Redirect, Response};
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
-    persons::PersonForm,
+    persons::PersonalDataForm,
 };
 
 use super::CandidateListUpdatePersonPath;
@@ -14,7 +14,7 @@ struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     on_candidate_lists: usize,
-    form: FormData<PersonForm>,
+    form: FormData<PersonalDataForm>,
 }
 
 pub async fn update_person(
@@ -27,7 +27,7 @@ pub async fn update_person(
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
-                PersonForm::from(candidate.person.clone()),
+                PersonalDataForm::from(candidate.person.clone()),
                 &context.session.csrf_tokens,
             ),
             on_candidate_lists: store.count_candidate_lists(candidate.person.id),
@@ -44,7 +44,7 @@ pub async fn update_person_submit(
     full_list: FullCandidateList,
     mut candidate: Candidate,
     store: AppStore,
-    Form(form): Form<PersonForm>,
+    Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -57,9 +57,11 @@ pub async fn update_person_submit(
             context,
         )
         .into_response()),
-        Ok(person) => {
-            person.update(&store).await?;
-            candidate.person = person;
+        Ok(updated) => {
+            candidate.person = candidate
+                .person
+                .update_personal_data(&store, updated.name, updated.personal_data)
+                .await?;
 
             Ok(Redirect::to(&candidate.after_update_path()).into_response())
         }

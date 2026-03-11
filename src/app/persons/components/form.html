@@ -1,17 +1,17 @@
 {% include "common/components/person_name_fields.html" %}
 <div class="form-row">
-  <p class="form-field {% if form.data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="place_of_residence"
            id="locality"
-           value="{{ form.data.place_of_residence }}"
+           value="{{ form.data.personal_data.place_of_residence }}"
            list="locality-suggestions" />
     <datalist id="locality-suggestions"></datalist>
-    {% for error in form|error("place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
-  <div class="form-field form-field-md {% if form.data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
+  <div class="form-field form-field-md {% if form.data.personal_data.country_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="country_of_residence">{{ "person.fields.country_of_residence"|trans }}</label>
     <div class="country-input input-icon">
       <span class="icon">🌐</span>
@@ -19,7 +19,7 @@
              placeholder=" "
              name="country_of_residence"
              id="country_of_residence"
-             value="{{ form.data.country_of_residence }}"
+             value="{{ form.data.personal_data.country_of_residence }}"
              minlength="2"
              maxlength="2"
              required />
@@ -31,7 +31,7 @@
         {% endfor %}
       </ul>
     </div>
-    {% for error in form|error("country_of_residence") %}
+    {% for error in form|error("personal_data.country_of_residence") %}
       <span class="error">{{ error }}</span>
     {% else %}
       <span class="hint">{{ "person.hints.country_of_residence"|trans }}</span>
@@ -39,35 +39,35 @@
   </div>
 </div>
 <div class="form-row">
-  <div class="form-field {% if form.data.bsn.is_empty() && !form.data.no_bsn_confirmed && should_warn %}warning{% endif %}">
+  <div class="form-field {% if form.data.personal_data.bsn.is_empty() && form.data.personal_data.bsn != crate::common::BSN_NONE_CONFIRMATION && should_warn %}warning{% endif %}">
     <label for="bsn">{{ "person.fields.bsn"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="bsn"
            id="bsn"
-           value="{{ form.data.bsn }}" />
-    {% if form.data.bsn.is_empty() && should_warn %}
+           value="{% if form.data.personal_data.bsn != crate::common::BSN_NONE_CONFIRMATION %}{{ form.data.personal_data.bsn }}{% endif %}" />
+    {% if (form.data.personal_data.bsn.is_empty() || form.data.personal_data.bsn == crate::common::BSN_NONE_CONFIRMATION) && should_warn %}
       <label for="no_bsn_confirmed" class="no_bsn_confirmed">
         <input type="checkbox"
-               name="no_bsn_confirmed"
+               name="bsn"
                id="no_bsn_confirmed"
-               value="true"
-               {% if form.data.no_bsn_confirmed %}checked{% endif %} />
+               value="{{ crate::common::BSN_NONE_CONFIRMATION }}"
+               {% if form.data.personal_data.bsn == crate::common::BSN_NONE_CONFIRMATION %}checked{% endif %} />
         <span>{{ "person.no_bsn_confirm"|trans }}</span>
       </label>
     {% endif %}
-    {% for error in form|error("bsn") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% for error in form|error("personal_data.bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
-  <p class="form-field form-field-md {% if form.data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field form-field-md {% if form.data.personal_data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
     <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="date_of_birth"
            id="date_of_birth"
-           value="{{ form.data.date_of_birth }}"
+           value="{{ form.data.personal_data.date_of_birth }}"
            placeholder="dd-mm-jjjj"
            inputmode="numeric" />
-    {% for error in form|error("date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% for error in form|error("personal_data.date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
 </div>
 <div class="form-row">
@@ -79,8 +79,8 @@
     <input type="text"
            name="first_name"
            id="first_name"
-           value="{{ form.data.first_name }}" />
-    {% for error in form|error("first_name") %}
+           value="{{ form.data.personal_data.first_name }}" />
+    {% for error in form|error("personal_data.first_name") %}
       <span class="error">{{ error }}</span>
     {% else %}
       <span class="hint">{{ "person.hints.first_name"|trans }}</span>
@@ -92,13 +92,18 @@
       <span class="hint">({{ "person.hints.optional"|trans }})</span>
     </label>
     <select name="gender" id="gender">
-      <option value="" {% if form.data.gender=="" %}selected{% endif %}>{{ "common.gender.empty"|trans }}</option>
-      <option value="male" {% if form.data.gender=="male" %}selected{% endif %}>{{ "common.gender.male"|trans }}</option>
-      <option value="female" {% if form.data.gender=="female" %}selected{% endif %}>
+      <option value=""
+              {% if form.data.personal_data.gender=="" %}selected{% endif %}>{{ "common.gender.empty"|trans }}</option>
+      <option value="male"
+              {% if form.data.personal_data.gender=="male" %}selected{% endif %}>
+        {{ "common.gender.male"|trans }}
+      </option>
+      <option value="female"
+              {% if form.data.personal_data.gender=="female" %}selected{% endif %}>
         {{ "common.gender.female"|trans }}
       </option>
     </select>
-    {% for error in form|error("gender") %}
+    {% for error in form|error("personal_data.gender") %}
       <span class="error">{{ error }}</span>
     {% else %}
       <span class="hint">{{ "person.hints.gender"|trans }}</span>

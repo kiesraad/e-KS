@@ -8,10 +8,10 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     common::{
-        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber, Initials,
-        LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
+        BsnOrNoneConfirmed, CountryCode, Date, DutchAddress, FirstName, FullName, Gender,
+        HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
-    persons::Person,
+    persons::{Person, PersonalData},
 };
 
 const PERSONS_CSV: &str = include_str!("persons.csv");
@@ -61,32 +61,33 @@ impl PersonRecord {
 
         Ok(Person {
             id: uuid.into(),
-            gender: match self.geslacht.as_str() {
-                "M" => Some(Gender::Male),
-                "V" => Some(Gender::Female),
-                _ => None,
-            },
             name: FullName {
                 last_name: Self::parse_value::<LastName>(&self.geslachtsnaam, "last name")?,
                 last_name_prefix: None,
                 initials: Self::parse_value::<Initials>(&initials, "initials")?,
             },
-            first_name: self
-                .voornamen
-                .split_whitespace()
-                .next()
-                .map(|s| Self::parse_value::<FirstName>(s, "first name"))
-                .transpose()?,
-            date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
-                .ok()
-                .map(Date::from),
-            bsn: Self::parse_value::<Bsn>(&self.burgerservicenummer, "bsn").ok(),
-            no_bsn_confirmed: false,
-            place_of_residence: locality
-                .as_deref()
-                .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
-                .transpose()?,
-            country_of_residence: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+            personal_data: PersonalData {
+                gender: match self.geslacht.as_str() {
+                    "M" => Some(Gender::Male),
+                    "V" => Some(Gender::Female),
+                    _ => None,
+                },
+                first_name: self
+                    .voornamen
+                    .split_whitespace()
+                    .next()
+                    .map(|s| Self::parse_value::<FirstName>(s, "first name"))
+                    .transpose()?,
+                date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
+                    .ok()
+                    .map(Date::from),
+                bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn").ok(),
+                place_of_residence: locality
+                    .as_deref()
+                    .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
+                    .transpose()?,
+                country_of_residence: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+            },
             address: DutchAddress {
                 locality,
                 postal_code: Some(self.postcode.parse::<PostalCode>().map_err(|_| {

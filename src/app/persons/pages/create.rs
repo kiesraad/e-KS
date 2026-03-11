@@ -4,13 +4,13 @@ use axum::response::{IntoResponse, Redirect, Response};
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
-    persons::{Person, PersonForm, pages::PersonsCreatePath},
+    persons::{Person, PersonalDataForm, pages::PersonsCreatePath},
 };
 
 #[derive(Template)]
 #[template(path = "persons/pages/create.html")]
 struct PersonCreateTemplate {
-    form: FormData<PersonForm>,
+    form: FormData<PersonalDataForm>,
 }
 
 pub async fn create_person(
@@ -29,14 +29,16 @@ pub async fn create_person_submit(
     _: PersonsCreatePath,
     context: Context,
     store: AppStore,
-    Form(form): Form<PersonForm>,
+    Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_unique(&context.session.csrf_tokens, &store) {
         Err(form_data) => {
             Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }
         Ok(person) => {
-            person.create(&store).await?;
+            let person =
+                Person::create_from_personal_data(&store, person.name, person.personal_data)
+                    .await?;
 
             Ok(Redirect::to(&person.after_create_path()).into_response())
         }

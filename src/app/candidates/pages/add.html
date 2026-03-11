@@ -12,9 +12,19 @@
                name="search"
                placeholder="{{ "candidate_list.search_placeholder"|trans }}"
                class="form-control w-full"
-               id="search"
-               autofocus />
+               id="search" />
       </p>
+      <input type="hidden"
+             name="added_position"
+             value="{{ form.data.added_position }}" />
+      {% if show_add_all %}
+        <p class="mt-md">
+          <button type="submit"
+                  class="button secondary float-right icon-plus"
+                  name="action"
+                  value="add-all">{{ "candidate_list.add_all"|trans }}</button>
+        </p>
+      {% endif %}
       {% include "candidates/components/add_table.html" %}
     {% endif %}
   </div>

@@ -9,16 +9,16 @@ use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 use uuid::Uuid;
 
-use super::{Store, StoreData};
+use super::{Store, StoreData, StorePersistence};
 use crate::AppError;
 
-/// Cache of per-stream stores backed by a shared storage URL.
+/// Cache of per-stream stores backed by a shared persistence backend.
 pub struct StoreRegistry<D>
 where
     D: StoreData,
     D::Event: Serialize + DeserializeOwned,
 {
-    storage_url: String,
+    persistence: StorePersistence,
     inner: Arc<RwLock<HashMap<Uuid, Store<D>>>>,
 }
 
@@ -29,7 +29,7 @@ where
 {
     fn clone(&self) -> Self {
         Self {
-            storage_url: self.storage_url.clone(),
+            persistence: self.persistence.clone(),
             inner: self.inner.clone(),
         }
     }
@@ -41,11 +41,14 @@ where
     D::Event: Serialize + DeserializeOwned,
 {
     /// Create a new registry for stores backed by the given storage URL.
-    pub fn new(storage_url: String) -> Self {
-        Self {
-            storage_url,
+    pub async fn new(storage_url: String) -> Result<Self, AppError> {
+        let persistence = StorePersistence::from_storage_url(&storage_url)?;
+        persistence.init().await?;
+
+        Ok(Self {
+            persistence,
             inner: Arc::new(RwLock::new(HashMap::new())),
-        }
+        })
     }
 
     /// Fetch an existing store or create and load it for the given stream.
@@ -68,7 +71,8 @@ where
             return Ok(existing.clone());
         }
 
-        let store = Store::new_for_stream(&self.storage_url, stream_id).await?;
+        let store =
+            Store::new_for_stream_with_persistence(self.persistence.clone(), stream_id).await?;
         store.load().await?;
         init(store.clone()).await?;
 

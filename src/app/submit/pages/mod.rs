@@ -60,7 +60,7 @@ mod tests {
                 "/render-pdf/batch",
                 post(|body: String| async move {
                     let json: Value = serde_json::from_str(&body).unwrap();
-                    dbg!(json.as_array().unwrap().len().to_string())
+                    json.as_array().unwrap().len().to_string()
                 }),
             );
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
@@ -69,9 +69,9 @@ mod tests {
             axum::serve(listener, router).await.unwrap();
         });
 
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str());
+        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str()).to_string();
         let config = Config {
-            storage_url: "memory:",
+            storage_url: "memory:".to_string(),
             typst_url,
         };
 

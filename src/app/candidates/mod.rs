@@ -7,6 +7,6 @@ mod forms;
 mod pages;
 mod structs;
 
-pub use forms::CandidatePositionForm;
+pub use forms::{AddPersonForm, CandidatePositionForm};
 pub use pages::{AddCandidatePath, CreateCandidatePath, router};
-pub use structs::{Candidate, CandidatePosition};
+pub use structs::{AddPerson, AddPersonAction, Candidate, CandidatePosition};

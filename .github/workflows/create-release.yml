@@ -2,8 +2,7 @@ name: Create release on version bump
 
 permissions: {}
 concurrency:
-  group: 
-    ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-create-release
+  group: create-release
   cancel-in-progress: true
 
 on:
@@ -66,7 +65,7 @@ jobs:
           fi
         env:
           STEPS_RELEASE_CHECK_OUTPUTS_RELEASE_EXISTS: ${{ steps.release_check.outputs.release_exists }}
-  
+
   release:
     name: Make release if necessary
     permissions:
@@ -76,9 +75,22 @@ jobs:
     if: needs.check-version.outputs.should_run == 'true'
     runs-on: ubuntu-latest
     steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          persist-credentials: false
+      - uses: psastras/sbom-rs/actions/install-cargo-sbom@9ecc460b937ac5558c4f8ebebc9e07d2bdbef67b # v0.10.0
+      - name: Create SBOM
+        run: |
+          mkdir sbom
+          cargo-sbom --output-format=cyclone_dx_json_1_6 > sbom/cyclone-dx-1-6-sbom.json
+          cargo-sbom --output-format=spdx_json_2_3 > sbom/spdx-2-3-sbom.json
+
       - name: Create release
         uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
         with:
           tag_name: ${{ needs.check-version.outputs.version }}
           name: Version ${{ needs.check-version.outputs.version }}
           generate_release_notes: true
+          files: |
+            sbom/cyclone-dx-1-6-sbom.json
+            sbom/spdx-2-3-sbom.json

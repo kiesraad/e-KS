@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
-use validate::Validate;
 
-use crate::OptionStringExt;
+use crate::OptionAsStrExt;
 
 use super::{Initials, LastName, LastNamePrefix};
 
@@ -46,24 +45,17 @@ impl FullName {
     }
 }
 
-#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "FullName")]
-#[serde(default)]
-pub struct FullNameForm {
-    #[validate(parse = "LastName")]
-    pub last_name: String,
-    #[validate(parse = "LastNamePrefix", optional)]
-    pub last_name_prefix: String,
-    #[validate(parse = "Initials")]
-    pub initials: String,
+impl PartialOrd for FullName {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
-impl From<FullName> for FullNameForm {
-    fn from(name: FullName) -> Self {
-        FullNameForm {
-            last_name: name.last_name.to_string(),
-            last_name_prefix: name.last_name_prefix.to_string_or_default(),
-            initials: name.initials.to_string(),
-        }
+impl Ord for FullName {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        self.last_name
+            .cmp(&other.last_name)
+            .then_with(|| self.last_name_prefix.cmp(&other.last_name_prefix))
+            .then_with(|| self.initials.cmp(&other.initials))
     }
 }

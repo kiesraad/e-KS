@@ -16,8 +16,8 @@ mod name;
 mod postal_code;
 mod utc_date_time;
 
-pub use address::{DutchAddress, DutchAddressForm};
-pub use bsn::Bsn;
+pub use address::DutchAddress;
+pub use bsn::{BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed};
 pub use constrained_string::{FirstName, LegalName, Locality, PlaceOfResidence, StreetName};
 pub use countries::COUNTRY_CODES;
 pub use country_code::CountryCode;
@@ -30,6 +30,6 @@ pub use house_number_addition::HouseNumberAddition;
 pub use initials::Initials;
 pub use last_name::LastName;
 pub use last_name_prefix::LastNamePrefix;
-pub use name::{FullName, FullNameForm};
+pub use name::FullName;
 pub use postal_code::PostalCode;
 pub use utc_date_time::UtcDateTime;

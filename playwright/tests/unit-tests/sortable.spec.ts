@@ -4,7 +4,7 @@ import setupSortable, {
   DragSession,
   reorderList,
   SortableTable,
-} from "../../../frontend/scripts/generic-ui/sortable";
+} from "../../../frontend/scripts/table-interaction/sortable";
 
 declare global {
   interface Window {

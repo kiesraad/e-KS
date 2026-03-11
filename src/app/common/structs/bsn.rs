@@ -119,3 +119,37 @@ impl<'de> Deserialize<'de> for Bsn {
         value.parse().map_err(serde::de::Error::custom)
     }
 }
+
+pub const BSN_NONE_CONFIRMATION: &str = "none-confirmed";
+
+/// This enum represents the state of a person's BSN (Dutch social security number):
+/// - `Bsn`: A BSN has been provided and confirmed valid.
+/// - `NoneConfirmed`: It is confirmed that this person does not have a BSN.
+#[derive(Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
+pub enum BsnOrNoneConfirmed {
+    /// BSN provided and confirmed valid
+    Bsn(Bsn),
+    /// It is confirmed that this person does not have a BSN
+    NoneConfirmed,
+}
+
+impl FromStr for BsnOrNoneConfirmed {
+    type Err = ValidationError;
+
+    fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if value.trim() == BSN_NONE_CONFIRMATION {
+            Ok(BsnOrNoneConfirmed::NoneConfirmed)
+        } else {
+            Ok(BsnOrNoneConfirmed::Bsn(value.parse()?))
+        }
+    }
+}
+
+impl BsnOrNoneConfirmed {
+    pub fn to_exposed_string(&self) -> String {
+        match self {
+            BsnOrNoneConfirmed::NoneConfirmed => BSN_NONE_CONFIRMATION.to_string(),
+            BsnOrNoneConfirmed::Bsn(b) => b.to_exposed_string(),
+        }
+    }
+}

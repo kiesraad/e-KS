@@ -2,40 +2,26 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{
-        Bsn, CountryCode, Date, DutchAddress, FirstName, FullName, Gender, PlaceOfResidence,
-        UtcDateTime,
-    },
+    common::{DutchAddress, FullName, Gender, UtcDateTime},
     core::AnyLocale,
     id_newtype,
     pagination::SortDirection,
-    persons::{PersonSort, structs::person_sort::compare_persons},
+    persons::{PersonSort, PersonalData, structs::person_sort::compare_persons},
 };
 
 id_newtype!(pub struct PersonId);
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub struct Person {
     pub id: PersonId,
     pub name: FullName,
-
-    pub first_name: Option<FirstName>,
-    pub gender: Option<Gender>,
-
-    pub bsn: Option<Bsn>,
-    pub no_bsn_confirmed: bool,
-    pub date_of_birth: Option<Date>,
-
-    pub place_of_residence: Option<PlaceOfResidence>,
-    pub country_of_residence: Option<CountryCode>,
-
+    pub personal_data: PersonalData,
     pub address: DutchAddress,
     pub representative: Representative,
-
     pub updated_at: UtcDateTime,
 }
 
-#[derive(Default, Debug, Serialize, Deserialize, Clone)]
+#[derive(Default, Debug, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Representative {
     pub name: FullName,
     pub address: DutchAddress,
@@ -48,8 +34,43 @@ impl Representative {
 }
 
 impl Person {
+    pub async fn create_from_personal_data(
+        store: &AppStore,
+        name: FullName,
+        personal_data: PersonalData,
+    ) -> Result<Person, AppError> {
+        let person_id = PersonId::new();
+
+        store
+            .update(AppEvent::CreatePersonPersonalData {
+                person_id,
+                name,
+                personal_data,
+            })
+            .await?;
+
+        store.get_person(person_id)
+    }
+
+    pub async fn update_personal_data(
+        &self,
+        store: &AppStore,
+        name: FullName,
+        personal_data: PersonalData,
+    ) -> Result<Person, AppError> {
+        store
+            .update(AppEvent::UpdatePersonPersonalData {
+                person_id: self.id,
+                name: name.clone(),
+                personal_data: personal_data.clone(),
+            })
+            .await?;
+
+        store.get_person(self.id)
+    }
+
     pub fn display_name(&self) -> String {
-        if let Some(first_name) = &self.first_name {
+        if let Some(first_name) = &self.personal_data.first_name {
             format!("{} {}", first_name, self.name.last_name_with_prefix())
         } else {
             self.name.display()
@@ -66,24 +87,25 @@ impl Person {
     /// - H.
     pub fn initials_as_printed_on_list(&self, locale: AnyLocale) -> String {
         let mut initials = self.name.initials.to_string();
-        if let Some(first_name) = &self.first_name {
+        if let Some(first_name) = &self.personal_data.first_name {
             initials.push_str(&format!(" ({})", first_name));
         }
-        if let Some(gender) = &self.gender {
+        if let Some(gender) = &self.personal_data.gender {
             initials.push_str(&format!(" ({})", &gender.abbreviation(locale)));
         }
         initials
     }
 
     pub fn lives_in_nl(&self) -> bool {
-        match &self.country_of_residence {
+        match &self.personal_data.country_of_residence {
             Some(country) => country.as_str() == "NL",
             None => true, // Assume Dutch if no country is set
         }
     }
 
     pub fn gender_key(&self) -> &'static str {
-        self.gender
+        self.personal_data
+            .gender
             .map(|g| match g {
                 Gender::Male => "common.gender.male",
                 Gender::Female => "common.gender.female",
@@ -93,10 +115,10 @@ impl Person {
 
     pub fn is_personal_info_complete(&self) -> bool {
         self.name.is_complete()
-            && self.date_of_birth.is_some()
-            && (self.bsn.is_some() || self.no_bsn_confirmed)
-            && self.place_of_residence.is_some()
-            && self.country_of_residence.is_some()
+            && self.personal_data.date_of_birth.is_some()
+            && self.personal_data.bsn.is_some()
+            && self.personal_data.place_of_residence.is_some()
+            && self.personal_data.country_of_residence.is_some()
     }
 
     pub fn is_representative_complete(&self) -> bool {
@@ -179,21 +201,14 @@ mod tests {
     use super::*;
     use crate::{
         AppStore,
+        common::BsnOrNoneConfirmed,
         pagination::SortDirection,
         persons::PersonSort,
-        test_utils::{sample_person, sample_person_with_last_name},
+        test_utils::{
+            parse_country_code, parse_first_name, parse_last_name_prefix, sample_person,
+            sample_person_with, sample_person_with_last_name,
+        },
     };
-    fn base_person() -> Person {
-        Person {
-            id: PersonId::new(),
-            name: FullName {
-                last_name: "Dijk".parse().expect("last name"),
-                last_name_prefix: None,
-                initials: "A.B.".parse().expect("initials"),
-            },
-            ..Default::default()
-        }
-    }
 
     #[tokio::test]
     async fn create_and_get_person() -> Result<(), AppError> {
@@ -312,47 +327,49 @@ mod tests {
 
     #[test]
     fn last_name_formats_with_optional_prefix() {
-        let mut person = base_person();
+        let mut person = sample_person_with(PersonId::new(), "Dijk", None, "A.B.");
         assert_eq!(person.name.last_name_with_prefix(), "Dijk");
         assert_eq!(person.name.last_name_with_prefix_appended(), "Dijk");
 
-        person.name.last_name_prefix = Some("van".parse().expect("last name prefix"));
+        person.name.last_name_prefix = Some(parse_last_name_prefix("van"));
         assert_eq!(person.name.last_name_with_prefix(), "van Dijk");
         assert_eq!(person.name.last_name_with_prefix_appended(), "Dijk, van");
     }
 
     #[test]
     fn display_name_prefers_first_name_over_initials() {
-        let mut person = base_person();
-        person.name.last_name_prefix = Some("van".parse().expect("last name prefix"));
-        person.first_name = Some("Anne".parse().expect("first name"));
+        let mut person = sample_person_with(PersonId::new(), "Dijk", None, "A.B.");
+        person.name.last_name_prefix = Some(parse_last_name_prefix("van"));
+        person.personal_data.first_name = Some(parse_first_name("Anne"));
         assert_eq!(person.display_name(), "Anne van Dijk");
 
-        person.first_name = None;
+        person.personal_data.first_name = None;
         assert_eq!(person.display_name(), "A.B. van Dijk");
     }
 
     #[test]
     fn lives_in_nl_defaults_to_true_and_accepts_variants() {
-        let mut person = base_person();
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country_of_residence = None;
         assert!(person.lives_in_nl());
 
-        person.country_of_residence = Some("NL".parse().expect("country code"));
+        person.personal_data.country_of_residence = Some(parse_country_code("NL"));
         assert!(person.lives_in_nl());
 
-        person.country_of_residence = Some("BE".parse().expect("country code"));
+        person.personal_data.country_of_residence = Some(parse_country_code("BE"));
         assert!(!person.lives_in_nl());
     }
 
     #[test]
     fn gender_key_returns_translations_or_empty_keys() {
-        let mut person = base_person();
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.gender = None;
         assert_eq!(person.gender_key(), "");
 
-        person.gender = Some(Gender::Male);
+        person.personal_data.gender = Some(Gender::Male);
         assert_eq!(person.gender_key(), "common.gender.male");
 
-        person.gender = Some(Gender::Female);
+        person.personal_data.gender = Some(Gender::Female);
         assert_eq!(person.gender_key(), "common.gender.female");
     }
 
@@ -389,13 +406,13 @@ mod tests {
     #[test]
     fn personal_info_complete_requires_core_fields() {
         let mut person = sample_person(PersonId::new());
-        person.no_bsn_confirmed = false;
+        person.personal_data.bsn = None;
         assert!(!person.is_personal_info_complete());
 
-        person.bsn = Some("999995972".parse().expect("bsn"));
+        person.personal_data.bsn = Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         assert!(person.is_personal_info_complete());
 
-        person.date_of_birth = None;
+        person.personal_data.date_of_birth = None;
         assert!(!person.is_personal_info_complete());
     }
 
@@ -404,7 +421,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         assert!(person.is_representative_complete());
 
-        person.country_of_residence = Some("BE".parse().expect("country code"));
+        person.personal_data.country_of_residence = Some("BE".parse().expect("country code"));
         assert!(!person.is_representative_complete());
 
         person.representative = complete_representative();
@@ -414,12 +431,15 @@ mod tests {
     #[test]
     fn person_complete_handles_dutch_and_non_dutch_requirements() {
         let mut dutch_person = sample_person(PersonId::new());
-        dutch_person.bsn = Some("999995972".parse().expect("bsn"));
+        dutch_person.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         assert!(dutch_person.is_complete());
 
         let mut non_dutch_person = sample_person(PersonId::new());
-        non_dutch_person.bsn = Some("999995972".parse().expect("bsn"));
-        non_dutch_person.country_of_residence = Some("BE".parse().expect("country code"));
+        non_dutch_person.personal_data.bsn =
+            Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
+        non_dutch_person.personal_data.country_of_residence =
+            Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
         assert!(!non_dutch_person.is_complete());
 

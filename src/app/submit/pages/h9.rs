@@ -14,7 +14,7 @@ pub async fn gen_h9(
     path: DownloadH9Path,
     list: FullCandidateList,
     store: AppStore,
-    State(config): State<Config>,
+    State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     // front load the ordering and Typst conversion of candidates
@@ -30,8 +30,8 @@ pub async fn gen_h9(
             candidate,
             &context.session.election,
             path.locale,
-        )?;
-        h9s.push(h9_model);
+        );
+        h9s.push(h9_model?);
     }
     let district_name = if h9s.is_empty() {
         ElectoralDistricts::Some(vec![]).to_string()
@@ -43,7 +43,7 @@ pub async fn gen_h9(
         filename: path.filename(district_name),
         pdfs: h9s,
     }
-    .generate(config.typst_url)
+    .generate(&config.typst_url)
     .await
 }
 
@@ -94,6 +94,7 @@ mod tests {
                 person: sample_person,
             }],
         };
+        let config = Config::new_test();
 
         // test
         let result = gen_h9(
@@ -103,7 +104,7 @@ mod tests {
             },
             full_list,
             store,
-            State(Config::new_test()),
+            State(&config),
             Context::new_test_without_db(),
         )
         .await;
@@ -114,7 +115,6 @@ mod tests {
                 assert!(matches!(err, AppError::IncompleteData(_)));
             }
             _ => {
-                // dbg!(result.unwrap().into_response());
                 panic!("expected missing data error")
             }
         }
@@ -168,12 +168,13 @@ mod tests {
             },
             full_list,
             store,
-            State(config),
+            State(&config),
             Context::new_test_without_db(),
         )
         .await
         .into_response();
 
+        // verify
         assert_eq!(response.status(), StatusCode::OK);
         let headers = response.headers();
         assert_eq!(
@@ -204,7 +205,6 @@ mod tests {
             "no-cache"
         );
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
-
         let body = String::from_utf8(
             body::to_bytes(response.into_body(), 1024)
                 .await
@@ -212,7 +212,6 @@ mod tests {
                 .to_vec(),
         )
         .unwrap();
-
         // the stub returns the number of expected pdfs in the zip (2 candidates = 2 pdfs)
         assert_eq!(body, "2");
 
