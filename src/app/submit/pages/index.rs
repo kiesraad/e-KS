@@ -38,7 +38,6 @@ pub async fn index(
     let candidate_lists = CandidateListSummary::list(&store)?
         .into_iter()
         .map(|summary| {
-            // TODO extract
             let has_required_list_data = summary.person_count > 0
                 && summary.person_count <= context.max_candidates
                 && !summary.list.electoral_districts.is_empty();
