@@ -45,6 +45,7 @@ impl From<ListSubmitter> for ListSubmitterData {
                 house_number: address.house_number,
                 house_number_addition: address.house_number_addition,
                 locality: address.locality,
+                state_or_province: None,
                 postal_code: address.postal_code.map(|postal_code| {
                     postal_code
                         .to_string()

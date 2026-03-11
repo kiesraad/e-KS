@@ -19,6 +19,7 @@ fields:
   name: Naam
   place_of_residence: Woonplaats
   postal_code: Postcode
+  state_or_province: Staat / provincie
   street_name: Straatnaam
   updated_at: Laatst aangepast
 form:

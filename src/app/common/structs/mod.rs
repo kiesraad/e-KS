@@ -18,7 +18,9 @@ mod utc_date_time;
 
 pub use address::{Address, DutchAddress, InternationalAddress};
 pub use bsn::{BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed};
-pub use constrained_string::{FirstName, LegalName, Locality, PlaceOfResidence, StreetName};
+pub use constrained_string::{
+    FirstName, LegalName, Locality, PlaceOfResidence, StateOrProvince, StreetName,
+};
 pub use countries::COUNTRY_CODES;
 pub use country_code::CountryCode;
 pub use date::Date;

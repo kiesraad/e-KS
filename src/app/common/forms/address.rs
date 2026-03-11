@@ -5,7 +5,7 @@ use crate::{
     OptionStringExt,
     common::{
         CountryCode, DutchAddress, HouseNumber, HouseNumberAddition, InternationalAddress,
-        InternationalPostalCode, Locality, PostalCode, StreetName,
+        InternationalPostalCode, Locality, PostalCode, StateOrProvince, StreetName,
     },
 };
 
@@ -49,6 +49,8 @@ pub struct InternationalAddressForm {
     pub country: String,
     #[validate(parse = "Locality", optional)]
     pub locality: String,
+    #[validate(parse = "StateOrProvince", optional)]
+    pub state_or_province: String,
     #[validate(parse = "InternationalPostalCode", optional)]
     pub postal_code: String,
     #[validate(parse = "HouseNumber", optional)]
@@ -64,6 +66,7 @@ impl From<InternationalAddress> for InternationalAddressForm {
         InternationalAddressForm {
             country: address.country.to_string_or_default(),
             locality: address.locality.to_string_or_default(),
+            state_or_province: address.state_or_province.to_string_or_default(),
             postal_code: address.postal_code.to_string_or_default(),
             house_number: address.house_number.to_string_or_default(),
             house_number_addition: address.house_number_addition.to_string_or_default(),
@@ -99,5 +102,6 @@ mod tests {
         assert_eq!("", form.house_number_addition);
         assert_eq!("", form.postal_code);
         assert_eq!("", form.locality);
+        assert_eq!("", form.state_or_province);
     }
 }

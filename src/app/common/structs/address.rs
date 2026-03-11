@@ -4,7 +4,7 @@ use crate::OptionAsStrExt;
 
 use super::{
     CountryCode, HouseNumber, HouseNumberAddition, InternationalPostalCode, Locality, PostalCode,
-    StreetName,
+    StateOrProvince, StreetName,
 };
 
 /// A Dutch postal address with optional components.
@@ -58,6 +58,8 @@ pub struct InternationalAddress {
     pub house_number_addition: Option<HouseNumberAddition>,
     /// City or town.
     pub locality: Option<Locality>,
+    /// State, province, or region.
+    pub state_or_province: Option<StateOrProvince>,
     /// International postal code with relaxed validation.
     pub postal_code: Option<InternationalPostalCode>,
     /// ISO 3166-1 alpha-2 country code.
@@ -81,6 +83,7 @@ impl InternationalAddress {
             && self.house_number_addition.is_empty_or_none()
             && self.postal_code.is_empty_or_none()
             && self.locality.is_empty_or_none()
+            && self.state_or_province.is_empty_or_none()
             && self.country.is_empty_or_none()
     }
 }
@@ -135,6 +138,15 @@ impl Address {
         }
     }
 
+    pub fn state_or_province(&self) -> Option<String> {
+        match self {
+            Address::Dutch(_) => None,
+            Address::International(address) => {
+                address.state_or_province.as_ref().map(ToString::to_string)
+            }
+        }
+    }
+
     /// The street name, house number, and house number addition, e.g. "Main Street 10A".
     ///
     /// Returns `None` if the street name or house number are `None`.
@@ -163,15 +175,28 @@ impl Address {
         }
     }
 
-    /// The locality, postal code, and country, e.g. "12345 Springfield, US".
+    /// The locality, postal code, state/province, and country.
     ///
-    /// Returns `None` if the locality, postal code, or country are `None`.
+    /// Returns `None` if the locality or postal code are `None`.
     pub fn address_line_2(&self) -> Option<String> {
-        match (self.locality(), self.postal_code(), self.country()) {
-            (Some(locality), Some(postal_code), Some(country)) => {
+        match (
+            self.locality(),
+            self.postal_code(),
+            self.state_or_province(),
+            self.country(),
+        ) {
+            (Some(locality), Some(postal_code), Some(state_or_province), Some(country)) => Some(
+                format!("{postal_code} {locality}, {state_or_province} ({country})"),
+            ),
+            (Some(locality), Some(postal_code), Some(state_or_province), None) => {
+                Some(format!("{postal_code} {locality}, {state_or_province}"))
+            }
+            (Some(locality), Some(postal_code), None, Some(country)) => {
                 Some(format!("{postal_code} {locality} ({country})"))
             }
-            (Some(locality), Some(postal_code), _) => Some(format!("{postal_code} {locality}")),
+            (Some(locality), Some(postal_code), None, None) => {
+                Some(format!("{postal_code} {locality}"))
+            }
             _ => None,
         }
     }
@@ -271,6 +296,7 @@ mod tests {
             house_number: Some(HouseNumber::from_str("10").unwrap()),
             house_number_addition: None,
             locality: Some(Locality::from_str("London").unwrap()),
+            state_or_province: Some(StateOrProvince::from_str("Greater London").unwrap()),
             postal_code: Some(InternationalPostalCode::from_str("SW1A 2AA").unwrap()),
             country: Some(CountryCode::from_str("GB").unwrap()),
         }
@@ -296,10 +322,19 @@ mod tests {
             house_number: Some(HouseNumber::default()),
             house_number_addition: Some(HouseNumberAddition::default()),
             locality: Some(Locality::default()),
+            state_or_province: Some(StateOrProvince::default()),
             postal_code: Some(InternationalPostalCode::default()),
             country: Some(CountryCode::default()),
         };
 
         assert!(address.is_empty());
+    }
+
+    #[test]
+    fn international_address_line_2_includes_state_or_province_when_present() {
+        assert_eq!(
+            Some("SW1A 2AA London, Greater London (GB)".to_string()),
+            Address::International(sample_international_address()).address_line_2()
+        );
     }
 }

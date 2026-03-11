@@ -50,6 +50,7 @@ mod tests {
             address: InternationalAddressForm {
                 country: String::new(),
                 locality: "Rotterdam".to_string(),
+                state_or_province: String::new(),
                 postal_code: "3011 CC".to_string(),
                 house_number: "5".to_string(),
                 house_number_addition: "B".to_string(),
@@ -79,6 +80,7 @@ mod tests {
             address: InternationalAddressForm {
                 country: "BE".to_string(),
                 locality: "Brussel".to_string(),
+                state_or_province: "Brussels".to_string(),
                 postal_code: "1000".to_string(),
                 house_number: "1".to_string(),
                 house_number_addition: String::new(),
@@ -97,6 +99,13 @@ mod tests {
                 assert_eq!(
                     address.country,
                     Some("BE".parse::<CountryCode>().expect("country"))
+                );
+                assert_eq!(
+                    address
+                        .state_or_province
+                        .as_deref()
+                        .map(ToString::to_string),
+                    Some("Brussels".to_string())
                 );
             }
             Address::Dutch(_) => panic!("expected international address"),

@@ -19,6 +19,7 @@ fields:
   name: Name
   place_of_residence: Place of residence
   postal_code: Postal code
+  state_or_province: State / province
   street_name: Street name
   updated_at: Updated at
 form:

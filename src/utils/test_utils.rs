@@ -241,6 +241,7 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
         address: InternationalAddressForm {
             country: String::new(),
             locality: "Rotterdam".to_string(),
+            state_or_province: String::new(),
             postal_code: "3011 CC".to_string(),
             house_number: "5".to_string(),
             house_number_addition: "B".to_string(),

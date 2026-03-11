@@ -8,6 +8,7 @@ type CountryInputElements = {
   list: HTMLElement;
   items: HTMLLIElement[];
   nlIndex: number;
+  stateOrProvinceField: HTMLElement | null;
 };
 
 /**
@@ -21,6 +22,9 @@ function getCountryInputElements(input: Element): CountryInputElements | null {
   const list = input.querySelector("ul");
   const items = Array.from(list?.querySelectorAll("li") || []);
   const nlIndex = items.findIndex((item) => item.dataset.country === "NL");
+  const scope = input.closest(".form-row") || input.closest("form") || document;
+  const stateInput = scope.querySelector("#state_or_province");
+  const stateOrProvinceField = stateInput?.closest(".form-field") || null;
 
   if (!textInput || !flagIcon || !hint || !list || items.length === 0) {
     console.error("Country input is missing required elements");
@@ -39,6 +43,7 @@ function getCountryInputElements(input: Element): CountryInputElements | null {
     list,
     items,
     nlIndex,
+    stateOrProvinceField: stateOrProvinceField as HTMLElement | null,
   };
 }
 
@@ -69,7 +74,35 @@ function hideList(list: HTMLElement) {
  * Toggles the hint visibility based on the selected country.
  */
 function updateHintVisibility(textInput: HTMLInputElement, hint: HTMLElement) {
-  hint.style.display = textInput.value === "NL" ? "none" : "inline";
+  hint.style.display =
+    textInput.value.toUpperCase() === "NL" ? "none" : "inline";
+}
+
+/**
+ * Toggles the state/province field based on the selected country.
+ */
+function updateStateOrProvinceVisibility(
+  textInput: HTMLInputElement,
+  stateOrProvinceField: HTMLElement | null,
+) {
+  if (!stateOrProvinceField) {
+    return;
+  }
+
+  stateOrProvinceField.style.display =
+    textInput.value.toUpperCase() === "NL" ? "none" : "";
+}
+
+/**
+ * Syncs all country-dependent UI elements.
+ */
+function updateCountryDependentUi(
+  textInput: HTMLInputElement,
+  hint: HTMLElement,
+  stateOrProvinceField: HTMLElement | null,
+) {
+  updateHintVisibility(textInput, hint);
+  updateStateOrProvinceVisibility(textInput, stateOrProvinceField);
 }
 
 /**
@@ -126,11 +159,16 @@ function findActiveIndex(
  * Wires up all behaviors for a single country input instance.
  */
 function initCountryInput(elements: CountryInputElements) {
-  const { textInput, hint, flagIcon, list, items, nlIndex } = elements;
+  const {
+    textInput,
+    hint,
+    flagIcon,
+    list,
+    items,
+    nlIndex,
+    stateOrProvinceField,
+  } = elements;
   let active = 0;
-
-  // hide hint
-  hint.style.display = "none";
 
   configureTextInput(textInput);
   selectDefaultCountry(textInput);
@@ -140,10 +178,12 @@ function initCountryInput(elements: CountryInputElements) {
     active = findActiveIndex(textInput, items, nlIndex);
     setActiveIndex(items, active);
     setFlagIcon(textInput, items, flagIcon);
+    updateCountryDependentUi(textInput, hint, stateOrProvinceField);
   };
 
   // render initial icon
   setFlagIcon(textInput, items, flagIcon);
+  updateCountryDependentUi(textInput, hint, stateOrProvinceField);
 
   // show the suggestion list when focus on country code input
   textInput.addEventListener("focus", () => {
@@ -154,7 +194,7 @@ function initCountryInput(elements: CountryInputElements) {
   textInput.addEventListener("blur", () => {
     setTimeout(() => {
       hideList(list);
-      updateHintVisibility(textInput, hint);
+      updateCountryDependentUi(textInput, hint, stateOrProvinceField);
     }, 200);
   });
 
@@ -164,6 +204,7 @@ function initCountryInput(elements: CountryInputElements) {
     item.addEventListener("click", () => {
       textInput.value = item.dataset.country || "";
       setFlagIcon(textInput, items, flagIcon);
+      updateCountryDependentUi(textInput, hint, stateOrProvinceField);
       hideList(list);
     });
   });
@@ -188,6 +229,7 @@ function initCountryInput(elements: CountryInputElements) {
       const selectedIndex = active % items.length;
       textInput.value = items[selectedIndex].dataset.country || "";
       setFlagIcon(textInput, items, flagIcon);
+      updateCountryDependentUi(textInput, hint, stateOrProvinceField);
       hideList(list);
     }
   });
