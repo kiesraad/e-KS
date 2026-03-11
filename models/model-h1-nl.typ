@@ -17,10 +17,11 @@ Het gaat om de verkiezing van: *#input.election_name*
 
 
 = Kieskringen
-De kandidatenlijst wordt ingeleverd voor:
+De kandidatenlijst wordt ingeleverd voor
 #if input.electoral_districts.tag == "All" {
-  [*alle kieskringen*]
+  [*alle kieskringen.*]
 } else {
+  [*de volgende kieskring(en):*]
   block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
 }
 

@@ -37,7 +37,10 @@
     grid.hline(stroke: 1pt),
     v(0.5em),
     text(size: 1.5em, weight: "bold", model),
-    text(size: 2em, weight: "bold", name),
+    text(size: 2em, weight: "bold", {
+      set par(leading: 0.4em)
+      name
+    }),
     text(explanation),
     v(0.5em),
     grid.hline(stroke: 1pt),
@@ -50,26 +53,12 @@
   assert.eq(
     columns.len(),
     headers.len(),
-    message: "columns.len() ("
-      + repr(columns.len())
-      + ") != headers.len() ("
-      + repr(headers.len())
-      + ")\ncolumns="
-      + repr(columns)
-      + "\nheaders="
-      + repr(headers),
+    message: "the number of headers does not match the number of columns",
   )
   assert.eq(
     columns.len(),
     values.at(0).len(),
-    message: "columns.len() ("
-      + repr(columns.len())
-      + ") != values[0].len() ("
-      + repr(values.at(0).len())
-      + ")\ncolumns="
-      + repr(columns)
-      + "\nvalues[0]="
-      + repr(values.at(0)),
+    message: "the first row of values does not match the number of columns",
   )
 
   table(

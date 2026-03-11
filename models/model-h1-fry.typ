@@ -17,10 +17,11 @@ It giet om de ferkiezing fan: *#input.election_name*
 
 
 = Kiesrûnten
-De kandidatelist wurdt ynlevere foar:
+De kandidatelist wurdt ynlevere foar
 #if input.electoral_districts.tag == "All" {
-  [*alle kiesrûnten*]
+  [*alle kiesrûnten.*]
 } else {
+  [*de neikommende kiesrûnte(n):*]
   block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
 }
 
