@@ -30,7 +30,7 @@ impl TypstCandidate {
             locality: candidate
                 .person
                 .personal_data
-                .place_of_residence
+                .locality()
                 .clone()
                 .ok_or(AppError::IncompleteData("Missing locality for candidate"))?
                 .to_string(),

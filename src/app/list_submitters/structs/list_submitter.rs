@@ -19,7 +19,7 @@ impl From<ListSubmitterData> for ListSubmitter {
             .address
             .country
             .as_ref()
-            .is_none_or(|country| country.as_str() == "NL");
+            .is_none_or(|country| country.is_nl());
 
         let address = if is_dutch {
             try_into_dutch_address(&value.address)

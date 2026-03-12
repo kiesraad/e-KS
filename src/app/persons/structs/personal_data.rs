@@ -13,3 +13,15 @@ pub struct PersonalData {
     pub place_of_residence: Option<PlaceOfResidence>,
     pub country: Option<CountryCode>,
 }
+
+impl PersonalData {
+    pub fn locality(&self) -> Option<String> {
+        match (&self.place_of_residence, &self.country) {
+            (Some(place), Some(country)) if !country.is_nl() => {
+                Some(format!("{} ({})", place, country))
+            }
+            (Some(place), _) => Some(place.to_string()),
+            _ => None,
+        }
+    }
+}
