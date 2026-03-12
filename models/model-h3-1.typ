@@ -1,7 +1,7 @@
 #import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono
 
 #let input = json("./input.json")
-#let trans = (dutch, frisian) => if input.locale == "FRY" { frisian } else { dutch }
+#let trans = (dutch, frisian) => if input.locale == "fry" { frisian } else { dutch }
 #show: doc => conf(
   doc,
   "Model H 3-1",
@@ -64,7 +64,7 @@
   "Ik geef toestemming aan",
   "Ik jou tastimming oan",
 )
-*#submitter.last_name, #submitter.initials (#submitter.first_name)*
+*#submitter.last_name, #submitter.initials* // TODO: add  (#submitter.first_name) #417
 #trans(
   "om de onder punt 3 vermelde aanduiding boven de kandidatenlijst te plaatsen.",
   "om de ûnder punt 3 neamde oantsjutting boppe de kandidatelist te pleatsen.",
@@ -91,7 +91,7 @@
       "Naam van de gemachtigde van de politieke groepering",
       "Namme fan de lêsthawwer fan de politike groepearring",
     ),
-    [#agent.last_name, #agent.initials (#agent.first_name)],
+    [#agent.last_name, #agent.initials], // TODO: add (#agent.first_name) #417
   ),
   (
     trans(

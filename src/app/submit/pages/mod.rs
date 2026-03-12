@@ -5,6 +5,7 @@ use serde::Deserialize;
 use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLocale};
 
 mod h1;
+mod h3_1;
 mod h9;
 mod index;
 
@@ -15,6 +16,13 @@ pub struct SubmitPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{list_id}/{locale}/h1.pdf", rejection(AppError))]
 pub struct DownloadH1Path {
+    list_id: CandidateListId,
+    locale: ModelLocale,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/generate/{list_id}/{locale}/h3_1.pdf", rejection(AppError))]
+pub struct DownloadH31Path {
     list_id: CandidateListId,
     locale: ModelLocale,
 }
@@ -36,6 +44,7 @@ pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)
         .typed_get(h1::gen_h1)
+        .typed_get(h3_1::gen_h3_1)
         .typed_get(h9::gen_h9)
 }
 
@@ -43,6 +52,7 @@ pub fn router() -> Router<AppState> {
 mod tests {
     use axum::{
         Router,
+        extract::Path,
         routing::{get, post},
     };
     use serde_json::Value;
@@ -53,8 +63,14 @@ mod tests {
     pub async fn setup_typst_webservice_stub() -> (JoinHandle<()>, Config) {
         let router = Router::new()
             .route(
-                "/render-pdf/model-h1-nl.typ/{file_name}",
-                get(|file_name: String| async { file_name }),
+                "/render-pdf/{template}/{file_name}",
+                get(
+                    |Path((template, file_name)): Path<(String, String)>| async move {
+                        assert!(template.ends_with(".typ"));
+                        assert!(std::fs::exists(format!("./models/{template}")).unwrap());
+                        file_name
+                    },
+                ),
             )
             .route(
                 "/render-pdf/batch",

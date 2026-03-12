@@ -5,4 +5,4 @@ mod pages;
 mod structs;
 
 pub use pages::{SubmitPath, router};
-pub use structs::{h1::H1, h9::H9};
+pub use structs::{h1::H1, h3_1::H31, h9::H9};

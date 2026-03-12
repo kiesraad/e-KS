@@ -15,6 +15,8 @@ struct SubmitCandidateList {
     list: CandidateList,
     download_h1_path_nl: String,
     download_h1_path_fry: String,
+    download_h3_1_path_nl: String,
+    download_h3_1_path_fry: String,
     download_h9_path_nl: String,
     download_h9_path_fry: String,
     person_count: usize,
@@ -55,6 +57,16 @@ pub async fn index(
                 }
                 .to_string(),
                 download_h1_path_fry: super::DownloadH1Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Fry,
+                }
+                .to_string(),
+                download_h3_1_path_nl: super::DownloadH31Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Nl,
+                }
+                .to_string(),
+                download_h3_1_path_fry: super::DownloadH31Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Fry,
                 }
