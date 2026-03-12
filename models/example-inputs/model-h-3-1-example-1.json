@@ -1,5 +1,6 @@
 {
-  "election_name": "de Tweede Kamer der Staten-Generaal",
+  "locale": "NL",
+  "election_name": "Tweede Kamer der Staten-Generaal 2027",
   "election_type": "TK",
   "electoral_districts": {
     "tag": "Some",

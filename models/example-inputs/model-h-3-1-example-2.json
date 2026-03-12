@@ -1,6 +1,7 @@
 {
-  "election_name": "de Tweede Kamer der Staten-Generaal",
-  "election_type": "TK",
+  "locale": "FRY",
+  "election_name": "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
+  "election_type": "EK",
   "electoral_districts": {
     "tag": "All"
   },
