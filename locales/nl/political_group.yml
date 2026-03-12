@@ -24,7 +24,7 @@ multiple_submitter_info: "Wanneer u meerdere lijsten aanmaakt, kunt u per lijst 
 no_authorised_agents: Geen gemachtigden
 no_list_submitters: Geen lijstinleveraars
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen
-select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen. De lijstinleveraar moet in Nederland wonen.
+select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 substitute_submitter_data: Vervangers voor het herstel van verzuimen
 substitute_submitters_info: "Het centraal stembureau controleert de stukken die worden overhandigd op de dag van kandidaatstelling. Mochten hierbij verzuimen worden vastgesteld, dan ontvangt u hierover schriftelijk bericht. In het bericht dat u van het centraal stembureau ontvangt staat ook tot wanneer verzuimen kunnen worden hersteld."
 title: Politieke groepering
