@@ -27,15 +27,14 @@ mod tests {
         core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::PersonId,
+        submit::pages::tests::setup_typst_webservice_stub,
         test_utils::{sample_candidate_list, sample_list_submitter, sample_person},
     };
     use axum::{
-        Router,
         http::{StatusCode, header},
         response::IntoResponse,
-        routing::get,
     };
-    use tokio::net::TcpListener;
+    use regex::Regex;
 
     #[tokio::test]
     async fn gen_h1_missing_list_submitter_returns_error() -> Result<(), AppError> {
@@ -89,20 +88,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
-        let router = Router::new().route(
-            "/render-pdf/model-h1-nl.typ/model-h1-nl.pdf",
-            get(|| async { "pdf" }),
-        );
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-        let server = tokio::spawn(async move {
-            axum::serve(listener, router).await.unwrap();
-        });
-
-        let config = Config {
-            storage_url: "memory:".to_string(),
-            typst_url: format!("http://{addr}"),
-        };
+        let (server, config) = setup_typst_webservice_stub().await;
 
         let response = gen_h1(
             DownloadH1Path {
@@ -125,11 +111,16 @@ mod tests {
                 .expect("content type header"),
             "application/pdf"
         );
-        assert_eq!(
-            headers
-                .get(header::CONTENT_DISPOSITION)
-                .expect("content disposition header"),
-            "attachment; filename=\"model-h1-nl.pdf\""
+        assert!(
+            Regex::new("attachment; filename=\"model-h1-nl-\\((.{2}-)*(.{2})\\)\\.pdf\"")
+                .unwrap()
+                .is_match(
+                    headers
+                        .get(header::CONTENT_DISPOSITION)
+                        .expect("content disposition header")
+                        .to_str()
+                        .unwrap()
+                )
         );
         assert_eq!(
             headers

@@ -3,7 +3,6 @@ const COUNTRY_INPUT_SELECTOR = ".country-input";
 
 type CountryInputElements = {
   textInput: HTMLInputElement;
-  hint: HTMLSpanElement;
   flagIcon: HTMLSpanElement;
   list: HTMLElement;
   items: HTMLLIElement[];
@@ -16,13 +15,12 @@ type CountryInputElements = {
  */
 function getCountryInputElements(input: Element): CountryInputElements | null {
   const textInput = input.querySelector("input");
-  const hint = input.parentNode?.querySelector(".hint") || null;
   const flagIcon = input.querySelector(".icon");
   const list = input.querySelector("ul");
   const items = Array.from(list?.querySelectorAll("li") || []);
   const nlIndex = items.findIndex((item) => item.dataset.country === "NL");
 
-  if (!textInput || !flagIcon || !hint || !list || items.length === 0) {
+  if (!textInput || !flagIcon || !list || items.length === 0) {
     console.error("Country input is missing required elements");
     return null;
   }
@@ -34,7 +32,6 @@ function getCountryInputElements(input: Element): CountryInputElements | null {
 
   return {
     textInput,
-    hint: hint as HTMLSpanElement,
     flagIcon: flagIcon as HTMLSpanElement,
     list,
     items,
@@ -68,8 +65,18 @@ function hideList(list: HTMLElement) {
 /**
  * Toggles the hint visibility based on the selected country.
  */
-function updateHintVisibility(textInput: HTMLInputElement, hint: HTMLElement) {
-  hint.style.display = textInput.value === "NL" ? "none" : "inline";
+function updateVisibility(textInput: HTMLInputElement) {
+  const is_nl = textInput.value.toUpperCase() === "NL";
+
+  // toggle elements with class hide-nl
+  document.querySelectorAll(".hide-nl").forEach((el) => {
+    (el as HTMLElement).style.display = is_nl ? "none" : "";
+  });
+
+  // toggle elements with class show-nl
+  document.querySelectorAll(".show-nl").forEach((el) => {
+    (el as HTMLElement).style.display = is_nl ? "" : "none";
+  });
 }
 
 /**
@@ -126,11 +133,8 @@ function findActiveIndex(
  * Wires up all behaviors for a single country input instance.
  */
 function initCountryInput(elements: CountryInputElements) {
-  const { textInput, hint, flagIcon, list, items, nlIndex } = elements;
+  const { textInput, flagIcon, list, items, nlIndex } = elements;
   let active = 0;
-
-  // hide hint
-  hint.style.display = "none";
 
   configureTextInput(textInput);
   selectDefaultCountry(textInput);
@@ -140,10 +144,12 @@ function initCountryInput(elements: CountryInputElements) {
     active = findActiveIndex(textInput, items, nlIndex);
     setActiveIndex(items, active);
     setFlagIcon(textInput, items, flagIcon);
+    updateVisibility(textInput);
   };
 
   // render initial icon
   setFlagIcon(textInput, items, flagIcon);
+  updateVisibility(textInput);
 
   // show the suggestion list when focus on country code input
   textInput.addEventListener("focus", () => {
@@ -154,7 +160,7 @@ function initCountryInput(elements: CountryInputElements) {
   textInput.addEventListener("blur", () => {
     setTimeout(() => {
       hideList(list);
-      updateHintVisibility(textInput, hint);
+      updateVisibility(textInput);
     }, 200);
   });
 
@@ -164,6 +170,7 @@ function initCountryInput(elements: CountryInputElements) {
     item.addEventListener("click", () => {
       textInput.value = item.dataset.country || "";
       setFlagIcon(textInput, items, flagIcon);
+      updateVisibility(textInput);
       hideList(list);
     });
   });
@@ -188,6 +195,7 @@ function initCountryInput(elements: CountryInputElements) {
       const selectedIndex = active % items.length;
       textInput.value = items[selectedIndex].dataset.country || "";
       setFlagIcon(textInput, items, flagIcon);
+      updateVisibility(textInput);
       hideList(list);
     }
   });

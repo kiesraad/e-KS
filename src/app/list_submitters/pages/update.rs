@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, filters,
     form::FormData,
-    list_submitters::{ListSubmitter, ListSubmitterForm},
+    list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
     redirect_success,
 };
 
@@ -42,7 +42,10 @@ pub async fn update_list_submitter_submit(
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&list_submitter, &context.session.csrf_tokens) {
+    match form.validate_update(
+        &ListSubmitterData::from(list_submitter.clone()),
+        &context.session.csrf_tokens,
+    ) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
                 list_submitter,
@@ -51,8 +54,12 @@ pub async fn update_list_submitter_submit(
             context,
         )
         .into_response()),
-        Ok(list_submitter) => {
-            list_submitter.update(&store).await?;
+        Ok(list_submitter_data) => {
+            let updated = ListSubmitter {
+                id: list_submitter.id,
+                ..list_submitter_data.into()
+            };
+            updated.update(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }

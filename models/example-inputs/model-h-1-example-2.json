@@ -8,38 +8,57 @@
   "candidates": [
     {
       "last_name": "Akwasi",
-      "initials": "M. (v)",
-      "date_of_birth": "01-09-1997",
-      "locality": "Ede"
+      "initials": "M. (Maria) (v)",
+      "date_of_birth": {
+        "year": 1997,
+        "month": 12,
+        "day": 25
+      },
+      "locality": "Ede",
+      "position": 1
     },
     {
       "last_name": "Altena",
-      "initials": "J. (m)",
-      "date_of_birth": "23-06-1984",
-      "locality": "'s-Gravenhage"
+      "initials": "J. (Jeroen) (m)",
+      "date_of_birth": {
+        "year": 2001,
+        "month": 10,
+        "day": 30
+      },
+      "locality": "'s-Gravenhage",
+      "position": 2
     },
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E. (v)",
-      "date_of_birth": "07-06-1979",
-      "locality": "Rotterdam"
+      "initials": "I.E. (Ingeborg) (v)",
+      "date_of_birth": {
+        "year": 2005,
+        "month": 3,
+        "day": 5
+      },
+      "locality": "Rotterdam",
+      "position": 3
     }
   ],
   "previously_seated": false,
   "list_submitter": {
     "last_name": "van Smit",
     "initials": "G.H.",
-    "postal_address": "Grotestraat 3",
-    "postal_code": "3000AA",
-    "locality": "Rotterdam"
+    "postal_address": {
+      "street_address": "Grotestraat 3",
+      "postal_code": "3000AA",
+      "locality": "Rotterdam"
+    }
   },
   "substitute_submitter": [
     {
       "last_name": "Bronwaßer",
       "initials": "I.E.",
-      "postal_address": "Grotestraat 3",
-      "postal_code": "3000AA",
-      "locality": "Rotterdam"
+      "postal_address": {
+        "street_address": "Grotestraat 3",
+        "postal_code": "3000AA",
+        "locality": "Rotterdam"
+      }
     }
   ],
   "timestamp": {

@@ -1,45 +1,13 @@
-use chrono::{Datelike, Timelike, Utc};
-use serde::Serialize;
-
+pub mod electoral_districts;
 pub mod h1;
+pub mod h9;
+pub mod typst_candidate;
+mod typst_datetime;
+mod typst_detailed_candidate;
+mod typst_person;
+mod typst_postal_address;
 
-#[derive(Debug, Serialize)]
-struct TypstDatetime {
-    year: i32,
-    month: u32,
-    day: u32,
-    hour: u32,
-    minute: u32,
-    second: u32,
-}
-
-impl TypstDatetime {
-    fn now() -> Self {
-        let now = Utc::now();
-        Self {
-            year: now.year(),
-            month: now.month(),
-            day: now.day(),
-            hour: now.hour(),
-            minute: now.minute(),
-            second: now.second(),
-        }
-    }
-}
-
-#[derive(Debug, Serialize)]
-struct TypstDate {
-    year: i32,
-    month: u32,
-    day: u32,
-}
-
-impl From<crate::common::Date> for TypstDate {
-    fn from(date: crate::common::Date) -> Self {
-        Self {
-            year: date.year(),
-            month: date.month(),
-            day: date.day(),
-        }
-    }
-}
+use electoral_districts::ElectoralDistricts;
+use typst_candidate::{TypstCandidate, ordered_candidates};
+use typst_datetime::TypstDatetime;
+use typst_person::{TypstPerson, substitute_submitter_from_ids};

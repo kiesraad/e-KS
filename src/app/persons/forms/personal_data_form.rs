@@ -26,7 +26,7 @@ pub struct PersonalDataFieldsForm {
     #[validate(parse = "PlaceOfResidence", optional)]
     pub place_of_residence: String,
     #[validate(parse = "CountryCode", optional)]
-    pub country_of_residence: String,
+    pub country: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -60,7 +60,7 @@ impl From<PersonalData> for PersonalDataFieldsForm {
                 .map(|s| s.to_exposed_string())
                 .unwrap_or_default(),
             place_of_residence: personal_data.place_of_residence.to_string_or_default(),
-            country_of_residence: personal_data.country_of_residence.to_string_or_default(),
+            country: personal_data.country.to_string_or_default(),
         }
     }
 }
@@ -153,7 +153,7 @@ mod tests {
         current.personal_data.gender = Some(Gender::Female);
         current.personal_data.first_name = Some(parse_first_name("Evert"));
         current.personal_data.place_of_residence = Some(parse_place_of_residence("Waterdam"));
-        current.personal_data.country_of_residence = Some(parse_country_code("NL"));
+        current.personal_data.country = Some(parse_country_code("NL"));
         current.address = DutchAddress {
             locality: Some("Heemdamseburg".parse().expect("locality")),
             postal_code: Some("1234AB".parse().expect("postal code")),
@@ -176,7 +176,7 @@ mod tests {
                 date_of_birth: "01-02-2020".to_string(),
                 bsn: "none-confirmed".to_string(),
                 place_of_residence: "Waterdam".to_string(),
-                country_of_residence: " nl ".to_string(),
+                country: " nl ".to_string(),
             },
             csrf_token: tokens.issue().value,
         };
@@ -221,7 +221,7 @@ mod tests {
         assert_eq!(
             updated
                 .personal_data
-                .country_of_residence
+                .country
                 .as_deref()
                 .map(|v| v.to_string()),
             Some("NL".to_string())
@@ -276,7 +276,7 @@ mod tests {
                 date_of_birth: "2020/01/01".to_string(),
                 bsn: "".to_string(),
                 place_of_residence: "x".to_string(),
-                country_of_residence: "xx".to_string(),
+                country: "xx".to_string(),
             },
             csrf_token: tokens.issue().value,
         };
@@ -313,7 +313,7 @@ mod tests {
             ValidationError::ValueTooShort(1, 2)
         )));
         assert!(errors.contains(&(
-            "personal_data.country_of_residence".to_string(),
+            "personal_data.country".to_string(),
             ValidationError::InvalidValue
         )));
     }

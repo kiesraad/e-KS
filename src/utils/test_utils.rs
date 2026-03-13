@@ -6,13 +6,15 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
-        CountryCode, Date, DisplayName, DutchAddress, DutchAddressForm, FirstName, FullName,
-        FullNameForm, Gender, HouseNumber, HouseNumberAddition, Initials, LastName, LastNamePrefix,
+        Address, BsnOrNoneConfirmed, CountryCode, Date, DisplayName, DutchAddress,
+        DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
+        HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
         LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{
-        AddressForm, Person, PersonId, PersonalDataForm, Representative, RepresentativeForm,
+        AddressForm, Person, PersonId, PersonalData, PersonalDataForm, Representative,
+        RepresentativeForm,
     },
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
@@ -129,13 +131,13 @@ pub fn sample_person(id: PersonId) -> Person {
     Person {
         id,
         name: sample_full_name("Jansen", None, "H.A.H.A."),
-        personal_data: crate::persons::PersonalData {
+        personal_data: PersonalData {
             gender: Some(Gender::Female),
             first_name: Some(parse_first_name("Henk")),
             date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
-            bsn: None,
+            bsn: Some(BsnOrNoneConfirmed::NoneConfirmed),
             place_of_residence: Some(parse_place_of_residence("Juinen")),
-            country_of_residence: Some(parse_country_code("NL")),
+            country: Some(parse_country_code("NL")),
         },
         address: sample_dutch_address("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
         representative: Representative::default(),
@@ -167,7 +169,7 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonalDataForm {
             date_of_birth: "01-02-1990".to_string(),
             bsn: "none-confirmed".to_string(),
             place_of_residence: "Juinen".to_string(),
-            country_of_residence: "NL".to_string(),
+            country: "NL".to_string(),
         },
         csrf_token: csrf_token.clone(),
     }
@@ -223,14 +225,28 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
     ListSubmitter {
         id,
         name: sample_full_name("Bos", None, "E.F."),
-        address: sample_dutch_address("Rotterdam", "3011 CC", "5", "B", "Coolsingel"),
+        address: Address::Dutch(sample_dutch_address(
+            "Rotterdam",
+            "3011 CC",
+            "5",
+            "B",
+            "Coolsingel",
+        )),
     }
 }
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
         name: sample_full_name_form("Bos", "", "E.F."),
-        address: sample_dutch_address_form("Rotterdam", "3011 CC", "5", "B", "Coolsingel"),
+        address: InternationalAddressForm {
+            country: String::new(),
+            locality: "Rotterdam".to_string(),
+            state_or_province: String::new(),
+            postal_code: "3011 CC".to_string(),
+            house_number: "5".to_string(),
+            house_number_addition: "B".to_string(),
+            street_name: "Coolsingel".to_string(),
+        },
         csrf_token: csrf_token.clone(),
     }
 }

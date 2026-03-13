@@ -1,9 +1,6 @@
 apiVersion: v2
 name: e-ks
 description: The Helm chart for e-ks
-
 type: application
-
 version: 0.0.1
-
-appVersion: "0.0.1"
+appVersion: "0.5.0"

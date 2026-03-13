@@ -1,0 +1,17 @@
+<div class="country-input input-icon">
+  <span class="icon">🌐</span>
+  <input type="text"
+         name="country"
+         id="country"
+         value="{{ country_value }}"
+         minlength="2"
+         maxlength="2"
+         required />
+  <ul>
+    {% for country in crate::common::COUNTRY_CODES %}
+      <li data-country="{{ country }}">
+        <span class="icon">{{ country|flag }}</span> {{ country }}
+      </li>
+    {% endfor %}
+  </ul>
+</div>

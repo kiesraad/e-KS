@@ -5,7 +5,7 @@ autoformat_initials: Auto-format initials
 correspondence_address: Correspondence address
 fields:
   bsn: Social security number (BSN)
-  country_of_residence: Country code
+  country: Country code
   date_of_birth: Date of birth
   first_name: First name
   gender: Gender
@@ -19,6 +19,7 @@ fields:
   name: Name
   place_of_residence: Place of residence
   postal_code: Postal code
+  state_or_province: State / province
   street_name: Street name
   updated_at: Updated at
 form:
@@ -26,7 +27,7 @@ form:
     title: Add person
   delete_warning_text: Are you sure you want to delete this person?
 hints:
-  country_of_residence: "For a candidate that does not have a Dutch correspondence address, an authorised agent is required."
+  country: "For a candidate that does not have a Dutch correspondence address, an authorised agent is required."
   first_name: Only fill in if this should be displayed on the candidate list.
   gender: Only fill in if this should be displayed on the candidate list.
   optional: optional

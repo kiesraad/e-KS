@@ -1,0 +1,11 @@
+{{ range .Values.dbs }}
+apiVersion: postgresql.cnpg.io/v1
+kind: Database
+metadata:
+  name: eks
+spec:
+  cluster:
+    name: postgres-cluster
+  name: {{ .name | quote }}
+  owner: {{ .owner | quote }}
+{{ end }}

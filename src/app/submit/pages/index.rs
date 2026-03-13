@@ -13,8 +13,10 @@ use super::SubmitPath;
 
 struct SubmitCandidateList {
     list: CandidateList,
-    download_path_nl: String,
-    download_path_fry: String,
+    download_h1_path_nl: String,
+    download_h1_path_fry: String,
+    download_h9_path_nl: String,
+    download_h9_path_fry: String,
     person_count: usize,
     duplicate_districts: Vec<ElectoralDistrict>,
     can_download: bool,
@@ -36,8 +38,9 @@ pub async fn index(
     let candidate_lists = CandidateListSummary::list(&store)?
         .into_iter()
         .map(|summary| {
-            let has_required_list_data =
-                summary.person_count > 0 && !summary.list.electoral_districts.is_empty();
+            let has_required_list_data = summary.person_count > 0
+                && summary.person_count <= context.max_candidates
+                && !summary.list.electoral_districts.is_empty();
             let can_download = if has_required_list_data {
                 let full_list = FullCandidateList::get(&store, summary.list.id)?;
                 H1::new(&store, full_list, &election, ModelLocale::Nl).is_ok()
@@ -46,12 +49,22 @@ pub async fn index(
             };
 
             Ok(SubmitCandidateList {
-                download_path_nl: super::DownloadH1Path {
+                download_h1_path_nl: super::DownloadH1Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Nl,
                 }
                 .to_string(),
-                download_path_fry: super::DownloadH1Path {
+                download_h1_path_fry: super::DownloadH1Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Fry,
+                }
+                .to_string(),
+                download_h9_path_nl: super::DownloadH9Path {
+                    list_id: summary.list.id,
+                    locale: ModelLocale::Nl,
+                }
+                .to_string(),
+                download_h9_path_fry: super::DownloadH9Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Fry,
                 }

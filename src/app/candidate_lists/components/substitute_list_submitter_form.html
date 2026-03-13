@@ -15,10 +15,9 @@
               <span>
                 <strong>{{ submitter.name.last_name_with_prefix() }}</strong>, {{ submitter.name.initials }}
                 <br />
-                {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+                {{ submitter.address_line_1() }}
                 <br />
-                {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
-                <br />
+                {{ submitter.address_line_2() }}
               </span>
             </label>
           {% endfor %}

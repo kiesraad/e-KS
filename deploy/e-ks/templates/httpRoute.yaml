@@ -59,30 +59,10 @@ spec:
             group: traefik.io
             kind: Middleware
             name: security-headers
-  {{- if .Values.requireLogin }}
-        - type: ExtensionRef
-          extensionRef:
-            group: traefik.io
-            kind: Middleware
-            name: auth
-  {{- end }}
 
       backendRefs:
         - name: eks
           port: 80
----
-apiVersion: traefik.io/v1alpha1
-kind: Middleware
-metadata:
-  name: auth
-  namespace: {{ .Release.Namespace }}
-spec:
-  chain:
-    middlewares:
-      - name: auth-error-redirection
-        namespace: ingress
-      - name: test-auth
-        namespace: ingress
 ---
 apiVersion: traefik.io/v1alpha1
 kind: Middleware

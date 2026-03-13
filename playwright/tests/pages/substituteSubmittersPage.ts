@@ -49,6 +49,7 @@ export class SubstituteSubmittersPage {
         await this.page.goto(href);
         await this.buttonDelete.click();
         await this.buttonConfirmDelete.click();
+        await this.page.waitForURL("**/list-submitters");
       }
     }
   }

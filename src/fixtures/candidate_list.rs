@@ -74,7 +74,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             ElectoralDistrict::GE,
             ElectoralDistrict::OV,
         ],
-        candidates: valid_person_ids,
+        candidates: valid_person_ids[..FIXTURE_CANDIDATE_LIST_SIZE / 2].to_vec(),
         ..candidate_list
     }
     .create(store)

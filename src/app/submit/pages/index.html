@@ -27,10 +27,14 @@
           {% endif %}
           <div class="card-actions">
             {% if candidate_list.can_download %}
-              <a href="{{ candidate_list.download_path_nl }}"
+              <a href="{{ candidate_list.download_h1_path_nl }}"
                  class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_path_fry }}"
+              <a href="{{ candidate_list.download_h1_path_fry }}"
                  class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+              <a href="{{ candidate_list.download_h9_path_nl }}"
+                 class="button secondary icon-print">{{ "action.download_h9"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+              <a href="{{ candidate_list.download_h9_path_fry }}"
+                 class="button secondary icon-print">{{ "action.download_h9"|trans }} ({{ "common.languages.frisian"|trans }})</a>
             {% else %}
               <a class="button secondary icon-print disabled"
                  disabled
@@ -38,6 +42,12 @@
               <a class="button secondary icon-print disabled"
                  disabled
                  aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+              <a class="button secondary icon-print disabled"
+                 disabled
+                 aria-disabled="true">{{ "action.download_h9"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+              <a class="button secondary icon-print disabled"
+                 disabled
+                 aria-disabled="true">{{ "action.download_h9"|trans }} ({{ "common.languages.frisian"|trans }})</a>
             {% endif %}
           </div>
         </div>

@@ -214,7 +214,7 @@ mod tests {
     fn candidate_after_create_path_depends_on_residence() {
         let list_id = CandidateListId::new();
         let mut dutch_person = sample_person(PersonId::new());
-        dutch_person.personal_data.country_of_residence =
+        dutch_person.personal_data.country =
             Some("NL".parse::<CountryCode>().expect("country code"));
         let dutch_candidate = Candidate {
             list_id,
@@ -223,7 +223,7 @@ mod tests {
         };
 
         let mut foreign_person = sample_person(PersonId::new());
-        foreign_person.personal_data.country_of_residence =
+        foreign_person.personal_data.country =
             Some("BE".parse::<CountryCode>().expect("country code"));
         let foreign_candidate = Candidate {
             list_id,

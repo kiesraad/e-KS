@@ -1,0 +1,4 @@
+apiVersion: v2
+name: cnpg-standaard-platform
+description: Cloud Native Postgres for Standaard Platform
+version: 0.0.1

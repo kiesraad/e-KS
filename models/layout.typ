@@ -46,17 +46,44 @@
   #doc
 ]
 
-#let column_table(columns: (), headers: (), values: ()) = table(
-  columns: columns,
-  table.header(..headers.map(value => { text(style: "italic", value) })),
-  ..values.flatten(),
-)
+#let column_table(columns: (), headers: (), values: ()) = {
+  assert.eq(
+    columns.len(),
+    headers.len(),
+    message: "columns.len() ("
+      + repr(columns.len())
+      + ") != headers.len() ("
+      + repr(headers.len())
+      + ")\ncolumns="
+      + repr(columns)
+      + "\nheaders="
+      + repr(headers),
+  )
+  assert.eq(
+    columns.len(),
+    values.at(0).len(),
+    message: "columns.len() ("
+      + repr(columns.len())
+      + ") != values[0].len() ("
+      + repr(values.at(0).len())
+      + ")\ncolumns="
+      + repr(columns)
+      + "\nvalues[0]="
+      + repr(values.at(0)),
+  )
+
+  table(
+    columns: columns,
+    table.header(..headers.map(value => { text(style: "italic", value) })),
+    ..values.flatten(),
+  )
+}
 
 /// Table with numbers in the first column
 #let enumerated_table(columns: (), headers: (), values: ()) = column_table(
   columns: (auto, ..columns),
   headers: ([], ..headers),
-  values: values.enumerate().map(((i, value)) => (str(i + 1), value)),
+  values: values.enumerate().map(((i, value)) => (str(i + 1), ..value)),
 )
 
 /// Table with two columns, with labels on the left

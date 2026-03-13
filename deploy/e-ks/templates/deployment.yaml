@@ -17,13 +17,14 @@ spec:
         app.kubernetes.io/name: eks
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
         ingress-controller-frontoffice-policy: allow
+        tier: vertrouwd
+        access-to-postgres: allow
     spec:
       automountServiceAccountToken: false
-      imagePullSecrets:
-        - name: regcred
       containers:
         - name: eks
           image: "{{ .Values.eks.image }}:{{ .Chart.AppVersion }}"
+          imagePullPolicy: Always
           ports:
             - containerPort: 3000
               name: http

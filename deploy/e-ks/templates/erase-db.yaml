@@ -20,12 +20,10 @@ spec:
         app.kubernetes.io/component: test-deployment
     spec:
       restartPolicy: Never
-      imagePullSecrets:
-        - name: regcred
       automountServiceAccountToken: false
       containers:
         - name: erase-db
-          image: "ghcr.io/kiesraad/e-ks/db:{{ .Chart.AppVersion }}"
+          image: "{{ .Values.db.image }}:{{ .Chart.AppVersion }}"
           command:
             - dropdb
             - {{ .Values.subdomain }}

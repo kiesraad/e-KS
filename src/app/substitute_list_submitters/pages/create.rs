@@ -39,7 +39,8 @@ pub async fn create_substitute_submitter_submit(
             context,
         )
         .into_response()),
-        Ok(substitute_submitter) => {
+        Ok(substitute_submitter_data) => {
+            let substitute_submitter: ListSubmitter = substitute_submitter_data.into();
             substitute_submitter.create_substitute(&store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))

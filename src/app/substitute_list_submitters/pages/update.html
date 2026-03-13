@@ -2,20 +2,12 @@
 {% import "common/components/macros.html" as macros %}
 {% set close_action = ListSubmitter::list_path() %}
 {% block overlay_title %}{{ "political_group.edit_substitute_submitter"|trans }}{% endblock %}
-{% block overlay_steps %}
-  <div class="steps-nav">
-    <ul>
-      <li>
-        <a href="{{ substitute_submitter.substitute_update_path() }}">{{ "political_group.edit_substitute_submitter"|trans }}</a>
-      </li>
-    </ul>
-  </div>
-{% endblock %}
+{% block overlay_steps %}<div class="steps-nav"></div>{% endblock %}
 {% block overlay_form %}
   <fieldset>
     {% set should_warn = true %}
     {% include "common/components/person_name_fields.html" %}
-    {% include "common/components/address_fields.html" %}
+    {% include "list_submitters/components/address_fields.html" %}
   </fieldset>
   <button class="button tertiary-destructive icon-trash open-modal mb-lg"
           type="button">{{ "political_group.actions.delete_substitute_submitter"|trans }}</button>

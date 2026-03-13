@@ -18,11 +18,13 @@ spec:
       labels:
         app.kubernetes.io/name: typst
         app.kubernetes.io/version: {{ .Chart.AppVersion }}
+        tier: vertrouwd
     spec:
       automountServiceAccountToken: false
       containers:
         - name: typst
-          image: "ghcr.io/kiesraad/e-ks/typst:{{ .Chart.AppVersion }}"
+          imagePullPolicy: Always
+          image: "{{ .Values.typst.image }}:{{ .Chart.AppVersion }}"
           ports:
             - containerPort: 8080
               name: http
@@ -30,8 +32,7 @@ spec:
             limits:
               memory: "1024Mi"
             requests:
-              cpu: "128m"
+              cpu: "100m"
               memory: "128Mi"
               ephemeral-storage: "265Mi"
-
 {{- end }}
