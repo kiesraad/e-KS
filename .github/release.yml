@@ -1,5 +1,13 @@
 changelog:
   categories:
-    - title: Changes
+    - title: Fixed Issues
       labels:
-        - '*'
+        - "*"
+      exclude:
+        labels:
+          - dependencies
+        authors:
+          - dependabot
+    - title: Updated Dependencies
+      labels:
+        - dependencies
