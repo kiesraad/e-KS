@@ -8,6 +8,8 @@ mod h1;
 mod h3_1;
 mod h9;
 mod index;
+#[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
+mod integration_tests;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/submit", rejection(AppError))]

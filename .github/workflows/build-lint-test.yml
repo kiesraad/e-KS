@@ -119,7 +119,7 @@ jobs:
         run: cargo --locked clippy --all-targets --no-default-features -- -D warnings
 
       - name: Run tests
-        run: cargo --locked test -- --nocapture
+        run: cargo --locked test --features embed-typst -- --nocapture
 
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
