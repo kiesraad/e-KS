@@ -34,12 +34,6 @@ pub struct DownloadH9Path {
     locale: ModelLocale,
 }
 
-impl DownloadH9Path {
-    pub fn filename(&self, district_name: String) -> String {
-        format!("model-h9-{}-({}).zip", self.locale, district_name)
-    }
-}
-
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)

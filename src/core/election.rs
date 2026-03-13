@@ -80,7 +80,7 @@ impl ElectoralDistrict {
             (Self::BO, AnyLocale::Fry) => "Kieskolleezje Bonêre",
             (Self::SE, AnyLocale::Nl) => "Kiescollege Sint Eustatius",
             (Self::SE, AnyLocale::En) => "Electoral College Sint Eustatius",
-            (Self::SE, AnyLocale::Fry) => "Kieskolleezje Sint-Eustasius",
+            (Self::SE, AnyLocale::Fry) => "Kieskolleezje Sint Eustaasjus",
             (Self::SA, AnyLocale::Nl) => "Kiescollege Saba",
             (Self::SA, AnyLocale::En) => "Electoral College Saba",
             (Self::SA, AnyLocale::Fry) => "Kieskolleezje Saba",

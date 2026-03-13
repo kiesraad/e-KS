@@ -3,7 +3,7 @@ use crate::{
     candidate_lists::FullCandidateList,
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
-        ElectoralDistricts, TypstCandidate, TypstDatetime, TypstPerson, ordered_candidates,
+        TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
         typst_authorised_agent::TypstAuthorisedAgent,
     },
 };
@@ -13,7 +13,7 @@ use serde::Serialize;
 pub struct H31 {
     election_name: String,
     election_type: ElectionType,
-    electoral_districts: ElectoralDistricts,
+    electoral_districts: TypstElectoralDistricts,
     designation: String,
     legal_name: String,
     candidates: Vec<TypstCandidate>,
@@ -21,18 +21,16 @@ pub struct H31 {
     authorised_agent: TypstAuthorisedAgent,
     timestamp: TypstDatetime,
     locale: ModelLocale,
+    filename: String,
 }
 
 impl Pdf for H31 {
-    fn typst_template_name(&self) -> String {
-        "model-h3-1.typ".to_owned()
+    fn typst_template_name(&self) -> &'static str {
+        "model-h3-1.typ"
     }
 
-    fn filename(&self) -> String {
-        format!(
-            "model-h3-1-{}-({}).pdf",
-            self.locale, self.electoral_districts
-        )
+    fn filename(&self) -> &str {
+        &self.filename
     }
 }
 
@@ -52,10 +50,16 @@ impl H31 {
             return Err(AppError::IncompleteData("Expected 1 authorised agent"));
         }
 
+        let filename = if list.contains_all_districts(election) {
+            "model-h3-1.pdf".to_string()
+        } else {
+            format!("model-h3-1-{}.pdf", list.districts_codes())
+        };
+
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(&list, election, locale),
+            electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
             designation: political_group
                 .display_name
                 .ok_or(AppError::IncompleteData(
@@ -78,6 +82,7 @@ impl H31 {
             authorised_agent: (&authorised_agents[0]).into(),
             timestamp: TypstDatetime::now(),
             locale,
+            filename,
         })
     }
 }

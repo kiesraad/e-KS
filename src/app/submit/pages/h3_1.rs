@@ -125,7 +125,7 @@ mod tests {
             "application/pdf"
         );
         assert!(
-            Regex::new("attachment; filename=\"model-h3-1-nl-\\((.{2}-)*(.{2})\\)\\.pdf\"")
+            Regex::new("attachment; filename=\"model-h3-1-(.{2}-)*(.{2})\\.pdf\"")
                 .unwrap()
                 .is_match(
                     headers

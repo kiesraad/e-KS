@@ -9,9 +9,9 @@ use serde::Serialize;
 use tracing::debug;
 
 pub trait Pdf: Sized + Serialize {
-    fn typst_template_name(&self) -> String;
+    fn typst_template_name(&self) -> &'static str;
 
-    fn filename(&self) -> String;
+    fn filename(&self) -> &str;
 
     async fn generate(self, typst_url: &str) -> Result<Response<Body>, AppError> {
         let url = format!(
@@ -69,7 +69,7 @@ where
 #[derive(serde::Serialize)]
 struct BatchRenderRequest {
     /// Name of the Typst template to render.
-    template: String,
+    template: &'static str,
     /// File name (including extension) for the PDF inside the archive.
     file_name: String,
     /// JSON payload injected into the Typst template.
@@ -89,7 +89,7 @@ where
         for pdf in self.pdfs {
             payload.push(BatchRenderRequest {
                 template: pdf.typst_template_name(),
-                file_name: pdf.filename(),
+                file_name: pdf.filename().to_owned(),
                 input: serde_json::to_value(pdf)?,
             });
         }
