@@ -38,11 +38,13 @@ pub fn extract_csrf_token(body: &str) -> Option<TokenValue> {
 }
 
 pub fn sample_full_name(
+    first_name: Option<&str>,
     last_name: &str,
     last_name_prefix: Option<&str>,
     initials: &str,
 ) -> FullName {
     FullName {
+        first_name: first_name.map(parse_first_name),
         last_name: parse_last_name(last_name),
         last_name_prefix: last_name_prefix.map(parse_last_name_prefix),
         initials: parse_initials(initials),
@@ -75,8 +77,14 @@ pub fn parse_country_code(value: &str) -> CountryCode {
     value.parse::<CountryCode>().expect("country code")
 }
 
-fn sample_full_name_form(last_name: &str, last_name_prefix: &str, initials: &str) -> FullNameForm {
+fn sample_full_name_form(
+    first_name: &str,
+    last_name: &str,
+    last_name_prefix: &str,
+    initials: &str,
+) -> FullNameForm {
     FullNameForm {
+        first_name: first_name.to_string(),
         last_name: last_name.to_string(),
         last_name_prefix: last_name_prefix.to_string(),
         initials: initials.to_string(),
@@ -130,10 +138,9 @@ pub fn sample_candidate_list(id: CandidateListId) -> CandidateList {
 pub fn sample_person(id: PersonId) -> Person {
     Person {
         id,
-        name: sample_full_name("Jansen", None, "H.A.H.A."),
+        name: sample_full_name(Some("Henk"), "Jansen", None, "H.A.H.A."),
         personal_data: PersonalData {
             gender: Some(Gender::Female),
-            first_name: Some(parse_first_name("Henk")),
             date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
             bsn: Some(BsnOrNoneConfirmed::NoneConfirmed),
             place_of_residence: Some(parse_place_of_residence("Juinen")),
@@ -146,26 +153,26 @@ pub fn sample_person(id: PersonId) -> Person {
 }
 
 pub fn sample_person_with_last_name(id: PersonId, last_name: &str) -> Person {
-    sample_person_with(id, last_name, None, "H.A.H.A.")
+    sample_person_with(id, None, last_name, None, "H.A.H.A.")
 }
 
 pub fn sample_person_with(
     id: PersonId,
+    first_name: Option<&str>,
     last_name: &str,
     last_name_prefix: Option<&str>,
     initials: &str,
 ) -> Person {
     let mut person = sample_person(id);
-    person.name = sample_full_name(last_name, last_name_prefix, initials);
+    person.name = sample_full_name(first_name, last_name, last_name_prefix, initials);
     person
 }
 
 pub fn sample_person_form(csrf_token: &TokenValue) -> PersonalDataForm {
     PersonalDataForm {
-        name: sample_full_name_form("Jansen", "", "H.A.H.A."),
+        name: sample_full_name_form("Henk", "Jansen", "", "H.A.H.A."),
         personal_data: crate::persons::PersonalDataFieldsForm {
             gender: "male".to_string(),
-            first_name: "Henk".to_string(),
             date_of_birth: "01-02-1990".to_string(),
             bsn: "none-confirmed".to_string(),
             place_of_residence: "Juinen".to_string(),
@@ -184,7 +191,7 @@ pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
 
 pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
     RepresentativeForm {
-        name: sample_full_name_form("Bakker", "", "A.B."),
+        name: sample_full_name_form("", "Bakker", "", "A.B."),
         address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
         csrf_token: csrf_token.clone(),
     }
@@ -210,13 +217,13 @@ pub fn sample_political_group(id: PoliticalGroupId) -> PoliticalGroup {
 pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
     AuthorisedAgent {
         id,
-        name: sample_full_name("Jansen", Some("de"), "A.B."),
+        name: sample_full_name(Some("Henk"), "Jansen", Some("de"), "A.B."),
     }
 }
 
 pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
     AuthorisedAgentForm {
-        name: sample_full_name_form("Jansen", "de", "A.B."),
+        name: sample_full_name_form("Henk", "Jansen", "de", "A.B."),
         csrf_token: csrf_token.clone(),
     }
 }
@@ -224,7 +231,7 @@ pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentF
 pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
     ListSubmitter {
         id,
-        name: sample_full_name("Bos", None, "E.F."),
+        name: sample_full_name(None, "Bos", None, "E.F."),
         address: Address::Dutch(sample_dutch_address(
             "Rotterdam",
             "3011 CC",
@@ -237,7 +244,7 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
-        name: sample_full_name_form("Bos", "", "E.F."),
+        name: sample_full_name_form("", "Bos", "", "E.F."),
         address: InternationalAddressForm {
             country: String::new(),
             locality: "Rotterdam".to_string(),

@@ -50,7 +50,7 @@ pub fn ordered_candidates(
                 "Found a hole in candidate list: expected position {}, got {} for candidate {}",
                 i + 1,
                 candidate.position,
-                candidate.person.display_name()
+                candidate.person.name.display()
             );
             return Err(AppError::IntegrityViolation);
         }

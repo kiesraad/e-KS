@@ -43,6 +43,7 @@ mod tests {
         let csrf_token = csrf_tokens.issue().value;
         let form = ListSubmitterForm {
             name: FullNameForm {
+                first_name: String::new(),
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -73,6 +74,7 @@ mod tests {
         let csrf_token = csrf_tokens.issue().value;
         let form = ListSubmitterForm {
             name: FullNameForm {
+                first_name: String::new(),
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),

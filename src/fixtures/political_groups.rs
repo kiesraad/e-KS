@@ -43,6 +43,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     AuthorisedAgent {
         id: agent_id,
         name: FullName {
+            first_name: None,
             last_name: "Jansen".parse::<LastName>().expect("last name"),
             last_name_prefix: Some("de".parse::<LastNamePrefix>().expect("last name prefix")),
             initials: "A.B.".parse::<Initials>().expect("initials"),
@@ -54,6 +55,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     ListSubmitter {
         id: submitter_id,
         name: FullName {
+            first_name: None,
             last_name: "Bos".parse::<LastName>().expect("last name"),
             last_name_prefix: None,
             initials: "E.F.".parse::<Initials>().expect("initials"),
@@ -75,6 +77,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     ListSubmitter {
         id: substitute_submitter_id_1,
         name: FullName {
+            first_name: None,
             last_name: "Smit".parse::<LastName>().expect("last name"),
             last_name_prefix: Some("van".parse::<LastNamePrefix>().expect("last name prefix")),
             initials: "G.H.".parse::<Initials>().expect("initials"),
@@ -93,6 +96,7 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
     ListSubmitter {
         id: substitute_submitter_id_2,
         name: FullName {
+            first_name: None,
             last_name: "Jong".parse::<LastName>().expect("last name"),
             last_name_prefix: None,
             initials: "I.J.".parse::<Initials>().expect("initials"),

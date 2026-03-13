@@ -56,21 +56,6 @@
 </div>
 <div class="form-row">
   <p class="form-field">
-    <label for="first_name">
-      {{ "person.fields.first_name"|trans }}
-      <span class="hint">({{ "person.hints.optional"|trans }})</span>
-    </label>
-    <input type="text"
-           name="first_name"
-           id="first_name"
-           value="{{ form.data.personal_data.first_name }}" />
-    {% for error in form|error("personal_data.first_name") %}
-      <span class="error">{{ error }}</span>
-    {% else %}
-      <span class="hint">{{ "person.hints.first_name"|trans }}</span>
-    {% endfor %}
-  </p>
-  <p class="form-field">
     <label for="gender">
       {{ "person.fields.gender"|trans }}
       <span class="hint">({{ "person.hints.optional"|trans }})</span>

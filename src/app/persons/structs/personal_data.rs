@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::common::{BsnOrNoneConfirmed, CountryCode, Date, FirstName, Gender, PlaceOfResidence};
+use crate::common::{BsnOrNoneConfirmed, CountryCode, Date, Gender, PlaceOfResidence};
 
 #[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct PersonalData {
-    pub first_name: Option<FirstName>,
     pub gender: Option<Gender>,
 
     pub bsn: Option<BsnOrNoneConfirmed>,
