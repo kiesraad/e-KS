@@ -40,6 +40,10 @@ const TYPST_FILES: &[(&str, &[u8])] = &[
         include_bytes!("../../models/model-h1-nl.typ"),
     ),
     (
+        "model-h3-1.typ",
+        include_bytes!("../../models/model-h3-1.typ"),
+    ),
+    (
         "model-h9-fry.typ",
         include_bytes!("../../models/model-h9-fry.typ"),
     ),
