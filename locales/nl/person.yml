@@ -5,7 +5,7 @@ autoformat_initials: Automatisch opmaken
 correspondence_address: Correspondentieadres
 fields:
   bsn: Burgerservicenummer (BSN)
-  country_of_residence: Landcode
+  country: Landcode
   date_of_birth: Geboortedatum
   first_name: Roepnaam
   gender: Geslacht
@@ -19,6 +19,7 @@ fields:
   name: Naam
   place_of_residence: Woonplaats
   postal_code: Postcode
+  state_or_province: Staat / provincie
   street_name: Straatnaam
   updated_at: Laatst aangepast
 form:
@@ -26,7 +27,7 @@ form:
     title: Kandidaat toevoegen
   delete_warning_text: Weet je zeker dat je deze kandidaat wilt verwijderen?
 hints:
-  country_of_residence: "Voor een kandidaat die geen Nederlands correspondentieadres heeft, is een gemachtigde nodig."
+  country: "Voor een kandidaat die geen Nederlands correspondentieadres heeft, is een gemachtigde nodig."
   first_name: Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
   gender: Alleen invullen als dit op de kandidatenlijst moet worden weergegeven.
   optional: optioneel

@@ -1,6 +1,5 @@
 hostname: "kiesraad.net"
 subdomain: "<branchname>"
-requireLogin: true
 
 ingress:
   enabled: false
@@ -11,6 +10,7 @@ gatewayApi:
 
 typst:
   enabled: true
+  image: "ghcr.io/kiesraad/e-ks/typst"
 
 bag:
   image: "ghcr.io/tweedegolf/bag-address-lookup"
@@ -20,12 +20,13 @@ eks:
   image: "ghcr.io/kiesraad/e-ks/eks"
 
 db:
+  image: "ghcr.io/kiesraad/e-ks/db"
   setup: false
   erase: false
-  runMigrations: false
 
   # connection parameters
-  host: postgresql.postgresql.svc.cluster.local
+  host: postgres-cluster-rw
   port: 5432
-  user: postgres
+  user: eks
+  database: eks
   password: "supersecurepassword"

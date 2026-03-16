@@ -7,8 +7,11 @@
       <li>
         <a href="{{ Person::create_path() }}" class="active">{{ "person.personal_details"|trans }}</a>
       </li>
-      <li>
+      <li class="show-nl">
         <a class="disabled" disabled>{{ "person.correspondence_address"|trans }}</a>
+      </li>
+      <li class="hide-nl">
+        <a class="disabled" disabled>{{ "person.representative"|trans }}</a>
       </li>
     </ul>
   </div>

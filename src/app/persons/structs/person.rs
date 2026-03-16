@@ -69,14 +69,6 @@ impl Person {
         store.get_person(self.id)
     }
 
-    pub fn display_name(&self) -> String {
-        if let Some(first_name) = &self.personal_data.first_name {
-            format!("{} {}", first_name, self.name.last_name_with_prefix())
-        } else {
-            self.name.display()
-        }
-    }
-
     /// Returns the initials as printed on the candidate list,
     /// i.e., optionally with the first name and gender.
     ///
@@ -86,10 +78,7 @@ impl Person {
     /// - H. (Hubertus)
     /// - H.
     pub fn initials_as_printed_on_list(&self, locale: AnyLocale) -> String {
-        let mut initials = self.name.initials.to_string();
-        if let Some(first_name) = &self.personal_data.first_name {
-            initials.push_str(&format!(" ({})", first_name));
-        }
+        let mut initials = self.name.initials_with_first_name();
         if let Some(gender) = &self.personal_data.gender {
             initials.push_str(&format!(" ({})", &gender.abbreviation(locale)));
         }
@@ -97,8 +86,8 @@ impl Person {
     }
 
     pub fn lives_in_nl(&self) -> bool {
-        match &self.personal_data.country_of_residence {
-            Some(country) => country.as_str() == "NL",
+        match &self.personal_data.country {
+            Some(country) => country.is_nl(),
             None => true, // Assume Dutch if no country is set
         }
     }
@@ -118,7 +107,7 @@ impl Person {
             && self.personal_data.date_of_birth.is_some()
             && self.personal_data.bsn.is_some()
             && self.personal_data.place_of_residence.is_some()
-            && self.personal_data.country_of_residence.is_some()
+            && self.personal_data.country.is_some()
     }
 
     pub fn is_representative_complete(&self) -> bool {
@@ -205,8 +194,8 @@ mod tests {
         pagination::SortDirection,
         persons::PersonSort,
         test_utils::{
-            parse_country_code, parse_first_name, parse_last_name_prefix, sample_person,
-            sample_person_with, sample_person_with_last_name,
+            parse_country_code, parse_last_name_prefix, sample_person, sample_person_with,
+            sample_person_with_last_name,
         },
     };
 
@@ -327,7 +316,7 @@ mod tests {
 
     #[test]
     fn last_name_formats_with_optional_prefix() {
-        let mut person = sample_person_with(PersonId::new(), "Dijk", None, "A.B.");
+        let mut person = sample_person_with(PersonId::new(), None, "Dijk", None, "A.B.");
         assert_eq!(person.name.last_name_with_prefix(), "Dijk");
         assert_eq!(person.name.last_name_with_prefix_appended(), "Dijk");
 
@@ -337,26 +326,25 @@ mod tests {
     }
 
     #[test]
-    fn display_name_prefers_first_name_over_initials() {
-        let mut person = sample_person_with(PersonId::new(), "Dijk", None, "A.B.");
-        person.name.last_name_prefix = Some(parse_last_name_prefix("van"));
-        person.personal_data.first_name = Some(parse_first_name("Anne"));
-        assert_eq!(person.display_name(), "Anne van Dijk");
+    fn display_name_shows_first_name_when_present() {
+        let mut person =
+            sample_person_with(PersonId::new(), Some("Anne"), "Dijk", Some("van"), "A.B.");
+        assert_eq!(person.name.display(), "van Dijk, A.B. (Anne)");
 
-        person.personal_data.first_name = None;
-        assert_eq!(person.display_name(), "A.B. van Dijk");
+        person.name.first_name = None;
+        assert_eq!(person.name.display(), "van Dijk, A.B.");
     }
 
     #[test]
     fn lives_in_nl_defaults_to_true_and_accepts_variants() {
         let mut person = sample_person(PersonId::new());
-        person.personal_data.country_of_residence = None;
+        person.personal_data.country = None;
         assert!(person.lives_in_nl());
 
-        person.personal_data.country_of_residence = Some(parse_country_code("NL"));
+        person.personal_data.country = Some(parse_country_code("NL"));
         assert!(person.lives_in_nl());
 
-        person.personal_data.country_of_residence = Some(parse_country_code("BE"));
+        person.personal_data.country = Some(parse_country_code("BE"));
         assert!(!person.lives_in_nl());
     }
 
@@ -386,6 +374,7 @@ mod tests {
     fn complete_representative() -> Representative {
         Representative {
             name: FullName {
+                first_name: Some("Anne".parse().expect("first name")),
                 last_name: "Dijk".parse().expect("last name"),
                 last_name_prefix: None,
                 initials: "A.B.".parse().expect("initials"),
@@ -421,7 +410,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         assert!(person.is_representative_complete());
 
-        person.personal_data.country_of_residence = Some("BE".parse().expect("country code"));
+        person.personal_data.country = Some("BE".parse().expect("country code"));
         assert!(!person.is_representative_complete());
 
         person.representative = complete_representative();
@@ -438,8 +427,7 @@ mod tests {
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        non_dutch_person.personal_data.country_of_residence =
-            Some("BE".parse().expect("country code"));
+        non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
         assert!(!non_dutch_person.is_complete());
 

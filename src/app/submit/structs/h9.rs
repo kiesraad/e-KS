@@ -6,7 +6,7 @@ use crate::{
     candidates::Candidate,
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
-        ElectoralDistricts, TypstCandidate, TypstDatetime,
+        TypstCandidate, TypstDatetime, TypstElectoralDistricts,
         typst_detailed_candidate::TypstDetailedCandidate,
     },
 };
@@ -15,29 +15,22 @@ use crate::{
 pub struct H9<'zip> {
     election_name: String,
     election_type: ElectionType,
-    pub electoral_districts: ElectoralDistricts,
+    pub electoral_districts: TypstElectoralDistricts,
     designation: String,
     candidates: &'zip Vec<TypstCandidate>,
     detailed_candidate: TypstDetailedCandidate,
     timestamp: TypstDatetime,
     locale: ModelLocale,
+    filename: String,
 }
 
 impl<'zip> Pdf for H9<'zip> {
-    fn typst_template_name(&self) -> String {
-        format!("model-h9-{}.typ", self.locale)
+    fn typst_template_name(&self) -> &'static str {
+        "model-h9.typ"
     }
 
-    fn filename(&self) -> String {
-        format!(
-            "model-h9-{}-{}-(#{}).pdf",
-            self.locale,
-            self.detailed_candidate
-                .candidate
-                .last_name
-                .replace(" ", "-"),
-            self.detailed_candidate.candidate.position
-        )
+    fn filename(&self) -> &str {
+        &self.filename
     }
 }
 
@@ -50,10 +43,17 @@ impl<'zip> H9<'zip> {
         election: &ElectionConfig,
         locale: ModelLocale,
     ) -> Result<Self, AppError> {
+        let detailed_candidate = TypstDetailedCandidate::try_from(&candidate, locale)?;
+        let filename = format!(
+            "model-h9-{}-{}.pdf",
+            detailed_candidate.candidate.last_name.replace(" ", "-"),
+            detailed_candidate.candidate.position
+        );
+
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: ElectoralDistricts::from(candidate_list, election, locale),
+            electoral_districts: TypstElectoralDistricts::from(candidate_list, election, locale),
             designation: store
                 .get_political_group()
                 .display_name
@@ -62,9 +62,10 @@ impl<'zip> H9<'zip> {
                 ))?
                 .to_string(),
             candidates: ordered_candidates,
-            detailed_candidate: TypstDetailedCandidate::try_from(&candidate, locale)?,
+            detailed_candidate,
             timestamp: TypstDatetime::now(),
             locale,
+            filename,
         })
     }
 }

@@ -16,9 +16,9 @@
                class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
               {{ submitter.name.display() }}
               <br />
-              {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+              {{ submitter.address_line_1() }}
               <br />
-              {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+              {{ submitter.address_line_2() }}
             </a>
           {% endfor %}
         </div>
@@ -40,9 +40,9 @@
                class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
               {{ submitter.name.display() }}
               <br />
-              {{ submitter.address.street_name|display }} {{ submitter.address.house_number|display }}{{ submitter.address.house_number_addition|display }}
+              {{ submitter.address_line_1() }}
               <br />
-              {{ submitter.address.postal_code|display }} {{ submitter.address.locality|display }}
+              {{ submitter.address_line_2() }}
             </a>
           {% endfor %}
         </div>

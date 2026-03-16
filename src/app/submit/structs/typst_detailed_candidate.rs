@@ -3,7 +3,7 @@ use serde::Serialize;
 use crate::{
     AppError,
     candidates::Candidate,
-    common::BsnOrNoneConfirmed,
+    common::{Address, BsnOrNoneConfirmed},
     core::ModelLocale,
     submit::structs::{
         typst_candidate::TypstCandidate, typst_person::TypstPerson,
@@ -14,6 +14,7 @@ use crate::{
 #[derive(Debug, Serialize)]
 pub struct TypstDetailedCandidate {
     pub candidate: TypstCandidate,
+    pub initials_no_gender: String,
     pub bsn: Option<String>,
     pub representative: Option<TypstPerson>,
     pub postal_address: Option<TypstPostalAddress>,
@@ -24,7 +25,9 @@ impl TypstDetailedCandidate {
         let (representative, postal_address) = if candidate.person.lives_in_nl() {
             (
                 None,
-                Some(TypstPostalAddress::try_from(&candidate.person.address)?),
+                Some(TypstPostalAddress::try_from(&Address::Dutch(
+                    candidate.person.address.clone(),
+                ))?),
             )
         } else {
             (
@@ -48,6 +51,7 @@ impl TypstDetailedCandidate {
 
         Ok(Self {
             candidate: TypstCandidate::try_from(candidate, locale)?,
+            initials_no_gender: candidate.person.name.initials_with_first_name(),
             bsn,
             representative,
             postal_address,
@@ -74,14 +78,13 @@ mod tests {
             position: 1,
             person: sample_person(PersonId::new()),
         };
-        candidate.person.personal_data.country_of_residence =
-            Some(CountryCode::from_str("NL").unwrap());
+        candidate.person.personal_data.country = Some(CountryCode::from_str("NL").unwrap());
         let typst_candidate =
             TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
 
         assert_eq!(
             typst_candidate.postal_address.unwrap().postal_code,
-            candidate.person.address.postal_code.unwrap()
+            candidate.person.address.postal_code.unwrap().to_string()
         );
         assert!(typst_candidate.representative.is_none());
     }
@@ -93,8 +96,7 @@ mod tests {
             position: 1,
             person: sample_person(PersonId::new()),
         };
-        candidate.person.personal_data.country_of_residence =
-            Some(CountryCode::from_str("BE").unwrap());
+        candidate.person.personal_data.country = Some(CountryCode::from_str("BE").unwrap());
         candidate.person.representative.address = DutchAddress {
             street_name: Some(StreetName::from_str("street name").unwrap()),
             house_number: Some(HouseNumber::from_str("4").unwrap()),
@@ -119,8 +121,7 @@ mod tests {
             position: 1,
             person: sample_person(PersonId::new()),
         };
-        candidate.person.personal_data.country_of_residence =
-            Some(CountryCode::from_str("NL").unwrap());
+        candidate.person.personal_data.country = Some(CountryCode::from_str("NL").unwrap());
         candidate.person.address.street_name = None;
         let err = TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
         assert!(matches!(err, AppError::IncompleteData(_)));
@@ -133,8 +134,7 @@ mod tests {
             position: 1,
             person: sample_person(PersonId::new()),
         };
-        candidate.person.personal_data.country_of_residence =
-            Some(CountryCode::from_str("BE").unwrap());
+        candidate.person.personal_data.country = Some(CountryCode::from_str("BE").unwrap());
         let err = TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
 
         assert!(matches!(err, AppError::IncompleteData(_)));

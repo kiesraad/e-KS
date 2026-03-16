@@ -1,53 +1,7 @@
 //! Embedded Typst webservice helpers for local PDF generation.
 use typst_webservice::{PdfContext, start_server};
 
-const TYPST_FILES: &[(&str, &[u8])] = &[
-    (
-        "DMSans-Bold.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-Bold.ttf"),
-    ),
-    (
-        "DMSans-BoldItalic.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-BoldItalic.ttf"),
-    ),
-    (
-        "DMSans-ExtraBold.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-ExtraBold.ttf"),
-    ),
-    (
-        "DMSans-ExtraBoldItalic.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-ExtraBoldItalic.ttf"),
-    ),
-    (
-        "DMSans-Italic.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-Italic.ttf"),
-    ),
-    (
-        "DMSans-Regular.ttf",
-        include_bytes!("../../models/fonts/DM_Sans/DMSans-Regular.ttf"),
-    ),
-    (
-        "GeistMono-Regular.otf",
-        include_bytes!("../../models/fonts/Geist_Mono/GeistMono-Regular.otf"),
-    ),
-    ("layout.typ", include_bytes!("../../models/layout.typ")),
-    (
-        "model-h1-fry.typ",
-        include_bytes!("../../models/model-h1-fry.typ"),
-    ),
-    (
-        "model-h1-nl.typ",
-        include_bytes!("../../models/model-h1-nl.typ"),
-    ),
-    (
-        "model-h9-fry.typ",
-        include_bytes!("../../models/model-h9-fry.typ"),
-    ),
-    (
-        "model-h9-nl.typ",
-        include_bytes!("../../models/model-h9-nl.typ"),
-    ),
-];
+const TYPST_FILES: &[(&str, &[u8])] = include!(concat!(env!("OUT_DIR"), "/typst_files.rs"));
 
 pub async fn start() -> Result<String, std::io::Error> {
     // bind to random port

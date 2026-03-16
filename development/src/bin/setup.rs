@@ -102,11 +102,11 @@ impl CommandConfig {
         let uid: u16 = std::env::var("UID")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or_else(|| 1000);
+            .unwrap_or(1000);
         let gid: u16 = std::env::var("GID")
             .ok()
             .and_then(|s| s.parse().ok())
-            .unwrap_or_else(|| 1000);
+            .unwrap_or(1000);
         let args: Vec<String> = self
             .args
             .iter()

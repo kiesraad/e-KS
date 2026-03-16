@@ -2,18 +2,37 @@ use serde::{Deserialize, Serialize};
 
 use crate::OptionAsStrExt;
 
-use super::{Initials, LastName, LastNamePrefix};
+use super::{FirstName, Initials, LastName, LastNamePrefix};
 
 #[derive(Default, Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct FullName {
+    pub first_name: Option<FirstName>,
     pub last_name: LastName,
     pub last_name_prefix: Option<LastNamePrefix>,
     pub initials: Initials,
 }
 
 impl FullName {
+    /// Returns e.g. "van Dijk, A.B. (Anne)"
     pub fn display(&self) -> String {
-        format!("{} {}", self.initials, self.last_name_with_prefix())
+        if let Some(first_name) = &self.first_name {
+            format!(
+                "{}, {} ({})",
+                self.last_name_with_prefix(),
+                self.initials,
+                first_name
+            )
+        } else {
+            format!("{}, {}", self.last_name_with_prefix(), self.initials)
+        }
+    }
+
+    pub fn initials_with_first_name(&self) -> String {
+        if let Some(first_name) = &self.first_name {
+            format!("{} ({})", self.initials, first_name)
+        } else {
+            self.initials.to_string()
+        }
     }
 
     /// Returns e.g. "van Dijk"

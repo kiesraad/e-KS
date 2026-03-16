@@ -58,6 +58,7 @@ fn apply_update_person_address_and_representative() {
     let rep_event_time = Utc::now() - Duration::seconds(10);
     let representative = Representative {
         name: FullName {
+            first_name: None,
             last_name: "Bakker".parse::<LastName>().expect("last name"),
             last_name_prefix: None,
             initials: "C.D.".parse::<Initials>().expect("initials"),

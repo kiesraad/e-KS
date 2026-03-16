@@ -4,7 +4,7 @@
 /// `cargo:rerun-if-changed` for each locale file.
 pub fn load_locales(out_dir: &str) {
     use std::io::Write;
-    
+
     let path = std::path::Path::new(out_dir).join("locales.rs");
     let mut file = std::io::BufWriter::new(std::fs::File::create(&path).unwrap());
 

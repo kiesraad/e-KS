@@ -1,6 +1,6 @@
 [package]
 name = "eks-development"
-version = "0.3.4"
+version = "0.4.1"
 edition = "2024"
 license = "EUPL-1.2"
 publish = false
@@ -17,10 +17,18 @@ test = false
 name = "update_locales"
 test = false
 
+[[bin]]
+name = "pdf_diff"
+test = false
+
 [dependencies]
 anyhow = { version = "1.0.86" }
 tokio = { version = "1.48.0", features = ["full"] }
 serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0"
 saphyr = "0.0.6"
 serde-saphyr = "0.0.13"
 regex = "1.12.2"
+tracing = "0.1.41"
+tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.5.3" }

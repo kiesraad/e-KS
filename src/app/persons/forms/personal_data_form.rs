@@ -3,9 +3,7 @@ use validate::Validate;
 
 use crate::{
     AppStore, CsrfTokens, OptionStringExt, TokenValue,
-    common::{
-        BsnOrNoneConfirmed, CountryCode, Date, FirstName, FullNameForm, Gender, PlaceOfResidence,
-    },
+    common::{BsnOrNoneConfirmed, CountryCode, Date, FullNameForm, Gender, PlaceOfResidence},
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, ValidationError},
     persons::{Person, PersonalData},
@@ -17,8 +15,6 @@ use crate::{
 pub struct PersonalDataFieldsForm {
     #[validate(parse = "Gender", optional)]
     pub gender: String,
-    #[validate(parse = "FirstName", optional)]
-    pub first_name: String,
     #[validate(parse = "Date", optional)]
     pub date_of_birth: String,
     #[validate(parse = "BsnOrNoneConfirmed", optional)]
@@ -26,7 +22,7 @@ pub struct PersonalDataFieldsForm {
     #[validate(parse = "PlaceOfResidence", optional)]
     pub place_of_residence: String,
     #[validate(parse = "CountryCode", optional)]
-    pub country_of_residence: String,
+    pub country: String,
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -50,7 +46,6 @@ impl From<PersonalData> for PersonalDataFieldsForm {
                 .gender
                 .map(|g| g.to_string())
                 .unwrap_or_default(),
-            first_name: personal_data.first_name.to_string_or_default(),
             date_of_birth: personal_data
                 .date_of_birth
                 .map(|d| d.format(DEFAULT_DATE_FORMAT).to_string())
@@ -60,7 +55,7 @@ impl From<PersonalData> for PersonalDataFieldsForm {
                 .map(|s| s.to_exposed_string())
                 .unwrap_or_default(),
             place_of_residence: personal_data.place_of_residence.to_string_or_default(),
-            country_of_residence: personal_data.country_of_residence.to_string_or_default(),
+            country: personal_data.country.to_string_or_default(),
         }
     }
 }
@@ -142,18 +137,17 @@ mod tests {
         form::ValidationError,
         persons::PersonId,
         test_utils::{
-            parse_country_code, parse_first_name, parse_last_name, parse_place_of_residence,
-            sample_person_with,
+            parse_country_code, parse_last_name, parse_place_of_residence, sample_person_with,
         },
     };
 
     #[test]
     fn personal_data_form_updates_existing_person_when_valid() {
-        let mut current = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut current =
+            sample_person_with(PersonId::new(), Some("Evert"), "Klaas Smit", None, "E.D.");
         current.personal_data.gender = Some(Gender::Female);
-        current.personal_data.first_name = Some(parse_first_name("Evert"));
         current.personal_data.place_of_residence = Some(parse_place_of_residence("Waterdam"));
-        current.personal_data.country_of_residence = Some(parse_country_code("NL"));
+        current.personal_data.country = Some(parse_country_code("NL"));
         current.address = DutchAddress {
             locality: Some("Heemdamseburg".parse().expect("locality")),
             postal_code: Some("1234AB".parse().expect("postal code")),
@@ -166,17 +160,17 @@ mod tests {
 
         let form = PersonalDataForm {
             name: FullNameForm {
+                first_name: " Evert ".to_string(),
                 last_name: "  Klaas Smit ".to_string(),
                 last_name_prefix: "  van de ".to_string(),
                 initials: "E.D.".to_string(),
             },
             personal_data: PersonalDataFieldsForm {
                 gender: "male".to_string(),
-                first_name: " Evert ".to_string(),
                 date_of_birth: "01-02-2020".to_string(),
                 bsn: "none-confirmed".to_string(),
                 place_of_residence: "Waterdam".to_string(),
-                country_of_residence: " nl ".to_string(),
+                country: " nl ".to_string(),
             },
             csrf_token: tokens.issue().value,
         };
@@ -195,11 +189,7 @@ mod tests {
             Some("van de".to_string())
         );
         assert_eq!(
-            updated
-                .personal_data
-                .first_name
-                .as_deref()
-                .map(|v| v.to_string()),
+            updated.name.first_name.as_deref().map(|v| v.to_string()),
             Some("Evert".to_string())
         );
         assert_eq!(updated.name.initials.to_string(), "E.D.");
@@ -221,7 +211,7 @@ mod tests {
         assert_eq!(
             updated
                 .personal_data
-                .country_of_residence
+                .country
                 .as_deref()
                 .map(|v| v.to_string()),
             Some("NL".to_string())
@@ -266,17 +256,17 @@ mod tests {
         let tokens = CsrfTokens::default();
         let form = PersonalDataForm {
             name: FullNameForm {
+                first_name: " B ".to_string(),
                 last_name: "de Bakker".to_string(),
                 last_name_prefix: "Boris".to_string(),
                 initials: "jd".to_string(),
             },
             personal_data: PersonalDataFieldsForm {
                 gender: "invalid".to_string(),
-                first_name: " B ".to_string(),
                 date_of_birth: "2020/01/01".to_string(),
                 bsn: "".to_string(),
                 place_of_residence: "x".to_string(),
-                country_of_residence: "xx".to_string(),
+                country: "xx".to_string(),
             },
             csrf_token: tokens.issue().value,
         };
@@ -300,7 +290,7 @@ mod tests {
             ValidationError::InvalidValue
         )));
         assert!(errors.contains(&(
-            "personal_data.first_name".to_string(),
+            "name.first_name".to_string(),
             ValidationError::ValueTooShort(1, 2)
         )));
         assert!(errors.contains(&("name.initials".to_string(), ValidationError::InvalidValue)));
@@ -313,32 +303,32 @@ mod tests {
             ValidationError::ValueTooShort(1, 2)
         )));
         assert!(errors.contains(&(
-            "personal_data.country_of_residence".to_string(),
+            "personal_data.country".to_string(),
             ValidationError::InvalidValue
         )));
     }
 
     #[test]
     fn display_helpers_behave_correctly() {
-        let mut person = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
-        person.personal_data.first_name = Some(parse_first_name("Evert"));
+        let mut person =
+            sample_person_with(PersonId::new(), Some("Evert"), "Klaas Smit", None, "E.D.");
         person.personal_data.gender = Some(Gender::Male);
 
-        assert_eq!(person.display_name(), "Evert Klaas Smit");
+        assert_eq!(person.name.display(), "Klaas Smit, E.D. (Evert)");
         assert_eq!(person.gender_key(), "common.gender.male");
 
-        person.personal_data.first_name = None;
-        assert_eq!(person.personal_data.first_name.as_str_or_empty(), "");
-        assert_eq!(person.display_name(), "E.D. Klaas Smit");
+        person.name.first_name = None;
+        assert_eq!(person.name.first_name.as_str_or_empty(), "");
+        assert_eq!(person.name.display(), "Klaas Smit, E.D.");
     }
 
     #[test]
     fn uniqueness_errors_for_duplicate_name_without_bsn() {
-        let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut existing = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         incoming.personal_data.bsn = None;
 
         let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
@@ -355,11 +345,11 @@ mod tests {
 
     #[test]
     fn uniqueness_errors_for_duplicate_bsn() {
-        let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut existing = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         incoming.name.last_name = parse_last_name("Other");
         incoming.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
@@ -377,11 +367,11 @@ mod tests {
 
     #[test]
     fn uniqueness_allows_duplicate_name_with_unique_bsn() {
-        let mut existing = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut existing = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), "Klaas Smit", None, "E.D.");
+        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
         incoming.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("111222333".parse().expect("bsn")));
 

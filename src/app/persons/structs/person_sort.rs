@@ -29,10 +29,10 @@ pub fn compare_persons(a: &Person, b: &Person, sort_field: &PersonSort) -> std::
             .then_with(|| a.name.initials.cmp(&b.name.initials))
             .then_with(|| a.id.cmp(&b.id)),
         PersonSort::FirstName => a
-            .personal_data
+            .name
             .first_name
             .as_str_or_empty()
-            .cmp(b.personal_data.first_name.as_str_or_empty())
+            .cmp(b.name.first_name.as_str_or_empty())
             .then_with(|| a.name.last_name.cmp(&b.name.last_name))
             .then_with(|| a.id.cmp(&b.id)),
         PersonSort::Initials => a
@@ -104,7 +104,13 @@ mod tests {
     }
 
     fn person_with_id(id: u128) -> Person {
-        sample_person_with(PersonId::from(Uuid::from_u128(id)), "Smith", None, "A.B.")
+        sample_person_with(
+            PersonId::from(Uuid::from_u128(id)),
+            None,
+            "Smith",
+            None,
+            "A.B.",
+        )
     }
 
     #[test]
@@ -147,8 +153,8 @@ mod tests {
         let mut a = person_with_id(1);
         let mut b = person_with_id(2);
 
-        a.personal_data.first_name = None;
-        b.personal_data.first_name = Some(parse_first_name("Adam"));
+        a.name.first_name = None;
+        b.name.first_name = Some(parse_first_name("Adam"));
         a.name.last_name = parse_last_name("Zulu");
         b.name.last_name = parse_last_name("Alpha");
         assert_eq!(
@@ -156,8 +162,8 @@ mod tests {
             Ordering::Less
         );
 
-        a.personal_data.first_name = Some(parse_first_name("Bob"));
-        b.personal_data.first_name = Some(parse_first_name("Bob"));
+        a.name.first_name = Some(parse_first_name("Bob"));
+        b.name.first_name = Some(parse_first_name("Bob"));
         a.name.last_name = parse_last_name("Alpha");
         b.name.last_name = parse_last_name("Zulu");
         assert_eq!(

@@ -1,7 +1,7 @@
 {% extends "common/components/overlay.html" %}
 {% block overlay_title %}
   <span class="person-badge"></span>
-  {{ person.display_name() }}
+  {{ person.name.display() }}
 {% endblock %}
 {% set close_action = person.highlight_path() %}
 {% block overlay_steps %}

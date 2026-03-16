@@ -33,6 +33,14 @@ impl CandidateList {
             .join(", ")
     }
 
+    pub fn districts_codes(&self) -> String {
+        self.electoral_districts
+            .iter()
+            .map(|d| d.code().to_lowercase())
+            .collect::<Vec<_>>()
+            .join("-")
+    }
+
     pub fn contains_all_districts(&self, election: &ElectionConfig) -> bool {
         self.electoral_districts.len() == election.electoral_districts().len()
     }

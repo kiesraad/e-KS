@@ -8,18 +8,18 @@
   "candidates": [
     {
       "last_name": "Akwasi",
-      "initials": "M. (v)",
+      "initials": "M. (Maria) (v)",
       "date_of_birth": {
         "year": 1997,
         "month": 12,
         "day": 25
       },
-      "locality": "Berlin",
+      "locality": "Ede",
       "position": 1
     },
     {
       "last_name": "Altena",
-      "initials": "J. (m)",
+      "initials": "J. (Jeroen) (m)",
       "date_of_birth": {
         "year": 2001,
         "month": 10,
@@ -30,7 +30,7 @@
     },
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E. (v)",
+      "initials": "I.E. (Ingeborg) (v)",
       "date_of_birth": {
         "year": 2005,
         "month": 3,
@@ -40,30 +40,27 @@
       "position": 3
     }
   ],
-  "detailed_candidate": {
-    "candidate": {
-      "last_name": "Akwasi",
-      "initials": "M. (v)",
-      "date_of_birth": {
-        "year": 1997,
-        "month": 12,
-        "day": 25
-      },
-      "locality": "Berlin",
-      "position": 1
-    },
-    "bsn": "999999321",
-    "representative": {
-      "last_name": "Akwasi",
-      "initials": "T.J.",
-      "postal_address": {
-        "street_address": "Molenweg 37",
-        "postal_code": "1111AA",
-        "locality": "Ede"
-      }
-    },
-    "postal_address": null
+  "previously_seated": false,
+  "list_submitter": {
+    "last_name": "van Smit",
+    "initials": "G.H.",
+    "postal_address": {
+      "street_address": "Grotestraat 3",
+      "postal_code": "3000AA",
+      "locality": "Rotterdam"
+    }
   },
+  "substitute_submitter": [
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E.",
+      "postal_address": {
+        "street_address": "Grotestraat 3",
+        "postal_code": "3000AA",
+        "locality": "Rotterdam"
+      }
+    }
+  ],
   "timestamp": {
     "year": 2025,
     "month": 8,
@@ -72,5 +69,6 @@
     "minute": 32,
     "second": 21
   },
-  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A"
+  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A",
+  "locale": "fry"
 }

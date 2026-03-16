@@ -18,8 +18,9 @@ pushd development
 popd
 
 cp development/target/release/dev bin/dev
-cp development/target/release/update_locales bin/update_locales
 cp development/target/release/setup bin/setup
+cp development/target/release/update_locales bin/update_locales
+cp development/target/release/pdf_diff bin/pdf_diff
 
 echo "$CARGO_VERSION" > bin/version
 bin/setup "$@"

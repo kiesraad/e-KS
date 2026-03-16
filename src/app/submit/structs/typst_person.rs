@@ -1,7 +1,7 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, AppStore, candidate_lists::CandidateList, common::Initials,
+    AppError, AppStore, candidate_lists::CandidateList, common::Address,
     list_submitters::ListSubmitter, persons::Representative,
     submit::structs::typst_postal_address::TypstPostalAddress,
 };
@@ -9,7 +9,8 @@ use crate::{
 #[derive(Debug, Serialize)]
 pub struct TypstPerson {
     pub last_name: String,
-    pub initials: Initials,
+    /// Initials as printed on the model, e.g., optionally including the first name
+    pub initials: String,
     pub postal_address: TypstPostalAddress,
 }
 
@@ -19,7 +20,7 @@ impl TryFrom<ListSubmitter> for TypstPerson {
     fn try_from(submitter: ListSubmitter) -> Result<Self, Self::Error> {
         Ok(TypstPerson {
             last_name: submitter.name.last_name_with_prefix(),
-            initials: submitter.name.initials,
+            initials: submitter.name.initials_with_first_name(),
             postal_address: (&submitter.address).try_into()?,
         })
     }
@@ -31,8 +32,8 @@ impl TryFrom<&Representative> for TypstPerson {
     fn try_from(representative: &Representative) -> Result<Self, Self::Error> {
         Ok(TypstPerson {
             last_name: representative.name.last_name_with_prefix(),
-            initials: representative.name.initials.clone(),
-            postal_address: (&representative.address).try_into()?,
+            initials: representative.name.initials_with_first_name(),
+            postal_address: (&Address::Dutch(representative.address.clone())).try_into()?,
         })
     }
 }
@@ -54,9 +55,7 @@ pub fn substitute_submitter_from_ids(
 mod tests {
     use super::*;
     use crate::{
-        common::{LastName, PostalCode},
-        list_submitters::ListSubmitterId,
-        test_utils::sample_list_submitter,
+        common::LastName, list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
     };
 
     #[test]
@@ -65,15 +64,9 @@ mod tests {
         let person = TypstPerson::try_from(submitter)?;
 
         assert_eq!(person.last_name, "Bos");
-        assert_eq!(
-            person.initials,
-            "E.F.".parse::<Initials>().expect("initials")
-        );
+        assert_eq!(person.initials, "E.F.");
         assert_eq!(person.postal_address.street_address, "Coolsingel 5B");
-        assert_eq!(
-            person.postal_address.postal_code,
-            "3011 CC".parse::<PostalCode>().expect("postal code")
-        );
+        assert_eq!(person.postal_address.postal_code, "3011CC".to_string());
         assert_eq!(person.postal_address.locality, "Rotterdam");
 
         Ok(())

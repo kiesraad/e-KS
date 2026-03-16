@@ -30,7 +30,7 @@ impl TypstCandidate {
             locality: candidate
                 .person
                 .personal_data
-                .place_of_residence
+                .locality()
                 .clone()
                 .ok_or(AppError::IncompleteData("Missing locality for candidate"))?
                 .to_string(),
@@ -50,7 +50,7 @@ pub fn ordered_candidates(
                 "Found a hole in candidate list: expected position {}, got {} for candidate {}",
                 i + 1,
                 candidate.position,
-                candidate.person.display_name()
+                candidate.person.name.display()
             );
             return Err(AppError::IntegrityViolation);
         }

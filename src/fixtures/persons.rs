@@ -62,6 +62,12 @@ impl PersonRecord {
         Ok(Person {
             id: uuid.into(),
             name: FullName {
+                first_name: self
+                    .voornamen
+                    .split_whitespace()
+                    .next()
+                    .map(|s| Self::parse_value::<FirstName>(s, "first name"))
+                    .transpose()?,
                 last_name: Self::parse_value::<LastName>(&self.geslachtsnaam, "last name")?,
                 last_name_prefix: None,
                 initials: Self::parse_value::<Initials>(&initials, "initials")?,
@@ -72,12 +78,6 @@ impl PersonRecord {
                     "V" => Some(Gender::Female),
                     _ => None,
                 },
-                first_name: self
-                    .voornamen
-                    .split_whitespace()
-                    .next()
-                    .map(|s| Self::parse_value::<FirstName>(s, "first name"))
-                    .transpose()?,
                 date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
                     .ok()
                     .map(Date::from),
@@ -86,7 +86,7 @@ impl PersonRecord {
                     .as_deref()
                     .map(|value| Self::parse_value::<PlaceOfResidence>(value, "place of residence"))
                     .transpose()?,
-                country_of_residence: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
+                country: Some(Self::parse_value::<CountryCode>("NL", "country code")?),
             },
             address: DutchAddress {
                 locality,

@@ -19,3 +19,9 @@ impl FromStr for CountryCode {
         Ok(CountryCode(trimmed_value))
     }
 }
+
+impl CountryCode {
+    pub fn is_nl(&self) -> bool {
+        self.0 == "NL"
+    }
+}

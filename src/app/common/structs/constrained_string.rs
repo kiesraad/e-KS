@@ -10,6 +10,7 @@ pub type LegalName = ConstrainedString;
 pub type StreetName = ConstrainedString;
 pub type Locality = ConstrainedString;
 pub type PlaceOfResidence = ConstrainedString;
+pub type StateOrProvince = ConstrainedString;
 
 transparent_string! {
     pub struct ConstrainedString(String);

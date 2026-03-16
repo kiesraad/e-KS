@@ -1,49 +1,29 @@
-use std::fmt::{self, Display, Formatter};
-
 use serde::Serialize;
 
 use crate::{ElectionConfig, candidate_lists::CandidateList, core::ModelLocale};
 
 #[derive(Debug, Serialize)]
 #[serde(tag = "tag", content = "districts")]
-pub enum ElectoralDistricts {
+pub enum TypstElectoralDistricts {
     All,
     Some(Vec<String>),
 }
 
-impl ElectoralDistricts {
+impl TypstElectoralDistricts {
     pub fn from(
         list: &CandidateList,
         election_config: &ElectionConfig,
         locale: ModelLocale,
     ) -> Self {
         if list.contains_all_districts(election_config) {
-            ElectoralDistricts::All
+            TypstElectoralDistricts::All
         } else {
-            ElectoralDistricts::Some(
+            TypstElectoralDistricts::Some(
                 list.electoral_districts
                     .iter()
                     .map(|d| d.title(locale.into()).to_string())
                     .collect(),
             )
-        }
-    }
-}
-
-impl Display for ElectoralDistricts {
-    fn fmt(&self, f: &mut Formatter) -> fmt::Result {
-        match self {
-            ElectoralDistricts::All => write!(f, "*"),
-            ElectoralDistricts::Some(districts) => write!(
-                f,
-                "{}",
-                districts
-                    .iter()
-                    .flat_map(|d| d.get(..2))
-                    .collect::<Vec<_>>()
-                    .join("-")
-                    .as_str()
-            ),
         }
     }
 }
@@ -62,8 +42,8 @@ mod tests {
         };
 
         assert!(matches!(
-            ElectoralDistricts::from(&list, &election, ModelLocale::Fry),
-            ElectoralDistricts::All
+            TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry),
+            TypstElectoralDistricts::All
         ));
     }
 
@@ -75,23 +55,23 @@ mod tests {
             ..Default::default()
         };
 
-        match ElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
-            ElectoralDistricts::Some(districts) => {
+        match TypstElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
+            TypstElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
                 );
             }
-            ElectoralDistricts::All => panic!("expected Some districts"),
+            TypstElectoralDistricts::All => panic!("expected Some districts"),
         }
-        match ElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
-            ElectoralDistricts::Some(districts) => {
+        match TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
+            TypstElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utert".to_string(), "Noard-Hollân".to_string()]
                 );
             }
-            ElectoralDistricts::All => panic!("expected Some districts"),
+            TypstElectoralDistricts::All => panic!("expected Some districts"),
         }
     }
 }

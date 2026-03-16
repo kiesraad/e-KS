@@ -1,0 +1,9 @@
+instances: 3
+
+users:
+  - name: eks
+    passwordHash: "SCRAM-SHA-256$4096:hashofsupersecuresecret"
+
+dbs:
+  - name: eks
+    owner: eks
