@@ -33,23 +33,15 @@ const TYPST_FILES: &[(&str, &[u8])] = &[
     ("layout.typ", include_bytes!("../../models/layout.typ")),
     (
         "model-h1-fry.typ",
-        include_bytes!("../../models/model-h1-fry.typ"),
-    ),
-    (
-        "model-h1-nl.typ",
-        include_bytes!("../../models/model-h1-nl.typ"),
+        include_bytes!("../../models/model-h1.typ"),
     ),
     (
         "model-h3-1.typ",
         include_bytes!("../../models/model-h3-1.typ"),
     ),
     (
-        "model-h9-fry.typ",
-        include_bytes!("../../models/model-h9-fry.typ"),
-    ),
-    (
         "model-h9-nl.typ",
-        include_bytes!("../../models/model-h9-nl.typ"),
+        include_bytes!("../../models/model-h9.typ"),
     ),
 ];
 
