@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppStore, ElectionConfig,
-    candidate_lists::FullCandidateList,
+    candidate_lists::{CandidateListId, FullCandidateList},
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
@@ -37,10 +37,7 @@ impl Pdf for H31 {
 impl H31 {
     pub fn new(
         store: &AppStore,
-        FullCandidateList {
-            list,
-            mut candidates,
-        }: FullCandidateList,
+        list_id: CandidateListId,
         election: &ElectionConfig,
         locale: ModelLocale,
     ) -> Result<Self, AppError> {
@@ -49,6 +46,11 @@ impl H31 {
         if authorised_agents.len() != 1 {
             return Err(AppError::IncompleteData("Expected 1 authorised agent"));
         }
+
+        let FullCandidateList {
+            list,
+            mut candidates,
+        } = FullCandidateList::get(store, list_id)?;
 
         let filename = if list.contains_all_districts(election) {
             "model-h3-1.pdf".to_string()

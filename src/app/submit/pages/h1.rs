@@ -1,19 +1,17 @@
 use crate::{
     AppError, AppStore, Config, Context,
-    candidate_lists::FullCandidateList,
     core::Pdf,
     submit::{H1, pages::DownloadH1Path},
 };
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h1(
-    path: DownloadH1Path,
-    list: FullCandidateList,
+    DownloadH1Path { list_id, locale }: DownloadH1Path,
     store: AppStore,
     State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H1::new(&store, list, &context.session.election, path.locale)?;
+    let h1 = H1::new(&store, list_id, &context.session.election, locale)?;
 
     h1.generate(&config.typst_url).await
 }
@@ -43,7 +41,6 @@ mod tests {
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         let config = Config::new_test();
 
         let result = gen_h1(
@@ -51,7 +48,6 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            full_list,
             store,
             State(&config),
             Context::new_test_without_db(),
@@ -86,8 +82,6 @@ mod tests {
         list.create(&store).await?;
         list.append_candidate(&store, person_id).await?;
 
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-
         let (server, config) = setup_typst_webservice_stub().await;
 
         let response = gen_h1(
@@ -95,7 +89,6 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            full_list,
             store,
             State(&config),
             Context::new_test_without_db(),

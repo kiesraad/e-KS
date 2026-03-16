@@ -1,19 +1,17 @@
 use crate::{
     AppError, AppStore, Config, Context,
-    candidate_lists::FullCandidateList,
     core::Pdf,
     submit::{H31, pages::DownloadH31Path},
 };
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h3_1(
-    path: DownloadH31Path,
-    list: FullCandidateList,
+    DownloadH31Path { list_id, locale }: DownloadH31Path,
     store: AppStore,
     State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H31::new(&store, list, &context.session.election, path.locale)?;
+    let h1 = H31::new(&store, list_id, &context.session.election, locale)?;
 
     h1.generate(&config.typst_url).await
 }
@@ -52,8 +50,6 @@ mod tests {
         sample_authorised_agent(AuthorisedAgentId::new())
             .create(&store)
             .await?;
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         let config = Config::new_test();
 
         let result = gen_h3_1(
@@ -61,7 +57,6 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            full_list,
             store,
             State(&config),
             Context::new_test_without_db(),
@@ -99,8 +94,6 @@ mod tests {
         list.create(&store).await?;
         list.append_candidate(&store, person_id).await?;
 
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-
         let (server, config) = setup_typst_webservice_stub().await;
 
         let response = gen_h3_1(
@@ -108,7 +101,6 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            full_list,
             store,
             State(&config),
             Context::new_test_without_db(),

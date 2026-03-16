@@ -7,4 +7,4 @@ We use [Typst](https://typst.app/) to render PDFs.
 
 The `inputs` folder contains various example JSON inputs for the templates.
 - TIP: Create a symlink to the example input for the template you're developing:
-  -  For example, for the H1 model use: `ln -s "$(pwd)/models/example-inputs/model-h-1-example-1.json" ./models/input.json`
+  -  For example, for the H1 model use: `ln -s "$(pwd)/models/example-inputs/model-h1-example-1.json" ./models/input.json`

@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+    candidate_lists::{CandidateList, CandidateListSummary},
     core::ModelLocale,
     filters,
     submit::H1,
@@ -44,8 +44,7 @@ pub async fn index(
                 && summary.person_count <= context.max_candidates
                 && !summary.list.electoral_districts.is_empty();
             let can_download = if has_required_list_data {
-                let full_list = FullCandidateList::get(&store, summary.list.id)?;
-                H1::new(&store, full_list, &election, ModelLocale::Nl).is_ok()
+                H1::new(&store, summary.list.id, &election, ModelLocale::Nl).is_ok()
             } else {
                 false
             };
