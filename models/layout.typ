@@ -1,7 +1,6 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
-#let translator(locale) = (
-  trans: (dutch, frisian) => if locale == "nl" { dutch } else { frisian },
+#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
 )
 
 #let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], input) = [
@@ -83,6 +82,7 @@
 #let label_table(values: ()) = table(
   columns: (auto, 1fr),
   ..values.flatten(),
+  inset: (left: 0pt)
 )
 
 /// Line with space to fill in later
