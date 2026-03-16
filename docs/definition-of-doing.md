@@ -16,10 +16,10 @@
 4. Implement the solution:
    - Create a draft PR that is linked to the issue as soon as possible;
    - Commit and push often and early;
-   - Keep the [DoD](https://github.com/kiesraad/e-ks/blob/main/docs/definition-of-done.md) in mind when working on the issue.
+   - Keep the [DoD](/docs/definition-of-done.md) in mind when working on the issue.
 5. Prepare the PR for review:
    - Remove draft status from the issue;
    - Pick a reviewer who is available and is knowledgeable about the affected parts in the code base;
    - Post a link to the PR in Mattermost ([#e-KS reviews](https://digilab.overheid.nl/chat/kiesraad/channels/e-ks-reviews)).
-6. Iterate improvements and reviews until [DoD](https://github.com/kiesraad/e-ks/blob/main/docs/definition-of-done.md) and acceptance criteria have been met.
+6. Iterate improvements and reviews until [DoD](/docs/definition-of-done.md) and acceptance criteria have been met.
 7. Merge the PR into `main`.

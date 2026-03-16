@@ -4,9 +4,7 @@
 
 - Should be linked to one or more issues (merging the PR resolved the issue(s))
 - Should be assigned (one person should be responsible for maintaining the PR)
-- Unit tests for all added code
-- Rust integration tests for all implemented user flows (tests that do not share code with the main crate)
-- Explicitly test use-cases described in the issue
+- Describe how to test this PR
 - If the PR fixes a bug: unit test to reproduce the bug
 - All automatic checks should have passed
     - cargo fmt
@@ -15,10 +13,10 @@
     - Playwright test suite
     - Newlines at the end of text files
     - Sigrid
-    - Codecov
+    - SonarQube
     - Typescript/CSS linting (biome)
     - HTML Template linting (djlint)
-- The PR should specify how the changes can be tested by users
+    - Zizmor
 - All relevant code documentation has been added
 - At least one review
     - Reviewer should read all changed code
