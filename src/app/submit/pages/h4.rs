@@ -21,11 +21,8 @@ pub async fn gen_h4(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
-        candidate_lists::CandidateListId,
-        core::ModelLocale,
-        submit::pages::tests::setup_typst_webservice_stub,
-        test_utils::sample_candidate_list,
+        AppStore, Context, candidate_lists::CandidateListId, core::ModelLocale,
+        submit::pages::tests::setup_typst_webservice_stub, test_utils::sample_candidate_list,
     };
     use axum::{
         http::{StatusCode, header},

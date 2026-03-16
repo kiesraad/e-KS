@@ -1,10 +1,14 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, AppStore, ElectionConfig, candidate_lists::{CandidateListId, FullCandidateList}, core::{ElectionType, ModelLocale, Pdf}, submit::structs::{
-        typst_candidate::{TypstCandidate, ordered_candidates}, typst_datetime::TypstDatetime,
+    AppError, AppStore, ElectionConfig,
+    candidate_lists::{CandidateListId, FullCandidateList},
+    core::{ElectionType, ModelLocale, Pdf},
+    submit::structs::{
+        typst_candidate::{TypstCandidate, ordered_candidates},
+        typst_datetime::TypstDatetime,
         typst_electoral_districts::TypstElectoralDistricts,
-    }
+    },
 };
 
 #[derive(Debug, Serialize)]
@@ -42,7 +46,10 @@ impl H4 {
         } = FullCandidateList::get(store, list_id)?;
 
         let filename = if list.electoral_districts.len() == 1 {
-            format!("model-h4-({}).pdf", list.electoral_districts[0].title(locale.into()))
+            format!(
+                "model-h4-({}).pdf",
+                list.electoral_districts[0].title(locale.into())
+            )
         } else {
             "model-h4.pdf".to_string()
         };
