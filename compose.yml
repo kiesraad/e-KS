@@ -9,3 +9,10 @@ services:
       TZ: Europe/Amsterdam
     ports: ['127.0.0.1:5432:5432']
     networks: [default]
+
+  saml-test-server:
+    build:
+      context: development
+      dockerfile: saml-test-server.Dockerfile
+    ports: ['127.0.0.1:8080:8080']
+    networks: [default]
