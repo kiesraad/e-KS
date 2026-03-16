@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-use super::{DownloadH1Path, DownloadH9Path, DownloadH31Path};
+use super::{DownloadH1Path, DownloadH4Path, DownloadH9Path, DownloadH31Path};
 
 async fn typst_url() -> String {
     let url = crate::utils::embed_typst::start()
@@ -262,6 +262,42 @@ async fn download_h9_endpoint_returns_zip() -> Result<(), AppError> {
         ".zip",
         b"PK",
         "ZIP",
+    )
+    .await;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[traced_test]
+async fn download_h4_endpoint_returns_pdf() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, false).await?;
+
+    let response = app
+        .oneshot(request(
+            DownloadH4Path {
+                list_id,
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            session,
+            store,
+        ))
+        .await
+        .expect("submit h4 response");
+
+    assert_download_response(
+        response,
+        "application/pdf",
+        "attachment; filename=\"model-h4",
+        ".pdf",
+        b"%PDF-",
+        "PDF",
     )
     .await;
 
