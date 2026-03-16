@@ -1,0 +1,79 @@
+{
+  "election_name": "de Eerste Kamer der Staten-Generaal",
+  "election_type": "EK",
+  "electoral_districts": {
+    "tag": "Some",
+    "districts": [
+      "Provincie Utrecht",
+      "Gemeente Rotterdam",
+      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
+    ]
+  },
+  "designation": "Test Partij (TP)",
+  "candidates": [
+    {
+      "last_name": "Abels",
+      "initials": "A. (Astrid) (v)",
+      "date_of_birth": {
+        "year": 1976,
+        "month": 2,
+        "day": 1
+      },
+      "locality": "Ede",
+      "position": 1
+    },
+    {
+      "last_name": "Akwasi",
+      "initials": "M. (Maria) (v)",
+      "date_of_birth": {
+        "year": 1997,
+        "month": 12,
+        "day": 25
+      },
+      "locality": "Ede",
+      "position": 2
+    },
+    {
+      "last_name": "Altena",
+      "initials": "J. (Jeroen) (m)",
+      "date_of_birth": {
+        "year": 2001,
+        "month": 10,
+        "day": 30
+      },
+      "locality": "'s-Gravenhage",
+      "position": 3
+    },
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E. (Ingeborg) (v)",
+      "date_of_birth": {
+        "year": 2005,
+        "month": 3,
+        "day": 5
+      },
+      "locality": "Rotterdam",
+      "position": 4
+    },
+    {
+      "last_name": "Jansen-de Groot",
+      "initials": "C. (Christine) (v)",
+      "date_of_birth": {
+        "year": 1960,
+        "month": 5,
+        "day": 9
+      },
+      "locality": "Amsterdam",
+      "position": 5
+    }
+  ],
+  "timestamp": {
+    "year": 2025,
+    "month": 8,
+    "day": 21,
+    "hour": 11,
+    "minute": 32,
+    "second": 21
+  },
+  "locale": "nl"
+}

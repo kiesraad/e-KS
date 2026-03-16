@@ -7,6 +7,7 @@ use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLoc
 mod h1;
 mod h3_1;
 mod h9;
+mod h4;
 mod index;
 #[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
 mod integration_tests;
