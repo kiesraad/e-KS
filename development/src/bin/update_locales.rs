@@ -14,8 +14,8 @@ enum LocaleNode {
     String(String),
 }
 
-include!("../../../locales/utils/collect_locale_files.rs");
-include!("../../../locales/utils/find_used_keys.rs");
+include!("../../../tooling/locales/collect_locale_files.rs");
+include!("../../../tooling/locales/find_used_keys.rs");
 
 /// Parse YAML into a structured tree while enforcing string-only leaves.
 fn yaml_to_node(yaml: &Yaml, file: &Path, path: &str) -> Result<LocaleNode> {
