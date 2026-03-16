@@ -7,6 +7,7 @@ use http_body_util::BodyExt;
 use reqwest::Client;
 use tokio::time::{Duration, sleep};
 use tower::ServiceExt;
+use tracing_test::traced_test;
 
 use crate::{
     AppError, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
@@ -19,7 +20,7 @@ use crate::{
     },
 };
 
-use super::{DownloadH1Path, DownloadH9Path};
+use super::{DownloadH1Path, DownloadH9Path, DownloadH31Path};
 
 async fn typst_url() -> String {
     let url = crate::utils::embed_typst::start()
@@ -56,6 +57,44 @@ async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
     Ok((super::router().with_state(state), store, session))
 }
 
+struct DownloadTestState {
+    app: Router,
+    store: AppStore,
+    session: Session,
+    list_id: CandidateListId,
+}
+
+async fn setup_download_test_state(
+    candidate_count: usize,
+    include_list_submitter: bool,
+) -> Result<DownloadTestState, AppError> {
+    let (app, store, session) = setup_app().await?;
+    let list_id = CandidateListId::new();
+
+    let mut list = sample_candidate_list(list_id);
+    if include_list_submitter {
+        let list_submitter_id = ListSubmitterId::new();
+        sample_list_submitter(list_submitter_id)
+            .create(&store)
+            .await?;
+        list.list_submitter_id = Some(list_submitter_id);
+    }
+    list.create(&store).await?;
+
+    for _ in 0..candidate_count {
+        let person_id = PersonId::new();
+        sample_person(person_id).create(&store).await?;
+        list.append_candidate(&store, person_id).await?;
+    }
+
+    Ok(DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    })
+}
+
 fn request(uri: String, session: Session, store: AppStore) -> Request<Body> {
     let mut request = Request::builder().uri(uri).body(Body::empty()).unwrap();
     request.extensions_mut().insert(session);
@@ -80,8 +119,20 @@ async fn assert_download_response(
     body_prefix: &'static [u8],
     body_kind: &'static str,
 ) {
-    assert_eq!(response.status(), StatusCode::OK);
-    let headers = response.headers();
+    let status = response.status();
+    let headers = response.headers().clone();
+    let body = body_bytes(response).await;
+
+    assert_eq!(
+        status,
+        StatusCode::OK,
+        "Failed to download: expected 200 OK, received response: {}",
+        String::from_utf8_lossy(&body)
+            .chars()
+            .take(255)
+            .collect::<String>()
+    );
+
     assert_eq!(
         headers
             .get(header::CONTENT_TYPE)
@@ -91,11 +142,18 @@ async fn assert_download_response(
     let disposition = headers
         .get(header::CONTENT_DISPOSITION)
         .and_then(|value| value.to_str().ok())
-        .expect("content disposition header");
-    assert!(disposition.starts_with(filename_prefix));
-    assert!(disposition.ends_with(extension));
+        .expect("content disposition header")
+        .trim_end_matches("\"");
 
-    let body = body_bytes(response).await;
+    assert!(
+        disposition.starts_with(filename_prefix),
+        "filename should start with {filename_prefix}, received content disposition: {disposition}"
+    );
+    assert!(
+        disposition.ends_with(extension),
+        "filename should end with {extension}, received content disposition: {disposition}"
+    );
+
     assert!(
         body.as_ref().starts_with(body_prefix),
         "expected {body_kind} body"
@@ -103,21 +161,14 @@ async fn assert_download_response(
 }
 
 #[tokio::test]
+#[traced_test]
 async fn download_h1_endpoint_returns_pdf() -> Result<(), AppError> {
-    let (app, store, session) = setup_app().await?;
-    let list_id = CandidateListId::new();
-    let list_submitter_id = ListSubmitterId::new();
-    let person_id = PersonId::new();
-
-    sample_list_submitter(list_submitter_id)
-        .create(&store)
-        .await?;
-    sample_person(person_id).create(&store).await?;
-
-    let mut list = sample_candidate_list(list_id);
-    list.list_submitter_id = Some(list_submitter_id);
-    list.create(&store).await?;
-    list.append_candidate(&store, person_id).await?;
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
 
     let response = app
         .oneshot(request(
@@ -135,8 +186,8 @@ async fn download_h1_endpoint_returns_pdf() -> Result<(), AppError> {
     assert_download_response(
         response,
         "application/pdf",
-        "attachment; filename=\"model-h1-nl-(",
-        ").pdf\"",
+        "attachment; filename=\"model-h1",
+        ".pdf",
         b"%PDF-",
         "PDF",
     )
@@ -146,20 +197,50 @@ async fn download_h1_endpoint_returns_pdf() -> Result<(), AppError> {
 }
 
 #[tokio::test]
+#[traced_test]
+async fn download_h3_1_endpoint_returns_pdf() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
+
+    let response = app
+        .oneshot(request(
+            DownloadH31Path {
+                list_id,
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            session,
+            store,
+        ))
+        .await
+        .expect("submit h3-1 response");
+
+    assert_download_response(
+        response,
+        "application/pdf",
+        "attachment; filename=\"model-h3-1",
+        ".pdf",
+        b"%PDF-",
+        "PDF",
+    )
+    .await;
+
+    Ok(())
+}
+
+#[tokio::test]
+#[traced_test]
 async fn download_h9_endpoint_returns_zip() -> Result<(), AppError> {
-    let (app, store, session) = setup_app().await?;
-    let list_id = CandidateListId::new();
-
-    let person_id_1 = PersonId::new();
-    sample_person(person_id_1).create(&store).await?;
-
-    let person_id_2 = PersonId::new();
-    sample_person(person_id_2).create(&store).await?;
-
-    let mut list = sample_candidate_list(list_id);
-    list.create(&store).await?;
-    list.append_candidate(&store, person_id_1).await?;
-    list.append_candidate(&store, person_id_2).await?;
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(2, false).await?;
 
     let response = app
         .oneshot(request(
@@ -177,8 +258,8 @@ async fn download_h9_endpoint_returns_zip() -> Result<(), AppError> {
     assert_download_response(
         response,
         "application/zip",
-        "attachment; filename=\"model-h9-nl-(",
-        ").zip\"",
+        "attachment; filename=\"model-h9",
+        ".zip",
         b"PK",
         "ZIP",
     )

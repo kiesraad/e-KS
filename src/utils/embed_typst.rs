@@ -31,18 +31,12 @@ const TYPST_FILES: &[(&str, &[u8])] = &[
         include_bytes!("../../models/fonts/Geist_Mono/GeistMono-Regular.otf"),
     ),
     ("layout.typ", include_bytes!("../../models/layout.typ")),
-    (
-        "model-h1-fry.typ",
-        include_bytes!("../../models/model-h1.typ"),
-    ),
+    ("model-h1.typ", include_bytes!("../../models/model-h1.typ")),
     (
         "model-h3-1.typ",
         include_bytes!("../../models/model-h3-1.typ"),
     ),
-    (
-        "model-h9-nl.typ",
-        include_bytes!("../../models/model-h9.typ"),
-    ),
+    ("model-h9.typ", include_bytes!("../../models/model-h9.typ")),
 ];
 
 pub async fn start() -> Result<String, std::io::Error> {

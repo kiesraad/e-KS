@@ -12,7 +12,7 @@ repository = "https://github.com/kiesraad/e-KS"
 
 [features]
 # Default development-oriented feature set.
-default = ["database", "migrations", "fixtures", "livereload", "dev-features", "http-logging", "db-tests", "net-tests"]
+default = ["database", "migrations", "fixtures", "livereload", "dev-features", "http-logging", "db-tests", "net-tests", "embed-typst"]
 # Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
 # Enable database-backed storage via Postgres / SQLx.
@@ -82,6 +82,7 @@ phf_codegen = "0.13.1"
 regex = "1.12.2"
 http-body-util = "0.1"
 tower = "0.5"
+tracing-test = "0.2.6"
 
 [lints.rust]
 unsafe_code = "forbid"

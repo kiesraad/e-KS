@@ -8,7 +8,7 @@ export MEMORY_SERVE_QUIET=1
 cargo check
 cargo +nightly fmt --all -- --config imports_granularity="Crate"
 cargo clippy --all-targets -- -D warnings
-cargo test
+cargo test --features embed-typst
 
 # typescript
 ./bin/biome check --fix ./frontend
