@@ -14,6 +14,7 @@ use crate::{
 #[derive(Debug, Serialize)]
 pub struct TypstDetailedCandidate {
     pub candidate: TypstCandidate,
+    pub initials_no_gender: String,
     pub bsn: Option<String>,
     pub representative: Option<TypstPerson>,
     pub postal_address: Option<TypstPostalAddress>,
@@ -50,6 +51,7 @@ impl TypstDetailedCandidate {
 
         Ok(Self {
             candidate: TypstCandidate::try_from(candidate, locale)?,
+            initials_no_gender: candidate.person.name.initials_with_first_name(),
             bsn,
             representative,
             postal_address,

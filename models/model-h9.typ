@@ -120,7 +120,7 @@
 #label_table(values: (
   (
     trans("Naam", "Namme"),
-    [#input.detailed_candidate.candidate.last_name, #input.detailed_candidate.candidate.initials],
+    [#input.detailed_candidate.candidate.last_name, #input.detailed_candidate.initials_no_gender],
   ),
   (trans("Woonplaats", "Wenplak"), input.detailed_candidate.candidate.locality),
   (trans("Burgerservicenummer", "Boargerservicenûmer"), input.detailed_candidate.bsn),

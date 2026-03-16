@@ -64,7 +64,7 @@
   "Ik geef toestemming aan",
   "Ik jou tastimming oan",
 )
-*#submitter.last_name, #submitter.initials* // TODO: add  (#submitter.first_name) #417
+*#submitter.last_name, #submitter.initials*
 #trans(
   "om de onder punt 3 vermelde aanduiding boven de kandidatenlijst te plaatsen.",
   "om de ûnder punt 3 neamde oantsjutting boppe de kandidatelist te pleatsen.",
@@ -91,7 +91,7 @@
       "Naam van de gemachtigde van de politieke groepering",
       "Namme fan de lêsthawwer fan de politike groepearring",
     ),
-    [#agent.last_name, #agent.initials], // TODO: add (#agent.first_name) #417
+    [#agent.last_name, #agent.initials],
   ),
   (
     trans(

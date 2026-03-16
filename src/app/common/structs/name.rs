@@ -27,6 +27,14 @@ impl FullName {
         }
     }
 
+    pub fn initials_with_first_name(&self) -> String {
+        if let Some(first_name) = &self.first_name {
+            format!("{} ({})", self.initials, first_name)
+        } else {
+            self.initials.to_string()
+        }
+    }
+
     /// Returns e.g. "van Dijk"
     pub fn last_name_with_prefix(&self) -> String {
         if let Some(prefix) = &self.last_name_prefix {

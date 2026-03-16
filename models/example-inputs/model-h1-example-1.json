@@ -70,7 +70,7 @@
   "previously_seated": true,
   "list_submitter": {
     "last_name": "van Smit",
-    "initials": "G.H.",
+    "initials": "G.H. (Gerard)",
     "postal_address": {
       "street_address": "Grotestraat 3",
       "postal_code": "3000AA",
@@ -80,7 +80,7 @@
   "substitute_submitter": [
     {
       "last_name": "Bronwaßer",
-      "initials": "I.E.",
+      "initials": "I.E. (Ingeborg)",
       "postal_address": {
         "street_address": "Grotestraat 3",
         "postal_code": "3000AA",
@@ -89,7 +89,7 @@
     },
     {
       "last_name": "Jansen-de Groot",
-      "initials": "C.",
+      "initials": "C. (Christine)",
       "postal_address": {
         "street_address": "Molenweg 37",
         "postal_code": "4000CC",
