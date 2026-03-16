@@ -41,3 +41,6 @@ lcov.info
 
 /offline/gen/
 /offline/target/
+
+/tmp
+bin/pdf_diff

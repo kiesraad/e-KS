@@ -86,11 +86,13 @@ jobs:
           cargo-sbom --output-format=spdx_json_2_3 > sbom/spdx-2-3-sbom.json
 
       - name: Create release
-        uses: softprops/action-gh-release@a06a81a03ee405af7f2048a818ed3f03bbf83c7b # v2.5.0
-        with:
-          tag_name: ${{ needs.check-version.outputs.version }}
-          name: Version ${{ needs.check-version.outputs.version }}
-          generate_release_notes: true
-          files: |
-            sbom/cyclone-dx-1-6-sbom.json
-            sbom/spdx-2-3-sbom.json
+        env:
+          GH_TOKEN: ${{ github.token }}
+          TAG: ${{ needs.check-version.outputs.version }}
+        run: |
+          gh release create "$TAG" \
+          sbom/cyclone-dx-1-6-sbom.json \
+          sbom/spdx-2-3-sbom.json \
+          --title "Version $TAG" \
+          --generate-notes \
+          --target "$GITHUB_SHA"
