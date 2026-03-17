@@ -14,5 +14,5 @@ services:
     build:
       context: development
       dockerfile: saml-test-server.Dockerfile
-    ports: ['127.0.0.1:8080:8080']
+    ports: ['127.0.0.1:9001:9001']
     networks: [default]
