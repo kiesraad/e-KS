@@ -4,6 +4,7 @@ mod locale;
 mod model_locale;
 mod pdf;
 mod templates;
+mod csv;
 
 pub mod constants;
 pub mod logging;
@@ -16,3 +17,4 @@ pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
 pub use pdf::{Pdf, PdfZip};
 pub use templates::HtmlTemplate;
+pub use csv::Csv;
