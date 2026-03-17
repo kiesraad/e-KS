@@ -73,8 +73,11 @@ secrecy = "0.10.3" # 89M downloads (Tony Arcieri)
 memory-serve = { version = "2.0.0", optional = true }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.6.0", optional = true }
 validate = { path = "validate" }
+
+# SAML parsing and generation
 samael = "0.0.19"
 openssl = "0.10.76"
+quick-xml = "0.37.5" # same version that samael uses
 
 [build-dependencies]
 memory-serve = { version = "2.0.0", optional = true }

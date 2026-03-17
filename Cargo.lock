@@ -964,6 +964,7 @@ dependencies = [
  "parking_lot",
  "phf",
  "phf_codegen",
+ "quick-xml 0.37.5",
  "rand 0.10.0",
  "regex",
  "reqwest",
