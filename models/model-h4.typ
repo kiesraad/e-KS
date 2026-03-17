@@ -68,7 +68,6 @@
 ))
 
 #let gr_or_other = (gr, non_gr) => if input.election_type == "GR" { gr } else { non_gr }
-#let districts = input.electoral_districts.districts
 #if input.election_type != "EK" {
   [
     = #trans[
@@ -88,7 +87,7 @@
           "De kiezer behoort tot kieskring",
           "De kiezer heart ta kiesrûnte",
         ),
-        [#if districts.len() == 1 { districts.at(0) } else { fill_in() }],
+        fill_in(),
       ),
       (trans("Datum", "Datum"), fill_in()),
       (trans("Ondertekening of gemeentestempel", "Undertekening of gemeentestimpel"), fill_in(height: 4em)),

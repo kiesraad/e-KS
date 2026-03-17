@@ -1,12 +1,6 @@
 {
   "election_name": "de Twadde Keamer fan de Steaten-Generaal",
   "election_type": "TK",
-  "electoral_districts": {
-    "tag": "Some",
-    "districts": [
-      "Fryslân"
-    ]
-  },
   "designation": "Test Partij (TP)",
   "candidates": [
     {
