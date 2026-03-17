@@ -2,6 +2,7 @@
 mod option_string_ext;
 mod query_param_state;
 mod redirect;
+mod slugify_teletex;
 
 pub mod id_newtype;
 pub mod transparent_string;
@@ -21,3 +22,4 @@ pub mod test_utils;
 pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;
+pub use slugify_teletex::slugify_teletex;
