@@ -1,7 +1,7 @@
-#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono
+#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono, translator
 
 #let input = json("./input.json")
-#let trans = (dutch, frisian) => if input.locale == "fry" { frisian } else { dutch }
+#let trans = translator(input.locale)
 #show: doc => conf(
   doc,
   "Model H 3-1",

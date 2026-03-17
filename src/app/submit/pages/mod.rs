@@ -6,6 +6,7 @@ use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLoc
 
 mod h1;
 mod h3_1;
+mod h4;
 mod h9;
 mod index;
 #[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
@@ -30,6 +31,13 @@ pub struct DownloadH31Path {
 }
 
 #[derive(TypedPath, Deserialize)]
+#[typed_path("/generate/{list_id}/{locale}/h4.zip", rejection(AppError))]
+pub struct DownloadH4Path {
+    list_id: CandidateListId,
+    locale: ModelLocale,
+}
+
+#[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{list_id}/{locale}/h9.zip", rejection(AppError))]
 pub struct DownloadH9Path {
     list_id: CandidateListId,
@@ -41,6 +49,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(index::index)
         .typed_get(h1::gen_h1)
         .typed_get(h3_1::gen_h3_1)
+        .typed_get(h4::gen_h4)
         .typed_get(h9::gen_h9)
 }
 

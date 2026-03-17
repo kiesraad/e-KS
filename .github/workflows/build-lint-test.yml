@@ -24,10 +24,12 @@ jobs:
     outputs:
       changed: ${{ steps.filter.outputs.changed }}
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - &checkout-with-history
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           fetch-depth: '0'
           persist-credentials: false
+
       - name: Filter changes for non-Markdown files
         id: filter
         run: | 
@@ -45,10 +47,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: '0'
-          persist-credentials: false
+      - *checkout-with-history
 
       - name: Setup Rust
         shell: bash
@@ -60,43 +59,39 @@ jobs:
       - name: Check rustfmt
         run: cargo --locked fmt --all -- --check
 
-  rust:
-    name: clippy, test & build
+  frontend:
+    name: Frontend lint
     permissions:
       contents: read
-      issues: write
-      pull-requests: write
     if: ${{ needs.changes.outputs.changed == 'true' }}
     needs: changes
     runs-on: ubuntu-24.04
-    env:
-      CARGO_TERM_COLOR: always
-      RUSTDOCFLAGS: "-D warnings"
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-        with:
-          fetch-depth: '0'
-          persist-credentials: false
+      - *checkout-with-history
 
-      - name: Setup Rust
+      - &setup-stable-rust
+        name: Setup Rust
         shell: bash
         run: >
           rustup update stable &&
           rustup default stable &&
           rustup component add --toolchain stable clippy rust-docs
 
-      - name: Cargo cache
+      - &cargo-cache
+        name: Cargo cache
         uses: Swatinem/rust-cache@c19371144df3bb44fab255c43d04cbc2ab54d1c4 # v2.9.1
         with:
           shared-key: eks
 
-      - name: Tools cache
+      - &tools-cache
+        name: Tools cache
         uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/bin/*.rs', 'development/*.yml') }}
 
-      - name: Setup project
+      - &setup-project
+        name: Setup project
         run: bin/init
 
       - name: Lint Typescript using Biome
@@ -116,6 +111,23 @@ jobs:
           djlint \
           djlint --lint --check --configuration=djlint.toml templates
 
+  rust-lint:
+    name: Rust lint & test
+    permissions:
+      contents: read
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    env: &rust-check-env
+      CARGO_TERM_COLOR: always
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - *checkout-with-history
+      - *setup-stable-rust
+      - *cargo-cache
+      - *tools-cache
+      - *setup-project
+
       - name: Check Clippy with all features
         run: cargo --locked clippy --all-targets --all-features -- -D warnings
 
@@ -128,25 +140,23 @@ jobs:
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
 
-      - name: Build
-        env:
-          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst"
-        run: bin/build
-
-      - name: Strip debug symbols
-        run: strip target/release/eks
-
-      - name: Upload binary to test server
-        env:
-          ETES_API_KEY: ${{ secrets.ETES_API_KEY }}
-          SHA_PR: ${{ github.event.pull_request.head.sha || github.sha }}
-          SHA_GH: ${{ github.sha }}
-        run: |
-          curl -s -v \
-          --fail \
-          -H "Authorization: Bearer $ETES_API_KEY" \
-          -T ./target/release/eks \
-          https://eks-test.nl/etes/api/v1/executable/${SHA_PR}/${SHA_GH}
+  pdf-diff:
+    name: PDF diff
+    permissions:
+      contents: read
+      pull-requests: write
+    if: ${{ needs.changes.outputs.changed == 'true' &&  github.event_name == 'pull_request' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    env: &rust-check-env
+      CARGO_TERM_COLOR: always
+      RUSTDOCFLAGS: "-D warnings"
+    steps:
+      - *checkout-with-history
+      - *setup-stable-rust
+      - *cargo-cache
+      - *tools-cache
+      - *setup-project
 
       - name: Install diff-pdf
         if: ${{ github.event_name == 'pull_request' }}
@@ -184,6 +194,41 @@ jobs:
           script: |
             const commentPdfDiffSummary = require('./.github/scripts/comment-pdf-diff-summary');
             await commentPdfDiffSummary({ github, context });
+
+  build:
+    name: Build and upload binary to test server
+    permissions:
+      contents: read
+    if: ${{ needs.changes.outputs.changed == 'true' }}
+    needs: changes
+    runs-on: ubuntu-24.04
+    env: *rust-check-env
+    steps:
+      - *checkout-with-history
+      - *setup-stable-rust
+      - *cargo-cache
+      - *tools-cache
+      - *setup-project
+
+      - name: Build
+        env:
+          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst"
+        run: bin/build
+
+      - name: Strip debug symbols
+        run: strip target/release/eks
+
+      - name: Upload binary to test server
+        env:
+          ETES_API_KEY: ${{ secrets.ETES_API_KEY }}
+          SHA_PR: ${{ github.event.pull_request.head.sha || github.sha }}
+          SHA_GH: ${{ github.sha }}
+        run: |
+          curl -s -v \
+          --fail \
+          -H "Authorization: Bearer $ETES_API_KEY" \
+          -T ./target/release/eks \
+          https://eks-test.nl/etes/api/v1/executable/${SHA_PR}/${SHA_GH}
 
   playwright:
     name: Playwright tests

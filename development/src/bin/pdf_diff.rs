@@ -153,6 +153,20 @@ fn template_name(file: &Path) -> Result<String> {
         .with_context(|| format!("Failed to determine template name for {}", file.display()))
 }
 
+/// Build the PDF output path using the input file stem while preserving the template directory.
+fn pdf_output_rel(file: &Path, input_name: &str) -> Result<PathBuf> {
+    let pdf_name = Path::new(input_name)
+        .file_stem()
+        .map(PathBuf::from)
+        .with_context(|| format!("Failed to determine PDF name for input {input_name}"))?
+        .with_extension("pdf");
+
+    Ok(match file.parent() {
+        Some(parent) => parent.join(pdf_name),
+        None => pdf_name,
+    })
+}
+
 /// Load the example JSON input associated with a model template from `example-inputs/`.
 async fn load_render_inputs(
     root: &Path,
@@ -406,12 +420,11 @@ async fn summarize_new_files(
 
     for rel in new_files {
         let template = template_name(&rel)?;
-        let pdf_rel = rel.with_extension("pdf");
-        let added_pdf = paths.diffs_root.join(&pdf_rel);
-
         let inputs = load_render_inputs(&paths.current_root, &template).await?;
 
         for (input_name, input) in inputs {
+            let pdf_rel = pdf_output_rel(&rel, &input_name)?;
+            let added_pdf = paths.diffs_root.join(&pdf_rel);
             render_pdf(
                 Arc::clone(current_context),
                 template.clone(),
@@ -452,14 +465,13 @@ async fn summarize_common_files(
 
     for rel in common_files {
         let template = template_name(&rel)?;
-        let pdf_rel = rel.with_extension("pdf");
-        let current_pdf = paths.current_pdfs_root.join(&pdf_rel);
-        let main_pdf = paths.main_pdfs_root.join(&pdf_rel);
-        let diff_pdf = paths.diffs_root.join(&pdf_rel);
-
         let inputs = load_render_inputs(&paths.current_root, &template).await?;
 
         for (input_name, input) in inputs {
+            let pdf_rel = pdf_output_rel(&rel, &input_name)?;
+            let current_pdf = paths.current_pdfs_root.join(&pdf_rel);
+            let main_pdf = paths.main_pdfs_root.join(&pdf_rel);
+            let diff_pdf = paths.diffs_root.join(&pdf_rel);
             render_pdf(
                 Arc::clone(current_context),
                 template.clone(),

@@ -1,5 +1,8 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
+#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
+)
+
 #let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], input) = [
   #set text(
     lang: "nl",
@@ -79,10 +82,11 @@
 #let label_table(values: ()) = table(
   columns: (auto, 1fr),
   ..values.flatten(),
+  inset: (left: 0pt)
 )
 
 /// Line with space to fill in later
-#let fill_in(height: 2em) = box(width: 100%, height: height, stroke: (bottom: 1pt + black), inset: 0pt)[]
+#let fill_in(height: 2em, width: 100%) = box(width: width, height: height, stroke: (bottom: 1pt + black), inset: 0pt)[]
 
 #let date(date) = mono(datetime(..date).display("[day]-[month]-[year]"))
 
