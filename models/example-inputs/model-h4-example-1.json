@@ -1,14 +1,6 @@
 {
   "election_name": "de Eerste Kamer der Staten-Generaal",
   "election_type": "EK",
-  "electoral_districts": {
-    "tag": "Some",
-    "districts": [
-      "Provincie Utrecht",
-      "Gemeente Rotterdam",
-      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
-    ]
-  },
   "designation": "Test Partij (TP)",
   "candidates": [
     {

@@ -9,6 +9,7 @@ use crate::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts,
         typst_detailed_candidate::TypstDetailedCandidate,
     },
+    utils::slugify_teletex,
 };
 
 #[derive(Debug, Serialize)]
@@ -46,7 +47,7 @@ impl<'zip> H9<'zip> {
         let detailed_candidate = TypstDetailedCandidate::try_from(&candidate, locale)?;
         let filename = format!(
             "model-h9-{}-{}.pdf",
-            detailed_candidate.candidate.last_name.replace(" ", "-"),
+            slugify_teletex(&detailed_candidate.candidate.last_name),
             detailed_candidate.candidate.position
         );
 
