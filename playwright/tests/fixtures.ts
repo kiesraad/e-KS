@@ -1,9 +1,9 @@
 import { test as base, type Page } from "@playwright/test";
 import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage";
-import { ListSubmittersPage } from "./pages/listSubmittersPage";
-import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
+import { ListSubmittersPage } from "./pages/listSubmittersPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
+import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
 
 type Fixtures = {
   deleteExistingGeneralInformation: Page;
@@ -28,12 +28,25 @@ export const test = base.extend<Fixtures>({
   deleteExistingCandidateLists: async ({ page }, use) => {
     await page.goto("/candidate-lists");
     const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
-    for (const candidateList of await candidateListsOverviewPage.linkCandidateList.all()) {
-      if (await candidateList.isVisible()) {
-        await candidateList.click();
-        await new ManageCandidateListPage(page).removeList();
-      }
+
+    while (true) {
+      const candidateLists =
+        await candidateListsOverviewPage.linkCandidateList.all();
+      const visibleList = await Promise.all(
+        candidateLists.map(async (item) => ({
+          item,
+          visible: await item.isVisible(),
+        })),
+      );
+
+      const firstVisible = visibleList.find((entry) => entry.visible);
+      if (!firstVisible) break;
+
+      await firstVisible.item.click();
+      await new ManageCandidateListPage(page).removeList();
+      await page.goto("/candidate-lists");
     }
+
     await use(page);
-  }
+  },
 });

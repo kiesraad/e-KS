@@ -12,7 +12,9 @@ test.describe("provide general information for political group", async () => {
   test("provide general information for political group", async ({
     deleteExistingGeneralInformation,
   }) => {
-    const politicalGroupPage = new PoliticalGroupPage(deleteExistingGeneralInformation);
+    const politicalGroupPage = new PoliticalGroupPage(
+      deleteExistingGeneralInformation,
+    );
     await politicalGroupPage.open();
     await politicalGroupPage.selectHasMoreThan16Seats("Ja");
     await politicalGroupPage.open();
@@ -21,14 +23,20 @@ test.describe("provide general information for political group", async () => {
     await politicalGroupPage.setStatutoryName("De Testpartij");
   });
 
-  test("provide authorised agent", async ({ deleteExistingGeneralInformation }) => {
-    await deleteExistingGeneralInformation.goto("/political-group/authorised-agents");
+  test("provide authorised agent", async ({
+    deleteExistingGeneralInformation,
+  }) => {
+    await deleteExistingGeneralInformation.goto(
+      "/political-group/authorised-agents",
+    );
     const agent: AuthorisedAgent = {
       initials: "K",
       lastNamePrefix: "van",
       lastName: `Jansen ${randomName()}`,
     };
-    const authorisedAgentsPage = new AuthorisedAgentsPage(deleteExistingGeneralInformation);
+    const authorisedAgentsPage = new AuthorisedAgentsPage(
+      deleteExistingGeneralInformation,
+    );
     await authorisedAgentsPage.addAuthorisedAgent(agent);
 
     const agentLastName = agent.lastNamePrefix
@@ -40,8 +48,12 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
   });
 
-  test("provide multiple list submitters", async ({ deleteExistingGeneralInformation }) => {
-    await deleteExistingGeneralInformation.goto("/political-group/list-submitters");
+  test("provide multiple list submitters", async ({
+    deleteExistingGeneralInformation,
+  }) => {
+    await deleteExistingGeneralInformation.goto(
+      "/political-group/list-submitters",
+    );
     const submitterOne: ListSubmitter = {
       initials: "C",
       lastNamePrefix: "de",
@@ -51,7 +63,9 @@ test.describe("provide general information for political group", async () => {
       initials: "Z",
       lastName: `Zeeman ${randomName()}`,
     };
-    const listSubmittersPage = new ListSubmittersPage(deleteExistingGeneralInformation);
+    const listSubmittersPage = new ListSubmittersPage(
+      deleteExistingGeneralInformation,
+    );
 
     for (const submitter of [submitterOne, submitterTwo]) {
       await listSubmittersPage.addListSubmitter(submitter);
@@ -66,8 +80,12 @@ test.describe("provide general information for political group", async () => {
     }
   });
 
-  test("provide substitute list submitter", async ({ deleteExistingGeneralInformation }) => {
-    await deleteExistingGeneralInformation.goto("/political-group/list-submitters");
+  test("provide substitute list submitter", async ({
+    deleteExistingGeneralInformation,
+  }) => {
+    await deleteExistingGeneralInformation.goto(
+      "/political-group/list-submitters",
+    );
     const submitterOne: ListSubmitter = {
       initials: "B",
       lastNamePrefix: "van",
@@ -95,4 +113,3 @@ test.describe("provide general information for political group", async () => {
     }
   });
 });
-
