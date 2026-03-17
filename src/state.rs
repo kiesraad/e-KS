@@ -1,8 +1,11 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
+use std::sync::Arc;
+
 use crate::{
-    AppError, AppStore, AppStoreData, Config, PoliticalGroupId, SessionStore, store::StoreRegistry,
+    AppError, AppStore, AppStoreData, AuthProvider, Config, PoliticalGroupId, SessionStore,
+    store::StoreRegistry,
 };
 use axum::extract::FromRef;
 
@@ -13,6 +16,7 @@ pub struct AppState {
     pub store_registry: StoreRegistry<AppStoreData>,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
+    pub auth_provider: Arc<AuthProvider>,
 }
 
 impl AppState {
@@ -29,6 +33,13 @@ impl AppState {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
+            auth_provider: Arc::new(
+                AuthProvider::new(
+                    // TODO: update this to a real IdP and make it configurable
+                    "http://localhost:9001/simplesaml/saml2/idp/metadata.php".to_string(),
+                )
+                .await?,
+            ),
         })
     }
 
@@ -58,6 +69,13 @@ impl AppState {
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
+            auth_provider: Arc::new(
+                AuthProvider::new(
+                    "http://localhost:9001/simplesaml/saml2/idp/metadata.php".to_string(),
+                )
+                .await
+                .unwrap(),
+            ),
         }
     }
 }

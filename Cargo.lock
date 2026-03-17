@@ -960,6 +960,7 @@ dependencies = [
  "http-body-util",
  "hyper-util",
  "memory-serve",
+ "openssl",
  "parking_lot",
  "phf",
  "phf_codegen",

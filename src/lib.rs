@@ -66,6 +66,7 @@ pub use app::{
     list_submitters, persons, political_groups, submit, substitute_list_submitters,
 };
 pub use auth::{
+    service_provider::AuthProvider,
     session::{SESSION_IDLE_TIMEOUT, Session},
     session_extractor::{SESSION_COOKIE_NAME, session_middleware, store_middleware},
     session_store::SessionStore,
