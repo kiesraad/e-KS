@@ -1,4 +1,5 @@
 //! Utilities and small helpers shared across the application.
+pub mod no_cache_headers;
 mod option_string_ext;
 mod query_param_state;
 mod redirect;
@@ -19,6 +20,7 @@ pub mod embed_typst;
 #[cfg(test)]
 pub mod test_utils;
 
+pub use no_cache_headers::generate_attachment_headers;
 pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;

@@ -10,12 +10,12 @@ use crate::{
 
 mod create;
 mod delete;
+mod export;
 mod list;
 mod reorder;
 mod update;
 mod update_list_submitter;
 mod view;
-mod export;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists", rejection(AppError))]
@@ -194,6 +194,10 @@ mod tests {
             list.create_candidate_path().to_string(),
             format!("/candidate-lists/{}/create", list.id)
         );
+        assert_eq!(
+            list.export_path().to_string(),
+            format!("/candidate-lists/{}/export", list.id)
+        )
     }
 
     #[test]

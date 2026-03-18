@@ -1,7 +1,7 @@
-use crate::AppError;
+use crate::{AppError, utils::no_cache_headers};
 use axum::{
     body::Body,
-    http::{HeaderMap, HeaderValue, Response, header},
+    http::{HeaderValue, Response},
     response::IntoResponse,
 };
 use reqwest::Method;
@@ -30,29 +30,10 @@ pub trait Pdf: Sized + Serialize {
             .error_for_status()?
             .bytes_stream();
 
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            header::CONTENT_TYPE,
+        let headers = no_cache_headers::generate_attachment_headers(
+            self.filename(),
             HeaderValue::from_static("application/pdf"),
-        );
-        headers.insert(
-            header::CONTENT_DISPOSITION,
-            HeaderValue::from_str(&format!(r#"attachment; filename="{}""#, self.filename()))
-                .map_err(|_| {
-                    tracing::error!(
-                        "invalid filename for content disposition: {}",
-                        self.filename()
-                    );
-
-                    AppError::InternalServerError
-                })?,
-        );
-        headers.insert(
-            header::CACHE_CONTROL,
-            HeaderValue::from_static("no-store, no-cache, must-revalidate, max-age=0"),
-        );
-        headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
-        headers.insert(header::EXPIRES, HeaderValue::from_static("0"));
+        )?;
 
         Ok((headers, Body::from_stream(typst_response)).into_response())
     }
@@ -102,29 +83,10 @@ where
             .error_for_status()?
             .bytes_stream();
 
-        let mut headers = HeaderMap::new();
-        headers.insert(
-            header::CONTENT_TYPE,
+        let headers = no_cache_headers::generate_attachment_headers(
+            self.filename.as_str(),
             HeaderValue::from_static("application/zip"),
-        );
-        headers.insert(
-            header::CONTENT_DISPOSITION,
-            HeaderValue::from_str(&format!(r#"attachment; filename="{}""#, self.filename))
-                .map_err(|_| {
-                    tracing::error!(
-                        "invalid filename for content disposition: {}",
-                        self.filename
-                    );
-
-                    AppError::InternalServerError
-                })?,
-        );
-        headers.insert(
-            header::CACHE_CONTROL,
-            HeaderValue::from_static("no-store, no-cache, must-revalidate, max-age=0"),
-        );
-        headers.insert(header::PRAGMA, HeaderValue::from_static("no-cache"));
-        headers.insert(header::EXPIRES, HeaderValue::from_static("0"));
+        )?;
 
         Ok((headers, Body::from_stream(typst_response)).into_response())
     }
