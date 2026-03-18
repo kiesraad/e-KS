@@ -7,7 +7,6 @@ use crate::{
     submit::structs::{
         typst_candidate::{TypstCandidate, ordered_candidates},
         typst_datetime::TypstDatetime,
-        typst_electoral_districts::TypstElectoralDistricts,
     },
 };
 
@@ -15,7 +14,6 @@ use crate::{
 pub struct H4 {
     election_name: String,
     election_type: ElectionType,
-    electoral_districts: TypstElectoralDistricts,
     designation: String,
     candidates: Vec<TypstCandidate>,
     timestamp: TypstDatetime,
@@ -57,7 +55,6 @@ impl H4 {
         Ok(Self {
             election_name: election.title(locale.into()).to_string(),
             election_type: election.election_type(),
-            electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
             designation: store
                 .get_political_group()
                 .display_name
