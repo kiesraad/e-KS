@@ -10,7 +10,7 @@ use crate::{
 
 const NO_BSN: &str = "kandidaat heeft geen BSN";
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CandidateRecord {
     kandidaat_voorletters: String,
     kandidaat_roepnaam: String,

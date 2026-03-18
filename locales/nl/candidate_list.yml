@@ -5,10 +5,11 @@ actions:
   add_new: Nieuwe
   back_to_list: Terug
   delete_list: Kandidatenlijst verwijderen
-  edit: Aanpassen
+  edit: Lijst aanpassen
+  import_export: "Kandidaten importeren/exporteren"
   edit_list_details: Kieskringen en lijstinleveraar aanpassen
-  export: Lijst exporteren
-  import: Lijst importeren
+  export: Exporteren
+  import: Importeren
   select_all_districts: Selecteer alle kieskringen
 add_all: Alle kandidaten toevoegen
 add_candidate: Kandidaat toevoegen

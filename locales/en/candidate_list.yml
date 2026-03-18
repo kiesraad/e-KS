@@ -5,10 +5,11 @@ actions:
   add_new: New
   back_to_list: Back
   delete_list: Delete candidate list
-  edit: List details
+  edit: Edit list
+  import_export: "Import/export candidates"
   edit_list_details: Edit the list details here
-  export: Export list
-  import: Import list
+  export: Export
+  import: Import
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate

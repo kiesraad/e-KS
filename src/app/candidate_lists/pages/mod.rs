@@ -16,6 +16,7 @@ mod reorder;
 mod update;
 mod update_list_submitter;
 mod view;
+mod import;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists", rejection(AppError))]
@@ -67,6 +68,12 @@ pub struct UpdateSubstituteListSubmittersPath {
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}/export", rejection(AppError))]
 pub struct CandidateListExportPath {
+    pub list_id: CandidateListId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{list_id}/import", rejection(AppError))]
+pub struct CandidateListImportPath {
     pub list_id: CandidateListId,
 }
 
@@ -128,6 +135,10 @@ impl CandidateList {
     pub fn export_path(&self) -> impl TypedPath {
         CandidateListExportPath { list_id: self.id }
     }
+
+    pub fn import_path(&self) -> impl TypedPath {
+        CandidateListImportPath { list_id: self.id }
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -146,6 +157,8 @@ pub fn router() -> Router<AppState> {
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
         .typed_get(export::export_candidate_list)
+        .typed_get(import::import_export)
+        .typed_post(import::import_candidate_list)
 }
 
 #[cfg(test)]
@@ -197,7 +210,11 @@ mod tests {
         assert_eq!(
             list.export_path().to_string(),
             format!("/candidate-lists/{}/export", list.id)
-        )
+        );
+        assert_eq!(
+            list.import_path().to_string(),
+            format!("/candidate-lists/{}/import", list.id)
+        );
     }
 
     #[test]
