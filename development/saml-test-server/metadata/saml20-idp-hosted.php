@@ -5,4 +5,7 @@ $metadata['http://localhost:8080/simplesaml/saml2/idp/metadata.php'] = [
     'privatekey' => 'idp.pem',
     'certificate' => 'idp.crt',
     'auth' => 'example-static',
+    'metadata.sign.enable' => true,
+    'metadata.sign.privatekey' => 'idp.pem',
+    'metadata.sign.certificate' => 'idp.crt',
 ];

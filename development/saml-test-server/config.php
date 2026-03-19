@@ -111,7 +111,7 @@ $config = [
     'metadata.sources' => [
         ['type' => 'flatfile'],
     ],
-    'metadata.sign.enable' => false,
+    'metadata.sign.enable' => true,
     'metadata.sign.privatekey' => null,
     'metadata.sign.privatekey_pass' => null,
     'metadata.sign.certificate' => null,
