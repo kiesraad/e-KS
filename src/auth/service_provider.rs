@@ -29,23 +29,25 @@ impl AuthProvider {
             .unwrap();
 
         let public_key = openssl::x509::X509::from_pem(
-            &std::fs::read("./publickey.cer").map_err(|_| AppError::InternalServerError)?,
+            &std::fs::read("./development/publickey.cer")
+                .map_err(|_| AppError::InternalServerError)?,
         )
         .map_err(|_| AppError::InternalServerError)?;
         let private_key = openssl::rsa::Rsa::private_key_from_pem(
-            &std::fs::read("./privatekey.pem").map_err(|_| AppError::InternalServerError)?,
+            &std::fs::read("./development/privatekey.pem")
+                .map_err(|_| AppError::InternalServerError)?,
         )
         .map_err(|_| AppError::InternalServerError)?;
         let private_key = PKey::from_rsa(private_key).unwrap();
 
         let sp = ServiceProviderBuilder::default()
-            .entity_id("test-sp".to_string())
+            .entity_id("e-ks".to_string())
             .key(private_key.clone())
             .certificate(public_key.clone())
             .allow_idp_initiated(true) // TODO: disable this and keep track of requests IDs
             .idp_metadata(idp_metadata)
-            .acs_url("http://localhost:8080/saml/acs".to_string())
-            .slo_url("http://localhost:8080/saml/slo".to_string())
+            .acs_url("http://localhost:3000/saml/acs".to_string())
+            .slo_url("http://localhost:3000/saml/logout".to_string())
             .build()
             .map_err(|_| AppError::InternalServerError)?;
 
@@ -59,8 +61,30 @@ impl AuthProvider {
 
 pub fn router() -> Router<AppState> {
     Router::new()
+        .route("/saml/login", get(saml_login))
         .route("/saml/metadata", get(saml_metadata))
         .route("/saml/acs", post(saml_acs))
+}
+
+async fn saml_login(State(state): State<AppState>) -> impl IntoResponse {
+    let authn_request = state
+        .auth_provider
+        .sp
+        .make_authentication_request(
+            &state
+                .auth_provider
+                .sp
+                .sso_binding_location(samael::metadata::HTTP_REDIRECT_BINDING)
+                .unwrap(),
+        )
+        .unwrap();
+
+    let login_url = authn_request
+        .signed_redirect("", state.auth_provider.private_key.clone())
+        .unwrap()
+        .unwrap();
+
+    axum::response::Redirect::temporary(login_url.as_str())
 }
 
 fn random_xml_id(prefix: &str) -> String {
@@ -78,8 +102,7 @@ async fn saml_metadata(State(state): State<AppState>) -> Result<impl IntoRespons
     sig.signed_info.reference[0].digest_method.algorithm = DigestAlgorithm::Sha256;
     metadata.signature = Some(sig);
 
-    let unsigned_xml = TryInto::<crate::auth::saml_structs::EntityDescriptor>::try_into(metadata)
-        .unwrap()
+    let unsigned_xml = TryInto::<crate::auth::saml_structs::EntityDescriptor>::try_into(metadata)?
         .to_string()
         .map_err(|_| AppError::InternalServerError)?;
 
