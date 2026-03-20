@@ -12,16 +12,16 @@ const NO_BSN: &str = "kandidaat heeft geen BSN";
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub struct CandidateRecord {
-    kandidaat_voorletters: String,
-    kandidaat_roepnaam: String,
-    kandidaat_voorvoegsel: String,
-    kandidaat_achternaam: String,
+    voorletters: String,
+    roepnaam: String,
+    voorvoegsel: String,
+    achternaam: String,
 
-    kandidaat_woonplaats: String,
-    kandidaat_landcode: String,
-    kandidaat_bsn: String,
-    kandidaat_geboortedatum: String,
-    kandidaat_geslacht: String,
+    woonplaats: String,
+    landcode: String,
+    bsn: String,
+    geboortedatum: String,
+    geslacht: String,
 
     gemachtigde_voorletters: String,
     gemachtigde_roepnaam: String,
@@ -33,7 +33,7 @@ pub struct CandidateRecord {
     huisnummer: String,
     toevoeging: String,
     straatnaam: String,
-    woonplaats: String,
+    plaats: String,
 }
 
 impl From<Person> for CandidateRecord {
@@ -59,25 +59,25 @@ impl From<Person> for CandidateRecord {
         };
 
         Self {
-            kandidaat_voorletters: candidate_name.initials.to_string(),
-            kandidaat_roepnaam: candidate_name.first_name.to_string_or_default(),
-            kandidaat_voorvoegsel: candidate_name.last_name_prefix.to_string_or_default(),
-            kandidaat_achternaam: candidate_name.last_name.to_string(),
+            voorletters: candidate_name.initials.to_string(),
+            roepnaam: candidate_name.first_name.to_string_or_default(),
+            voorvoegsel: candidate_name.last_name_prefix.to_string_or_default(),
+            achternaam: candidate_name.last_name.to_string(),
 
-            kandidaat_woonplaats: candidate_personal_data
+            woonplaats: candidate_personal_data
                 .place_of_residence
                 .to_string_or_default(),
-            kandidaat_landcode: candidate_personal_data.country.to_string_or_default(),
-            kandidaat_bsn: match candidate_personal_data.bsn {
+            landcode: candidate_personal_data.country.to_string_or_default(),
+            bsn: match candidate_personal_data.bsn {
                 Some(BsnOrNoneConfirmed::NoneConfirmed) => NO_BSN.to_string(),
                 Some(BsnOrNoneConfirmed::Bsn(bsn)) => bsn.to_exposed_string(),
                 None => "".to_string(),
             },
-            kandidaat_geboortedatum: candidate_personal_data
+            geboortedatum: candidate_personal_data
                 .date_of_birth
                 .map(|d| d.format(DEFAULT_DATE_FORMAT))
                 .to_string_or_default(),
-            kandidaat_geslacht: match candidate_personal_data.gender {
+            geslacht: match candidate_personal_data.gender {
                 Some(gender) => gender.abbreviation(AnyLocale::Nl).to_string(),
                 None => "".to_string(),
             },
@@ -91,7 +91,7 @@ impl From<Person> for CandidateRecord {
             huisnummer: address.house_number.to_string_or_default(),
             toevoeging: address.house_number_addition.to_string_or_default(),
             straatnaam: address.street_name.to_string_or_default(),
-            woonplaats: address.locality.to_string_or_default(),
+            plaats: address.locality.to_string_or_default(),
         }
     }
 }
@@ -164,15 +164,15 @@ mod tests {
 
         let record: CandidateRecord = person.clone().into();
 
-        assert_eq!(record.kandidaat_voorletters, "J.");
-        assert_eq!(record.kandidaat_roepnaam, "Jan");
-        assert_eq!(record.kandidaat_voorvoegsel, "van de");
-        assert_eq!(record.kandidaat_achternaam, "Berg");
-        assert_eq!(record.kandidaat_woonplaats, "Amsterdam");
-        assert_eq!(record.kandidaat_landcode, "NL");
-        assert_eq!(record.kandidaat_bsn, "999994335");
-        assert_eq!(record.kandidaat_geboortedatum, "20-10-2000");
-        assert_eq!(record.kandidaat_geslacht, "m");
+        assert_eq!(record.voorletters, "J.");
+        assert_eq!(record.roepnaam, "Jan");
+        assert_eq!(record.voorvoegsel, "van de");
+        assert_eq!(record.achternaam, "Berg");
+        assert_eq!(record.woonplaats, "Amsterdam");
+        assert_eq!(record.landcode, "NL");
+        assert_eq!(record.bsn, "999994335");
+        assert_eq!(record.geboortedatum, "20-10-2000");
+        assert_eq!(record.geslacht, "m");
 
         // despite having a representative filled in, because country == NL, it should be empty
         assert_eq!(record.gemachtigde_voorletters, "");
@@ -185,7 +185,7 @@ mod tests {
         assert_eq!(record.huisnummer, "12");
         assert_eq!(record.toevoeging, "a");
         assert_eq!(record.straatnaam, "Mooie Straat");
-        assert_eq!(record.woonplaats, "Rotterdam");
+        assert_eq!(record.plaats, "Rotterdam");
     }
 
     #[test]
@@ -201,12 +201,9 @@ mod tests {
         let no_bsn_confirmed_record: CandidateRecord = no_bsn_confirmed.into();
         let bsn_record: CandidateRecord = bsn.into();
 
-        assert_eq!(no_bsn_record.kandidaat_bsn, "");
-        assert_eq!(
-            no_bsn_confirmed_record.kandidaat_bsn,
-            "kandidaat heeft geen BSN"
-        );
-        assert_eq!(bsn_record.kandidaat_bsn, "999994335");
+        assert_eq!(no_bsn_record.bsn, "");
+        assert_eq!(no_bsn_confirmed_record.bsn, "kandidaat heeft geen BSN");
+        assert_eq!(bsn_record.bsn, "999994335");
     }
 
     #[test]
@@ -222,9 +219,9 @@ mod tests {
         let female_record: CandidateRecord = female.into();
         let x_record: CandidateRecord = x.into();
 
-        assert_eq!(male_record.kandidaat_geslacht, "m");
-        assert_eq!(female_record.kandidaat_geslacht, "v");
-        assert_eq!(x_record.kandidaat_geslacht, "");
+        assert_eq!(male_record.geslacht, "m");
+        assert_eq!(female_record.geslacht, "v");
+        assert_eq!(x_record.geslacht, "");
     }
 
     #[test]
@@ -245,6 +242,6 @@ mod tests {
         assert_eq!(record.huisnummer, "34");
         assert_eq!(record.toevoeging, "b");
         assert_eq!(record.straatnaam, "Mooiere Straat");
-        assert_eq!(record.woonplaats, "Den Haag");
+        assert_eq!(record.plaats, "Den Haag");
     }
 }
