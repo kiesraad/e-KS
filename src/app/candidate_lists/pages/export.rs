@@ -98,12 +98,9 @@ mod tests {
         );
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
-        let expected_csv = r#"kandidaat_voorletters,kandidaat_roepnaam,kandidaat_voorvoegsel,kandidaat_achternaam,kandidaat_woonplaats,kandidaat_landcode,kandidaat_bsn,kandidaat_geboortedatum,kandidaat_geslacht,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,postcode,huisnummer,toevoeging,straatnaam,woonplaats
-H.A.H.A.,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,,,,,1234AB,10,A,Stationsstraat,Juinen
-H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,,,,,1234AB,10,A,Stationsstraat,Juinen
-"#;
+        let expected_csv = include_str!("../testdata/candidates.csv");
         let body = String::from_utf8(
-            body::to_bytes(response.into_body(), 1024)
+            body::to_bytes(response.into_body(), expected_csv.len() * 2)
                 .await
                 .unwrap()
                 .to_vec(),
