@@ -14,6 +14,7 @@ manage_candidate_lists: Manage candidate lists
 manage_candidates: Manage candidates
 manage_data: Manage data
 next: Next
+continue: Continue
 remove: Remove
 review_and_submit: Review and submit
 save: Save

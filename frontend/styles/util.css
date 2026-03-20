@@ -71,6 +71,11 @@
   font-size: var(--font-size-sm);
 }
 
+.warning-text {
+  color: var(--red-600);
+  font-weight: bold;
+}
+
 .text-muted {
   color: var(--gray-400);
 }

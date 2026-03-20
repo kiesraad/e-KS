@@ -152,12 +152,6 @@ impl From<serde_json::Error> for AppError {
     }
 }
 
-impl From<csv::Error> for AppError {
-    fn from(_: csv::Error) -> Self {
-        AppError::InternalServerError
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;

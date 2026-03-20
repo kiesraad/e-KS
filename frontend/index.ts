@@ -17,7 +17,7 @@ import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
 import setupSortable from "./scripts/table-interaction/sortable";
 import setupStickyNav from "./scripts/generic-ui/sticky-nav";
 import setupRememberScroll from "./scripts/generic-ui/remember-scroll";
-import one_click_upload from "./scripts/form-inputs/one-click-upload-button";
+import one_click_upload from "./scripts/form-inputs/one-click-text-file-upload";
 
 import "./styles/index.css";
 

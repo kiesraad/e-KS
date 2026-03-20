@@ -10,7 +10,7 @@ pub use form_data::FormData;
 pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};
 pub use validation_error::ValidationError;
 
-use axum::extract::{FromRequest, Multipart, Request};
+use axum::extract::{FromRequest, Request};
 use axum_extra::extract::Form as AxumForm;
 use serde::de::DeserializeOwned;
 

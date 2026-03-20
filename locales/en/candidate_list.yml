@@ -8,10 +8,11 @@ actions:
   edit: Edit list
   import_export: "Import/export candidates"
   edit_list_details: Edit the list details here
-  export: Export
-  import: Import
+  export_csv: Export as CSV
+  import_csv: Import as CSV
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
+import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 add_candidate: Add candidate
 all_candidates: All candidates
 all_candidates_note: All created candidates can be found back here
