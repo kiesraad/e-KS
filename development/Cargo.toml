@@ -31,4 +31,4 @@ serde-saphyr = "0.0.13"
 regex = "1.12.2"
 tracing = "0.1.41"
 tracing-subscriber = { version = "0.3.19", features = ["env-filter"] }
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.5.3" }
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.6.0" }
