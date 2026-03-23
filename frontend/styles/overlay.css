@@ -14,6 +14,7 @@ body.overlay-open {
   background-color: rgba(0, 0, 0, 0.5);
   z-index: 500;
   padding: var(--space-lg) var(--space-lg) 0 var(--space-lg);
+  cursor: pointer;
 }
 
 .overlay {
@@ -27,6 +28,7 @@ body.overlay-open {
   height: auto;
   border-radius: var(--space-sm) var(--space-sm) 0 0;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
+  cursor: default;
 
   &.animation {
     transform: translateY(0);

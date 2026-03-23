@@ -37,6 +37,7 @@ form:
   update:
     title: Edit candidate list
 not_found: "Candidate {} not found."
+remove_all_added_candidates: Remove all added candidates
 remove_candidate: Remove candidate
 search_existing_person: Search existing person
 search_placeholder: "Search by name, initials or locality"

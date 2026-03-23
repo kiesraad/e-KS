@@ -37,6 +37,7 @@ form:
   update:
     title: Kandidatenlijst aanpassen
 not_found: "Kandidatenlijst {} niet gevonden."
+remove_all_added_candidates: Toegevoegde kandidaten verwijderen
 remove_candidate: Uit deze lijst verwijderen
 search_existing_person: Zoek bestaande kandidaat
 search_placeholder: "Zoek op naam, voorletters of woonplaats"

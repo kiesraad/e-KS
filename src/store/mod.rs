@@ -3,7 +3,6 @@ pub(crate) mod database;
 
 mod event;
 mod filesystem;
-mod persistance;
 mod persistence;
 mod registry;
 mod store_handle;
