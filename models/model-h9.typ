@@ -37,7 +37,7 @@
 #if input.electoral_districts.tag == "All" {
   trans([*alle kieskringen*], [*alle kiesrûnten*])
 } else {
-  block(above: 1em, list(tight: true, ..input.electoral_districts.districts))
+  block(above: 1em, input.electoral_districts.districts.join(", "))
 }
 
 
