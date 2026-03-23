@@ -13,6 +13,7 @@ jobs:
   sigridci:
     name: Sigrid CI
     if: "!github.event.pull_request.head.repo.fork"
+    environment: development
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -24,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@75387733621a91d9cd103757f364f341ad0cc32b # main
+        uses: Software-Improvement-Group/sigridci@fd97032536e538c05c07869ac3584006185374b0 # v1.6
         with:
           customer: kiesraad
           system: e-ks
@@ -34,7 +35,7 @@ jobs:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
 
       - name: "Sigrid PR feedback"
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2
+        uses: mshick/add-pr-comment@ffd016c7e151d97d69d21a843022fd4cd5b96fe5 # v3.9.0
         if: always()
         with:
           message-id: sigrid

@@ -85,7 +85,7 @@ jobs:
 
       - &tools-cache
         name: Tools cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/bin/*.rs', 'development/*.yml') }}
@@ -148,9 +148,7 @@ jobs:
     if: ${{ needs.changes.outputs.changed == 'true' &&  github.event_name == 'pull_request' }}
     needs: changes
     runs-on: ubuntu-24.04
-    env: &rust-check-env
-      CARGO_TERM_COLOR: always
-      RUSTDOCFLAGS: "-D warnings"
+    env: *rust-check-env
     steps:
       - *checkout-with-history
       - *setup-stable-rust
@@ -199,6 +197,7 @@ jobs:
     name: Build and upload binary to test server
     permissions:
       contents: read
+    environment: development
     if: ${{ needs.changes.outputs.changed == 'true' }}
     needs: changes
     runs-on: ubuntu-24.04
@@ -256,7 +255,7 @@ jobs:
           shared-key: eks
 
       - name: Tools cache
-        uses: actions/cache@cdf6c1fa76f9f475f3d7449005a359c84ca0f306 # v5
+        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
