@@ -19,7 +19,7 @@ use crate::{
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
-    let router = Router::new()
+    let app_router = Router::new()
         .merge(common::router())
         .merge(persons::router())
         .merge(political_groups::router())
@@ -35,7 +35,11 @@ pub fn create(state: AppState) -> Router<AppState> {
         .expect("BAG_SERVICE_URL must be set in dev-features mode");
 
     #[cfg(feature = "dev-features")]
-    let router = router
+    let dev_router = Router::new()
+        .route(
+            crate::auth::dev_login::DEV_LOGIN_PATH,
+            get(crate::auth::dev_login::dev_login),
+        )
         .route(
             "/lookup",
             crate::utils::proxy::proxy_handler(&bag_service_url),
@@ -45,20 +49,28 @@ pub fn create(state: AppState) -> Router<AppState> {
             crate::utils::proxy::proxy_handler(&bag_service_url),
         );
 
-    let router = router
+    let app_router = app_router
         .fallback(get(common::not_found))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             render_error_pages,
         ))
-                .layer(middleware::from_fn_with_state(
+        .layer(middleware::from_fn_with_state(
             state.clone(),
             store_middleware,
         ))
-                .layer(middleware::from_fn_with_state(
+        .layer(middleware::from_fn_with_state(
             state.clone(),
             session_middleware,
-        ))
+        ));
+
+    #[cfg(feature = "dev-features")]
+    let router = Router::new().merge(dev_router).merge(app_router);
+
+    #[cfg(not(feature = "dev-features"))]
+    let router = app_router;
+
+    let router = router
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
             HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),

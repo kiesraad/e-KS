@@ -1,5 +1,7 @@
 //! Authentication and session helpers.
 
+#[cfg(feature = "dev-features")]
+pub mod dev_login;
 /// Session model and token utilities.
 pub mod session;
 /// Session middleware and request extraction.
