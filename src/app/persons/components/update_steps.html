@@ -6,17 +6,18 @@
         {{ "person.personal_details"|trans }}
       </a>
     </li>
-    {% if person.lives_in_nl() %}
-      <li>
+    {% if person.lives_in_nl() || conditional_next_step|default(false) %}
+      <li class="show-nl">
         <a href="{{ person.update_address_path() }}"
            class="{% if person.address.is_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
           {{ "person.correspondence_address"|trans }}
         </a>
       </li>
-    {% else %}
-      <li>
+    {% endif %}
+    {% if !person.lives_in_nl() || conditional_next_step|default(false) %}
+      <li class="hide-nl">
         <a href="{{ person.update_representative_path() }}"
-           class="{% if person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
+           class="{% if person.representative.is_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
           {{ "person.representative"|trans }}
         </a>
       </li>
