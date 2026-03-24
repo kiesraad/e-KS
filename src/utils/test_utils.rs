@@ -6,7 +6,7 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
-        Address, BsnOrNoneConfirmed, CountryCode, Date, DisplayName, DutchAddress,
+        Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
         DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
         HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
         LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
@@ -141,7 +141,7 @@ pub fn sample_person(id: PersonId) -> Person {
         name: sample_full_name(Some("Henk"), "Jansen", None, "H.A.H.A."),
         personal_data: PersonalData {
             gender: Some(Gender::Female),
-            date_of_birth: Some("01-02-1990".parse::<Date>().unwrap()),
+            date_of_birth: Some("01-02-1990".parse::<DateOfBirth>().unwrap()),
             bsn: Some(BsnOrNoneConfirmed::NoneConfirmed),
             place_of_residence: Some(parse_place_of_residence("Juinen")),
             country: Some(parse_country_code("NL")),

@@ -32,8 +32,8 @@ pub struct TypstDate {
     pub day: u32,
 }
 
-impl From<crate::common::Date> for TypstDate {
-    fn from(date: crate::common::Date) -> Self {
+impl From<crate::common::DateOfBirth> for TypstDate {
+    fn from(date: crate::common::DateOfBirth) -> Self {
         Self {
             year: date.year(),
             month: date.month(),
@@ -48,7 +48,7 @@ mod tests {
 
     #[test]
     fn date_from_common_date_copies_components() {
-        let input: crate::common::Date = "15-03-2001".parse().expect("date");
+        let input: crate::common::DateOfBirth = "15-03-2001".parse().expect("date");
         let date = TypstDate::from(input);
 
         assert_eq!(date.year, 2001);
