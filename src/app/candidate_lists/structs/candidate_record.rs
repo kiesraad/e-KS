@@ -104,9 +104,9 @@ mod tests {
 
     use crate::{
         common::{
-            CountryCode, Date, FirstName, FullName, Gender, HouseNumber, HouseNumberAddition,
-            Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence, PostalCode, StreetName,
-            UtcDateTime,
+            CountryCode, DateOfBirth, FirstName, FullName, Gender, HouseNumber,
+            HouseNumberAddition, Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence,
+            PostalCode, StreetName, UtcDateTime,
         },
         persons::{PersonId, PersonalData, Representative},
     };
@@ -128,7 +128,9 @@ mod tests {
             personal_data: PersonalData {
                 gender: Some(Gender::Male),
                 bsn: BsnOrNoneConfirmed::from_str("999994335").ok(),
-                date_of_birth: Some(Date::from(NaiveDate::from_ymd_opt(2000, 10, 20).unwrap())),
+                date_of_birth: Some(DateOfBirth::from(
+                    NaiveDate::from_ymd_opt(2000, 10, 20).unwrap(),
+                )),
                 place_of_residence: PlaceOfResidence::from_str("Amsterdam").ok(),
                 country: CountryCode::from_str("NL").ok(),
             },
