@@ -21,9 +21,15 @@
   {% endif %}
 {% endblock %}
 {% block header_action %}
-  <a href="{{ CandidateList::list_path() }}" class="button secondary">
-    {{ "candidate_list.actions.back_to_list"|trans }}
-  </a>
+  <div class="buttons">
+    <a href="" class="button secondary icon-down disabled" type="button">{{ "candidate_list.actions.import"|trans }}</a>
+    <a href="{{ full_list.list.export_path() }}"
+       class="button secondary icon-up"
+       type="button">{{ "candidate_list.actions.export"|trans }}</a>
+    <a href="{{ CandidateList::list_path() }}" class="button secondary">
+      {{ "candidate_list.actions.back_to_list"|trans }}
+    </a>
+  </div>
 {% endblock %}
 {% block content %}
   <nav class="sticky-nav">

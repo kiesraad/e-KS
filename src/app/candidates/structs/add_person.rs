@@ -13,6 +13,7 @@ pub enum AddPersonAction {
     #[default]
     None,
     AddAll,
+    RemoveAll,
     TogglePerson(PersonId),
 }
 
@@ -23,6 +24,7 @@ impl std::str::FromStr for AddPersonAction {
         match s {
             "" => Ok(AddPersonAction::None),
             "add-all" => Ok(AddPersonAction::AddAll),
+            "remove-all" => Ok(AddPersonAction::RemoveAll),
             value => Ok(AddPersonAction::TogglePerson(value.parse()?)),
         }
     }
@@ -33,6 +35,7 @@ impl std::fmt::Display for AddPersonAction {
         match self {
             AddPersonAction::None => write!(f, ""),
             AddPersonAction::AddAll => write!(f, "add-all"),
+            AddPersonAction::RemoveAll => write!(f, "remove-all"),
             AddPersonAction::TogglePerson(person_id) => write!(f, "{}", person_id),
         }
     }

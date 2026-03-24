@@ -10,6 +10,7 @@ use crate::{
 
 mod create;
 mod delete;
+mod export;
 mod list;
 mod reorder;
 mod update;
@@ -60,6 +61,12 @@ pub struct UpdateListSubmitterPath {
     rejection(AppError)
 )]
 pub struct UpdateSubstituteListSubmittersPath {
+    pub list_id: CandidateListId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/{list_id}/export", rejection(AppError))]
+pub struct CandidateListExportPath {
     pub list_id: CandidateListId,
 }
 
@@ -117,6 +124,10 @@ impl CandidateList {
     pub fn after_create_path(&self) -> impl TypedPath {
         UpdateListSubmitterPath { list_id: self.id }.with_query_params(QueryParamState::created())
     }
+
+    pub fn export_path(&self) -> impl TypedPath {
+        CandidateListExportPath { list_id: self.id }
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -134,6 +145,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(update_list_submitter::update_list_submitter_submit)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
+        .typed_get(export::export_candidate_list)
 }
 
 #[cfg(test)]
@@ -182,6 +194,10 @@ mod tests {
             list.create_candidate_path().to_string(),
             format!("/candidate-lists/{}/create", list.id)
         );
+        assert_eq!(
+            list.export_path().to_string(),
+            format!("/candidate-lists/{}/export", list.id)
+        )
     }
 
     #[test]

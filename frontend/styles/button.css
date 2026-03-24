@@ -210,4 +210,19 @@ label.button {
     padding-left: 2.6rem;
     background-size: 18px;
   }
+  &.icon-down {
+    background-image: url("../icons/arrowNarrowDown.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: 2.6rem;
+    background-size: 18px;
+  }
+
+  &.icon-up {
+    background-image: url("../icons/arrowNarrowUp.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: 2.6rem;
+    background-size: 18px;
+  }
 }

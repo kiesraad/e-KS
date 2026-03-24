@@ -21,6 +21,7 @@ struct AddExistingPersonTemplate {
     added_candidates: HashMap<PersonId, usize>,
     form: FormData<AddPersonForm>,
     show_add_all: bool,
+    show_remove_all: bool,
 }
 
 impl AddExistingPersonTemplate {
@@ -44,9 +45,11 @@ impl AddExistingPersonTemplate {
         };
         let candidate_ids = added_candidates.keys().cloned().collect::<Vec<_>>();
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
+        let show_add_all = persons.len() != candidate_ids.len();
 
         Ok(Self {
-            show_add_all: persons.len() != candidate_ids.len(),
+            show_add_all,
+            show_remove_all: !show_add_all && !candidate_ids.is_empty(),
             full_list,
             persons,
             added_candidates,
@@ -80,6 +83,23 @@ async fn handle_add_candidate_form(
             all_persons.extend(person_ids);
 
             full_list.list.update_order(store, &all_persons).await?;
+        }
+        AddPersonAction::RemoveAll => {
+            if let Some(position) = add_person.added_position {
+                let remaining_candidates = full_list
+                    .list
+                    .candidates
+                    .iter()
+                    .take(position.saturating_sub(1))
+                    .copied()
+                    .collect::<Vec<_>>();
+                full_list
+                    .list
+                    .update_order(store, &remaining_candidates)
+                    .await?;
+            }
+
+            add_person.added_position = None;
         }
         AddPersonAction::TogglePerson(person_id) => {
             if full_list.list.candidates.contains(&person_id) {
@@ -311,6 +331,107 @@ mod tests {
         assert!(full_list.contains(existing_person.id));
         assert!(full_list.contains(person_one.id));
         assert!(full_list.contains(person_two.id));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_person_to_candidate_list_remove_all_removes_recently_added_persons()
+    -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        let existing_person = sample_person_with_last_name(PersonId::new(), "Adams");
+        let person_one = sample_person_with_last_name(PersonId::new(), "Bakker");
+        let person_two = sample_person_with_last_name(PersonId::new(), "Jansen");
+
+        existing_person.create(&store).await?;
+        person_one.create(&store).await?;
+        person_two.create(&store).await?;
+        list.candidates = vec![existing_person.id];
+        list.create(&store).await?;
+
+        let add_all_context = Context::new_test_without_db();
+        let add_all_form = AddPersonForm {
+            action: AddPersonAction::AddAll.to_string(),
+            added_position: String::new(),
+            csrf_token: add_all_context.session.csrf_tokens.issue().value,
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            add_all_context,
+            Form(add_all_form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let remove_all_context = Context::new_test_without_db();
+        let remove_all_form = AddPersonForm {
+            action: AddPersonAction::RemoveAll.to_string(),
+            added_position: "2".into(),
+            csrf_token: remove_all_context.session.csrf_tokens.issue().value,
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            remove_all_context,
+            Form(remove_all_form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        assert_eq!(full_list.candidates.len(), 1);
+        assert_eq!(full_list.candidates[0].person.id, existing_person.id);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_person_to_candidate_list_renders_remove_all_after_adding_everyone()
+    -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person_with_last_name(PersonId::new(), "Bakker");
+
+        list.create(&store).await?;
+        person.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let form = AddPersonForm {
+            action: person.id.to_string(),
+            added_position: String::new(),
+            csrf_token: context.session.csrf_tokens.issue().value,
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store,
+            context,
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Remove all"));
+        assert!(!body.contains("Add all candidates"));
 
         Ok(())
     }

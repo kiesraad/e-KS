@@ -31,7 +31,7 @@ pub struct DownloadH31Path {
 }
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/generate/{list_id}/{locale}/h4.zip", rejection(AppError))]
+#[typed_path("/generate/{list_id}/{locale}/h4.pdf", rejection(AppError))]
 pub struct DownloadH4Path {
     list_id: CandidateListId,
     locale: ModelLocale,
