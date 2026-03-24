@@ -16,6 +16,7 @@ jobs:
   sigridci:
     name: Sigrid CI
     if: github.repository == 'kiesraad/e-ks'
+    environment: development
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository

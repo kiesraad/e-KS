@@ -13,6 +13,7 @@ jobs:
   sigridci:
     name: Sigrid CI
     if: "!github.event.pull_request.head.repo.fork"
+    environment: development
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -34,8 +35,9 @@ jobs:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
 
       - name: "Sigrid PR feedback"
-        uses: mshick/add-pr-comment@b8f338c590a895d50bcbfa6c5859251edc8952fc # v2
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
         if: always()
         with:
-          message-id: sigrid
-          message-path: sigrid-ci-output/feedback.md
+          script: |
+            const commentSigridFeedback = require('./.github/scripts/comment-sigrid-feedback');
+            await commentSigridFeedback({ github, context });
