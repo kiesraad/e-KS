@@ -19,7 +19,7 @@ use crate::{AppError, AppState, Locale, Session};
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 
 /// Builds a secure, HTTP-only cookie that carries the session token.
-fn build_session_cookie(session: &Session) -> Cookie<'static> {
+pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
     let mut cookie = Cookie::new(SESSION_COOKIE_NAME, session.token().to_exposed_string());
     cookie.set_http_only(true);
     cookie.set_secure(true);
@@ -36,6 +36,11 @@ pub async fn session_middleware(
     mut request: Request,
     next: Next,
 ) -> Response {
+    #[cfg(feature = "dev-features")]
+    if request.uri().path() == crate::auth::dev_login::DEV_LOGIN_PATH {
+        return next.run(request).await;
+    }
+
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
     let mut session = match state.sessions.get_existing(token) {
@@ -57,12 +62,7 @@ pub async fn session_middleware(
 
             // TODO: only create a new session after a successfull login
             state.sessions.cleanup_expired();
-            let locale = request
-                .headers()
-                .get(axum::http::header::ACCEPT_LANGUAGE)
-                .and_then(|value| value.to_str().ok())
-                .and_then(Locale::from_accept_language)
-                .unwrap_or_default();
+            let locale = request_locale(request.headers());
             let mut new_session = Session::new_with_locale(locale);
             new_session.set_political_group(uuid::Uuid::nil().into());
             state.sessions.insert(new_session.clone());
@@ -79,6 +79,21 @@ pub async fn session_middleware(
     request.extensions_mut().insert(session.clone());
 
     next.run(request).await
+}
+
+fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
+    #[cfg(feature = "dev-features")]
+    {
+        crate::auth::dev_login::request_locale(headers)
+    }
+    #[cfg(not(feature = "dev-features"))]
+    {
+        headers
+            .get(axum::http::header::ACCEPT_LANGUAGE)
+            .and_then(|value| value.to_str().ok())
+            .and_then(Locale::from_accept_language)
+            .unwrap_or_default()
+    }
 }
 
 /// Middleware that resolves the scoped store for the session's political group.
