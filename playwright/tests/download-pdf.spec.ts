@@ -4,7 +4,6 @@ import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.t
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
-import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 
 test.describe("download PDF", async () => {
   const existingCandidates = ["Akwasi", "Braber"];
@@ -14,14 +13,13 @@ test.describe("download PDF", async () => {
     district: string,
     clickDownloadLink: (submitPage: SubmitPage) => Promise<void>,
   ) {
-    await page.goto("/political-group/list-submitters");
-    await new ListSubmittersPage(page).addListSubmitter({ initials: "T", lastName: "Tester", postalCode: "1234AB", houseNumber: "1", streetName: "Teststraat", locality: "Teststad" });
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
     await new SelectElectoralDistrictsPage(page).selectDistricts([district]);
     await new ManageCandidateListPage(page).addExistingCandidates(
       existingCandidates,
     );
+
     await page.goto("/submit");
 
     const downloadPromise = page.waitForEvent("download");
@@ -35,7 +33,6 @@ test.describe("download PDF", async () => {
     );
     expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
 
-    
     //expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
