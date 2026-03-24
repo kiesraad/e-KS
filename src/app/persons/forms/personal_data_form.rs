@@ -3,7 +3,9 @@ use validate::Validate;
 
 use crate::{
     AppStore, CsrfTokens, OptionStringExt, TokenValue,
-    common::{BsnOrNoneConfirmed, CountryCode, Date, FullNameForm, Gender, PlaceOfResidence},
+    common::{
+        BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, PlaceOfResidence,
+    },
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, ValidationError},
     persons::{Person, PersonalData},
@@ -15,7 +17,7 @@ use crate::{
 pub struct PersonalDataFieldsForm {
     #[validate(parse = "Gender", optional)]
     pub gender: String,
-    #[validate(parse = "Date", optional)]
+    #[validate(parse = "DateOfBirth", optional)]
     pub date_of_birth: String,
     #[validate(parse = "BsnOrNoneConfirmed", optional)]
     pub bsn: String,
