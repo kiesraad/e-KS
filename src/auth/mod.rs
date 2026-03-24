@@ -2,9 +2,8 @@
 
 #[cfg(feature = "dev-features")]
 pub mod dev_login;
-pub mod saml_structs;
-/// SAML service provider
-pub mod service_provider;
+
+pub mod saml;
 /// Session model and token utilities.
 pub mod session;
 /// Session middleware and request extraction.

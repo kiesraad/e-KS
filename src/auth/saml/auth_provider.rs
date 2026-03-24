@@ -4,7 +4,11 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
-use openssl::pkey::{PKey, Private};
+use openssl::{
+    pkey::{PKey, Private},
+    rsa::Rsa,
+    x509::X509,
+};
 use samael::{
     metadata::EntityDescriptor,
     service_provider::{ServiceProvider, ServiceProviderBuilder},
@@ -13,12 +17,13 @@ use samael::{
 };
 use serde::Deserialize;
 
-use crate::{AppError, AppState};
+use crate::{AppError, AppState, auth::saml::ActiveAuthnRequests};
 
 pub struct AuthProvider {
     sp: ServiceProvider,
     private_key: PKey<Private>,
-    public_key: openssl::x509::X509,
+    public_key: X509,
+    active_authn_requests: ActiveAuthnRequests,
 }
 
 impl AuthProvider {
@@ -28,12 +33,12 @@ impl AuthProvider {
             .map_err(|_| AppError::InternalServerError)
             .unwrap();
 
-        let public_key = openssl::x509::X509::from_pem(
+        let public_key = X509::from_pem(
             &std::fs::read("./development/publickey.cer")
                 .map_err(|_| AppError::InternalServerError)?,
         )
         .map_err(|_| AppError::InternalServerError)?;
-        let private_key = openssl::rsa::Rsa::private_key_from_pem(
+        let private_key = Rsa::private_key_from_pem(
             &std::fs::read("./development/privatekey.pem")
                 .map_err(|_| AppError::InternalServerError)?,
         )
@@ -44,7 +49,7 @@ impl AuthProvider {
             .entity_id("e-ks".to_string())
             .key(private_key.clone())
             .certificate(public_key.clone())
-            .allow_idp_initiated(true) // TODO: disable this and keep track of requests IDs
+            .allow_idp_initiated(false)
             .idp_metadata(idp_metadata)
             .acs_url("http://localhost:3000/saml/acs".to_string())
             .slo_url("http://localhost:3000/saml/logout".to_string())
@@ -55,6 +60,7 @@ impl AuthProvider {
             sp,
             private_key,
             public_key,
+            active_authn_requests: ActiveAuthnRequests::default(),
         })
     }
 }
@@ -79,6 +85,11 @@ async fn saml_login(State(state): State<AppState>) -> impl IntoResponse {
         )
         .unwrap();
 
+    state
+        .auth_provider
+        .active_authn_requests
+        .add(authn_request.id.clone());
+
     let login_url = authn_request
         .signed_redirect("", state.auth_provider.private_key.clone())
         .unwrap()
@@ -87,14 +98,10 @@ async fn saml_login(State(state): State<AppState>) -> impl IntoResponse {
     axum::response::Redirect::temporary(login_url.as_str())
 }
 
-fn random_xml_id(prefix: &str) -> String {
-    format!("_{}{}", prefix, uuid::Uuid::new_v4().simple())
-}
-
 async fn saml_metadata(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
     let mut metadata = state.auth_provider.sp.metadata().unwrap();
 
-    let root_id = random_xml_id("md");
+    let root_id = format!("_{}", uuid::Uuid::new_v4().simple());
     metadata.id = Some(root_id.clone());
 
     let mut sig = Signature::template(&root_id, &state.auth_provider.public_key.to_der().unwrap());
@@ -102,7 +109,7 @@ async fn saml_metadata(State(state): State<AppState>) -> Result<impl IntoRespons
     sig.signed_info.reference[0].digest_method.algorithm = DigestAlgorithm::Sha256;
     metadata.signature = Some(sig);
 
-    let unsigned_xml = TryInto::<crate::auth::saml_structs::EntityDescriptor>::try_into(metadata)?
+    let unsigned_xml = TryInto::<crate::auth::saml::structs::EntityDescriptor>::try_into(metadata)?
         .to_string()
         .map_err(|_| AppError::InternalServerError)?;
 
@@ -132,25 +139,36 @@ async fn saml_acs(
     State(state): State<AppState>,
     Form(SAMLResponse { saml_response }): Form<SAMLResponse>,
 ) -> impl IntoResponse {
+    let active_authn_requests = state.auth_provider.active_authn_requests.list_all();
+    let possible_request_ids = active_authn_requests
+        .iter()
+        .map(String::as_str)
+        .collect::<Vec<_>>();
+
     let t = state
         .auth_provider
         .sp
-        .parse_base64_response(&saml_response, Some(&["a_possible_request_id"])) // TODO: use a list of active request IDs
+        .parse_base64_response(&saml_response, Some(&possible_request_ids))
         .unwrap();
-    format!("Received: {:#?}", t)
-}
 
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[tokio::test]
-    async fn test_auth_provider() {
-        let auth_provider = AuthProvider::new(
-            "http://localhost:9001/simplesaml/saml2/idp/metadata.php".to_string(),
-        )
-        .await
-        .unwrap();
-        assert_eq!(auth_provider.sp.entity_id, Some("test-sp".to_string()));
+    if let Some(in_response_to) = t
+        .subject
+        .as_ref()
+        .and_then(|subject| subject.subject_confirmations.as_ref())
+        .and_then(|confirmations| {
+            confirmations.iter().find_map(|confirmation| {
+                confirmation
+                    .subject_confirmation_data
+                    .as_ref()
+                    .and_then(|data| data.in_response_to.as_deref())
+            })
+        })
+    {
+        state
+            .auth_provider
+            .active_authn_requests
+            .remove(in_response_to);
     }
+
+    format!("Received: {:#?}", t)
 }

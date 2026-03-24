@@ -13,7 +13,7 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, auth::service_provider, authorised_agents, candidate_lists, candidates, common,
+    AppState, auth::saml::auth_provider, authorised_agents, candidate_lists, candidates, common,
     list_submitters, persons, political_groups, render_error_pages, session_middleware,
     store_middleware, submit, substitute_list_submitters,
 };
@@ -29,7 +29,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(submit::router())
         .merge(candidate_lists::router())
         .merge(candidates::router())
-        .merge(service_provider::router());
+        .merge(auth_provider::router());
 
     #[cfg(feature = "dev-features")]
     let bag_service_url = crate::get_env("BAG_SERVICE_URL", "http://localhost:8090")
