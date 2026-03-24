@@ -15,7 +15,7 @@ test.describe("download PDF", async () => {
     clickDownloadLink: (submitPage: SubmitPage) => Promise<void>,
   ) {
     await page.goto("/political-group/list-submitters");
-    await new ListSubmittersPage(page).addListSubmitter({ initials: "T", lastName: "Tester"});
+    await new ListSubmittersPage(page).addListSubmitter({ initials: "T", lastName: "Tester", postalCode: "1234AB", houseNumber: "1", streetName: "Teststraat", locality: "Teststad" });
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
     await new SelectElectoralDistrictsPage(page).selectDistricts([district]);
