@@ -56,7 +56,7 @@ impl ValidationError {
                 trans!("validation.name_already_exists", locale)
             }
             ValidationError::BsnAlreadyExists => trans!("validation.bsn_already_exists", locale),
-            ValidationError::DateInFuture => trans!("validation.date_in_future", locale),
+            ValidationError::DateInFuture => trans!("validation.date_of_birth_in_future", locale),
         }
         .to_string()
     }
