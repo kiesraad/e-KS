@@ -27,6 +27,7 @@ export default function setupOverlay() {
 
     globalThis.addEventListener("keydown", (event: KeyboardEvent) => {
       if (event.key === "Escape") {
+        event.preventDefault();
         close();
       }
     });
