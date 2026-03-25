@@ -5,6 +5,7 @@ import setupClickRow from "./scripts/table-interaction/click-row";
 import countryCodeInput from "./scripts/form-inputs/country-input";
 import dateInput from "./scripts/form-inputs/date-input";
 import setupDirtyForms from "./scripts/form-inputs/dirty-form";
+import setupFileImport from "./scripts/form-inputs/file-import";
 import highlightRow from "./scripts/highlights-alerts/highlight-row";
 import initialsInput from "./scripts/form-inputs/initials-input";
 import localitySuggestions from "./scripts/form-inputs/locality-suggestions";
@@ -17,7 +18,6 @@ import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
 import setupSortable from "./scripts/table-interaction/sortable";
 import setupStickyNav from "./scripts/generic-ui/sticky-nav";
 import setupRememberScroll from "./scripts/generic-ui/remember-scroll";
-import one_click_upload from "./scripts/form-inputs/one-click-text-file-upload";
 
 import "./styles/index.css";
 
@@ -34,12 +34,12 @@ bsnInput();
 countryCodeInput();
 dateInput();
 initialsInput();
+setupFileImport();
 addressLookup();
 localitySuggestions();
 setupPositionPreview();
 setupSelectAllCheckbox();
 setupDirtyForms();
-one_click_upload();
 
 // generic UI
 setupStickyNav();

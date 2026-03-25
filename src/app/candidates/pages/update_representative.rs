@@ -28,7 +28,7 @@ pub async fn update_representative(
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
-        RepresentativeForm::from(candidate.person.representative.clone()),
+        RepresentativeForm::from(candidate.person.clone()),
         &context.session.csrf_tokens,
     );
 
@@ -52,10 +52,7 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(
-        &candidate.person.representative,
-        &context.session.csrf_tokens,
-    ) {
+    match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
@@ -66,10 +63,10 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(representative) => {
+        Ok(person) => {
             candidate
                 .person
-                .update_representative(&store, representative)
+                .update_representative(&store, person.representative.clone())
                 .await?;
 
             Ok(Redirect::to(
@@ -201,7 +198,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
-        form.name.last_name = "Smit".to_string();
+        form.representative.as_mut().unwrap().name.last_name = "Smit".to_string();
 
         let expected_path = full_list
             .list
@@ -232,7 +229,10 @@ mod tests {
         assert_eq!(location, expected_path);
 
         let updated = store.get_person(person.id)?;
-        assert_eq!(updated.representative.name.last_name.to_string(), "Smit");
+        assert_eq!(
+            updated.representative.unwrap().name.last_name.to_string(),
+            "Smit"
+        );
 
         Ok(())
     }
@@ -257,7 +257,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
-        form.address.postal_code = "a".to_string();
+        form.representative.as_mut().unwrap().address.postal_code = "a".to_string();
 
         let response = update_representative_submit(
             UpdateRepresentativePath {

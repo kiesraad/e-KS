@@ -331,7 +331,7 @@ mod tests {
                 message: "invalid value".to_string(),
             }
             .message(Locale::En),
-            "The candidate on line 4 could not be imported. Please check field \"Postal code\": invalid value"
+            "The candidate on line 4 could not be imported. Please check field 'Postal code': invalid value"
         );
     }
 
@@ -436,7 +436,7 @@ mod tests {
                 message: "invalid value".to_string(),
             }
             .message(Locale::Nl),
-            "De kandidaat op regel 4 kon niet worden geïmporteerd. Controleer veld \"Postcode\": invalid value"
+            "De kandidaat op regel 4 kon niet worden geïmporteerd. Controleer veld 'Postcode': invalid value"
         );
     }
 

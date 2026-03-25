@@ -1,14 +1,16 @@
 use askama::Template;
-use axum::{
-    body::Bytes,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
-    candidate_lists::{CandidateList, pages::CandidateListImportPath, structs::CandidateRecord},
-    core::{Csv, CsvError},
+    candidate_lists::{
+        CandidateList,
+        importer::{ImportCandidateListError, import_candidate_list_csv},
+        pages::CandidateListImportPath,
+    },
     filters,
+    form::{EmptyForm, FileForm, FormData},
+    redirect_success, trans,
 };
 
 #[derive(Template)]
@@ -16,6 +18,23 @@ use crate::{
 struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,
+    form: FormData<EmptyForm>,
+}
+
+fn render_import_export(
+    list: CandidateList,
+    import_errors: Vec<String>,
+    context: Context,
+) -> Response {
+    HtmlTemplate(
+        ImportExportTemplate {
+            list,
+            import_errors,
+            form: FormData::new(&context.session.csrf_tokens),
+        },
+        context,
+    )
+    .into_response()
 }
 
 pub async fn import_export(
@@ -23,74 +42,93 @@ pub async fn import_export(
     context: Context,
     store: AppStore,
 ) -> Result<Response, AppError> {
-    Ok(HtmlTemplate(
-        ImportExportTemplate {
-            list: store.get_candidate_list(list_id)?,
-            import_errors: vec![],
-        },
+    Ok(render_import_export(
+        store.get_candidate_list(list_id)?,
+        vec![],
         context,
-    )
-    .into_response())
+    ))
 }
 
 pub async fn import_candidate_list(
     CandidateListImportPath { list_id }: CandidateListImportPath,
     context: Context,
     store: AppStore,
-    csv_data: Bytes,
+    import_data: FileForm,
 ) -> Result<Response, AppError> {
-    let records = match Csv::<CandidateRecord>::from_bytes(&csv_data) {
-        Ok(records) => records,
-        Err(errors) => {
-            return Ok(HtmlTemplate(
-                ImportExportTemplate {
-                    list: store.get_candidate_list(list_id)?,
-                    import_errors: errors
-                        .into_iter()
-                        .map(|error| error.message(context.session.locale))
-                        .collect(),
-                },
-                context,
-            )
-            .into_response());
-        }
+    let mut list = store.get_candidate_list(list_id)?;
+    let csrf_form = EmptyForm {
+        csrf_token: import_data.csrf_token,
     };
 
-    let mut persons = Vec::new();
-
-    for (index, record) in records.into_iter().enumerate() {
-        let person = match record.validate_create(&context.session.csrf_tokens) {
-            Ok(person) => person,
-            Err(error) => {
-                return Ok(HtmlTemplate(
-                    ImportExportTemplate {
-                        list: store.get_candidate_list(list_id)?,
-                        import_errors: error
-                            .errors()
-                            .into_iter()
-                            .map(|(field_name, error)| {
-                                CsvError::ParseError {
-                                    candidate_number: index + 1,
-                                    field_name,
-                                    message: error.message(context.session.locale),
-                                }
-                                .message(context.session.locale)
-                            })
-                            .collect(),
-                    },
-                    context,
-                )
-                .into_response());
-            }
-        };
-
-        persons.push(person);
+    if csrf_form
+        .validate_create(&context.session.csrf_tokens)
+        .is_err()
+    {
+        return Err(AppError::CsrfTokenInvalid);
     }
 
-    dbg!(
-        "imported {} candidates successfully: {:?}",
-        persons.len(),
-        persons
-    );
-    todo!("actually import the candidates into the list");
+    let Some(csv_data) = import_data.file_data else {
+        return Ok(render_import_export(
+            list.clone(),
+            vec![trans!(
+                "candidate_list.import_errors.missing_file",
+                context.session.locale
+            )],
+            context,
+        ));
+    };
+
+    match import_candidate_list_csv(
+        &mut list,
+        &store,
+        &csv_data,
+        &context.session.csrf_tokens,
+        context.session.locale,
+    )
+    .await
+    {
+        Ok(()) => Ok(redirect_success(list.view_path())),
+        Err(ImportCandidateListError::App(error)) => Err(error),
+        Err(ImportCandidateListError::Messages(messages)) => {
+            Ok(render_import_export(list.clone(), messages, context))
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::http::StatusCode;
+
+    use crate::{
+        candidate_lists::CandidateListId,
+        test_utils::{response_body_string, sample_candidate_list},
+    };
+
+    #[tokio::test]
+    async fn import_export_renders_multipart_file_form() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let response = import_export(
+            CandidateListImportPath { list_id: list.id },
+            Context::new_test_without_db(),
+            store,
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("type=\"file\""));
+        assert!(body.contains("name=\"file_data\""));
+        assert!(body.contains("name=\"csrf_token\""));
+        assert!(body.contains("data-import-file-field"));
+        assert!(body.contains("data-import-file-trigger"));
+        assert!(body.contains("formenctype=\"multipart/form-data\""));
+        assert!(!body.contains("one-click-upload"));
+
+        Ok(())
+    }
 }

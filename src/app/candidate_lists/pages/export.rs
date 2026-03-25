@@ -1,25 +1,28 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore,
-    candidate_lists::{CandidateList, pages::CandidateListExportPath, structs::CandidateRecord},
+    AppError,
+    candidate_lists::{
+        FullCandidateList, pages::CandidateListExportPath, structs::CandidateRecordCsv,
+    },
     core::Csv,
 };
 
 pub async fn export_candidate_list(
     _: CandidateListExportPath,
-    candidate_list: CandidateList,
-    store: AppStore,
+    full_list: FullCandidateList,
 ) -> Result<Response, AppError> {
-    let mut records: Vec<CandidateRecord> = vec![];
-    for person_id in &candidate_list.candidates {
-        records.push(store.get_person(*person_id)?.into());
-    }
+    let records = full_list
+        .candidates
+        .into_iter()
+        .map(|candidate| CandidateRecordCsv::from(candidate.person))
+        .collect::<Vec<_>>();
+
     Csv {
         records,
         filename: format!(
             "candidate-list-export-{}.csv",
-            candidate_list.districts_codes()
+            full_list.list.districts_codes()
         ),
     }
     .generate_csv_response()
@@ -32,6 +35,7 @@ mod tests {
     use reqwest::{StatusCode, header};
 
     use crate::{
+        AppStore,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person},
@@ -60,9 +64,11 @@ mod tests {
 
         list.create(&store).await?;
 
+        let full_list = FullCandidateList::get(&store, list_id)?;
+
         // test
         let response =
-            export_candidate_list(CandidateListExportPath { list_id }, list, store).await?;
+            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
 
         // verify
         assert_eq!(response.status(), StatusCode::OK);

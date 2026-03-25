@@ -14,8 +14,8 @@ impl std::str::FromStr for Gender {
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
         match s {
-            "female" => Ok(Gender::Female),
-            "male" => Ok(Gender::Male),
+            "female" | "f" | "v" => Ok(Gender::Female),
+            "male" | "m" => Ok(Gender::Male),
             _ => Err(ValidationError::InvalidValue),
         }
     }

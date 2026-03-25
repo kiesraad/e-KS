@@ -5,13 +5,13 @@ actions:
   add_new: Nieuwe
   back_to_list: Terug
   delete_list: Kandidatenlijst verwijderen
-  export_csv: Exporteren als CSV
-  import_csv: Importeren als CSV
-  import_export: Kandidaten importeren/exporteren
   edit: Aanpassen
-  edit_list_details: Kieskringen en lijstinleveraar aanpassen
   export: Lijst exporteren
+  export_csv: CSV bestand downloaden
   import: Lijst importeren
+  import_csv: CSV bestand uploaden
+  import_export: Kandidaten importeren / exporteren
+  import_export_csv: CSV
   select_all_districts: Selecteer alle kieskringen
 add_all: Alle kandidaten toevoegen
 add_candidate: Kandidaat toevoegen
@@ -40,8 +40,6 @@ form:
   update:
     title: Kandidatenlijst aanpassen
 import_errors:
-  format_error: "De kandidaat op regel {} kon niet worden geïmporteerd: {}"
-  parse_error: 'De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld "{}": {}'
   csv:
     deserialize: "een van de waarden in deze rij heeft niet het juiste formaat. {}"
     deserialize_with_position: "record {} op regel {} rond teken {} bevat een waarde met een onjuist formaat. {}"
@@ -53,6 +51,16 @@ import_errors:
     unknown: "het bestand kon niet worden verwerkt. {}"
     utf8: "veld {} bevat onleesbare tekst. Sla het bestand op als UTF-8 en probeer het opnieuw. {}"
     utf8_with_position: "record {} op regel {} bevat onleesbare tekst in veld {} rond teken {}. Sla het bestand op als UTF-8 en probeer het opnieuw. {}"
+  format_error: "De kandidaat op regel {} kon niet worden geïmporteerd: {}"
+  invalid_headers: Gebruik dezelfde kolomnamen als in het geëxporteerde CSV-bestand.
+  missing_file: Selecteer een CSV-bestand om te importeren.
+  parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
+import_export:
+  export_title: Exporteer kandidaten
+  import_description: Gebruik een CSV-bestand om de kandidaten aan deze lijst toe te voegen.
+  import_failed: Importeren niet gelukt
+  import_title: Importeer kandidaten
+  overwrite_title: Let op!
 import_warning: Deze lijst bevat al kandidaten. Het importeren van kandidaten zal de huidige kandidaten in deze lijst overschrijven. Weet u zeker dat u door wilt gaan?
 not_found: "Kandidatenlijst {} niet gevonden."
 remove_all_added_candidates: Toegevoegde kandidaten verwijderen

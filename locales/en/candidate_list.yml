@@ -6,12 +6,12 @@ actions:
   back_to_list: Back
   delete_list: Delete candidate list
   edit: Edit list
+  export: Export list
   export_csv: Export as CSV
+  import: Import list
   import_csv: Import as CSV
   import_export: Import/export candidates
-  edit_list_details: Edit the list details here
-  export: Export list
-  import: Import list
+  import_export_csv: Import/export CSV
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate
@@ -40,8 +40,6 @@ form:
   update:
     title: Edit candidate list
 import_errors:
-  format_error: "The candidate on line {} could not be imported: {}"
-  parse_error: 'The candidate on line {} could not be imported. Please check field "{}": {}'
   csv:
     deserialize: "one of the values in this row is in the wrong format. {}"
     deserialize_with_position: "record {} on line {} near character {} contains a value in the wrong format. {}"
@@ -53,6 +51,16 @@ import_errors:
     unknown: "the file could not be processed. {}"
     utf8: "field {} contains unreadable text. Please save the file as UTF-8 and try again. {}"
     utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
+  format_error: "The candidate on line {} could not be imported: {}"
+  invalid_headers: The CSV header is not supported. Please export a new CSV from e-KS and try again.
+  missing_file: Please select a CSV file to import.
+  parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
+import_export:
+  export_title: Export candidates
+  import_description: Use a CSV file exported from e-KS to replace the candidates on this list.
+  import_failed: Import failed
+  import_title: Import candidates
+  overwrite_title: Warning
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."
 remove_all_added_candidates: Remove all added candidates
