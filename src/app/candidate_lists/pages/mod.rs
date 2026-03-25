@@ -11,12 +11,12 @@ use crate::{
 mod create;
 mod delete;
 mod export;
+mod import;
 mod list;
 mod reorder;
 mod update;
 mod update_list_submitter;
 mod view;
-mod import;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists", rejection(AppError))]

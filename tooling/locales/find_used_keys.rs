@@ -40,7 +40,7 @@ fn find_used_keys(path: &std::path::Path) -> Vec<String> {
         }
     }
 
-    let re = regex::Regex::new(r#"trans!\("([\w\.]+)""#).unwrap();
+    let re = regex::Regex::new(r#"trans!\(\s*"([\w\.]+)""#).unwrap();
     let sources_dir = path.join("src");
     let mut source_files = Vec::new();
     collect_files_recursively(&sources_dir, "rs", &mut source_files);

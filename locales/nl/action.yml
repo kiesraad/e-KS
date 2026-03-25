@@ -2,6 +2,7 @@ add: Toevoegen
 back: Terug
 cancel: Annuleren
 close: Sluiten
+continue: Doorgaan
 delete: Verwijderen
 download_h1: H1 downloaden
 download_h3_1: H3-1 downloaden
@@ -16,7 +17,6 @@ manage_data: Basisgegevens beheren
 next: Volgende
 remove: Verwijderen
 review_and_submit: Controleren en inleveren
-continue: Doorgaan
 save: Opslaan
 save_and_continue: Opslaan en volgende
 signout: Afmelden
