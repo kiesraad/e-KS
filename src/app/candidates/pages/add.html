@@ -24,6 +24,13 @@
                   name="action"
                   value="add-all">{{ "candidate_list.add_all"|trans }}</button>
         </p>
+      {% elif show_remove_all %}
+        <p class="mt-md">
+          <button type="submit"
+                  class="button secondary float-right icon-trash"
+                  name="action"
+                  value="remove-all">{{ "candidate_list.remove_all_added_candidates"|trans }}</button>
+        </p>
       {% endif %}
       {% include "candidates/components/add_table.html" %}
     {% endif %}

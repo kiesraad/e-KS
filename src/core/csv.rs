@@ -143,18 +143,16 @@ fn format_error_kind(kind: &csv::ErrorKind, locale: Locale) -> String {
     }
 }
 
-pub struct Csv<T: Serialize + DeserializeOwned> {
+pub struct Csv<T> {
     pub records: Vec<T>,
     pub filename: String,
 }
 
-impl<T: Serialize + DeserializeOwned> Csv<T> {
+impl<T: Serialize> Csv<T> {
     pub fn generate_csv_response(&self) -> Result<Response<Body>, AppError> {
         let mut csv_writer = Writer::from_writer(vec![]);
         for record in &self.records {
-            if csv_writer.serialize(record).is_err() {
-                return Err(AppError::InternalServerError);
-            }
+            csv_writer.serialize(record)?;
         }
         let data = if let Ok(data) = csv_writer.into_inner() {
             data
@@ -168,7 +166,9 @@ impl<T: Serialize + DeserializeOwned> Csv<T> {
 
         Ok((headers, data).into_response())
     }
+}
 
+impl<T: DeserializeOwned> Csv<T> {
     pub fn from_bytes(data: &[u8]) -> Result<Vec<T>, Vec<CsvError>> {
         let mut records = vec![];
         let mut errors = vec![];

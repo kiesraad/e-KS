@@ -3,14 +3,14 @@ use validate::Validate;
 
 use crate::{
     CsrfToken, CsrfTokens, OptionStringExt,
-    common::{BsnOrNoneConfirmed, DutchAddressForm, FullNameForm},
+    common::{BsnOrNoneConfirmed, DutchAddress, DutchAddressForm, FullNameForm},
     constants::DEFAULT_DATE_FORMAT,
     core::AnyLocale,
     form::{FieldErrors, FormData, WithCsrfToken},
     persons::{Person, PersonalDataFieldsForm, Representative},
 };
 
-const NO_BSN: &str = "persoon heeft geen BSN";
+const NO_BSN: &str = "kandidaat heeft geen BSN";
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
 #[serde(from = "CandidateRecordCsv", into = "CandidateRecordCsv")]
@@ -176,11 +176,23 @@ impl From<CandidateRecord> for CandidateRecordCsv {
 
 impl From<Person> for CandidateRecord {
     fn from(person: Person) -> Self {
-        let candidate_name = person.name;
-        let candidate_personal_data = person.personal_data;
+        let Person {
+            name: candidate_name,
+            personal_data: candidate_personal_data,
+            address: person_address,
+            representative: person_representative,
+            ..
+        } = person;
 
-        let representative = person.representative;
-        let address = person.address;
+        let representative = match candidate_personal_data.country.as_ref() {
+            Some(country) if !country.is_nl() => person_representative,
+            _ => Representative::default(),
+        };
+
+        let address = match candidate_personal_data.country.as_ref() {
+            Some(country) if country.is_nl() => person_address,
+            _ => DutchAddress::default(),
+        };
 
         Self::from(CandidateRecordCsv {
             voorletters: candidate_name.initials.to_string(),
@@ -195,7 +207,7 @@ impl From<Person> for CandidateRecord {
             bsn: match candidate_personal_data.bsn {
                 Some(BsnOrNoneConfirmed::NoneConfirmed) => NO_BSN.to_string(),
                 Some(BsnOrNoneConfirmed::Bsn(bsn)) => bsn.to_exposed_string(),
-                None => "".to_string(),
+                None => String::new(),
             },
             geboortedatum: candidate_personal_data
                 .date_of_birth
@@ -203,7 +215,7 @@ impl From<Person> for CandidateRecord {
                 .to_string_or_default(),
             geslacht: match candidate_personal_data.gender {
                 Some(gender) => gender.abbreviation(AnyLocale::Nl).to_string(),
-                None => "".to_string(),
+                None => String::new(),
             },
 
             gemachtigde_voorletters: representative.name.initials.to_string(),
@@ -230,7 +242,7 @@ impl From<Person> for CandidateRecord {
 }
 
 impl CandidateRecord {
-    pub fn validate_create(self, csrf_tokens: &CsrfTokens) -> Result<Person, FormData<Self>> {
+    pub fn validate_create(self, csrf_tokens: &CsrfTokens) -> Result<Person, Box<FormData<Self>>> {
         let mut errors = Vec::new();
 
         let name = collect_validation_result(
@@ -259,7 +271,11 @@ impl CandidateRecord {
         };
 
         if !errors.is_empty() {
-            return Err(FormData::new_with_errors(self, csrf_tokens, errors));
+            return Err(Box::new(FormData::new_with_errors(
+                self,
+                csrf_tokens,
+                errors,
+            )));
         }
 
         Ok(Person {
@@ -336,7 +352,7 @@ mod tests {
     use crate::{
         CsrfTokens,
         common::{
-            CountryCode, Date, DutchAddress, FirstName, FullName, Gender, HouseNumber,
+            CountryCode, DateOfBirth, DutchAddress, FirstName, FullName, Gender, HouseNumber,
             HouseNumberAddition, Initials, LastName, LastNamePrefix, Locality, PlaceOfResidence,
             PostalCode, StreetName, UtcDateTime,
         },
@@ -345,9 +361,6 @@ mod tests {
 
     use super::*;
 
-    /// alternative to sample person.
-    /// 1. It's a person with everything filled in
-    /// 2. Defined here because it has semantic significance for the tests
     fn test_person() -> Person {
         Person {
             id: PersonId::new(),
@@ -360,7 +373,9 @@ mod tests {
             personal_data: PersonalData {
                 gender: Some(Gender::Male),
                 bsn: BsnOrNoneConfirmed::from_str("999994335").ok(),
-                date_of_birth: Some(Date::from(NaiveDate::from_ymd_opt(2000, 10, 20).unwrap())),
+                date_of_birth: Some(DateOfBirth::from(
+                    NaiveDate::from_ymd_opt(2000, 10, 20).unwrap(),
+                )),
                 place_of_residence: PlaceOfResidence::from_str("Amsterdam").ok(),
                 country: CountryCode::from_str("NL").ok(),
             },
@@ -407,21 +422,21 @@ mod tests {
         assert_eq!(csv.geboortedatum, "20-10-2000");
         assert_eq!(csv.geslacht, "m");
 
-        assert_eq!(csv.gemachtigde_voorletters, "P.");
-        assert_eq!(csv.gemachtigde_roepnaam, "Pietje");
+        assert_eq!(csv.gemachtigde_voorletters, "");
+        assert_eq!(csv.gemachtigde_roepnaam, "");
         assert_eq!(csv.gemachtigde_voorvoegsel, "");
-        assert_eq!(csv.gemachtigde_achternaam, "Puk");
+        assert_eq!(csv.gemachtigde_achternaam, "");
 
         assert_eq!(csv.correspondentie_postcode, "1234AB");
         assert_eq!(csv.correspondentie_huisnummer, "12");
         assert_eq!(csv.correspondentie_toevoeging, "a");
         assert_eq!(csv.correspondentie_straatnaam, "Mooie Straat");
         assert_eq!(csv.correspondentie_plaats, "Rotterdam");
-        assert_eq!(csv.gemachtigde_postcode, "5678CD");
-        assert_eq!(csv.gemachtigde_huisnummer, "34");
-        assert_eq!(csv.gemachtigde_toevoeging, "b");
-        assert_eq!(csv.gemachtigde_straatnaam, "Mooiere Straat");
-        assert_eq!(csv.gemachtigde_plaats, "Den Haag");
+        assert_eq!(csv.gemachtigde_postcode, "");
+        assert_eq!(csv.gemachtigde_huisnummer, "");
+        assert_eq!(csv.gemachtigde_toevoeging, "");
+        assert_eq!(csv.gemachtigde_straatnaam, "");
+        assert_eq!(csv.gemachtigde_plaats, "");
     }
 
     #[test]
@@ -479,11 +494,11 @@ mod tests {
         assert_eq!(csv.gemachtigde_voorvoegsel, "");
         assert_eq!(csv.gemachtigde_achternaam, "Puk");
 
-        assert_eq!(csv.correspondentie_postcode, "1234AB");
-        assert_eq!(csv.correspondentie_huisnummer, "12");
-        assert_eq!(csv.correspondentie_toevoeging, "a");
-        assert_eq!(csv.correspondentie_straatnaam, "Mooie Straat");
-        assert_eq!(csv.correspondentie_plaats, "Rotterdam");
+        assert_eq!(csv.correspondentie_postcode, "");
+        assert_eq!(csv.correspondentie_huisnummer, "");
+        assert_eq!(csv.correspondentie_toevoeging, "");
+        assert_eq!(csv.correspondentie_straatnaam, "");
+        assert_eq!(csv.correspondentie_plaats, "");
         assert_eq!(csv.gemachtigde_postcode, "5678CD");
         assert_eq!(csv.gemachtigde_huisnummer, "34");
         assert_eq!(csv.gemachtigde_toevoeging, "b");

@@ -18,6 +18,7 @@ pub enum ValidationError {
     InvalidPostalCode,
     NameAlreadyExists,
     BsnAlreadyExists,
+    DateInFuture,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -55,6 +56,7 @@ impl ValidationError {
                 trans!("validation.name_already_exists", locale)
             }
             ValidationError::BsnAlreadyExists => trans!("validation.bsn_already_exists", locale),
+            ValidationError::DateInFuture => trans!("validation.date_of_birth_in_future", locale),
         }
         .to_string()
     }
@@ -109,6 +111,10 @@ mod tests {
         assert_eq!(
             ValidationError::BsnAlreadyExists.message(Locale::En),
             "This BSN is already in use."
+        );
+        assert_eq!(
+            ValidationError::DateInFuture.message(Locale::En),
+            "Date of birth cannot be in the future."
         );
     }
 

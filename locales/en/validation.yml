@@ -1,5 +1,6 @@
 bsn_already_exists: This BSN is already in use.
 choose_at_least_one_option: Please choose at least one option.
+date_of_birth_in_future: Date of birth cannot be in the future.
 invalid_bsn: Invalid BSN.
 invalid_csrf_token: The CSRF token is invalid.
 invalid_email: Invalid email address.

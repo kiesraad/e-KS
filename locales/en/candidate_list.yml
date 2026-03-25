@@ -9,6 +9,9 @@ actions:
   export_csv: Export as CSV
   import_csv: Import as CSV
   import_export: Import/export candidates
+  edit_list_details: Edit the list details here
+  export: Export list
+  import: Import list
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate
@@ -52,6 +55,7 @@ import_errors:
     utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."
+remove_all_added_candidates: Remove all added candidates
 remove_candidate: Remove candidate
 search_existing_person: Search existing person
 search_placeholder: "Search by name, initials or locality"

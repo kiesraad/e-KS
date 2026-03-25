@@ -8,7 +8,7 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     common::{
-        BsnOrNoneConfirmed, CountryCode, Date, DutchAddress, FirstName, FullName, Gender,
+        BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FirstName, FullName, Gender,
         HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     persons::{Person, PersonalData},
@@ -80,7 +80,7 @@ impl PersonRecord {
                 },
                 date_of_birth: NaiveDate::parse_from_str(&self.geboortedatum, "%Y%m%d")
                     .ok()
-                    .map(Date::from),
+                    .map(DateOfBirth::from),
                 bsn: Self::parse_value::<BsnOrNoneConfirmed>(&self.burgerservicenummer, "bsn").ok(),
                 place_of_residence: locality
                     .as_deref()
