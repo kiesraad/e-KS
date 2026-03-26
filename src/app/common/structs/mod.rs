@@ -23,7 +23,7 @@ pub use constrained_string::{
 };
 pub use countries::COUNTRY_CODES;
 pub use country_code::CountryCode;
-pub use date::Date;
+pub use date::DateOfBirth;
 pub use display_name::DisplayName;
 pub use form_action::FormAction;
 pub use gender::Gender;

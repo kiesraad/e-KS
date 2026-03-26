@@ -8,16 +8,15 @@ use uuid::Uuid;
 
 use crate::{
     AppError, AppState, Locale, PoliticalGroupId, Session,
-    auth::session_extractor::build_session_cookie, form::ValidationError,
-    political_groups::PoliticalGroup,
+    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
 
 #[derive(Debug, Deserialize)]
 pub struct DevLoginQuery {
-    name: String,
-    fixtures: bool,
+    name: Option<String>,
+    fixtures: Option<bool>,
 }
 
 pub async fn dev_login(
@@ -26,16 +25,13 @@ pub async fn dev_login(
     Query(query): Query<DevLoginQuery>,
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let name = query.name.trim();
-    if name.is_empty() {
-        return Err(AppError::ValidationError(vec![(
-            "name".to_string(),
-            ValidationError::InvalidValue,
-        )]));
-    }
+    let political_group_id = match query.name {
+        Some(name) if !name.is_empty() => dev_political_group_id(&name),
+        _ => PoliticalGroupId::new(),
+    };
+    let load_fixtures = query.fixtures.unwrap_or(false);
 
-    let political_group_id = dev_political_group_id(name);
-    ensure_dev_store(&state, political_group_id, query.fixtures).await?;
+    ensure_dev_store(&state, political_group_id, load_fixtures).await?;
 
     let locale = request_locale(&headers);
     let mut session = Session::new_with_locale(locale);
