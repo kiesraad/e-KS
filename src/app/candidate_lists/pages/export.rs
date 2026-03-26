@@ -3,7 +3,7 @@ use axum::response::Response;
 use crate::{
     AppError,
     candidate_lists::{
-        FullCandidateList, pages::CandidateListExportPath, structs::CandidateRecordCsv,
+        FullCandidateList, pages::CandidateListExportPath, structs::{CSV_HEADERS, CandidateRecordCsv},
     },
     core::Csv,
 };
@@ -24,6 +24,7 @@ pub async fn export_candidate_list(
             "candidate-list-export-{}.csv",
             full_list.list.districts_codes()
         ),
+        headers: Some(CSV_HEADERS.to_vec()),
     }
     .generate_csv_response()
 }
@@ -105,6 +106,34 @@ mod tests {
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
         let expected_csv = include_str!("../testdata/candidates.csv");
+        let body = String::from_utf8(
+            body::to_bytes(response.into_body(), expected_csv.len() * 2)
+                .await
+                .unwrap()
+                .to_vec(),
+        )
+        .unwrap();
+        assert_eq!(body, expected_csv);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn export_candidate_list_includes_header_without_candidates() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id)?;
+
+        let response =
+            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let expected_csv = "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\n";
         let body = String::from_utf8(
             body::to_bytes(response.into_body(), expected_csv.len() * 2)
                 .await

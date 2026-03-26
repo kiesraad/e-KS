@@ -52,12 +52,12 @@ import_errors:
     utf8: "field {} contains unreadable text. Please save the file as UTF-8 and try again. {}"
     utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
   format_error: "The candidate on line {} could not be imported: {}"
-  invalid_headers: The CSV header is not supported. Please export a new CSV from e-KS and try again.
+  invalid_headers: Use the same column names as in the exported CSV file.
   missing_file: Please select a CSV file to import.
   parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
 import_export:
   export_title: Export candidates
-  import_description: Use a CSV file exported from e-KS to replace the candidates on this list.
+  import_description: Use a CSV file to replace the candidates on this list.
   import_failed: Import failed
   import_title: Import candidates
   overwrite_title: Warning

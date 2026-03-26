@@ -57,7 +57,7 @@ import_errors:
   parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
 import_export:
   export_title: Exporteer kandidaten
-  import_description: Gebruik een CSV-bestand om de kandidaten aan deze lijst toe te voegen.
+  import_description: Gebruik een CSV-bestand om kandidaten op deze lijst te importeren.
   import_failed: Importeren niet gelukt
   import_title: Importeer kandidaten
   overwrite_title: Let op!
