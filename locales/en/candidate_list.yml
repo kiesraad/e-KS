@@ -6,12 +6,10 @@ actions:
   back_to_list: Back
   delete_list: Delete candidate list
   edit: Edit list
-  export: Export list
   export_csv: Export as CSV
-  import: Import list
   import_csv: Import as CSV
   import_export: Import/export candidates
-  import_export_csv: Import/export CSV
+  import_export_csv: CSV
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate

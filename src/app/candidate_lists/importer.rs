@@ -87,14 +87,22 @@ fn collect_persons(
     locale: Locale,
 ) -> Result<Vec<PreparedPerson>, ImportCandidateListError> {
     let mut prepared_people = Vec::new();
+    let mut errors = Vec::new();
 
     for (index, record) in records.into_iter().enumerate() {
         let candidate_number = index + 1;
-        let person = validate_record(record, candidate_number, csrf_tokens, locale)?;
-        upsert_person(person, &mut prepared_people, &existing_persons);
+        match validate_record(record, candidate_number, csrf_tokens, locale) {
+            Ok(person) => upsert_person(person, &mut prepared_people, &existing_persons),
+            Err(ImportCandidateListError::Messages(messages)) => errors.extend(messages),
+            Err(error) => return Err(error),
+        }
     }
 
-    Ok(prepared_people)
+    if errors.is_empty() {
+        Ok(prepared_people)
+    } else {
+        Err(ImportCandidateListError::Messages(errors))
+    }
 }
 
 fn validate_record(
@@ -456,30 +464,31 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_rejects_legacy_headers() -> Result<(), AppError> {
+    async fn import_candidate_list_csv_returns_all_row_validation_errors() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        let list_id = CandidateListId::new();
-        let mut list = sample_candidate_list(list_id);
+        let mut list = sample_candidate_list(CandidateListId::new());
 
         list.create(&store).await?;
 
-        let error = import_candidate_list_csv(
+        let result = import_candidate_list_csv(
             &mut list,
             &store,
-            legacy_header_csv().as_bytes(),
+            multiple_invalid_rows_csv().as_bytes(),
             &CsrfTokens::default(),
             Locale::En,
         )
-        .await
-        .expect_err("legacy header should fail");
+        .await;
 
-        match error {
-            ImportCandidateListError::Messages(messages) => {
-                assert_eq!(messages.len(), 1);
-                assert!(messages[0].contains("header"));
+        match result {
+            Err(ImportCandidateListError::Messages(messages)) => {
+                assert_eq!(messages.len(), 2);
+                assert!(messages.iter().any(|message| message.contains("line 1")));
+                assert!(messages.iter().any(|message| message.contains("line 2")));
             }
-            other => panic!("expected import messages, got {other:?}"),
+            other => panic!("expected validation messages, got {other:?}"),
         }
+
+        assert_eq!(store.get_person_count(), 0);
 
         Ok(())
     }
@@ -522,10 +531,11 @@ mod tests {
         )
     }
 
-    fn legacy_header_csv() -> &'static str {
+    fn multiple_invalid_rows_csv() -> &'static str {
         concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaatsnaam\r\n",
-            "J.,Jan,van de,Berg,Antwerp,BE,,20-10-2000,v,,,,,,P.,Pietje,,Puk,5678CD,34,b,Mooiere Straat,Den Haag\r\n"
+            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+            ",Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
+            "H.A.H.A.,Henk,,,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 }

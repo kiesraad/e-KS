@@ -6,9 +6,7 @@ actions:
   back_to_list: Terug
   delete_list: Kandidatenlijst verwijderen
   edit: Aanpassen
-  export: Lijst exporteren
   export_csv: CSV bestand downloaden
-  import: Lijst importeren
   import_csv: CSV bestand uploaden
   import_export: Kandidaten importeren / exporteren
   import_export_csv: CSV

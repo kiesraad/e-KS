@@ -3,7 +3,9 @@ use axum::response::Response;
 use crate::{
     AppError,
     candidate_lists::{
-        FullCandidateList, pages::CandidateListExportPath, structs::{CSV_HEADERS, CandidateRecordCsv},
+        FullCandidateList,
+        pages::CandidateListExportPath,
+        structs::{CSV_HEADERS, CandidateRecordCsv},
     },
     core::Csv,
 };

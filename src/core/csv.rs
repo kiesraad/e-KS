@@ -166,7 +166,7 @@ impl<T: Serialize> Csv<T> {
         } else {
             return Err(AppError::InternalServerError);
         };
-        
+
         let headers = no_cache_headers::generate_attachment_headers(
             self.filename.as_str(),
             HeaderValue::from_static("text/csv"),
