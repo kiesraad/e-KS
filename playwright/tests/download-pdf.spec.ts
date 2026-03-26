@@ -4,6 +4,7 @@ import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.t
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
+import { stat } from "node:fs/promises";
 
 test.describe("download PDF", async () => {
   const existingCandidates = ["Akwasi", "Braber"];
@@ -33,7 +34,7 @@ test.describe("download PDF", async () => {
     );
     expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
 
-    //expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H1 FR", async ({ deleteExistingCandidateLists: page }) => {
