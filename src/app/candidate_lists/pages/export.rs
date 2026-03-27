@@ -1,26 +1,32 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore,
-    candidate_lists::{CandidateList, pages::CandidateListExportPath, structs::CandidateRecord},
+    AppError,
+    candidate_lists::{
+        FullCandidateList,
+        pages::CandidateListExportPath,
+        structs::{CSV_HEADERS, CandidateRecordCsv},
+    },
     core::Csv,
 };
 
 pub async fn export_candidate_list(
     _: CandidateListExportPath,
-    candidate_list: CandidateList,
-    store: AppStore,
+    full_list: FullCandidateList,
 ) -> Result<Response, AppError> {
-    let mut records: Vec<CandidateRecord> = vec![];
-    for person_id in &candidate_list.candidates {
-        records.push(store.get_person(*person_id)?.into());
-    }
+    let records = full_list
+        .candidates
+        .into_iter()
+        .map(|candidate| CandidateRecordCsv::from(candidate.person))
+        .collect::<Vec<_>>();
+
     Csv {
         records,
         filename: format!(
             "candidate-list-export-{}.csv",
-            candidate_list.districts_codes()
+            full_list.list.districts_codes()
         ),
+        headers: Some(CSV_HEADERS.to_vec()),
     }
     .generate_csv_response()
 }
@@ -32,12 +38,15 @@ mod tests {
     use reqwest::{StatusCode, header};
 
     use crate::{
+        AppStore,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person},
     };
 
     use super::*;
+
+    const CSV_HEADER: &str = include_str!("../testdata/csv_header.csv");
 
     #[tokio::test]
     async fn export_candidate_list_success() -> Result<(), AppError> {
@@ -60,9 +69,11 @@ mod tests {
 
         list.create(&store).await?;
 
+        let full_list = FullCandidateList::get(&store, list_id)?;
+
         // test
         let response =
-            export_candidate_list(CandidateListExportPath { list_id }, list, store).await?;
+            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
 
         // verify
         assert_eq!(response.status(), StatusCode::OK);
@@ -99,6 +110,37 @@ mod tests {
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
         let expected_csv = include_str!("../testdata/candidates.csv");
+        let body = String::from_utf8(
+            body::to_bytes(response.into_body(), expected_csv.len() * 2)
+                .await
+                .unwrap()
+                .to_vec(),
+        )
+        .unwrap();
+        assert_eq!(body, expected_csv);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn export_candidate_list_includes_header_without_candidates() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id)?;
+
+        let response =
+            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let expected_csv = format!(
+            "{}\n",
+            CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
+        );
         let body = String::from_utf8(
             body::to_bytes(response.into_body(), expected_csv.len() * 2)
                 .await

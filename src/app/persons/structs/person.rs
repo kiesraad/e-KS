@@ -17,7 +17,7 @@ pub struct Person {
     pub name: FullName,
     pub personal_data: PersonalData,
     pub address: DutchAddress,
-    pub representative: Representative,
+    pub representative: Option<Representative>,
     pub updated_at: UtcDateTime,
 }
 
@@ -115,13 +115,23 @@ impl Person {
             return true;
         }
 
-        self.representative.is_complete()
+        self.representative
+            .as_ref()
+            .map(|r| r.is_complete())
+            .unwrap_or(false)
     }
 
     pub fn is_complete(&self) -> bool {
         self.is_personal_info_complete()
             && (!self.lives_in_nl() || self.address.is_complete())
             && (self.lives_in_nl() || self.is_representative_complete())
+    }
+
+    pub fn representative_is_complete(&self) -> bool {
+        self.representative
+            .as_ref()
+            .map(|r| r.is_complete())
+            .unwrap_or(false)
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
@@ -135,7 +145,7 @@ impl Person {
     pub async fn update_representative(
         &self,
         store: &AppStore,
-        representative: Representative,
+        representative: Option<Representative>,
     ) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdatePersonRepresentative {
@@ -413,7 +423,7 @@ mod tests {
         person.personal_data.country = Some("BE".parse().expect("country code"));
         assert!(!person.is_representative_complete());
 
-        person.representative = complete_representative();
+        person.representative = Some(complete_representative());
         assert!(person.is_representative_complete());
     }
 
@@ -431,7 +441,7 @@ mod tests {
         non_dutch_person.address = DutchAddress::default();
         assert!(!non_dutch_person.is_complete());
 
-        non_dutch_person.representative = complete_representative();
+        non_dutch_person.representative = Some(complete_representative());
         assert!(non_dutch_person.is_complete());
     }
 }
