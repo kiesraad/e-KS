@@ -30,23 +30,16 @@ export const test = base.extend<Fixtures>({
     await page.goto(`/dev/login?name=${randomName()}&fixtures=true`);
     await page.goto("/candidate-lists");
     const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
+   
 
-    while (true) {
-      const candidateLists =
-        await candidateListsOverviewPage.linkCandidateList.all();
-      const visibleList = await Promise.all(
-        candidateLists.map(async (item) => ({
-          item,
-          visible: await item.isVisible(),
-        })),
-      );
+    const hrefs = await candidateListsOverviewPage.linkCandidateList
+      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
 
-      const firstVisible = visibleList.find((entry) => entry.visible);
-      if (!firstVisible) break;
-
-      await firstVisible.item.click();
-      await new ManageCandidateListPage(page).removeList();
-      await page.goto("/candidate-lists");
+    for (const href of hrefs) {
+      if (href) {
+        await page.goto(href);
+        await new ManageCandidateListPage(page).removeList();
+      }
     }
 
     await use(page);
