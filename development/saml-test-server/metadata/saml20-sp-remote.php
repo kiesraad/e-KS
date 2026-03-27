@@ -1,6 +1,6 @@
 <?php
 
-$metadata['e-ks'] = [
+$metadata['urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9000'] = [
     'host' => '__DEFAULT__',
     'name' => [
         'en' => 'Electronic Candidate Nomination System',
