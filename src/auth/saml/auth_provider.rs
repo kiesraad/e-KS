@@ -172,3 +172,66 @@ async fn saml_acs(
 
     format!("Received: {:#?}", t)
 }
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode},
+    };
+    use bytes::{Buf, BytesMut};
+    use tower::ServiceExt;
+
+    use super::*;
+
+    #[tokio::test]
+    async fn signed_sp_metadata_verifies() {
+        let app_state = AppState::new_for_tests().await;
+        let router = router().with_state(app_state.clone());
+
+        let response = router
+            .oneshot(Request::get("/saml/metadata").body(Body::empty()).unwrap())
+            .await
+            .unwrap();
+        assert_eq!(response.status(), StatusCode::OK);
+        let bytes = axum::body::to_bytes(response.into_body(), 64000)
+            .await
+            .unwrap();
+
+        // retrieved SP metadata should have a valid signature
+        let metadata: EntityDescriptor =
+            samael::metadata::de::from_reader(bytes.clone().reader()).unwrap();
+        assert_eq!(metadata.entity_id, Some("e-ks".to_owned()));
+        assert!(
+            samael::crypto::verify_signed_xml(
+                bytes.clone(),
+                &app_state.auth_provider.public_key.to_der().unwrap(),
+                Some("ID"),
+            )
+            .is_ok()
+        );
+
+        // let's mess up the signature
+        let sig_start = b"<ds:SignatureValue>";
+        let position = bytes
+            .windows(sig_start.len())
+            .position(|window| window == sig_start)
+            .unwrap()
+            + sig_start.len();
+        let mut bytes_wrong_sig = BytesMut::from(bytes);
+        for i in position..position + 10 {
+            bytes_wrong_sig[i] = b'X';
+        }
+
+        // now it no longer verifies
+        assert!(matches!(
+            samael::crypto::verify_signed_xml(
+                bytes_wrong_sig,
+                &app_state.auth_provider.public_key.to_der().unwrap(),
+                Some("ID"),
+            )
+            .unwrap_err(),
+            samael::crypto::Error::InvalidSignature
+        ));
+    }
+}
