@@ -46,6 +46,8 @@ mod tests {
 
     use super::*;
 
+    const CSV_HEADER: &str = include_str!("../testdata/csv_header.csv");
+
     #[tokio::test]
     async fn export_candidate_list_success() -> Result<(), AppError> {
         // setup
@@ -135,7 +137,10 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
 
-        let expected_csv = "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\n";
+        let expected_csv = format!(
+            "{}\n",
+            CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
+        );
         let body = String::from_utf8(
             body::to_bytes(response.into_body(), expected_csv.len() * 2)
                 .await

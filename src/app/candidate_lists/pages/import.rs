@@ -98,7 +98,7 @@ pub async fn import_candidate_list(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::http::StatusCode;
+    use axum::{body::Bytes, http::StatusCode};
 
     use crate::{
         candidate_lists::CandidateListId,
@@ -130,5 +130,92 @@ mod tests {
         assert!(!body.contains("one-click-upload"));
 
         Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_invalid_csv_renders_error() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_tokens.issue().value;
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store.clone(),
+            FileForm {
+                csrf_token,
+                file_data: Some(Bytes::from(invalid_csv())),
+            },
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert!(body.contains("The candidate on line 1 could not be imported:"));
+        assert!(body.contains("has 2 columns, but earlier rows have 23"));
+        assert_eq!(body.matches("alert alert-warning").count(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_renders_multiple_validation_errors() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_tokens.issue().value;
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store,
+            FileForm {
+                csrf_token,
+                file_data: Some(Bytes::from(csv_with_multiple_validation_errors())),
+            },
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert_eq!(
+            body.matches("The candidate on line 1 could not be imported.")
+                .count(),
+            2
+        );
+        assert!(body.contains("Initials"));
+        assert!(body.contains("The provided value is not valid."));
+        assert!(body.contains("Postal code"));
+        assert!(body.contains("The postal code is not valid, use the format 1234AB."));
+        assert_eq!(body.matches("alert alert-warning").count(), 2);
+
+        Ok(())
+    }
+
+    const CSV_HEADER: &str = include_str!("../testdata/csv_header.csv");
+
+    fn csv_headers() -> &'static str {
+        CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
+    }
+
+    fn invalid_csv() -> String {
+        format!("{}\r\n{row}", csv_headers(), row = "H.A.H.A.,Henk\r\n")
+    }
+
+    fn csv_with_multiple_validation_errors() -> String {
+        format!(
+            "{}\r\n{}",
+            csv_headers(),
+            "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+        )
     }
 }

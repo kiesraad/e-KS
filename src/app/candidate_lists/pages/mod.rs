@@ -156,8 +156,8 @@ pub fn router() -> Router<AppState> {
         .typed_post(update_list_submitter::update_list_submitter_submit)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
-        .typed_get(export::export_candidate_list)
         .typed_get(import::import_export)
+        .typed_get(export::export_candidate_list)
         .typed_post(import::import_candidate_list)
 }
 

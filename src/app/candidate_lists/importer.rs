@@ -259,7 +259,7 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn import_candidate_list_csv_reuses_existing_person() -> Result<(), AppError> {
+    async fn reuses_existing_person() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -297,8 +297,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_reuses_existing_person_without_bsn_by_initials_and_last_name()
-    -> Result<(), AppError> {
+    async fn reuses_no_bsn_match_by_initials_and_last_name() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -329,8 +328,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_does_not_reuse_existing_person_with_bsn_when_import_has_no_bsn()
-    -> Result<(), AppError> {
+    async fn does_not_reuse_bsn_match_for_no_bsn_import() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -368,8 +366,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_allows_same_name_when_only_one_row_has_bsn()
-    -> Result<(), AppError> {
+    async fn allows_same_name_when_only_one_row_has_bsn() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -393,8 +390,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_merges_duplicate_rows_without_bsn_by_initials_and_last_name()
-    -> Result<(), AppError> {
+    async fn merges_no_bsn_duplicates_by_initials_and_last_name() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -429,7 +425,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_merges_duplicate_rows_by_bsn() -> Result<(), AppError> {
+    async fn merges_duplicates_by_bsn() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
@@ -464,7 +460,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_candidate_list_csv_returns_all_row_validation_errors() -> Result<(), AppError> {
+    async fn returns_all_row_validation_errors() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let mut list = sample_candidate_list(CandidateListId::new());
 
@@ -493,47 +489,59 @@ mod tests {
         Ok(())
     }
 
-    fn valid_csv() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    const CSV_HEADER: &str = include_str!("testdata/csv_header.csv");
+
+    fn csv_headers() -> &'static str {
+        CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
+    }
+
+    fn valid_csv() -> String {
+        format!(
+            "{}\r\n{}",
+            csv_headers(),
             "H.A.H.A.,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 
-    fn no_bsn_csv_with_different_first_name() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    fn no_bsn_csv_with_different_first_name() -> String {
+        format!(
+            "{}\r\n{}",
+            csv_headers(),
             "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 
-    fn mixed_bsn_duplicate_name_csv() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    fn mixed_bsn_duplicate_name_csv() -> String {
+        format!(
+            "{}\r\n{}{}",
+            csv_headers(),
             "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
             "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 
-    fn duplicate_no_bsn_csv() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    fn duplicate_no_bsn_csv() -> String {
+        format!(
+            "{}\r\n{}{}",
+            csv_headers(),
             "H.A.H.A.,Henk,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
             "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 
-    fn duplicate_bsn_csv() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    fn duplicate_bsn_csv() -> String {
+        format!(
+            "{}\r\n{}{}",
+            csv_headers(),
             "H.A.H.A.,Henk,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
             "H.A.H.A.,Hendrik,,Jansen,Juinen,NL,123456782,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
 
-    fn multiple_invalid_rows_csv() -> &'static str {
-        concat!(
-            "voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats\r\n",
+    fn multiple_invalid_rows_csv() -> String {
+        format!(
+            "{}\r\n{}{}",
+            csv_headers(),
             ",Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n",
             "H.A.H.A.,Henk,,,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
