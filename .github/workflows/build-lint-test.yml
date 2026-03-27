@@ -144,7 +144,7 @@ jobs:
     name: PDF diff
     permissions:
       contents: read
-      pull-requests: write
+      pull-requests: write # Need to be able to comment on the PR
     if: ${{ needs.changes.outputs.changed == 'true' &&  github.event_name == 'pull_request' }}
     needs: changes
     runs-on: ubuntu-24.04
