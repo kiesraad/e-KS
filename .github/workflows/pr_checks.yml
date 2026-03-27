@@ -1,4 +1,4 @@
-name: PR title check
+name: PR checks
 
 permissions: {}
 concurrency:
