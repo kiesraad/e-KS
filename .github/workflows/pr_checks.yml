@@ -12,9 +12,11 @@ on:
       - edited
       - reopened
       - synchronize
+      - ready_for_review
 
 jobs:
   pr-title-check:
+    if: github.event.pull_request.draft == false
     name: PR title check
     runs-on: ubuntu-latest
     permissions:
@@ -110,6 +112,7 @@ jobs:
         env:
           TITLE: ${{ github.event.pull_request.title }}
   all-checkboxes-checked:
+    if: github.event.pull_request.draft == false
     name: PR title check
     runs-on: ubuntu-latest
     steps:
