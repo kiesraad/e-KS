@@ -305,6 +305,11 @@
   margin-top: var(--space-lg);
 }
 
+.form-actions-stack {
+  display: flex;
+  flex-direction: column-reverse;
+}
+
 #gender option:first-child {
   color: var(--color-placeholder);
 }
