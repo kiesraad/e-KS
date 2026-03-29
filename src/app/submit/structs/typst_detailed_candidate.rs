@@ -31,7 +31,13 @@ impl TypstDetailedCandidate {
             )
         } else {
             (
-                Some(TypstPerson::try_from(&candidate.person.representative)?),
+                Some(TypstPerson::try_from(
+                    candidate
+                        .person
+                        .representative
+                        .as_ref()
+                        .ok_or(AppError::IncompleteData("missing representative"))?,
+                )?),
                 None,
             )
         };
@@ -66,8 +72,11 @@ mod tests {
     use super::*;
     use crate::{
         candidate_lists::CandidateListId,
-        common::{CountryCode, DutchAddress, HouseNumber, Locality, PostalCode, StreetName},
-        persons::PersonId,
+        common::{
+            CountryCode, DutchAddress, FullName, HouseNumber, Initials, LastName, Locality,
+            PostalCode, StreetName,
+        },
+        persons::{PersonId, Representative},
         test_utils::sample_person,
     };
 
@@ -97,20 +106,34 @@ mod tests {
             person: sample_person(PersonId::new()),
         };
         candidate.person.personal_data.country = Some(CountryCode::from_str("BE").unwrap());
-        candidate.person.representative.address = DutchAddress {
-            street_name: Some(StreetName::from_str("street name").unwrap()),
-            house_number: Some(HouseNumber::from_str("4").unwrap()),
-            house_number_addition: None,
-            postal_code: Some(PostalCode::from_str("1234AB").unwrap()),
-            locality: Some(Locality::from_str("Amsterdam").unwrap()),
-        };
+        candidate.person.representative = Some(Representative {
+            name: FullName {
+                first_name: Some("Anne".parse().unwrap()),
+                last_name: LastName::from_str("Dijk").unwrap(),
+                last_name_prefix: None,
+                initials: Initials::from_str("A.B.").unwrap(),
+            },
+            address: DutchAddress {
+                street_name: Some(StreetName::from_str("street name").unwrap()),
+                house_number: Some(HouseNumber::from_str("4").unwrap()),
+                house_number_addition: None,
+                postal_code: Some(PostalCode::from_str("1234AB").unwrap()),
+                locality: Some(Locality::from_str("Amsterdam").unwrap()),
+            },
+        });
         let typst_candidate =
             TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
 
         assert!(typst_candidate.postal_address.is_none());
         assert_eq!(
             typst_candidate.representative.unwrap().last_name,
-            candidate.person.representative.name.last_name_with_prefix()
+            candidate
+                .person
+                .representative
+                .as_ref()
+                .unwrap()
+                .name
+                .last_name_with_prefix()
         );
     }
 

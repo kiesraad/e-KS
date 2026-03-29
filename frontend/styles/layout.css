@@ -89,6 +89,13 @@ header {
 
     h1 {
       font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+
+    h1 .button {
+      letter-spacing: initial;
+      margin-left: var(--space-md);
     }
 
     div:first-child {

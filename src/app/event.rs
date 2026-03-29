@@ -32,7 +32,7 @@ pub enum AppEvent {
     },
     UpdatePersonRepresentative {
         person_id: PersonId,
-        representative: Representative,
+        representative: Option<Representative>,
     },
     DeletePerson {
         person_id: PersonId,

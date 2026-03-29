@@ -1,2 +1,4 @@
-{% include "common/components/person_name_fields.html" %}
-{% include "common/components/address_fields.html" %}
+{% import "common/components/form_field_macros.html" as field_macros %}
+{% let representative = form.data.representative_fields() %}
+{{ field_macros::person_name_fields(representative.name, form, "representative.name.initials", "representative.name.first_name", "representative.name.last_name_prefix", "representative.name.last_name", "", "representative_", should_warn|default(false) ) }}
+{{ field_macros::address_fields(representative.address, form, "representative.address.postal_code", "representative.address.house_number", "representative.address.house_number_addition", "representative.address.street_name", "representative.address.locality", "", "representative_", should_warn|default(false) ) }}

@@ -50,10 +50,7 @@ fn apply_update_person_address_and_representative() {
     let updated = data.persons.get(&person_id).expect("person exists");
     assert_eq!(updated.address.postal_code, new_address.postal_code);
     assert_eq!(updated.updated_at, UtcDateTime::from(address_event_time));
-    assert_eq!(
-        updated.representative.name.initials,
-        original_representative.name.initials
-    );
+    assert_eq!(updated.representative, original_representative);
 
     let rep_event_time = Utc::now() - Duration::seconds(10);
     let representative = Representative {
@@ -76,15 +73,24 @@ fn apply_update_person_address_and_representative() {
         2,
         AppEvent::UpdatePersonRepresentative {
             person_id,
-            representative: representative.clone(),
+            representative: Some(representative.clone()),
         },
         rep_event_time,
     ));
 
     let updated = data.persons.get(&person_id).expect("person exists");
-    assert_eq!(updated.representative.name.last_name.to_string(), "Bakker");
     assert_eq!(
-        updated.representative.address.street_name,
+        updated
+            .representative
+            .as_ref()
+            .unwrap()
+            .name
+            .last_name
+            .to_string(),
+        "Bakker"
+    );
+    assert_eq!(
+        updated.representative.as_ref().unwrap().address.street_name,
         representative.address.street_name
     );
     assert_eq!(updated.updated_at, UtcDateTime::from(rep_event_time));
