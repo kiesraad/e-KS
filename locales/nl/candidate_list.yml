@@ -6,9 +6,10 @@ actions:
   back_to_list: Terug
   delete_list: Kandidatenlijst verwijderen
   edit: Aanpassen
-  edit_list_details: Kieskringen en lijstinleveraar aanpassen
-  export: Lijst exporteren
-  import: Lijst importeren
+  export_csv: CSV bestand downloaden
+  import_csv: CSV bestand uploaden
+  import_export: Kandidaten importeren / exporteren
+  import_export_csv: CSV
   select_all_districts: Selecteer alle kieskringen
 add_all: Alle kandidaten toevoegen
 add_candidate: Kandidaat toevoegen
@@ -36,6 +37,29 @@ form:
   delete_warning_text: Weet u zeker dat u deze kandidatenlijst wilt verwijderen?
   update:
     title: Kandidatenlijst aanpassen
+import_errors:
+  csv:
+    deserialize: "een van de waarden in deze rij heeft niet het juiste formaat. {}"
+    deserialize_with_position: "record {} op regel {} rond teken {} bevat een waarde met een onjuist formaat. {}"
+    io: "het bestand kon niet worden gelezen. {}"
+    seek: het bestand kon niet goed worden gelezen. Exporteer het CSV-bestand opnieuw en probeer het daarna nog eens.
+    serialize: "het bestand bevat een waarde die niet verwerkt kon worden. {}"
+    unequal_lengths: "deze rij heeft {} kolommen, maar eerdere rijen hebben er {}. Controleer of elke rij evenveel kolommen heeft."
+    unequal_lengths_with_position: "record {} op regel {} rond teken {} heeft {} kolommen, maar eerdere rijen hebben er {}. Controleer of elke rij evenveel kolommen heeft."
+    unknown: "het bestand kon niet worden verwerkt. {}"
+    utf8: "veld {} bevat onleesbare tekst. Sla het bestand op als UTF-8 en probeer het opnieuw. {}"
+    utf8_with_position: "record {} op regel {} bevat onleesbare tekst in veld {} rond teken {}. Sla het bestand op als UTF-8 en probeer het opnieuw. {}"
+  format_error: "De kandidaat op regel {} kon niet worden geïmporteerd: {}"
+  invalid_headers: Gebruik dezelfde kolomnamen als in het geëxporteerde CSV-bestand.
+  missing_file: Selecteer een CSV-bestand om te importeren.
+  parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
+import_export:
+  export_title: Exporteer kandidaten
+  import_description: Gebruik een CSV-bestand om kandidaten op deze lijst te importeren.
+  import_failed: Importeren niet gelukt
+  import_title: Importeer kandidaten
+  overwrite_title: Let op!
+import_warning: Deze lijst bevat al kandidaten. Het importeren van kandidaten zal de huidige kandidaten in deze lijst overschrijven. Weet u zeker dat u door wilt gaan?
 not_found: "Kandidatenlijst {} niet gevonden."
 remove_all_added_candidates: Toegevoegde kandidaten verwijderen
 remove_candidate: Uit deze lijst verwijderen

@@ -30,3 +30,12 @@ impl From<FullName> for FullNameForm {
         }
     }
 }
+
+impl FullNameForm {
+    pub fn is_empty(&self) -> bool {
+        self.first_name.is_empty()
+            && self.last_name.is_empty()
+            && self.last_name_prefix.is_empty()
+            && self.initials.is_empty()
+    }
+}

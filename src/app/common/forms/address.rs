@@ -40,6 +40,16 @@ impl From<DutchAddress> for DutchAddressForm {
     }
 }
 
+impl DutchAddressForm {
+    pub fn is_empty(&self) -> bool {
+        self.locality.is_empty()
+            && self.postal_code.is_empty()
+            && self.house_number.is_empty()
+            && self.house_number_addition.is_empty()
+            && self.street_name.is_empty()
+    }
+}
+
 /// Form-friendly representation of an international address.
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "InternationalAddress")]

@@ -1,0 +1,116 @@
+{% macro person_name_fields(person_name, form, initials_error, first_name_error, last_name_prefix_error, last_name_error, input_prefix = "", id_prefix = "", should_warn = false, show_last_name_info = false) %}
+  <div class="form-row">
+    <p class="form-field form-field-sm {% if person_name.initials.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "initials" }}">{{ "person.fields.initials"|trans }}</label>
+      <input type="text"
+             name="{{ input_prefix ~ "initials" }}"
+             id="{{ id_prefix ~ "initials" }}"
+             value="{{ person_name.initials }}"
+             class="initials-input"
+             required />
+      <label class="autoformat">
+        <input type="checkbox" checked tabindex="-1" />
+        <span>{{ "person.autoformat_initials"|trans }}</span>
+      </label>
+      {% for error in form|error(initials_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p class="form-field">
+      <label for="{{ id_prefix ~ "first_name" }}">
+        {{ "person.fields.first_name"|trans }}
+        <span class="hint">({{ "person.hints.optional"|trans }})</span>
+      </label>
+      <input type="text"
+             name="{{ input_prefix ~ "first_name" }}"
+             id="{{ id_prefix ~ "first_name" }}"
+             value="{{ person_name.first_name }}" />
+      {% for error in form|error(first_name_error) %}
+        <span class="error">{{ error }}</span>
+      {% else %}
+        <span class="hint">{{ "person.hints.first_name"|trans }}</span>
+      {% endfor %}
+    </p>
+  </div>
+  <div class="form-row">
+    <p class="form-field form-field-sm">
+      <label for="{{ id_prefix ~ "last_name_prefix" }}">{{ "person.fields.last_name_prefix"|trans }}</label>
+      <input type="text"
+             name="{{ input_prefix ~ "last_name_prefix" }}"
+             id="{{ id_prefix ~ "last_name_prefix" }}"
+             value="{{ person_name.last_name_prefix }}" />
+      {% for error in form|error(last_name_prefix_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <div class="form-field {% if person_name.last_name.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "last_name" }}">{{ "person.fields.last_name"|trans }}</label>
+      <input type="text"
+             name="{{ input_prefix ~ "last_name" }}"
+             id="{{ id_prefix ~ "last_name" }}"
+             value="{{ person_name.last_name }}"
+             required />
+      {% for error in form|error(last_name_error) %}
+        <span class="error">{{ error }}</span>
+      {% else %}
+        {% if show_last_name_info %}
+          <details class="hint" tabindex="-1">
+            <summary>{{ "action.information"|trans }}</summary>
+            <div class="hint-popover">
+              {# sonar Web:S5247: static string translation which is trusted #}
+              {{ "person.fields.last_name_info"|trans|safe }}
+            </div>
+          </details>
+        {% endif %}
+      {% endfor %}
+    </div>
+  </div>
+{% endmacro person_name_fields %}
+{% macro address_fields(address, form, postal_code_error, house_number_error, house_number_addition_error, street_name_error, locality_error, input_prefix = "", id_prefix = "", should_warn = false) %}
+  <div class="form-row">
+    <p class="form-field form-field-sm {% if address.postal_code.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "postal_code" }}">{{ "person.fields.postal_code"|trans }}</label>
+      <input type="text"
+             placeholder=" "
+             name="{{ input_prefix ~ "postal_code" }}"
+             id="{{ id_prefix ~ "postal_code" }}"
+             value="{{ address.postal_code }}" />
+      {% for error in form|error(postal_code_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p class="form-field form-field-sm {% if address.house_number.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "house_number" }}">{{ "person.fields.house_number"|trans }}</label>
+      <input type="text"
+             placeholder=" "
+             name="{{ input_prefix ~ "house_number" }}"
+             id="{{ id_prefix ~ "house_number" }}"
+             value="{{ address.house_number }}" />
+      {% for error in form|error(house_number_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p class="form-field form-field-sm">
+      <label for="{{ id_prefix ~ "house_number_addition" }}">{{ "person.fields.house_number_addition"|trans }}</label>
+      <input type="text"
+             name="{{ input_prefix ~ "house_number_addition" }}"
+             id="{{ id_prefix ~ "house_number_addition" }}"
+             value="{{ address.house_number_addition }}" />
+      {% for error in form|error(house_number_addition_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+  </div>
+  <div class="form-row">
+    <p class="form-field {% if address.street_name.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "street_name" }}">{{ "person.fields.street_name"|trans }}</label>
+      <input type="text"
+             placeholder=" "
+             name="{{ input_prefix ~ "street_name" }}"
+             id="{{ id_prefix ~ "street_name" }}"
+             value="{{ address.street_name }}" />
+      {% for error in form|error(street_name_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+    <p class="form-field {% if address.locality.is_empty() && should_warn %}warning{% endif %}">
+      <label for="{{ id_prefix ~ "locality" }}">{{ "person.fields.locality"|trans }}</label>
+      <input type="text"
+             placeholder=" "
+             name="{{ input_prefix ~ "locality" }}"
+             id="{{ id_prefix ~ "locality" }}"
+             value="{{ address.locality }}"
+             list="{{ id_prefix ~ "locality-suggestions" }}" />
+      <datalist id="{{ id_prefix ~ "locality-suggestions" }}"></datalist>
+      {% for error in form|error(locality_error) %}<span class="error">{{ error }}</span>{% endfor %}
+    </p>
+  </div>
+{% endmacro address_fields %}

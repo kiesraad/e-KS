@@ -9,6 +9,12 @@
     color: var(--gray-600);
   }
 
+  &.alert-warning {
+    background-color: var(--yellow-100);
+    border-left: 4px solid var(--yellow-300);
+    color: var(--yellow-800);
+  }
+
   &.alert-success {
     background-color: var(--green-100);
     color: var(--green-600);

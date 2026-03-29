@@ -116,7 +116,7 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
             field_blocks_update.push(block);
         }
 
-        let validation = build_field_validation(ident, &field_name, &opts)?;
+        let validation = build_field_validation(ident, &field_name, &field.ty, &opts)?;
 
         field_blocks_create.push(build_field_block(ident, &validation.create_expr));
         field_blocks_update.push(build_field_block(ident, &validation.update_expr));
@@ -148,6 +148,17 @@ fn is_vec_type(ty: &Type) -> bool {
         .segments
         .last()
         .is_some_and(|segment| segment.ident == "Vec")
+}
+
+fn is_option_type(ty: &Type) -> bool {
+    let Type::Path(type_path) = ty else {
+        return false;
+    };
+    type_path
+        .path
+        .segments
+        .last()
+        .is_some_and(|segment| segment.ident == "Option")
 }
 
 fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
@@ -375,10 +386,15 @@ struct FieldValidation {
 fn build_field_validation(
     ident: &syn::Ident,
     field_name: &str,
+    ty: &Type,
     opts: &FieldOptions,
 ) -> syn::Result<FieldValidation> {
     if opts.flatten {
-        return Ok(build_flatten_validation(ident, field_name));
+        return Ok(build_flatten_validation(
+            ident,
+            field_name,
+            is_option_type(ty),
+        ));
     }
 
     if let Some(ty) = &opts.parse_ty {
@@ -392,7 +408,15 @@ fn build_field_validation(
 ///
 /// Example:
 /// - `address` field errors become `address.postal_code`.
-fn build_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValidation {
+fn build_flatten_validation(
+    ident: &syn::Ident,
+    field_name: &str,
+    optional: bool,
+) -> FieldValidation {
+    if optional {
+        return build_optional_flatten_validation(ident, field_name);
+    }
+
     let create_expr = quote!({
         match self.#ident.clone().validate_create(csrf_tokens) {
             Ok(value) => Some(value),
@@ -415,6 +439,55 @@ fn build_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValida
             }
         }
     });
+    FieldValidation {
+        create_expr,
+        update_expr,
+        validated: true,
+    }
+}
+
+fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValidation {
+    let prefix = field_name.to_string();
+    let create_expr = quote!({
+        match self.#ident.clone() {
+            Some(value) => match value.validate_create(csrf_tokens) {
+                Ok(value) => Some(Some(value)),
+                Err(form_data) => {
+                    errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+                        (format!("{}.{}", #prefix, name), err.clone())
+                    }));
+                    None
+                }
+            },
+            None => Some(None),
+        }
+    });
+    let update_expr = quote!({
+        match self.#ident.clone() {
+            Some(value) => match current.#ident.as_ref() {
+                Some(current_value) => match value.validate_update(current_value, csrf_tokens) {
+                    Ok(value) => Some(Some(value)),
+                    Err(form_data) => {
+                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+                            (format!("{}.{}", #prefix, name), err.clone())
+                        }));
+                        None
+                    }
+                },
+                None => match value.validate_create(csrf_tokens) {
+                    Ok(value) => Some(Some(value)),
+                    Err(form_data) => {
+                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+                            (format!("{}.{}", #prefix, name), err.clone())
+                        }));
+                        None
+                    }
+                },
+            },
+            None => Some(None),
+        }
+    });
+
     FieldValidation {
         create_expr,
         update_expr,
