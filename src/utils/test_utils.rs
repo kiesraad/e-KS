@@ -12,10 +12,7 @@ use crate::{
         LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
-    persons::{
-        AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeFieldsForm,
-        RepresentativeForm,
-    },
+    persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
 
@@ -191,10 +188,8 @@ pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
 
 pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
     RepresentativeForm {
-        representative: Some(RepresentativeFieldsForm {
-            name: sample_full_name_form("", "Bakker", "", "A.B."),
-            address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
-        }),
+        name: sample_full_name_form("", "Bakker", "", "A.B."),
+        address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
         csrf_token: csrf_token.clone(),
     }
 }

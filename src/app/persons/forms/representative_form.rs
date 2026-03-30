@@ -4,7 +4,7 @@ use validate::Validate;
 use crate::{
     TokenValue,
     common::{DutchAddressForm, FullNameForm},
-    persons::{Person, Representative},
+    persons::Representative,
 };
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
@@ -19,15 +19,6 @@ pub struct RepresentativeFieldsForm {
     pub address: DutchAddressForm,
 }
 
-impl From<Representative> for RepresentativeFieldsForm {
-    fn from(person: Representative) -> Self {
-        Self {
-            name: FullNameForm::from(person.name),
-            address: DutchAddressForm::from(person.address),
-        }
-    }
-}
-
 impl RepresentativeFieldsForm {
     pub fn is_empty(&self) -> bool {
         self.name.is_empty() && self.address.is_empty()
@@ -35,27 +26,25 @@ impl RepresentativeFieldsForm {
 }
 
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "Person")]
+#[validate(target = "Representative")]
 #[serde(default)]
 pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]
-    pub representative: Option<RepresentativeFieldsForm>,
+    pub name: FullNameForm,
+    #[validate(flatten)]
+    #[serde(flatten)]
+    pub address: DutchAddressForm,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
 
-impl From<Person> for RepresentativeForm {
-    fn from(person: Person) -> Self {
+impl From<Representative> for RepresentativeForm {
+    fn from(representative: Representative) -> Self {
         Self {
-            representative: person.representative.map(|r| r.into()),
+            name: FullNameForm::from(representative.name),
+            address: DutchAddressForm::from(representative.address),
             csrf_token: TokenValue::default(),
         }
-    }
-}
-
-impl RepresentativeForm {
-    pub fn representative_fields(&self) -> RepresentativeFieldsForm {
-        self.representative.clone().unwrap_or_default()
     }
 }

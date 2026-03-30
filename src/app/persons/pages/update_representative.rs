@@ -28,7 +28,7 @@ pub async fn update_representative(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
             form: FormData::new_with_data(
-                RepresentativeForm::from(person.clone()),
+                RepresentativeForm::from(person.clone().representative.unwrap_or_default()),
                 &context.session.csrf_tokens,
             ),
             person,
@@ -45,7 +45,8 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.session.csrf_tokens) {
+    let representative = person.clone().representative.unwrap_or_default();
+    match form.validate_update(&representative, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -55,9 +56,9 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(person) => {
+        Ok(representative) => {
             person
-                .update_representative(&store, person.representative.clone())
+                .update_representative(&store, Some(representative))
                 .await?;
 
             Ok(Redirect::to(&person.highlight_success_path().to_string()).into_response())
@@ -146,7 +147,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
-        form.representative.as_mut().unwrap().name.last_name = "Smit".to_string();
+        form.name.last_name = "Smit".to_string();
         let expected_path = person.highlight_success_path().to_string();
 
         let response = update_representative_submit(
@@ -189,7 +190,7 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_representative_form(&csrf_token);
-        form.representative.as_mut().unwrap().address.postal_code = "a".to_string();
+        form.address.postal_code = "a".to_string();
 
         let response = update_representative_submit(
             UpdateRepresentativePath { person_id },

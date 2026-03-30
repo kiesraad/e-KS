@@ -1,4 +1,4 @@
-{% include "common/components/person_name_fields.html" %}
+{% include "common/components/name_fields.html" %}
 <div class="form-row">
   <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
