@@ -12,10 +12,7 @@ use crate::{
         LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
-    persons::{
-        AddressForm, Person, PersonId, PersonalData, PersonalDataForm, Representative,
-        RepresentativeForm,
-    },
+    persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
 
@@ -147,7 +144,7 @@ pub fn sample_person(id: PersonId) -> Person {
             country: Some(parse_country_code("NL")),
         },
         address: sample_dutch_address("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
-        representative: Representative::default(),
+        representative: None,
         ..Default::default()
     }
 }

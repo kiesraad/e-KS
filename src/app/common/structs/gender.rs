@@ -13,9 +13,9 @@ impl std::str::FromStr for Gender {
     type Err = ValidationError;
 
     fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "female" => Ok(Gender::Female),
-            "male" => Ok(Gender::Male),
+        match s.to_lowercase().as_str() {
+            "female" | "frou" | "vrouw" | "f" | "v" => Ok(Gender::Female),
+            "male" | "man" | "m" => Ok(Gender::Male),
             _ => Err(ValidationError::InvalidValue),
         }
     }

@@ -5,10 +5,11 @@ actions:
   add_new: New
   back_to_list: Back
   delete_list: Delete candidate list
-  edit: List details
-  edit_list_details: Edit the list details here
-  export: Export list
-  import: Import list
+  edit: Edit list
+  export_csv: Export as CSV
+  import_csv: Import as CSV
+  import_export: Import/export candidates
+  import_export_csv: CSV
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate
@@ -36,6 +37,29 @@ form:
   delete_warning_text: Are you sure you want to delete this candidate list?
   update:
     title: Edit candidate list
+import_errors:
+  csv:
+    deserialize: "one of the values in this row is in the wrong format. {}"
+    deserialize_with_position: "record {} on line {} near character {} contains a value in the wrong format. {}"
+    io: "the file could not be read. {}"
+    seek: the file could not be read correctly. Please export the CSV again and try again.
+    serialize: "the file contains a value that could not be processed. {}"
+    unequal_lengths: "this row has {} columns, but earlier rows have {}. Please make sure each row has the same number of columns."
+    unequal_lengths_with_position: "record {} on line {} near character {} has {} columns, but earlier rows have {}. Please make sure each row has the same number of columns."
+    unknown: "the file could not be processed. {}"
+    utf8: "field {} contains unreadable text. Please save the file as UTF-8 and try again. {}"
+    utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
+  format_error: "The candidate on line {} could not be imported: {}"
+  invalid_headers: Use the same column names as in the exported CSV file.
+  missing_file: Please select a CSV file to import.
+  parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
+import_export:
+  export_title: Export candidates
+  import_description: Use a CSV file to replace the candidates on this list.
+  import_failed: Import failed
+  import_title: Import candidates
+  overwrite_title: Warning
+import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."
 remove_all_added_candidates: Remove all added candidates
 remove_candidate: Remove candidate

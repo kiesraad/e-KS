@@ -28,7 +28,7 @@ pub async fn update_representative(
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
-        RepresentativeForm::from(candidate.person.representative.clone()),
+        RepresentativeForm::from(candidate.person.clone().representative.unwrap_or_default()),
         &context.session.csrf_tokens,
     );
 
@@ -52,10 +52,8 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(
-        &candidate.person.representative,
-        &context.session.csrf_tokens,
-    ) {
+    let representative = candidate.person.clone().representative.unwrap_or_default();
+    match form.validate_update(&representative, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
@@ -69,7 +67,7 @@ pub async fn update_representative_submit(
         Ok(representative) => {
             candidate
                 .person
-                .update_representative(&store, representative)
+                .update_representative(&store, Some(representative))
                 .await?;
 
             Ok(Redirect::to(
@@ -232,7 +230,10 @@ mod tests {
         assert_eq!(location, expected_path);
 
         let updated = store.get_person(person.id)?;
-        assert_eq!(updated.representative.name.last_name.to_string(), "Smit");
+        assert_eq!(
+            updated.representative.unwrap().name.last_name.to_string(),
+            "Smit"
+        );
 
         Ok(())
     }

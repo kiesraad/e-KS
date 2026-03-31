@@ -43,4 +43,4 @@ representative_info: "Omdat de kandidaat in het buitenland woont, is een gemacht
 title: Alle kandidaten
 total: "<strong>{}</strong> kandidaten toegevoegd"
 view:
-  empty: Geen kandidaten gevonden.
+  empty: Geen kandidaten beschikbaar.

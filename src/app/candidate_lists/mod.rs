@@ -4,6 +4,7 @@
 //! their ordering, submitters, and related list summaries.
 mod extractors;
 mod forms;
+pub(crate) mod importer;
 mod pages;
 mod structs;
 
