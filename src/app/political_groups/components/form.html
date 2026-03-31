@@ -33,7 +33,8 @@
   <fieldset>
     <div class="form-row">
       <fieldset class="checklist">
-        <legend class="legend-md">{{ "political_group.long_list_allowed"|trans }}</legend>
+        {% let election = "election"|election_value %}
+        <legend class="legend-md">{{ "political_group.long_list_allowed"|trans(&election|election_type_title) }}</legend>
         <span class="hint">{{ "political_group.type.long_list_allowed_hint"|trans }}</span>
         <div class="checklist">
           <div class="checkbox">

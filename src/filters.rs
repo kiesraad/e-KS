@@ -88,6 +88,16 @@ pub fn election_title(
 }
 
 #[askama::filter_fn]
+pub fn election_type_title(
+    value: &ElectionConfig,
+    values: &dyn askama::Values,
+) -> askama::Result<&'static str> {
+    let locale: &Locale = askama::get_value(values, "locale")?;
+
+    Ok(value.election_type().title(*locale))
+}
+
+#[askama::filter_fn]
 pub fn flag(country_code: &str, _: &dyn askama::Values) -> askama::Result<String> {
     if !country_code.is_ascii() || country_code.len() != 2 {
         return Ok("🌐".to_string());
