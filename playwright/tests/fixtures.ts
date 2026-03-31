@@ -4,7 +4,6 @@ import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ListSubmittersPage } from "./pages/listSubmittersPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
-import { randomName } from "./utils/random";
 
 type Fixtures = {
   deleteExistingGeneralInformation: Page;
@@ -27,13 +26,14 @@ export const test = base.extend<Fixtures>({
   },
 
   deleteExistingCandidateLists: async ({ page }, use) => {
-    await page.goto(`/dev/login?name=${randomName()}&fixtures=true`);
+    await page.goto(`/dev/login?fixtures=true`);
     await page.goto("/candidate-lists");
     const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
-   
 
-    const hrefs = await candidateListsOverviewPage.linkCandidateList
-      .evaluateAll((links) => links.map((link) => link.getAttribute("href")));
+    const hrefs =
+      await candidateListsOverviewPage.linkCandidateList.evaluateAll((links) =>
+        links.map((link) => link.getAttribute("href")),
+      );
 
     for (const href of hrefs) {
       if (href) {

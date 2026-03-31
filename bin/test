@@ -20,5 +20,6 @@ cargo build \
     --bin eks
 
 pushd playwright
+    docker compose build --quiet
     docker compose run --rm --quiet-pull --quiet-build playwright
 popd
