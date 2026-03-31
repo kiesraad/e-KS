@@ -18,10 +18,13 @@ use crate::{AppError, AppState, Locale, Session};
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 
-/// Builds a secure, HTTP-only cookie that carries the session token.
+/// Builds an HTTP-only cookie that carries the session token.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
     let mut cookie = Cookie::new(SESSION_COOKIE_NAME, session.token().to_exposed_string());
     cookie.set_http_only(true);
+    #[cfg(feature = "dev-features")]
+    cookie.set_secure(false);
+    #[cfg(not(feature = "dev-features"))]
     cookie.set_secure(true);
     cookie.set_same_site(SameSite::Lax);
     cookie.set_path("/");
@@ -178,6 +181,10 @@ mod tests {
             .and_then(|value| value.to_str().ok())
             .expect("set-cookie header");
         assert!(set_cookie.contains(SESSION_COOKIE_NAME));
+        #[cfg(feature = "dev-features")]
+        assert!(!set_cookie.contains("Secure"));
+        #[cfg(not(feature = "dev-features"))]
+        assert!(set_cookie.contains("Secure"));
     }
 
     /// Reuses the existing session when the cookie is provided.

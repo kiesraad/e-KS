@@ -22,7 +22,7 @@ lcov.info
 **/*.local
 
 **/.DS_Store
-**/test-results
+**/test-results*
 **/playwright-report/
 
 /frontend/static/*
