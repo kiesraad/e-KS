@@ -1,0 +1,127 @@
+name: PR checks
+
+permissions: {}
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.ref }}-pr-title-check
+  cancel-in-progress: true
+
+on:
+  pull_request:
+    types:
+      - opened
+      - edited
+      - reopened
+      - synchronize
+      - ready_for_review
+
+jobs:
+  pr-title-check:
+    if: github.event.pull_request.draft == false
+    name: PR title check
+    runs-on: ubuntu-latest
+    permissions:
+      pull-requests: write # Need to be able to edit the PR body
+    steps:
+      - name: Issue number(s) included in PR title
+        run: |
+          echo "PR title: $TITLE"
+          if [ "$AUTHOR_TYPE" = "Bot" ]; then
+            echo "Author is a bot, automations don't require linked issues"
+            exit 0
+          fi
+
+          if echo "$TITLE" | grep -qE '^\[(#[1-9][0-9]*, )*#[1-9][0-9]*\]'; then
+            echo "Check passed: PR title references one or more issues"
+          else
+            echo "::error::PR title must start with one or more issue numbers"
+            echo "::error::"
+            echo "::error::correct examples:"
+            echo "::error::[#123] Issue title"
+            echo "::error::[#123, #567] Issue title"
+            echo "::error::[#123] Issue title"
+            echo "::error::"
+            echo "::error::incorrect examples:"
+            echo "::error::preceding text [#123] Issue title <-- title should start with the issues"
+            echo "::error::#123, #567 Issue title <-- Missing braces ([...])"
+            exit 1
+          fi
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+          AUTHOR_TYPE: ${{ github.event.pull_request.user.type }}
+      - name: Link issues to numbers
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const title = process.env.TITLE;
+            const prNumber = context.payload.pull_request.number;
+
+            // Extract issue numbers from the bracket prefix
+            const bracket = title.match(/^\[([^\]]+)\]/);
+            if (!bracket) return;
+
+            const issueNumbers = [...bracket[1].matchAll(/#(\d+)/g)].map(m => parseInt(m[1]));
+            console.log(`Found issues: ${issueNumbers.join(", ")}`);
+
+            // Verify issues exist
+            const validIssues = [];
+            for (const num of issueNumbers) {
+              try {
+                const { data: issue } = await github.rest.issues.get({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  issue_number: num,
+                });
+                // Make sure it's actually an issue, not a PR
+                if (!issue.pull_request) {
+                  validIssues.push(num);
+                } else {
+                  core.warning(`#${num} is a pull request, not an issue.`);
+                  core.setFailed(`Issue #${num} does not exist.`);
+                  return;
+                }
+              } catch (error) {
+                if (error.status === 404) {
+                  core.setFailed(`Issue #${num} does not exist.`);
+                  return;
+                }
+                throw error;
+              }
+            }
+
+            // Closing keyword approach: update the PR body to include "Closes #N" lines
+            const currentBody = context.payload.pull_request.body || "";
+            const closingLines = issueNumbers
+              .map(n => `Closes #${n}`)
+              .filter(line => !currentBody.includes(line));
+
+            if (closingLines.length > 0) {
+              const separator = currentBody.length > 0 ? "\n\n" : "";
+              const newBody = closingLines.join("\n") + separator + currentBody;
+
+              await github.rest.pulls.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                pull_number: prNumber,
+                body: newBody,
+              });
+
+              console.log(`Added to PR body: ${closingLines.join(", ")}`);
+            } else {
+              console.log("All issues already linked in PR body.");
+            }   
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+  all-checkboxes-checked:
+    if: github.event.pull_request.draft == false
+    name: PR title check
+    runs-on: ubuntu-latest
+    steps:
+      - name: All checkboxes checked in PR body
+        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const unchecked = (body.match(/- \[ \]/g) || []).length;
+            if (unchecked > 0) {
+              core.setFailed(`${unchecked} unchecked item(s) in PR checklist`);
+            }
