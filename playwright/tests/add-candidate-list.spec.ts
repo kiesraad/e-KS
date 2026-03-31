@@ -7,6 +7,7 @@ import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {
   test("add candidate list", async ({ page }) => {
+    await page.goto(`/dev/login?fixtures=true`);
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
