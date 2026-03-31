@@ -2,7 +2,7 @@ use chrono::{DateTime, Duration, Utc};
 use parking_lot::RwLock;
 use std::{collections::HashMap, sync::Arc};
 
-/// Number of minutes a CSRF token remains valid.
+/// Number of minutes a AuthnRequest remains valid.
 pub const AUTHN_REQUEST_TTL_MINUTES: i64 = 30;
 
 #[derive(Default, Clone)]

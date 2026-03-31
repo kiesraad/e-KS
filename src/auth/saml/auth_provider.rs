@@ -17,7 +17,10 @@ use samael::{
 };
 use serde::Deserialize;
 
-use crate::{AppError, AppState, auth::saml::ActiveAuthnRequests};
+use crate::{
+    AppError, AppState,
+    auth::saml::{ActiveAuthnRequests, pages::login_auto_post},
+};
 
 const TEST_ENTITY_ID: &str = "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9000";
 
@@ -52,6 +55,7 @@ impl AuthProvider {
             .key(private_key.clone())
             .certificate(public_key.clone())
             .allow_idp_initiated(false)
+            .force_authn(true)
             .idp_metadata(idp_metadata)
             .acs_url("http://localhost:3000/saml/acs".to_string())
             .slo_url("http://localhost:3000/saml/logout".to_string())
@@ -74,30 +78,47 @@ pub fn router() -> Router<AppState> {
         .route("/saml/acs", post(saml_acs))
 }
 
-async fn saml_login(State(state): State<AppState>) -> impl IntoResponse {
-    let authn_request = state
+async fn saml_login(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {
+    let mut authn_request = state
         .auth_provider
         .sp
         .make_authentication_request(
             &state
                 .auth_provider
                 .sp
-                .sso_binding_location(samael::metadata::HTTP_REDIRECT_BINDING)
+                .sso_binding_location(samael::metadata::HTTP_POST_BINDING)
                 .unwrap(),
         )
         .unwrap();
 
+    let login_url = authn_request.destination.clone().unwrap();
+
+    // sign AuthnRequest
+    let mut sig = Signature::template(
+        &authn_request.id,
+        &state.auth_provider.public_key.to_der().unwrap(),
+    );
+    sig.signed_info.signature_method.algorithm = SignatureAlgorithm::RsaSha256;
+    sig.signed_info.reference[0].digest_method.algorithm = DigestAlgorithm::Sha256;
+    authn_request.signature = Some(sig);
+
+    let authn_request_xml = authn_request
+        .to_signed_xml(
+            &state
+                .auth_provider
+                .private_key
+                .private_key_to_der()
+                .unwrap(),
+        )
+        .unwrap();
+
+    // add to list of active AuthnRequests
     state
         .auth_provider
         .active_authn_requests
         .add(authn_request.id.clone());
 
-    let login_url = authn_request
-        .signed_redirect("", state.auth_provider.private_key.clone())
-        .unwrap()
-        .unwrap();
-
-    axum::response::Redirect::temporary(login_url.as_str())
+    login_auto_post(&login_url, authn_request_xml.as_bytes())
 }
 
 async fn saml_metadata(State(state): State<AppState>) -> Result<impl IntoResponse, AppError> {

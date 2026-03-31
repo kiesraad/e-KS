@@ -953,6 +953,7 @@ dependencies = [
  "askama",
  "axum",
  "axum-extra",
+ "base64",
  "bytes",
  "chrono",
  "csv",

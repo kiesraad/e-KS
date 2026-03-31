@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Inloggen</title>
+    <link rel="stylesheet" href="/static/index.css" />
+    <script src="/static/index.js" defer></script>
+  </head>
+  <body>
+    <header>
+      <nav></nav>
+      <div class="header-content">
+        <h1>Je wordt ingelogd...</h1>
+      </div>
+    </header>
+
+    <main>
+      <section> 
+        <p class="info">Je wordt automatisch doorgestuurd naar de routeringsdienst.</p>
+
+        <form id="saml-login-form" method="post" action="{{ login_url }}">
+          <input type="hidden" name="SAMLRequest" value="{{ saml_request }}">
+          {% match relay_state %}
+            {% when Some with (relay_state) %}
+              <input type="hidden" name="RelayState" value="{{ relay_state }}">
+            {% when None %}
+            {% endmatch %}
+          <button type="submit" class="button">Log in</button>
+        </form>
+
+        <noscript>
+          <p class="info">JavaScript staat uit. Gebruik de knop om verder te gaan.</p>
+        </noscript>
+      </section>
+    </main>
+  </body>
+</html>
