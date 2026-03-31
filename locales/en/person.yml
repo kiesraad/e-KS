@@ -43,4 +43,4 @@ representative_info: "Due to this candidate living abroad, an authorised agent i
 title: Persons
 total: "<strong>{}</strong> persons in total"
 view:
-  empty: No details available for this person.
+  empty: No candidates available.
