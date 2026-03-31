@@ -25,8 +25,8 @@ test.describe("download PDF", async () => {
     const downloadPromise = page.waitForEvent("download");
     await new SubmitPage(page).linkH1NLDownload.click();
     const download = await downloadPromise;
-    expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
 
+    expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
@@ -39,6 +39,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H3-1 NL", async ({ deleteExistingCandidateLists: page }) => {
@@ -50,6 +51,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h3-1-gr\.pdf/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H3-1 FR", async ({ deleteExistingCandidateLists: page }) => {
@@ -61,6 +63,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h3-1-gr\.pdf/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H4 NL", async ({ deleteExistingCandidateLists: page }) => {
@@ -72,6 +75,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h4-\(Utrecht\)\.pdf/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H4 FR", async ({ deleteExistingCandidateLists: page }) => {
@@ -83,6 +87,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h4-\(Utert\)\.pdf/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H9 NL", async ({ deleteExistingCandidateLists: page }) => {
@@ -94,6 +99,7 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h9-ze\.zip/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H9 FR", async ({ deleteExistingCandidateLists: page }) => {
@@ -105,5 +111,6 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h9-ze\.zip/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 });

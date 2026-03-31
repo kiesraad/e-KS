@@ -22,7 +22,7 @@ test.describe("provide general information for political group", async () => {
   });
 
   test("provide authorised agent", async ({ page }) => {
-    await page.goto(`/dev/login?name=${randomName()}&fixtures=false`);
+    await page.goto(`/dev/login?fixtures=false`);
     await page.goto("/political-group/authorised-agents");
 
     const agent: AuthorisedAgent = {
@@ -43,7 +43,7 @@ test.describe("provide general information for political group", async () => {
   });
 
   test("provide multiple list submitters", async ({ page }) => {
-    await page.goto(`/dev/login?name=${randomName()}&fixtures=false`);
+    await page.goto(`/dev/login?fixtures=false`);
 
     await page.goto("/political-group/list-submitters");
 
@@ -72,7 +72,7 @@ test.describe("provide general information for political group", async () => {
   });
 
   test("provide substitute list submitter", async ({ page }) => {
-    await page.goto(`/dev/login?name=${randomName()}&fixtures=false`);
+    await page.goto(`/dev/login?fixtures=false`);
     await page.goto("/political-group/list-submitters");
     const submitterOne: ListSubmitter = {
       initials: "B",
