@@ -10,7 +10,7 @@ import { randomName } from "./utils/random.ts";
 
 test.describe("provide general information for political group", async () => {
   test("provide general information for political group", async ({
-    deleteExistingGeneralInformation: page,
+    noExistingGeneralInformation: page,
   }) => {
     const politicalGroupPage = new PoliticalGroupPage(page);
     await politicalGroupPage.open();
@@ -21,8 +21,9 @@ test.describe("provide general information for political group", async () => {
     await politicalGroupPage.setStatutoryName("De Testpartij");
   });
 
-  test("provide authorised agent", async ({ page }) => {
-    await page.goto(`/dev/login?fixtures=false`);
+  test("provide authorised agent", async ({
+    noExistingGeneralInformation: page,
+  }) => {
     await page.goto("/political-group/authorised-agents");
 
     const agent: AuthorisedAgent = {
@@ -42,9 +43,9 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
   });
 
-  test("provide multiple list submitters", async ({ page }) => {
-    await page.goto(`/dev/login?fixtures=false`);
-
+  test("provide multiple list submitters", async ({
+    noExistingGeneralInformation: page,
+  }) => {
     await page.goto("/political-group/list-submitters");
 
     const submitterOne: ListSubmitter = {
@@ -71,8 +72,9 @@ test.describe("provide general information for political group", async () => {
     }
   });
 
-  test("provide substitute list submitter", async ({ page }) => {
-    await page.goto(`/dev/login?fixtures=false`);
+  test("provide substitute list submitter", async ({
+    noExistingGeneralInformation: page,
+  }) => {
     await page.goto("/political-group/list-submitters");
     const submitterOne: ListSubmitter = {
       initials: "B",

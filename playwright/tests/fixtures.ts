@@ -1,27 +1,21 @@
 import { test as base, type Page } from "@playwright/test";
-import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { ListSubmittersPage } from "./pages/listSubmittersPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
-import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage";
 
 type Fixtures = {
-  deleteExistingGeneralInformation: Page;
+  login: Page;
+  noExistingGeneralInformation: Page;
   deleteExistingCandidateLists: Page;
 };
 
 export const test = base.extend<Fixtures>({
-  deleteExistingGeneralInformation: async ({ page }, use) => {
-    await page.goto("/political-group/authorised-agents");
-    await new AuthorisedAgentsPage(page).deleteExistingAuthorisedAgents();
+  login: async ({ page }, use) => {
+    await page.goto("/dev/login?fixtures=true");
+    await use(page);
+  },
 
-    await page.goto("/political-group/list-submitters");
-    await new ListSubmittersPage(page).deleteExistingListSubmitters();
-
-    await new SubstituteSubmittersPage(
-      page,
-    ).deleteExistingSubstituteSubmitters();
-
+  noExistingGeneralInformation: async ({ page }, use) => {
+    await page.goto("/dev/login?fixtures=false");
     await use(page);
   },
 
