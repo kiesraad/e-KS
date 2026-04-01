@@ -385,7 +385,7 @@ async fn h4_download_adds_download_event() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(1, true).await?;
+    } = setup_download_test_state(1, false).await?;
 
     let download_path = DownloadH4Path {
         list_id,
@@ -422,7 +422,7 @@ async fn h9_download_adds_download_event() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(1, true).await?;
+    } = setup_download_test_state(1, false).await?;
 
     let download_path = DownloadH9Path {
         list_id,
