@@ -19,7 +19,7 @@ general_information: General
 legal_name: Full statutory name
 list_submitter_data: List submitter data
 list_type: "Type list designation:"
-long_list_allowed: "Your party obtained 16 or more seats in the previous election of the Senate:"
+long_list_allowed: "Your party obtained 16 or more seats in the previous {}:"
 multiple_submitter_info: "When creating multiple lists, it is possible to select a different list submitter per list. This action can be performed at the list itself."
 no_authorised_agents: No authorised agents
 no_list_submitters: No list submitters
