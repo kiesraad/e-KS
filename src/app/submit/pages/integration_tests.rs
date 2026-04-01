@@ -70,7 +70,7 @@ async fn setup_download_test_state(
     list_id: Option<CandidateListId>,
 ) -> Result<DownloadTestState, AppError> {
     let (app, store, session) = setup_app().await?;
-    let list_id = list_id.unwrap_or_else(CandidateListId::new);
+    let list_id = list_id.unwrap_or_default();
 
     let mut list = sample_candidate_list(list_id);
     if include_list_submitter {
