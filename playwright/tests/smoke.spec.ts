@@ -1,6 +1,7 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
 
-test("homepage loads", async ({ page }) => {
+test("homepage loads", async ({ login: page }) => {
   await page.goto("/");
   await expect(page).toHaveTitle("Kiesraad - Kandidaatstelling");
 });

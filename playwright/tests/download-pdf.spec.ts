@@ -19,26 +19,26 @@ test.describe("download PDF", async () => {
   }
 
   test("H1 NL", async ({ deleteExistingCandidateLists: page }) => {
-    await setupCandidateList(page, "Drenthe");
+    await setupCandidateList(page, "Gelderland");
     await page.goto("/submit");
 
     const downloadPromise = page.waitForEvent("download");
     await new SubmitPage(page).linkH1NLDownload.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
+    expect(download.suggestedFilename()).toMatch(/model-h1-ge\.pdf/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
   test("H1 FR", async ({ deleteExistingCandidateLists: page }) => {
-    await setupCandidateList(page, "Drenthe");
+    await setupCandidateList(page, "Gelderland");
     await page.goto("/submit");
 
     const downloadPromise = page.waitForEvent("download");
     await new SubmitPage(page).linkH1FRDownload.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch(/model-h1-dr\.pdf/);
+    expect(download.suggestedFilename()).toMatch(/model-h1-ge\.pdf/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 
