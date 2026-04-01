@@ -11,7 +11,7 @@ use syn::{Data, DeriveInput, Fields, LitStr, Type, parse_macro_input};
 /// - `#[validate(not_empty)]` to reject empty values via `is_empty`.
 /// - `#[validate(csrf)]` to validate CSRF tokens.
 /// - `#[validate(ignore)]` to skip validation and mapping for a field.
-/// - `#[validate(flatten)]` to validate a nested form and prefix its errors with `field[child]`.
+/// - `#[validate(flatten)]` to validate a nested form and prefix its errors with `field.child`.
 #[proc_macro_derive(Validate, attributes(validate))]
 pub fn derive_validate(input: TokenStream) -> TokenStream {
     let input = parse_macro_input!(input as DeriveInput);
@@ -21,22 +21,14 @@ pub fn derive_validate(input: TokenStream) -> TokenStream {
     }
 }
 
-struct StructOptions {
-    target: Type,
-}
-
 #[derive(Default)]
 struct FieldOptions {
     optional: bool,
     csrf: bool,
     ignore: bool,
-    validator: Option<Validator>,
+    parse_ty: Option<Type>,
     flatten: bool,
     not_empty: bool,
-}
-
-enum Validator {
-    Parse { ty: Type },
 }
 
 /// Expand the `Validate` derive into an implementation for the target type.
@@ -44,14 +36,12 @@ enum Validator {
 /// Example:
 /// - `PersonForm` + `#[validate(target = "Person")]` -> `impl Validate<Person> for PersonForm`.
 fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
-    let struct_options = parse_struct_options(input)?;
+    let target = parse_struct_options(input)?;
     let struct_name = &input.ident;
-    let target = struct_options.target;
 
     let fields = collect_named_fields(input)?;
     let field_blocks = build_field_blocks(&fields)?;
-    let with_csrf_impl = build_with_csrf_impl(struct_name, field_blocks.has_csrf);
-    let tokens = build_validate_impl(struct_name, &target, &field_blocks, with_csrf_impl);
+    let tokens = build_validate_impl(struct_name, &target, &field_blocks);
 
     Ok(tokens.into())
 }
@@ -66,7 +56,7 @@ struct FieldBlocks {
 fn collect_named_fields(input: &DeriveInput) -> syn::Result<Vec<&syn::Field>> {
     match &input.data {
         Data::Struct(data) => match &data.fields {
-            Fields::Named(fields) => Ok(fields.named.iter().collect::<Vec<_>>()),
+            Fields::Named(fields) => Ok(fields.named.iter().collect()),
             _ => Err(syn::Error::new_spanned(
                 &data.fields,
                 "Validate can only be derived for structs with named fields",
@@ -112,12 +102,16 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         }
 
         if opts.not_empty {
-            let error = if is_vec_type(&field.ty) {
+            let error = if is_type_named(&field.ty, "Vec") {
                 quote!(crate::form::ValidationError::ChooseAtLeastOneOption)
             } else {
                 quote!(crate::form::ValidationError::ValueShouldNotBeEmpty)
             };
-            let block = build_not_empty_block(ident, &field_name, &error);
+            let block = quote! {
+                if self.#ident.is_empty() {
+                    errors.push((#field_name.to_string(), #error));
+                }
+            };
             field_blocks_create.push(block.clone());
             field_blocks_update.push(block);
         }
@@ -145,7 +139,7 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
     })
 }
 
-fn is_vec_type(ty: &Type) -> bool {
+fn is_type_named(ty: &Type, name: &str) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
     };
@@ -153,33 +147,7 @@ fn is_vec_type(ty: &Type) -> bool {
         .path
         .segments
         .last()
-        .is_some_and(|segment| segment.ident == "Vec")
-}
-
-fn is_option_type(ty: &Type) -> bool {
-    let Type::Path(type_path) = ty else {
-        return false;
-    };
-    type_path
-        .path
-        .segments
-        .last()
-        .is_some_and(|segment| segment.ident == "Option")
-}
-
-fn build_not_empty_block(
-    ident: &syn::Ident,
-    field_name: &str,
-    error: &proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
-    quote! {
-        if self.#ident.is_empty() {
-            errors.push((
-                #field_name.to_string(),
-                #error,
-            ));
-        }
-    }
+        .is_some_and(|segment| segment.ident == name)
 }
 
 fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
@@ -210,11 +178,14 @@ fn build_validate_impl(
     struct_name: &syn::Ident,
     target: &Type,
     field_blocks: &FieldBlocks,
-    with_csrf_impl: proc_macro2::TokenStream,
 ) -> proc_macro2::TokenStream {
-    let field_inits = &field_blocks.field_inits;
-    let field_blocks_create = &field_blocks.field_blocks_create;
-    let field_blocks_update = &field_blocks.field_blocks_update;
+    let with_csrf_impl = build_with_csrf_impl(struct_name, field_blocks.has_csrf);
+    let FieldBlocks {
+        field_inits,
+        field_blocks_create,
+        field_blocks_update,
+        ..
+    } = field_blocks;
 
     quote! {
         #with_csrf_impl
@@ -272,11 +243,8 @@ fn build_validate_impl(
     }
 }
 
-/// Parse struct-level `#[validate(...)]` options.
-///
-/// Example:
-/// - `#[validate(target = "Person")]` -> target `Person`, timestamps disabled.
-fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
+/// Parse the `#[validate(target = "Type")]` attribute from a struct.
+fn parse_struct_options(input: &DeriveInput) -> syn::Result<Type> {
     let mut target = None;
 
     for attr in &input.attrs {
@@ -295,11 +263,9 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<StructOptions> {
         })?;
     }
 
-    let target = target.ok_or_else(|| {
+    target.ok_or_else(|| {
         syn::Error::new_spanned(input, "missing #[validate(target = \"Type\")] on struct")
-    })?;
-
-    Ok(StructOptions { target })
+    })
 }
 
 /// Parse field-level `#[validate(...)]` options.
@@ -349,7 +315,7 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 }
                 if opts.optional
                     || opts.csrf
-                    || opts.validator.is_some()
+                    || opts.parse_ty.is_some()
                     || opts.flatten
                     || opts.not_empty
                 {
@@ -366,7 +332,7 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 }
                 if opts.optional
                     || opts.csrf
-                    || opts.validator.is_some()
+                    || opts.parse_ty.is_some()
                     || opts.ignore
                     || opts.not_empty
                 {
@@ -378,15 +344,14 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
                 return Ok(());
             }
             if meta.path.is_ident("parse") {
-                if opts.validator.is_some() {
+                if opts.parse_ty.is_some() {
                     return Err(meta.error("only one validator kind is allowed per field"));
                 }
                 if opts.flatten || opts.ignore {
                     return Err(meta.error("parse cannot be combined with flatten or ignore"));
                 }
                 let lit: LitStr = meta.value()?.parse()?;
-                let ty = lit.parse::<Type>()?;
-                opts.validator = Some(Validator::Parse { ty });
+                opts.parse_ty = Some(lit.parse::<Type>()?);
                 return Ok(());
             }
 
@@ -417,17 +382,15 @@ fn build_field_validation(
         return Ok(build_flatten_validation(
             ident,
             field_name,
-            is_option_type(ty),
+            is_type_named(ty, "Option"),
         ));
     }
 
-    let Some(validator) = &opts.validator else {
-        return Ok(build_passthrough_validation(ident));
-    };
-
-    match validator {
-        Validator::Parse { ty } => Ok(build_parse_validation(ident, field_name, ty, opts.optional)),
+    if let Some(ty) = &opts.parse_ty {
+        return Ok(build_parse_validation(ident, field_name, ty, opts.optional));
     }
+
+    Ok(build_passthrough_validation(ident))
 }
 
 /// Build validation for a nested form (`#[validate(flatten)]`), forwarding and prefixing errors.
@@ -443,27 +406,21 @@ fn build_flatten_validation(
         return build_optional_flatten_validation(ident, field_name);
     }
 
-    let prefix = field_name.to_string();
+    let extend_errors = quote! {
+        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+            (format!("{}.{}", #field_name, name), err.clone())
+        }));
+    };
     let create_expr = quote!({
         match self.#ident.clone().validate_create(csrf_tokens) {
             Ok(value) => Some(value),
-            Err(form_data) => {
-                errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                    (format!("{}.{}", #prefix, name), err.clone())
-                }));
-                None
-            }
+            Err(form_data) => { #extend_errors None }
         }
     });
     let update_expr = quote!({
         match self.#ident.clone().validate_update(&current.#ident, csrf_tokens) {
             Ok(value) => Some(value),
-            Err(form_data) => {
-                errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                    (format!("{}.{}", #prefix, name), err.clone())
-                }));
-                None
-            }
+            Err(form_data) => { #extend_errors None }
         }
     });
     FieldValidation {
@@ -474,17 +431,16 @@ fn build_flatten_validation(
 }
 
 fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValidation {
-    let prefix = field_name.to_string();
+    let extend_errors = quote! {
+        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+            (format!("{}.{}", #field_name, name), err.clone())
+        }));
+    };
     let create_expr = quote!({
         match self.#ident.clone() {
             Some(value) => match value.validate_create(csrf_tokens) {
                 Ok(value) => Some(Some(value)),
-                Err(form_data) => {
-                    errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                        (format!("{}.{}", #prefix, name), err.clone())
-                    }));
-                    None
-                }
+                Err(form_data) => { #extend_errors None }
             },
             None => Some(None),
         }
@@ -494,21 +450,11 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
             Some(value) => match current.#ident.as_ref() {
                 Some(current_value) => match value.validate_update(current_value, csrf_tokens) {
                     Ok(value) => Some(Some(value)),
-                    Err(form_data) => {
-                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                            (format!("{}.{}", #prefix, name), err.clone())
-                        }));
-                        None
-                    }
+                    Err(form_data) => { #extend_errors None }
                 },
                 None => match value.validate_create(csrf_tokens) {
                     Ok(value) => Some(Some(value)),
-                    Err(form_data) => {
-                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                            (format!("{}.{}", #prefix, name), err.clone())
-                        }));
-                        None
-                    }
+                    Err(form_data) => { #extend_errors None }
                 },
             },
             None => Some(None),
@@ -527,9 +473,10 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
 /// Example:
 /// - `electoral_districts: Vec<ElectoralDistrict>` is cloned as-is.
 fn build_passthrough_validation(ident: &syn::Ident) -> FieldValidation {
+    let expr = quote!(self.#ident.clone());
     FieldValidation {
-        create_expr: quote!(self.#ident.clone()),
-        update_expr: quote!(self.#ident.clone()),
+        create_expr: expr.clone(),
+        update_expr: expr,
         validated: false,
     }
 }
@@ -544,75 +491,47 @@ fn build_parse_validation(
     ty: &Type,
     optional: bool,
 ) -> FieldValidation {
-    let expr = if optional {
-        build_optional_parse_expr(ident, field_name, ty)
+    let if_empty = if optional {
+        quote!(Some(None))
     } else {
-        build_required_parse_expr(ident, field_name, ty)
+        quote!(
+            errors.push((
+                #field_name.to_string(),
+                crate::form::ValidationError::ValueShouldNotBeEmpty,
+            ));
+            None
+        )
     };
+
+    let res = if optional {
+        quote!(Some(Some(value)))
+    } else {
+        quote!(Some(value))
+    };
+
+    let expr = quote!({
+        let value = self.#ident.trim();
+        if value.is_empty() {
+            #if_empty
+        } else {
+            match <#ty as ::std::str::FromStr>::from_str(value) {
+                Ok(value) => #res,
+                Err(err) => {
+                    errors.push((
+                        #field_name.to_string(),
+                        crate::form::IntoValidationError::into_validation_error(err)
+                    ));
+                    None
+                }
+            }
+        }
+    });
 
     FieldValidation {
         create_expr: expr.clone(),
         update_expr: expr,
         validated: true,
     }
-}
-
-/// Build parse expression for optional fields (empty string => `None`).
-///
-/// Example:
-/// - `country_code: String` -> `Option<CountryCode>`.
-fn build_optional_parse_expr(
-    ident: &syn::Ident,
-    field_name: &str,
-    ty: &Type,
-) -> proc_macro2::TokenStream {
-    quote!({
-        let value = self.#ident.trim();
-        if self.#ident.is_empty() {
-            Some(None)
-        } else {
-            match <#ty as ::std::str::FromStr>::from_str(value) {
-                Ok(value) => Some(Some(value)),
-                Err(err) => {
-                    errors.push((
-                        #field_name.to_string(),
-                        crate::form::IntoValidationError::into_validation_error(err)
-                    ));
-                    None
-                }
-            }
-        }
-    })
-}
-
-/// Build parse expression for required fields (empty string => error).
-fn build_required_parse_expr(
-    ident: &syn::Ident,
-    field_name: &str,
-    ty: &Type,
-) -> proc_macro2::TokenStream {
-    quote!({
-        let value = self.#ident.trim();
-        if value.is_empty() {
-            errors.push((
-                #field_name.to_string(),
-                crate::form::ValidationError::ValueShouldNotBeEmpty,
-            ));
-
-            None
-        } else {
-            match <#ty as ::std::str::FromStr>::from_str(value) {
-                Ok(value) => Some(value),
-                Err(err) => {
-                    errors.push((
-                        #field_name.to_string(),
-                        crate::form::IntoValidationError::into_validation_error(err)
-                    ));
-                    None
-                }
-            }
-        }
-    })
 }
 
 /// Emit a local binding for a validated field value.
