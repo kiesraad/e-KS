@@ -73,7 +73,7 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | betalingsbewijs                |           | proof of payment          |             |
 | gemachtigde                    |           | authorised agent          |             |
 | gemachtigde van kandidaat      |           | authorised person         |             |
-| kiesgerechtigd                 |           | entiteld to vote          |             |
+| kiesgerechtigd                 |           | entitled to vote          |             |
 | Kamer van Koophandel           | KVK       | Chamber of Commerce       |             |
 | instemmingsverklaring          |           | declaration of consent    |             |
 | gemeenteambtenaar              |           | municipal official        |             |

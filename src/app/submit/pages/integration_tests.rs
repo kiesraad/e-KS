@@ -10,7 +10,7 @@ use tower::ServiceExt;
 use tracing_test::traced_test;
 
 use crate::{
-    AppError, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
+    AppError, AppEvent, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
     candidate_lists::CandidateListId,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
@@ -300,6 +300,154 @@ async fn download_h4_endpoint_returns_pdf() -> Result<(), AppError> {
         "PDF",
     )
     .await;
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn h1_download_adds_download_event() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
+
+    let download_path = DownloadH1Path {
+        list_id,
+        locale: ModelLocale::Nl,
+    }
+    .to_string();
+
+    app.oneshot(request(download_path.clone(), session, store.clone()))
+        .await
+        .unwrap();
+
+    let events = store.get_events();
+
+    let AppEvent::DownloadFile {
+        file_name,
+        download_path: actual_download_path,
+        list_id: actual_list_id,
+    } = events.last().unwrap()
+    else {
+        panic!("expected the last event to be a download event")
+    };
+
+    assert_eq!(file_name, "model-h1-ut.pdf");
+    assert_eq!(download_path, *actual_download_path);
+    assert_eq!(list_id, *actual_list_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn h3_1_download_adds_download_event() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
+
+    let download_path = DownloadH31Path {
+        list_id,
+        locale: ModelLocale::Nl,
+    }
+    .to_string();
+
+    app.oneshot(request(download_path.clone(), session, store.clone()))
+        .await
+        .unwrap();
+
+    let events = store.get_events();
+
+    let AppEvent::DownloadFile {
+        file_name,
+        download_path: actual_download_path,
+        list_id: actual_list_id,
+    } = events.last().unwrap()
+    else {
+        panic!("expected the last event to be a download event")
+    };
+
+    assert_eq!(file_name, "model-h3-1-ut.pdf");
+    assert_eq!(download_path, *actual_download_path);
+    assert_eq!(list_id, *actual_list_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn h4_download_adds_download_event() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
+
+    let download_path = DownloadH4Path {
+        list_id,
+        locale: ModelLocale::Nl,
+    }
+    .to_string();
+
+    app.oneshot(request(download_path.clone(), session, store.clone()))
+        .await
+        .unwrap();
+
+    let events = store.get_events();
+
+    let AppEvent::DownloadFile {
+        file_name,
+        download_path: actual_download_path,
+        list_id: actual_list_id,
+    } = events.last().unwrap()
+    else {
+        panic!("expected the last event to be a download event")
+    };
+
+    assert_eq!(file_name, "model-h4-(Utrecht).pdf");
+    assert_eq!(download_path, *actual_download_path);
+    assert_eq!(list_id, *actual_list_id);
+
+    Ok(())
+}
+
+#[tokio::test]
+async fn h9_download_adds_download_event() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id,
+    } = setup_download_test_state(1, true).await?;
+
+    let download_path = DownloadH9Path {
+        list_id,
+        locale: ModelLocale::Nl,
+    }
+    .to_string();
+
+    app.oneshot(request(download_path.clone(), session, store.clone()))
+        .await
+        .unwrap();
+
+    let events = store.get_events();
+
+    let AppEvent::DownloadFile {
+        file_name,
+        download_path: actual_download_path,
+        list_id: actual_list_id,
+    } = events.last().unwrap()
+    else {
+        panic!("expected the last event to be a download event")
+    };
+
+    assert_eq!(file_name, "model-h9-ut.zip");
+    assert_eq!(download_path, *actual_download_path);
+    assert_eq!(list_id, *actual_list_id);
 
     Ok(())
 }

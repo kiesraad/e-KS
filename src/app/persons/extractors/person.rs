@@ -73,7 +73,7 @@ mod tests {
             .uri(format!("/persons/{}", person.id))
             .body(Body::empty())
             .unwrap();
-        request.extensions_mut().insert(store.clone());
+        request.extensions_mut().insert(store);
 
         let response = app.oneshot(request).await.expect("response");
 
