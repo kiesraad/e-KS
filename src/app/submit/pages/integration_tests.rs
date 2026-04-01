@@ -67,9 +67,10 @@ struct DownloadTestState {
 async fn setup_download_test_state(
     candidate_count: usize,
     include_list_submitter: bool,
+    list_id: Option<CandidateListId>,
 ) -> Result<DownloadTestState, AppError> {
     let (app, store, session) = setup_app().await?;
-    let list_id = CandidateListId::new();
+    let list_id = list_id.unwrap_or_else(|| CandidateListId::new());
 
     let mut list = sample_candidate_list(list_id);
     if include_list_submitter {
@@ -93,6 +94,36 @@ async fn setup_download_test_state(
         session,
         list_id,
     })
+}
+
+async fn download_file(
+    download_path: &str,
+    list_id: CandidateListId,
+    include_list_submitter: bool,
+) -> Result<(String, String, CandidateListId), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+        list_id: _,
+    } = setup_download_test_state(1, include_list_submitter, Some(list_id)).await?;
+
+    app.oneshot(request(download_path.to_string(), session, store.clone()))
+        .await
+        .unwrap();
+
+    // Consume last event and check that it is a DownloadFile event
+    let mut events = store.get_events();
+    let Some(AppEvent::DownloadFile {
+        file_name,
+        download_path: actual_download_path,
+        list_id: actual_list_id,
+    }) = events.pop()
+    else {
+        panic!("expected the last event to be a download event")
+    };
+
+    Ok((file_name, actual_download_path, actual_list_id))
 }
 
 fn request(uri: String, session: Session, store: AppStore) -> Request<Body> {
@@ -168,7 +199,7 @@ async fn download_h1_endpoint_returns_pdf() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(1, true).await?;
+    } = setup_download_test_state(1, true, None).await?;
 
     let response = app
         .oneshot(request(
@@ -204,7 +235,7 @@ async fn download_h3_1_endpoint_returns_pdf() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(1, true).await?;
+    } = setup_download_test_state(1, true, None).await?;
 
     let response = app
         .oneshot(request(
@@ -240,7 +271,7 @@ async fn download_h9_endpoint_returns_zip() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(2, false).await?;
+    } = setup_download_test_state(2, false, None).await?;
 
     let response = app
         .oneshot(request(
@@ -276,7 +307,7 @@ async fn download_h4_endpoint_returns_pdf() -> Result<(), AppError> {
         store,
         session,
         list_id,
-    } = setup_download_test_state(1, false).await?;
+    } = setup_download_test_state(1, false, None).await?;
 
     let response = app
         .oneshot(request(
@@ -305,149 +336,81 @@ async fn download_h4_endpoint_returns_pdf() -> Result<(), AppError> {
 }
 
 #[tokio::test]
+#[traced_test]
 async fn h1_download_adds_download_event() -> Result<(), AppError> {
-    let DownloadTestState {
-        app,
-        store,
-        session,
-        list_id,
-    } = setup_download_test_state(1, true).await?;
-
+    let list_id = CandidateListId::new();
     let download_path = DownloadH1Path {
         list_id,
         locale: ModelLocale::Nl,
     }
     .to_string();
 
-    app.oneshot(request(download_path.clone(), session, store.clone()))
-        .await
-        .unwrap();
-
-    let events = store.get_events();
-
-    let AppEvent::DownloadFile {
-        file_name,
-        download_path: actual_download_path,
-        list_id: actual_list_id,
-    } = events.last().unwrap()
-    else {
-        panic!("expected the last event to be a download event")
-    };
+    let (file_name, actual_download_path, actual_list_id) =
+        download_file(&download_path, list_id, true).await?;
 
     assert_eq!(file_name, "model-h1-ut.pdf");
-    assert_eq!(download_path, *actual_download_path);
-    assert_eq!(list_id, *actual_list_id);
+    assert_eq!(download_path, actual_download_path);
+    assert_eq!(list_id, actual_list_id);
 
     Ok(())
 }
 
 #[tokio::test]
+#[traced_test]
 async fn h3_1_download_adds_download_event() -> Result<(), AppError> {
-    let DownloadTestState {
-        app,
-        store,
-        session,
-        list_id,
-    } = setup_download_test_state(1, true).await?;
-
+    let list_id = CandidateListId::new();
     let download_path = DownloadH31Path {
         list_id,
         locale: ModelLocale::Nl,
     }
     .to_string();
 
-    app.oneshot(request(download_path.clone(), session, store.clone()))
-        .await
-        .unwrap();
-
-    let events = store.get_events();
-
-    let AppEvent::DownloadFile {
-        file_name,
-        download_path: actual_download_path,
-        list_id: actual_list_id,
-    } = events.last().unwrap()
-    else {
-        panic!("expected the last event to be a download event")
-    };
+    let (file_name, actual_download_path, actual_list_id) =
+        download_file(&download_path, list_id, true).await?;
 
     assert_eq!(file_name, "model-h3-1-ut.pdf");
-    assert_eq!(download_path, *actual_download_path);
-    assert_eq!(list_id, *actual_list_id);
+    assert_eq!(download_path, actual_download_path);
+    assert_eq!(list_id, actual_list_id);
 
     Ok(())
 }
 
 #[tokio::test]
+#[traced_test]
 async fn h4_download_adds_download_event() -> Result<(), AppError> {
-    let DownloadTestState {
-        app,
-        store,
-        session,
-        list_id,
-    } = setup_download_test_state(1, false).await?;
-
+    let list_id = CandidateListId::new();
     let download_path = DownloadH4Path {
         list_id,
         locale: ModelLocale::Nl,
     }
     .to_string();
 
-    app.oneshot(request(download_path.clone(), session, store.clone()))
-        .await
-        .unwrap();
-
-    let events = store.get_events();
-
-    let AppEvent::DownloadFile {
-        file_name,
-        download_path: actual_download_path,
-        list_id: actual_list_id,
-    } = events.last().unwrap()
-    else {
-        panic!("expected the last event to be a download event")
-    };
+    let (file_name, actual_download_path, actual_list_id) =
+        download_file(&download_path, list_id, false).await?;
 
     assert_eq!(file_name, "model-h4-(Utrecht).pdf");
-    assert_eq!(download_path, *actual_download_path);
-    assert_eq!(list_id, *actual_list_id);
+    assert_eq!(download_path, actual_download_path);
+    assert_eq!(list_id, actual_list_id);
 
     Ok(())
 }
 
 #[tokio::test]
+#[traced_test]
 async fn h9_download_adds_download_event() -> Result<(), AppError> {
-    let DownloadTestState {
-        app,
-        store,
-        session,
-        list_id,
-    } = setup_download_test_state(1, false).await?;
-
+    let list_id = CandidateListId::new();
     let download_path = DownloadH9Path {
         list_id,
         locale: ModelLocale::Nl,
     }
     .to_string();
 
-    app.oneshot(request(download_path.clone(), session, store.clone()))
-        .await
-        .unwrap();
-
-    let events = store.get_events();
-
-    let AppEvent::DownloadFile {
-        file_name,
-        download_path: actual_download_path,
-        list_id: actual_list_id,
-    } = events.last().unwrap()
-    else {
-        panic!("expected the last event to be a download event")
-    };
+    let (file_name, actual_download_path, actual_list_id) =
+        download_file(&download_path, list_id, false).await?;
 
     assert_eq!(file_name, "model-h9-ut.zip");
-    assert_eq!(download_path, *actual_download_path);
-    assert_eq!(list_id, *actual_list_id);
+    assert_eq!(download_path, actual_download_path);
+    assert_eq!(list_id, actual_list_id);
 
     Ok(())
 }
