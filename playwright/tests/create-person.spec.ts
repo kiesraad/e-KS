@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
 import type { AuthorisedPerson } from "./models/authorisedPerson";
 import type { Candidate } from "./models/candidate";
 import { AuthorisedPersonPage } from "./pages/authorisedPersonPage";
@@ -34,7 +35,7 @@ test.describe("create new person", async () => {
     },
   ];
   for (const { candidate, description } of candidates) {
-    test(description, async ({ page }) => {
+    test(description, async ({ login: page }) => {
       await page.goto("/candidate-lists");
       await new CandidateListsOverviewPage(page).headingAllCandidates.click();
       const personsPage = new PersonsPage(page);
@@ -49,7 +50,9 @@ test.describe("create new person", async () => {
     });
   }
 
-  test("living outside NL requires authorised person", async ({ page }) => {
+  test("living outside NL requires authorised person", async ({
+    login: page,
+  }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).headingAllCandidates.click();
 

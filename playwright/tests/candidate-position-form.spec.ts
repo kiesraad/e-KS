@@ -1,15 +1,16 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage";
 
 test.describe("candidate position form", () => {
   test("pressing Enter in the position field saves instead of removing the candidate", async ({
-    page,
+    login: page,
   }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
-    await new SelectElectoralDistrictsPage(page).selectDistricts(["Drenthe"]);
+    await new SelectElectoralDistrictsPage(page).selectDistricts(["Limburg"]);
 
     const managePage = new ManageCandidateListPage(page);
     await managePage.addExistingCandidates(["Nagelhout", "Meerman"]);

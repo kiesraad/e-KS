@@ -1,4 +1,5 @@
-import { expect, test } from "@playwright/test";
+import { expect } from "@playwright/test";
+import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
@@ -6,7 +7,7 @@ import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPa
 import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {
-  test("add candidate list", async ({ page }) => {
+  test("add candidate list", async ({ login: page }) => {
     await page.goto(`/dev/login?fixtures=true`);
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
@@ -49,7 +50,7 @@ test.describe("add candidate list", async () => {
     }
   });
 
-  test("delete candidate list", async ({ page }) => {
+  test("delete candidate list", async ({ login: page }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
@@ -67,7 +68,7 @@ test.describe("add candidate list", async () => {
     }
   });
 
-  test("edit candidate list", async ({ page }) => {
+  test("edit candidate list", async ({ login: page }) => {
     const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
     await page.goto("/candidate-lists");
     await candidateListsOverviewPage.linkCandidateList.first().click();
