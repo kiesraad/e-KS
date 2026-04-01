@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
-use crate::core::AnyLocale;
+use crate::{Locale, core::AnyLocale};
 
 /// Electoral districts used for nomination and submission flows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
@@ -118,6 +118,17 @@ pub enum ElectionType {
     Tk,
 }
 
+impl ElectionType {
+    pub fn title(&self, locale: Locale) -> &'static str {
+        match (self, locale) {
+            (ElectionType::Ek, Locale::En) => "election of the Senate",
+            (ElectionType::Ek, Locale::Nl) => "Eerste Kamerverkiezing",
+            (ElectionType::Tk, Locale::En) => "election of the House of Representatives",
+            (ElectionType::Tk, Locale::Nl) => "Tweede Kamerverkiezing",
+        }
+    }
+}
+
 /// Active election configuration and ruleset for the application.
 #[derive(Default, Debug, Clone, Copy)]
 pub enum ElectionConfig {
@@ -196,6 +207,9 @@ mod tests {
     fn election_titles_are_correct() {
         assert!(ElectionConfig::EK2027.title(AnyLocale::Nl).len() > 20);
         assert!(ElectionConfig::EK2027.short_title(AnyLocale::Nl).len() > 10);
+
+        let election_type = ElectionConfig::EK2027.election_type();
+        assert!(election_type.title(Locale::Nl).len() > 20);
     }
 
     #[test]

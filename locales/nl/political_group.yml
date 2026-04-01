@@ -19,7 +19,7 @@ general_information: Algemeen
 legal_name: Volledige statutaire naam
 list_submitter_data: Gegevens lijstinleveraar
 list_type: "Type lijstaanduiding:"
-long_list_allowed: "Uw partij heeft bij de vorige Eerste Kamerverkiezing 16 zetels of meer behaald:"
+long_list_allowed: "Uw partij heeft bij de vorige {} 16 zetels of meer behaald:"
 multiple_submitter_info: "Wanneer u meerdere lijsten aanmaakt, kunt u per lijst een andere lijstinleveraar selecteren. Dit doet u bij de specifieke lijst."
 no_authorised_agents: Geen gemachtigden
 no_list_submitters: Geen lijstinleveraars
