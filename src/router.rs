@@ -42,11 +42,11 @@ pub fn create(state: AppState) -> Router<AppState> {
         )
         .route(
             "/lookup",
-            crate::utils::proxy::proxy_handler(&bag_service_url),
+            crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
         )
         .route(
             "/suggest",
-            crate::utils::proxy::proxy_handler(&bag_service_url),
+            crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
         );
 
     let app_router = app_router
@@ -98,16 +98,30 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(feature = "livereload")]
     let router = router.merge(crate::utils::livereload::livereload_router());
 
+    let code = crate::filters::cache_buster();
+    let index_js = format!("/{code}-index.js");
+    let index_css = format!("/{code}-index.css");
+
     #[cfg(feature = "memory-serve")]
-    let router = router.nest(
-        "/static",
-        memory_serve::load!().index_file(None).into_router(),
-    );
+    let router = {
+        let memory_serve = memory_serve::load!()
+            .index_file(None)
+            .add_alias(index_js.leak(), "/index.js")
+            .add_alias(index_css.leak(), "/index.css");
+
+        router.nest("/static", memory_serve.into_router())
+    };
 
     #[cfg(not(feature = "memory-serve"))]
     let router = router.nest(
         "/static",
-        Router::new().fallback(crate::utils::proxy::proxy_handler("http://localhost:8888")),
+        Router::new().fallback(crate::utils::proxy::proxy_handler(
+            "http://localhost:8888",
+            vec![
+                (index_js, "/index.js".to_string()),
+                (index_css, "/index.css".to_string()),
+            ],
+        )),
     );
 
     router
