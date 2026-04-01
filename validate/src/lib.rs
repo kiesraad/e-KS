@@ -102,7 +102,7 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         }
 
         if opts.not_empty {
-            let error = if is_vec_type(&field.ty) {
+            let error = if is_type_named(&field.ty, "Vec") {
                 quote!(crate::form::ValidationError::ChooseAtLeastOneOption)
             } else {
                 quote!(crate::form::ValidationError::ValueShouldNotBeEmpty)
@@ -139,7 +139,7 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
     })
 }
 
-fn is_vec_type(ty: &Type) -> bool {
+fn is_type_named(ty: &Type, name: &str) -> bool {
     let Type::Path(type_path) = ty else {
         return false;
     };
@@ -147,18 +147,7 @@ fn is_vec_type(ty: &Type) -> bool {
         .path
         .segments
         .last()
-        .is_some_and(|segment| segment.ident == "Vec")
-}
-
-fn is_option_type(ty: &Type) -> bool {
-    let Type::Path(type_path) = ty else {
-        return false;
-    };
-    type_path
-        .path
-        .segments
-        .last()
-        .is_some_and(|segment| segment.ident == "Option")
+        .is_some_and(|segment| segment.ident == name)
 }
 
 fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
@@ -393,7 +382,7 @@ fn build_field_validation(
         return Ok(build_flatten_validation(
             ident,
             field_name,
-            is_option_type(ty),
+            is_type_named(ty, "Option"),
         ));
     }
 
@@ -417,26 +406,21 @@ fn build_flatten_validation(
         return build_optional_flatten_validation(ident, field_name);
     }
 
+    let extend_errors = quote! {
+        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+            (format!("{}.{}", #field_name, name), err.clone())
+        }));
+    };
     let create_expr = quote!({
         match self.#ident.clone().validate_create(csrf_tokens) {
             Ok(value) => Some(value),
-            Err(form_data) => {
-                errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                    (format!("{}.{}", #field_name, name), err.clone())
-                }));
-                None
-            }
+            Err(form_data) => { #extend_errors None }
         }
     });
     let update_expr = quote!({
         match self.#ident.clone().validate_update(&current.#ident, csrf_tokens) {
             Ok(value) => Some(value),
-            Err(form_data) => {
-                errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                    (format!("{}.{}", #field_name, name), err.clone())
-                }));
-                None
-            }
+            Err(form_data) => { #extend_errors None }
         }
     });
     FieldValidation {
@@ -447,17 +431,16 @@ fn build_flatten_validation(
 }
 
 fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValidation {
-    let prefix = field_name.to_string();
+    let extend_errors = quote! {
+        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
+            (format!("{}.{}", #field_name, name), err.clone())
+        }));
+    };
     let create_expr = quote!({
         match self.#ident.clone() {
             Some(value) => match value.validate_create(csrf_tokens) {
                 Ok(value) => Some(Some(value)),
-                Err(form_data) => {
-                    errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                        (format!("{}.{}", #prefix, name), err.clone())
-                    }));
-                    None
-                }
+                Err(form_data) => { #extend_errors None }
             },
             None => Some(None),
         }
@@ -467,21 +450,11 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
             Some(value) => match current.#ident.as_ref() {
                 Some(current_value) => match value.validate_update(current_value, csrf_tokens) {
                     Ok(value) => Some(Some(value)),
-                    Err(form_data) => {
-                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                            (format!("{}.{}", #prefix, name), err.clone())
-                        }));
-                        None
-                    }
+                    Err(form_data) => { #extend_errors None }
                 },
                 None => match value.validate_create(csrf_tokens) {
                     Ok(value) => Some(Some(value)),
-                    Err(form_data) => {
-                        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-                            (format!("{}.{}", #prefix, name), err.clone())
-                        }));
-                        None
-                    }
+                    Err(form_data) => { #extend_errors None }
                 },
             },
             None => Some(None),
@@ -500,9 +473,10 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
 /// Example:
 /// - `electoral_districts: Vec<ElectoralDistrict>` is cloned as-is.
 fn build_passthrough_validation(ident: &syn::Ident) -> FieldValidation {
+    let expr = quote!(self.#ident.clone());
     FieldValidation {
-        create_expr: quote!(self.#ident.clone()),
-        update_expr: quote!(self.#ident.clone()),
+        create_expr: expr.clone(),
+        update_expr: expr,
         validated: false,
     }
 }
@@ -517,47 +491,41 @@ fn build_parse_validation(
     ty: &Type,
     optional: bool,
 ) -> FieldValidation {
-    let expr = if optional {
-        quote!({
-            let value = self.#ident.trim();
-            if self.#ident.is_empty() {
-                Some(None)
-            } else {
-                match <#ty as ::std::str::FromStr>::from_str(value) {
-                    Ok(value) => Some(Some(value)),
-                    Err(err) => {
-                        errors.push((
-                            #field_name.to_string(),
-                            crate::form::IntoValidationError::into_validation_error(err)
-                        ));
-                        None
-                    }
-                }
-            }
-        })
+    let if_empty = if optional {
+        quote!(Some(None))
     } else {
-        quote!({
-            let value = self.#ident.trim();
-            if value.is_empty() {
-                errors.push((
-                    #field_name.to_string(),
-                    crate::form::ValidationError::ValueShouldNotBeEmpty,
-                ));
-                None
-            } else {
-                match <#ty as ::std::str::FromStr>::from_str(value) {
-                    Ok(value) => Some(value),
-                    Err(err) => {
-                        errors.push((
-                            #field_name.to_string(),
-                            crate::form::IntoValidationError::into_validation_error(err)
-                        ));
-                        None
-                    }
+        quote!(
+            errors.push((
+                #field_name.to_string(),
+                crate::form::ValidationError::ValueShouldNotBeEmpty,
+            ));
+            None
+        )
+    };
+
+    let res = if optional {
+        quote!(Some(Some(value)))
+    } else {
+        quote!(Some(value))
+    };
+
+    let expr = quote!({
+        let value = self.#ident.trim();
+        if value.is_empty() {
+            #if_empty
+        } else {
+            match <#ty as ::std::str::FromStr>::from_str(value) {
+                Ok(value) => #res,
+                Err(err) => {
+                    errors.push((
+                        #field_name.to_string(),
+                        crate::form::IntoValidationError::into_validation_error(err)
+                    ));
+                    None
                 }
             }
-        })
-    };
+        }
+    });
 
     FieldValidation {
         create_expr: expr.clone(),
