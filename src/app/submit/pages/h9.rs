@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore, Config, Context,
+    AppError, AppEvent, AppStore, Config, Context,
     candidate_lists::FullCandidateList,
     core::PdfZip,
     submit::{H9, pages::DownloadH9Path, structs::typst_candidate::ordered_candidates},
@@ -35,6 +35,14 @@ pub async fn gen_h9(
     } else {
         format!("model-h9-{}.zip", list.list.districts_codes())
     };
+
+    store
+        .update(AppEvent::DownloadFile {
+            file_name: filename.clone(),
+            download_path: path.to_string(),
+            list_id: path.list_id,
+        })
+        .await?;
 
     PdfZip {
         filename,

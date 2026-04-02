@@ -1,19 +1,27 @@
 use crate::{
-    AppError, AppStore, Config, Context,
+    AppError, AppEvent, AppStore, Config, Context,
     core::Pdf,
     submit::{H31, pages::DownloadH31Path},
 };
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h3_1(
-    DownloadH31Path { list_id, locale }: DownloadH31Path,
+    path @ DownloadH31Path { list_id, locale }: DownloadH31Path,
     store: AppStore,
     State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h1 = H31::new(&store, list_id, &context.session.election, locale)?;
+    let h3_1 = H31::new(&store, list_id, &context.session.election, locale)?;
 
-    h1.generate(&config.typst_url).await
+    store
+        .update(AppEvent::DownloadFile {
+            file_name: h3_1.filename().to_string(),
+            download_path: path.to_string(),
+            list_id,
+        })
+        .await?;
+
+    h3_1.generate(&config.typst_url).await
 }
 
 #[cfg(test)]

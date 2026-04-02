@@ -1,3 +1,11 @@
+---
+name: New issue
+about: Use this template for new issues
+title: ''
+labels: ''
+assignees: ''
+---
+
 ## [DOR](/docs/definition-of-ready.md) checklist
 
 ### Issue Maintainer

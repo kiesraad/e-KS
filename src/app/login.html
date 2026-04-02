@@ -9,30 +9,28 @@
   </head>
   <body>
     <header>
-      <nav></nav>
+      <nav>
+      </nav>
       <div class="header-content">
         <h1>Je wordt ingelogd...</h1>
       </div>
     </header>
-
     <main>
-      <section> 
+      <section>
         <p class="info">Je wordt automatisch doorgestuurd naar de routeringsdienst.</p>
-
         <form id="saml-login-form" method="post" action="{{ login_url }}">
           <input type="hidden" name="SAMLRequest" value="{{ saml_request }}">
           {% match relay_state %}
-            {% when Some with (relay_state) %}
-              <input type="hidden" name="RelayState" value="{{ relay_state }}">
-            {% when None %}
-            {% endmatch %}
-          <button type="submit" class="button">Log in</button>
-        </form>
-
-        <noscript>
-          <p class="info">JavaScript staat uit. Gebruik de knop om verder te gaan.</p>
-        </noscript>
-      </section>
-    </main>
-  </body>
+          {% when Some with (relay_state) %}
+          <input type="hidden" name="RelayState" value="{{ relay_state }}">
+          {% when None %}
+        {% endmatch %}
+        <button type="submit" class="button">Log in</button>
+      </form>
+      <noscript>
+        <p class="info">JavaScript staat uit. Gebruik de knop om verder te gaan.</p>
+      </noscript>
+    </section>
+  </main>
+</body>
 </html>

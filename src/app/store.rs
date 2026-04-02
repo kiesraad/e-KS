@@ -23,6 +23,10 @@ pub struct AppStoreData {
     pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
     // Track the last event ID applied to this store instance for synchronization purposes
     pub(crate) last_event_id: usize,
+
+    // Download path, file name, downloader id
+    pub(crate) downloaded_files: Vec<(String, String, CandidateListId)>,
+    pub(crate) events: Vec<AppEvent>,
 }
 
 impl StoreData for AppStoreData {
@@ -36,6 +40,8 @@ impl StoreData for AppStoreData {
         } = event;
         self.last_event_id = event_id;
         let event_time = UtcDateTime::from(created_at);
+
+        self.events.push(payload.clone());
 
         match payload {
             AppEvent::UpdatePoliticalGroup(pg) => {
@@ -199,6 +205,10 @@ impl StoreData for AppStoreData {
                     });
 
                 self.substitute_submitters.remove(&ss_id);
+            }
+
+            AppEvent::DeveloperLogin { .. } | AppEvent::DownloadFile { .. } => {
+                // Only the serialized event are relevant for logging
             }
         }
     }

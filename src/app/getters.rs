@@ -7,6 +7,9 @@ use crate::{
     political_groups::PoliticalGroup,
 };
 
+#[cfg(test)]
+use crate::AppEvent;
+
 impl AppStore {
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
         let data = self.data.read();
@@ -131,5 +134,11 @@ impl AppStore {
             .values()
             .filter(|list| list.candidates.contains(&person_id))
             .count()
+    }
+
+    #[cfg(test)]
+    pub fn get_events(&self) -> Vec<AppEvent> {
+        let data = self.data.read();
+        data.events.clone()
     }
 }

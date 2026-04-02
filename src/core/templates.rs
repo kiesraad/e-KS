@@ -2,7 +2,10 @@
 //! Used by handlers to render templates with Context.
 
 use askama::Template;
-use axum::response::{Html, IntoResponse, Response};
+use axum::{
+    http::{HeaderValue, header},
+    response::{Html, IntoResponse, Response},
+};
 
 use crate::{AppError, Context};
 
@@ -15,7 +18,13 @@ where
 {
     fn into_response(self) -> Response {
         match self.0.render_with_values(&self.1) {
-            Ok(html) => Html(html).into_response(),
+            Ok(html) => {
+                let mut response = Html(html).into_response();
+                response
+                    .headers_mut()
+                    .insert(header::CACHE_CONTROL, HeaderValue::from_static("no-store"));
+                response
+            }
             Err(err) => AppError::TemplateError(err).into_response(),
         }
     }

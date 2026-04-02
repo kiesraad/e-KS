@@ -7,8 +7,8 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppState, Locale, PoliticalGroupId, Session,
-    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup,
+    AppError, AppEvent, AppState, AppStoreData, Locale, PoliticalGroupId, Session,
+    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup, store::Store,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -29,9 +29,13 @@ pub async fn dev_login(
         Some(name) if !name.is_empty() => dev_political_group_id(&name),
         _ => PoliticalGroupId::new(),
     };
-    let load_fixtures = query.fixtures.unwrap_or(false);
 
-    ensure_dev_store(&state, political_group_id, load_fixtures).await?;
+    let load_fixtures = query.fixtures.unwrap_or(false);
+    let store = ensure_dev_store(&state, political_group_id, load_fixtures).await?;
+
+    store
+        .update(AppEvent::DeveloperLogin { political_group_id })
+        .await?;
 
     let locale = request_locale(&headers);
     let mut session = Session::new_with_locale(locale);
@@ -63,7 +67,7 @@ async fn ensure_dev_store(
     state: &AppState,
     political_group_id: PoliticalGroupId,
     load_fixtures: bool,
-) -> Result<(), AppError> {
+) -> Result<Store<AppStoreData>, AppError> {
     let store = state
         .store_registry
         .get_or_create(political_group_id.uuid())
@@ -74,7 +78,7 @@ async fn ensure_dev_store(
         #[cfg(feature = "fixtures")]
         {
             crate::fixtures::load(&store, political_group_id).await?;
-            return Ok(());
+            return Ok(store);
         }
     }
 
@@ -87,7 +91,7 @@ async fn ensure_dev_store(
         .await?;
     }
 
-    Ok(())
+    Ok(store)
 }
 
 #[cfg(test)]
@@ -184,6 +188,52 @@ mod tests {
             store.get_political_group().id,
             dev_political_group_id("empty-store")
         );
+    }
+
+    #[tokio::test]
+    async fn dev_login_without_fixtures_adds_dev_login_event() {
+        let state = AppState::new_for_tests().await;
+        let app = router::create(state.clone()).with_state(state.clone());
+
+        let login = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/dev/login?name=empty-store&fixtures=false")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/")
+                    .header(header::COOKIE, cookie_value(&login))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Kiesraad - Kandidaatstelling"));
+
+        let store = state
+            .store_registry
+            .get_or_create(dev_political_group_id("empty-store").uuid())
+            .await
+            .expect("store");
+
+        assert!(matches!(
+            store.get_events().as_slice(),
+            &[
+                AppEvent::UpdatePoliticalGroup(..),
+                AppEvent::DeveloperLogin { .. }
+            ],
+        ))
     }
 
     #[cfg(feature = "fixtures")]
