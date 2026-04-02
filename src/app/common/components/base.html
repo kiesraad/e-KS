@@ -8,9 +8,9 @@
     <title>{{ "common.title"|trans }}</title>
     <link rel="icon" href="/static/favicon.svg" />
     <link rel="stylesheet"
-          href="/static/index.css?{{ filters::cache_buster() }}" />
+          href="/static/{{ filters::cache_buster() }}-index.css" />
     {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
-    <script src="/static/index.js?{{ filters::cache_buster() }}" defer></script>
+    <script src="/static/{{ filters::cache_buster() }}-index.js" defer></script>
   </head>
   <body class="{% block body_class %}{% endblock %}">
     {% block body %}{% endblock %}

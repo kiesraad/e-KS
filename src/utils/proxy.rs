@@ -16,7 +16,14 @@ use std::{
 
 use crate::AppState;
 
-pub fn proxy_handler(upstream: impl Into<String>) -> axum::routing::MethodRouter<AppState> {
+/// Proxy handler that forwards requests to `upstream`.
+///
+/// `rewrites` maps incoming paths to outgoing paths. When the incoming path matches a key,
+/// the corresponding value is used as the path forwarded to upstream instead.
+pub fn proxy_handler(
+    upstream: impl Into<String>,
+    rewrites: Vec<(String, String)>,
+) -> axum::routing::MethodRouter<AppState> {
     let upstream = upstream.into();
     let client = Arc::new(Mutex::new(LazyCell::new(|| {
         hyper_util::client::legacy::Client::<(), ()>::builder(TokioExecutor::new()).build_http()
@@ -24,6 +31,7 @@ pub fn proxy_handler(upstream: impl Into<String>) -> axum::routing::MethodRouter
 
     axum::routing::any(move |mut req: Request<Body>| {
         let upstream = upstream.clone();
+        let rewrites = rewrites.clone();
         let client = Arc::clone(&client);
 
         async move {
@@ -34,7 +42,12 @@ pub fn proxy_handler(upstream: impl Into<String>) -> axum::routing::MethodRouter
                 .map(|v| v.as_str())
                 .unwrap_or(path);
 
-            let uri = format!("{upstream}{path_query}");
+            let rewritten = rewrites
+                .iter()
+                .find(|(from, _)| from == path)
+                .map(|(_, to)| to.as_str());
+
+            let uri = format!("{upstream}{}", rewritten.unwrap_or(path_query));
 
             *req.uri_mut() = Uri::try_from(uri).map_err(|_| StatusCode::BAD_REQUEST)?;
 
@@ -81,7 +94,7 @@ mod tests {
 
         let app_state = AppState::new_for_tests().await;
         let app = Router::new()
-            .route("/up", proxy_handler(format!("http://{addr}")))
+            .route("/up", proxy_handler(format!("http://{addr}"), vec![]))
             .with_state(app_state);
 
         let response = app
