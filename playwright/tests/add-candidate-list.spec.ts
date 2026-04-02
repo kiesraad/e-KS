@@ -68,7 +68,7 @@ test.describe("add candidate list", async () => {
     }
   });
 
-  test("edit candidate list", async ({ login: page }) => {
+  test("edit electoral districts", async ({ login: page }) => {
     const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
     await page.goto("/candidate-lists");
     await candidateListsOverviewPage.linkCandidateList.first().click();

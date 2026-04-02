@@ -4,7 +4,7 @@ import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 
 type Fixtures = {
   login: Page;
-  noExistingGeneralInformation: Page;
+  noExistingData: Page;
   deleteExistingCandidateLists: Page;
 };
 
@@ -14,7 +14,7 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
 
-  noExistingGeneralInformation: async ({ page }, use) => {
+  noExistingData: async ({ page }, use) => {
     await page.goto("/dev/login?fixtures=false");
     await use(page);
   },
