@@ -28,18 +28,13 @@ impl AppState {
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
         let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
+        let idp_metadata_url = config.idp_metadata_url.clone();
 
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
-            auth_provider: Arc::new(
-                AuthProvider::new(
-                    // TODO: update this to a real IdP and make it configurable
-                    "http://localhost:9001/simplesaml/saml2/idp/metadata.php".to_string(),
-                )
-                .await?,
-            ),
+            auth_provider: Arc::new(AuthProvider::new(idp_metadata_url).await?),
         })
     }
 
@@ -62,6 +57,7 @@ impl AppState {
     #[cfg(test)]
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
+        let idp_metadata_url = config.idp_metadata_url.clone();
 
         Self {
             store_registry: StoreRegistry::new(config.storage_url.to_string())
@@ -69,13 +65,7 @@ impl AppState {
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
-            auth_provider: Arc::new(
-                AuthProvider::new(
-                    "http://localhost:9001/simplesaml/saml2/idp/metadata.php".to_string(),
-                )
-                .await
-                .unwrap(),
-            ),
+            auth_provider: Arc::new(AuthProvider::new(idp_metadata_url).await.unwrap()),
         }
     }
 }

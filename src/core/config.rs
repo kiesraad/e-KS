@@ -13,11 +13,14 @@ const DEFAULT_STORAGE_URL: &str = "memory://ephemeral";
 
 const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
 
+const DEFAULT_IDP_METADATA_URL: &str = "http://localhost:9001/simplesaml/saml2/idp/metadata.php";
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub storage_url: String,
     pub typst_url: String,
+    pub idp_metadata_url: String,
 }
 
 /// Helper function to get environment variable or return an error
@@ -56,10 +59,13 @@ impl Config {
             Some(value) => value,
             None => get_env_with("TYPST_URL", DEFAULT_TYPST_URL, &mut lookup)?,
         };
+        let idp_metadata_url =
+            get_env_with("IDP_METADATA_URL", DEFAULT_IDP_METADATA_URL, &mut lookup)?;
 
         Ok(Self {
             storage_url,
             typst_url,
+            idp_metadata_url,
         })
     }
 
@@ -68,6 +74,7 @@ impl Config {
         Self {
             storage_url: "memory://".to_string(),
             typst_url: DEFAULT_TYPST_URL.to_string(),
+            idp_metadata_url: DEFAULT_IDP_METADATA_URL.to_string(),
         }
     }
 }

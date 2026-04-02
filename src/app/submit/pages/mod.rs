@@ -90,11 +90,8 @@ mod tests {
             axum::serve(listener, router).await.unwrap();
         });
 
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str()).to_string();
-        let config = Config {
-            storage_url: "memory:".to_string(),
-            typst_url,
-        };
+        let mut config = Config::new_test();
+        config.typst_url = format!("http://{addr}");
 
         (server, config)
     }

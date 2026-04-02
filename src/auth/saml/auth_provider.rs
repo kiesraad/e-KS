@@ -4,6 +4,7 @@ use axum::{
     response::IntoResponse,
     routing::{get, post},
 };
+use bytes::Buf;
 use openssl::{
     pkey::{PKey, Private},
     rsa::Rsa,
@@ -29,15 +30,11 @@ pub struct AuthProvider {
     private_key: PKey<Private>,
     public_key: X509,
     active_authn_requests: ActiveAuthnRequests,
+    idp_metadata_url: String,
 }
 
 impl AuthProvider {
     pub async fn new(idp_metadata_url: String) -> Result<Self, AppError> {
-        let resp = reqwest::get(idp_metadata_url).await?.text().await?;
-        let idp_metadata: EntityDescriptor = samael::metadata::de::from_str(&resp)
-            .map_err(|_| AppError::InternalServerError)
-            .unwrap();
-
         let public_key = X509::from_pem(
             &std::fs::read("./development/publickey.cer")
                 .map_err(|_| AppError::InternalServerError)?,
@@ -56,18 +53,36 @@ impl AuthProvider {
             .certificate(public_key.clone())
             .allow_idp_initiated(false)
             .force_authn(true)
-            .idp_metadata(idp_metadata)
             .acs_url("http://localhost:3000/saml/acs".to_string())
             .slo_url("http://localhost:3000/saml/logout".to_string())
             .build()
             .map_err(|_| AppError::InternalServerError)?;
 
-        Ok(AuthProvider {
+        let mut auth_provider = AuthProvider {
             sp,
             private_key,
             public_key,
             active_authn_requests: ActiveAuthnRequests::default(),
-        })
+            idp_metadata_url,
+        };
+        auth_provider.load_idp_metadata().await?;
+
+        Ok(auth_provider)
+    }
+
+    pub async fn load_idp_metadata(&mut self) -> Result<(), AppError> {
+        let resp = reqwest::get(&self.idp_metadata_url).await?.bytes().await?;
+
+        let idp_metadata: EntityDescriptor = samael::metadata::de::from_reader(resp.reader())
+            .map_err(|_| AppError::InternalServerError)?;
+
+        let x509_cert_der = todo!();
+        samael::crypto::verify_signed_xml(resp, x509_cert_der, Some("ID"))
+            .map_err(|_| AppError::InternalServerError)?;
+
+        self.sp.idp_metadata = idp_metadata;
+
+        Ok(())
     }
 }
 
