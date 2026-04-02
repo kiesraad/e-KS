@@ -19,6 +19,19 @@ test.describe("provide general information for political group", async () => {
     await politicalGroupPage.setRegisteredDesignation("TP");
     await politicalGroupPage.open();
     await politicalGroupPage.setStatutoryName("De Testpartij");
+    await politicalGroupPage.open();
+
+    await expect(
+      page.getByRole("radio", { name: "Ja" }),
+    ).toBeChecked();
+
+    await expect(
+      page.getByRole("textbox", { name: "Geregistreerde aanduiding" }),
+    ).toHaveValue("TP");
+
+    await expect(
+      page.getByLabel("Volledige statutaire naam"),
+    ).toHaveValue("De Testpartij");
   });
 
   test("provide authorised agent", async ({

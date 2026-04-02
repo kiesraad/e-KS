@@ -33,6 +33,7 @@ export const test = base.extend<Fixtures>({
       if (href) {
         await page.goto(href);
         await new ManageCandidateListPage(page).removeList();
+        await new CandidateListsOverviewPage(page).buttonAddList.waitFor();
       }
     }
 
