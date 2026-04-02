@@ -98,8 +98,8 @@ test.describe("add candidate list", async () => {
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.buttonEditList.click();
     await manageCandidateListPage.buttonNext.click();
-    await page.waitForURL("**/list-submitter**");
     const chooseListSubmitterPage = new ChooseListSubmitterPage(page);
+    await expect(chooseListSubmitterPage.headerListSubmitter).toBeVisible();
 
     const submitterOne: ListSubmitter = {
       initials: "G.H.",

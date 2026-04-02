@@ -5,6 +5,7 @@ export class ChooseListSubmitterPage {
   readonly linkElectoralDistrictsPage: Locator;
   readonly buttonClose: Locator;
   readonly buttonSave: Locator;
+  readonly headerListSubmitter: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkElectoralDistrictsPage = this.page.getByRole("link", {
@@ -12,6 +13,9 @@ export class ChooseListSubmitterPage {
     });
     this.buttonClose = this.page.getByRole("link", { name: "Sluiten" });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
+    this.headerListSubmitter = this.page.getByRole("heading", {
+      name: "Gegevens lijstinleveraar",
+    });
   }
 
   getSubmitterLocator(listSubmitter: ListSubmitter) {
