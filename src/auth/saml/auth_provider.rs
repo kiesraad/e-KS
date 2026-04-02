@@ -6,10 +6,17 @@ use axum::{
 };
 use bytes::Buf;
 use openssl::{
+    nid::Nid,
     pkey::{PKey, Private},
     rsa::Rsa,
     x509::X509,
 };
+use rustls::{
+    client::danger::ServerCertVerifier,
+    crypto::aws_lc_rs,
+    pki_types::{CertificateDer, ServerName, UnixTime},
+};
+use rustls_platform_verifier::Verifier;
 use samael::{
     metadata::EntityDescriptor,
     service_provider::{ServiceProvider, ServiceProviderBuilder},
@@ -20,7 +27,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState,
-    auth::saml::{ActiveAuthnRequests, pages::login_auto_post},
+    auth::saml::{ActiveAuthnRequests, SamlError, pages::login_auto_post, util::string_to_der},
 };
 
 const TEST_ENTITY_ID: &str = "urn:nl-eid-gdi:1.0:DV:00000004185618890000:entities:9000";
@@ -30,21 +37,32 @@ pub struct AuthProvider {
     private_key: PKey<Private>,
     public_key: X509,
     active_authn_requests: ActiveAuthnRequests,
+
     idp_metadata_url: String,
+    idp_signing_keys: Vec<X509>,
 }
 
 impl AuthProvider {
-    pub async fn new(idp_metadata_url: String) -> Result<Self, AppError> {
+    pub async fn load(idp_metadata_url: String) -> Result<Self, SamlError> {
+        let mut auth_provider = Self::new(idp_metadata_url).await?;
+        auth_provider.load_idp_metadata().await?;
+
+        Ok(auth_provider)
+    }
+
+    async fn new(idp_metadata_url: String) -> Result<Self, SamlError> {
         let public_key = X509::from_pem(
             &std::fs::read("./development/publickey.cer")
-                .map_err(|_| AppError::InternalServerError)?,
+                .map_err(|e| SamlError::KeyLoadError(Box::new(e)))?,
         )
-        .map_err(|_| AppError::InternalServerError)?;
+        .map_err(|e| SamlError::KeyLoadError(Box::new(e)))?;
+
         let private_key = Rsa::private_key_from_pem(
             &std::fs::read("./development/privatekey.pem")
-                .map_err(|_| AppError::InternalServerError)?,
+                .map_err(|e| SamlError::KeyLoadError(Box::new(e)))?,
         )
-        .map_err(|_| AppError::InternalServerError)?;
+        .map_err(|e| SamlError::KeyLoadError(Box::new(e)))?;
+
         let private_key = PKey::from_rsa(private_key).unwrap();
 
         let sp = ServiceProviderBuilder::default()
@@ -56,33 +74,124 @@ impl AuthProvider {
             .acs_url("http://localhost:3000/saml/acs".to_string())
             .slo_url("http://localhost:3000/saml/logout".to_string())
             .build()
-            .map_err(|_| AppError::InternalServerError)?;
+            .map_err(|e| SamlError::ServiceProviderBuildError(Box::new(e)))?;
 
-        let mut auth_provider = AuthProvider {
+        Ok(AuthProvider {
             sp,
             private_key,
             public_key,
             active_authn_requests: ActiveAuthnRequests::default(),
             idp_metadata_url,
-        };
-        auth_provider.load_idp_metadata().await?;
-
-        Ok(auth_provider)
+            idp_signing_keys: Vec::new(),
+        })
     }
 
-    pub async fn load_idp_metadata(&mut self) -> Result<(), AppError> {
-        let resp = reqwest::get(&self.idp_metadata_url).await?.bytes().await?;
+    pub async fn load_idp_metadata(&mut self) -> Result<(), SamlError> {
+        let resp = reqwest::get(&self.idp_metadata_url)
+            .await
+            .map_err(SamlError::IdpMetadataLoadError)?
+            .bytes()
+            .await
+            .map_err(SamlError::IdpMetadataLoadError)?;
 
-        let idp_metadata: EntityDescriptor = samael::metadata::de::from_reader(resp.reader())
-            .map_err(|_| AppError::InternalServerError)?;
+        let new_keys = Self::read_idp_metadata(&resp).await?;
+        Self::verify_idp_signing_keys(&new_keys).await?;
 
-        let x509_cert_der = todo!();
-        samael::crypto::verify_signed_xml(resp, x509_cert_der, Some("ID"))
-            .map_err(|_| AppError::InternalServerError)?;
-
-        self.sp.idp_metadata = idp_metadata;
+        self.idp_signing_keys = new_keys;
 
         Ok(())
+    }
+
+    async fn verify_idp_signing_keys(certificates: &[X509]) -> Result<(), SamlError> {
+        let verifier = Verifier::new(aws_lc_rs::default_provider().into())
+            .map_err(SamlError::CertificateTrustError)?;
+        let now = UnixTime::now();
+
+        for certificate in certificates {
+            let end_entity = certificate
+                .to_der()
+                .map(CertificateDer::from)
+                .map_err(SamlError::InvalidCertificate)?;
+            let server_name = Self::certificate_server_name(certificate)
+                .map_err(SamlError::CertificateTrustError)?;
+
+            verifier
+                .verify_server_cert(&end_entity, &[], &server_name, &[], now)
+                .map_err(SamlError::CertificateTrustError)?;
+        }
+
+        Ok(())
+    }
+
+    fn certificate_server_name(certificate: &X509) -> Result<ServerName<'static>, rustls::Error> {
+        if let Some(subject_alt_names) = certificate.subject_alt_names() {
+            for name in subject_alt_names {
+                if let Some(dns_name) = name.dnsname() {
+                    return ServerName::try_from(dns_name.to_owned()).map_err(|e| {
+                        rustls::Error::General(format!("invalid certificate DNS name: {e}"))
+                    });
+                }
+            }
+        }
+
+        if let Some(common_name) = certificate
+            .subject_name()
+            .entries_by_nid(Nid::COMMONNAME)
+            .next()
+        {
+            let common_name = common_name.data().as_utf8().map_err(|e| {
+                rustls::Error::General(format!("invalid certificate common name: {e}"))
+            })?;
+
+            return ServerName::try_from(common_name.to_string()).map_err(|e| {
+                rustls::Error::General(format!("invalid certificate common name: {e}"))
+            });
+        }
+
+        Err(rustls::Error::General(
+            "certificate has no usable DNS SAN or common name".to_owned(),
+        ))
+    }
+
+    async fn read_idp_metadata(idp_metadata_xml: &[u8]) -> Result<Vec<X509>, SamlError> {
+        let reader = idp_metadata_xml.reader();
+        let idp_metadata: EntityDescriptor =
+            samael::metadata::de::from_reader(reader).map_err(SamlError::IdpMetadataParseError)?;
+
+        let valid_until = idp_metadata
+            .valid_until
+            .as_ref()
+            .ok_or(SamlError::MissingValidUntil)?;
+
+        if *valid_until <= chrono::Utc::now() {
+            return Err(SamlError::IdpMetadataExpired);
+        }
+
+        let new_idp_signing_keys = idp_metadata
+            .idp_sso_descriptors
+            .and_then(|descriptors| descriptors.first().cloned())
+            .ok_or(SamlError::MissingIdpSsoDescriptor)?
+            .key_descriptors
+            .into_iter()
+            .filter(|key_descriptor| key_descriptor.key_use.as_deref() == Some("signing"))
+            .filter_map(|key_descriptor| key_descriptor.key_info.x509_data)
+            .flat_map(|x509_data| x509_data.certificates.into_iter())
+            .map(|certificate| string_to_der(&certificate))
+            .collect::<Result<Vec<_>, _>>()?;
+
+        for signing_key in &new_idp_signing_keys {
+            let x509_cert_der = signing_key
+                .to_der()
+                .map_err(SamlError::InvalidCertificate)?;
+
+            match samael::crypto::verify_signed_xml(idp_metadata_xml, &x509_cert_der, Some("ID")) {
+                Ok(_) => return Ok(new_idp_signing_keys),
+                Err(samael::crypto::Error::InvalidSignature) => continue,
+                Err(e) => return Err(SamlError::CryptoError(e)),
+            }
+        }
+
+        Err(SamlError::InvalidIdpMetadataSignature)
     }
 }
 
@@ -381,5 +490,17 @@ mod tests {
             .unwrap_err(),
             samael::crypto::Error::InvalidSignature
         ));
+    }
+
+    #[tokio::test]
+    async fn read_idp_metadata() {
+        let bytes = std::fs::read("src/auth/testdata/tvs-preproductie-metadata.xml").unwrap();
+
+        let result = AuthProvider::read_idp_metadata(&bytes).await;
+
+        assert!(result.is_ok());
+
+        // TODO: verify x509 certificate
+        // AuthProvider::verify_idp_signing_keys(&result.unwrap()).await.unwrap();
     }
 }

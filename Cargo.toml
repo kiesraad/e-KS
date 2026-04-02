@@ -60,8 +60,8 @@ rand = "0.10.0"
 sqlx = { version = "0.8.6", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
 uuid = { version = "1.11.0", features = ["serde", "v4", "v5"] }
 url = "2.5.7"
-# for now, we don't need TLS in reqwest as we only use it for cluster internal traffic with Typst
-reqwest = { version = "0.13.2", default-features = false, features = ["json", "stream"] }
+# reqwest is used for IdP metadata and intermediate certificate fetching
+reqwest = { version = "0.13.2", default-features = false, features = ["json", "stream", "rustls"] }
 
 # well maintained + many downloads
 askama = "0.15.4" # 31M downloads (Dirkjan Ochtman)
@@ -79,6 +79,9 @@ validate = { path = "validate" }
 samael = "0.0.19"
 openssl = "0.10.76"
 quick-xml = "0.37.5" # same version that samael uses
+rustls = "0.23.37"
+rustls-platform-verifier = "0.6.2"
+webpki-roots = "1.0.6"
 
 [build-dependencies]
 memory-serve = { version = "2.0.0", optional = true }

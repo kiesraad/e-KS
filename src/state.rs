@@ -34,7 +34,7 @@ impl AppState {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
-            auth_provider: Arc::new(AuthProvider::new(idp_metadata_url).await?),
+            auth_provider: Arc::new(AuthProvider::load(idp_metadata_url).await?),
         })
     }
 
@@ -65,7 +65,7 @@ impl AppState {
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
-            auth_provider: Arc::new(AuthProvider::new(idp_metadata_url).await.unwrap()),
+            auth_provider: Arc::new(AuthProvider::load(idp_metadata_url).await.unwrap()),
         }
     }
 }
