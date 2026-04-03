@@ -24,4 +24,8 @@ export class CsvImportExportPage {
     });
     this.textFailure = this.page.getByText("Importeren niet gelukt");
   }
+
+  async getValidationErrors(validationError: string) {
+    return this.page.getByText(`Controleer veld ${validationError}`);
+  }
 }

@@ -50,6 +50,24 @@ test.describe("import and export candidates with csv file", () => {
     await uploadCsvFile(page, csvImportExport, "candidate-list-export-nh.csv");
 
     await expect(csvImportExport.textFailure).toBeVisible();
+
+    const expectedErrors = [
+      "'Geboortedatum'",
+      "'Burgerservicenummer (BSN)'",
+      "'Postcode'",
+      "'Huisnummer'",
+      "'Achternaam'",
+      "'Voorvoegsel'",
+      "'Geslacht'",
+      "'Landcode'",
+      "'Voorletters'",
+    ];
+
+    for (const error of expectedErrors) {
+      await expect(
+        await csvImportExport.getValidationErrors(error),
+      ).toBeVisible();
+    }
   });
 
   test("export", async ({ login: page }) => {
