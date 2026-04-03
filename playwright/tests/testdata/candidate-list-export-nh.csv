@@ -1,0 +1,3 @@
+voorletters,roepnaam,voorvoegsel,achternaam,woonplaats,landcode,bsn,geboortedatum,geslacht,correspondentie_postcode,correspondentie_huisnummer,correspondentie_toevoeging,correspondentie_straatnaam,correspondentie_plaats,gemachtigde_voorletters,gemachtigde_roepnaam,gemachtigde_voorvoegsel,gemachtigde_achternaam,gemachtigde_postcode,gemachtigde_huisnummer,gemachtigde_toevoeging,gemachtigde_straatnaam,gemachtigde_plaats
+G,,,Groot,Amsterdam,NL,123456789,01-31-2000,,12345AB,negen,,straat,amsterdam,,,,,,,,,
+J,,Groot,,Brussel,Belgie,,,X,,,,,,Hendrik,,,Klein,1234AB,,,,Zaandam
