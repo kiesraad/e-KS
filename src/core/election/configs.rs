@@ -1,55 +1,50 @@
 use chrono::NaiveDate;
 
-use crate::core::{AnyLocale, ElectionType, ElectoralDistrict};
+use crate::{
+    ElectoralDistrict,
+    core::{AnyLocale, ElectionType, election::Province},
+};
 
-/// Active election configuration and ruleset for the application.
-#[derive(Default, Debug, Clone, Copy)]
-pub enum ElectionConfig {
-    #[default]
-    EK2027,
+super::define_elections! {
+    EK27 {
+        election_type: ElectionType::Ek,
+        titles: {
+            nl: "Eerste Kamerverkiezing der Staten-Generaal 2027",
+            fry: "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
+            en: "Election of the Senate of the States General 2027",
+        },
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
+        electoral_districts: ElectoralDistrict::ek27(),
+    },
+
+    PS27(province: Province) {
+        election_type: ElectionType::Ps,
+        titles: {
+            nl: "Provinciale Statenverkiezingen 2027",
+            fry: "Provinsjale Steateferkiezings 2027",
+            en: "Elections of the provincial council 2027",
+        },
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 1, 1).unwrap(),
+        electoral_districts: match province {
+            Province::GR => &[ElectoralDistrict::PsGroningen],
+            Province::FR => &[ElectoralDistrict::PsLeeuwarden],
+            Province::DR => &[ElectoralDistrict::PsAssen],
+            Province::OV => &[ElectoralDistrict::PsZwolle],
+            Province::FL => &[ElectoralDistrict::PsLelystad],
+            Province::GE => &[ElectoralDistrict::PsNijmegen, ElectoralDistrict::PsArnhem],
+            Province::UT => &[ElectoralDistrict::PsUtrecht],
+            Province::NH => &[ElectoralDistrict::PsAmsterdam, ElectoralDistrict::PsHaarlem, ElectoralDistrict::PsDenHelder],
+            Province::ZH => &[ElectoralDistrict::PsDenHaag, ElectoralDistrict::PsRotterdam, ElectoralDistrict::PsDordrecht, ElectoralDistrict::PsLeiden],
+            Province::ZE => &[ElectoralDistrict::PsMiddelburg],
+            Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
+            Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
+        },
+    }
 }
 
 impl ElectionConfig {
-    pub fn election_type(&self) -> ElectionType {
-        match self {
-            Self::EK2027 => ElectionType::Ek,
-        }
-    }
-
-    pub fn title(&self, locale: AnyLocale) -> &'static str {
-        match self {
-            Self::EK2027 => match locale {
-                AnyLocale::En => "Election of the Senate of the States General 2027",
-                AnyLocale::Fry => "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
-                AnyLocale::Nl => "Eerste Kamerverkiezing der Staten-Generaal 2027",
-            },
-        }
-    }
-
-    pub fn short_title(&self, locale: AnyLocale) -> &'static str {
-        match self {
-            Self::EK2027 => match locale {
-                AnyLocale::En => "Election of the Senate 2027",
-                AnyLocale::Fry => "Earste Keamer 2027",
-                AnyLocale::Nl => "Eerste Kamer 2027",
-            },
-        }
-    }
-
-    pub fn nomination_day_date(&self) -> NaiveDate {
-        match self {
-            ElectionConfig::EK2027 => NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
-        }
-    }
-
     pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
         if long_list_allowed { 80 } else { 50 }
-    }
-
-    pub fn electoral_districts(&self) -> &'static [ElectoralDistrict] {
-        match self {
-            Self::EK2027 => ElectoralDistrict::ek2027(),
-        }
     }
 
     pub fn available_districts(
@@ -72,16 +67,15 @@ mod tests {
 
     #[test]
     fn election_titles_are_correct() {
-        assert!(ElectionConfig::EK2027.title(AnyLocale::Nl).len() > 20);
-        assert!(ElectionConfig::EK2027.short_title(AnyLocale::Nl).len() > 10);
+        assert!(ElectionConfig::EK27.title(AnyLocale::Nl).len() > 20);
 
-        let election_type = ElectionConfig::EK2027.election_type();
+        let election_type = ElectionConfig::EK27.election_type();
         assert!(election_type.title(Locale::Nl).len() > 20);
     }
 
     #[test]
     fn election_config_exposes_districts() {
-        let districts = ElectionConfig::EK2027.electoral_districts();
+        let districts = ElectionConfig::EK27.electoral_districts();
         assert!(districts.contains(&ElectoralDistrict::NH));
     }
 }

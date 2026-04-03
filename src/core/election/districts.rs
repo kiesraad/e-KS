@@ -2,21 +2,58 @@ use serde::{Deserialize, Serialize};
 
 use crate::core::AnyLocale;
 
+/// Regions for the elections of the provincial council
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+pub enum Province {
+    GR,
+    FR,
+    DR,
+    OV,
+    FL,
+    GE,
+    UT,
+    NH,
+    ZH,
+    ZE,
+    NB,
+    LI,
+}
+
 /// Electoral districts used for nomination and submission flows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
 pub enum ElectoralDistrict {
-    DR,
-    FL,
-    FR,
-    GE,
     GR,
-    LI,
-    NB,
-    NH,
+    PsGroningen,
+    FR,
+    PsLeeuwarden,
+    DR,
+    PsAssen,
     OV,
+    PsZwolle,
+    FL,
+    PsLelystad,
+    GE,
+    PsNijmegen,
+    PsArnhem,
     UT,
-    ZE,
+    PsUtrecht,
+    NH,
+    PsAmsterdam,
+    PsHaarlem,
+    PsDenHelder,
     ZH,
+    PsDenHaag,
+    PsRotterdam,
+    PsDordrecht,
+    PsLeiden,
+    ZE,
+    PsMiddelburg,
+    NB,
+    PsTilburg,
+    PsDenBosch,
+    LI,
+    PsMaastricht,
+    PsVenlo,
     BO,
     SE,
     SA,
@@ -24,20 +61,20 @@ pub enum ElectoralDistrict {
 }
 
 impl ElectoralDistrict {
-    pub fn ek2027() -> &'static [Self] {
+    pub fn ek27() -> &'static [Self] {
         &[
-            Self::DR,
-            Self::FL,
-            Self::FR,
-            Self::GE,
             Self::GR,
-            Self::LI,
-            Self::NB,
-            Self::NH,
+            Self::FR,
+            Self::DR,
             Self::OV,
+            Self::FL,
+            Self::GE,
             Self::UT,
-            Self::ZE,
+            Self::NH,
             Self::ZH,
+            Self::ZE,
+            Self::NB,
+            Self::LI,
             Self::BO,
             Self::SE,
             Self::SA,
@@ -47,33 +84,58 @@ impl ElectoralDistrict {
 
     pub fn title(&self, locale: AnyLocale) -> &'static str {
         match (self, locale) {
-            (Self::DR, AnyLocale::Nl | AnyLocale::En) => "Drenthe",
-            (Self::DR, AnyLocale::Fry) => "Drinte",
-            (Self::FL, AnyLocale::Nl | AnyLocale::En) => "Flevoland",
-            (Self::FL, AnyLocale::Fry) => "Flevolân",
-            (Self::FR, AnyLocale::Nl | AnyLocale::En) => "Friesland",
-            (Self::FR, AnyLocale::Fry) => "Fryslân",
-            (Self::GE, AnyLocale::Nl | AnyLocale::En) => "Gelderland",
-            (Self::GE, AnyLocale::Fry) => "Gelderlân",
             (Self::GR, AnyLocale::Nl | AnyLocale::En) => "Groningen",
             (Self::GR, AnyLocale::Fry) => "Grinslân",
-            (Self::LI, AnyLocale::Nl | AnyLocale::En) => "Limburg",
-            (Self::LI, AnyLocale::Fry) => "Limboarch",
-            (Self::NB, AnyLocale::Nl) => "Noord-Brabant",
-            (Self::NB, AnyLocale::En) => "North Brabant",
-            (Self::NB, AnyLocale::Fry) => "Noard-Brabân",
+            (Self::PsGroningen, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Groningen",
+            (Self::FR, AnyLocale::Nl | AnyLocale::En) => "Friesland",
+            (Self::FR, AnyLocale::Fry) => "Fryslân",
+            (Self::PsLeeuwarden, AnyLocale::Nl | AnyLocale::En) => "Leeuwarden",
+            (Self::PsLeeuwarden, AnyLocale::Fry) => "Ljouwert",
+            (Self::DR, AnyLocale::Nl | AnyLocale::En) => "Drenthe",
+            (Self::DR, AnyLocale::Fry) => "Drinte",
+            (Self::PsAssen, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Assen",
+            (Self::OV, AnyLocale::Nl | AnyLocale::En) => "Overijssel",
+            (Self::OV, AnyLocale::Fry) => "Oerisel",
+            (Self::PsZwolle, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Zwolle",
+            (Self::FL, AnyLocale::Nl | AnyLocale::En) => "Flevoland",
+            (Self::FL, AnyLocale::Fry) => "Flevolân",
+            (Self::PsLelystad, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Lelystad",
+            (Self::GE, AnyLocale::Nl | AnyLocale::En) => "Gelderland",
+            (Self::GE, AnyLocale::Fry) => "Gelderlân",
+            (Self::PsNijmegen, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Nijmegen",
+            (Self::PsArnhem, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Arnhem",
+            (Self::UT, AnyLocale::Nl | AnyLocale::En) => "Utrecht",
+            (Self::UT, AnyLocale::Fry) => "Utert",
+            (Self::PsUtrecht, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Utrecht",
             (Self::NH, AnyLocale::Nl) => "Noord-Holland",
             (Self::NH, AnyLocale::En) => "North Holland",
             (Self::NH, AnyLocale::Fry) => "Noard-Hollân",
-            (Self::OV, AnyLocale::Nl | AnyLocale::En) => "Overijssel",
-            (Self::OV, AnyLocale::Fry) => "Oerisel",
-            (Self::UT, AnyLocale::Nl | AnyLocale::En) => "Utrecht",
-            (Self::UT, AnyLocale::Fry) => "Utert",
-            (Self::ZE, AnyLocale::Nl | AnyLocale::En) => "Zeeland",
-            (Self::ZE, AnyLocale::Fry) => "Seelân",
+            (Self::PsAmsterdam, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Amsterdam",
+            (Self::PsHaarlem, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Haarlem",
+            (Self::PsDenHelder, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Den Helder",
             (Self::ZH, AnyLocale::Nl) => "Zuid-Holland",
             (Self::ZH, AnyLocale::En) => "South Holland",
             (Self::ZH, AnyLocale::Fry) => "Súd-Hollân",
+            (Self::PsDenHaag, AnyLocale::Nl | AnyLocale::Fry) => "'s-Gravenhage",
+            (Self::PsDenHaag, AnyLocale::En) => "The Hague",
+            (Self::PsRotterdam, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Rotterdam",
+            (Self::PsDordrecht, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Dordrecht",
+            (Self::PsLeiden, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Leiden",
+            (Self::ZE, AnyLocale::Nl | AnyLocale::En) => "Zeeland",
+            (Self::ZE, AnyLocale::Fry) => "Seelân",
+            (Self::PsMiddelburg, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Middelburg",
+            (Self::NB, AnyLocale::Nl) => "Noord-Brabant",
+            (Self::NB, AnyLocale::En) => "North Brabant",
+            (Self::NB, AnyLocale::Fry) => "Noard-Brabân",
+            (Self::PsTilburg, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Tilburg",
+            (Self::PsDenBosch, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => {
+                "'s-Hertogenbosch"
+            }
+
+            (Self::LI, AnyLocale::Nl | AnyLocale::En) => "Limburg",
+            (Self::LI, AnyLocale::Fry) => "Limboarch",
+            (Self::PsMaastricht, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Maastricht",
+            (Self::PsVenlo, AnyLocale::Nl | AnyLocale::En | AnyLocale::Fry) => "Venlo",
             (Self::BO, AnyLocale::Nl) => "Kiescollege Bonaire",
             (Self::BO, AnyLocale::En) => "Electoral College Bonaire",
             (Self::BO, AnyLocale::Fry) => "Kieskolleezje Bonêre",
@@ -91,18 +153,38 @@ impl ElectoralDistrict {
 
     pub fn code(&self) -> &str {
         match self {
-            Self::DR => "DR",
-            Self::FL => "FL",
-            Self::FR => "FR",
-            Self::GE => "GE",
             Self::GR => "GR",
-            Self::LI => "LI",
-            Self::NB => "NB",
-            Self::NH => "NH",
+            Self::PsGroningen => "GRQ",
+            Self::FR => "FR",
+            Self::PsLeeuwarden => "LWR",
+            Self::DR => "DR",
+            Self::PsAssen => "ASS",
             Self::OV => "OV",
+            Self::PsZwolle => "ZWO",
+            Self::FL => "FL",
+            Self::PsLelystad => "LEY",
+            Self::GE => "GE",
+            Self::PsNijmegen => "NIJ",
+            Self::PsArnhem => "ARN",
             Self::UT => "UT",
-            Self::ZE => "ZE",
+            Self::PsUtrecht => "UTC",
+            Self::NH => "NH",
+            Self::PsAmsterdam => "AMS",
+            Self::PsHaarlem => "HAA",
+            Self::PsDenHelder => "DHR",
             Self::ZH => "ZH",
+            Self::PsDenHaag => "HAG",
+            Self::PsRotterdam => "RTM",
+            Self::PsDordrecht => "DOR",
+            Self::PsLeiden => "LID",
+            Self::ZE => "ZE",
+            Self::PsMiddelburg => "MDL",
+            Self::NB => "NB",
+            Self::PsTilburg => "TLB",
+            Self::PsDenBosch => "HTB",
+            Self::LI => "LI",
+            Self::PsMaastricht => "MST",
+            Self::PsVenlo => "VEN",
             Self::BO => "BO",
             Self::SE => "SE",
             Self::SA => "SA",
@@ -120,11 +202,22 @@ mod tests {
         assert_eq!(ElectoralDistrict::UT.code(), "UT");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Nl), "Utrecht");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Fry), "Utert");
+
+        assert_eq!(ElectoralDistrict::PsArnhem.code(), "ARN");
+        assert_eq!(ElectoralDistrict::PsArnhem.title(AnyLocale::Nl), "Arnhem");
+        assert_eq!(
+            ElectoralDistrict::PsDenHaag.title(AnyLocale::Nl),
+            "'s-Gravenhage"
+        );
+        assert_eq!(
+            ElectoralDistrict::PsDenHaag.title(AnyLocale::En),
+            "The Hague"
+        );
     }
 
     #[test]
     fn electoral_districts_include_expected_code() {
-        let districts = ElectoralDistrict::ek2027();
+        let districts = ElectoralDistrict::ek27();
         assert!(districts.contains(&ElectoralDistrict::UT));
         assert_eq!(districts.len(), 16);
     }
