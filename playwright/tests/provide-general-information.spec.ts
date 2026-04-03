@@ -10,20 +10,27 @@ import { randomName } from "./utils/random.ts";
 
 test.describe("provide general information for political group", async () => {
   test("provide general information for political group", async ({
-    noExistingGeneralInformation: page,
+    noExistingData: page,
   }) => {
     const politicalGroupPage = new PoliticalGroupPage(page);
-    await politicalGroupPage.open();
-    await politicalGroupPage.selectHasMoreThan16Seats("Ja");
-    await politicalGroupPage.open();
-    await politicalGroupPage.setRegisteredDesignation("TP");
-    await politicalGroupPage.open();
-    await politicalGroupPage.setStatutoryName("De Testpartij");
+    await page.goto("/political-group");
+    await politicalGroupPage.selectMoreThan16Seats.check();
+    await politicalGroupPage.textfieldRegisteredDesignation.fill("TP");
+    await politicalGroupPage.textfieldStatutoryName.fill("De Testpartij");
+    await politicalGroupPage.buttonSaveandNext.click();
+    await page.waitForURL("/political-group/authorised-agents");
+    await page.goto("/political-group");
+
+    await expect(politicalGroupPage.selectMoreThan16Seats).toBeChecked();
+    await expect(politicalGroupPage.textfieldRegisteredDesignation).toHaveValue(
+      "TP",
+    );
+    await expect(politicalGroupPage.textfieldStatutoryName).toHaveValue(
+      "De Testpartij",
+    );
   });
 
-  test("provide authorised agent", async ({
-    noExistingGeneralInformation: page,
-  }) => {
+  test("provide authorised agent", async ({ noExistingData: page }) => {
     await page.goto("/political-group/authorised-agents");
 
     const agent: AuthorisedAgent = {
@@ -43,9 +50,7 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
   });
 
-  test("provide multiple list submitters", async ({
-    noExistingGeneralInformation: page,
-  }) => {
+  test("provide multiple list submitters", async ({ noExistingData: page }) => {
     await page.goto("/political-group/list-submitters");
 
     const submitterOne: ListSubmitter = {
@@ -73,7 +78,7 @@ test.describe("provide general information for political group", async () => {
   });
 
   test("provide substitute list submitter", async ({
-    noExistingGeneralInformation: page,
+    noExistingData: page,
   }) => {
     await page.goto("/political-group/list-submitters");
     const submitterOne: ListSubmitter = {

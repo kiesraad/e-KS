@@ -1,14 +1,34 @@
-import type { Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export class PoliticalGroupPage {
-  private readonly page: Page;
+  readonly selectMoreThan16Seats: Locator;
+  readonly selectLessThan16Seats: Locator;
+  readonly textfieldRegisteredDesignation: Locator;
+  readonly textfieldStatutoryName: Locator;
+  readonly buttonSaveandNext: Locator;
 
-  constructor(page: Page) {
-    this.page = page;
+  constructor(protected readonly page: Page) {
+    this.buttonSaveandNext = this.page.getByRole("button", {
+      name: "Opslaan en volgende",
+    });
+    this.selectMoreThan16Seats = this.page.getByRole("radio", { name: "Ja" });
+    this.selectLessThan16Seats = this.page.getByRole("radio", { name: "Nee" });
+    this.textfieldRegisteredDesignation = this.page.getByRole("textbox", {
+      name: "Geregistreerde aanduiding",
+    });
+    this.textfieldStatutoryName = this.page.getByLabel(
+      "Volledige statutaire naam",
+    );
   }
 
   async open() {
     await this.page.goto("/political-group");
+  }
+
+  async save() {
+    await this.page
+      .getByRole("button", { name: "Opslaan en volgende" })
+      .click();
   }
 
   /**
@@ -17,18 +37,15 @@ export class PoliticalGroupPage {
    */
   async selectHasMoreThan16Seats(input: string) {
     await this.page.getByRole("radio", { name: input }).check();
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async setRegisteredDesignation(registeredDesignation: string) {
     await this.page
       .getByRole("textbox", { name: "Geregistreerde aanduiding" })
       .fill(registeredDesignation);
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 
   async setStatutoryName(statutoryName: string) {
     await this.page.getByLabel("Volledige statutaire naam").fill(statutoryName);
-    await this.page.getByRole("button", { name: "Opslaan" }).click();
   }
 }

@@ -43,6 +43,7 @@ export class AuthorisedAgentsPage {
         await this.page.goto(href);
         await this.buttonDelete.click();
         await this.buttonConfirmDelete.click();
+        await this.page.waitForURL("**/authorised-agents");
       }
     }
   }
