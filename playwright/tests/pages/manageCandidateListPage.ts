@@ -17,7 +17,6 @@ export class ManageCandidateListPage {
   readonly buttonCSV: Locator;
   readonly headingCandidateList: Locator;
 
-
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
       name: "Bestaande",

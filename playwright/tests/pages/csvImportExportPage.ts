@@ -10,8 +10,12 @@ export class CsvImportExportPage {
   readonly textFailure: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonDownload = this.page.getByRole("button", { name: "CSV bestand downloaden" });
-    this.buttonUpload = this.page.getByRole("button", { name: "CSV bestand uploaden" });
+    this.buttonDownload = this.page.getByRole("link", {
+      name: "CSV bestand downloaden",
+    });
+    this.buttonUpload = this.page.getByRole("button", {
+      name: "CSV bestand uploaden",
+    });
     this.buttonContinue = this.page.getByRole("button", { name: "Doorgaan" });
     this.buttonCancel = this.page.getByRole("button", { name: "Annuleren" });
     this.buttonClose = this.page.getByRole("link", { name: "Sluiten" });
