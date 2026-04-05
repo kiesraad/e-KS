@@ -182,6 +182,7 @@ mod tests {
         type Event = TestEvent;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
+            self.last_event_id = event.event_id;
             self.events.push((event.event_id, event.payload));
         }
 

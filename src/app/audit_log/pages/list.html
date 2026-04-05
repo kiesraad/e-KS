@@ -1,0 +1,32 @@
+{% extends "common/components/layout.html" %}
+{% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
+{% block content %}
+  {% if entries.is_empty() %}
+    <section>
+      <p>{{ "audit_log.empty"|trans }}</p>
+    </section>
+  {% else %}
+    <section>
+      <table class="audit-log">
+        <thead>
+          <tr>
+            <th scope="col">{{ "audit_log.fields.event_id"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.details"|trans }}</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr>
+              <td>{{ entry.event_id }}</td>
+              <td>{{ entry.created_at|datetime }}</td>
+              <td>{{ entry.description_key|trans }}</td>
+              <td>{{ entry.details }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  {% endif %}
+{% endblock %}

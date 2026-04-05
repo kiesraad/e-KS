@@ -1,0 +1,16 @@
+table.audit-log {
+  td:first-child {
+    font-family: var(--font-number);
+    width: 4rem;
+  }
+
+  td:nth-child(2) {
+    font-family: var(--font-number);
+    white-space: nowrap;
+    width: 12rem;
+  }
+
+  tr:nth-child(even) {
+    background-color: var(--gray-100);
+  }
+}
