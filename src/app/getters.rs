@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[cfg(test)]
-use crate::AppEvent;
+use crate::{AppEvent, store::StoreEvent};
 
 impl AppStore {
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
@@ -137,7 +137,7 @@ impl AppStore {
     }
 
     #[cfg(test)]
-    pub fn get_events(&self) -> Vec<AppEvent> {
+    pub fn get_events(&self) -> Vec<StoreEvent<AppEvent>> {
         let data = self.data.read();
         data.events.clone()
     }

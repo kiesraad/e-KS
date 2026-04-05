@@ -12,6 +12,7 @@ use tracing_test::traced_test;
 use crate::{
     AppError, AppEvent, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
     candidate_lists::CandidateListId,
+    store::StoreEvent,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
     persons::PersonId,
@@ -114,10 +115,14 @@ async fn download_file(
 
     // Consume last event and check that it is a DownloadFile event
     let mut events = store.get_events();
-    let Some(AppEvent::DownloadFile {
-        file_name,
-        download_path: actual_download_path,
-        list_id: actual_list_id,
+    let Some(StoreEvent {
+        payload:
+            AppEvent::DownloadFile {
+                file_name,
+                download_path: actual_download_path,
+                list_id: actual_list_id,
+            },
+        ..
     }) = events.pop()
     else {
         panic!("expected the last event to be a download event")

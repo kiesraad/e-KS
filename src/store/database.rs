@@ -203,7 +203,6 @@ where
                     created_at,
                 };
                 data.apply(store_event);
-                data.set_last_event_id(event_id);
             }
             Err(e) => {
                 tracing::error!("Failed to deserialize event: {e:?}");

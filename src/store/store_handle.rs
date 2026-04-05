@@ -90,7 +90,6 @@ where
         }
 
         data.apply(store_event);
-        data.set_last_event_id(next_id);
     }
 }
 
@@ -113,10 +112,6 @@ mod tests {
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
-        }
-
-        fn set_last_event_id(&mut self, event_id: usize) {
-            self.last_event_id = event_id;
         }
     }
 
