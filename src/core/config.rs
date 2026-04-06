@@ -3,6 +3,8 @@
 
 use std::env;
 
+use secrecy::SecretString;
+
 use crate::AppError;
 
 #[cfg(feature = "database")]
@@ -12,12 +14,14 @@ const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
 const DEFAULT_STORAGE_URL: &str = "memory://ephemeral";
 
 const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
+const DEFAULT_ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
 
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub storage_url: String,
     pub typst_url: String,
+    pub id_derivation_key: SecretString,
 }
 
 /// Helper function to get environment variable or return an error
@@ -56,10 +60,13 @@ impl Config {
             Some(value) => value,
             None => get_env_with("TYPST_URL", DEFAULT_TYPST_URL, &mut lookup)?,
         };
+        let id_derivation_key =
+            get_env_with("ID_DERIVATION_KEY", DEFAULT_ID_DERIVATION_KEY, &mut lookup)?;
 
         Ok(Self {
             storage_url,
             typst_url,
+            id_derivation_key: SecretString::from(id_derivation_key),
         })
     }
 
@@ -68,6 +75,7 @@ impl Config {
         Self {
             storage_url: "memory://".to_string(),
             typst_url: DEFAULT_TYPST_URL.to_string(),
+            id_derivation_key: SecretString::from(DEFAULT_ID_DERIVATION_KEY),
         }
     }
 }

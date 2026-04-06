@@ -2,7 +2,8 @@
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, PoliticalGroupId, SessionStore, store::StoreRegistry,
+    AppError, AppStore, AppStoreData, BsnIdDeriver, Config, PoliticalGroupId, SessionStore,
+    store::StoreRegistry,
 };
 use axum::extract::FromRef;
 
@@ -13,6 +14,7 @@ pub struct AppState {
     pub store_registry: StoreRegistry<AppStoreData>,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
+    pub bsn_id_deriver: BsnIdDeriver,
 }
 
 impl AppState {
@@ -24,11 +26,13 @@ impl AppState {
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
         let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
+        let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
 
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
+            bsn_id_deriver,
         })
     }
 
@@ -51,6 +55,7 @@ impl AppState {
     #[cfg(test)]
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
+        let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
 
         Self {
             store_registry: StoreRegistry::new(config.storage_url.to_string())
@@ -58,6 +63,7 @@ impl AppState {
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
+            bsn_id_deriver,
         }
     }
 }

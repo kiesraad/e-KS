@@ -13,10 +13,13 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
 };
 
-use crate::{AppError, AppState, Locale, Session};
+use crate::{AppError, AppState, Locale, Session, common::Bsn};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
+
+/// Default BSN used when no session cookie is present (dev/test only).
+const DEV_BSN: &str = "999999990";
 
 /// Builds an HTTP-only cookie that carries the session token.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
@@ -67,7 +70,9 @@ pub async fn session_middleware(
             state.sessions.cleanup_expired();
             let locale = request_locale(request.headers());
             let mut new_session = Session::new_with_locale(locale);
-            new_session.set_political_group(uuid::Uuid::nil().into());
+            let dev_bsn: Bsn = DEV_BSN.parse().expect("DEV_BSN is a valid BSN");
+            new_session
+                .set_political_group(state.bsn_id_deriver.derive_political_group_id(&dev_bsn));
             state.sessions.insert(new_session.clone());
             request.extensions_mut().insert(new_session.clone());
             let response = next.run(request).await;

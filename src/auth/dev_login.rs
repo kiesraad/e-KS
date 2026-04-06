@@ -4,18 +4,18 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 use serde::Deserialize;
-use uuid::Uuid;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, Locale, PoliticalGroupId, Session,
-    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup, store::Store,
+    auth::session_extractor::build_session_cookie, common::Bsn, political_groups::PoliticalGroup,
+    store::Store,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
 
 #[derive(Debug, Deserialize)]
 pub struct DevLoginQuery {
-    name: Option<String>,
+    bsn: Option<String>,
     fixtures: Option<bool>,
 }
 
@@ -25,8 +25,11 @@ pub async fn dev_login(
     Query(query): Query<DevLoginQuery>,
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let political_group_id = match query.name {
-        Some(name) if !name.is_empty() => dev_political_group_id(&name),
+    let political_group_id = match query.bsn {
+        Some(bsn_str) if !bsn_str.is_empty() => {
+            let bsn: Bsn = bsn_str.parse().map_err(|_| AppError::InternalServerError)?;
+            state.bsn_id_deriver.derive_political_group_id(&bsn)
+        }
         _ => PoliticalGroupId::new(),
     };
 
@@ -53,14 +56,6 @@ pub(crate) fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
         .and_then(|value| value.to_str().ok())
         .and_then(Locale::from_accept_language)
         .unwrap_or_default()
-}
-
-fn dev_political_group_id(name: &str) -> PoliticalGroupId {
-    Uuid::new_v5(
-        &Uuid::NAMESPACE_URL,
-        format!("eks/dev-login/{name}").as_bytes(),
-    )
-    .into()
 }
 
 async fn ensure_dev_store(
@@ -102,9 +97,16 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{AppState, router, test_utils::response_body_string};
+    use crate::{AppState, common::Bsn, router, test_utils::response_body_string};
 
     use super::*;
+
+    const TEST_BSN: &str = "999999990";
+
+    fn derive_test_id(state: &AppState, bsn_str: &str) -> PoliticalGroupId {
+        let bsn: Bsn = bsn_str.parse().expect("valid test BSN");
+        state.bsn_id_deriver.derive_political_group_id(&bsn)
+    }
 
     fn cookie_value(response: &axum::response::Response) -> &str {
         response
@@ -123,7 +125,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/dev/login?name=alice&fixtures=false")
+                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap(),
@@ -142,7 +144,7 @@ mod tests {
         assert_eq!(session.locale, Locale::En);
         assert_eq!(
             session.political_group_id,
-            Some(dev_political_group_id("alice"))
+            Some(derive_test_id(&state, TEST_BSN))
         );
     }
 
@@ -155,7 +157,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri("/dev/login?name=empty-store&fixtures=false")
+                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -177,17 +179,15 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
+        let expected_id = derive_test_id(&state, TEST_BSN);
         let store = state
             .store_registry
-            .get_or_create(dev_political_group_id("empty-store").uuid())
+            .get_or_create(expected_id.uuid())
             .await
             .expect("store");
         assert_eq!(store.get_person_count(), 0);
         assert_eq!(store.get_candidate_list_count(), 0);
-        assert_eq!(
-            store.get_political_group().id,
-            dev_political_group_id("empty-store")
-        );
+        assert_eq!(store.get_political_group().id, expected_id);
     }
 
     #[tokio::test]
@@ -199,7 +199,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri("/dev/login?name=empty-store&fixtures=false")
+                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -221,9 +221,10 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
+        let expected_id = derive_test_id(&state, TEST_BSN);
         let store = state
             .store_registry
-            .get_or_create(dev_political_group_id("empty-store").uuid())
+            .get_or_create(expected_id.uuid())
             .await
             .expect("store");
 
@@ -245,7 +246,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri("/dev/login?name=fixture-store&fixtures=true")
+                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=true"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -254,16 +255,14 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
+        let expected_id = derive_test_id(&state, TEST_BSN);
         let store = state
             .store_registry
-            .get_or_create(dev_political_group_id("fixture-store").uuid())
+            .get_or_create(expected_id.uuid())
             .await
             .expect("store");
         assert!(store.get_person_count() > 0);
         assert!(store.get_candidate_list_count() > 0);
-        assert_eq!(
-            store.get_political_group().id,
-            dev_political_group_id("fixture-store")
-        );
+        assert_eq!(store.get_political_group().id, expected_id);
     }
 }
