@@ -1,32 +1,32 @@
-title: Audit log
 empty: No events have been recorded yet.
-fields:
-  event_id: "#"
-  timestamp: Timestamp
-  event: Event
-  details: Details
 event:
-  update_political_group: Updated political group
-  create_person: Created person
-  update_person: Updated person
-  update_person_address: Updated person address
-  update_person_representative: Updated person representative
-  delete_person: Deleted person
-  create_candidate_list: Created list of candidates
-  update_candidate_list_districts: Updated electoral districts of list
-  update_candidate_list_order: Updated order of list of candidates
-  update_candidate_list_submitters: Updated submitters of list
   add_candidate_to_list: Added candidate to list
-  remove_candidate_from_list: Removed candidate from list
-  delete_candidate_list: Deleted list of candidates
   create_authorised_agent: Created authorised agent
-  update_authorised_agent: Updated authorised agent
-  delete_authorised_agent: Deleted authorised agent
+  create_candidate_list: Created list of candidates
   create_list_submitter: Created submitter of the list
-  update_list_submitter: Updated submitter of the list
-  delete_list_submitter: Deleted submitter of the list
+  create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
-  update_substitute_submitter: Updated substitute submitter of the list
+  delete_authorised_agent: Deleted authorised agent
+  delete_candidate_list: Deleted list of candidates
+  delete_list_submitter: Deleted submitter of the list
+  delete_person: Deleted person
   delete_substitute_submitter: Deleted substitute submitter of the list
   developer_login: Developer login
   download_file: Downloaded file
+  remove_candidate_from_list: Removed candidate from list
+  update_authorised_agent: Updated authorised agent
+  update_candidate_list_districts: Updated electoral districts of list
+  update_candidate_list_order: Updated order of list of candidates
+  update_candidate_list_submitters: Updated submitters of list
+  update_list_submitter: Updated submitter of the list
+  update_person: Updated person
+  update_person_address: Updated person address
+  update_person_representative: Updated person representative
+  update_political_group: Updated political group
+  update_substitute_submitter: Updated substitute submitter of the list
+fields:
+  details: Details
+  event: Event
+  event_id: "#"
+  timestamp: Timestamp
+title: Audit log

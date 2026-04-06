@@ -230,8 +230,14 @@ mod tests {
         assert!(matches!(
             store.get_events().as_slice(),
             &[
-                StoreEvent { payload: AppEvent::UpdatePoliticalGroup(..), .. },
-                StoreEvent { payload: AppEvent::DeveloperLogin { .. }, .. }
+                StoreEvent {
+                    payload: AppEvent::UpdatePoliticalGroup(..),
+                    ..
+                },
+                StoreEvent {
+                    payload: AppEvent::DeveloperLogin { .. },
+                    ..
+                }
             ],
         ))
     }

@@ -213,7 +213,6 @@ impl StoreData for AppStoreData {
     fn last_event_id(&self) -> usize {
         self.events.last().map(|e| e.event_id).unwrap_or(0)
     }
-
 }
 
 #[cfg(test)]

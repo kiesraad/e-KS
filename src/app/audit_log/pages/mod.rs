@@ -5,6 +5,9 @@ use serde::Deserialize;
 
 mod list;
 
+#[cfg(test)]
+mod integration_tests;
+
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/audit-log", rejection(AppError))]
 pub struct AuditLogPath;

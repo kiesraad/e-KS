@@ -21,7 +21,7 @@
             <tr>
               <td>{{ entry.event_id }}</td>
               <td>{{ entry.created_at|datetime_seconds }}</td>
-              <td>{{ entry.description_key|trans }}</td>
+              <td>{{ entry.description }}</td>
               <td>{{ entry.details }}</td>
             </tr>
           {% endfor %}

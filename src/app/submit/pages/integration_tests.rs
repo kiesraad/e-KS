@@ -12,10 +12,10 @@ use tracing_test::traced_test;
 use crate::{
     AppError, AppEvent, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
     candidate_lists::CandidateListId,
-    store::StoreEvent,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
     persons::PersonId,
+    store::StoreEvent,
     test_utils::{
         sample_candidate_list, sample_list_submitter, sample_person, sample_political_group,
     },
