@@ -20,7 +20,7 @@
           {% for entry in entries %}
             <tr>
               <td>{{ entry.event_id }}</td>
-              <td>{{ entry.created_at|datetime }}</td>
+              <td>{{ entry.created_at|datetime_seconds }}</td>
               <td>{{ entry.description_key|trans }}</td>
               <td>{{ entry.details }}</td>
             </tr>
@@ -28,5 +28,8 @@
         </tbody>
       </table>
     </section>
+    {% if pagination.total_pages > 1 %}
+      {% include "common/components/pagination.html" %}
+    {% endif %}
   {% endif %}
 {% endblock %}

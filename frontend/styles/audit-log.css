@@ -5,9 +5,7 @@ table.audit-log {
   }
 
   td:nth-child(2) {
-    font-family: var(--font-number);
     white-space: nowrap;
-    width: 12rem;
   }
 
   tr:nth-child(even) {
