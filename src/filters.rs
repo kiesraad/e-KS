@@ -24,6 +24,11 @@ pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result
 }
 
 #[askama::filter_fn]
+pub fn datetime_seconds(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(value.format("%d-%m-%Y %H:%M:%S").to_string())
+}
+
+#[askama::filter_fn]
 pub fn value_true(value_name: &str, values: &dyn askama::Values) -> askama::Result<bool> {
     let value = askama::get_value::<bool>(values, value_name)?;
 

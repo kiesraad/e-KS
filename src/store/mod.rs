@@ -19,6 +19,4 @@ pub trait StoreData: Default + Send + Sync + 'static {
     fn apply(&mut self, event: StoreEvent<Self::Event>);
     /// Return the last applied event ID for this data instance.
     fn last_event_id(&self) -> usize;
-    /// Update the last applied event ID for this data instance.
-    fn set_last_event_id(&mut self, event_id: usize);
 }
