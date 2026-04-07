@@ -19,6 +19,7 @@ pub enum ValidationError {
     NameAlreadyExists,
     BsnAlreadyExists,
     DateInFuture,
+    CandidateTooYoung,
 }
 
 impl std::fmt::Display for ValidationError {
@@ -57,6 +58,7 @@ impl ValidationError {
             }
             ValidationError::BsnAlreadyExists => trans!("validation.bsn_already_exists", locale),
             ValidationError::DateInFuture => trans!("validation.date_of_birth_in_future", locale),
+            ValidationError::CandidateTooYoung => trans!("validation.candidate_too_young", locale),
         }
         .to_string()
     }

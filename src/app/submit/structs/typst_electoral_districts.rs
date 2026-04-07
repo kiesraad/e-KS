@@ -35,7 +35,7 @@ mod tests {
 
     #[test]
     fn electoral_districts_from_full_list_returns_all() {
-        let election = ElectionConfig::EK2027;
+        let election = ElectionConfig::EK27;
         let list = CandidateList {
             electoral_districts: election.electoral_districts().to_vec(),
             ..Default::default()
@@ -49,7 +49,7 @@ mod tests {
 
     #[test]
     fn electoral_districts_from_partial_list_returns_titles() {
-        let election = ElectionConfig::EK2027;
+        let election = ElectionConfig::EK27;
         let list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::NH],
             ..Default::default()

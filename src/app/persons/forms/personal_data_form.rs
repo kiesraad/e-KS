@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    AppStore, CsrfTokens, OptionStringExt, TokenValue,
+    AppStore, CsrfTokens, ElectionConfig, OptionStringExt, TokenValue,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, PlaceOfResidence,
     },
@@ -73,14 +73,40 @@ impl From<Person> for PersonalDataForm {
 }
 
 impl PersonalDataForm {
-    pub fn validate_create_unique(
+    /// Also checks person uniqueness and date of birth
+    pub fn validate_create_with_checks(
         self,
         csrf_tokens: &CsrfTokens,
         store: &AppStore,
+        election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
         let person = self.clone().validate_create(csrf_tokens)?;
-        let errors = PersonalDataForm::uniqueness_errors(&person, &existing);
+        let mut errors = PersonalDataForm::uniqueness_errors(&person, &existing);
+        errors.append(&mut PersonalDataForm::date_of_birth_check(
+            &person, election,
+        ));
+
+        if errors.is_empty() {
+            Ok(person)
+        } else {
+            Err(Box::new(FormData::new_with_errors(
+                self,
+                csrf_tokens,
+                errors,
+            )))
+        }
+    }
+
+    /// Also checks date of birth
+    pub fn validate_update_with_checks(
+        self,
+        current: &Person,
+        csrf_tokens: &CsrfTokens,
+        election: &ElectionConfig,
+    ) -> Result<Person, Box<FormData<Self>>> {
+        let person = self.clone().validate_update(current, csrf_tokens)?;
+        let errors = PersonalDataForm::date_of_birth_check(&person, election);
 
         if errors.is_empty() {
             Ok(person)
@@ -128,10 +154,28 @@ impl PersonalDataForm {
 
         errors
     }
+
+    /// Validate that the date of birth is valid for the current election
+    pub(crate) fn date_of_birth_check(person: &Person, election: &ElectionConfig) -> FieldErrors {
+        let mut errors = Vec::new();
+
+        if let Some(date) = &person.personal_data.date_of_birth
+            && **date > election.eligible_date_of_birth()
+        {
+            errors.push((
+                "personal_data.date_of_birth".to_string(),
+                ValidationError::CandidateTooYoung,
+            ));
+        }
+
+        errors
+    }
 }
 
 #[cfg(test)]
 mod tests {
+    use chrono::Duration;
+
     use super::*;
     use crate::{
         CsrfTokens, OptionAsStrExt,
@@ -380,5 +424,27 @@ mod tests {
         let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
 
         assert!(errors.is_empty());
+    }
+
+    #[test]
+    fn candidate_too_young_errors() {
+        let election = &ElectionConfig::EK27;
+
+        let mut person = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
+
+        let eligible_date = election.eligible_date_of_birth();
+        person.personal_data.date_of_birth = Some(DateOfBirth::from(eligible_date));
+        let errors = PersonalDataForm::date_of_birth_check(&person, election);
+        assert!(errors.is_empty());
+
+        person.personal_data.date_of_birth =
+            Some(DateOfBirth::from(eligible_date + Duration::days(1)));
+        assert_eq!(
+            PersonalDataForm::date_of_birth_check(&person, election),
+            vec![(
+                "personal_data.date_of_birth".to_string(),
+                ValidationError::CandidateTooYoung
+            )]
+        );
     }
 }

@@ -301,7 +301,7 @@ mod tests {
 
     #[tokio::test]
     async fn contains_all_districts_compares_to_election_config_length() {
-        let election = ElectionConfig::EK2027;
+        let election = ElectionConfig::EK27;
         let list = base_candidate_list(election.electoral_districts().to_vec());
         assert!(list.contains_all_districts(&election));
 

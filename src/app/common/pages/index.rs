@@ -24,6 +24,6 @@ mod tests {
             .await
             .into_response();
         let body = response_body_string(body).await;
-        assert!(body.contains(ElectionConfig::default().title(AnyLocale::En)));
+        assert!(body.contains(ElectionConfig::EK27.title(AnyLocale::En)));
     }
 }
