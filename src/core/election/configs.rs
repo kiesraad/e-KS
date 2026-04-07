@@ -17,6 +17,7 @@ super::define_elections! {
             en: "Election of the Senate of the States General 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
         electoral_districts: ElectoralDistrict::ek27(),
     },
 
@@ -28,6 +29,7 @@ super::define_elections! {
             en: "Elections of the Provincial Council 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match province {
             Province::GR => &[ElectoralDistrict::PsGroningen],
             Province::FR => &[ElectoralDistrict::PsLeeuwarden],
@@ -52,6 +54,7 @@ super::define_elections! {
             en: "Elections of the Water Authority 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match water_council {
             WaterCouncil::Noorderzijlvest => &[ElectoralDistrict::WsNoorderzijlvest],
             WaterCouncil::Fryslan => &[ElectoralDistrict::WsFryslan],

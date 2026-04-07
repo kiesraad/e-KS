@@ -1,4 +1,5 @@
 bsn_already_exists: Dit BSN is al in gebruik.
+candidate_too_young: Kandidaat is te jong om met deze verkiezing mee te doen.
 choose_at_least_one_option: Kies ten minste één optie.
 date_of_birth_in_future: Geboortedatum kan niet in de toekomst zijn.
 invalid_bsn: Ongeldig BSN.

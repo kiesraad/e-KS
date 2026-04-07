@@ -46,13 +46,14 @@ pub async fn update_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
+    match form.validate_update_with_checks(&context.session.csrf_tokens, &context.session.election)
+    {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,
                 on_candidate_lists: store.count_candidate_lists(candidate.person.id),
                 candidate,
-                form: form_data,
+                form: *form_data,
             },
             context,
         )
@@ -74,6 +75,7 @@ mod tests {
     use crate::{
         AppStore, Context, Form,
         candidate_lists::CandidateListId,
+        common::DateOfBirth,
         persons::PersonId,
         test_utils::{
             response_body_string, sample_candidate_list, sample_person, sample_person_form,
@@ -83,6 +85,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use chrono::Duration;
 
     #[tokio::test]
     async fn update_person_renders_candidate() -> Result<(), AppError> {
@@ -215,6 +218,53 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_too_young_renders_error() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(PersonId::new());
+
+        list.create(&store).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_tokens.issue().value;
+        let mut form = sample_person_form(&csrf_token);
+        form.personal_data.date_of_birth = DateOfBirth::from(
+            context.session.election.eligible_date_of_birth() + Duration::days(1),
+        )
+        .format(crate::core::constants::DEFAULT_DATE_FORMAT)
+        .to_string();
+
+        let response = update_person_submit(
+            CandidateListUpdatePersonPath {
+                list_id,
+                person_id: person.id,
+            },
+            context,
+            full_list,
+            candidate,
+            store,
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Candidate is too young to participate in this election."));
 
         Ok(())
     }

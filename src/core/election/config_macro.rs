@@ -10,6 +10,7 @@ macro_rules! define_elections {
                     en: $title_en:expr $(,)?
                 },
                 nomination_day_date: $nomination_day_date:expr,
+                eligible_date_of_birth: $eligible_date_of_birth:expr,
                 electoral_districts: $electoral_districts:expr $(,)?
             }
         ),* $(,)?
@@ -48,6 +49,15 @@ macro_rules! define_elections {
                 match self {
                     $(
                         Self::$name $(($binding))? => $nomination_day_date,
+                    )*
+                }
+            }
+
+            pub fn eligible_date_of_birth(&self) -> NaiveDate {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => $eligible_date_of_birth,
                     )*
                 }
             }
