@@ -56,5 +56,13 @@ mod tests {
             assert!(election_type.title(Locale::Nl).contains("verkiezing"));
             assert!(election_type.title(Locale::En).contains("election"));
         }
+
+        // Kc uses "kiescolleges" rather than "verkiezing"
+        assert!(ElectionType::Kc.title(Locale::Nl).contains("kiescolleges"));
+        assert!(
+            ElectionType::Kc
+                .title(Locale::En)
+                .contains("electoral colleges")
+        );
     }
 }

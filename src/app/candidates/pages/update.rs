@@ -46,8 +46,11 @@ pub async fn update_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(&context.session.csrf_tokens, &context.session.election)
-    {
+    match form.validate_update_with_checks(
+        &candidate.person,
+        &context.session.csrf_tokens,
+        &context.session.election,
+    ) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,

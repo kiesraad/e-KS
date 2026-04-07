@@ -41,8 +41,11 @@ pub async fn update_person_submit(
     person: Person,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(&context.session.csrf_tokens, &context.session.election)
-    {
+    match form.validate_update_with_checks(
+        &person,
+        &context.session.csrf_tokens,
+        &context.session.election,
+    ) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 on_candidate_lists: store.count_candidate_lists(person.id),

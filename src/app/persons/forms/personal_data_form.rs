@@ -101,10 +101,11 @@ impl PersonalDataForm {
     /// Also checks date of birth
     pub fn validate_update_with_checks(
         self,
+        current: &Person,
         csrf_tokens: &CsrfTokens,
         election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
-        let person = self.clone().validate_create(csrf_tokens)?;
+        let person = self.clone().validate_update(current, csrf_tokens)?;
         let errors = PersonalDataForm::date_of_birth_check(&person, election);
 
         if errors.is_empty() {
