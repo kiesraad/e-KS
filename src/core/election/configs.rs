@@ -2,7 +2,10 @@ use chrono::NaiveDate;
 
 use crate::{
     ElectoralDistrict,
-    core::{AnyLocale, ElectionType, election::Province},
+    core::{
+        AnyLocale, ElectionType,
+        election::{Province, WaterCouncil},
+    },
 };
 
 super::define_elections! {
@@ -22,9 +25,9 @@ super::define_elections! {
         titles: {
             nl: "Provinciale Statenverkiezingen 2027",
             fry: "Provinsjale Steateferkiezings 2027",
-            en: "Elections of the provincial council 2027",
+            en: "Elections of the Provincial Council 2027",
         },
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 1, 1).unwrap(),
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
         electoral_districts: match province {
             Province::GR => &[ElectoralDistrict::PsGroningen],
             Province::FR => &[ElectoralDistrict::PsLeeuwarden],
@@ -38,6 +41,39 @@ super::define_elections! {
             Province::ZE => &[ElectoralDistrict::PsMiddelburg],
             Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
             Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
+        },
+    },
+
+    WS27(water_council: WaterCouncil) {
+        election_type: ElectionType::Ws,
+        titles: {
+            nl: "Waterschapsverkiezingen 2027",
+            fry: "Wetterskipsferkiezings 2027",
+            en: "Elections of the Water Authority 2027",
+        },
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        electoral_districts: match water_council {
+            WaterCouncil::Noorderzijlvest => &[ElectoralDistrict::WsNoorderzijlvest],
+            WaterCouncil::Fryslan => &[ElectoralDistrict::WsFryslan],
+            WaterCouncil::HunzeEnAas => &[ElectoralDistrict::WsHunzeEnAas],
+            WaterCouncil::DrentsOverijsselseDelta => &[ElectoralDistrict::WsDrentsOverijsselseDelta],
+            WaterCouncil::Vechtstromen => &[ElectoralDistrict::WsVechtstromen],
+            WaterCouncil::ValleiEnVeluwe => &[ElectoralDistrict::WsValleiEnVeluwe],
+            WaterCouncil::RijnEnIJssel => &[ElectoralDistrict::WsRijnEnIJssel],
+            WaterCouncil::DeStichtseRijnlanden => &[ElectoralDistrict::WsDeStichtseRijnlanden],
+            WaterCouncil::AmstelGooiEnVecht => &[ElectoralDistrict::WsAmstelGooiEnVecht],
+            WaterCouncil::HollandsNoorderkwartier => &[ElectoralDistrict::WsHollandsNoorderkwartier],
+            WaterCouncil::Rijnland => &[ElectoralDistrict::WsRijnland],
+            WaterCouncil::Delfland => &[ElectoralDistrict::WsDelfland],
+            WaterCouncil::SchielandEnDeKrimpenerwaard => &[ElectoralDistrict::WsSchielandEnDeKrimpenerwaard],
+            WaterCouncil::Rivierenland => &[ElectoralDistrict::WsRivierenland],
+            WaterCouncil::HollandseDelta => &[ElectoralDistrict::WsHollandseDelta],
+            WaterCouncil::Scheldestromen => &[ElectoralDistrict::WsScheldestromen],
+            WaterCouncil::BrabantseDelta => &[ElectoralDistrict::WsBrabantseDelta],
+            WaterCouncil::DeDommel => &[ElectoralDistrict::WsDeDommel],
+            WaterCouncil::AaEnMaas => &[ElectoralDistrict::WsAaEnMaas],
+            WaterCouncil::Limburg => &[ElectoralDistrict::WsLimburg],
+            WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
         },
     }
 }
@@ -77,5 +113,11 @@ mod tests {
     fn election_config_exposes_districts() {
         let districts = ElectionConfig::EK27.electoral_districts();
         assert!(districts.contains(&ElectoralDistrict::NH));
+
+        let districts = ElectionConfig::PS27(Province::GE).electoral_districts();
+        assert!(districts.contains(&ElectoralDistrict::PsNijmegen));
+
+        let districts = ElectionConfig::WS27(WaterCouncil::AaEnMaas).electoral_districts();
+        assert!(districts.contains(&ElectoralDistrict::WsAaEnMaas));
     }
 }
