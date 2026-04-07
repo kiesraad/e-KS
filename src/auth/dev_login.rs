@@ -67,7 +67,7 @@ async fn ensure_dev_store(
         .store_registry
         .get_or_create(political_group_id.uuid())
         .await?;
-    let store_is_empty = store.data.read().last_event_id == 0;
+    let store_is_empty = store.data.read().events.is_empty();
 
     if load_fixtures {
         #[cfg(feature = "fixtures")]
@@ -97,7 +97,9 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{AppState, common::Bsn, router, test_utils::response_body_string};
+    use crate::{
+        AppState, common::Bsn, router, store::StoreEvent, test_utils::response_body_string,
+    };
 
     use super::*;
 
@@ -231,8 +233,14 @@ mod tests {
         assert!(matches!(
             store.get_events().as_slice(),
             &[
-                AppEvent::UpdatePoliticalGroup(..),
-                AppEvent::DeveloperLogin { .. }
+                StoreEvent {
+                    payload: AppEvent::UpdatePoliticalGroup(..),
+                    ..
+                },
+                StoreEvent {
+                    payload: AppEvent::DeveloperLogin { .. },
+                    ..
+                }
             ],
         ))
     }

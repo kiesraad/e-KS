@@ -132,7 +132,6 @@ where
                 let event_id = data.last_event_id() + 1;
                 let store_event = StoreEvent::new(event_id, event);
                 data.apply(store_event);
-                data.set_last_event_id(event_id);
 
                 Ok(())
             }
@@ -213,15 +212,12 @@ mod tests {
         type Event = usize;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
+            self.last_event_id = event.event_id;
             self.applied.push(event.payload);
         }
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
-        }
-
-        fn set_last_event_id(&mut self, event_id: usize) {
-            self.last_event_id = event_id;
         }
     }
 

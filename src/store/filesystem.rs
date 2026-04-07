@@ -96,7 +96,6 @@ where
                     created_at: event.created_at,
                 };
                 data.apply(store_event);
-                data.set_last_event_id(event.event_id);
             }
             Err(err) => {
                 tracing::error!("Failed to deserialize event payload: {err:?}");
@@ -183,15 +182,12 @@ mod tests {
         type Event = TestEvent;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
+            self.last_event_id = event.event_id;
             self.events.push((event.event_id, event.payload));
         }
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
-        }
-
-        fn set_last_event_id(&mut self, event_id: usize) {
-            self.last_event_id = event_id;
         }
     }
 

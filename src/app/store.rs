@@ -21,27 +21,24 @@ pub struct AppStoreData {
     pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
     pub(crate) list_submitters: HashMap<ListSubmitterId, ListSubmitter>,
     pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
-    // Track the last event ID applied to this store instance for synchronization purposes
-    pub(crate) last_event_id: usize,
 
     // Download path, file name, downloader id
     pub(crate) downloaded_files: Vec<(String, String, CandidateListId)>,
-    pub(crate) events: Vec<AppEvent>,
+    pub(crate) events: Vec<StoreEvent<AppEvent>>,
 }
 
 impl StoreData for AppStoreData {
     type Event = AppEvent;
 
     fn apply(&mut self, event: StoreEvent<AppEvent>) {
+        self.events.push(event.clone());
+
         let StoreEvent {
-            event_id,
             payload,
             created_at,
+            ..
         } = event;
-        self.last_event_id = event_id;
         let event_time = UtcDateTime::from(created_at);
-
-        self.events.push(payload.clone());
 
         match payload {
             AppEvent::UpdatePoliticalGroup(pg) => {
@@ -214,11 +211,7 @@ impl StoreData for AppStoreData {
     }
 
     fn last_event_id(&self) -> usize {
-        self.last_event_id
-    }
-
-    fn set_last_event_id(&mut self, event_id: usize) {
-        self.last_event_id = event_id;
+        self.events.last().map(|e| e.event_id).unwrap_or(0)
     }
 }
 
