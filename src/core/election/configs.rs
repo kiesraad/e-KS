@@ -121,6 +121,10 @@ mod tests {
         assert!(districts.contains(&ElectoralDistrict::PsNijmegen));
 
         let districts = ElectionConfig::WS27(WaterCouncil::AaEnMaas).electoral_districts();
-        assert!(districts.contains(&ElectoralDistrict::WsAaEnMaas));
+        assert_eq!(districts, &[ElectoralDistrict::WsAaEnMaas]);
+        let districts = ElectionConfig::WS27(WaterCouncil::Rivierenland).electoral_districts();
+        assert_eq!(districts, &[ElectoralDistrict::WsRivierenland]);
+        let districts = ElectionConfig::WS27(WaterCouncil::ValleiEnVeluwe).electoral_districts();
+        assert_eq!(districts, &[ElectoralDistrict::WsValleiEnVeluwe]);
     }
 }

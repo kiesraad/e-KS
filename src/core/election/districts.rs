@@ -256,6 +256,29 @@ mod tests {
             ElectoralDistrict::PsDenHaag.title(AnyLocale::En),
             "The Hague"
         );
+
+        assert_eq!(ElectoralDistrict::WsHunzeEnAas.code(), "WS-HEA");
+        assert_eq!(
+            ElectoralDistrict::WsHunzeEnAas.title(AnyLocale::Nl),
+            "Hunze en Aa's"
+        );
+        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.code(), "WS-AGV");
+        assert_eq!(
+            ElectoralDistrict::WsAmstelGooiEnVecht.title(AnyLocale::Nl),
+            "Amstel, Gooi en Vecht"
+        );
+
+        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Friesland");
+        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Fry), "Fryslân");
+        assert_eq!(ElectoralDistrict::WsFryslan.title(AnyLocale::Nl), "Fryslân");
+        assert_eq!(
+            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Nl),
+            "Leeuwarden"
+        );
+        assert_eq!(
+            ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Fry),
+            "Ljouwert"
+        );
     }
 
     #[test]
@@ -263,5 +286,44 @@ mod tests {
         let districts = ElectoralDistrict::ek27();
         assert!(districts.contains(&ElectoralDistrict::UT));
         assert_eq!(districts.len(), 16);
+    }
+
+    #[test]
+    fn similar_districts_have_different_codes() {
+        assert_eq!(
+            ElectoralDistrict::FR.title(AnyLocale::Fry),
+            ElectoralDistrict::WsFryslan.title(AnyLocale::Fry)
+        );
+        assert_ne!(
+            ElectoralDistrict::FR.code(),
+            ElectoralDistrict::WsFryslan.code()
+        );
+
+        assert_eq!(
+            ElectoralDistrict::GR.title(AnyLocale::Nl),
+            ElectoralDistrict::PsGroningen.title(AnyLocale::Nl)
+        );
+        assert_ne!(
+            ElectoralDistrict::GR.code(),
+            ElectoralDistrict::PsGroningen.code()
+        );
+
+        assert_eq!(
+            ElectoralDistrict::UT.title(AnyLocale::Nl),
+            ElectoralDistrict::PsUtrecht.title(AnyLocale::Nl)
+        );
+        assert_ne!(
+            ElectoralDistrict::UT.code(),
+            ElectoralDistrict::PsUtrecht.code()
+        );
+
+        assert_eq!(
+            ElectoralDistrict::LI.title(AnyLocale::Nl),
+            ElectoralDistrict::WsLimburg.title(AnyLocale::Nl)
+        );
+        assert_ne!(
+            ElectoralDistrict::LI.code(),
+            ElectoralDistrict::WsLimburg.code()
+        );
     }
 }

@@ -37,3 +37,24 @@ impl ElectionType {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn election_type_title_match() {
+        for election_type in &[
+            ElectionType::Tk,
+            ElectionType::Ek,
+            ElectionType::Gr,
+            ElectionType::Ps,
+            ElectionType::Ws,
+            ElectionType::Ep,
+            ElectionType::Er,
+        ] {
+            assert!(election_type.title(Locale::Nl).contains("verkiezing"));
+            assert!(election_type.title(Locale::En).contains("election"));
+        }
+    }
+}
