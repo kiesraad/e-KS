@@ -13,13 +13,14 @@ use tower_http::set_header::SetResponseHeaderLayer;
 use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
 
 use crate::{
-    AppState, authorised_agents, candidate_lists, candidates, common, list_submitters, persons,
-    political_groups, render_error_pages, session_middleware, store_middleware, submit,
+    AppState, audit_log, authorised_agents, candidate_lists, candidates, common, list_submitters,
+    persons, political_groups, render_error_pages, session_middleware, store_middleware, submit,
     substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
     let app_router = Router::new()
+        .merge(audit_log::router())
         .merge(common::router())
         .merge(persons::router())
         .merge(political_groups::router())

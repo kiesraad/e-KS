@@ -1,3 +1,4 @@
+pub mod audit_log;
 pub mod authorised_agents;
 pub mod candidate_lists;
 pub mod candidates;

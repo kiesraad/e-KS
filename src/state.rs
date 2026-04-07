@@ -38,7 +38,7 @@ impl AppState {
     ) -> Result<AppStore, AppError> {
         self.store_registry
             .get_or_create_with_init(political_group_id.uuid(), |store| async move {
-                let needs_init = store.data.read().last_event_id == 0;
+                let needs_init = store.data.read().events.is_empty();
                 if needs_init {
                     #[cfg(feature = "fixtures")]
                     crate::fixtures::load(&store, political_group_id).await?;

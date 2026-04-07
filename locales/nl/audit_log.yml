@@ -1,0 +1,32 @@
+empty: Er zijn nog geen gebeurtenissen vastgelegd.
+event:
+  add_candidate_to_list: Kandidaat aan lijst toegevoegd
+  create_authorised_agent: Gemachtigde aangemaakt
+  create_candidate_list: Kandidatenlijst aangemaakt
+  create_list_submitter: Lijstinleveraar aangemaakt
+  create_person: Persoon aangemaakt
+  create_substitute_submitter: Vervanger herstel verzuim aangemaakt
+  delete_authorised_agent: Gemachtigde verwijderd
+  delete_candidate_list: Kandidatenlijst verwijderd
+  delete_list_submitter: Lijstinleveraar verwijderd
+  delete_person: Persoon verwijderd
+  delete_substitute_submitter: Vervanger herstel verzuim verwijderd
+  developer_login: Ontwikkelaar ingelogd
+  download_file: Bestand gedownload
+  remove_candidate_from_list: Kandidaat van lijst verwijderd
+  update_authorised_agent: Gemachtigde bijgewerkt
+  update_candidate_list_districts: Kieskringen van lijst bijgewerkt
+  update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
+  update_candidate_list_submitters: Lijstinleveraars van kandidatenlijst bijgewerkt
+  update_list_submitter: Lijstinleveraar bijgewerkt
+  update_person: Persoon bijgewerkt
+  update_person_address: Adres van persoon bijgewerkt
+  update_person_representative: Gemachtigde van persoon bijgewerkt
+  update_political_group: Politieke groepering bijgewerkt
+  update_substitute_submitter: Vervanger herstel verzuim bijgewerkt
+fields:
+  details: Details
+  event: Gebeurtenis
+  event_id: "#"
+  timestamp: Tijdstip
+title: Logboek
