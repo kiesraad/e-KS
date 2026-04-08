@@ -32,6 +32,7 @@ export default defineConfig({
        name: 'webkit',
        use: {
          browserName: 'webkit',
+         acceptDownloads: true,
        },
      },
     {

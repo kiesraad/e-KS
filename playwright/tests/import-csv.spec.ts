@@ -72,9 +72,13 @@ test.describe("import and export candidates with csv file", () => {
 
   test("export", async ({ login: page }) => {
     const csvImportExport = await navigateToCsvPage(page);
-    const downloadPromise = page.waitForEvent("download");
-    await csvImportExport.buttonDownload.click();
-    const download = await downloadPromise;
+    await csvImportExport.buttonDownload.evaluate((el) =>
+      el.setAttribute("download", ""),
+    );
+    const [download] = await Promise.all([
+      page.waitForEvent("download"),
+      csvImportExport.buttonDownload.click(),
+    ]);
     expect(download.suggestedFilename()).toMatch(
       /candidate-list-export-nh\.csv/,
     );
