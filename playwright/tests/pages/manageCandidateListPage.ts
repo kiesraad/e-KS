@@ -14,6 +14,8 @@ export class ManageCandidateListPage {
   readonly buttonEditList: Locator;
   readonly buttonRemoveList: Locator;
   readonly buttonConfirmRemoveList: Locator;
+  readonly buttonCSV: Locator;
+  readonly headingCandidateList: Locator;
 
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
@@ -38,6 +40,10 @@ export class ManageCandidateListPage {
     this.buttonConfirmRemoveList = this.page.getByRole("button", {
       name: "Verwijderen",
       exact: true,
+    });
+    this.buttonCSV = this.page.getByRole("link", { name: "CSV" });
+    this.headingCandidateList = this.page.getByRole("heading", {
+      name: "Kandidatenlijst",
     });
   }
 
