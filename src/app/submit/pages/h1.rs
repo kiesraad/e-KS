@@ -12,7 +12,6 @@ pub async fn gen_h1(
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     let h1 = H1::new(&store, list_id, &context.session.election, locale)?;
-
     store
         .update(AppEvent::DownloadFile {
             file_name: h1.filename().to_string(),
