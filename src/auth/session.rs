@@ -97,7 +97,7 @@ impl Session {
             political_group_id: None,
             locale,
             csrf_tokens: CsrfTokens::default(),
-            election: ElectionConfig::EK2027,
+            election: ElectionConfig::EK27,
         }
     }
 

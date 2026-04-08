@@ -79,11 +79,11 @@
 )
 
 /// Table with two columns, with labels on the left
-#let label_table(values: ()) = table(
-  columns: (auto, 1fr),
+#let label_table(values: ()) = block(breakable: false, table(
+  columns: (1fr, 2fr),
   ..values.flatten(),
   inset: (left: 0pt)
-)
+))
 
 /// Line with space to fill in later
 #let fill_in(height: 2em, width: 100%) = box(width: width, height: height, stroke: (bottom: 1pt + black), inset: 0pt)[]

@@ -62,8 +62,8 @@ pub mod utils;
 pub mod fixtures;
 
 pub use app::{
-    AppEvent, AppStoreData, Context, authorised_agents, candidate_lists, candidates, common,
-    list_submitters, persons, political_groups, submit, substitute_list_submitters,
+    AppEvent, AppStoreData, Context, audit_log, authorised_agents, candidate_lists, candidates,
+    common, list_submitters, persons, political_groups, submit, substitute_list_submitters,
 };
 pub use auth::{
     session::{SESSION_IDLE_TIMEOUT, Session},

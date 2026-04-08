@@ -31,11 +31,11 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | Tweede Kamerverkiezing          | TK        | election of the House of Representatives  | ook *election(s) to* wordt gebruikt |
 | Eerste Kamerverkiezing          | EK        | election of the Senate                    |                                     |
 | gemeenteraadsverkiezingen       | GR        | elections of the municipal council        |                                     |
-| provinciale statenverkiezingen  | PS        | elections of the provincial council       |                                     |
+| Provinciale Statenverkiezingen  | PS        | elections of the provincial council       |                                     |
 | waterschapsverkiezingen         | WS        | elections of the water authority          | AB in EML_NL                        |
 | Europees Parlementsverkiezing   | EP        | election of the European Parliament       |                                     |
-| kiescolleges Eerste Kamer       |           | electoral colleges for the Senate         |                                     |
-| Eilandsraadsverkiezingen        |           | elections of the Island Councils          | ER in EML_NL                        |
+| kiescolleges Eerste Kamer       | KC        | electoral colleges for the Senate         |                                     |
+| eilandsraadsverkiezingen        | ER        | elections of the Island Councils          | ER in EML_NL                        |
 | herindelingsverkiezingen        | GRh       | redivision elections                      | GR in EML_NL                        |
 
 

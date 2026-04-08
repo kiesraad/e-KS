@@ -203,7 +203,7 @@ mod test {
 
     #[tokio::test]
     async fn test_determine_available_districts() {
-        let election = ElectionConfig::EK2027;
+        let election = ElectionConfig::EK27;
         let all_districts = election.electoral_districts().to_vec();
 
         let none_used = vec![];
