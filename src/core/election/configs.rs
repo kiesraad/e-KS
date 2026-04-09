@@ -96,6 +96,10 @@ impl ElectionConfig {
             .cloned()
             .collect()
     }
+
+    pub fn has_only_one_district(&self) -> bool {
+        self.electoral_districts().len() == 1
+    }
 }
 
 #[cfg(test)]

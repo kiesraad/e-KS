@@ -23,14 +23,16 @@
 *#input.election_name*
 
 
-= #trans("Kieskringen", "Kiesrûnten")
-#trans("De kandidatenlijst wordt ingeleverd voor", "De kandidatelist wurdt ynlevere foar")
-#if input.electoral_districts.tag == "All" {
-  trans([*alle kieskringen.*], [*alle kiesrûnten.*])
-} else {
-  trans([*de volgende kieskring(en):*], [*de neikommende kiesrûnte(n):*])
-  block(above: 1em, input.electoral_districts.districts.join(", "))
-}
+#if input.electoral_districts.tag != "OnlyOne" [
+  = #trans("Kieskringen", "Kiesrûnten")
+  #trans("De kandidatenlijst wordt ingeleverd voor", "De kandidatelist wurdt ynlevere foar")
+  #if input.electoral_districts.tag == "All" {
+    trans([*alle kieskringen.*], [*alle kiesrûnten.*])
+  } else {
+    trans([*de volgende kieskring(en):*], [*de neikommende kiesrûnte(n):*])
+    block(above: 1em, input.electoral_districts.districts.join(", "))
+  }
+]
 
 
 = #trans("Aanduiding van de politieke groepering", "De politike groepearring")

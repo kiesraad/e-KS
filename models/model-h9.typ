@@ -30,16 +30,16 @@
 )
 *#input.election_name*
 
-
-= #trans("Kieskringen", "Kiesrûnten")
-// TODO: this is slightly different from the h1, should we allow people to only agree for certain electoral districts?
-#trans("Mijn instemming geldt voor:", "Myn ynstimming jildt foar:")
-#if input.electoral_districts.tag == "All" {
-  trans([*alle kieskringen*], [*alle kiesrûnten*])
-} else {
-  block(above: 1em, input.electoral_districts.districts.join(", "))
-}
-
+#if input.electoral_districts.tag != "OnlyOne" [
+  = #trans("Kieskringen", "Kiesrûnten")
+  // TODO: this is slightly different from the h1, should we allow people to only agree for certain electoral districts?
+  #trans("Mijn instemming geldt voor:", "Myn ynstimming jildt foar:")
+  #if input.electoral_districts.tag == "All" {
+    trans([*alle kieskringen*], [*alle kiesrûnten*])
+  } else {
+    block(above: 1em, input.electoral_districts.districts.join(", "))
+  }
+]
 
 = #trans("Politieke groepering", "Politike groepearring")
 #trans(
@@ -56,12 +56,9 @@
   values: input.candidates.map(c => ([#c.position], c.last_name, c.initials, c.locality)),
 )
 
-
+#if input.detailed_candidate.representative != none [
 = #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
-#if input.detailed_candidate.representative == none {
-  trans([_niet van toepassing_], [_net fan tapassing_])
-} else {
-  column_table(
+  #column_table(
     columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
     headers: (
       trans("naam", "namme"),
@@ -80,10 +77,9 @@
       ),
     ),
   )
-}
+]
 
-
-#if input.election_type != "KNCI" [
+#if input.election_type != "KCNI" [
   = #trans("Adres voor de kennisgeving van mijn benoeming", "Adres foar de meidieling fan myn beneaming")
   // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
   #if input.detailed_candidate.postal_address == none {

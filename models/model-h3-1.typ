@@ -33,22 +33,22 @@
 )
 *#input.election_name*
 
-
-= #trans("Kieskringen", "Kiesrûnten")
-#trans("De machtiging geldt", "De machtiging jildt")
-#if input.electoral_districts.tag == "All" {
-  trans(
-    [*voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.*],
-    [*foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.*],
-  )
-} else {
-  trans(
-    [*uitsluitend voor de volgende kieskring(en):*],
-    [*allinnich foar de neikommende kiesrûnte(n):*],
-  )
-  block(above: 1em, input.electoral_districts.districts.join(", "))
-}
-
+#if input.electoral_districts.tag != "OnlyOne" [
+  = #trans("Kieskringen", "Kiesrûnten")
+  #trans("De machtiging geldt", "De machtiging jildt")
+  #if input.electoral_districts.tag == "All" {
+    trans(
+      [*voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.*],
+      [*foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.*],
+    )
+  } else {
+    trans(
+      [*uitsluitend voor de volgende kieskring(en):*],
+      [*allinnich foar de neikommende kiesrûnte(n):*],
+    )
+    block(above: 1em, input.electoral_districts.districts.join(", "))
+  }
+]
 
 = #trans("Aanduiding van de politieke groepering", "Oantsjutting fan de politike groepearring")
 #trans(

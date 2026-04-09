@@ -7,6 +7,7 @@ use crate::{ElectionConfig, candidate_lists::CandidateList, core::ModelLocale};
 pub enum TypstElectoralDistricts {
     All,
     Some(Vec<String>),
+    OnlyOne,
 }
 
 impl TypstElectoralDistricts {
@@ -15,7 +16,9 @@ impl TypstElectoralDistricts {
         election_config: &ElectionConfig,
         locale: ModelLocale,
     ) -> Self {
-        if list.contains_all_districts(election_config) {
+        if election_config.has_only_one_district() {
+            TypstElectoralDistricts::OnlyOne
+        } else if list.contains_all_districts(election_config) {
             TypstElectoralDistricts::All
         } else {
             TypstElectoralDistricts::Some(

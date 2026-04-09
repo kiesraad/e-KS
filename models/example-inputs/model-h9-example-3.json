@@ -1,0 +1,70 @@
+{
+  "election_name": "het algemeen bestuur van het waterschap Rijn en IJssel",
+  "election_type": "WS",
+  "electoral_districts": {
+    "tag": "OnlyOne"
+  },
+  "designation": "Een Andere Partij (EAP)",
+  "candidates": [
+    {
+      "last_name": "Akwasi",
+      "initials": "M. (v)",
+      "date_of_birth": {
+        "year": 1997,
+        "month": 12,
+        "day": 25
+      },
+      "locality": "Ede",
+      "position": 1
+    },
+    {
+      "last_name": "Altena",
+      "initials": "J. (m)",
+      "date_of_birth": {
+        "year": 2001,
+        "month": 10,
+        "day": 30
+      },
+      "locality": "'s-Gravenhage",
+      "position": 2
+    },
+    {
+      "last_name": "Bronwaßer",
+      "initials": "I.E. (v)",
+      "date_of_birth": {
+        "year": 2005,
+        "month": 3,
+        "day": 5
+      },
+      "locality": "Rotterdam",
+      "position": 3
+    }
+  ],
+  "detailed_candidate": {
+    "candidate": {
+      "last_name": "Akwasi",
+      "initials": "M. (v)",
+      "date_of_birth": "1997-09-01",
+      "locality": "Ede",
+      "position": 1
+    },
+    "initials_no_gender": "M. (Maria)",
+    "bsn": "999999321",
+    "representative": null,
+    "postal_address": {
+      "street_address": "Molenweg 37",
+      "postal_code": "1111AA",
+      "locality": "Ede"
+    }
+  },
+  "timestamp": {
+    "year": 2025,
+    "month": 8,
+    "day": 21,
+    "hour": 11,
+    "minute": 32,
+    "second": 21
+  },
+  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0 9184 446B 5415 8D5D 674A B7BC E92C E98A",
+  "locale": "nl"
+}
