@@ -103,19 +103,9 @@ impl Candidate {
 
     pub fn after_update_path(&self) -> String {
         if self.person.lives_in_nl() {
-            CandidateListUpdateAddressPath {
-                list_id: self.list_id,
-                person_id: self.person.id,
-            }
-            .with_query_params(QueryParamState::success())
-            .to_string()
+            self.update_address_path().to_string()
         } else {
-            UpdateRepresentativePath {
-                list_id: self.list_id,
-                person_id: self.person.id,
-            }
-            .with_query_params(QueryParamState::success())
-            .to_string()
+            self.update_representative_path().to_string()
         }
     }
 

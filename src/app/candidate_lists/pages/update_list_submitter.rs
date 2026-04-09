@@ -10,7 +10,6 @@ use crate::{
     filters,
     form::FormData,
     list_submitters::ListSubmitter,
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -85,7 +84,7 @@ pub async fn update_list_submitter_submit(
         Ok(candidate_list) => {
             candidate_list.update_submitters(&store).await?;
 
-            Ok(redirect_success(candidate_list.view_path()))
+            Ok(query.redirect_or(candidate_list.view_path()))
         }
     }
 }

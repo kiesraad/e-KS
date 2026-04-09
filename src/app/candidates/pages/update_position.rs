@@ -1,8 +1,8 @@
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     common::FormAction,
@@ -54,6 +54,7 @@ pub async fn update_candidate_position_submit(
     full_list: FullCandidateList,
     candidate: Candidate,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
@@ -83,7 +84,7 @@ pub async fn update_candidate_position_submit(
                 list.update_position(&store, candidate.person.id, position_form.position)
                     .await?;
 
-                Ok(redirect_success(candidate.update_path()))
+                Ok(query.redirect_or(candidate.update_path()))
             }
         },
     }
@@ -93,7 +94,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, TokenValue,
+        AppStore, Context, Form, QueryParamState, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -101,7 +102,7 @@ mod tests {
             sample_person_with_last_name,
         },
     };
-    use axum::{http::StatusCode, response::IntoResponse};
+    use axum::{extract::Query, http::StatusCode, response::IntoResponse};
 
     fn sample_position_form(
         csrf_token: &TokenValue,
@@ -183,6 +184,7 @@ mod tests {
             full_list,
             candidate,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?
@@ -232,6 +234,7 @@ mod tests {
             full_list,
             candidate,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?
@@ -280,6 +283,7 @@ mod tests {
             full_list,
             candidate,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?

@@ -1,8 +1,11 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::UpdatePersonPath},
 };
@@ -39,6 +42,7 @@ pub async fn update_person_submit(
     context: Context,
     store: AppStore,
     person: Person,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update_with_checks(
@@ -60,7 +64,7 @@ pub async fn update_person_submit(
                 .update_personal_data(&store, updated.name, updated.personal_data)
                 .await?;
 
-            Ok(Redirect::to(&updated.after_update_path()).into_response())
+            Ok(query.redirect_or(updated.after_update_path()))
         }
     }
 }
@@ -69,12 +73,13 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, AppStore, Context, Form, QueryParamState,
         common::DateOfBirth,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -117,13 +122,14 @@ mod tests {
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
-        let expected_path = person.after_update_path();
+        let expected_path = format!("{}?&success=true", person.after_update_path());
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
             context,
             store.clone(),
             person,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -162,6 +168,7 @@ mod tests {
             context,
             store,
             person,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -196,6 +203,7 @@ mod tests {
             context,
             store,
             person,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

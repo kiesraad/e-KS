@@ -1,4 +1,5 @@
 //! Query parameter state for UI feedback and highlighting.
+use axum::response::{IntoResponse, Redirect, Response};
 use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
@@ -12,6 +13,9 @@ pub struct QueryParamState {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     highlight: Option<Uuid>,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "Option::is_none")]
+    redirect_to: Option<String>,
 }
 
 impl QueryParamState {
@@ -59,5 +63,20 @@ impl QueryParamState {
             highlight: Some(id),
             ..Default::default()
         }
+    }
+
+    /// Redirect to `redirect_to` query param if present (and a valid relative path),
+    /// otherwise redirect to the default path with success query params.
+    pub fn redirect_or(&self, default: impl std::fmt::Display) -> Response {
+        let mut url = match &self.redirect_to {
+            Some(url) if url.starts_with('/') => url.clone(),
+            _ => default.to_string(),
+        };
+
+        if !url.contains('?') {
+            url.push_str("?&success=true");
+        }
+
+        Redirect::to(&url).into_response()
     }
 }
