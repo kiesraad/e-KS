@@ -10,8 +10,10 @@ macro_rules! define_elections {
                     en: $title_en:expr $(,)?
                 },
                 nomination_day_date: $nomination_day_date:expr,
+                election_date: $election_date:expr,
                 eligible_date_of_birth: $eligible_date_of_birth:expr,
-                electoral_districts: $electoral_districts:expr $(,)?
+                electoral_districts: $electoral_districts:expr $(,)?,
+                nineteen_or_more_seats: $nineteen_or_more_seats:expr
             }
         ),* $(,)?
     ) => {
@@ -84,11 +86,21 @@ macro_rules! define_elections {
                 }
             }
 
+
             pub fn nomination_day_date(&self) -> NaiveDate {
                 #[allow(unused)]
                 match self {
                     $(
                         Self::$name $(($binding))? => $nomination_day_date,
+                    )*
+                }
+            }
+
+            pub fn election_date(&self) -> NaiveDate {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => $election_date,
                     )*
                 }
             }
@@ -110,6 +122,15 @@ macro_rules! define_elections {
                 }
             }
 
+            pub fn nineteen_or_more_seats(&self) -> bool {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => $nineteen_or_more_seats,
+                    )*
+                }
+            }
+
             /// Parse an election code plus optional region code into a variant.
             /// Variants without a region ignore the `region` argument; variants
             /// with one return `None` if `region` is missing or invalid.
@@ -122,6 +143,7 @@ macro_rules! define_elections {
                 )*
                 None
             }
+
         }
     };
 }

@@ -996,6 +996,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "csv",
+ "eml-nl",
  "futures-core",
  "hkdf 0.13.0",
  "http-body-util",
@@ -1038,6 +1039,18 @@ name = "embedded-io"
 version = "0.6.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
+
+[[package]]
+name = "eml-nl"
+version = "0.5.0"
+source = "git+https://github.com/kiesraad/rust-eml-nl.git?branch=nomination-210-support#742bf6acf63f3acaf9cf6b3941396ac888f3a1f5"
+dependencies = [
+ "chrono",
+ "quick-xml",
+ "regex",
+ "thiserror",
+ "tracing",
+]
 
 [[package]]
 name = "encoding_rs"

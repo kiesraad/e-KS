@@ -47,7 +47,7 @@ impl<'zip> H9<'zip> {
         let detailed_candidate = TypstDetailedCandidate::try_from(&candidate, locale)?;
         let filename = format!(
             "model-h9-{}-{}.pdf",
-            slugify_teletex(&detailed_candidate.candidate.last_name),
+            slugify_teletex(&detailed_candidate.candidate.last_name, true),
             detailed_candidate.candidate.position
         );
 

@@ -177,6 +177,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {msg}"),
             },
+            AppError::EmlError(err) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("EML error: {err}"),
+            },
         }
     }
 }

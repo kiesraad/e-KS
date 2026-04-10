@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLocale};
 
+mod eml210;
 mod h1;
 mod h3_1;
 mod h4;
@@ -15,6 +16,12 @@ mod integration_tests;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/submit", rejection(AppError))]
 pub struct SubmitPath;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/generate/{list_id}/eml210.xml", rejection(AppError))]
+pub struct DownloadEml210Path {
+    list_id: CandidateListId,
+}
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{list_id}/{locale}/h1.pdf", rejection(AppError))]
@@ -47,6 +54,7 @@ pub struct DownloadH9Path {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)
+        .typed_get(eml210::gen_eml210)
         .typed_get(h1::gen_h1)
         .typed_get(h3_1::gen_h3_1)
         .typed_get(h4::gen_h4)

@@ -17,8 +17,10 @@ super::define_elections! {
             en: "Election of the Senate of the States General 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap(),
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
         electoral_districts: ElectoralDistrict::ek27(),
+        nineteen_or_more_seats: true
     },
 
     PS27(province: Province) {
@@ -29,6 +31,7 @@ super::define_elections! {
             en: "Elections of the Provincial Council 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap(),
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match province {
             Province::GR => &[ElectoralDistrict::PsGroningen],
@@ -44,6 +47,7 @@ super::define_elections! {
             Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
             Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
         },
+        nineteen_or_more_seats: true // for this election, all provinces have >= 19 seats
     },
 
     WS27(water_council: WaterCouncil) {
@@ -54,6 +58,7 @@ super::define_elections! {
             en: "Elections of the Water Authority 2027",
         },
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap(),
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match water_council {
             WaterCouncil::Noorderzijlvest => &[ElectoralDistrict::WsNoorderzijlvest],
@@ -78,6 +83,7 @@ super::define_elections! {
             WaterCouncil::Limburg => &[ElectoralDistrict::WsLimburg],
             WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
         },
+        nineteen_or_more_seats: true // for this election, all councils have >= 19 seats
     }
 }
 
