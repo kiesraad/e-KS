@@ -94,6 +94,7 @@ mod tests {
         let config = Config {
             storage_url: "memory:".to_string(),
             typst_url,
+            id_derivation_key: secrecy::SecretString::from("test-key"),
         };
 
         (server, config)

@@ -12,7 +12,7 @@
   <div class="checklist grid" id="district_list">
     {% for d in election.electoral_districts() %}
     <div class="checkbox {% if !available_districts.contains(&d) %}disabled{% endif %}">
-      <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.code() }}"
+      <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.serde_name() }}"
         {% if form.data.electoral_districts.contains(&d) %}checked{% endif %} />
       <label for="electoral_district_{{ d.code() }}">
         {{ d|district_name }}

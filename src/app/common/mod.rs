@@ -16,4 +16,4 @@ pub use structs::{
     UtcDateTime,
 };
 
-pub use pages::{IndexPath, SwitchLanguagePath, not_found, router};
+pub use pages::{IndexPath, SwitchElectionPath, SwitchLanguagePath, not_found, router};

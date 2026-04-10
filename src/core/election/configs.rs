@@ -82,6 +82,43 @@ super::define_elections! {
 }
 
 impl ElectionConfig {
+    /// Short code identifying the election type (without region), used in forms.
+    pub fn code(&self) -> &'static str {
+        match self {
+            ElectionConfig::EK27 => "EK27",
+            ElectionConfig::PS27(_) => "PS27",
+            ElectionConfig::WS27(_) => "WS27",
+        }
+    }
+
+    /// Stable ID for the election configuration, used in HKDF derivation.
+    pub fn stable_id(&self) -> String {
+        match self {
+            ElectionConfig::EK27 => "EK27".to_string(),
+            ElectionConfig::PS27(province) => format!("PS27:{}", province.code()),
+            ElectionConfig::WS27(water_council) => {
+                format!("WS27:{}", water_council.code())
+            }
+        }
+    }
+
+    /// Returns the region title (province or water council name), if any.
+    pub fn region_title(&self, locale: AnyLocale) -> Option<&'static str> {
+        match self {
+            ElectionConfig::EK27 => None,
+            ElectionConfig::PS27(p) => Some(p.title(locale)),
+            ElectionConfig::WS27(wc) => Some(wc.title(locale)),
+        }
+    }
+
+    /// Returns all concrete election configurations.
+    pub fn all() -> Vec<ElectionConfig> {
+        let mut configs = vec![ElectionConfig::EK27];
+        configs.extend(Province::ALL.iter().map(|p| ElectionConfig::PS27(*p)));
+        configs.extend(WaterCouncil::ALL.iter().map(|wc| ElectionConfig::WS27(*wc)));
+        configs
+    }
+
     pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
         if long_list_allowed { 80 } else { 50 }
     }

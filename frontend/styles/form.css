@@ -37,6 +37,10 @@
       max-width: 12rem;
     }
 
+    &.form-field-lg {
+      max-width: 30rem;
+    }
+
     &.form-field-full {
       max-width: 100%;
 

@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict, PoliticalGroupId,
+    ElectionConfig, ElectoralDistrict, StreamId,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, FullName},
@@ -13,6 +13,9 @@ use crate::{
 /// Domain events that mutate the application store.
 #[derive(Debug, Serialize, Deserialize, Clone)]
 pub enum AppEvent {
+    StreamCreated {
+        election: ElectionConfig,
+    },
     UpdatePoliticalGroup(PoliticalGroup),
     CreatePerson(Person),
     CreatePersonPersonalData {
@@ -78,7 +81,7 @@ pub enum AppEvent {
     },
 
     DeveloperLogin {
-        political_group_id: PoliticalGroupId,
+        stream_id: StreamId,
     },
 
     DownloadFile {

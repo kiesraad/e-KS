@@ -24,6 +24,16 @@ submit_description:
   submit: Lever de kandidatenlijst(en) in
   view_follow_up_steps: Bekijk de vervolgstappen
 submit_instruction: Doe dit uiterlijk op de dag van kandidaatstelling
+switch_election:
+  election: Verkiezing
+  existing: Verkiezingen
+  label: Verkiezing wisselen
+  province: Provincie
+  region: Regio
+  resume: Hervatten
+  select_region: kies een regio
+  submit: Verkiezing wisselen
+  water_council: Waterschap
 title: Kiesraad - Kandidaatstelling
 version: Versie
 yes_label: Ja

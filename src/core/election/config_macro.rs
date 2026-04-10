@@ -16,7 +16,7 @@ macro_rules! define_elections {
         ),* $(,)?
     ) => {
 	    /// Active election configurations and ruleset for the application.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
         pub enum ElectionConfig {
             $(
                 $name $(($binding_ty))?,

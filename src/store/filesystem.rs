@@ -107,6 +107,23 @@ where
     Ok(last_file_id)
 }
 
+/// Check which of the given stream IDs have persisted events on disk.
+pub async fn streams_with_data(
+    dir: &Path,
+    stream_ids: &[uuid::Uuid],
+) -> std::collections::HashSet<uuid::Uuid> {
+    let mut result = std::collections::HashSet::new();
+    for &id in stream_ids {
+        let path = stream_path(dir, id);
+        if let Ok(meta) = fs::metadata(&path).await
+            && meta.len() > 0
+        {
+            result.insert(id);
+        }
+    }
+    result
+}
+
 /// Ensure a stream file exists for local storage.
 pub async fn ensure_stream_file(dir: &Path, stream_id: uuid::Uuid) -> Result<(), AppError> {
     let path = stream_path(dir, stream_id);
@@ -180,6 +197,11 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = TestEvent;
+        type Init = ();
+
+        fn new(_: ()) -> Self {
+            Self::default()
+        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
