@@ -1,41 +1,84 @@
-use crate::core::{AnyLocale, ElectionType, ModelLocale};
+use crate::core::{AnyLocale, ElectionType, ModelLocale as Locale};
 
-pub fn generate_election_title(election_type: &ElectionType, locale: ModelLocale) -> String {
-    match (locale, election_type) {
-        (ModelLocale::Nl, ElectionType::Tk) => "de Tweede Kamer der Staten-Generaal".to_string(),
-        (ModelLocale::Nl, ElectionType::Ek) => "de Eerste Kamer der Staten-Generaal".to_string(),
-        (ModelLocale::Nl, ElectionType::Ps(province)) => {
+pub fn generate_election_title(election_type: &ElectionType, locale: Locale) -> String {
+    match (election_type, locale) {
+        (ElectionType::Tk, Locale::Nl) => "de Tweede Kamer der Staten-Generaal".to_string(),
+        (ElectionType::Tk, Locale::Fry) => "de Twadde Keamer fan de Steaten-Generaal".to_string(),
+
+        (ElectionType::Ek, Locale::Nl) => "de Eerste Kamer der Staten-Generaal".to_string(),
+        (ElectionType::Ek, Locale::Fry) => "de Earste Keamer fan de Steaten-Generaal".to_string(),
+
+        (ElectionType::Ps(province), Locale::Nl) => {
             format!(
                 "de provinciale staten van {}",
                 province.title(AnyLocale::from(locale))
             )
         }
-        (ModelLocale::Nl, ElectionType::Ws(council)) => format!(
-            "het algemeen bestuur van het waterschap {}",
-            council.title(AnyLocale::from(locale))
-        ),
-        (ModelLocale::Nl, ElectionType::Ep) => "het Europees Parlement".to_string(),
-
-        (ModelLocale::Fry, ElectionType::Tk) => {
-            "de Twadde Keamer fan de Steaten-Generaal".to_string()
-        }
-        (ModelLocale::Fry, ElectionType::Ek) => {
-            "de Earste Keamer fan de Steaten-Generaal".to_string()
-        }
-        (ModelLocale::Fry, ElectionType::Ps(province)) => {
+        (ElectionType::Ps(province), Locale::Fry) => {
             format!(
                 "de Provinsjale Steaten fan {}",
                 province.title(AnyLocale::from(locale))
             )
         }
-        (ModelLocale::Fry, ElectionType::Ws(council)) => format!(
+
+        (ElectionType::Ws(council), Locale::Nl) => format!(
+            "het algemeen bestuur van het waterschap {}",
+            council.title(AnyLocale::from(locale))
+        ),
+        (ElectionType::Ws(council), Locale::Fry) => format!(
             "it algemien bestjoer fan it wetterskip {}",
             council.title(AnyLocale::from(locale))
         ),
-        (ModelLocale::Fry, ElectionType::Ep) => "het Europees Parlement".to_string(),
 
-        (_, ElectionType::Kc) => todo!("Support electoral college regions"),
-        (_, ElectionType::Er) => todo!("Support island regions"),
-        (_, ElectionType::Gr) => todo!("Support municipality regions"),
+        (ElectionType::Ep, Locale::Nl) => "het Europees Parlement".to_string(),
+        (ElectionType::Ep, Locale::Fry) => "het Europees Parlement".to_string(),
+
+        (ElectionType::Gr, _) => todo!("Support municipality regions"),
+        (ElectionType::Kc, _) => todo!("Support electoral college regions"),
+        (ElectionType::Er, _) => todo!("Support island regions"),
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use std::panic::catch_unwind;
+
+    use crate::core::election::{Province, WaterCouncil};
+
+    use super::*;
+
+    #[test]
+    fn election_title() {
+        // This test is not exhaustive
+        assert_eq!(
+            generate_election_title(&ElectionType::Ek, Locale::Nl),
+            "de Eerste Kamer der Staten-Generaal"
+        );
+        assert_eq!(
+            generate_election_title(&ElectionType::Tk, Locale::Fry),
+            "de Twadde Keamer fan de Steaten-Generaal"
+        );
+    }
+
+    #[test]
+    fn election_tile_with_sub_type() {
+        assert_eq!(
+            generate_election_title(&ElectionType::Ps(Province::DR), Locale::Nl),
+            "de provinciale staten van Drenthe"
+        );
+
+        assert_eq!(
+            generate_election_title(&ElectionType::Ws(WaterCouncil::Fryslan), Locale::Fry),
+            "it algemien bestjoer fan it wetterskip Fryslân"
+        );
+    }
+
+    #[test]
+    fn unimplemented() {
+        assert!(catch_unwind(|| generate_election_title(&ElectionType::Gr, Locale::Nl)).is_err());
+
+        assert!(catch_unwind(|| generate_election_title(&ElectionType::Kc, Locale::Fry)).is_err());
+
+        assert!(catch_unwind(|| generate_election_title(&ElectionType::Er, Locale::Nl)).is_err());
     }
 }

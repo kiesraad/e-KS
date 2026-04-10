@@ -14,7 +14,7 @@ pub enum ElectionType {
     Ps(Province),
     Ws(WaterCouncil),
     Ep,
-    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported 
+    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported
     Er,
 }
 

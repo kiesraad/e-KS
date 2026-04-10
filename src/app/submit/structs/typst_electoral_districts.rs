@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{ElectionConfig, candidate_lists::CandidateList, core::ModelLocale};
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, PartialEq, Eq)]
 #[serde(tag = "tag", content = "districts")]
 pub enum TypstElectoralDistricts {
     All,
@@ -34,7 +34,7 @@ impl TypstElectoralDistricts {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::ElectoralDistrict;
+    use crate::{ElectoralDistrict, core::election::WaterCouncil};
 
     #[test]
     fn electoral_districts_from_full_list_returns_all() {
@@ -44,10 +44,10 @@ mod tests {
             ..Default::default()
         };
 
-        assert!(matches!(
+        assert_eq!(
             TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry),
             TypstElectoralDistricts::All
-        ));
+        );
     }
 
     #[test]
@@ -65,7 +65,7 @@ mod tests {
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
                 );
             }
-            TypstElectoralDistricts::All => panic!("expected Some districts"),
+            _ => panic!("expected Some districts"),
         }
         match TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
             TypstElectoralDistricts::Some(districts) => {
@@ -74,7 +74,19 @@ mod tests {
                     vec!["Utert".to_string(), "Noard-Hollân".to_string()]
                 );
             }
-            TypstElectoralDistricts::All => panic!("expected Some districts"),
+            _ => panic!("expected Some districts"),
         }
+    }
+
+    #[test]
+    fn electoral_districts_with_only_one_district_returns_only_one() {
+        let election = ElectionConfig::WS27(WaterCouncil::RijnEnIJssel);
+        let list = CandidateList {
+            ..Default::default()
+        };
+
+        let district = TypstElectoralDistricts::from(&list, &election, ModelLocale::Nl);
+
+        assert_eq!(district, TypstElectoralDistricts::OnlyOne);
     }
 }

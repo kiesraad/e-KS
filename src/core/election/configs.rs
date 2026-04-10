@@ -131,4 +131,10 @@ mod tests {
         let districts = ElectionConfig::WS27(WaterCouncil::ValleiEnVeluwe).electoral_districts();
         assert_eq!(districts, &[ElectoralDistrict::WsValleiEnVeluwe]);
     }
+
+    #[test]
+    fn has_only_district() {
+        assert!(ElectionConfig::PS27(Province::DR).has_only_one_district());
+        assert!(!ElectionConfig::PS27(Province::GE).has_only_one_district());
+    }
 }

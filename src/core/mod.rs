@@ -1,6 +1,6 @@
 mod config;
 mod csv;
-mod election;
+pub mod election;
 mod locale;
 mod model_locale;
 mod pdf;
