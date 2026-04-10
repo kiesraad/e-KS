@@ -2,6 +2,8 @@
 
 ## For PR maintainer
 
+Perform these checks before marking the PR as ready:
+
 - [ ] I have linked the PR to at least one issue.
 - [ ] I assigned the PR to myself.
 - [ ] I have added a description how to test this PR (see "Review Instructions").
@@ -10,12 +12,12 @@
 
 ## For reviewer
 
-- [ ] I have read all code changes.
-- [ ] I have audited the code quality.
-- I have tested the changes...
-  - [ ] locally
-  - [ ] on the test environment (preferred)
-- [ ] I have validated that the PR is functionally correct (use-cases, figma designs, etc.)
+- I have read all code changes.
+- I have audited the code quality.
+- I have tested the changes either or both:
+  - locally
+  - on the test environment (preferred)
+- I have validated that the PR is functionally correct (use-cases, figma designs, etc.)
 
 ### Review instructions
 
