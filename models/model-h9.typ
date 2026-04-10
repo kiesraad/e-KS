@@ -57,7 +57,7 @@
 )
 
 #if input.detailed_candidate.representative != none [
-= #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
+  = #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
   #column_table(
     columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
     headers: (
@@ -79,7 +79,7 @@
   )
 ]
 
-#if input.election_type != "KCNI" [
+#if input.election_type != "KCNI" and input.detailed_candidate.representative == none [
   = #trans("Adres voor de kennisgeving van mijn benoeming", "Adres foar de meidieling fan myn beneaming")
   // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
   #if input.detailed_candidate.postal_address == none {

@@ -10,11 +10,11 @@ use crate::{
 pub enum ElectionType {
     Tk,
     Ek,
-    Gr, // TODO gemeente
+    Gr,
     Ps(Province),
     Ws(WaterCouncil),
     Ep,
-    Kc,
+    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported 
     Er,
 }
 

@@ -124,31 +124,29 @@
       "In betellingsbewiis fan de boarchsom, want de list komt net yn oanmerking foar de ûntheffing fan dy ferplichting (model H 12).",
     )
   ]
-  #if input.election_type != "EK" [
-    #checkbox(checked: true)[
-      #trans(
-        "Een verklaring van voorgenomen vestiging van iedere op de lijst voorkomende kandidaat die niet woonachtig is in het gebied waarop de verkiezing betrekking heeft (alleen bij een verkiezing van provinciale staten, het algemeen bestuur van een waterschap, een gemeenteraad, de eilandsraden van de openbare lichamen Bonaire, Saba of Sint Eustatius en de kiescolleges van de openbare lichamen).",
-        "In ferklearring fan foarnommen fêstiging foar alle op de list foarkommende kandidaten dy’t net wenjend binne yn it gebiet dêr’t de ferkiezing op slacht (allinnich by in ferkiezing fan provinsjale steaten, it algemien bestjoer fan in wetterskip, in gemeenteried, de eilânrieden fan it iepenbiere lichem Bonêre, Saba of Sint Eustaasjus en de kieskolleezjes fan it iepenbiere lichem).",
-      )
-    ]
-    #checkbox(checked: true)[
-      #trans(
-        "Een verklaring van voorgenomen vestiging buiten Nederland van iedere op de lijst voorkomende kandidaat die woonachtig is in Nederland (alleen bij een verkiezing van het kiescollege voor niet-ingezetenen).",
-        "In ferklearring fan foarnommen fêstiging bûten Nederlân fan elke op de list foarkommende kandidaat dy’t yn Nederlân wennet (allinnich by in ferkiezing fan it kieskolleezje foar net-ynwenners).",
-      )
-    ]
-    #checkbox(checked: true)[
-      #trans(
-        "Een verklaring van iedere op de lijst voorkomende kandidaat dat hij niet in een andere lidstaat kandidaat zal zijn voor het Europees Parlement (model Y 13).",
-        "In ferklearring fan alle op de list foarkommende kandidaten dat se foar it Europeeske Parlemint net yn in oare lidsteat kandidaat wêze sille (model Y 13).",
-      )
-    ]
-    #checkbox(checked: true)[
-      #trans(
-        "Een verklaring van kandidaten die onderdaan zijn van een andere lidstaat, dat zij in die lidstaat niet zijn uitgesloten van het recht om gekozen te worden voor de verkiezingen van het Europees Parlement (model Y 35).",
-        "In ferklearring fan kandidaten dy’t ûnderdaan binne fan in oare lidsteat, dat sy yn dy lidsteat net útsletten binne fan it rjocht om keazen te wurden foar de ferkiezings fan it Europeeske Parlemint (model Y 35).",
-      )
-    ]
+  #checkbox(checked: input.election_type in ("PS", "WS", "GR", "ER", "KC"))[
+    #trans(
+      "Een verklaring van voorgenomen vestiging van iedere op de lijst voorkomende kandidaat die niet woonachtig is in het gebied waarop de verkiezing betrekking heeft (alleen bij een verkiezing van provinciale staten, het algemeen bestuur van een waterschap, een gemeenteraad, de eilandsraden van de openbare lichamen Bonaire, Saba of Sint Eustatius en de kiescolleges van de openbare lichamen).",
+      "In ferklearring fan foarnommen fêstiging foar alle op de list foarkommende kandidaten dy’t net wenjend binne yn it gebiet dêr’t de ferkiezing op slacht (allinnich by in ferkiezing fan provinsjale steaten, it algemien bestjoer fan in wetterskip, in gemeenteried, de eilânrieden fan it iepenbiere lichem Bonêre, Saba of Sint Eustaasjus en de kieskolleezjes fan it iepenbiere lichem).",
+    )
+  ]
+  #checkbox(checked: input.election_type == "KCNI")[
+    #trans(
+      "Een verklaring van voorgenomen vestiging buiten Nederland van iedere op de lijst voorkomende kandidaat die woonachtig is in Nederland (alleen bij een verkiezing van het kiescollege voor niet-ingezetenen).",
+      "In ferklearring fan foarnommen fêstiging bûten Nederlân fan elke op de list foarkommende kandidaat dy’t yn Nederlân wennet (allinnich by in ferkiezing fan it kieskolleezje foar net-ynwenners).",
+    )
+  ]
+  #checkbox(checked: input.election_type == "EK")[
+    #trans(
+      "Een verklaring van iedere op de lijst voorkomende kandidaat dat hij niet in een andere lidstaat kandidaat zal zijn voor het Europees Parlement (model Y 13).",
+      "In ferklearring fan alle op de list foarkommende kandidaten dat se foar it Europeeske Parlemint net yn in oare lidsteat kandidaat wêze sille (model Y 13).",
+    )
+  ]
+  #checkbox(checked: input.election_type == "EK")[
+    #trans(
+      "Een verklaring van kandidaten die onderdaan zijn van een andere lidstaat, dat zij in die lidstaat niet zijn uitgesloten van het recht om gekozen te worden voor de verkiezingen van het Europees Parlement (model Y 35).",
+      "In ferklearring fan kandidaten dy’t ûnderdaan binne fan in oare lidsteat, dat sy yn dy lidsteat net útsletten binne fan it rjocht om keazen te wurden foar de ferkiezings fan it Europeeske Parlemint (model Y 35).",
+    )
   ]
 ]
 

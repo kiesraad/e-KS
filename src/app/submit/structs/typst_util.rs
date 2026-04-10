@@ -34,8 +34,8 @@ pub fn generate_election_title(election_type: &ElectionType, locale: ModelLocale
         ),
         (ModelLocale::Fry, ElectionType::Ep) => "het Europees Parlement".to_string(),
 
-        (_, ElectionType::Kc) => todo!("Support municipality regions"),
-        (_, ElectionType::Er) => todo!("Support Island regions"),
+        (_, ElectionType::Kc) => todo!("Support electoral college regions"),
+        (_, ElectionType::Er) => todo!("Support island regions"),
         (_, ElectionType::Gr) => todo!("Support municipality regions"),
     }
 }
