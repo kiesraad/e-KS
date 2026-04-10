@@ -76,7 +76,8 @@ impl Config {
             Some(value) => value,
             None => get_env_with("TYPST_URL", &mut lookup)?,
         };
-        let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
+        let id_derivation_key =
+            get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
         Ok(Self {
             storage_url,
