@@ -1,21 +1,39 @@
+use axum_extra::routing::TypedPath;
 use chrono::{DateTime, Utc};
 
-use crate::{AppEvent, Locale, store::StoreEvent, trans};
+use crate::{
+    AppEvent, Locale, audit_log::AuditLogDetailPath, authorised_agents::AuthorisedAgentId,
+    candidate_lists::CandidateListId, list_submitters::ListSubmitterId, persons::PersonId,
+    store::StoreEvent, trans,
+};
 
 pub struct AuditLogEntry {
     pub event_id: usize,
     pub description: String,
     pub details: String,
+    pub subject_id: String,
+    pub subject_id_full: String,
+    pub subject_path: String,
     pub created_at: DateTime<Utc>,
 }
 
 impl AuditLogEntry {
     pub fn new(event: StoreEvent<AppEvent>, locale: Locale) -> Self {
+        let full_id = subject_id_full(&event.payload);
         Self {
             event_id: event.event_id,
             description: event_description(&event.payload, locale),
             details: details(&event.payload),
+            subject_id: abbreviate_str(&full_id),
+            subject_id_full: full_id,
+            subject_path: subject_path(&event.payload),
             created_at: event.created_at,
+        }
+    }
+
+    pub fn detail_path(&self) -> impl TypedPath {
+        AuditLogDetailPath {
+            event_id: self.event_id,
         }
     }
 }
@@ -84,6 +102,14 @@ fn event_description(event: &AppEvent, locale: Locale) -> String {
 }
 
 fn details(event: &AppEvent) -> String {
+    fn district_codes(districts: &[crate::ElectoralDistrict]) -> String {
+        districts
+            .iter()
+            .map(|d| d.code())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+
     match event {
         AppEvent::UpdatePoliticalGroup(pg) => pg
             .display_name
@@ -93,15 +119,131 @@ fn details(event: &AppEvent) -> String {
         AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.name.display(),
         AppEvent::CreatePersonPersonalData { name, .. }
         | AppEvent::UpdatePersonPersonalData { name, .. } => name.display(),
+        AppEvent::UpdatePersonAddress { person_id, .. }
+        | AppEvent::UpdatePersonRepresentative { person_id, .. }
+        | AppEvent::DeletePerson { person_id } => abbreviate_str(&person_id.to_string()),
+        AppEvent::CreateCandidateList(cl) => district_codes(&cl.electoral_districts),
+        AppEvent::UpdateCandidateListDistricts {
+            electoral_districts,
+            ..
+        } => district_codes(electoral_districts),
+        AppEvent::UpdateCandidateListOrder { list_id, .. }
+        | AppEvent::UpdateCandidateListSubmitters { list_id, .. }
+        | AppEvent::AddCandidateToCandidateList { list_id, .. }
+        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
+            abbreviate_str(&list_id.to_string())
+        }
+        AppEvent::DeleteCandidateList(cl_id) => abbreviate_str(&cl_id.to_string()),
         AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
             aa.name.display()
         }
+        AppEvent::DeleteAuthorisedAgent(aa_id) => abbreviate_str(&aa_id.to_string()),
         AppEvent::CreateListSubmitter(ls) | AppEvent::UpdateListSubmitter(ls) => ls.name.display(),
+        AppEvent::DeleteListSubmitter {
+            list_submitter_id, ..
+        } => abbreviate_str(&list_submitter_id.to_string()),
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
             ss.name.display()
         }
+        AppEvent::DeleteSubstituteSubmitter {
+            substitute_submitter_id,
+            ..
+        } => abbreviate_str(&substitute_submitter_id.to_string()),
+        AppEvent::DeveloperLogin {
+            political_group_id, ..
+        } => abbreviate_str(&political_group_id.to_string()),
         AppEvent::DownloadFile { file_name, .. } => file_name.clone(),
+    }
+}
+
+/// Abbreviate a string to its first 8 characters.
+fn abbreviate_str(s: &str) -> String {
+    s[..8.min(s.len())].to_string()
+}
+
+/// Return the URL path to the subject entity's form/page, or empty if not applicable.
+fn subject_path(event: &AppEvent) -> String {
+    fn person_path(id: PersonId) -> String {
+        format!("/persons/{id}/update")
+    }
+    fn candidate_list_path(id: CandidateListId) -> String {
+        format!("/candidate-lists/{id}")
+    }
+    fn authorised_agent_path(id: AuthorisedAgentId) -> String {
+        format!("/political-group/authorised-agents/{id}/update")
+    }
+    fn list_submitter_path(id: ListSubmitterId) -> String {
+        format!("/political-group/list-submitters/{id}/update")
+    }
+    fn substitute_submitter_path(id: ListSubmitterId) -> String {
+        format!("/political-group/substitute-submitters/{id}/update")
+    }
+
+    match event {
+        AppEvent::UpdatePoliticalGroup(_) => "/political-group".to_string(),
+        AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => person_path(p.id),
+        AppEvent::CreatePersonPersonalData { person_id, .. }
+        | AppEvent::UpdatePersonPersonalData { person_id, .. }
+        | AppEvent::UpdatePersonAddress { person_id, .. }
+        | AppEvent::UpdatePersonRepresentative { person_id, .. } => person_path(*person_id),
+        AppEvent::CreateCandidateList(cl) => candidate_list_path(cl.id),
+        AppEvent::UpdateCandidateListDistricts { list_id, .. }
+        | AppEvent::UpdateCandidateListOrder { list_id, .. }
+        | AppEvent::UpdateCandidateListSubmitters { list_id, .. }
+        | AppEvent::AddCandidateToCandidateList { list_id, .. }
+        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
+            candidate_list_path(*list_id)
+        }
+        AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
+            authorised_agent_path(aa.id)
+        }
+        AppEvent::CreateListSubmitter(ls) | AppEvent::UpdateListSubmitter(ls) => {
+            list_submitter_path(ls.id)
+        }
+        AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
+            substitute_submitter_path(ss.id)
+        }
+        // Deleted entities and system events have no target page
         _ => String::new(),
+    }
+}
+
+/// Extract the primary subject ID from the event as a full UUID string.
+fn subject_id_full(event: &AppEvent) -> String {
+    match event {
+        AppEvent::UpdatePoliticalGroup(pg) => pg.id.to_string(),
+        AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.id.to_string(),
+        AppEvent::CreatePersonPersonalData { person_id, .. }
+        | AppEvent::UpdatePersonPersonalData { person_id, .. }
+        | AppEvent::UpdatePersonAddress { person_id, .. }
+        | AppEvent::UpdatePersonRepresentative { person_id, .. }
+        | AppEvent::DeletePerson { person_id } => person_id.to_string(),
+        AppEvent::CreateCandidateList(cl) => cl.id.to_string(),
+        AppEvent::UpdateCandidateListDistricts { list_id, .. }
+        | AppEvent::UpdateCandidateListOrder { list_id, .. }
+        | AppEvent::UpdateCandidateListSubmitters { list_id, .. }
+        | AppEvent::AddCandidateToCandidateList { list_id, .. }
+        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => list_id.to_string(),
+        AppEvent::DeleteCandidateList(cl_id) => cl_id.to_string(),
+        AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
+            aa.id.to_string()
+        }
+        AppEvent::DeleteAuthorisedAgent(aa_id) => aa_id.to_string(),
+        AppEvent::CreateListSubmitter(ls) | AppEvent::UpdateListSubmitter(ls) => ls.id.to_string(),
+        AppEvent::DeleteListSubmitter {
+            list_submitter_id, ..
+        } => list_submitter_id.to_string(),
+        AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
+            ss.id.to_string()
+        }
+        AppEvent::DeleteSubstituteSubmitter {
+            substitute_submitter_id,
+            ..
+        } => substitute_submitter_id.to_string(),
+        AppEvent::DeveloperLogin {
+            political_group_id, ..
+        } => political_group_id.to_string(),
+        AppEvent::DownloadFile { list_id, .. } => list_id.to_string(),
     }
 }
 
@@ -156,7 +298,7 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Deleted person");
-        assert!(entry.details.is_empty());
+        assert!(!entry.details.is_empty());
     }
 
     #[test]
@@ -201,29 +343,30 @@ mod tests {
     }
 
     #[test]
-    fn from_create_candidate_list_event_has_empty_details() {
+    fn from_create_candidate_list_event_shows_districts() {
         let list = sample_candidate_list(CandidateListId::new());
         let event = StoreEvent::new(7, AppEvent::CreateCandidateList(list));
 
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Created list of candidates");
-        assert!(entry.details.is_empty());
+        assert_eq!(entry.details, "UT");
     }
 
     #[test]
-    fn from_developer_login_event_has_empty_details() {
+    fn from_developer_login_event_shows_abbreviated_id() {
+        let pg_id = PoliticalGroupId::new();
         let event = StoreEvent::new(
             8,
             AppEvent::DeveloperLogin {
-                political_group_id: PoliticalGroupId::new(),
+                political_group_id: pg_id,
             },
         );
 
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Developer login");
-        assert!(entry.details.is_empty());
+        assert_eq!(entry.details, abbreviate_str(&pg_id.to_string()));
     }
 
     #[test]

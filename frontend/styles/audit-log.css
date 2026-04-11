@@ -12,3 +12,46 @@ table.audit-log {
     background-color: var(--gray-100);
   }
 }
+
+dl.event-meta {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  gap: 0.5rem 1rem;
+  margin-bottom: 1.5rem;
+  padding: 1rem;
+  font-size: var(--font-size-md);
+
+  dt {
+    font-weight: 600;
+  }
+
+  abbr {
+    font-family: "Courier New", Courier, monospace;
+  }
+
+  a {
+    color: var(--blue-600);
+  }
+}
+
+table.diff-table {
+  width: 100%;
+
+  th:first-child,
+  td:first-child {
+    width: 40%;
+    word-break: break-word;
+  }
+
+  tr:nth-child(even) {
+    background-color: var(--gray-100);
+  }
+
+  tr.added td:last-child {
+    color: var(--green-700, #15803d);
+  }
+
+  tr.removed td:nth-child(2) {
+    color: var(--red-700, #b91c1c);
+  }
+}

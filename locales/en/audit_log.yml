@@ -1,3 +1,38 @@
+detail:
+  field: Field
+  fields:
+    address_type: Address type
+    bsn: Social security number (BSN)
+    candidates: Candidates
+    country: Country code
+    date_of_birth: Date of birth
+    display_name: Registered designation
+    download_path: Download path
+    electoral_districts: Electoral districts
+    file_name: File name
+    first_name: First name
+    gender: Gender
+    house_number: House number
+    house_number_addition: House number addition
+    initials: Initials
+    last_name: Last name
+    last_name_prefix: Last name prefix
+    legal_name: Full statutory name
+    list_id: List ID
+    list_submitter_id: List submitter
+    locality: Locality
+    long_list_allowed: Long list allowed
+    person_id: Person ID
+    place_of_residence: Place of residence
+    political_group_id: Political group ID
+    postal_code: Postal code
+    state_or_province: State / province
+    street_name: Street name
+    substitute_list_submitter_ids: Substitute list submitters
+  new_value: New value
+  no_changes: No field changes recorded for this event.
+  old_value: Old value
+  subject_link: Subject page
 empty: No events have been recorded yet.
 event:
   add_candidate_to_list: Added candidate to list
@@ -28,5 +63,6 @@ fields:
   details: Details
   event: Event
   event_id: "#"
+  subject_id: Subject ID
   timestamp: Timestamp
 title: Audit log

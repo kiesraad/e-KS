@@ -14,15 +14,21 @@
             <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.details"|trans }}</th>
+            <th></th>
           </tr>
         </thead>
         <tbody>
           {% for entry in entries %}
-            <tr>
+            <tr class="clickable">
               <td>{{ entry.event_id }}</td>
               <td>{{ entry.created_at|datetime_seconds }}</td>
               <td>{{ entry.description }}</td>
               <td>{{ entry.details }}</td>
+              <td>
+                <a href="{{ entry.detail_path() }}">
+                  <span>{{ "audit_log.fields.details"|trans }}</span>
+                </a>
+              </td>
             </tr>
           {% endfor %}
         </tbody>
