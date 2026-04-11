@@ -204,7 +204,10 @@ impl StoreData for AppStoreData {
                 self.substitute_submitters.remove(&ss_id);
             }
 
-            AppEvent::DeveloperLogin { .. } | AppEvent::DownloadFile { .. } => {
+            AppEvent::DeveloperLogin { .. }
+            | AppEvent::DownloadFile { .. }
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::ImportCsv { .. } => {
                 // Only the serialized event are relevant for logging
             }
         }

@@ -1,6 +1,31 @@
 {% extends "common/components/layout.html" %}
 {% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
 {% block content %}
+  <section>
+    <form method="get" action="/audit-log" class="form audit-log-filters">
+      <fieldset role="group">
+        <input type="text"
+               name="search"
+               placeholder="{{ "audit_log.filter.search_placeholder"|trans }}"
+               value="{{ filter.search.as_deref().unwrap_or_default() }}"
+               class="form-control"
+               aria-label="{{ "audit_log.filter.search"|trans }}" />
+        <select name="event_type"
+                class="form-control"
+                aria-label="{{ "audit_log.filter.event_type"|trans }}">
+          <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
+          {% for category in event_categories %}
+            {% let key = format!("audit_log.filter.category.{}", category) %}
+            <option value="{{ category }}"
+                    {% if filter.event_type.as_deref() == Some(category.as_ref()) %}selected{% endif %}>
+              {{ key.as_str() |trans }}
+            </option>
+          {% endfor %}
+        </select>
+        <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
+      </fieldset>
+    </form>
+  </section>
   {% if entries.is_empty() %}
     <section>
       <p>{{ "audit_log.empty"|trans }}</p>
@@ -35,7 +60,35 @@
       </table>
     </section>
     {% if pagination.total_pages > 1 %}
-      {% include "common/components/pagination.html" %}
+      <nav aria-label="Pagination" class="pagination">
+        {% let suffix = filter.as_query_suffix() %}
+        {% if pagination.has_prev %}
+          <a href="{{ pagination.prev() }}{{ suffix }}"
+             rel="prev"
+             class="button secondary">&lt;</a>
+        {% else %}
+          <a class="button disabled" disabled aria-disabled="true">&lt;</a>
+        {% endif %}
+        {% for link in pagination.links %}
+          {% if let Some(number) = link.number %}
+            {% if link.current %}
+              <a class="button disabled" disabled aria-current="page">{{ number }}</a>
+            {% else %}
+              <a href="{{ pagination.goto(number) }}{{ suffix }}"
+                 class="button secondary">{{ number }}</a>
+            {% endif %}
+          {% else %}
+            <span aria-hidden="true">...</span>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+          <a href="{{ pagination.next() }}{{ suffix }}"
+             rel="next"
+             class="button secondary">&gt;</a>
+        {% else %}
+          <a class="button disabled" disabled aria-disabled="true">&gt;</a>
+        {% endif %}
+      </nav>
     {% endif %}
   {% endif %}
 {% endblock %}

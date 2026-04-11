@@ -10,6 +10,7 @@ detail:
     download_path: Downloadpad
     electoral_districts: Kieskringen
     file_name: Bestandsnaam
+    file_size: Bestandsgrootte
     first_name: Roepnaam
     gender: Geslacht
     house_number: Huisnummer
@@ -48,6 +49,8 @@ event:
   delete_substitute_submitter: Vervanger herstel verzuim verwijderd
   developer_login: Ontwikkelaar ingelogd
   download_file: Bestand gedownload
+  export_csv: CSV geëxporteerd
+  import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd
   update_authorised_agent: Gemachtigde bijgewerkt
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
@@ -65,4 +68,18 @@ fields:
   event_id: "#"
   subject_id: Subject-ID
   timestamp: Tijdstip
+filter:
+  all_events: Alle gebeurtenissen
+  apply: Filteren
+  category:
+    authorised_agent: Gemachtigde
+    candidate_list: Kandidatenlijst
+    list_submitter: Lijstinleveraar
+    person: Persoon
+    political_group: Politieke groepering
+    substitute_submitter: Vervanger herstel verzuim
+    system: Systeem
+  event_type: Type gebeurtenis
+  search: Zoeken
+  search_placeholder: "Zoek op naam, ID..."
 title: Logboek

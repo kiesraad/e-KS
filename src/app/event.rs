@@ -86,4 +86,52 @@ pub enum AppEvent {
         download_path: String,
         list_id: CandidateListId,
     },
+
+    ExportCsv {
+        file_name: String,
+        file_size: usize,
+        list_id: CandidateListId,
+    },
+
+    ImportCsv {
+        file_name: String,
+        file_size: usize,
+        list_id: CandidateListId,
+    },
+}
+
+impl AppEvent {
+    /// Return a stable category key for filtering in the audit log.
+    pub fn event_category(&self) -> &'static str {
+        match self {
+            AppEvent::UpdatePoliticalGroup(_) => "political_group",
+            AppEvent::CreatePerson(_)
+            | AppEvent::CreatePersonPersonalData { .. }
+            | AppEvent::UpdatePerson(_)
+            | AppEvent::UpdatePersonPersonalData { .. }
+            | AppEvent::UpdatePersonAddress { .. }
+            | AppEvent::UpdatePersonRepresentative { .. }
+            | AppEvent::DeletePerson { .. } => "person",
+            AppEvent::CreateCandidateList(_)
+            | AppEvent::UpdateCandidateListDistricts { .. }
+            | AppEvent::UpdateCandidateListOrder { .. }
+            | AppEvent::UpdateCandidateListSubmitters { .. }
+            | AppEvent::AddCandidateToCandidateList { .. }
+            | AppEvent::RemoveCandidateFromCandidateList { .. }
+            | AppEvent::DeleteCandidateList(_) => "candidate_list",
+            AppEvent::CreateAuthorisedAgent(_)
+            | AppEvent::UpdateAuthorisedAgent(_)
+            | AppEvent::DeleteAuthorisedAgent(_) => "authorised_agent",
+            AppEvent::CreateListSubmitter(_)
+            | AppEvent::UpdateListSubmitter(_)
+            | AppEvent::DeleteListSubmitter { .. } => "list_submitter",
+            AppEvent::CreateSubstituteSubmitter(_)
+            | AppEvent::UpdateSubstituteSubmitter(_)
+            | AppEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
+            AppEvent::DeveloperLogin { .. }
+            | AppEvent::DownloadFile { .. }
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::ImportCsv { .. } => "system",
+        }
+    }
 }

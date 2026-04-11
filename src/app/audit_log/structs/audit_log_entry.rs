@@ -9,6 +9,7 @@ use crate::{
 
 pub struct AuditLogEntry {
     pub event_id: usize,
+    pub event_type: &'static str,
     pub description: String,
     pub details: String,
     pub subject_id: String,
@@ -22,6 +23,7 @@ impl AuditLogEntry {
         let full_id = subject_id_full(&event.payload);
         Self {
             event_id: event.event_id,
+            event_type: event.payload.event_category(),
             description: event_description(&event.payload, locale),
             details: details(&event.payload),
             subject_id: abbreviate_str(&full_id),
@@ -35,6 +37,16 @@ impl AuditLogEntry {
         AuditLogDetailPath {
             event_id: self.event_id,
         }
+    }
+
+    /// Check whether this entry matches a search query (case-insensitive).
+    /// Searches across details, subject ID, and description.
+    pub fn matches_search(&self, query: &str) -> bool {
+        let query = query.to_lowercase();
+        self.details.to_lowercase().contains(&query)
+            || self.subject_id_full.to_lowercase().contains(&query)
+            || self.subject_id.to_lowercase().contains(&query)
+            || self.description.to_lowercase().contains(&query)
     }
 }
 
@@ -98,6 +110,8 @@ fn event_description(event: &AppEvent, locale: Locale) -> String {
         }
         AppEvent::DeveloperLogin { .. } => trans!("audit_log.event.developer_login", locale),
         AppEvent::DownloadFile { .. } => trans!("audit_log.event.download_file", locale),
+        AppEvent::ExportCsv { .. } => trans!("audit_log.event.export_csv", locale),
+        AppEvent::ImportCsv { .. } => trans!("audit_log.event.import_csv", locale),
     }
 }
 
@@ -152,7 +166,9 @@ fn details(event: &AppEvent) -> String {
         AppEvent::DeveloperLogin {
             political_group_id, ..
         } => abbreviate_str(&political_group_id.to_string()),
-        AppEvent::DownloadFile { file_name, .. } => file_name.clone(),
+        AppEvent::DownloadFile { file_name, .. }
+        | AppEvent::ExportCsv { file_name, .. }
+        | AppEvent::ImportCsv { file_name, .. } => file_name.clone(),
     }
 }
 
@@ -203,6 +219,9 @@ fn subject_path(event: &AppEvent) -> String {
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
             substitute_submitter_path(ss.id)
         }
+        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
+            candidate_list_path(*list_id)
+        }
         // Deleted entities and system events have no target page
         _ => String::new(),
     }
@@ -243,7 +262,9 @@ fn subject_id_full(event: &AppEvent) -> String {
         AppEvent::DeveloperLogin {
             political_group_id, ..
         } => political_group_id.to_string(),
-        AppEvent::DownloadFile { list_id, .. } => list_id.to_string(),
+        AppEvent::DownloadFile { list_id, .. }
+        | AppEvent::ExportCsv { list_id, .. }
+        | AppEvent::ImportCsv { list_id, .. } => list_id.to_string(),
     }
 }
 
@@ -393,5 +414,194 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.created_at, timestamp);
+    }
+
+    #[test]
+    fn matches_search_by_description() {
+        let person = sample_person(PersonId::new());
+        let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert!(entry.matches_search("Created"));
+        assert!(entry.matches_search("created")); // case-insensitive
+        assert!(!entry.matches_search("nonexistent"));
+    }
+
+    #[test]
+    fn matches_search_by_details() {
+        let event = StoreEvent::new(
+            1,
+            AppEvent::DownloadFile {
+                file_name: "export-report.pdf".to_string(),
+                download_path: "/download/report".to_string(),
+                list_id: CandidateListId::new(),
+            },
+        );
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert!(entry.matches_search("export-report"));
+        assert!(entry.matches_search("EXPORT-REPORT"));
+    }
+
+    #[test]
+    fn matches_search_by_subject_id() {
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+        let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
+        let entry = AuditLogEntry::new(event, EN);
+
+        // Search by the first 8 chars of the UUID (abbreviated subject_id)
+        assert!(entry.matches_search(&entry.subject_id));
+        // Search by the full UUID
+        assert!(entry.matches_search(&entry.subject_id_full));
+    }
+
+    #[test]
+    fn abbreviate_str_short_string() {
+        assert_eq!(abbreviate_str("abc"), "abc");
+        assert_eq!(abbreviate_str(""), "");
+    }
+
+    #[test]
+    fn abbreviate_str_long_string() {
+        assert_eq!(abbreviate_str("123456789abcdef"), "12345678");
+    }
+
+    #[test]
+    fn abbreviate_str_exactly_eight() {
+        assert_eq!(abbreviate_str("12345678"), "12345678");
+    }
+
+    #[test]
+    fn from_export_csv_event() {
+        let list_id = CandidateListId::new();
+        let event = StoreEvent::new(
+            1,
+            AppEvent::ExportCsv {
+                file_name: "candidates.csv".to_string(),
+                file_size: 1024,
+                list_id,
+            },
+        );
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Exported CSV");
+        assert_eq!(entry.details, "candidates.csv");
+        assert_eq!(entry.subject_path, format!("/candidate-lists/{list_id}"));
+    }
+
+    #[test]
+    fn from_import_csv_event() {
+        let list_id = CandidateListId::new();
+        let event = StoreEvent::new(
+            1,
+            AppEvent::ImportCsv {
+                file_name: "import.csv".to_string(),
+                file_size: 512,
+                list_id,
+            },
+        );
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Imported CSV");
+        assert_eq!(entry.details, "import.csv");
+        assert_eq!(entry.subject_path, format!("/candidate-lists/{list_id}"));
+    }
+
+    #[test]
+    fn from_delete_candidate_list_event() {
+        let cl_id = CandidateListId::new();
+        let event = StoreEvent::new(1, AppEvent::DeleteCandidateList(cl_id));
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Deleted list of candidates");
+        // Deleted entities have no subject path
+        assert!(entry.subject_path.is_empty());
+    }
+
+    #[test]
+    fn from_update_person_address_event() {
+        let person_id = PersonId::new();
+        let event = StoreEvent::new(
+            1,
+            AppEvent::UpdatePersonAddress {
+                person_id,
+                address: crate::common::DutchAddress::default(),
+            },
+        );
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Updated person address");
+        assert_eq!(entry.subject_path, format!("/persons/{person_id}/update"));
+    }
+
+    #[test]
+    fn from_create_substitute_submitter_event() {
+        let submitter = sample_list_submitter(ListSubmitterId::new());
+        let expected_name = submitter.name.display();
+        let event = StoreEvent::new(1, AppEvent::CreateSubstituteSubmitter(submitter));
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(
+            entry.description,
+            "Created substitute submitter of the list"
+        );
+        assert_eq!(entry.details, expected_name);
+    }
+
+    #[test]
+    fn from_add_candidate_to_list_event() {
+        let list_id = CandidateListId::new();
+        let person_id = PersonId::new();
+        let event = StoreEvent::new(
+            1,
+            AppEvent::AddCandidateToCandidateList { list_id, person_id },
+        );
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Added candidate to list");
+        assert_eq!(entry.subject_path, format!("/candidate-lists/{list_id}"));
+    }
+
+    #[test]
+    fn from_remove_candidate_from_list_event() {
+        let list_id = CandidateListId::new();
+        let person_id = PersonId::new();
+        let event = StoreEvent::new(
+            1,
+            AppEvent::RemoveCandidateFromCandidateList { list_id, person_id },
+        );
+
+        let entry = AuditLogEntry::new(event, EN);
+
+        assert_eq!(entry.description, "Removed candidate from list");
+    }
+
+    #[test]
+    fn event_type_is_set_correctly() {
+        let person = sample_person(PersonId::new());
+        let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
+        let entry = AuditLogEntry::new(event, EN);
+        assert_eq!(entry.event_type, "person");
+
+        let pg = sample_political_group(PoliticalGroupId::new());
+        let event = StoreEvent::new(2, AppEvent::UpdatePoliticalGroup(pg));
+        let entry = AuditLogEntry::new(event, EN);
+        assert_eq!(entry.event_type, "political_group");
+
+        let event = StoreEvent::new(
+            3,
+            AppEvent::DeveloperLogin {
+                political_group_id: PoliticalGroupId::new(),
+            },
+        );
+        let entry = AuditLogEntry::new(event, EN);
+        assert_eq!(entry.event_type, "system");
     }
 }

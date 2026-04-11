@@ -73,6 +73,7 @@ secrecy = "0.10.3" # 89M downloads (Tony Arcieri)
 memory-serve = { version = "2.0.0", optional = true }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.6.0", optional = true }
 validate = { path = "validate" }
+urlencoding = "2.1.3"
 
 [build-dependencies]
 memory-serve = { version = "2.0.0", optional = true }

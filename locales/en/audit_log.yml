@@ -10,6 +10,7 @@ detail:
     download_path: Download path
     electoral_districts: Electoral districts
     file_name: File name
+    file_size: File size
     first_name: First name
     gender: Gender
     house_number: House number
@@ -48,6 +49,8 @@ event:
   delete_substitute_submitter: Deleted substitute submitter of the list
   developer_login: Developer login
   download_file: Downloaded file
+  export_csv: Exported CSV
+  import_csv: Imported CSV
   remove_candidate_from_list: Removed candidate from list
   update_authorised_agent: Updated authorised agent
   update_candidate_list_districts: Updated electoral districts of list
@@ -65,4 +68,18 @@ fields:
   event_id: "#"
   subject_id: Subject ID
   timestamp: Timestamp
+filter:
+  all_events: All events
+  apply: Filter
+  category:
+    authorised_agent: Authorised agent
+    candidate_list: Candidate list
+    list_submitter: List submitter
+    person: Person
+    political_group: Political group
+    substitute_submitter: Substitute submitter
+    system: System
+  event_type: Event type
+  search: Search
+  search_placeholder: "Search by name, ID..."
 title: Audit log

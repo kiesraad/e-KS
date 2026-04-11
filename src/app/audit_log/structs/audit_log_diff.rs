@@ -219,6 +219,7 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         "person_id" => trans!("audit_log.detail.fields.person_id", locale),
         "political_group_id" => trans!("audit_log.detail.fields.political_group_id", locale),
         "file_name" => trans!("audit_log.detail.fields.file_name", locale),
+        "file_size" => trans!("audit_log.detail.fields.file_size", locale),
         "download_path" => trans!("audit_log.detail.fields.download_path", locale),
         "list_id" => trans!("audit_log.detail.fields.list_id", locale),
         // Address type discriminator
@@ -434,6 +435,23 @@ fn extract_old_new(
             });
             (None, Some(val))
         }
+        AppEvent::ExportCsv {
+            file_name,
+            file_size,
+            list_id,
+        }
+        | AppEvent::ImportCsv {
+            file_name,
+            file_size,
+            list_id,
+        } => {
+            let val = serde_json::json!({
+                "file_name": file_name,
+                "file_size": file_size,
+                "list_id": list_id.to_string(),
+            });
+            (None, Some(val))
+        }
     }
 }
 
@@ -626,5 +644,177 @@ mod tests {
         )];
 
         assert!(AuditLogDetail::compute(&events, 999, Locale::En).is_none());
+    }
+
+    #[test]
+    fn flatten_boolean_value() {
+        let val = serde_json::json!({
+            "active": true,
+            "deleted": false
+        });
+        let flat = flatten(&val, "");
+        assert_eq!(flat.get("active").unwrap(), "true");
+        assert_eq!(flat.get("deleted").unwrap(), "false");
+    }
+
+    #[test]
+    fn flatten_deeply_nested() {
+        let val = serde_json::json!({
+            "a": { "b": { "c": "deep" } }
+        });
+        let flat = flatten(&val, "");
+        assert_eq!(flat.get("a.b.c").unwrap(), "deep");
+        assert_eq!(flat.len(), 1);
+    }
+
+    #[test]
+    fn flatten_empty_object() {
+        let val = serde_json::json!({});
+        let flat = flatten(&val, "");
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn flatten_empty_array() {
+        let val = serde_json::json!({ "items": [] });
+        let flat = flatten(&val, "");
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn flatten_mixed_types() {
+        let val = serde_json::json!({
+            "name": "test",
+            "count": 42,
+            "active": true,
+            "tags": ["a"],
+            "meta": null
+        });
+        let flat = flatten(&val, "");
+        assert_eq!(flat.get("name").unwrap(), "test");
+        assert_eq!(flat.get("count").unwrap(), "42");
+        assert_eq!(flat.get("active").unwrap(), "true");
+        assert_eq!(flat.get("tags.0").unwrap(), "a");
+        assert_eq!(flat.get("meta").unwrap(), "");
+    }
+
+    #[test]
+    fn flatten_root_scalar_ignored() {
+        // Root-level scalars without a prefix are not inserted
+        let val = serde_json::json!("hello");
+        let flat = flatten(&val, "");
+        assert!(flat.is_empty());
+    }
+
+    #[test]
+    fn flatten_with_prefix() {
+        let val = serde_json::json!({ "x": 1 });
+        let flat = flatten(&val, "root");
+        assert_eq!(flat.get("root.x").unwrap(), "1");
+    }
+
+    #[test]
+    fn diff_no_changes() {
+        let mut old = BTreeMap::new();
+        old.insert("name".to_string(), "Alice".to_string());
+
+        let new = old.clone();
+        let changes = diff(&old, &new, EN);
+        assert!(changes.is_empty());
+    }
+
+    #[test]
+    fn diff_excludes_nested_id_fields() {
+        let mut old = BTreeMap::new();
+        old.insert("person.id".to_string(), "abc".to_string());
+        old.insert("person.updated_at".to_string(), "old-ts".to_string());
+        old.insert("person.created_at".to_string(), "old-ts".to_string());
+        old.insert("person.name".to_string(), "Alice".to_string());
+
+        let mut new = BTreeMap::new();
+        new.insert("person.id".to_string(), "abc".to_string());
+        new.insert("person.updated_at".to_string(), "new-ts".to_string());
+        new.insert("person.created_at".to_string(), "new-ts".to_string());
+        new.insert("person.name".to_string(), "Bob".to_string());
+
+        let changes = diff(&old, &new, EN);
+        // Only `name` change should remain; id, updated_at, created_at are excluded
+        assert_eq!(changes.len(), 1);
+        assert_eq!(changes[0].field, "person.name");
+    }
+
+    #[test]
+    fn diff_both_empty() {
+        let old = BTreeMap::new();
+        let new = BTreeMap::new();
+        let changes = diff(&old, &new, EN);
+        assert!(changes.is_empty());
+    }
+
+    #[test]
+    fn translate_known_fields() {
+        assert_eq!(translate_field_name("first_name", EN), "First name");
+        assert_eq!(translate_field_name("last_name", EN), "Last name");
+        assert_eq!(translate_field_name("gender", EN), "Gender");
+        assert_eq!(translate_field_name("postal_code", EN), "Postal code");
+    }
+
+    #[test]
+    fn translate_nested_field_uses_leaf() {
+        // "name.first_name" should resolve via the leaf "first_name"
+        assert_eq!(translate_field_name("name.first_name", EN), "First name");
+        assert_eq!(translate_field_name("personal_data.gender", EN), "Gender");
+    }
+
+    #[test]
+    fn translate_array_index_uses_parent() {
+        // "electoral_districts.0" → leaf is "0" (all digits) → use parent "electoral_districts"
+        assert_eq!(
+            translate_field_name("electoral_districts.0", EN),
+            "Electoral districts"
+        );
+        assert_eq!(translate_field_name("candidates.3", EN), "Candidates");
+    }
+
+    #[test]
+    fn translate_unknown_field_returns_raw() {
+        assert_eq!(
+            translate_field_name("some_unknown_field", EN),
+            "some_unknown_field"
+        );
+    }
+
+    #[test]
+    fn translate_dutch_locale() {
+        assert_eq!(translate_field_name("first_name", Locale::Nl), "Roepnaam");
+    }
+
+    #[test]
+    fn compute_system_event_has_no_old_state() {
+        let list_id = crate::candidate_lists::CandidateListId::new();
+        let events = vec![StoreEvent::new(
+            1,
+            AppEvent::ExportCsv {
+                file_name: "export.csv".to_string(),
+                file_size: 100,
+                list_id,
+            },
+        )];
+
+        let detail = AuditLogDetail::compute(&events, 1, Locale::En).unwrap();
+        // System events: all changes are additions (no old state)
+        for change in &detail.changes {
+            assert!(
+                change.old_value.is_empty(),
+                "system event old_value should be empty for field {}",
+                change.field
+            );
+        }
+    }
+
+    #[test]
+    fn compute_returns_none_for_empty_events() {
+        let events: Vec<StoreEvent<AppEvent>> = vec![];
+        assert!(AuditLogDetail::compute(&events, 1, Locale::En).is_none());
     }
 }

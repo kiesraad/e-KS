@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppEvent, AppStore, Context, HtmlTemplate,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -78,6 +78,8 @@ pub async fn import_candidate_list(
         ));
     };
 
+    let file_size = csv_data.len();
+
     match import_candidate_list_csv(
         &mut list,
         &store,
@@ -87,7 +89,20 @@ pub async fn import_candidate_list(
     )
     .await
     {
-        Ok(()) => Ok(redirect_success(list.view_path())),
+        Ok(()) => {
+            store
+                .update(AppEvent::ImportCsv {
+                    file_name: format!(
+                        "{}-import-{}.csv",
+                        &list_id.to_string()[..8],
+                        list.districts_codes()
+                    ),
+                    file_size,
+                    list_id,
+                })
+                .await?;
+            Ok(redirect_success(list.view_path()))
+        }
         Err(ImportCandidateListError::App(error)) => Err(error),
         Err(ImportCandidateListError::Messages(messages)) => {
             Ok(render_import_export(list.clone(), messages, context))

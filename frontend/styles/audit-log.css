@@ -55,3 +55,20 @@ table.diff-table {
     color: var(--red-700, #b91c1c);
   }
 }
+
+.audit-log-filters {
+  fieldset {
+    display: flex;
+    gap: 1rem;
+    flex-direction: row;
+    justify-content: flex-end;
+    margin-bottom: var(--space-md);
+    height: 3rem;
+
+    input[type="text"],
+    select {
+      width: 18rem;
+      padding: 0 1rem;
+    }
+  }
+}
