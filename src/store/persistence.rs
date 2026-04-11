@@ -159,6 +159,8 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::store::encryption::EventEncryption;
+    use secrecy::SecretString;
     use std::{fs, path::PathBuf};
     use uuid::Uuid;
 
@@ -166,6 +168,10 @@ mod tests {
         let dir = std::env::temp_dir().join(format!("store-test-{}", Uuid::new_v4()));
         fs::create_dir_all(&dir).expect("create temp dir");
         dir
+    }
+
+    fn test_encryption() -> EventEncryption {
+        EventEncryption::new(&SecretString::from("test-secret"))
     }
 
     #[test]
@@ -244,9 +250,12 @@ mod tests {
     }
 
     fn test_store() -> Store<TestData> {
+        let encryption = test_encryption();
+        let stream_id = Uuid::new_v4();
         Store {
-            stream_id: Uuid::new_v4(),
+            stream_id,
             persistence: StorePersistence::None,
+            cipher: encryption.derive_cipher(stream_id),
             data: std::sync::Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
@@ -261,6 +270,115 @@ mod tests {
         let data = store.data.read();
         assert_eq!(data.last_event_id, 2);
         assert_eq!(data.applied, vec![10, 11]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn correct_key_loads_persisted_events() -> Result<(), AppError> {
+        let dir = temp_dir();
+        let encryption = test_encryption();
+        let stream_id = Uuid::new_v4();
+        let persistence = StorePersistence::Local(dir.clone());
+
+        let store = Store::<TestData>::new_for_stream_with_persistence(
+            persistence.clone(),
+            stream_id,
+            &encryption,
+            (),
+        )
+        .await?;
+
+        store.update(10).await?;
+        store.update(20).await?;
+
+        let fresh = Store::<TestData>::new_for_stream_with_persistence(
+            persistence,
+            stream_id,
+            &encryption,
+            (),
+        )
+        .await?;
+        fresh.load().await?;
+
+        let data = fresh.data.read();
+        assert_eq!(data.last_event_id, 2);
+        assert_eq!(data.applied, vec![10, 20]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn wrong_secret_cannot_load_persisted_events() -> Result<(), AppError> {
+        let dir = temp_dir();
+        let encryption = test_encryption();
+        let stream_id = Uuid::new_v4();
+        let persistence = StorePersistence::Local(dir.clone());
+
+        let store = Store::<TestData>::new_for_stream_with_persistence(
+            persistence.clone(),
+            stream_id,
+            &encryption,
+            (),
+        )
+        .await?;
+
+        store.update(10).await?;
+        store.update(20).await?;
+
+        let wrong_encryption = EventEncryption::new(&SecretString::from("wrong-secret"));
+        let wrong_store = Store::<TestData>::new_for_stream_with_persistence(
+            persistence,
+            stream_id,
+            &wrong_encryption,
+            (),
+        )
+        .await?;
+        wrong_store.load().await?;
+
+        let data = wrong_store.data.read();
+        assert_eq!(data.last_event_id, 0);
+        assert!(data.applied.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn wrong_stream_cannot_load_events_from_other_stream() -> Result<(), AppError> {
+        let dir = temp_dir();
+        let encryption = test_encryption();
+        let stream_a = Uuid::new_v4();
+        let stream_b = Uuid::new_v4();
+        let persistence = StorePersistence::Local(dir.clone());
+
+        let store_a = Store::<TestData>::new_for_stream_with_persistence(
+            persistence.clone(),
+            stream_a,
+            &encryption,
+            (),
+        )
+        .await?;
+
+        store_a.update(42).await?;
+
+        // Manually copy stream_a's file to stream_b's path so stream_b
+        // tries to read data encrypted with stream_a's key.
+        let src = dir.join(format!("{stream_a}.bin"));
+        let dst = dir.join(format!("{stream_b}.bin"));
+        std::fs::copy(&src, &dst).expect("copy stream file");
+
+        let store_b = Store::<TestData>::new_for_stream_with_persistence(
+            persistence,
+            stream_b,
+            &encryption,
+            (),
+        )
+        .await?;
+        store_b.load().await?;
+
+        let data = store_b.data.read();
+        assert_eq!(data.last_event_id, 0);
+        assert!(data.applied.is_empty());
 
         Ok(())
     }

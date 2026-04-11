@@ -7,14 +7,14 @@ use super::{Store, StoreData, StoreEvent};
 use crate::AppError;
 
 #[cfg(feature = "database")]
-impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<serde_json::Value> {
-    /// Map a database row into a store event.
+impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
+    /// Map a database row into a store event with an encrypted payload.
     fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
         use chrono::{DateTime, Utc};
         use sqlx::Row;
 
         let event_id: i64 = row.try_get("event_id")?;
-        let payload: serde_json::Value = row.try_get("payload")?;
+        let payload: Vec<u8> = row.try_get("payload")?;
         let created_at: DateTime<Utc> = row.try_get("created_at")?;
 
         Ok(Self {
@@ -54,7 +54,7 @@ pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
               stream_id UUID NOT NULL,
               event_id BIGINT NOT NULL,
               created_at timestamp with time zone NOT NULL,
-              payload jsonb NOT NULL,
+              payload bytea NOT NULL,
               PRIMARY KEY (stream_id, event_id)
             )
             "#,
@@ -147,7 +147,7 @@ where
         created_at: Utc::now(),
     };
 
-    if let Err(err) = append_once(store.stream_id, next_id, &store_event, &mut tx).await {
+    if let Err(err) = append_once(store, next_id, &store_event, &mut tx).await {
         tx.rollback().await?;
         return Err(err);
     }
@@ -180,47 +180,37 @@ where
     .fetch_one(&mut **tx)
     .await?;
 
-    let missing: Vec<StoreEvent<serde_json::Value>> =
-        sqlx::query_as::<_, StoreEvent<serde_json::Value>>(
-            r#"
+    let missing: Vec<StoreEvent<Vec<u8>>> = sqlx::query_as::<_, StoreEvent<Vec<u8>>>(
+        r#"
         SELECT event_id, payload, created_at
         FROM events
         WHERE stream_id = $1 AND event_id > $2
         ORDER BY event_id ASC
         "#,
-        )
-        .bind(store.stream_id)
-        .bind(last_id as i64)
-        .fetch_all(&mut **tx)
-        .await?;
+    )
+    .bind(store.stream_id)
+    .bind(last_id as i64)
+    .fetch_all(&mut **tx)
+    .await?;
 
     let mut data = store.data.write();
 
     for event in missing {
         if data.last_event_id() >= event.event_id {
-            // This can happen if another instance of the application processed events concurrently
-            // and updated the store before this instance could acquire the write lock. In that case,
-            // the store is already up-to-date and we can skip applying the event again.
             continue;
         }
 
-        let StoreEvent {
-            event_id,
-            payload,
-            created_at,
-        } = event;
-
-        match serde_json::from_value::<D::Event>(payload) {
-            Ok(ev) => {
+        match store.cipher.decrypt_owned::<D::Event>(event.payload) {
+            Ok(payload) => {
                 let store_event = StoreEvent {
-                    event_id,
-                    payload: ev,
-                    created_at,
+                    event_id: event.event_id,
+                    payload,
+                    created_at: event.created_at,
                 };
                 data.apply(store_event);
             }
             Err(e) => {
-                tracing::error!("Failed to deserialize event: {e:?}");
+                tracing::error!("Failed to decrypt/deserialize event: {e:?}");
                 continue;
             }
         }
@@ -230,28 +220,30 @@ where
 }
 
 /// Append a single event to the database within an open transaction.
-async fn append_once<E: Serialize>(
-    stream_id: uuid::Uuid,
+async fn append_once<D, E: Serialize>(
+    store: &Store<D>,
     next_id: usize,
     event: &StoreEvent<E>,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<(), AppError> {
-    let new_payload =
-        serde_json::to_value(&event.payload).map_err(|_| AppError::InternalServerError)?;
+) -> Result<(), AppError>
+where
+    D: StoreData,
+{
+    let encrypted_payload = store.cipher.encrypt(&event.payload)?;
 
     sqlx::query(
         r#"INSERT INTO events (stream_id, event_id, created_at, payload)
         VALUES ($1, $2, $3, $4)"#,
     )
-    .bind(stream_id)
+    .bind(store.stream_id)
     .bind(next_id as i64)
     .bind(event.created_at)
-    .bind(new_payload)
+    .bind(encrypted_payload)
     .execute(&mut **tx)
     .await?;
 
     sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-        .bind(stream_id)
+        .bind(store.stream_id)
         .bind(next_id as i64)
         .execute(&mut **tx)
         .await?;
