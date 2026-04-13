@@ -31,11 +31,8 @@ pub async fn create_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(
-        &context.session.csrf_tokens,
-        &store,
-        &context.session.election,
-    ) {
+    match form.validate_create_with_checks(&context.session.csrf_tokens, &store, &context.election)
+    {
         Err(form_data) => {
             Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }
@@ -156,11 +153,10 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
-        form.personal_data.date_of_birth = DateOfBirth::from(
-            context.session.election.eligible_date_of_birth() + Duration::days(1),
-        )
-        .format(crate::core::constants::DEFAULT_DATE_FORMAT)
-        .to_string();
+        form.personal_data.date_of_birth =
+            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
+                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
+                .to_string();
 
         let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
             .await

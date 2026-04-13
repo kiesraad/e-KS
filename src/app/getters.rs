@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore,
+    AppError, AppStore, ElectionConfig,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -10,6 +10,12 @@ use crate::{
 use crate::store::StoreEvent;
 
 impl AppStore {
+    pub fn get_election(&self) -> ElectionConfig {
+        let data = self.data.read();
+
+        data.election
+    }
+
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
         let data = self.data.read();
 

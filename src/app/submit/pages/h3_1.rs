@@ -11,7 +11,7 @@ pub async fn gen_h3_1(
     State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h3_1 = H31::new(&store, list_id, &context.session.election, locale)?;
+    let h3_1 = H31::new(&store, list_id, &context.election, locale)?;
 
     store
         .update(AppEvent::DownloadFile {

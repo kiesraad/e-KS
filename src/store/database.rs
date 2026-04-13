@@ -88,6 +88,21 @@ pub async fn ensure_stream(pool: &sqlx::PgPool, stream_id: uuid::Uuid) -> Result
     Ok(())
 }
 
+/// Check which of the given stream IDs have persisted events.
+pub async fn streams_with_data(
+    pool: &sqlx::PgPool,
+    stream_ids: &[uuid::Uuid],
+) -> Result<std::collections::HashSet<uuid::Uuid>, AppError> {
+    let rows: Vec<(uuid::Uuid,)> = sqlx::query_as(
+        "SELECT stream_id FROM streams WHERE stream_id = ANY($1) AND last_event_id > 0",
+    )
+    .bind(stream_ids)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows.into_iter().map(|(id,)| id).collect())
+}
+
 /// Load and replay missing events from the database into the store.
 pub async fn load_from_database<D>(store: &Store<D>, pool: &sqlx::PgPool) -> Result<(), AppError>
 where

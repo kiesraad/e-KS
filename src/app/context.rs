@@ -3,7 +3,7 @@
 
 use axum::{extract::FromRequestParts, http::request::Parts};
 
-use crate::{AppError, AppStore, Session, political_groups::PoliticalGroup};
+use crate::{AppError, AppStore, ElectionConfig, Session, political_groups::PoliticalGroup};
 
 #[cfg(test)]
 use crate::Locale;
@@ -11,6 +11,8 @@ use crate::Locale;
 /// Request-scoped template context used by Askama.
 #[derive(Clone)]
 pub struct Context {
+    /// Election configuration for this stream.
+    pub election: ElectionConfig,
     /// Political group tied to the session / request.
     pub political_group: PoliticalGroup,
     /// Maximum number of candidates allowed for this political group.
@@ -21,18 +23,19 @@ pub struct Context {
     pub show_success_alert: bool,
     /// Whether the request came from an overlay page (via referrer query).
     pub overlay_referrer: bool,
-    /// Session data for locale, CSRF, and election configuration.
+    /// Session data for locale and CSRF.
     pub session: Session,
 }
 
 impl Context {
     pub fn new(store: &AppStore, session: Session) -> Self {
-        let election = session.election;
+        let election = store.get_election();
         let political_group = store.get_political_group();
         let long_list_allowed = political_group.long_list_allowed.unwrap_or(false);
         let multiple_candidate_lists = store.get_candidate_list_count() > 1;
 
         Self {
+            election,
             political_group,
             max_candidates: election.get_max_candidates(long_list_allowed),
             multiple_candidate_lists,
@@ -58,7 +61,7 @@ impl askama::Values for Context {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
-            "election" => Some(&self.session.election as &dyn std::any::Any),
+            "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             "multiple_candidate_lists" => {

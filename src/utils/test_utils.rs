@@ -2,7 +2,7 @@
 use http_body_util::BodyExt;
 
 use crate::{
-    ElectoralDistrict, PoliticalGroupId, TokenValue,
+    ElectoralDistrict, TokenValue,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
@@ -194,9 +194,8 @@ pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm
     }
 }
 
-pub fn sample_political_group(id: PoliticalGroupId) -> PoliticalGroup {
+pub fn sample_political_group() -> PoliticalGroup {
     PoliticalGroup {
-        id,
         long_list_allowed: Some(false),
         legal_name: Some(
             "Kiesraad Demo Partij"

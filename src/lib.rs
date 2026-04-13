@@ -12,9 +12,9 @@
 //!
 //! **Core structs and relationships**
 //! - [`AppState`]: application state container shared by request handlers. Owns config,
-//!   a `StoreRegistry<AppStoreData>` for per-political-group data, and the in-memory
+//!   a `StoreRegistry<AppStoreData>` for per-stream data, and the in-memory
 //!   [`SessionStore`] for active sessions.
-//! - [`AppStoreData`]: the domain projection for a single political group. It is the
+//! - [`AppStoreData`]: the domain projection for a single stream. It is the
 //!   in-memory state updated by [`AppEvent`] through `StoreData::apply`.
 //! - `Store<D>`: generic event-sourced store wrapper around type parameter `D`
 //!   implementing `StoreData`. It owns
@@ -22,7 +22,7 @@
 //! - [`AppStore`]: type alias for `Store<AppStoreData>`, i.e., the concrete store used
 //!   by the application.
 //! - `StoreRegistry<D>`: cache/registry that creates and reuses `Store<D>` instances
-//!   per stream ID (political group).
+//!   per stream ID (scoped to BSN + election).
 //! - [`AppEvent`]: domain event enum driving updates to [`AppStoreData`].
 //!
 //! **Directory layout (high level)**
@@ -66,13 +66,14 @@ pub use app::{
     common, list_submitters, persons, political_groups, submit, substitute_list_submitters,
 };
 pub use auth::{
+    bsn_id::BsnIdDeriver,
     session::{SESSION_IDLE_TIMEOUT, Session},
     session_extractor::{SESSION_COOKIE_NAME, session_middleware, store_middleware},
     session_store::SessionStore,
 };
 pub use core::{
-    Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, constants, get_env, logging,
-    server, translate,
+    AnyLocale, Config, ElectionConfig, ElectoralDistrict, HtmlTemplate, Locale, Province,
+    WaterCouncil, constants, get_env, logging, server, translate,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{CsrfToken, CsrfTokens, Form, TokenValue};
@@ -85,6 +86,6 @@ pub use utils::{
 #[cfg(test)]
 pub use utils::test_utils;
 
-id_newtype!(pub struct PoliticalGroupId);
+id_newtype!(pub struct StreamId);
 
 pub type AppStore = store::Store<AppStoreData>;

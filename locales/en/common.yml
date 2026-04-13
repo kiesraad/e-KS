@@ -24,6 +24,16 @@ submit_description:
   submit: Submit the candidate list(s)
   view_follow_up_steps: View follow-up steps
 submit_instruction: Perform this step at the latest on nomination day
+switch_election:
+  election: Election
+  existing: Elections
+  label: Switch election
+  province: Province
+  region: Region
+  resume: Resume
+  select_region: select a region
+  submit: Switch election
+  water_council: Water authority
 title: Kiesraad - Kandidaatstelling
 version: Version
 yes_label: "Yes"

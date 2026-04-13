@@ -28,7 +28,7 @@ pub async fn update_candidate_list(
     store: AppStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
-    let available_districts = CandidateList::available_districts(&store, &context.session.election);
+    let available_districts = CandidateList::available_districts(&store, &context.election);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -52,7 +52,7 @@ pub async fn update_candidate_list_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
-    let available_districts = CandidateList::available_districts(&store, &context.session.election);
+    let available_districts = CandidateList::available_districts(&store, &context.election);
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {

@@ -82,6 +82,25 @@ super::define_elections! {
 }
 
 impl ElectionConfig {
+    /// Stable ID for the election configuration, used in HKDF derivation.
+    pub fn stable_id(&self) -> String {
+        let code = self.code();
+
+        if let Some(region_code) = self.region_code() {
+            format!("{code}:{region_code}")
+        } else {
+            code.to_string()
+        }
+    }
+
+    /// Returns all concrete election configurations.
+    pub fn all() -> Vec<ElectionConfig> {
+        let mut configs = vec![ElectionConfig::EK27];
+        configs.extend(Province::ALL.iter().map(|p| ElectionConfig::PS27(*p)));
+        configs.extend(WaterCouncil::ALL.iter().map(|wc| ElectionConfig::WS27(*wc)));
+        configs
+    }
+
     pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
         if long_list_allowed { 80 } else { 50 }
     }
