@@ -127,7 +127,8 @@ main {
     min-height: var(--space-xxl);
   }
 
-  & > .steps {
+  & > .steps,
+  & > form > .steps {
     display: flex;
     justify-content: stretch;
     gap: var(--space-lg);

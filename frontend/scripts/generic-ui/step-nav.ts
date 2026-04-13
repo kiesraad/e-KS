@@ -13,36 +13,41 @@ function formSnapshot(form: HTMLFormElement): string {
 }
 
 export default function setupStepNav() {
-  const form = document.querySelector<HTMLFormElement>("form.overlay");
-  if (!form) return;
+  const formElement = document.querySelector<HTMLFormElement>(
+    "form.overlay, form.page-form",
+  );
 
-  const initial = formSnapshot(form);
+  if (!formElement) {
+    return;
+  }
 
-  form.querySelectorAll<HTMLAnchorElement>(".steps-nav a").forEach((link) => {
-    link.addEventListener("click", (event) => {
-      const submitBtn = form.querySelector<HTMLButtonElement>(
-        "button[value='save']",
-      );
+  const initial = formSnapshot(formElement);
 
-      if (!submitBtn) {
-        return;
-      }
+  formElement
+    .querySelectorAll<HTMLAnchorElement>(".steps-nav a")
+    .forEach((link) => {
+      link.addEventListener("click", (event) => {
+        const submitBtn = formElement.querySelector<HTMLButtonElement>(
+          "button[value='save']",
+        );
 
-      // Form is clean — let the browser follow the link normally.
-      if (formSnapshot(form) === initial) {
-        return;
-      }
+        if (!submitBtn) {
+          return;
+        }
 
-      // The form has unsaved changes — submit it instead of navigating.
-      // Append a redirect_to parameter so the server sends the user to
-      // the clicked step after saving.
-      event.preventDefault();
-      const action = new URL(
-        form.getAttribute("action") || globalThis.location.href,
-      );
-      action.searchParams.set("redirect_to", link.pathname);
-      form.action = action.toString();
-      form.requestSubmit(submitBtn);
+        // Form is clean — let the browser follow the link normally.
+        if (formSnapshot(formElement) === initial) {
+          return;
+        }
+
+        // The form has unsaved changes we need to submit it instead of navigating.
+        // Append a redirect_to parameter so the server sends the user to
+        // the clicked step after saving.
+        event.preventDefault();
+        const action = new URL(globalThis.location.href);
+        action.searchParams.set("redirect_to", link.pathname);
+        formElement.action = action.toString();
+        formElement.requestSubmit(submitBtn);
+      });
     });
-  });
 }
