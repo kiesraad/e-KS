@@ -7,14 +7,34 @@ use secrecy::SecretString;
 
 use crate::AppError;
 
-#[cfg(feature = "database")]
-const DEFAULT_STORAGE_URL: &str = "postgres://eks@localhost/eks";
+#[cfg(feature = "dev-features")]
+mod dev_defaults {
+    use super::*;
 
-#[cfg(not(feature = "database"))]
-const DEFAULT_STORAGE_URL: &str = "memory://ephemeral";
+    #[cfg(feature = "database")]
+    pub(super) const STORAGE_URL: &str = "postgres://eks@localhost/eks";
 
-const DEFAULT_TYPST_URL: &str = "http://localhost:8080";
-const DEFAULT_ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
+    #[cfg(not(feature = "database"))]
+    pub(super) const STORAGE_URL: &str = "memory://ephemeral";
+
+    pub(super) const TYPST_URL: &str = "http://localhost:8080";
+
+    pub(super) const BAG_SERVICE_URL: &str = "http://localhost:8090";
+
+    pub(super) const ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
+
+    pub(super) fn lookup(name: &'static str) -> Result<String, env::VarError> {
+        std::collections::HashMap::from([
+            ("STORAGE_URL", STORAGE_URL),
+            ("TYPST_URL", TYPST_URL),
+            ("BAG_SERVICE_URL", BAG_SERVICE_URL),
+            ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
+        ])
+        .get(name)
+        .map(|value| (*value).to_string())
+        .ok_or(env::VarError::NotPresent)
+    }
+}
 
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
@@ -25,22 +45,18 @@ pub struct Config {
 }
 
 /// Helper function to get environment variable or return an error
-pub fn get_env(name: &'static str, _dev_default: &'static str) -> Result<String, AppError> {
-    get_env_with(name, _dev_default, &mut |key| env::var(key))
+pub fn get_env(name: &'static str) -> Result<String, AppError> {
+    get_env_with(name, &mut |key| env::var(key))
 }
 
-fn get_env_with<F>(
-    name: &'static str,
-    _dev_default: &'static str,
-    lookup: &mut F,
-) -> Result<String, AppError>
+fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
 where
     F: FnMut(&'static str) -> Result<String, env::VarError>,
 {
     match lookup(name) {
         Ok(value) => Ok(value),
         #[cfg(feature = "dev-features")]
-        Err(_) => Ok(_dev_default.to_string()),
+        Err(_) => Ok(dev_defaults::lookup(name).map_err(|_| AppError::MissingEnvVar(name))?),
         #[cfg(not(feature = "dev-features"))]
         Err(_) => Err(AppError::MissingEnvVar(name)),
     }
@@ -55,13 +71,12 @@ impl Config {
     where
         F: FnMut(&'static str) -> Result<String, env::VarError>,
     {
-        let storage_url = get_env_with("STORAGE_URL", DEFAULT_STORAGE_URL, &mut lookup)?;
+        let storage_url = get_env_with("STORAGE_URL", &mut lookup)?;
         let typst_url = match typst_url {
             Some(value) => value,
-            None => get_env_with("TYPST_URL", DEFAULT_TYPST_URL, &mut lookup)?,
+            None => get_env_with("TYPST_URL", &mut lookup)?,
         };
-        let id_derivation_key =
-            get_env_with("ID_DERIVATION_KEY", DEFAULT_ID_DERIVATION_KEY, &mut lookup)?;
+        let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
         Ok(Self {
             storage_url,
@@ -74,8 +89,8 @@ impl Config {
     pub fn new_test() -> Self {
         Self {
             storage_url: "memory://".to_string(),
-            typst_url: DEFAULT_TYPST_URL.to_string(),
-            id_derivation_key: SecretString::from(DEFAULT_ID_DERIVATION_KEY),
+            typst_url: "http://localhost:8080".to_string(),
+            id_derivation_key: SecretString::from("test-secret-123"),
         }
     }
 }
@@ -100,7 +115,7 @@ mod tests {
         let map = HashMap::from([("TEST_CONFIG_ENV", "present")]);
         let mut lookup = lookup_from(&map);
 
-        let value = get_env_with("TEST_CONFIG_ENV", "fallback", &mut lookup).expect("env value");
+        let value = get_env_with("TEST_CONFIG_ENV", &mut lookup).expect("env value");
 
         assert_eq!(value, "present");
     }
@@ -110,6 +125,7 @@ mod tests {
         let map = HashMap::from([
             ("STORAGE_URL", "memory://test"),
             ("TYPST_URL", "http://typst.test"),
+            ("ID_DERIVATION_KEY", "test-secret-123"),
         ]);
         let lookup = lookup_from(&map);
 
@@ -124,6 +140,7 @@ mod tests {
         let map = HashMap::from([
             ("STORAGE_URL", "memory://override"),
             ("TYPST_URL", "http://typst.env"),
+            ("ID_DERIVATION_KEY", "test-secret-123"),
         ]);
         let lookup = lookup_from(&map);
 
@@ -140,10 +157,9 @@ mod tests {
         let map = HashMap::new();
         let mut lookup = lookup_from(&map);
 
-        let value =
-            get_env_with("TEST_CONFIG_MISSING", "default", &mut lookup).expect("dev default");
+        let value = get_env_with("ID_DERIVATION_KEY", &mut lookup).expect("dev default");
 
-        assert_eq!(value, "default");
+        assert_eq!(value, dev_defaults::ID_DERIVATION_KEY);
     }
 
     #[cfg(not(feature = "dev-features"))]
@@ -152,8 +168,7 @@ mod tests {
         let map = HashMap::new();
         let mut lookup = lookup_from(&map);
 
-        let err =
-            get_env_with("TEST_CONFIG_MISSING", "default", &mut lookup).expect_err("missing env");
+        let err = get_env_with("TEST_CONFIG_MISSING", &mut lookup).expect_err("missing env");
 
         assert_eq!(
             err.to_string(),
@@ -169,8 +184,8 @@ mod tests {
 
         let config = Config::from_env_with(None, lookup).expect("dev defaults");
 
-        assert_eq!(config.storage_url, DEFAULT_STORAGE_URL);
-        assert_eq!(config.typst_url, DEFAULT_TYPST_URL);
+        assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
+        assert_eq!(config.typst_url, dev_defaults::TYPST_URL);
     }
 
     #[cfg(not(feature = "dev-features"))]
