@@ -1,6 +1,9 @@
 use serde::Serialize;
 
-use crate::Locale;
+use crate::{
+    Locale,
+    core::election::{Province, WaterCouncil},
+};
 
 #[derive(Debug, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
@@ -8,10 +11,10 @@ pub enum ElectionType {
     Tk,
     Ek,
     Gr,
-    Ps,
-    Ws,
+    Ps(Province),
+    Ws(WaterCouncil),
     Ep,
-    Kc,
+    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported
     Er,
 }
 
@@ -24,10 +27,10 @@ impl ElectionType {
             (ElectionType::Ek, Locale::Nl) => "Eerste Kamerverkiezing",
             (ElectionType::Gr, Locale::En) => "elections of the municipal council",
             (ElectionType::Gr, Locale::Nl) => "gemeenteraadsverkiezingen",
-            (ElectionType::Ps, Locale::En) => "elections of the provincial council",
-            (ElectionType::Ps, Locale::Nl) => "Provinciale Statenverkiezingen",
-            (ElectionType::Ws, Locale::En) => "elections of the water authority",
-            (ElectionType::Ws, Locale::Nl) => "waterschapsverkiezingen",
+            (ElectionType::Ps(_), Locale::En) => "elections of the provincial council",
+            (ElectionType::Ps(_), Locale::Nl) => "Provinciale Statenverkiezingen",
+            (ElectionType::Ws(_), Locale::En) => "elections of the water authority",
+            (ElectionType::Ws(_), Locale::Nl) => "waterschapsverkiezingen",
             (ElectionType::Ep, Locale::En) => "election of the European Parliament",
             (ElectionType::Ep, Locale::Nl) => "Europees Parlementsverkiezing",
             (ElectionType::Kc, Locale::En) => "electoral colleges for the Senate",
@@ -40,6 +43,8 @@ impl ElectionType {
 
 #[cfg(test)]
 mod tests {
+    use crate::core::election::{Province, WaterCouncil};
+
     use super::*;
 
     #[test]
@@ -48,8 +53,8 @@ mod tests {
             ElectionType::Tk,
             ElectionType::Ek,
             ElectionType::Gr,
-            ElectionType::Ps,
-            ElectionType::Ws,
+            ElectionType::Ps(Province::DR),
+            ElectionType::Ws(WaterCouncil::AaEnMaas),
             ElectionType::Ep,
             ElectionType::Er,
         ] {

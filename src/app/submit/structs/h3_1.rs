@@ -4,7 +4,7 @@ use crate::{
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
-        typst_authorised_agent::TypstAuthorisedAgent,
+        typst_authorised_agent::TypstAuthorisedAgent, typst_util,
     },
 };
 use serde::Serialize;
@@ -58,9 +58,11 @@ impl H31 {
             format!("model-h3-1-{}.pdf", list.districts_codes())
         };
 
+        let election_type = election.election_type();
+
         Ok(Self {
-            election_name: election.title(locale.into()).to_string(),
-            election_type: election.election_type(),
+            election_name: typst_util::generate_election_title(&election_type, locale),
+            election_type,
             electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
             designation: political_group
                 .display_name

@@ -22,7 +22,7 @@ super::define_elections! {
     },
 
     PS27(province: Province) {
-        election_type: ElectionType::Ps,
+        election_type: ElectionType::Ps(*province),
         titles: {
             nl: "Provinciale Statenverkiezingen 2027",
             fry: "Provinsjale Steateferkiezings 2027",
@@ -47,7 +47,7 @@ super::define_elections! {
     },
 
     WS27(water_council: WaterCouncil) {
-        election_type: ElectionType::Ws,
+        election_type: ElectionType::Ws(*water_council),
         titles: {
             nl: "Waterschapsverkiezingen 2027",
             fry: "Wetterskipsferkiezings 2027",
@@ -115,6 +115,10 @@ impl ElectionConfig {
             .cloned()
             .collect()
     }
+
+    pub fn has_only_one_district(&self) -> bool {
+        self.electoral_districts().len() == 1
+    }
 }
 
 #[cfg(test)]
@@ -145,5 +149,11 @@ mod tests {
         assert_eq!(districts, &[ElectoralDistrict::WsRivierenland]);
         let districts = ElectionConfig::WS27(WaterCouncil::ValleiEnVeluwe).electoral_districts();
         assert_eq!(districts, &[ElectoralDistrict::WsValleiEnVeluwe]);
+    }
+
+    #[test]
+    fn has_only_district() {
+        assert!(ElectionConfig::PS27(Province::DR).has_only_one_district());
+        assert!(!ElectionConfig::PS27(Province::GE).has_only_one_district());
     }
 }
