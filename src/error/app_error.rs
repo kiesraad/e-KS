@@ -46,6 +46,10 @@ pub enum AppError {
 
     NoStorageConfigured,
     IntegrityViolation,
+
+    /// A persisted event could not be decrypted or deserialized.
+    /// Indicates tampering, a wrong key, or a corrupt/unsupported frame.
+    EventDecodeError(String),
 }
 
 impl Display for AppError {
@@ -73,6 +77,7 @@ impl Display for AppError {
             AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::UpstreamError(err) => write!(f, "Upstream error: {err}"),
             AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
+            AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),
         }
     }
 }

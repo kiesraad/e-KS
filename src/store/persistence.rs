@@ -334,11 +334,13 @@ mod tests {
             (),
         )
         .await?;
-        wrong_store.load().await?;
 
-        let data = wrong_store.data.read();
-        assert_eq!(data.last_event_id, 0);
-        assert!(data.applied.is_empty());
+        let err = wrong_store
+            .load()
+            .await
+            .expect_err("load must fail with the wrong secret");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+        assert!(wrong_store.data.read().applied.is_empty());
 
         Ok(())
     }
@@ -374,11 +376,13 @@ mod tests {
             (),
         )
         .await?;
-        store_b.load().await?;
 
-        let data = store_b.data.read();
-        assert_eq!(data.last_event_id, 0);
-        assert!(data.applied.is_empty());
+        let err = store_b
+            .load()
+            .await
+            .expect_err("load must fail for events encrypted with another stream's key");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+        assert!(store_b.data.read().applied.is_empty());
 
         Ok(())
     }

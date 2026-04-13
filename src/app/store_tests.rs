@@ -366,7 +366,7 @@ mod database_tests {
 
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test(migrations = false)]
-    async fn load_skips_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
+    async fn load_fails_on_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
@@ -412,10 +412,12 @@ mod database_tests {
         )
         .await
         .unwrap();
-        fresh_store.load().await?;
 
-        let reloaded = fresh_store.get_person(person_id)?;
-        assert_eq!(reloaded.id, person_id);
+        let err = fresh_store
+            .load()
+            .await
+            .expect_err("load must fail when an event's payload cannot be decrypted");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
 
         Ok(())
     }

@@ -3,6 +3,16 @@
 //! Each stream gets its own encryption key derived from a master secret
 //! and the stream ID using HKDF-SHA256. Events are serialized with postcard,
 //! then encrypted with AES-256-GCM using a random nonce prepended to the ciphertext.
+//!
+//! We encrypt event payloads at rest in the database, and decrypt them on demand when
+//! fetching events. This provides confidentiality even if the database is compromised.
+//!
+//! This is not end-to-end encryption, since the server still has access to the plaintext
+//! and performs encryption and decryption. The main threat model is an attacker who gains
+//! read access to the database but not the server's memory or master secret.
+//!
+//! Note that this is a security-in-depth measure. The database should still be secure
+//! and stored on a encrypted volume.
 
 use aes_gcm::{
     AeadCore, AeadInPlace, Aes256Gcm, KeyInit,
@@ -105,10 +115,9 @@ impl EventCipher {
     /// Expects `nonce (12 bytes) || ciphertext || tag`.
     pub fn decrypt_owned<E: DeserializeOwned>(&self, mut data: Vec<u8>) -> Result<E, AppError> {
         if data.len() < NONCE_LEN {
-            return Err(AppError::ServerError(std::io::Error::new(
-                std::io::ErrorKind::InvalidData,
-                "ciphertext too short for nonce",
-            )));
+            return Err(AppError::EventDecodeError(
+                "ciphertext too short for nonce".to_string(),
+            ));
         }
 
         let nonce = *Nonce::<Aes256Gcm>::from_slice(&data[..NONCE_LEN]);
@@ -118,16 +127,10 @@ impl EventCipher {
         let _ = data.drain(..NONCE_LEN);
         self.cipher
             .decrypt_in_place(&nonce, b"", &mut data)
-            .map_err(|e| {
-                AppError::ServerError(std::io::Error::new(
-                    std::io::ErrorKind::InvalidData,
-                    e.to_string(),
-                ))
-            })?;
+            .map_err(|e| AppError::EventDecodeError(format!("AES-GCM decrypt failed: {e}")))?;
 
-        postcard::from_bytes(&data).map_err(|e| {
-            AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-        })
+        postcard::from_bytes(&data)
+            .map_err(|e| AppError::EventDecodeError(format!("payload deserialize failed: {e}")))
     }
 }
 

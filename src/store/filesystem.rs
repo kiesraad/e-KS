@@ -1,19 +1,20 @@
 //! Filesystem-backed persistence for the event store.
 //!
-//! Events are stored as length-prefixed binary frames in a single file per stream.
-//! Each frame contains an event_id, created_at timestamp, and an encrypted postcard
-//! payload. Appends are performed with `O_APPEND` to avoid rewriting the file.
+//! Events are stored as length-prefixed postcard frames in a single file per stream.
+//! The length prefix lets us read one frame at a time without decoding the whole file,
+//! and lets us append new frames at the end. Appends use `O_APPEND` to avoid rewriting.
 //!
-//! Frame format (all integers little-endian):
-//!   [4 bytes: frame length (u32, excludes this header)]
-//!   [8 bytes: event_id (u64)]
-//!   [8 bytes: created_at (i64, Unix timestamp in microseconds)]
-//!   [remaining: encrypted payload (nonce || ciphertext || tag)]
+//! On-disk layout per frame:
+//!   [4 bytes: body length (u32, little-endian)]
+//!   [body:    postcard-encoded [`Frame`]]
+//!
+//! [`Frame`] is a versioned enum; postcard encodes the variant discriminant as a
+//! varint, giving us a per-frame version marker for future format migrations.
 
 use std::path::{Path, PathBuf};
 
 use chrono::{DateTime, Utc};
-use serde::{Serialize, de::DeserializeOwned};
+use serde::{Deserialize, Serialize, de::DeserializeOwned};
 use tokio::{
     fs::{self, File, OpenOptions},
     io::{AsyncReadExt, AsyncWriteExt},
@@ -22,10 +23,16 @@ use tokio::{
 use super::{Store, StoreData, StoreEvent, encryption::EventCipher};
 use crate::AppError;
 
-const EVENT_ID_LEN: usize = 8;
-const CREATED_AT_LEN: usize = 8;
 const FRAME_HEADER_LEN: usize = 4;
-const METADATA_LEN: usize = EVENT_ID_LEN + CREATED_AT_LEN;
+
+#[derive(Serialize, Deserialize)]
+enum Frame {
+    V1 {
+        event_id: u64,
+        created_at_micros: i64,
+        encrypted_payload: Vec<u8>,
+    },
+}
 
 /// Ensure the filesystem storage directory exists.
 pub async fn init_local(dir: &Path) -> Result<(), AppError> {
@@ -74,37 +81,31 @@ where
     let mut events = Vec::new();
 
     loop {
-        // Read frame length (4 bytes LE)
         let mut len_buf = [0u8; FRAME_HEADER_LEN];
         match file.read_exact(&mut len_buf).await {
             Ok(_) => {}
             Err(err) if err.kind() == std::io::ErrorKind::UnexpectedEof => break,
             Err(err) => return Err(AppError::ServerError(err)),
         }
-        let frame_len = u32::from_le_bytes(len_buf) as usize;
+        let body_len = u32::from_le_bytes(len_buf) as usize;
 
-        if frame_len < METADATA_LEN {
-            tracing::error!("Frame too short ({frame_len} bytes), skipping rest of file");
-            break;
-        }
+        let mut body = vec![0u8; body_len];
+        file.read_exact(&mut body)
+            .await
+            .map_err(AppError::ServerError)?;
 
-        // Read full frame
-        let mut frame = vec![0u8; frame_len];
-        if let Err(err) = file.read_exact(&mut frame).await {
-            tracing::error!("Failed to read frame body: {err:?}");
-            break;
-        }
+        let Frame::V1 {
+            event_id,
+            created_at_micros,
+            encrypted_payload,
+        } = postcard::from_bytes::<Frame>(&body)
+            .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
 
-        // Parse metadata
-        let event_id = u64::from_le_bytes(frame[..EVENT_ID_LEN].try_into().unwrap()) as usize;
-        let created_at_micros =
-            i64::from_le_bytes(frame[EVENT_ID_LEN..METADATA_LEN].try_into().unwrap());
-        let encrypted_payload = &frame[METADATA_LEN..];
-
+        let event_id = event_id as usize;
         let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
 
         last_file_id = last_file_id.max(event_id);
-        events.push((event_id, created_at, encrypted_payload.to_vec()));
+        events.push((event_id, created_at, encrypted_payload));
     }
 
     let mut data = store.data.write();
@@ -114,20 +115,12 @@ where
             continue;
         }
 
-        match store.cipher.decrypt_owned::<D::Event>(encrypted_payload) {
-            Ok(payload) => {
-                let store_event = StoreEvent {
-                    event_id,
-                    payload,
-                    created_at,
-                };
-                data.apply(store_event);
-            }
-            Err(err) => {
-                tracing::error!("Failed to decrypt/deserialize event {event_id}: {err:?}");
-                continue;
-            }
-        }
+        let payload = store.cipher.decrypt_owned::<D::Event>(encrypted_payload)?;
+        data.apply(StoreEvent {
+            event_id,
+            payload,
+            created_at,
+        });
     }
 
     Ok(last_file_id)
@@ -178,16 +171,26 @@ async fn append_once<E: Serialize>(
         .await
         .map_err(AppError::ServerError)?;
 
-    let encrypted_payload = cipher.encrypt(&event.payload)?;
+    let frame = Frame::V1 {
+        event_id: event.event_id as u64,
+        created_at_micros: event.created_at.timestamp_micros(),
+        encrypted_payload: cipher.encrypt(&event.payload)?,
+    };
 
-    let created_at_micros = event.created_at.timestamp_micros();
-    let frame_len = (METADATA_LEN + encrypted_payload.len()) as u32;
+    let body = postcard::to_allocvec(&frame).map_err(|e| {
+        AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+    })?;
 
-    let mut buf = Vec::with_capacity(FRAME_HEADER_LEN + frame_len as usize);
-    buf.extend_from_slice(&frame_len.to_le_bytes());
-    buf.extend_from_slice(&(event.event_id as u64).to_le_bytes());
-    buf.extend_from_slice(&created_at_micros.to_le_bytes());
-    buf.extend_from_slice(&encrypted_payload);
+    let body_len = u32::try_from(body.len()).map_err(|_| {
+        AppError::ServerError(std::io::Error::new(
+            std::io::ErrorKind::InvalidData,
+            "frame body exceeds u32::MAX",
+        ))
+    })?;
+
+    let mut buf = Vec::with_capacity(FRAME_HEADER_LEN + body.len());
+    buf.extend_from_slice(&body_len.to_le_bytes());
+    buf.extend_from_slice(&body);
 
     let written = file.write(&buf).await.map_err(AppError::ServerError)?;
     if written != buf.len() {
@@ -409,11 +412,11 @@ mod tests {
             data: Arc::new(RwLock::new(TestData::default())),
         };
 
-        // Replay should fail to decrypt (events are skipped)
-        replay_from_file(&wrong_store, &dir).await?;
-        let data = wrong_store.data.read();
-        assert_eq!(data.last_event_id(), 0);
-        assert!(data.events.is_empty());
+        let err = replay_from_file(&wrong_store, &dir)
+            .await
+            .expect_err("replay must fail with the wrong key");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+        assert!(wrong_store.data.read().events.is_empty());
 
         Ok(())
     }

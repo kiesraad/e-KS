@@ -200,20 +200,12 @@ where
             continue;
         }
 
-        match store.cipher.decrypt_owned::<D::Event>(event.payload) {
-            Ok(payload) => {
-                let store_event = StoreEvent {
-                    event_id: event.event_id,
-                    payload,
-                    created_at: event.created_at,
-                };
-                data.apply(store_event);
-            }
-            Err(e) => {
-                tracing::error!("Failed to decrypt/deserialize event: {e:?}");
-                continue;
-            }
-        }
+        let payload = store.cipher.decrypt_owned::<D::Event>(event.payload)?;
+        data.apply(StoreEvent {
+            event_id: event.event_id,
+            payload,
+            created_at: event.created_at,
+        });
     }
 
     Ok(stream_last_id as usize)
