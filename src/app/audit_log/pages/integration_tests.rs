@@ -80,8 +80,8 @@ async fn audit_log_shows_events_after_mutations() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response_body_string(response).await;
     assert!(body.contains("<table"));
-    assert!(body.contains("Created person"));
-    assert!(body.contains("Updated political group"));
+    assert!(body.contains("<td>Created person</td>"));
+    assert!(body.contains("<td>Updated political group</td>"));
     assert!(body.contains(&person_name));
 }
 
@@ -118,6 +118,6 @@ async fn audit_log_pagination_with_query_params() {
     let body = response_body_string(response).await;
     assert!(body.contains("<table"));
     // Page 2 should have the remaining 5 events
-    let row_count = body.matches("Created person").count();
+    let row_count = body.matches("<td>Created person</td>").count();
     assert_eq!(row_count, 5);
 }

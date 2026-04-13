@@ -7,6 +7,9 @@ use crate::{
     store::StoreEvent, trans,
 };
 
+/// A single entry in the audit log, representing one application event.
+const DEFAULT_DETAILS: &str = "-";
+
 pub struct AuditLogEntry {
     pub event_id: usize,
     pub event_type: &'static str,
@@ -133,42 +136,33 @@ fn details(event: &AppEvent) -> String {
         AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.name.display(),
         AppEvent::CreatePersonPersonalData { name, .. }
         | AppEvent::UpdatePersonPersonalData { name, .. } => name.display(),
-        AppEvent::UpdatePersonAddress { person_id, .. }
-        | AppEvent::UpdatePersonRepresentative { person_id, .. }
-        | AppEvent::DeletePerson { person_id } => abbreviate_str(&person_id.to_string()),
         AppEvent::CreateCandidateList(cl) => district_codes(&cl.electoral_districts),
         AppEvent::UpdateCandidateListDistricts {
             electoral_districts,
             ..
         } => district_codes(electoral_districts),
-        AppEvent::UpdateCandidateListOrder { list_id, .. }
-        | AppEvent::UpdateCandidateListSubmitters { list_id, .. }
-        | AppEvent::AddCandidateToCandidateList { list_id, .. }
-        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
-            abbreviate_str(&list_id.to_string())
-        }
-        AppEvent::DeleteCandidateList(cl_id) => abbreviate_str(&cl_id.to_string()),
         AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
             aa.name.display()
         }
-        AppEvent::DeleteAuthorisedAgent(aa_id) => abbreviate_str(&aa_id.to_string()),
         AppEvent::CreateListSubmitter(ls) | AppEvent::UpdateListSubmitter(ls) => ls.name.display(),
-        AppEvent::DeleteListSubmitter {
-            list_submitter_id, ..
-        } => abbreviate_str(&list_submitter_id.to_string()),
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
             ss.name.display()
         }
-        AppEvent::DeleteSubstituteSubmitter {
-            substitute_submitter_id,
-            ..
-        } => abbreviate_str(&substitute_submitter_id.to_string()),
-        AppEvent::DeveloperLogin {
-            political_group_id, ..
-        } => abbreviate_str(&political_group_id.to_string()),
         AppEvent::DownloadFile { file_name, .. }
         | AppEvent::ExportCsv { file_name, .. }
         | AppEvent::ImportCsv { file_name, .. } => file_name.clone(),
+        AppEvent::UpdatePersonAddress { .. }
+        | AppEvent::UpdatePersonRepresentative { .. }
+        | AppEvent::DeletePerson { .. }
+        | AppEvent::UpdateCandidateListOrder { .. }
+        | AppEvent::UpdateCandidateListSubmitters { .. }
+        | AppEvent::AddCandidateToCandidateList { .. }
+        | AppEvent::RemoveCandidateFromCandidateList { .. }
+        | AppEvent::DeleteCandidateList(..)
+        | AppEvent::DeleteAuthorisedAgent(..)
+        | AppEvent::DeleteListSubmitter { .. }
+        | AppEvent::DeleteSubstituteSubmitter { .. }
+        | AppEvent::DeveloperLogin { .. } => DEFAULT_DETAILS.to_string(),
     }
 }
 
@@ -375,7 +369,7 @@ mod tests {
     }
 
     #[test]
-    fn from_developer_login_event_shows_abbreviated_id() {
+    fn from_developer_login_event_shows_default_details() {
         let pg_id = PoliticalGroupId::new();
         let event = StoreEvent::new(
             8,
@@ -387,7 +381,7 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Developer login");
-        assert_eq!(entry.details, abbreviate_str(&pg_id.to_string()));
+        assert_eq!(entry.details, DEFAULT_DETAILS);
     }
 
     #[test]

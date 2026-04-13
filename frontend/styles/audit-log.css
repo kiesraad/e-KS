@@ -8,6 +8,13 @@ table.audit-log {
     white-space: nowrap;
   }
 
+  td.subject-id abbr {
+    font-family: "Courier New", Courier, monospace;
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--blue-600);
+  }
+
   tr:nth-child(even) {
     background-color: var(--gray-100);
   }

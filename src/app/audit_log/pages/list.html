@@ -14,12 +14,17 @@
                 class="form-control"
                 aria-label="{{ "audit_log.filter.event_type"|trans }}">
           <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
-          {% for category in event_categories %}
-            {% let key = format!("audit_log.filter.category.{}", category) %}
-            <option value="{{ category }}"
-                    {% if filter.event_type.as_deref() == Some(category.as_ref()) %}selected{% endif %}>
-              {{ key.as_str() |trans }}
-            </option>
+          {% for group in event_types_by_category %}
+            {% let category_key = format!("audit_log.filter.category.{}", group.0) %}
+            <optgroup label="{{ category_key.as_str() |trans }}">
+              {% for event_key in group.1.iter() %}
+                {% let event_label_key = format!("audit_log.event.{}", event_key) %}
+                <option value="{{ event_key }}"
+                        {% if filter.event_type.as_deref() == Some(event_key.as_ref()) %}selected{% endif %}>
+                  {{ event_label_key.as_str() |trans }}
+                </option>
+              {% endfor %}
+            </optgroup>
           {% endfor %}
         </select>
         <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
@@ -39,6 +44,7 @@
             <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.details"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.id"|trans }}</th>
             <th></th>
           </tr>
         </thead>
@@ -49,6 +55,11 @@
               <td>{{ entry.created_at|datetime_seconds }}</td>
               <td>{{ entry.description }}</td>
               <td>{{ entry.details }}</td>
+              <td class="subject-id">
+                <a href="/audit-log?search={{ entry.subject_id_full }}">
+                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id }}</abbr>
+                </a>
+              </td>
               <td>
                 <a href="{{ entry.detail_path() }}">
                   <span>{{ "audit_log.fields.details"|trans }}</span>

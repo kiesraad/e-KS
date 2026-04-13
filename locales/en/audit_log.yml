@@ -66,6 +66,7 @@ fields:
   details: Details
   event: Event
   event_id: "#"
+  id: ID
   subject_id: Subject ID
   timestamp: Timestamp
 filter:
