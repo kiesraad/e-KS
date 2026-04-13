@@ -4,6 +4,7 @@ import bsnInput from "./scripts/form-inputs/bsn-input";
 import setupClickRow from "./scripts/table-interaction/click-row";
 import countryCodeInput from "./scripts/form-inputs/country-input";
 import dateInput from "./scripts/form-inputs/date-input";
+import electionRegion from "./scripts/form-inputs/election-region";
 import setupFileImport from "./scripts/form-inputs/file-import";
 import highlightRow from "./scripts/highlights-alerts/highlight-row";
 import initialsInput from "./scripts/form-inputs/initials-input";
@@ -39,6 +40,7 @@ addressLookup();
 localitySuggestions();
 setupPositionPreview();
 setupSelectAllCheckbox();
+electionRegion();
 
 // generic UI
 setupStickyNav();

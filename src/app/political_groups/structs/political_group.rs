@@ -1,13 +1,11 @@
 use crate::{
-    AppError, AppEvent, AppStore, OptionAsStrExt, PoliticalGroupId,
+    AppError, AppEvent, AppStore, OptionAsStrExt,
     common::{DisplayName, LegalName},
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PoliticalGroup {
-    pub id: PoliticalGroupId,
-
     pub long_list_allowed: Option<bool>,
     pub legal_name: Option<LegalName>,
     pub display_name: Option<DisplayName>,

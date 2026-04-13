@@ -53,7 +53,7 @@ pub async fn update_person_submit(
     match form.validate_update_with_checks(
         &candidate.person,
         &context.session.csrf_tokens,
-        &context.session.election,
+        &context.election,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
@@ -252,11 +252,10 @@ mod tests {
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
-        form.personal_data.date_of_birth = DateOfBirth::from(
-            context.session.election.eligible_date_of_birth() + Duration::days(1),
-        )
-        .format(crate::core::constants::DEFAULT_DATE_FORMAT)
-        .to_string();
+        form.personal_data.date_of_birth =
+            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
+                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
+                .to_string();
 
         let response = update_person_submit(
             CandidateListUpdatePersonPath {

@@ -12,7 +12,7 @@ pub async fn gen_h4(
     State(config): State<&Config>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let h4 = H4::new(&store, list_id, &context.session.election, locale)?;
+    let h4 = H4::new(&store, list_id, &context.election, locale)?;
 
     store
         .update(AppEvent::DownloadFile {

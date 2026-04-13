@@ -98,6 +98,23 @@ impl StorePersistence {
 
         Ok(())
     }
+
+    /// Check which of the given stream IDs have persisted events.
+    pub async fn streams_with_data(
+        &self,
+        stream_ids: &[Uuid],
+    ) -> Result<std::collections::HashSet<Uuid>, AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                super::database::streams_with_data(pool, stream_ids).await
+            }
+            StorePersistence::Local(dir) => {
+                Ok(filesystem::streams_with_data(dir, stream_ids).await)
+            }
+            StorePersistence::None => Ok(std::collections::HashSet::new()),
+        }
+    }
 }
 
 impl<D> Store<D>
@@ -210,6 +227,11 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = usize;
+        type Init = ();
+
+        fn new(_: ()) -> Self {
+            Self::default()
+        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;

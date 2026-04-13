@@ -73,6 +73,7 @@ table {
 
     &:hover {
       cursor: pointer;
+      background-color: var(--blue-100);
     }
   }
 }

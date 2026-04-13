@@ -24,13 +24,13 @@ pub async fn gen_h9(
             &list.list,
             &ordered_candidates,
             candidate,
-            &context.session.election,
+            &context.election,
             path.locale,
         );
         h9s.push(h9_model?);
     }
 
-    let filename = if list.list.contains_all_districts(&context.session.election) {
+    let filename = if list.list.contains_all_districts(&context.election) {
         "model-h9.zip".to_string()
     } else {
         format!("model-h9-{}.zip", list.list.districts_codes())

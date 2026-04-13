@@ -10,7 +10,7 @@ use tower::ServiceExt;
 use tracing_test::traced_test;
 
 use crate::{
-    AppError, AppEvent, AppState, AppStore, Config, Locale, PoliticalGroupId, Session,
+    AppError, AppEvent, AppState, AppStore, Config, ElectionConfig, Locale, Session, StreamId,
     candidate_lists::CandidateListId,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
@@ -46,14 +46,14 @@ async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
     config.typst_url = typst_url().await;
 
     let state = AppState::new_with_config(config).await?;
-    let political_group_id = PoliticalGroupId::new();
-    let store = state.store_for_political_group(political_group_id).await?;
-    sample_political_group(political_group_id)
-        .update(&store)
+    let stream_id = StreamId::new();
+    let store = state
+        .store_for_stream(stream_id, ElectionConfig::EK27)
         .await?;
+    sample_political_group().update(&store).await?;
 
     let mut session = Session::new_with_locale(Locale::En);
-    session.set_political_group(political_group_id);
+    session.set_stream_id(stream_id);
 
     Ok((super::router().with_state(state), store, session))
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, AppStoreData, ElectoralDistrict,
+    AppError, AppEvent, AppStore, AppStoreData, ElectionConfig, ElectoralDistrict,
     candidate_lists::CandidateListId,
     common::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
@@ -14,7 +14,7 @@ use chrono::{Duration, Utc};
 
 #[test]
 fn apply_update_person_address_and_representative() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let person_id = PersonId::new();
     let person = sample_person(person_id);
     data.persons.insert(person_id, person);
@@ -98,7 +98,7 @@ fn apply_update_person_address_and_representative() {
 
 #[test]
 fn apply_add_candidate_to_list_deduplicates() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let list_id = CandidateListId::new();
     let list = sample_candidate_list(list_id);
 
@@ -133,7 +133,7 @@ fn apply_add_candidate_to_list_deduplicates() {
 
 #[test]
 fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let person_id = PersonId::new();
     let base_time = Utc::now();
 
@@ -177,7 +177,7 @@ fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
 
 #[test]
 fn apply_remove_candidate_from_candidate_list_updates_list() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let list_id = CandidateListId::new();
     let person_id = PersonId::new();
     let other_person_id = PersonId::new();
@@ -205,7 +205,7 @@ fn apply_remove_candidate_from_candidate_list_updates_list() {
 
 #[test]
 fn apply_update_candidate_list_districts_replaces_districts() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let list_id = CandidateListId::new();
     let base_time = Utc::now();
 
@@ -235,7 +235,7 @@ fn apply_update_candidate_list_districts_replaces_districts() {
 
 #[test]
 fn apply_update_candidate_list_order_replaces_candidates() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let list_id = CandidateListId::new();
     let person_id = PersonId::new();
     let other_person_id = PersonId::new();
@@ -267,7 +267,7 @@ fn apply_update_candidate_list_order_replaces_candidates() {
 
 #[test]
 fn apply_update_candidate_list_submitters_sets_ids() {
-    let mut data = AppStoreData::default();
+    let mut data = AppStoreData::new(ElectionConfig::EK27);
     let list_id = CandidateListId::new();
     let mut list = sample_candidate_list(list_id);
     list.list_submitter_id = None;
@@ -316,7 +316,7 @@ async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
 #[cfg(feature = "database")]
 mod database_tests {
     use super::*;
-    use crate::{PoliticalGroupId, persons::PersonId, test_utils::sample_person};
+    use crate::{StreamId, persons::PersonId, test_utils::sample_person};
     use chrono::Utc;
     use sqlx::PgPool;
 
@@ -326,10 +326,11 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let group_id = PoliticalGroupId::new();
-        let store = AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid())
-            .await
-            .unwrap();
+        let group_id = StreamId::new();
+        let store =
+            AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid(), ElectionConfig::EK27)
+                .await
+                .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -338,9 +339,10 @@ mod database_tests {
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
 
-        let fresh_store = AppStore::new_with_pool_for_stream(pool, group_id.uuid())
-            .await
-            .unwrap();
+        let fresh_store =
+            AppStore::new_with_pool_for_stream(pool, group_id.uuid(), ElectionConfig::EK27)
+                .await
+                .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;
@@ -355,10 +357,11 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let group_id = PoliticalGroupId::new();
-        let store = AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid())
-            .await
-            .unwrap();
+        let group_id = StreamId::new();
+        let store =
+            AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid(), ElectionConfig::EK27)
+                .await
+                .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -382,9 +385,10 @@ mod database_tests {
             .execute(&pool)
             .await?;
 
-        let fresh_store = AppStore::new_with_pool_for_stream(pool, group_id.uuid())
-            .await
-            .unwrap();
+        let fresh_store =
+            AppStore::new_with_pool_for_stream(pool, group_id.uuid(), ElectionConfig::EK27)
+                .await
+                .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;

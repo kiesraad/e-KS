@@ -3,7 +3,11 @@
 //! Ensures each stream has a single shared `Store` instance within the process,
 //! and provides an optional initialization hook for first-time loads.
 
-use std::{collections::HashMap, future::Future, sync::Arc};
+use std::{
+    collections::{HashMap, HashSet},
+    future::Future,
+    sync::Arc,
+};
 
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
@@ -52,8 +56,12 @@ where
     }
 
     /// Fetch an existing store or create and load it for the given stream.
-    pub async fn get_or_create(&self, stream_id: Uuid) -> Result<Store<D>, AppError> {
-        self.get_or_create_with_init(stream_id, |_| async { Ok(()) })
+    pub async fn get_or_create(
+        &self,
+        stream_id: Uuid,
+        store_init: D::Init,
+    ) -> Result<Store<D>, AppError> {
+        self.get_or_create_with_init(stream_id, store_init, |_| async { Ok(()) })
             .await
     }
 
@@ -61,6 +69,7 @@ where
     pub async fn get_or_create_with_init<F, Fut>(
         &self,
         stream_id: Uuid,
+        store_init: D::Init,
         init: F,
     ) -> Result<Store<D>, AppError>
     where
@@ -72,7 +81,8 @@ where
         }
 
         let store =
-            Store::new_for_stream_with_persistence(self.persistence.clone(), stream_id).await?;
+            Store::new_for_stream_with_persistence(self.persistence.clone(), stream_id, store_init)
+                .await?;
         store.load().await?;
         init(store.clone()).await?;
 
@@ -80,5 +90,34 @@ where
         let entry = stores.entry(stream_id).or_insert(store);
 
         Ok(entry.clone())
+    }
+
+    /// Check which of the given stream IDs have data, using the in-memory
+    /// cache first and falling back to the persistence backend.
+    pub async fn streams_with_data(&self, stream_ids: &[Uuid]) -> Result<HashSet<Uuid>, AppError> {
+        let (mut found, remaining) = {
+            let cached = self.inner.read();
+            let mut found = HashSet::new();
+            let mut remaining = Vec::new();
+
+            for &id in stream_ids {
+                if let Some(store) = cached.get(&id) {
+                    if store.data.read().last_event_id() > 0 {
+                        found.insert(id);
+                    }
+                } else {
+                    remaining.push(id);
+                }
+            }
+
+            (found, remaining)
+        };
+
+        if !remaining.is_empty() {
+            let persisted = self.persistence.streams_with_data(&remaining).await?;
+            found.extend(persisted);
+        }
+
+        Ok(found)
     }
 }
