@@ -2,8 +2,10 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
+    candidate_lists::{
+        CandidateList, CandidateListCreateForm, CandidateListId, pages::CandidateListCreatePath,
+    },
     filters,
     form::FormData,
 };
@@ -21,9 +23,24 @@ pub async fn create_candidate_list(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
+    if context.election.has_only_one_district() {
+        if store.get_candidate_lists().len() > 0 {
+            return Err(AppError::UserError(
+                "Cannot create more than one candidate list for single district elections"
+                    .to_string(),
+            ));
+        }
+        let list = CandidateList {
+            id: CandidateListId::new(),
+            electoral_districts: context.election.electoral_districts().to_vec(),
+            ..Default::default()
+        };
+        list.create(&store).await?;
+        return Ok(Redirect::to(&list.after_create_path().to_string()).into_response());
+    }
+
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let has_previous_list = !store.get_candidate_lists().is_empty();
-
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
             form: FormData::new(&context.session.csrf_tokens),
@@ -41,6 +58,9 @@ pub async fn create_candidate_list_submit(
     store: AppStore,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
+    if context.election.has_only_one_district() {
+        return Err(AppError::UserError("Not available for single district elections".to_string()))
+    }
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let should_copy_candidates = form.copy_candidates;
     match form.validate_create(&context.session.csrf_tokens) {

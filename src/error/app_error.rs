@@ -22,6 +22,7 @@ pub enum AppError {
     GenericNotFound,
     CsrfTokenInvalid,
     NotFound(String),
+    UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
     TemplateError(askama::Error),
@@ -69,6 +70,7 @@ impl Display for AppError {
             AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
             AppError::NoStorageConfigured => write!(f, "No event storage configured"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
+            AppError::UserError(msg) => write!(f, "{msg}"),
             AppError::PathRejection(err) => write!(f, "Path error: {err}"),
             AppError::QueryRejection(err) => write!(f, "Query error: {err}"),
             AppError::ServerError(err) => write!(f, "Server error: {err}"),

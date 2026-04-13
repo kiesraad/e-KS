@@ -51,6 +51,11 @@ pub async fn update_candidate_list_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
+    if context.election.has_only_one_district() {
+        return Err(AppError::UserError(
+            "Not available for single district elections".to_string(),
+        ));
+    }
     let available_districts = CandidateList::available_districts(&store, &context.election);
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
