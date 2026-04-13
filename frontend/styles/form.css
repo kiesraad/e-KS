@@ -72,6 +72,13 @@
       }
     }
 
+    &.success {
+      input {
+        border-color: var(--green-300);
+        background-color: var(--green-50);
+      }
+    }
+
     .autoformat,
     .no_bsn_confirmed {
       font-size: var(--font-size-sm);

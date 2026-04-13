@@ -49,11 +49,16 @@ export default function addressLookup() {
 
     if (response.ok) {
       const data = await response.json();
-      if (data.wp) {
+      // fill in locality and street name if data is available
+      if (data.wp && data.pr) {
         localityInput.value = data.wp;
-      }
-      if (data.pr) {
         streetNameInput.value = data.pr;
+
+        // highlight the address fields to indicate they were auto-filled
+        postalCodeInput.closest('.form-field')?.classList.add("success");
+        houseNumberInput.closest('.form-field')?.classList.add("success");
+        localityInput.closest('.form-field')?.classList.add("success");
+        streetNameInput.closest('.form-field')?.classList.add("success");
       }
     }
   };
