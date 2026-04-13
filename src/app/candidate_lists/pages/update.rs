@@ -49,7 +49,7 @@ pub async fn update_candidate_list_submit(
     candidate_list: CandidateList,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<CandidateListForm>,
+    Form(mut form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
     if context.election.has_only_one_district() {
         return Err(AppError::UserError(
@@ -57,6 +57,8 @@ pub async fn update_candidate_list_submit(
         ));
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    form.electoral_districts
+        .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {

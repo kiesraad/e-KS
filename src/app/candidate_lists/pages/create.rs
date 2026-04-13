@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, Form, HtmlTemplate,
+    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate,
     candidate_lists::{
         CandidateList, CandidateListCreateForm, CandidateListId, pages::CandidateListCreatePath,
     },
@@ -22,9 +22,9 @@ pub async fn create_candidate_list(
     _: CandidateListCreatePath,
     context: Context,
     store: AppStore,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Response, AppError> {
     if context.election.has_only_one_district() {
-        if store.get_candidate_lists().len() > 0 {
+        if !store.get_candidate_lists().is_empty() {
             return Err(AppError::UserError(
                 "Cannot create more than one candidate list for single district elections"
                     .to_string(),
@@ -56,13 +56,18 @@ pub async fn create_candidate_list_submit(
     _: CandidateListCreatePath,
     context: Context,
     store: AppStore,
-    Form(form): Form<CandidateListCreateForm>,
+    Form(mut form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
     if context.election.has_only_one_district() {
-        return Err(AppError::UserError("Not available for single district elections".to_string()))
+        return Err(AppError::UserError(
+            "Not available for single district elections".to_string(),
+        ));
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let should_copy_candidates = form.copy_candidates;
+    form.electoral_districts
+        .retain(|district| context.election.electoral_districts().contains(district));
+
     match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
@@ -276,20 +281,9 @@ mod test {
         let store =
             AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::Fryslan));
         let context = Context::new(&store, Session::new_with_locale(Locale::En));
-        let csrf_token = context.session.csrf_tokens.issue().value;
-        let form = CandidateListCreateForm {
-            electoral_districts: vec![ElectoralDistrict::WsFryslan],
-            copy_candidates: false,
-            csrf_token,
-        };
 
-        let response = create_candidate_list_submit(
-            CandidateListCreatePath {},
-            context,
-            store.clone(),
-            Form(form),
-        )
-        .await?;
+        let response =
+            create_candidate_list(CandidateListCreatePath {}, context, store.clone()).await?;
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
