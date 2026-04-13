@@ -86,6 +86,14 @@ impl ElectoralDistrict {
         ]
     }
 
+    /// Returns the serde variant name, used as form value so that
+    /// `serde_urlencoded` can deserialize it back into `ElectoralDistrict`.
+    pub fn serde_name(&self) -> String {
+        serde_json::to_value(self)
+            .and_then(serde_json::from_value)
+            .expect("unit enum variant serializes to a string")
+    }
+
     pub fn title(&self, locale: AnyLocale) -> &'static str {
         match (self, locale) {
             (Self::GR, AnyLocale::Nl | AnyLocale::En) => "Groningen",
@@ -173,7 +181,7 @@ impl ElectoralDistrict {
         }
     }
 
-    pub fn code(&self) -> &str {
+    pub fn code(&self) -> &'static str {
         match self {
             Self::GR => "GR",
             Self::PsGroningen => "GRQ",

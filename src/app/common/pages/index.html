@@ -1,7 +1,12 @@
 {% extends "common/components/layout.html" %}
+{% block header_action %}
+  <a href="{{ crate::common::SwitchElectionPath.to_string() }}"
+     class="button secondary">{{ "common.switch_election.label"|trans }}</a>
+{% endblock %}
 {% block page_title %}
   {% let election = "election"|election_value %}
   {{ (&election)|election_title }}
+  {% if let Some(region) = (&election)|region_title %}- {{ region }}{% endif %}
 {% endblock %}
 {% block content %}
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>

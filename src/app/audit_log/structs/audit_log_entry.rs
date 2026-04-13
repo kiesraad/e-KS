@@ -22,6 +22,7 @@ impl AuditLogEntry {
 
 fn event_description(event: &AppEvent, locale: Locale) -> String {
     match event {
+        AppEvent::StreamCreated { .. } => trans!("audit_log.event.stream_created", locale),
         AppEvent::UpdatePoliticalGroup(_) => {
             trans!("audit_log.event.update_political_group", locale)
         }
@@ -109,7 +110,7 @@ fn details(event: &AppEvent) -> String {
 mod tests {
     use super::*;
     use crate::{
-        Locale, PoliticalGroupId,
+        Locale, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
@@ -137,7 +138,7 @@ mod tests {
 
     #[test]
     fn from_update_political_group_event() {
-        let pg = sample_political_group(PoliticalGroupId::new());
+        let pg = sample_political_group();
         let expected_name = pg.display_name.as_ref().unwrap().to_string();
         let event = StoreEvent::new(2, AppEvent::UpdatePoliticalGroup(pg));
 
@@ -216,7 +217,7 @@ mod tests {
         let event = StoreEvent::new(
             8,
             AppEvent::DeveloperLogin {
-                political_group_id: PoliticalGroupId::new(),
+                stream_id: StreamId::new(),
             },
         );
 

@@ -57,7 +57,7 @@ pub async fn audit_log(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, PoliticalGroupId,
+        AppError, AppStore, Context,
         pagination::Pagination,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_political_group},
@@ -115,7 +115,7 @@ mod tests {
     #[tokio::test]
     async fn shows_events_in_reverse_chronological_order() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        let pg = sample_political_group(PoliticalGroupId::new());
+        let pg = sample_political_group();
         pg.update(&store).await?;
         let person = sample_person(PersonId::new());
         person.create(&store).await?;

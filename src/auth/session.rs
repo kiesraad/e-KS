@@ -4,7 +4,7 @@ use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 use std::time::{Duration, Instant};
 
-use crate::{CsrfTokens, ElectionConfig, Locale, PoliticalGroupId};
+use crate::{CsrfTokens, Locale, StreamId, common::Bsn};
 
 /// Idle timeout after which a session is considered expired.
 pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -54,14 +54,14 @@ pub struct Session {
     token: SessionToken,
     /// Timestamp of the last activity for idle-timeout validation.
     pub last_activity: Instant,
-    /// Political group associated with this session (set on login).
-    pub political_group_id: Option<PoliticalGroupId>,
+    /// Stream (BSN + election scoped) associated with this session (set on login).
+    pub stream_id: Option<StreamId>,
+    /// BSN used to derive stream IDs (kept for election switching).
+    pub bsn: Option<Bsn>,
     /// Active locale for the session.
     pub locale: Locale,
     /// CSRF tokens scoped to this session.
     pub csrf_tokens: CsrfTokens,
-    /// Election configuration for the session.
-    pub election: ElectionConfig,
 }
 
 impl std::fmt::Debug for Session {
@@ -69,7 +69,7 @@ impl std::fmt::Debug for Session {
         f.debug_struct("Session")
             .field("token", &"***")
             .field("last_activity", &self.last_activity)
-            .field("political_group_id", &self.political_group_id)
+            .field("stream_id", &self.stream_id)
             .field("locale", &self.locale)
             .finish()
     }
@@ -94,16 +94,16 @@ impl Session {
         Self {
             token: generate_session_token(),
             last_activity: Instant::now(),
-            political_group_id: None,
+            stream_id: None,
+            bsn: None,
             locale,
             csrf_tokens: CsrfTokens::default(),
-            election: ElectionConfig::EK27,
         }
     }
 
-    /// Assigns the political group for this session.
-    pub fn set_political_group(&mut self, political_group_id: PoliticalGroupId) {
-        self.political_group_id = Some(political_group_id);
+    /// Assigns the stream for this session.
+    pub fn set_stream_id(&mut self, stream_id: StreamId) {
+        self.stream_id = Some(stream_id);
     }
 
     /// Returns the session token (kept secret until explicitly exposed).

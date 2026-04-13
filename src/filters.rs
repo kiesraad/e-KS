@@ -93,6 +93,17 @@ pub fn election_title(
 }
 
 #[askama::filter_fn]
+pub fn region_title(
+    value: &ElectionConfig,
+    values: &dyn askama::Values,
+) -> askama::Result<Option<&'static str>> {
+    let locale: &Locale = askama::get_value(values, "locale")?;
+    let any_locale = AnyLocale::from(*locale);
+
+    Ok(value.region_title(any_locale))
+}
+
+#[askama::filter_fn]
 pub fn election_type_title(
     value: &ElectionConfig,
     values: &dyn askama::Values,

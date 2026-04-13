@@ -21,7 +21,7 @@ pub async fn create_candidate_list(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let available_districts = CandidateList::available_districts(&store, &context.session.election);
+    let available_districts = CandidateList::available_districts(&store, &context.election);
     let has_previous_list = !store.get_candidate_lists().is_empty();
 
     Ok(HtmlTemplate(
@@ -41,7 +41,7 @@ pub async fn create_candidate_list_submit(
     store: AppStore,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
-    let available_districts = CandidateList::available_districts(&store, &context.session.election);
+    let available_districts = CandidateList::available_districts(&store, &context.election);
     let should_copy_candidates = form.copy_candidates;
     match form.validate_create(&context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -80,7 +80,8 @@ mod test {
     };
 
     use crate::{
-        AppStore, Context, ElectionConfig, ElectoralDistrict, TokenValue,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Province, Session,
+        TokenValue, WaterCouncil,
         candidate_lists::{CandidateListId, CandidateListSummary},
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -248,5 +249,68 @@ mod test {
             ]),
             some_used_result
         );
+    }
+
+    #[tokio::test]
+    async fn create_candidate_list_with_district_election_persists() -> Result<(), AppError> {
+        let store =
+            AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::Fryslan));
+        let context = Context::new(&store, Session::new_with_locale(Locale::En));
+        let csrf_token = context.session.csrf_tokens.issue().value;
+        let form = CandidateListCreateForm {
+            electoral_districts: vec![ElectoralDistrict::WsFryslan],
+            copy_candidates: false,
+            csrf_token,
+        };
+
+        let response = create_candidate_list_submit(
+            CandidateListCreatePath {},
+            context,
+            store.clone(),
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let lists = CandidateListSummary::list(&store)?;
+        assert_eq!(lists.len(), 1);
+        assert_eq!(
+            lists[0].list.electoral_districts,
+            vec![ElectoralDistrict::WsFryslan]
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_candidate_list_with_provincial_election_persists() -> Result<(), AppError> {
+        let store = AppStore::new_for_test_with_election(ElectionConfig::PS27(Province::GE));
+        let context = Context::new(&store, Session::new_with_locale(Locale::En));
+        let csrf_token = context.session.csrf_tokens.issue().value;
+        let form = CandidateListCreateForm {
+            electoral_districts: vec![ElectoralDistrict::PsNijmegen],
+            copy_candidates: false,
+            csrf_token,
+        };
+
+        let response = create_candidate_list_submit(
+            CandidateListCreatePath {},
+            context,
+            store.clone(),
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let lists = CandidateListSummary::list(&store)?;
+        assert_eq!(lists.len(), 1);
+        assert_eq!(
+            lists[0].list.electoral_districts,
+            vec![ElectoralDistrict::PsNijmegen]
+        );
+
+        Ok(())
     }
 }

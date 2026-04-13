@@ -14,6 +14,7 @@ event:
   developer_login: Developer login
   download_file: Downloaded file
   remove_candidate_from_list: Removed candidate from list
+  stream_created: Stream created
   update_authorised_agent: Updated authorised agent
   update_candidate_list_districts: Updated electoral districts of list
   update_candidate_list_order: Updated order of list of candidates

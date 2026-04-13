@@ -16,7 +16,7 @@ macro_rules! define_elections {
         ),* $(,)?
     ) => {
 	    /// Active election configurations and ruleset for the application.
-        #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, serde::Serialize, serde::Deserialize)]
         pub enum ElectionConfig {
             $(
                 $name $(($binding_ty))?,
@@ -24,6 +24,46 @@ macro_rules! define_elections {
         }
 
         impl ElectionConfig {
+            /// Short code identifying the election type (without region), used in forms.
+            pub fn code(&self) -> &'static str {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => stringify!($name),
+                    )*
+                }
+            }
+
+            /// Returns the region code (province or water council code), if any.
+            pub fn region_code(&self) -> Option<&'static str> {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => {
+                            #[allow(unused_mut, unused_assignments)]
+                            let mut result: Option<&'static str> = None;
+                            $( result = Some($binding.code()); )?
+                            result
+                        },
+                    )*
+                }
+            }
+
+            /// Returns the region title (province or water council name), if any.
+            pub fn region_title(&self, locale: AnyLocale) -> Option<&'static str> {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => {
+                            #[allow(unused_mut, unused_assignments)]
+                            let mut result: Option<&'static str> = None;
+                            $( result = Some($binding.title(locale)); )?
+                            result
+                        },
+                    )*
+                }
+            }
+
             pub fn election_type(&self) -> ElectionType {
                 #[allow(unused)]
                 match self {

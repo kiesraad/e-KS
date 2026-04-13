@@ -1,0 +1,221 @@
+use askama::Template;
+use axum::{
+    extract::State,
+    response::{IntoResponse, Redirect, Response},
+};
+use serde::Deserialize;
+
+use crate::{
+    AnyLocale, AppError, AppState, Context, CsrfToken, ElectionConfig, HtmlTemplate, Province,
+    Session, TokenValue, WaterCouncil, filters,
+};
+
+use super::SwitchElectionPath;
+
+/// Returns one representative `ElectionConfig` per election type, for the
+/// type-selector dropdown. Derived from `ElectionConfig::all()` so new
+/// election types are picked up automatically.
+fn election_type_options() -> Vec<ElectionConfig> {
+    let mut seen = std::collections::HashSet::new();
+    ElectionConfig::all()
+        .into_iter()
+        .filter(|e| seen.insert(e.code()))
+        .collect()
+}
+
+#[derive(Template)]
+#[template(path = "common/pages/switch_election.html")]
+struct SwitchElectionTemplate {
+    elections: Vec<ElectionConfig>,
+    existing_elections: Vec<ElectionConfig>,
+    current_election: ElectionConfig,
+    title_locale: AnyLocale,
+    current_type: &'static str,
+    selected_province: Option<Province>,
+    selected_water_council: Option<WaterCouncil>,
+    provinces: &'static [Province],
+    water_councils: &'static [WaterCouncil],
+    csrf_token: CsrfToken,
+}
+
+pub async fn switch_election(
+    _: SwitchElectionPath,
+    State(state): State<AppState>,
+    context: Context,
+) -> Result<Response, AppError> {
+    let (selected_province, selected_water_council) = match context.election {
+        ElectionConfig::PS27(p) => (Some(p), None),
+        ElectionConfig::WS27(wc) => (None, Some(wc)),
+        _ => (None, None),
+    };
+
+    let existing_elections = match &context.session.bsn {
+        Some(bsn) => state.existing_elections_for_bsn(bsn).await?,
+        None => Vec::new(),
+    };
+
+    let csrf_token = context.session.csrf_tokens.issue();
+
+    Ok(HtmlTemplate(
+        SwitchElectionTemplate {
+            elections: election_type_options(),
+            existing_elections,
+            current_election: context.election,
+            title_locale: AnyLocale::from(context.session.locale),
+            current_type: context.election.code(),
+            selected_province,
+            selected_water_council,
+            provinces: Province::ALL,
+            water_councils: WaterCouncil::ALL,
+            csrf_token,
+        },
+        context,
+    )
+    .into_response())
+}
+
+#[derive(Deserialize)]
+pub struct SwitchElectionForm {
+    csrf_token: String,
+    election: String,
+    province: Option<String>,
+    water_council: Option<String>,
+}
+
+impl SwitchElectionForm {
+    fn into_election_config(self) -> Option<ElectionConfig> {
+        match self.election.as_str() {
+            "EK27" => Some(ElectionConfig::EK27),
+            "PS27" => {
+                let code = self.province.filter(|s| !s.is_empty())?;
+                Some(ElectionConfig::PS27(Province::from_code(&code)?))
+            }
+            "WS27" => {
+                let code = self.water_council.filter(|s| !s.is_empty())?;
+                Some(ElectionConfig::WS27(WaterCouncil::from_code(&code)?))
+            }
+            _ => None,
+        }
+    }
+}
+
+pub async fn switch_election_submit(
+    _: SwitchElectionPath,
+    State(state): State<AppState>,
+    mut session: Session,
+    axum::Form(form): axum::Form<SwitchElectionForm>,
+) -> Result<Response, AppError> {
+    if !session
+        .csrf_tokens
+        .consume(&TokenValue(form.csrf_token.clone()))
+    {
+        return Err(AppError::CsrfTokenInvalid);
+    }
+
+    let Some(election) = form.into_election_config() else {
+        return Ok(Redirect::to("/switch-election").into_response());
+    };
+
+    let stream_id = match &session.bsn {
+        Some(bsn) => state.bsn_id_deriver.derive_stream_id(bsn, election),
+        None => crate::StreamId::new(),
+    };
+
+    // Short-circuit if already on this election (same BSN + election = same stream)
+    if Some(stream_id) == session.stream_id {
+        return Ok(Redirect::to("/").into_response());
+    }
+
+    // Ensure the stream/store exists for the new election
+    state.store_for_stream(stream_id, election).await?;
+
+    session.set_stream_id(stream_id);
+    state.sessions.insert(session);
+
+    Ok(Redirect::to("/").into_response())
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::{
+        Router,
+        body::Body,
+        http::{Request, StatusCode, header},
+        middleware,
+    };
+    use axum_extra::routing::RouterExt;
+    use tower::ServiceExt;
+
+    use crate::{AppState, ElectionConfig, session_middleware, store_middleware};
+
+    use super::*;
+
+    #[tokio::test]
+    async fn switch_election_submit_changes_session_election() {
+        let state = AppState::new_for_tests().await;
+        let app = Router::new()
+            .typed_get(switch_election)
+            .typed_post(switch_election_submit)
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                store_middleware,
+            ))
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                session_middleware,
+            ))
+            .with_state(state.clone());
+
+        // First request to get a session cookie
+        let first = app
+            .clone()
+            .oneshot(
+                Request::builder()
+                    .uri("/switch-election")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(first.status(), StatusCode::OK);
+
+        let cookie = first
+            .headers()
+            .get(header::SET_COOKIE)
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(';').next())
+            .expect("cookie");
+
+        // Issue a CSRF token for the session
+        let token_value = cookie.split_once('=').map(|(_, v)| v).expect("token value");
+        let session = state.sessions.get(token_value).expect("session");
+        let csrf_token = session.csrf_tokens.issue();
+
+        // Submit switch to PS27 Groningen
+        let body = format!("csrf_token={}&election=PS27&province=GR", csrf_token.value);
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .method("POST")
+                    .uri("/switch-election")
+                    .header(header::COOKIE, cookie)
+                    .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+                    .body(Body::from(body))
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
+
+        // Verify session stream was updated
+        let session = state.sessions.get(token_value).expect("session");
+        let expected_stream_id = state.bsn_id_deriver.derive_stream_id(
+            &session.bsn.clone().expect("bsn"),
+            ElectionConfig::PS27(Province::GR),
+        );
+        assert_eq!(session.stream_id, Some(expected_stream_id));
+    }
+}
