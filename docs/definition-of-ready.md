@@ -13,6 +13,7 @@ There are two levels of the definition of ready (DoR):
 - PO has approved the approach and the time estimate
 
 ## DoR issue level:
+_Only issues concerning a new feature have to conform to the DoR. Issues concerning (bug) fixes may deviate from the DoR_
 
 - Discussed and clear for the dev team
 - Confirmation from Product Owner that the issue will (likely) improve the product
