@@ -10,6 +10,11 @@ use crate::{
 
 const PER_PAGE: usize = 20;
 
+pub struct EventTypeCategory {
+    pub key: &'static str,
+    pub event_types: &'static [&'static str],
+}
+
 /// Event type categories grouped with their specific event keys, used by the
 /// filter dropdown to render <optgroup>s with fine-grained <option>s.
 ///
@@ -21,21 +26,24 @@ const PER_PAGE: usize = 20;
 /// trans!("audit_log.filter.category.list_submitter", _)
 /// trans!("audit_log.filter.category.substitute_submitter", _)
 /// trans!("audit_log.filter.category.system", _)
-pub const EVENT_TYPES_BY_CATEGORY: &[(&str, &[&str])] = &[
-    ("political_group", &["update_political_group"]),
-    (
-        "person",
-        &[
+pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
+    EventTypeCategory {
+        key: "political_group",
+        event_types: &["update_political_group"],
+    },
+    EventTypeCategory {
+        key: "person",
+        event_types: &[
             "create_person",
             "update_person",
             "update_person_address",
             "update_person_representative",
             "delete_person",
         ],
-    ),
-    (
-        "candidate_list",
-        &[
+    },
+    EventTypeCategory {
+        key: "candidate_list",
+        event_types: &[
             "create_candidate_list",
             "update_candidate_list_districts",
             "update_candidate_list_order",
@@ -44,40 +52,40 @@ pub const EVENT_TYPES_BY_CATEGORY: &[(&str, &[&str])] = &[
             "remove_candidate_from_list",
             "delete_candidate_list",
         ],
-    ),
-    (
-        "authorised_agent",
-        &[
+    },
+    EventTypeCategory {
+        key: "authorised_agent",
+        event_types: &[
             "create_authorised_agent",
             "update_authorised_agent",
             "delete_authorised_agent",
         ],
-    ),
-    (
-        "list_submitter",
-        &[
+    },
+    EventTypeCategory {
+        key: "list_submitter",
+        event_types: &[
             "create_list_submitter",
             "update_list_submitter",
             "delete_list_submitter",
         ],
-    ),
-    (
-        "substitute_submitter",
-        &[
+    },
+    EventTypeCategory {
+        key: "substitute_submitter",
+        event_types: &[
             "create_substitute_submitter",
             "update_substitute_submitter",
             "delete_substitute_submitter",
         ],
-    ),
-    (
-        "system",
-        &[
+    },
+    EventTypeCategory {
+        key: "system",
+        event_types: &[
             "developer_login",
             "download_file",
             "export_csv",
             "import_csv",
         ],
-    ),
+    },
 ];
 
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
@@ -98,6 +106,11 @@ impl AuditLogFilter {
             _ => String::new(),
         }
     }
+
+    pub fn is_active(&self) -> bool {
+        self.event_type.as_deref().is_some_and(|s| !s.is_empty())
+            || self.search.as_deref().is_some_and(|s| !s.is_empty())
+    }
 }
 
 #[derive(Template)]
@@ -106,7 +119,7 @@ struct AuditLogTemplate {
     entries: Vec<AuditLogEntry>,
     pagination: crate::pagination::PaginationInfo<NoSort>,
     filter: AuditLogFilter,
-    event_types_by_category: &'static [(&'static str, &'static [&'static str])],
+    event_types_by_category: &'static [EventTypeCategory],
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -350,6 +363,46 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Deleted person</td>"));
         assert!(!body.contains("<td>Created person</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn reset_button_only_shown_when_filter_active() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        person.create(&store).await?;
+
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store.clone(),
+            Pagination::default(),
+            no_filter(),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        assert!(!body.contains("/audit-log\" class=\"button secondary\">Reset"));
+
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store,
+            Pagination::default(),
+            Query(AuditLogFilter {
+                event_type: Some("person".to_string()),
+                search: None,
+            }),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("/audit-log\" class=\"button secondary\">Reset"));
 
         Ok(())
     }

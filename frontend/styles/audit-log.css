@@ -61,6 +61,23 @@ table.diff-table {
   tr.removed td:nth-child(2) {
     color: var(--red-700, #b91c1c);
   }
+
+  .entity-ref {
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+  }
+
+  .entity-ref + .entity-ref {
+    margin-top: 0.25rem;
+  }
+
+  .entity-ref abbr {
+    font-family: "Courier New", Courier, monospace;
+    text-decoration: none;
+    cursor: pointer;
+    color: var(--blue-600);
+  }
 }
 
 .audit-log-filters {

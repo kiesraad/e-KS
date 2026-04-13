@@ -1,0 +1,102 @@
+//! Resolve ID-like diff values (person_id, list_submitter_id, etc.) into
+//! `EntityRef`s the template can render as abbreviated clickable links plus a
+//! human-readable description.
+
+use crate::{
+    AppStoreData, candidate_lists::CandidateListId, list_submitters::ListSubmitterId,
+    persons::PersonId,
+};
+
+use super::event_info::abbreviate_str;
+
+/// A reference to another entity mentioned inside a diff value. Rendered in
+/// the template as an abbreviated link + the entity's description.
+pub struct EntityRef {
+    pub id_full: String,
+    pub id_abbreviated: String,
+    pub description: String,
+}
+
+/// Entity types that can appear as ID references inside diff values.
+enum EntityKind {
+    Person,
+    ListSubmitter,
+    SubstituteSubmitter,
+    CandidateList,
+}
+
+/// Detect whether a flattened field key references another entity by ID.
+///
+/// Handles array-element paths like `candidates.0` by falling back to the
+/// parent segment.
+fn entity_kind_for_key(key: &str) -> Option<EntityKind> {
+    let leaf = key.rsplit('.').next().unwrap_or(key);
+    let semantic = if leaf.chars().all(|c| c.is_ascii_digit()) {
+        key.rsplit('.').nth(1).unwrap_or(key)
+    } else {
+        leaf
+    };
+    match semantic {
+        "person_id" | "candidates" => Some(EntityKind::Person),
+        "list_submitter_id" => Some(EntityKind::ListSubmitter),
+        "substitute_list_submitter_ids" => Some(EntityKind::SubstituteSubmitter),
+        "list_id" => Some(EntityKind::CandidateList),
+        _ => None,
+    }
+}
+
+/// Build `EntityRef`s for a diff cell value, if the key references known
+/// entities. The value may be a single UUID or a comma-separated list of
+/// UUIDs (from the scalar-array CSV collapsing performed in `flatten`).
+pub(super) fn build_refs_for_key(key: &str, value: &str, state: &AppStoreData) -> Vec<EntityRef> {
+    let Some(kind) = entity_kind_for_key(key) else {
+        return Vec::new();
+    };
+    if value.is_empty() {
+        return Vec::new();
+    }
+    value
+        .split(", ")
+        .filter(|s| !s.is_empty())
+        .map(|id_str| EntityRef {
+            id_full: id_str.to_string(),
+            id_abbreviated: abbreviate_str(id_str),
+            description: describe_entity(&kind, id_str, state),
+        })
+        .collect()
+}
+
+fn describe_entity(kind: &EntityKind, id_str: &str, state: &AppStoreData) -> String {
+    match kind {
+        EntityKind::Person => id_str
+            .parse::<PersonId>()
+            .ok()
+            .and_then(|id| state.persons.get(&id))
+            .map(|p| p.name.display())
+            .unwrap_or_default(),
+        EntityKind::ListSubmitter => id_str
+            .parse::<ListSubmitterId>()
+            .ok()
+            .and_then(|id| state.list_submitters.get(&id))
+            .map(|ls| ls.name.display())
+            .unwrap_or_default(),
+        EntityKind::SubstituteSubmitter => id_str
+            .parse::<ListSubmitterId>()
+            .ok()
+            .and_then(|id| state.substitute_submitters.get(&id))
+            .map(|ss| ss.name.display())
+            .unwrap_or_default(),
+        EntityKind::CandidateList => id_str
+            .parse::<CandidateListId>()
+            .ok()
+            .and_then(|id| state.candidate_lists.get(&id))
+            .map(|cl| {
+                cl.electoral_districts
+                    .iter()
+                    .map(|d| d.code())
+                    .collect::<Vec<_>>()
+                    .join(", ")
+            })
+            .unwrap_or_default(),
+    }
+}

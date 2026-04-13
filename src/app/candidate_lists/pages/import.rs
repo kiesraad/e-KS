@@ -92,11 +92,7 @@ pub async fn import_candidate_list(
         Ok(()) => {
             store
                 .update(AppEvent::ImportCsv {
-                    file_name: format!(
-                        "{}-import-{}.csv",
-                        &list_id.to_string()[..8],
-                        list.districts_codes()
-                    ),
+                    file_name: import_data.file_name.unwrap_or_default(),
                     file_size,
                     list_id,
                 })
@@ -162,6 +158,7 @@ mod tests {
             store.clone(),
             FileForm {
                 csrf_token,
+                file_name: Some("invalid.csv".to_string()),
                 file_data: Some(Bytes::from(invalid_csv())),
             },
         )
@@ -193,6 +190,7 @@ mod tests {
             store,
             FileForm {
                 csrf_token,
+                file_name: Some("validation-errors.csv".to_string()),
                 file_data: Some(Bytes::from(csv_with_multiple_validation_errors())),
             },
         )

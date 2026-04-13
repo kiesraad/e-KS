@@ -81,6 +81,7 @@ filter:
     substitute_submitter: Substitute submitter
     system: System
   event_type: Event type
+  reset: Reset
   search: Search
   search_placeholder: "Search by name, ID..."
 title: Audit log

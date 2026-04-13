@@ -81,6 +81,7 @@ filter:
     substitute_submitter: Vervanger herstel verzuim
     system: Systeem
   event_type: Type gebeurtenis
+  reset: Wissen
   search: Zoeken
   search_placeholder: "Zoek op naam, ID..."
 title: Logboek
