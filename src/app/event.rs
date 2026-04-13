@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict, PoliticalGroupId,
+    ElectoralDistrict, StreamId,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, FullName},
@@ -78,7 +78,7 @@ pub enum AppEvent {
     },
 
     DeveloperLogin {
-        political_group_id: PoliticalGroupId,
+        stream_id: StreamId,
     },
 
     DownloadFile {

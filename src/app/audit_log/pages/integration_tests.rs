@@ -6,7 +6,7 @@ use axum::{
 use tower::ServiceExt;
 
 use crate::{
-    AppState, AppStore, Locale, PoliticalGroupId, Session,
+    AppState, AppStore, Locale, Session,
     persons::PersonId,
     test_utils::{response_body_string, sample_person, sample_political_group},
 };
@@ -66,7 +66,7 @@ async fn audit_log_empty_store_shows_empty_message() {
 async fn audit_log_shows_events_after_mutations() {
     let (app, store, token) = setup().await;
 
-    let pg = sample_political_group(PoliticalGroupId::new());
+    let pg = sample_political_group();
     pg.update(&store).await.unwrap();
     let person = sample_person(PersonId::new());
     let person_name = person.name.display();

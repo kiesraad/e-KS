@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppEvent, AppStoreData, Locale,
+    AppEvent, AppStoreData, ElectionConfig, Locale,
     store::{StoreData, StoreEvent},
     trans,
 };
@@ -46,7 +46,9 @@ impl AuditLogDetail {
         let target_event = &events[target_index];
 
         // Replay all events before the target to reconstruct the prior state.
-        let mut state_before = AppStoreData::default();
+        // The ElectionConfig passed here is unused by the diff — it only seeds
+        // the projection's unused `election` field.
+        let mut state_before = AppStoreData::new(ElectionConfig::EK27);
         for event in &events[..target_index] {
             state_before.apply(event.clone());
         }
@@ -419,8 +421,8 @@ fn extract_old_new(
         }
 
         // System events: informational only
-        AppEvent::DeveloperLogin { political_group_id } => {
-            let val = serde_json::json!({ "political_group_id": political_group_id.to_string() });
+        AppEvent::DeveloperLogin { stream_id } => {
+            let val = serde_json::json!({ "stream_id": stream_id.to_string() });
             (None, Some(val))
         }
         AppEvent::DownloadFile {
@@ -459,7 +461,7 @@ fn extract_old_new(
 mod tests {
     use super::*;
     use crate::{
-        Locale, PoliticalGroupId,
+        Locale,
         common::FullName,
         persons::PersonId,
         test_utils::{sample_person, sample_political_group},
@@ -640,7 +642,7 @@ mod tests {
     fn compute_returns_none_for_unknown_event() {
         let events = vec![StoreEvent::new(
             1,
-            AppEvent::UpdatePoliticalGroup(sample_political_group(PoliticalGroupId::new())),
+            AppEvent::UpdatePoliticalGroup(sample_political_group()),
         )];
 
         assert!(AuditLogDetail::compute(&events, 999, Locale::En).is_none());

@@ -34,26 +34,31 @@ where
     D: StoreData,
 {
     /// Create a new store and initialize persistence from the provided storage URL.
-    pub async fn new(storage_url: &str) -> Result<Self, AppError> {
-        Self::new_for_stream(storage_url, Uuid::new_v4()).await
+    pub async fn new(storage_url: &str, init: D::Init) -> Result<Self, AppError> {
+        Self::new_for_stream(storage_url, Uuid::new_v4(), init).await
     }
 
     /// Create a new store scoped to a specific stream ID.
-    pub async fn new_for_stream(storage_url: &str, stream_id: Uuid) -> Result<Self, AppError> {
+    pub async fn new_for_stream(
+        storage_url: &str,
+        stream_id: Uuid,
+        init: D::Init,
+    ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, init).await
     }
 
     /// Create a new store for a stream using an already-initialized persistence backend.
     pub async fn new_for_stream_with_persistence(
         persistence: StorePersistence,
         stream_id: Uuid,
+        init: D::Init,
     ) -> Result<Self, AppError> {
         let store = Store {
             stream_id,
             persistence,
-            data: Default::default(),
+            data: Arc::new(parking_lot::RwLock::new(D::new(init))),
         };
 
         store.persistence.ensure_stream(stream_id).await?;
@@ -63,8 +68,8 @@ where
 
     #[cfg(feature = "database")]
     /// Create a new store backed by the provided database pool.
-    pub async fn new_with_pool(pool: sqlx::PgPool) -> Result<Self, AppError> {
-        Self::new_with_pool_for_stream(pool, Uuid::new_v4()).await
+    pub async fn new_with_pool(pool: sqlx::PgPool, init: D::Init) -> Result<Self, AppError> {
+        Self::new_with_pool_for_stream(pool, Uuid::new_v4(), init).await
     }
 
     #[cfg(feature = "database")]
@@ -72,10 +77,11 @@ where
     pub async fn new_with_pool_for_stream(
         pool: sqlx::PgPool,
         stream_id: Uuid,
+        init: D::Init,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, init).await
     }
 
     /// Synchronize the in-memory store with the persistence by replaying any missing events.
@@ -105,6 +111,11 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = usize;
+        type Init = ();
+
+        fn new(_: ()) -> Self {
+            Self::default()
+        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;

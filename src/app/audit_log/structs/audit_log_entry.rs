@@ -224,7 +224,7 @@ fn subject_path(event: &AppEvent) -> String {
 /// Extract the primary subject ID from the event as a full UUID string.
 fn subject_id_full(event: &AppEvent) -> String {
     match event {
-        AppEvent::UpdatePoliticalGroup(pg) => pg.id.to_string(),
+        AppEvent::UpdatePoliticalGroup(_) => String::new(),
         AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.id.to_string(),
         AppEvent::CreatePersonPersonalData { person_id, .. }
         | AppEvent::UpdatePersonPersonalData { person_id, .. }
@@ -253,9 +253,7 @@ fn subject_id_full(event: &AppEvent) -> String {
             substitute_submitter_id,
             ..
         } => substitute_submitter_id.to_string(),
-        AppEvent::DeveloperLogin {
-            political_group_id, ..
-        } => political_group_id.to_string(),
+        AppEvent::DeveloperLogin { stream_id, .. } => stream_id.to_string(),
         AppEvent::DownloadFile { list_id, .. }
         | AppEvent::ExportCsv { list_id, .. }
         | AppEvent::ImportCsv { list_id, .. } => list_id.to_string(),
@@ -266,7 +264,7 @@ fn subject_id_full(event: &AppEvent) -> String {
 mod tests {
     use super::*;
     use crate::{
-        Locale, PoliticalGroupId,
+        Locale, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
@@ -294,7 +292,7 @@ mod tests {
 
     #[test]
     fn from_update_political_group_event() {
-        let pg = sample_political_group(PoliticalGroupId::new());
+        let pg = sample_political_group();
         let expected_name = pg.display_name.as_ref().unwrap().to_string();
         let event = StoreEvent::new(2, AppEvent::UpdatePoliticalGroup(pg));
 
@@ -370,11 +368,10 @@ mod tests {
 
     #[test]
     fn from_developer_login_event_shows_default_details() {
-        let pg_id = PoliticalGroupId::new();
         let event = StoreEvent::new(
             8,
             AppEvent::DeveloperLogin {
-                political_group_id: pg_id,
+                stream_id: StreamId::new(),
             },
         );
 
@@ -584,7 +581,7 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
         assert_eq!(entry.event_type, "person");
 
-        let pg = sample_political_group(PoliticalGroupId::new());
+        let pg = sample_political_group();
         let event = StoreEvent::new(2, AppEvent::UpdatePoliticalGroup(pg));
         let entry = AuditLogEntry::new(event, EN);
         assert_eq!(entry.event_type, "political_group");
@@ -592,7 +589,7 @@ mod tests {
         let event = StoreEvent::new(
             3,
             AppEvent::DeveloperLogin {
-                political_group_id: PoliticalGroupId::new(),
+                stream_id: StreamId::new(),
             },
         );
         let entry = AuditLogEntry::new(event, EN);

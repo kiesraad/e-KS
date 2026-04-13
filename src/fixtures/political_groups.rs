@@ -1,7 +1,5 @@
-use uuid::Uuid;
-
 use crate::{
-    AppError, AppStore, PoliticalGroupId,
+    AppError, AppStore,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     common::{
         Address, DisplayName, DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials,
@@ -10,8 +8,9 @@ use crate::{
     list_submitters::{ListSubmitter, ListSubmitterId},
     political_groups::PoliticalGroup,
 };
+use uuid::Uuid;
 
-pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let agent_id: AuthorisedAgentId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_authorised_agent").into();
 
@@ -24,7 +23,6 @@ pub async fn load(store: &AppStore, political_group_id: PoliticalGroupId) -> Res
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_2").into();
 
     let political_group = PoliticalGroup {
-        id: political_group_id,
         long_list_allowed: None,
         legal_name: Some(
             "Kiesraad Demo Partij"
@@ -125,9 +123,7 @@ mod tests {
     #[tokio::test]
     async fn test_load() {
         let store = AppStore::new_for_test();
-        let political_group_id: PoliticalGroupId =
-            Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_political_group").into();
-        load(&store, political_group_id).await.unwrap();
+        load(&store).await.unwrap();
 
         let list_submitters = store.get_list_submitters();
         assert_eq!(list_submitters.len(), 1);
