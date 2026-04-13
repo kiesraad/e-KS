@@ -55,7 +55,7 @@ impl H1 {
         let election_type = election.election_type();
 
         Ok(Self {
-            election_name: typst_util::generate_election_title(&election_type, locale).to_string(),
+            election_name: typst_util::generate_election_title(election, locale),
             election_type,
             electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
             designation: store

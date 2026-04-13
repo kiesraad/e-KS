@@ -22,7 +22,7 @@ super::define_elections! {
     },
 
     PS27(province: Province) {
-        election_type: ElectionType::Ps(*province),
+        election_type: ElectionType::Ps,
         titles: {
             nl: "Provinciale Statenverkiezingen 2027",
             fry: "Provinsjale Steateferkiezings 2027",
@@ -47,7 +47,7 @@ super::define_elections! {
     },
 
     WS27(water_council: WaterCouncil) {
-        election_type: ElectionType::Ws(*water_council),
+        election_type: ElectionType::Ws,
         titles: {
             nl: "Waterschapsverkiezingen 2027",
             fry: "Wetterskipsferkiezings 2027",

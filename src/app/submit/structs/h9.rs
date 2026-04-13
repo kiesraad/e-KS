@@ -54,7 +54,7 @@ impl<'zip> H9<'zip> {
         let election_type = election.election_type();
 
         Ok(Self {
-            election_name: typst_util::generate_election_title(&election_type, locale),
+            election_name: typst_util::generate_election_title(election, locale),
             election_type,
             electoral_districts: TypstElectoralDistricts::from(candidate_list, election, locale),
             designation: store
