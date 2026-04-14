@@ -95,6 +95,7 @@ mod tests {
             storage_url: "memory:".to_string(),
             typst_url,
             id_derivation_key: secrecy::SecretString::from("test-key"),
+            encryption_derivation_key: secrecy::SecretString::from("test-encryption-key"),
         };
 
         (server, config)
