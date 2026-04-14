@@ -78,7 +78,6 @@ async fn ensure_dev_store(
     let store_is_empty = store.data.read().events.is_empty();
 
     if store_is_empty {
-        store.update(AppEvent::StreamCreated { election }).await?;
         PoliticalGroup::default().create(&store).await?;
     }
 
@@ -235,10 +234,6 @@ mod tests {
         assert!(matches!(
             store.get_events().as_slice(),
             &[
-                StoreEvent {
-                    payload: AppEvent::StreamCreated { .. },
-                    ..
-                },
                 StoreEvent {
                     payload: AppEvent::UpdatePoliticalGroup(..),
                     ..

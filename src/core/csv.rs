@@ -150,7 +150,8 @@ pub struct Csv<T> {
 }
 
 impl<T: Serialize> Csv<T> {
-    pub fn generate_csv_response(&self) -> Result<Response<Body>, AppError> {
+    /// Generate a CSV response and return the response along with the CSV data size in bytes.
+    pub fn generate_csv_response(&self) -> Result<(Response<Body>, usize), AppError> {
         let mut csv_writer = WriterBuilder::new().has_headers(false).from_writer(vec![]);
 
         if let Some(headers) = &self.headers {
@@ -167,12 +168,14 @@ impl<T: Serialize> Csv<T> {
             return Err(AppError::InternalServerError);
         };
 
+        let size = data.len();
+
         let headers = no_cache_headers::generate_attachment_headers(
             self.filename.as_str(),
             HeaderValue::from_static("text/csv"),
         )?;
 
-        Ok((headers, data).into_response())
+        Ok(((headers, data).into_response(), size))
     }
 }
 

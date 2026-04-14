@@ -3,7 +3,8 @@
 
 use crate::{
     AppError, AppStore, AppStoreData, BsnIdDeriver, Config, ElectionConfig, SessionStore, StreamId,
-    common::Bsn, store::StoreRegistry,
+    common::Bsn,
+    store::{EventEncryption, StoreRegistry},
 };
 use axum::extract::FromRef;
 
@@ -25,7 +26,8 @@ impl AppState {
     }
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
-        let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
+        let encryption = EventEncryption::new(&config.encryption_derivation_key);
+        let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
         let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
 
         Ok(Self {
@@ -41,19 +43,23 @@ impl AppState {
         stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<AppStore, AppError> {
-        self.store_registry
-            .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
-                let needs_init = store.data.read().events.is_empty();
-                if needs_init {
-                    store
-                        .update(crate::AppEvent::StreamCreated { election })
-                        .await?;
-                    #[cfg(feature = "fixtures")]
-                    crate::fixtures::load(&store).await?;
-                }
-                Ok(())
-            })
-            .await
+        #[cfg(feature = "fixtures")]
+        {
+            self.store_registry
+                .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
+                    if store.data.read().events.is_empty() {
+                        crate::fixtures::load(&store).await?;
+                    }
+                    Ok(())
+                })
+                .await
+        }
+        #[cfg(not(feature = "fixtures"))]
+        {
+            self.store_registry
+                .get_or_create(stream_id.uuid(), election)
+                .await
+        }
     }
 
     /// Find which elections already have persisted data for the given BSN.
@@ -81,9 +87,10 @@ impl AppState {
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
         let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
+        let encryption = EventEncryption::new(&config.encryption_derivation_key);
 
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string())
+            store_registry: StoreRegistry::new(config.storage_url.to_string(), encryption)
                 .await
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),

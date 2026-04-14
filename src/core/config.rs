@@ -23,12 +23,19 @@ mod dev_defaults {
 
     pub(super) const ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
 
+    pub(super) const DEFAULT_ENCRYPTION_DERIVATION_KEY: &str =
+        "eks-dev-encryption-derivation-key-not-for-production";
+
     pub(super) fn lookup(name: &'static str) -> Result<String, env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("TYPST_URL", TYPST_URL),
             ("BAG_SERVICE_URL", BAG_SERVICE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
+            (
+                "ENCRYPTION_DERIVATION_KEY",
+                DEFAULT_ENCRYPTION_DERIVATION_KEY,
+            ),
         ])
         .get(name)
         .map(|value| (*value).to_string())
@@ -42,6 +49,7 @@ pub struct Config {
     pub storage_url: String,
     pub typst_url: String,
     pub id_derivation_key: SecretString,
+    pub encryption_derivation_key: SecretString,
 }
 
 /// Helper function to get environment variable or return an error
@@ -78,10 +86,13 @@ impl Config {
         };
         let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
+        let encryption_derivation_key = get_env_with("ENCRYPTION_DERIVATION_KEY", &mut lookup)?;
+
         Ok(Self {
             storage_url,
             typst_url,
             id_derivation_key: SecretString::from(id_derivation_key),
+            encryption_derivation_key: SecretString::from(encryption_derivation_key),
         })
     }
 
@@ -91,6 +102,7 @@ impl Config {
             storage_url: "memory://".to_string(),
             typst_url: "http://localhost:8080".to_string(),
             id_derivation_key: SecretString::from("test-secret-123"),
+            encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
         }
     }
 }

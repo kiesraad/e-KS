@@ -11,9 +11,22 @@ export default function setupClickRow() {
         return;
       }
 
-      const link = row.querySelector("a,button");
+      const links = row.querySelectorAll<HTMLAnchorElement | HTMLButtonElement>(
+        "a,button",
+      );
+      const link = links.item(links.length - 1);
+
+      // ignore clicks on links or buttons that are not the last one in the row
+      if (
+        event?.target instanceof HTMLElement &&
+        event.target.closest("a,button") &&
+        event.target !== link
+      ) {
+        return;
+      }
+
       if (link) {
-        (link as HTMLButtonElement | HTMLLinkElement).click();
+        link.click();
       }
     });
   });

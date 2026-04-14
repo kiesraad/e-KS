@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppEvent, AppStore, Context, HtmlTemplate,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -78,6 +78,8 @@ pub async fn import_candidate_list(
         ));
     };
 
+    let file_size = csv_data.len();
+
     match import_candidate_list_csv(
         &mut list,
         &store,
@@ -87,7 +89,16 @@ pub async fn import_candidate_list(
     )
     .await
     {
-        Ok(()) => Ok(redirect_success(list.view_path())),
+        Ok(()) => {
+            store
+                .update(AppEvent::ImportCsv {
+                    file_name: import_data.file_name.unwrap_or_default(),
+                    file_size,
+                    list_id,
+                })
+                .await?;
+            Ok(redirect_success(list.view_path()))
+        }
         Err(ImportCandidateListError::App(error)) => Err(error),
         Err(ImportCandidateListError::Messages(messages)) => {
             Ok(render_import_export(list.clone(), messages, context))
@@ -147,6 +158,7 @@ mod tests {
             store.clone(),
             FileForm {
                 csrf_token,
+                file_name: Some("invalid.csv".to_string()),
                 file_data: Some(Bytes::from(invalid_csv())),
             },
         )
@@ -178,6 +190,7 @@ mod tests {
             store,
             FileForm {
                 csrf_token,
+                file_name: Some("validation-errors.csv".to_string()),
                 file_data: Some(Bytes::from(csv_with_multiple_validation_errors())),
             },
         )

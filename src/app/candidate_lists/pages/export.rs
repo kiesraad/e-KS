@@ -1,7 +1,7 @@
 use axum::response::Response;
 
 use crate::{
-    AppError,
+    AppError, AppEvent, AppStore,
     candidate_lists::{
         FullCandidateList,
         pages::CandidateListExportPath,
@@ -13,22 +13,34 @@ use crate::{
 pub async fn export_candidate_list(
     _: CandidateListExportPath,
     full_list: FullCandidateList,
+    store: AppStore,
 ) -> Result<Response, AppError> {
+    let list_id = full_list.list.id;
+    let short_id = &list_id.to_string()[..8];
+    let file_name = format!("{short_id}-{}.csv", full_list.list.districts_codes());
     let records = full_list
         .candidates
         .into_iter()
         .map(|candidate| CandidateRecordCsv::from(candidate.person))
         .collect::<Vec<_>>();
 
-    Csv {
+    let csv = Csv {
         records,
-        filename: format!(
-            "candidate-list-export-{}.csv",
-            full_list.list.districts_codes()
-        ),
+        filename: file_name.clone(),
         headers: Some(CSV_HEADERS.to_vec()),
-    }
-    .generate_csv_response()
+    };
+
+    let (response, file_size) = csv.generate_csv_response()?;
+
+    store
+        .update(AppEvent::ExportCsv {
+            file_name,
+            file_size,
+            list_id,
+        })
+        .await?;
+
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -73,7 +85,7 @@ mod tests {
 
         // test
         let response =
-            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
+            export_candidate_list(CandidateListExportPath { list_id }, full_list, store).await?;
 
         // verify
         assert_eq!(response.status(), StatusCode::OK);
@@ -91,7 +103,7 @@ mod tests {
             .to_str()
             .unwrap();
         assert!(
-            Regex::new("attachment; filename=\"candidate-list-export-(.{2}-)*(.{2})\\.csv\"")
+            Regex::new("attachment; filename=\"[0-9a-f]{8}-(.{2,}-)*(.{2,})\\.csv\"")
                 .unwrap()
                 .is_match(content_header),
             "{}",
@@ -133,7 +145,7 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id)?;
 
         let response =
-            export_candidate_list(CandidateListExportPath { list_id }, full_list).await?;
+            export_candidate_list(CandidateListExportPath { list_id }, full_list, store).await?;
 
         assert_eq!(response.status(), StatusCode::OK);
 
