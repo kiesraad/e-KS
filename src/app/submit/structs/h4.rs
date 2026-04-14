@@ -7,6 +7,7 @@ use crate::{
     submit::structs::{
         typst_candidate::{TypstCandidate, ordered_candidates},
         typst_datetime::TypstDatetime,
+        typst_util,
     },
 };
 
@@ -52,9 +53,11 @@ impl H4 {
             "model-h4.pdf".to_string()
         };
 
+        let election_type = election.election_type();
+
         Ok(Self {
-            election_name: election.title(locale.into()).to_string(),
-            election_type: election.election_type(),
+            election_name: typst_util::generate_election_title(election, locale),
+            election_type,
             designation: store
                 .get_political_group()
                 .display_name

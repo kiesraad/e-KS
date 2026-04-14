@@ -11,7 +11,7 @@ pub enum ElectionType {
     Ps,
     Ws,
     Ep,
-    Kc,
+    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported
     Er,
 }
 

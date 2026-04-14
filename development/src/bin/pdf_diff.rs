@@ -1,6 +1,6 @@
 use anyhow::{Context, Result};
 use std::{
-    collections::HashSet,
+    collections::{HashMap, HashSet},
     env,
     fmt::Write as _,
     path::{Path, PathBuf},
@@ -465,30 +465,32 @@ async fn summarize_common_files(
 
     for rel in common_files {
         let template = template_name(&rel)?;
-        let inputs = load_render_inputs(&paths.current_root, &template).await?;
+        let current_inputs = load_render_inputs(&paths.current_root, &template).await?;
+        let mut main_inputs: HashMap<String, serde_json::Value> =
+            load_render_inputs(&paths.main_root, &template)
+                .await?
+                .into_iter()
+                .collect();
 
-        for (input_name, input) in inputs {
+        for (input_name, input) in current_inputs {
             let pdf_rel = pdf_output_rel(&rel, &input_name)?;
-            let current_pdf = paths.current_pdfs_root.join(&pdf_rel);
-            let main_pdf = paths.main_pdfs_root.join(&pdf_rel);
-            let diff_pdf = paths.diffs_root.join(&pdf_rel);
-            render_pdf(
-                Arc::clone(current_context),
-                template.clone(),
-                input,
-                &rel,
-                &current_pdf,
-            )
-            .await?;
 
-            let inputs = load_render_inputs(&paths.main_root, &template).await?;
-            let input_tuple = inputs.into_iter().find(|(name, _)| name == &input_name);
-
-            if let Some((_, input)) = input_tuple {
+            if let Some(main_input) = main_inputs.remove(&input_name) {
+                let current_pdf = paths.current_pdfs_root.join(&pdf_rel);
+                let main_pdf = paths.main_pdfs_root.join(&pdf_rel);
+                let diff_pdf = paths.diffs_root.join(&pdf_rel);
+                render_pdf(
+                    Arc::clone(current_context),
+                    template.clone(),
+                    input,
+                    &rel,
+                    &current_pdf,
+                )
+                .await?;
                 render_pdf(
                     Arc::clone(main_context),
                     template.clone(),
-                    input,
+                    main_input,
                     &rel,
                     &main_pdf,
                 )
@@ -501,7 +503,27 @@ async fn summarize_common_files(
                 let status = if changed { "changed" } else { "identical" };
                 let diff_link = changed.then(|| Path::new(DIFFS_DIR_NAME).join(&pdf_rel));
                 results.push((rel.clone(), Some(input_name), status, diff_link));
+            } else {
+                let added_pdf = paths.diffs_root.join(&pdf_rel);
+                render_pdf(
+                    Arc::clone(current_context),
+                    template.clone(),
+                    input,
+                    &rel,
+                    &added_pdf,
+                )
+                .await?;
+                results.push((
+                    rel.clone(),
+                    Some(input_name),
+                    "added",
+                    Some(Path::new(DIFFS_DIR_NAME).join(pdf_rel)),
+                ));
             }
+        }
+
+        for input_name in main_inputs.into_keys() {
+            results.push((rel.clone(), Some(input_name), "deleted", None));
         }
     }
 
