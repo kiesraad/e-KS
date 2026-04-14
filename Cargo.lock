@@ -941,6 +941,7 @@ dependencies = [
  "tracing-test",
  "typst-webservice",
  "url",
+ "urlencoding",
  "uuid",
  "validate",
 ]

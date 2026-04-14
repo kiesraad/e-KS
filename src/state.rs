@@ -43,19 +43,23 @@ impl AppState {
         stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<AppStore, AppError> {
-        self.store_registry
-            .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
-                let needs_init = store.data.read().events.is_empty();
-                if needs_init {
-                    store
-                        .update(crate::AppEvent::StreamCreated { election })
-                        .await?;
-                    #[cfg(feature = "fixtures")]
-                    crate::fixtures::load(&store).await?;
-                }
-                Ok(())
-            })
-            .await
+        #[cfg(feature = "fixtures")]
+        {
+            self.store_registry
+                .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
+                    if store.data.read().events.is_empty() {
+                        crate::fixtures::load(&store).await?;
+                    }
+                    Ok(())
+                })
+                .await
+        }
+        #[cfg(not(feature = "fixtures"))]
+        {
+            self.store_registry
+                .get_or_create(stream_id.uuid(), election)
+                .await
+        }
     }
 
     /// Find which elections already have persisted data for the given BSN.

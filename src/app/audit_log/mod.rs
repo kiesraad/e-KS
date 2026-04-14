@@ -2,5 +2,5 @@
 mod pages;
 mod structs;
 
-pub use pages::{AuditLogPath, router};
-pub use structs::AuditLogEntry;
+pub use pages::{AuditLogDetailPath, AuditLogPath, router};
+pub use structs::{AuditLogDetail, AuditLogEntry};

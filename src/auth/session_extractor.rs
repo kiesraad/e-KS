@@ -122,8 +122,9 @@ pub async fn store_middleware(
         return next.run(request).await;
     };
 
-    // The init value (EK27) is a placeholder — existing stores already have a
-    // StreamCreated event that sets the correct election during replay.
+    // The init value (EK27) is only used if the registry doesn't yet have
+    // a store for this stream. In practice, login paths always prime the
+    // registry with the correct election before this middleware runs.
     let store = match state
         .store_for_stream(stream_id, ElectionConfig::EK27)
         .await

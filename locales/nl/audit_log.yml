@@ -1,3 +1,39 @@
+detail:
+  field: Veld
+  fields:
+    address_type: Adrestype
+    bsn: Burgerservicenummer (BSN)
+    candidates: Kandidaten
+    country: Landcode
+    date_of_birth: Geboortedatum
+    display_name: Geregistreerde aanduiding
+    download_path: Downloadpad
+    electoral_districts: Kieskringen
+    file_name: Bestandsnaam
+    file_size: Bestandsgrootte
+    first_name: Roepnaam
+    gender: Geslacht
+    house_number: Huisnummer
+    house_number_addition: Huisnummer toevoeging
+    initials: Voorletters
+    last_name: Achternaam
+    last_name_prefix: Voorvoegsel
+    legal_name: Volledige statutaire naam
+    list_id: Lijst-ID
+    list_submitter_id: Lijstinleveraar
+    locality: Woonplaats
+    long_list_allowed: Lange lijst toegestaan
+    person_id: Persoon-ID
+    place_of_residence: Woonplaats
+    political_group_id: Politieke groepering-ID
+    postal_code: Postcode
+    state_or_province: Staat / provincie
+    street_name: Straatnaam
+    substitute_list_submitter_ids: Vervangers herstel verzuim
+  new_value: Nieuwe waarde
+  no_changes: Geen veldwijzigingen vastgelegd voor deze gebeurtenis.
+  old_value: Oude waarde
+  subject_link: Subjectpagina
 empty: Er zijn nog geen gebeurtenissen vastgelegd.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
@@ -13,8 +49,9 @@ event:
   delete_substitute_submitter: Vervanger herstel verzuim verwijderd
   developer_login: Ontwikkelaar ingelogd
   download_file: Bestand gedownload
+  export_csv: CSV geëxporteerd
+  import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd
-  stream_created: Stream aangemaakt
   update_authorised_agent: Gemachtigde bijgewerkt
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
@@ -29,5 +66,22 @@ fields:
   details: Details
   event: Gebeurtenis
   event_id: "#"
+  id: ID
+  subject_id: Subject-ID
   timestamp: Tijdstip
+filter:
+  all_events: Alle gebeurtenissen
+  apply: Filteren
+  category:
+    authorised_agent: Gemachtigde
+    candidate_list: Kandidatenlijst
+    list_submitter: Lijstinleveraar
+    person: Persoon
+    political_group: Politieke groepering
+    substitute_submitter: Vervanger herstel verzuim
+    system: Systeem
+  event_type: Type gebeurtenis
+  reset: Wissen
+  search: Zoeken
+  search_placeholder: "Zoek op naam, ID..."
 title: Logboek

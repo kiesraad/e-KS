@@ -57,9 +57,6 @@ impl StoreData for AppStoreData {
         let event_time = UtcDateTime::from(created_at);
 
         match payload {
-            AppEvent::StreamCreated { election } => {
-                self.election = election;
-            }
             AppEvent::UpdatePoliticalGroup(pg) => {
                 self.political_group = pg;
             }
@@ -223,7 +220,10 @@ impl StoreData for AppStoreData {
                 self.substitute_submitters.remove(&ss_id);
             }
 
-            AppEvent::DeveloperLogin { .. } | AppEvent::DownloadFile { .. } => {
+            AppEvent::DeveloperLogin { .. }
+            | AppEvent::DownloadFile { .. }
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::ImportCsv { .. } => {
                 // Only the serialized event are relevant for logging
             }
         }
