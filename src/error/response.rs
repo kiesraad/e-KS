@@ -164,7 +164,8 @@ impl ErrorResponse {
             | AppError::ConfigLoadError(_)
             | AppError::TemplateError(_)
             | AppError::UpstreamError(_)
-            | AppError::ServerError(_) => ErrorResponse {
+            | AppError::ServerError(_)
+            | AppError::EventDecodeError(_) => ErrorResponse {
                 error: ErrorResponseVariant::InternalServerError,
                 message: "An internal server error occurred.".to_string(),
             },

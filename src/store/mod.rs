@@ -1,12 +1,14 @@
 #[cfg(feature = "database")]
 pub(crate) mod database;
 
+pub(crate) mod encryption;
 mod event;
 mod filesystem;
 mod persistence;
 mod registry;
 mod store_handle;
 
+pub use encryption::EventEncryption;
 pub use event::StoreEvent;
 pub use persistence::StorePersistence;
 pub use registry::StoreRegistry;

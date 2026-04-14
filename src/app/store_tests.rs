@@ -320,17 +320,26 @@ mod database_tests {
     use chrono::Utc;
     use sqlx::PgPool;
 
+    fn test_encryption() -> crate::store::EventEncryption {
+        crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"))
+    }
+
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test(migrations = false)]
     async fn update_persists_and_load_replays(pool: PgPool) -> Result<(), AppError> {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
+        let encryption = test_encryption();
         let group_id = StreamId::new();
-        let store =
-            AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid(), ElectionConfig::EK27)
-                .await
-                .unwrap();
+        let store = AppStore::new_with_pool_for_stream(
+            pool.clone(),
+            group_id.uuid(),
+            &encryption,
+            ElectionConfig::EK27,
+        )
+        .await
+        .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
@@ -339,10 +348,14 @@ mod database_tests {
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
 
-        let fresh_store =
-            AppStore::new_with_pool_for_stream(pool, group_id.uuid(), ElectionConfig::EK27)
-                .await
-                .unwrap();
+        let fresh_store = AppStore::new_with_pool_for_stream(
+            pool,
+            group_id.uuid(),
+            &encryption,
+            ElectionConfig::EK27,
+        )
+        .await
+        .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;
@@ -353,21 +366,27 @@ mod database_tests {
 
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test(migrations = false)]
-    async fn load_skips_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
+    async fn load_fails_on_invalid_payloads(pool: PgPool) -> Result<(), AppError> {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
+        let encryption = test_encryption();
         let group_id = StreamId::new();
-        let store =
-            AppStore::new_with_pool_for_stream(pool.clone(), group_id.uuid(), ElectionConfig::EK27)
-                .await
-                .unwrap();
+        let store = AppStore::new_with_pool_for_stream(
+            pool.clone(),
+            group_id.uuid(),
+            &encryption,
+            ElectionConfig::EK27,
+        )
+        .await
+        .unwrap();
         let person_id = PersonId::new();
         let person = sample_person(person_id);
 
         person.create(&store).await?;
 
-        let invalid_payload = serde_json::json!({"not": "an app event"});
+        // Insert invalid encrypted payload (random bytes that won't decrypt correctly)
+        let invalid_payload: Vec<u8> = vec![0u8; 64];
         sqlx::query(
             r#"INSERT INTO events (stream_id, event_id, created_at, payload)
             VALUES ($1, $2, $3, $4)"#,
@@ -385,14 +404,20 @@ mod database_tests {
             .execute(&pool)
             .await?;
 
-        let fresh_store =
-            AppStore::new_with_pool_for_stream(pool, group_id.uuid(), ElectionConfig::EK27)
-                .await
-                .unwrap();
-        fresh_store.load().await?;
+        let fresh_store = AppStore::new_with_pool_for_stream(
+            pool,
+            group_id.uuid(),
+            &encryption,
+            ElectionConfig::EK27,
+        )
+        .await
+        .unwrap();
 
-        let reloaded = fresh_store.get_person(person_id)?;
-        assert_eq!(reloaded.id, person_id);
+        let err = fresh_store
+            .load()
+            .await
+            .expect_err("load must fail when an event's payload cannot be decrypted");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
 
         Ok(())
     }

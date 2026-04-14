@@ -3,7 +3,8 @@
 
 use crate::{
     AppError, AppStore, AppStoreData, BsnIdDeriver, Config, ElectionConfig, SessionStore, StreamId,
-    common::Bsn, store::StoreRegistry,
+    common::Bsn,
+    store::{EventEncryption, StoreRegistry},
 };
 use axum::extract::FromRef;
 
@@ -25,7 +26,8 @@ impl AppState {
     }
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
-        let store_registry = StoreRegistry::new(config.storage_url.to_string()).await?;
+        let encryption = EventEncryption::new(&config.encryption_derivation_key);
+        let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
         let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
 
         Ok(Self {
@@ -81,9 +83,10 @@ impl AppState {
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
         let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
+        let encryption = EventEncryption::new(&config.encryption_derivation_key);
 
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string())
+            store_registry: StoreRegistry::new(config.storage_url.to_string(), encryption)
                 .await
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
