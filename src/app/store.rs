@@ -244,9 +244,13 @@ impl crate::store::Store<AppStoreData> {
         let mut data = AppStoreData::new(election);
         data.political_group = crate::test_utils::sample_political_group();
 
+        let encryption =
+            crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"));
+        let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
-            stream_id: uuid::Uuid::new_v4(),
+            stream_id,
             persistence: crate::store::StorePersistence::None,
+            cipher: encryption.derive_cipher(stream_id),
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }
