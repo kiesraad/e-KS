@@ -109,6 +109,19 @@ macro_rules! define_elections {
                     )*
                 }
             }
+
+            /// Parse an election code plus optional region code into a variant.
+            /// Variants without a region ignore the `region` argument; variants
+            /// with one return `None` if `region` is missing or invalid.
+            #[allow(unused_variables)]
+            pub fn from_code_and_region(code: &str, region: Option<&str>) -> Option<Self> {
+                $(
+                    if code == stringify!($name) {
+                        return Some(Self::$name $((<$binding_ty>::from_code(region?)?))?);
+                    }
+                )*
+                None
+            }
         }
     };
 }

@@ -1,17 +1,18 @@
 const FORM_SELECTOR = ".election-switch";
 
 /**
- * Shows the region select matching the chosen election,
+ * Shows the region select matching the chosen election's region kind,
  * hides the others.
  */
 function updateRegionVisibility(form: HTMLFormElement) {
   const select = form.querySelector<HTMLSelectElement>(
     'select[name="election"]',
   );
-  const value = select?.value ?? "";
+  const selected = select?.selectedOptions[0];
+  const kind = selected?.dataset.regionKind ?? "";
 
   form.querySelectorAll<HTMLElement>(".region-select").forEach((el) => {
-    el.style.display = el.dataset.forElection === value ? "" : "none";
+    el.style.display = el.dataset.regionKind === kind ? "" : "none";
   });
 }
 

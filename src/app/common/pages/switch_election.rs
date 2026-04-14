@@ -3,25 +3,13 @@ use axum::{
     extract::State,
     response::{IntoResponse, Redirect, Response},
 };
-use serde::Deserialize;
 
 use crate::{
     AnyLocale, AppError, AppState, Context, CsrfToken, ElectionConfig, HtmlTemplate, Province,
-    Session, TokenValue, WaterCouncil, filters,
+    Session, TokenValue, WaterCouncil, common::SwitchElectionForm, filters,
 };
 
 use super::SwitchElectionPath;
-
-/// Returns one representative `ElectionConfig` per election type, for the
-/// type-selector dropdown. Derived from `ElectionConfig::all()` so new
-/// election types are picked up automatically.
-fn election_type_options() -> Vec<ElectionConfig> {
-    let mut seen = std::collections::HashSet::new();
-    ElectionConfig::all()
-        .into_iter()
-        .filter(|e| seen.insert(e.code()))
-        .collect()
-}
 
 #[derive(Template)]
 #[template(path = "common/pages/switch_election.html")]
@@ -31,8 +19,7 @@ struct SwitchElectionTemplate {
     current_election: ElectionConfig,
     title_locale: AnyLocale,
     current_type: &'static str,
-    selected_province: Option<Province>,
-    selected_water_council: Option<WaterCouncil>,
+    selected_region: Option<&'static str>,
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
     csrf_token: CsrfToken,
@@ -43,60 +30,29 @@ pub async fn switch_election(
     State(state): State<AppState>,
     context: Context,
 ) -> Result<Response, AppError> {
-    let (selected_province, selected_water_council) = match context.election {
-        ElectionConfig::PS27(p) => (Some(p), None),
-        ElectionConfig::WS27(wc) => (None, Some(wc)),
-        _ => (None, None),
-    };
-
     let existing_elections = match &context.session.bsn {
         Some(bsn) => state.existing_elections_for_bsn(bsn).await?,
         None => Vec::new(),
     };
 
     let csrf_token = context.session.csrf_tokens.issue();
+    let elections = ElectionConfig::type_options();
 
     Ok(HtmlTemplate(
         SwitchElectionTemplate {
-            elections: election_type_options(),
-            existing_elections,
             current_election: context.election,
             title_locale: AnyLocale::from(context.session.locale),
             current_type: context.election.code(),
-            selected_province,
-            selected_water_council,
+            selected_region: context.election.region_code(),
             provinces: Province::ALL,
             water_councils: WaterCouncil::ALL,
+            elections,
+            existing_elections,
             csrf_token,
         },
         context,
     )
     .into_response())
-}
-
-#[derive(Deserialize)]
-pub struct SwitchElectionForm {
-    csrf_token: String,
-    election: String,
-    province: Option<String>,
-    water_council: Option<String>,
-}
-
-impl SwitchElectionForm {
-    fn into_election_config(self) -> Option<ElectionConfig> {
-        match self.election.as_str() {
-            "EK27" => Some(ElectionConfig::EK27),
-            "PS27" => {
-                let code = self.province.filter(|s| !s.is_empty())?;
-                Some(ElectionConfig::PS27(Province::from_code(&code)?))
-            }
-            "WS27" => {
-                let code = self.water_council.filter(|s| !s.is_empty())?;
-                Some(ElectionConfig::WS27(WaterCouncil::from_code(&code)?))
-            }
-            _ => None,
-        }
-    }
 }
 
 pub async fn switch_election_submit(
@@ -146,7 +102,7 @@ mod tests {
     use axum_extra::routing::RouterExt;
     use tower::ServiceExt;
 
-    use crate::{AppState, ElectionConfig, session_middleware, store_middleware};
+    use crate::{AppState, ElectionConfig, Province, session_middleware, store_middleware};
 
     use super::*;
 
@@ -193,7 +149,10 @@ mod tests {
         let csrf_token = session.csrf_tokens.issue();
 
         // Submit switch to PS27 Groningen
-        let body = format!("csrf_token={}&election=PS27&province=GR", csrf_token.value);
+        let body = format!(
+            "csrf_token={}&election=PS27&region_province=GR",
+            csrf_token.value
+        );
         let response = app
             .oneshot(
                 Request::builder()

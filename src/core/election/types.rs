@@ -16,6 +16,20 @@ pub enum ElectionType {
 }
 
 impl ElectionType {
+    /// Short uppercase code identifying the election type (e.g. `"PS"`, `"WS"`).
+    pub fn code(&self) -> &'static str {
+        match self {
+            ElectionType::Tk => "TK",
+            ElectionType::Ek => "EK",
+            ElectionType::Gr => "GR",
+            ElectionType::Ps => "PS",
+            ElectionType::Ws => "WS",
+            ElectionType::Ep => "EP",
+            ElectionType::Kc => "KC",
+            ElectionType::Er => "ER",
+        }
+    }
+
     pub fn title(&self, locale: Locale) -> &'static str {
         match (self, locale) {
             (ElectionType::Tk, Locale::En) => "election of the House of Representatives",

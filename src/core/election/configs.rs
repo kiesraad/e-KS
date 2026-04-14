@@ -101,6 +101,17 @@ impl ElectionConfig {
         configs
     }
 
+    /// Returns one representative `ElectionConfig` per election type, for the
+    /// type-selector dropdown. Derived from `ElectionConfig::all()` so new
+    /// election types are picked up automatically.
+    pub fn type_options() -> Vec<ElectionConfig> {
+        let mut seen = std::collections::HashSet::new();
+        Self::all()
+            .into_iter()
+            .filter(|e| seen.insert(e.code()))
+            .collect()
+    }
+
     pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
         if long_list_allowed { 80 } else { 50 }
     }
