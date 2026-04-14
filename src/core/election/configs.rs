@@ -167,4 +167,78 @@ mod tests {
         assert!(ElectionConfig::PS27(Province::DR).has_only_one_district());
         assert!(!ElectionConfig::PS27(Province::GE).has_only_one_district());
     }
+
+    #[test]
+    fn type_options_contains_one_per_election_code() {
+        let options = ElectionConfig::type_options();
+
+        let codes: Vec<&str> = options.iter().map(|e| e.code()).collect();
+        assert_eq!(codes, vec!["EK27", "PS27", "WS27"]);
+
+        // No duplicate codes — each election type appears at most once.
+        let mut sorted = codes.clone();
+        sorted.sort();
+        sorted.dedup();
+        assert_eq!(sorted.len(), codes.len());
+    }
+
+    #[test]
+    fn from_code_and_region_resolves_region_less_election() {
+        assert_eq!(
+            ElectionConfig::from_code_and_region("EK27", None),
+            Some(ElectionConfig::EK27)
+        );
+    }
+
+    #[test]
+    fn from_code_and_region_ignores_region_for_region_less_election() {
+        // A spurious region argument is ignored for elections that don't take one.
+        assert_eq!(
+            ElectionConfig::from_code_and_region("EK27", Some("anything")),
+            Some(ElectionConfig::EK27)
+        );
+    }
+
+    #[test]
+    fn from_code_and_region_resolves_ps27_with_valid_province() {
+        assert_eq!(
+            ElectionConfig::from_code_and_region("PS27", Some("GR")),
+            Some(ElectionConfig::PS27(Province::GR))
+        );
+    }
+
+    #[test]
+    fn from_code_and_region_resolves_ws27_with_valid_water_council() {
+        assert_eq!(
+            ElectionConfig::from_code_and_region("WS27", Some("WS-FRY")),
+            Some(ElectionConfig::WS27(WaterCouncil::Fryslan))
+        );
+    }
+
+    #[test]
+    fn from_code_and_region_returns_none_when_region_required_but_missing() {
+        assert_eq!(ElectionConfig::from_code_and_region("PS27", None), None);
+        assert_eq!(ElectionConfig::from_code_and_region("WS27", None), None);
+    }
+
+    #[test]
+    fn from_code_and_region_returns_none_for_invalid_region() {
+        assert_eq!(
+            ElectionConfig::from_code_and_region("PS27", Some("XX")),
+            None
+        );
+        assert_eq!(
+            ElectionConfig::from_code_and_region("WS27", Some("NotAWaterCouncil")),
+            None
+        );
+    }
+
+    #[test]
+    fn from_code_and_region_returns_none_for_unknown_code() {
+        assert_eq!(
+            ElectionConfig::from_code_and_region("ZZ99", Some("GR")),
+            None
+        );
+        assert_eq!(ElectionConfig::from_code_and_region("", None), None);
+    }
 }

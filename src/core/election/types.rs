@@ -79,4 +79,21 @@ mod tests {
                 .contains("electoral colleges")
         );
     }
+
+    #[test]
+    fn election_type_codes_are_two_uppercase_letters() {
+        let cases = [
+            (ElectionType::Tk, "TK"),
+            (ElectionType::Ek, "EK"),
+            (ElectionType::Gr, "GR"),
+            (ElectionType::Ps, "PS"),
+            (ElectionType::Ws, "WS"),
+            (ElectionType::Ep, "EP"),
+            (ElectionType::Kc, "KC"),
+            (ElectionType::Er, "ER"),
+        ];
+        for (election_type, expected) in cases {
+            assert_eq!(election_type.code(), expected);
+        }
+    }
 }
