@@ -60,6 +60,7 @@ table {
         background-position: right center;
         background-repeat: no-repeat;
         background-size: 1.25rem;
+        box-shadow: none;
         height: 1em;
         width: var(--space-xxl);
         cursor: pointer;

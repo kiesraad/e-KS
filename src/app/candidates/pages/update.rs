@@ -1,8 +1,11 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::PersonalDataForm,
 };
@@ -44,6 +47,7 @@ pub async fn update_person_submit(
     full_list: FullCandidateList,
     mut candidate: Candidate,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update_with_checks(
@@ -67,7 +71,7 @@ pub async fn update_person_submit(
                 .update_personal_data(&store, updated.name, updated.personal_data)
                 .await?;
 
-            Ok(Redirect::to(&candidate.after_update_path()).into_response())
+            Ok(query.redirect_or(candidate.after_update_path()))
         }
     }
 }
@@ -76,7 +80,7 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form,
+        AppStore, Context, Form, QueryParamState,
         candidate_lists::CandidateListId,
         common::DateOfBirth,
         persons::PersonId,
@@ -85,6 +89,7 @@ mod tests {
         },
     };
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -148,7 +153,7 @@ mod tests {
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
-        let expected_path = candidate.after_update_path();
+        let expected_path = format!("{}?&success=true", candidate.after_update_path());
 
         let response = update_person_submit(
             CandidateListUpdatePersonPath {
@@ -159,6 +164,7 @@ mod tests {
             full_list,
             candidate,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?;
@@ -213,6 +219,7 @@ mod tests {
             full_list,
             candidate,
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await?
@@ -259,6 +266,7 @@ mod tests {
             full_list,
             candidate,
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

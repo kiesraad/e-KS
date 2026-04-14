@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::Query,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -61,7 +61,7 @@ pub async fn update_representative_submit(
                 .update_representative(&store, Some(representative))
                 .await?;
 
-            Ok(Redirect::to(&person.highlight_success_path().to_string()).into_response())
+            Ok(query.redirect_or(person.highlight_success_path()))
         }
     }
 }

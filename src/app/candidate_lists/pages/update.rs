@@ -9,7 +9,6 @@ use crate::{
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -67,9 +66,7 @@ pub async fn update_candidate_list_submit(
         Ok(candidate_list) => {
             candidate_list.update_districts(&store).await?;
 
-            Ok(redirect_success(
-                candidate_list.update_list_submitter_path(),
-            ))
+            Ok(query.redirect_or(candidate_list.update_list_submitter_path()))
         }
     }
 }

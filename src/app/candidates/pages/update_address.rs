@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     extract::Query,
-    response::{IntoResponse, Redirect, Response},
+    response::{IntoResponse, Response},
 };
 
 use crate::{
@@ -68,13 +68,7 @@ pub async fn update_person_address_submit(
                 .update_address(&store, person.address.clone())
                 .await?;
 
-            Ok(Redirect::to(
-                &full_list
-                    .list
-                    .highlight_success_path(candidate.person.id)
-                    .to_string(),
-            )
-            .into_response())
+            Ok(query.redirect_or(full_list.list.highlight_success_path(candidate.person.id)))
         }
     }
 }

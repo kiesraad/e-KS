@@ -1,14 +1,16 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
     authorised_agents::AuthorisedAgent,
     filters,
     form::{Form, FormData},
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
-    redirect_success,
 };
 
 use super::PoliticalGroupUpdatePath;
@@ -46,6 +48,7 @@ pub async fn update_political_group_submit(
     context: Context,
     political_group: PoliticalGroup,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
@@ -62,7 +65,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(redirect_success(AuthorisedAgent::list_path()))
+            Ok(query.redirect_or(AuthorisedAgent::list_path()))
         }
     }
 }
@@ -122,6 +125,7 @@ mod tests {
             context,
             political_group,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -174,6 +178,7 @@ mod tests {
             context,
             store.get_political_group(),
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
