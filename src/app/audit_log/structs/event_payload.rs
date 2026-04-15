@@ -14,12 +14,6 @@ pub(super) fn extract_old_new(
     state_before: &AppStoreData,
     state_after: &AppStoreData,
 ) -> (Option<serde_json::Value>, Option<serde_json::Value>) {
-    macro_rules! add {
-        ($data:expr) => {
-            (None, serde_json::to_value($data).ok())
-        };
-    }
-
     macro_rules! update {
         ($kind:ident) => {{
             let old = serde_json::to_value(&state_before.$kind).ok();
@@ -40,16 +34,6 @@ pub(super) fn extract_old_new(
         }};
     }
 
-    macro_rules! delete {
-        ($kind:ident, $id:expr) => {{
-            let old = state_before
-                .$kind
-                .get($id)
-                .and_then(|data| serde_json::to_value(data).ok());
-            (old, None)
-        }};
-    }
-
     macro_rules! event {
         ({
             $($field:ident: $val:expr),* $(,)?
@@ -60,13 +44,13 @@ pub(super) fn extract_old_new(
     }
 
     match event {
-        AppEvent::CreatePerson(person) => add!(person),
+        AppEvent::CreatePerson(person) => update!(persons, person.id),
         // Technically a create, but update works too as it does a diff
         AppEvent::CreatePersonPersonalData { person_id, .. } => update!(persons, person_id),
-        AppEvent::CreateCandidateList(cl) => add!(cl),
-        AppEvent::CreateAuthorisedAgent(aa) => add!(aa),
-        AppEvent::CreateListSubmitter(ls) => add!(ls),
-        AppEvent::CreateSubstituteSubmitter(ss) => add!(ss),
+        AppEvent::CreateCandidateList(cl) => update!(candidate_lists, cl.id),
+        AppEvent::CreateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
+        AppEvent::CreateListSubmitter(ls) => update!(list_submitters, ls.id),
+        AppEvent::CreateSubstituteSubmitter(ss) => update!(substitute_submitters, ss.id),
 
         AppEvent::UpdatePerson(person) => update!(persons, person.id),
         AppEvent::UpdateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
@@ -92,15 +76,15 @@ pub(super) fn extract_old_new(
             (Some(old_val), None)
         }
 
-        AppEvent::DeletePerson { person_id } => delete!(persons, person_id),
-        AppEvent::DeleteCandidateList(cl_id) => delete!(candidate_lists, cl_id),
-        AppEvent::DeleteAuthorisedAgent(aa_id) => delete!(authorised_agents, aa_id),
+        AppEvent::DeletePerson { person_id } => update!(persons, person_id),
+        AppEvent::DeleteCandidateList(cl_id) => update!(candidate_lists, cl_id),
+        AppEvent::DeleteAuthorisedAgent(aa_id) => update!(authorised_agents, aa_id),
         AppEvent::DeleteListSubmitter {
             list_submitter_id: ls_id,
-        } => delete!(list_submitters, ls_id),
+        } => update!(list_submitters, ls_id),
         AppEvent::DeleteSubstituteSubmitter {
             substitute_submitter_id: ss_id,
-        } => delete!(substitute_submitters, ss_id),
+        } => update!(substitute_submitters, ss_id),
 
         AppEvent::DeveloperLogin { stream_id } => event!({ stream_id: stream_id.to_string() }),
         AppEvent::DownloadFile {
