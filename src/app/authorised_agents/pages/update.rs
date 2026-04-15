@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, RequestCtx,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -38,22 +38,21 @@ pub async fn update_authorised_agent(
 
 pub async fn update_authorised_agent_submit(
     _: AuthorisedAgentUpdatePath,
-    context: Context,
+    ctx: RequestCtx,
     authorised_agent: AuthorisedAgent,
-    store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&authorised_agent, &context.session.csrf_tokens) {
+    match form.validate_update(&authorised_agent, ctx.csrf()) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentUpdateTemplate {
                 authorised_agent,
                 form: form_data,
             },
-            context,
+            ctx.context,
         )
         .into_response()),
         Ok(authorised_agent) => {
-            authorised_agent.update(&store).await?;
+            authorised_agent.update(&ctx.store).await?;
 
             Ok(redirect_success(AuthorisedAgent::list_path()))
         }
@@ -114,9 +113,12 @@ mod tests {
 
         let response = update_authorised_agent_submit(
             AuthorisedAgentUpdatePath { agent_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             authorised_agent.clone(),
-            store.clone(),
             Form(form),
         )
         .await
@@ -157,9 +159,12 @@ mod tests {
 
         let response = update_authorised_agent_submit(
             AuthorisedAgentUpdatePath { agent_id },
-            context,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             authorised_agent.clone(),
-            store,
             Form(form),
         )
         .await

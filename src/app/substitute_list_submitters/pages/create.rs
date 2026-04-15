@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 
 use super::SubstituteSubmitterCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, RequestCtx, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -29,19 +29,18 @@ pub async fn create_substitute_submitter(
 
 pub async fn create_substitute_submitter_submit(
     _: SubstituteSubmitterCreatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterCreateTemplate { form: form_data },
-            context,
+            ctx.context,
         )
         .into_response()),
         Ok(substitute_submitter_data) => {
             let substitute_submitter: ListSubmitter = substitute_submitter_data.into();
-            substitute_submitter.create_substitute(&store).await?;
+            substitute_submitter.create_substitute(&ctx.store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -86,8 +85,11 @@ mod tests {
 
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -123,8 +125,11 @@ mod tests {
 
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
-            context,
-            store,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

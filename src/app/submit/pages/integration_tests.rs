@@ -147,14 +147,15 @@ async fn body_bytes(response: axum::response::Response) -> bytes::Bytes {
         .to_bytes()
 }
 
-async fn assert_download_response(
-    response: axum::response::Response,
+struct ExpectedDownload {
     content_type: &'static str,
     filename_prefix: &'static str,
     extension: &'static str,
     body_prefix: &'static [u8],
     body_kind: &'static str,
-) {
+}
+
+async fn assert_download_response(response: axum::response::Response, expected: ExpectedDownload) {
     let status = response.status();
     let headers = response.headers().clone();
     let body = body_bytes(response).await;
@@ -173,7 +174,7 @@ async fn assert_download_response(
         headers
             .get(header::CONTENT_TYPE)
             .expect("content type header"),
-        content_type
+        expected.content_type
     );
     let disposition = headers
         .get(header::CONTENT_DISPOSITION)
@@ -182,17 +183,20 @@ async fn assert_download_response(
         .trim_end_matches("\"");
 
     assert!(
-        disposition.starts_with(filename_prefix),
-        "filename should start with {filename_prefix}, received content disposition: {disposition}"
+        disposition.starts_with(expected.filename_prefix),
+        "filename should start with {}, received content disposition: {disposition}",
+        expected.filename_prefix
     );
     assert!(
-        disposition.ends_with(extension),
-        "filename should end with {extension}, received content disposition: {disposition}"
+        disposition.ends_with(expected.extension),
+        "filename should end with {}, received content disposition: {disposition}",
+        expected.extension
     );
 
     assert!(
-        body.as_ref().starts_with(body_prefix),
-        "expected {body_kind} body"
+        body.as_ref().starts_with(expected.body_prefix),
+        "expected {} body",
+        expected.body_kind
     );
 }
 
@@ -221,11 +225,13 @@ async fn download_h1_endpoint_returns_pdf() -> Result<(), AppError> {
 
     assert_download_response(
         response,
-        "application/pdf",
-        "attachment; filename=\"model-h1",
-        ".pdf",
-        b"%PDF-",
-        "PDF",
+        ExpectedDownload {
+            content_type: "application/pdf",
+            filename_prefix: "attachment; filename=\"model-h1",
+            extension: ".pdf",
+            body_prefix: b"%PDF-",
+            body_kind: "PDF",
+        },
     )
     .await;
 
@@ -257,11 +263,13 @@ async fn download_h3_1_endpoint_returns_pdf() -> Result<(), AppError> {
 
     assert_download_response(
         response,
-        "application/pdf",
-        "attachment; filename=\"model-h3-1",
-        ".pdf",
-        b"%PDF-",
-        "PDF",
+        ExpectedDownload {
+            content_type: "application/pdf",
+            filename_prefix: "attachment; filename=\"model-h3-1",
+            extension: ".pdf",
+            body_prefix: b"%PDF-",
+            body_kind: "PDF",
+        },
     )
     .await;
 
@@ -293,11 +301,13 @@ async fn download_h9_endpoint_returns_zip() -> Result<(), AppError> {
 
     assert_download_response(
         response,
-        "application/zip",
-        "attachment; filename=\"model-h9",
-        ".zip",
-        b"PK",
-        "ZIP",
+        ExpectedDownload {
+            content_type: "application/zip",
+            filename_prefix: "attachment; filename=\"model-h9",
+            extension: ".zip",
+            body_prefix: b"PK",
+            body_kind: "ZIP",
+        },
     )
     .await;
 
@@ -329,11 +339,13 @@ async fn download_h4_endpoint_returns_pdf() -> Result<(), AppError> {
 
     assert_download_response(
         response,
-        "application/pdf",
-        "attachment; filename=\"model-h4",
-        ".pdf",
-        b"%PDF-",
-        "PDF",
+        ExpectedDownload {
+            content_type: "application/pdf",
+            filename_prefix: "attachment; filename=\"model-h4",
+            extension: ".pdf",
+            body_prefix: b"%PDF-",
+            body_kind: "PDF",
+        },
     )
     .await;
 

@@ -2,7 +2,7 @@ use hkdf::Hkdf;
 use secrecy::{ExposeSecret, SecretString};
 use sha2::Sha256;
 
-use crate::{ElectionConfig, StreamId, common::Bsn};
+use crate::{ElectionConfig, StreamId};
 
 const HKDF_SALT: &[u8] = b"e-KS BSN identifier derivation v1";
 const STREAM_INFO_PREFIX: &[u8] = b"stream-id:";
@@ -23,11 +23,11 @@ impl BsnIdDeriver {
         Self { hk }
     }
 
-    pub fn derive_stream_id(&self, bsn: &Bsn, election: ElectionConfig) -> StreamId {
+    pub fn derive_stream_id(&self, bsn: &SecretString, election: ElectionConfig) -> StreamId {
         let election_id = election.stable_id();
         let info: Vec<u8> = STREAM_INFO_PREFIX
             .iter()
-            .chain(bsn.expose().as_bytes())
+            .chain(bsn.expose_secret().as_bytes())
             .chain(b":")
             .chain(election_id.as_bytes())
             .copied()
@@ -56,8 +56,8 @@ mod tests {
         SecretString::from(value)
     }
 
-    fn test_bsn(value: &str) -> Bsn {
-        value.parse().expect("valid test BSN")
+    fn test_bsn(value: &str) -> SecretString {
+        SecretString::from(value)
     }
 
     #[test]

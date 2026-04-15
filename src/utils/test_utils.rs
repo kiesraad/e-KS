@@ -88,23 +88,41 @@ fn sample_full_name_form(
     }
 }
 
-fn sample_dutch_address(
-    locality: &str,
-    postal_code: &str,
-    house_number: &str,
-    house_number_addition: &str,
-    street_name: &str,
-) -> DutchAddress {
+struct SampleDutchAddress<'a> {
+    locality: &'a str,
+    postal_code: &'a str,
+    house_number: &'a str,
+    house_number_addition: &'a str,
+    street_name: &'a str,
+}
+
+fn sample_dutch_address(parts: SampleDutchAddress<'_>) -> DutchAddress {
     DutchAddress {
-        locality: Some(locality.parse::<Locality>().expect("locality")),
-        postal_code: Some(postal_code.parse::<PostalCode>().expect("postal code")),
-        house_number: Some(house_number.parse::<HouseNumber>().expect("house number")),
+        locality: Some(parts.locality.parse::<Locality>().expect("locality")),
+        postal_code: Some(
+            parts
+                .postal_code
+                .parse::<PostalCode>()
+                .expect("postal code"),
+        ),
+        house_number: Some(
+            parts
+                .house_number
+                .parse::<HouseNumber>()
+                .expect("house number"),
+        ),
         house_number_addition: Some(
-            house_number_addition
+            parts
+                .house_number_addition
                 .parse::<HouseNumberAddition>()
                 .expect("house number addition"),
         ),
-        street_name: Some(street_name.parse::<StreetName>().expect("street name")),
+        street_name: Some(
+            parts
+                .street_name
+                .parse::<StreetName>()
+                .expect("street name"),
+        ),
     }
 }
 
@@ -143,7 +161,13 @@ pub fn sample_person(id: PersonId) -> Person {
             place_of_residence: Some(parse_place_of_residence("Juinen")),
             country: Some(parse_country_code("NL")),
         },
-        address: sample_dutch_address("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
+        address: sample_dutch_address(SampleDutchAddress {
+            locality: "Juinen",
+            postal_code: "1234 AB",
+            house_number: "10",
+            house_number_addition: "A",
+            street_name: "Stationsstraat",
+        }),
         representative: None,
         ..Default::default()
     }
@@ -228,13 +252,13 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
     ListSubmitter {
         id,
         name: sample_full_name(None, "Bos", None, "E.F."),
-        address: Address::Dutch(sample_dutch_address(
-            "Rotterdam",
-            "3011 CC",
-            "5",
-            "B",
-            "Coolsingel",
-        )),
+        address: Address::Dutch(sample_dutch_address(SampleDutchAddress {
+            locality: "Rotterdam",
+            postal_code: "3011 CC",
+            house_number: "5",
+            house_number_addition: "B",
+            street_name: "Coolsingel",
+        })),
     }
 }
 

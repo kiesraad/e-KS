@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use std::collections::HashMap;
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateListId, FullCandidateList},
     candidates::{AddPerson, AddPersonAction, AddPersonForm},
     filters,
@@ -120,27 +120,23 @@ async fn handle_add_candidate_form(
 
 pub async fn add_existing_person(
     AddCandidatePath { list_id }: AddCandidatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
-        AddExistingPersonTemplate::from(
-            list_id,
-            None,
-            &store,
-            FormData::new(&context.session.csrf_tokens),
-        )?,
-        context,
+        AddExistingPersonTemplate::from(list_id, None, &ctx.store, ctx.form_data())?,
+        ctx.context,
     ))
 }
 
 pub async fn add_person_to_candidate_list(
     _: AddCandidatePath,
     mut full_list: FullCandidateList,
-    store: AppStore,
-    mut context: Context,
+    ctx: RequestCtx,
     Form(form): Form<AddPersonForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        mut context, store, ..
+    } = ctx;
     context.show_success_alert = true;
 
     match form.validate_create(&context.session.csrf_tokens) {
@@ -175,7 +171,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, TokenValue,
+        AppStore, Context, Form, QueryParamState, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -197,8 +193,11 @@ mod tests {
 
         let response = add_existing_person(
             AddCandidatePath { list_id },
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await?
         .into_response();
@@ -233,8 +232,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            context,
+            RequestCtx {
+                store: store.clone(),
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -274,8 +276,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            context,
+            RequestCtx {
+                store: store.clone(),
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -318,8 +323,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            context,
+            RequestCtx {
+                store: store.clone(),
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -363,8 +371,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            add_all_context,
+            RequestCtx {
+                context: add_all_context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(add_all_form),
         )
         .await?;
@@ -383,8 +394,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            remove_all_context,
+            RequestCtx {
+                context: remove_all_context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(remove_all_form),
         )
         .await?;
@@ -421,8 +435,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store,
-            context,
+            RequestCtx {
+                store,
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -458,8 +475,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            context,
+            RequestCtx {
+                store: store.clone(),
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -498,8 +518,11 @@ mod tests {
         let response = add_person_to_candidate_list(
             AddCandidatePath { list_id },
             full_list,
-            store.clone(),
-            context,
+            RequestCtx {
+                store: store.clone(),
+                context,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;

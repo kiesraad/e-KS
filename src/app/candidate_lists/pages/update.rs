@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::Query,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate, QueryParamState,
+    AppError, Context, ElectoralDistrict, Form, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
@@ -22,11 +19,14 @@ struct CandidateListUpdateTemplate {
 
 pub async fn update_candidate_list(
     _: CandidateListUpdatePath,
-    context: Context,
     candidate_list: CandidateList,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     let available_districts = CandidateList::available_districts(&store, &context.election);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
@@ -45,12 +45,15 @@ pub async fn update_candidate_list(
 
 pub async fn update_candidate_list_submit(
     _: CandidateListUpdatePath,
-    context: Context,
     candidate_list: CandidateList,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     let available_districts = CandidateList::available_districts(&store, &context.election);
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -75,14 +78,11 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, RequestCtx, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
-    use axum::{
-        extract::Query,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::routing::TypedPath;
 
     #[tokio::test]
@@ -96,10 +96,12 @@ mod tests {
             CandidateListUpdatePath {
                 list_id: candidate_list.id,
             },
-            Context::new_test_without_db(),
             candidate_list.clone(),
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await?;
 
@@ -132,10 +134,12 @@ mod tests {
             CandidateListUpdatePath {
                 list_id: candidate_list.id,
             },
-            context,
             candidate_list.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -189,10 +193,12 @@ mod tests {
             CandidateListUpdatePath {
                 list_id: candidate_list.id,
             },
-            Context::new_test_without_db(),
             candidate_list.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;

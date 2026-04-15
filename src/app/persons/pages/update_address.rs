@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, RequestCtx, filters,
     form::FormData,
     persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
 };
@@ -39,12 +39,15 @@ pub async fn update_person_address(
 
 pub async fn update_person_address_submit(
     _: UpdatePersonAddressPath,
-    context: Context,
     person: Person,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     match form.validate_update(&person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
@@ -69,7 +72,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState, RequestCtx,
         common::DutchAddressForm,
         persons::PersonId,
         test_utils::{response_body_string, sample_address_form, sample_person},
@@ -120,10 +123,12 @@ mod tests {
 
         let response = update_person_address_submit(
             UpdatePersonAddressPath { person_id },
-            context,
             person,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -163,10 +168,12 @@ mod tests {
 
         let response = update_person_address_submit(
             UpdatePersonAddressPath { person_id },
-            context,
             person,
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -193,10 +200,12 @@ mod tests {
         // Update with Dutch address (but all form fields filled)
         update_person_address_submit(
             UpdatePersonAddressPath { person_id },
-            context.clone(),
             person.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context: context.clone(),
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(AddressForm {
                 address: DutchAddressForm {
                     locality: "Juinen".to_string(),

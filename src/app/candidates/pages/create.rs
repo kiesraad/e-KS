@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, RequestCtx,
     candidate_lists::FullCandidateList,
     filters,
     form::FormData,
@@ -34,11 +34,11 @@ pub async fn create_person_candidate_list(
 
 pub async fn create_person_candidate_list_submit(
     _: CreateCandidatePath,
-    context: Context,
+    ctx: RequestCtx,
     full_list: FullCandidateList,
-    store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     match form.validate_create_with_checks(&context.session.csrf_tokens, &store, &context.election)
     {
         Err(form_data) => Ok(HtmlTemplate(
@@ -68,7 +68,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        AppStore, Context, Form,
+        AppStore, Context, Form, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         common::DateOfBirth,
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
@@ -119,9 +119,12 @@ mod tests {
 
         let response = create_person_candidate_list_submit(
             CreateCandidatePath { list_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             full_list,
-            store.clone(),
             Form(form),
         )
         .await?;
@@ -158,9 +161,12 @@ mod tests {
 
         let response = create_person_candidate_list_submit(
             CreateCandidatePath { list_id },
-            context,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             full_list,
-            store,
             Form(form),
         )
         .await?
@@ -192,9 +198,12 @@ mod tests {
 
         let response = create_person_candidate_list_submit(
             CreateCandidatePath { list_id },
-            context,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             full_list,
-            store,
             Form(form),
         )
         .await?

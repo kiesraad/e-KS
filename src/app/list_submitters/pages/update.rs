@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, RequestCtx, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
     redirect_success,
@@ -37,21 +37,17 @@ pub async fn update_list_submitter(
 
 pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
-    context: Context,
+    ctx: RequestCtx,
     list_submitter: ListSubmitter,
-    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(
-        &ListSubmitterData::from(list_submitter.clone()),
-        &context.session.csrf_tokens,
-    ) {
+    match form.validate_update(&ListSubmitterData::from(list_submitter.clone()), ctx.csrf()) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
                 list_submitter,
                 form: form_data,
             },
-            context,
+            ctx.context,
         )
         .into_response()),
         Ok(list_submitter_data) => {
@@ -59,7 +55,7 @@ pub async fn update_list_submitter_submit(
                 id: list_submitter.id,
                 ..list_submitter_data.into()
             };
-            updated.update(&store).await?;
+            updated.update(&ctx.store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -119,9 +115,12 @@ mod tests {
 
         let response = update_list_submitter_submit(
             ListSubmitterUpdatePath { submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             list_submitter.clone(),
-            store.clone(),
             Form(form),
         )
         .await
@@ -162,9 +161,12 @@ mod tests {
 
         let response = update_list_submitter_submit(
             ListSubmitterUpdatePath { submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             list_submitter.clone(),
-            store,
             Form(form),
         )
         .await

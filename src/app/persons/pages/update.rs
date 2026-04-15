@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::Query,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, RequestCtx, filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::UpdatePersonPath},
 };
@@ -39,12 +36,15 @@ pub async fn update_person(
 
 pub async fn update_person_submit(
     _: UpdatePersonPath,
-    context: Context,
-    store: AppStore,
     person: Person,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     match form.validate_update_with_checks(&person, &context.session.csrf_tokens, &context.election)
     {
         Err(form_data) => Ok(HtmlTemplate(
@@ -70,13 +70,12 @@ pub async fn update_person_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState, RequestCtx,
         common::DateOfBirth,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
     use axum::{
-        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -123,10 +122,12 @@ mod tests {
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
-            context,
-            store.clone(),
             person,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -162,10 +163,12 @@ mod tests {
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
-            context,
-            store,
             person,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -196,10 +199,12 @@ mod tests {
 
         let response = update_person_submit(
             UpdatePersonPath { person_id },
-            context,
-            store,
             person,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

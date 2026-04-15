@@ -1,23 +1,21 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
-    redirect_success,
+    AppError, Form, RequestCtx, form::EmptyForm, list_submitters::ListSubmitter, redirect_success,
 };
 
 use super::SubstituteSubmitterDeletePath;
 
 pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
-    context: Context,
+    ctx: RequestCtx,
     substitute_submitter: ListSubmitter,
-    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            substitute_submitter.delete_substitute(&store).await?;
+            substitute_submitter.delete_substitute(&ctx.store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -49,9 +47,12 @@ mod tests {
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             substitute_submitter,
-            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -89,9 +90,12 @@ mod tests {
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             substitute_submitter.clone(),
-            store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

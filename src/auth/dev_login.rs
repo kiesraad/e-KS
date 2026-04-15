@@ -3,12 +3,12 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::CookieJar;
+use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Session, StreamId,
-    auth::session_extractor::build_session_cookie, common::Bsn, political_groups::PoliticalGroup,
-    store::Store,
+    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup, store::Store,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -26,13 +26,11 @@ pub async fn dev_login(
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
     let election = ElectionConfig::EK27;
-    let bsn: Option<Bsn> = query
+    let bsn: Option<SecretString> = query
         .bsn
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(|s| s.parse())
-        .transpose()
-        .map_err(|_| AppError::InternalServerError)?;
+        .map(SecretString::from);
 
     let stream_id = match &bsn {
         Some(bsn) => state.bsn_id_deriver.derive_stream_id(bsn, election),
@@ -98,21 +96,19 @@ mod tests {
         body::Body,
         http::{Request, StatusCode, header},
     };
+    use secrecy::SecretString;
     use tower::ServiceExt;
 
-    use crate::{
-        AppState, common::Bsn, router, store::StoreEvent, test_utils::response_body_string,
-    };
+    use crate::{AppState, router, store::StoreEvent, test_utils::response_body_string};
 
     use super::*;
 
     const TEST_BSN: &str = "999999990";
 
     fn derive_test_id(state: &AppState, bsn_str: &str) -> StreamId {
-        let bsn: Bsn = bsn_str.parse().expect("valid test BSN");
         state
             .bsn_id_deriver
-            .derive_stream_id(&bsn, ElectionConfig::EK27)
+            .derive_stream_id(&SecretString::from(bsn_str), ElectionConfig::EK27)
     }
 
     fn cookie_value(response: &axum::response::Response) -> &str {

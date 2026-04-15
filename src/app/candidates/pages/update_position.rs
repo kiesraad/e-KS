@@ -1,8 +1,8 @@
 use askama::Template;
-use axum::{extract::Query, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, Context, Form, HtmlTemplate, RequestCtx,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     common::FormAction,
@@ -50,13 +50,16 @@ pub async fn update_candidate_position(
 
 pub async fn update_candidate_position_submit(
     _: UpdateCandidatePositionPath,
-    context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<CandidatePositionForm>,
 ) -> Result<impl IntoResponse, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     let candidate_position = CandidatePosition {
         position: candidate.position,
         action: FormAction::Save,
@@ -94,7 +97,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, QueryParamState, TokenValue,
+        AppStore, Context, Form, QueryParamState, RequestCtx, TokenValue,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -102,7 +105,7 @@ mod tests {
             sample_person_with_last_name,
         },
     };
-    use axum::{extract::Query, http::StatusCode, response::IntoResponse};
+    use axum::{http::StatusCode, response::IntoResponse};
 
     fn sample_position_form(
         csrf_token: &TokenValue,
@@ -180,11 +183,13 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            context,
             full_list,
             candidate,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?
@@ -230,11 +235,13 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            context,
             full_list,
             candidate,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?
@@ -279,11 +286,13 @@ mod tests {
                 list_id,
                 person_id: person_a.id,
             },
-            context,
             full_list,
             candidate,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?

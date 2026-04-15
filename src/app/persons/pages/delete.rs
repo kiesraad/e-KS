@@ -1,7 +1,7 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore, Context, Form,
+    AppError, Form, RequestCtx,
     form::EmptyForm,
     persons::{Person, pages::DeletePersonPath},
     redirect_success,
@@ -9,15 +9,14 @@ use crate::{
 
 pub async fn delete_person(
     _: DeletePersonPath,
-    context: Context,
+    ctx: RequestCtx,
     person: Person,
-    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            person.delete(&store).await?;
+            person.delete(&ctx.store).await?;
 
             Ok(redirect_success(Person::list_path()))
         }
@@ -30,7 +29,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState, persons::PersonId,
+        AppError, AppStore, Context, Form, QueryParamState, RequestCtx, persons::PersonId,
         test_utils::sample_person,
     };
 
@@ -47,9 +46,12 @@ mod tests {
 
         let response = delete_person(
             DeletePersonPath { person_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             person,
-            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await

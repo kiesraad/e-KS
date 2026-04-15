@@ -31,6 +31,6 @@ jobs:
           system: e-ks
           convert: rust
           publishonly: true
-          exclude: deploy,playwright,validate,frontend/styles,src/fixtures,locales
+          exclude: deploy,playwright,validate,frontend/styles,src/fixtures,locales,src/utils/test_utils.rs
         env:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"

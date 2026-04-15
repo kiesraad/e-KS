@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    AppError, Form, RequestCtx, authorised_agents::AuthorisedAgent, form::EmptyForm,
     redirect_success,
 };
 use axum::response::Response;
@@ -9,14 +9,13 @@ use super::AuthorisedAgentDeletePath;
 pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,
     authorized_agent: AuthorisedAgent,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            authorized_agent.delete(&store).await?;
+            authorized_agent.delete(&ctx.store).await?;
 
             Ok(redirect_success(AuthorisedAgent::list_path()))
         }
@@ -47,8 +46,11 @@ mod tests {
         let response = delete_authorised_agent(
             AuthorisedAgentDeletePath { agent_id },
             authorised_agent,
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -87,8 +89,11 @@ mod tests {
         let response = delete_authorised_agent(
             AuthorisedAgentDeletePath { agent_id },
             authorised_agent.clone(),
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

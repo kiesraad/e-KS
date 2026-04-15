@@ -3,10 +3,10 @@
 
 use crate::{
     AppError, AppStore, AppStoreData, BsnIdDeriver, Config, ElectionConfig, SessionStore, StreamId,
-    common::Bsn,
     store::{EventEncryption, StoreRegistry},
 };
 use axum::extract::FromRef;
+use secrecy::SecretString;
 
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
@@ -65,7 +65,7 @@ impl AppState {
     /// Find which elections already have persisted data for the given BSN.
     pub async fn existing_elections_for_bsn(
         &self,
-        bsn: &Bsn,
+        bsn: &SecretString,
     ) -> Result<Vec<ElectionConfig>, AppError> {
         let all = ElectionConfig::all();
         let stream_ids: Vec<_> = all

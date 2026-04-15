@@ -1,7 +1,7 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore, Context, Form,
+    AppError, Form, RequestCtx,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     form::EmptyForm,
     redirect_success,
@@ -9,15 +9,14 @@ use crate::{
 
 pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
-    context: Context,
+    ctx: RequestCtx,
     candidate_list: CandidateList,
-    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            candidate_list.delete(&store).await?;
+            candidate_list.delete(&ctx.store).await?;
 
             Ok(redirect_success(CandidateList::list_path()))
         }
@@ -28,7 +27,7 @@ pub async fn delete_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        AppStore, Context, ElectoralDistrict, Form, QueryParamState, RequestCtx, TokenValue,
         candidate_lists::CandidateListSummary,
     };
     use axum::http::{StatusCode, header};
@@ -49,9 +48,12 @@ mod tests {
             CandidateListsDeletePath {
                 list_id: candidate_list.id,
             },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             candidate_list.clone(),
-            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await?;
@@ -94,9 +96,12 @@ mod tests {
             CandidateListsDeletePath {
                 list_id: candidate_list.id,
             },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             candidate_list.clone(),
-            store.clone(),
             Form(EmptyForm { csrf_token }),
         )
         .await

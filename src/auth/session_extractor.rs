@@ -12,8 +12,9 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
+use secrecy::SecretString;
 
-use crate::{AppError, AppState, ElectionConfig, Locale, Session, common::Bsn};
+use crate::{AppError, AppState, ElectionConfig, Locale, Session};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
@@ -70,7 +71,7 @@ pub async fn session_middleware(
             state.sessions.cleanup_expired();
             let locale = request_locale(request.headers());
             let mut new_session = Session::new_with_locale(locale);
-            let dev_bsn: Bsn = DEV_BSN.parse().expect("DEV_BSN is a valid BSN");
+            let dev_bsn: SecretString = DEV_BSN.into();
             new_session.set_stream_id(
                 state
                     .bsn_id_deriver

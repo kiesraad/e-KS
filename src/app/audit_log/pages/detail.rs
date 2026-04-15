@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, RequestCtx,
     audit_log::{AuditLogDetail, AuditLogPath, pages::AuditLogDetailPath},
     filters,
 };
@@ -15,23 +15,22 @@ struct AuditLogDetailTemplate {
 
 pub async fn audit_log_detail(
     path: AuditLogDetailPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
-    let events = store.get_events();
-    let locale = context.session.locale;
+    let events = ctx.store.get_events();
+    let locale = ctx.locale();
 
     let detail =
         AuditLogDetail::compute(&events, path.event_id, locale).ok_or(AppError::GenericNotFound)?;
 
-    Ok(HtmlTemplate(AuditLogDetailTemplate { detail }, context))
+    Ok(HtmlTemplate(AuditLogDetailTemplate { detail }, ctx.context))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState, RequestCtx,
         persons::PersonId,
         test_utils::{response_body_string, sample_person},
     };
@@ -45,8 +44,11 @@ mod tests {
 
         let response = audit_log_detail(
             AuditLogDetailPath { event_id: 1 },
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap()
@@ -85,8 +87,11 @@ mod tests {
             AuditLogDetailPath {
                 event_id: target_event_id,
             },
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap()
@@ -117,8 +122,11 @@ mod tests {
 
         let result = audit_log_detail(
             AuditLogDetailPath { event_id: 999 },
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await;
 

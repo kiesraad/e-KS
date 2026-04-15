@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, RequestCtx, filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::PersonsCreatePath},
 };
@@ -27,18 +27,16 @@ pub async fn create_person(
 
 pub async fn create_person_submit(
     _: PersonsCreatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_tokens, &store, &context.election)
-    {
-        Err(form_data) => {
-            Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
-        }
+    match form.validate_create_with_checks(ctx.csrf(), &ctx.store, ctx.election()) {
+        Err(form_data) => Ok(
+            HtmlTemplate(PersonCreateTemplate { form: *form_data }, ctx.context).into_response(),
+        ),
         Ok(person) => {
             let person =
-                Person::create_from_personal_data(&store, person.name, person.personal_data)
+                Person::create_from_personal_data(&ctx.store, person.name, person.personal_data)
                     .await?;
 
             Ok(Redirect::to(&person.after_create_path()).into_response())
@@ -51,7 +49,7 @@ mod tests {
     use super::*;
 
     use crate::{
-        AppError, AppStore, Context, Form,
+        AppError, AppStore, Context, Form, QueryParamState,
         common::DateOfBirth,
         test_utils::{response_body_string, sample_person_form},
     };
@@ -83,10 +81,17 @@ mod tests {
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let response =
-            create_person_submit(PersonsCreatePath {}, context, store.clone(), Form(form))
-                .await
-                .unwrap();
+        let response = create_person_submit(
+            PersonsCreatePath {},
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
+            Form(form),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         let location = response
@@ -114,9 +119,17 @@ mod tests {
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
-            .await
-            .unwrap();
+        let response = create_person_submit(
+            PersonsCreatePath {},
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
+            Form(form),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -135,9 +148,17 @@ mod tests {
         let csrf_token = context.session.csrf_tokens.issue().value;
         let form = sample_person_form(&csrf_token);
 
-        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
-            .await
-            .unwrap();
+        let response = create_person_submit(
+            PersonsCreatePath {},
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
+            Form(form),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -158,9 +179,17 @@ mod tests {
                 .format(crate::core::constants::DEFAULT_DATE_FORMAT)
                 .to_string();
 
-        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
-            .await
-            .unwrap();
+        let response = create_person_submit(
+            PersonsCreatePath {},
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
+            Form(form),
+        )
+        .await
+        .unwrap();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

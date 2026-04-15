@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::Query,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
+    AppError, Context, HtmlTemplate, RequestCtx,
     authorised_agents::AuthorisedAgent,
     filters,
     form::{Form, FormData},
@@ -24,33 +21,32 @@ struct PoliticalGroupUpdateTemplate {
 
 pub async fn update_political_group(
     _: PoliticalGroupUpdatePath,
-    context: Context,
-    store: AppStore,
     political_group: PoliticalGroup,
+    ctx: RequestCtx,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&ctx.store)?;
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
-            form: FormData::new_with_data(
-                political_group.clone().into(),
-                &context.session.csrf_tokens,
-            ),
+            form: FormData::new_with_data(political_group.clone().into(), ctx.csrf()),
             steps,
         },
-        context,
+        ctx.context,
     )
     .into_response())
 }
 
 pub async fn update_political_group_submit(
     _: PoliticalGroupUpdatePath,
-    context: Context,
     political_group: PoliticalGroup,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     let steps = PoliticalGroupSteps::new(&store)?;
 
     match form.validate_update(&political_group, &context.session.csrf_tokens) {
@@ -74,7 +70,7 @@ pub async fn update_political_group_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState, RequestCtx,
         authorised_agents::AuthorisedAgentId,
         test_utils::{response_body_string, sample_authorised_agent, sample_political_group_form},
     };
@@ -91,9 +87,12 @@ mod tests {
 
         let response = update_political_group(
             PoliticalGroupUpdatePath {},
-            Context::new_test_without_db(),
-            store,
             political_group,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap()
@@ -122,10 +121,12 @@ mod tests {
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
-            context,
             political_group,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -175,10 +176,12 @@ mod tests {
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
-            context,
             store.get_political_group(),
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

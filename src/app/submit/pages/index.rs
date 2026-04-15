@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
+    AppError, Context, ElectoralDistrict, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateList, CandidateListSummary},
     core::ModelLocale,
     filters,
@@ -32,11 +32,8 @@ pub struct IndexTemplate {
     candidate_lists: Vec<SubmitCandidateList>,
 }
 
-pub async fn index(
-    _: SubmitPath,
-    context: Context,
-    store: AppStore,
-) -> Result<impl IntoResponse, AppError> {
+pub async fn index(_: SubmitPath, ctx: RequestCtx) -> Result<impl IntoResponse, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     let election = context.election;
 
     let candidate_lists = CandidateListSummary::list(&store)?
@@ -107,7 +104,7 @@ pub async fn index(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
@@ -138,9 +135,16 @@ mod tests {
         let incomplete_list = sample_candidate_list(incomplete_list_id);
         incomplete_list.create(&store).await?;
 
-        let response = index(SubmitPath, Context::new_test_without_db(), store)
-            .await?
-            .into_response();
+        let response = index(
+            SubmitPath,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
+        )
+        .await?
+        .into_response();
         let body = response_body_string(response).await;
 
         assert!(

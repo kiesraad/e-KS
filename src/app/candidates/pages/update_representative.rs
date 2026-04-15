@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, RequestCtx,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::RepresentativeForm,
 };
@@ -45,13 +45,16 @@ pub async fn update_representative(
 
 pub async fn update_representative_submit(
     _: UpdateRepresentativePath,
-    context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     let representative = candidate.person.clone().representative.unwrap_or_default();
     match form.validate_update(&representative, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -79,7 +82,7 @@ pub async fn update_representative_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, Form, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -204,11 +207,13 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            context,
             full_list,
             candidate.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -259,11 +264,13 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            context,
             full_list,
             candidate,
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

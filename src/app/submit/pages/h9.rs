@@ -1,32 +1,36 @@
 use crate::{
-    AppError, AppEvent, AppStore, Config, Context,
+    AppError, AppEvent, Config, RequestCtx,
     candidate_lists::FullCandidateList,
     core::PdfZip,
-    submit::{H9, pages::DownloadH9Path, structs::typst_candidate::ordered_candidates},
+    submit::{
+        H9,
+        pages::DownloadH9Path,
+        structs::{h9::H9Inputs, typst_candidate::ordered_candidates},
+    },
 };
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h9(
     path: DownloadH9Path,
     list: FullCandidateList,
-    store: AppStore,
     State(config): State<&Config>,
-    context: Context,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     // front load the ordering and Typst conversion of candidates
     // so we only need to do it once for all H9 models
     let ordered_candidates = ordered_candidates(&mut list.candidates.clone(), path.locale)?;
 
     let mut h9s = vec![];
     for candidate in list.candidates {
-        let h9_model = H9::new(
-            &store,
-            &list.list,
-            &ordered_candidates,
+        let h9_model = H9::new(H9Inputs {
+            store: &store,
+            candidate_list: &list.list,
+            ordered_candidates: &ordered_candidates,
             candidate,
-            &context.election,
-            path.locale,
-        );
+            election: &context.election,
+            locale: path.locale,
+        });
         h9s.push(h9_model?);
     }
 
@@ -56,7 +60,7 @@ pub async fn gen_h9(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         candidates::Candidate,
         core::ModelLocale,
@@ -108,9 +112,12 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            store,
             State(&config),
-            Context::new_test_without_db(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await;
 
@@ -172,9 +179,12 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             full_list,
-            store,
             State(&config),
-            Context::new_test_without_db(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await
         .into_response();

@@ -9,5 +9,3 @@ services:
       TZ: Europe/Amsterdam
     ports: ['127.0.0.1:5432:5432']
     networks: [default]
-    security_opt: ["no-new-privileges:true"]
-    cap_drop: ["ALL"]

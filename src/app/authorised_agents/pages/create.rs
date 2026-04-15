@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 
 use super::AuthorisedAgentCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, Context, Form, HtmlTemplate, RequestCtx,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm},
     filters,
     form::FormData,
@@ -30,18 +30,17 @@ pub async fn create_authorised_agent(
 
 pub async fn create_authorised_agent_submit(
     _: AuthorisedAgentCreatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentCreateTemplate { form: form_data },
-            context,
+            ctx.context,
         )
         .into_response()),
         Ok(authorised_agent) => {
-            authorised_agent.create(&store).await?;
+            authorised_agent.create(&ctx.store).await?;
 
             Ok(redirect_success(AuthorisedAgent::list_path()))
         }
@@ -86,8 +85,11 @@ mod tests {
 
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -123,8 +125,11 @@ mod tests {
 
         let response = create_authorised_agent_submit(
             AuthorisedAgentCreatePath {},
-            context,
-            store,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

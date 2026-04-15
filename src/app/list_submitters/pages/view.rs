@@ -1,6 +1,6 @@
 use super::ListSubmittersPath;
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, RequestCtx,
     authorised_agents::AuthorisedAgent,
     filters,
     list_submitters::ListSubmitter,
@@ -19,10 +19,9 @@ struct ListSubmittersTemplate {
 
 pub async fn list_submitters(
     _: ListSubmittersPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&ctx.store)?;
 
     Ok(HtmlTemplate(
         ListSubmittersTemplate {
@@ -30,7 +29,7 @@ pub async fn list_submitters(
             substitute_submitters: steps.substitute_submitters.clone(),
             steps,
         },
-        context,
+        ctx.context,
     ))
 }
 
@@ -38,7 +37,7 @@ pub async fn list_submitters(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState,
         list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter},
     };
@@ -52,11 +51,17 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
         list_submitter.create(&store).await?;
 
-        let response =
-            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
-                .await
-                .unwrap()
-                .into_response();
+        let response = list_submitters(
+            ListSubmittersPath {},
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -73,11 +78,17 @@ mod tests {
         let list_submitter = sample_list_submitter(submitter_id);
         list_submitter.create(&store).await?;
 
-        let response =
-            list_submitters(ListSubmittersPath {}, Context::new_test_without_db(), store)
-                .await
-                .unwrap()
-                .into_response();
+        let response = list_submitters(
+            ListSubmittersPath {},
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

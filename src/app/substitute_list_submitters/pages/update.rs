@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, Context, Form, HtmlTemplate, RequestCtx, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
     redirect_success,
@@ -37,21 +37,20 @@ pub async fn update_substitute_submitter(
 
 pub async fn update_substitute_submitter_submit(
     _: SubstituteSubmitterUpdatePath,
-    context: Context,
+    ctx: RequestCtx,
     substitute_submitter: ListSubmitter,
-    store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(
         &ListSubmitterData::from(substitute_submitter.clone()),
-        &context.session.csrf_tokens,
+        ctx.csrf(),
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
                 form: form_data,
             },
-            context,
+            ctx.context,
         )
         .into_response()),
         Ok(substitute_submitter_data) => {
@@ -59,7 +58,7 @@ pub async fn update_substitute_submitter_submit(
                 id: substitute_submitter.id,
                 ..substitute_submitter_data.into()
             };
-            updated.update_substitute(&store).await?;
+            updated.update_substitute(&ctx.store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -70,17 +69,15 @@ pub async fn update_substitute_submitter_submit(
 mod tests {
     use super::*;
     use crate::{
-        QueryParamState,
+        AppError, AppStore, Context, QueryParamState, RequestCtx,
         list_submitters::ListSubmitterId,
-        test_utils::{sample_list_submitter, sample_list_submitter_form},
+        test_utils::{response_body_string, sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
     use axum_extra::routing::TypedPath;
-
-    use crate::{AppError, AppStore, Context, test_utils::response_body_string};
 
     #[tokio::test]
     async fn update_substitute_submitter_renders_existing_submitter() -> Result<(), AppError> {
@@ -121,9 +118,12 @@ mod tests {
 
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             substitute_submitter.clone(),
-            store.clone(),
             Form(form),
         )
         .await
@@ -164,9 +164,12 @@ mod tests {
 
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             substitute_submitter.clone(),
-            store,
             Form(form),
         )
         .await

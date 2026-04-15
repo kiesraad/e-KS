@@ -1,11 +1,8 @@
 use askama::Template;
-use axum::{
-    extract::Query,
-    response::{IntoResponse, Response},
-};
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppStore, Context, Form, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateList, ListSubmitterForm, pages::UpdateListSubmitterPath},
     filters,
     form::FormData,
@@ -47,11 +44,14 @@ fn render_submitter_form(
 
 pub async fn update_list_submitter(
     _: UpdateListSubmitterPath,
-    context: Context,
     mut candidate_list: CandidateList,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     // When adding a new candidate list, select the default submitter and substitute submitters
     if query.is_initial() {
         candidate_list.select_default_submitters(&store)?;
@@ -67,12 +67,15 @@ pub async fn update_list_submitter(
 
 pub async fn update_list_submitter_submit(
     _: UpdateListSubmitterPath,
-    context: Context,
     candidate_list: CandidateList,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => render_submitter_form(
             context,
@@ -92,14 +95,12 @@ pub async fn update_list_submitter_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{
-        extract::Query,
-        http::{StatusCode, header},
-    };
+    use axum::http::{StatusCode, header};
     use axum_extra::routing::TypedPath;
 
     use crate::{
-        AppStore, Context, ElectoralDistrict, Locale, QueryParamState, Session, TokenValue,
+        AppStore, Context, ElectoralDistrict, Locale, QueryParamState, RequestCtx, Session,
+        TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_candidate_list, sample_list_submitter},
@@ -122,10 +123,12 @@ mod tests {
             UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
-            context,
             candidate_list.clone(),
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap();
@@ -163,10 +166,12 @@ mod tests {
             UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
-            context,
             candidate_list.clone(),
-            store,
-            Query(QueryParamState::created()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::created(),
+            },
         )
         .await
         .unwrap();
@@ -211,10 +216,12 @@ mod tests {
             UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
-            context,
             candidate_list.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await
@@ -276,10 +283,12 @@ mod tests {
             UpdateListSubmitterPath {
                 list_id: candidate_list.id,
             },
-            context,
             candidate_list.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await

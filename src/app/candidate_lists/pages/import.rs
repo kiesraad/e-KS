@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate,
+    AppError, AppEvent, Context, HtmlTemplate, RequestCtx,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -39,22 +39,21 @@ fn render_import_export(
 
 pub async fn import_export(
     CandidateListImportPath { list_id }: CandidateListImportPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<Response, AppError> {
     Ok(render_import_export(
-        store.get_candidate_list(list_id)?,
+        ctx.store.get_candidate_list(list_id)?,
         vec![],
-        context,
+        ctx.context,
     ))
 }
 
 pub async fn import_candidate_list(
     CandidateListImportPath { list_id }: CandidateListImportPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     import_data: FileForm,
 ) -> Result<Response, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     let mut list = store.get_candidate_list(list_id)?;
     let csrf_form = EmptyForm {
         csrf_token: import_data.csrf_token,
@@ -112,6 +111,7 @@ mod tests {
     use axum::{body::Bytes, http::StatusCode};
 
     use crate::{
+        AppStore, Context, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -124,8 +124,11 @@ mod tests {
 
         let response = import_export(
             CandidateListImportPath { list_id: list.id },
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await?;
 
@@ -154,8 +157,11 @@ mod tests {
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             FileForm {
                 csrf_token,
                 file_name: Some("invalid.csv".to_string()),
@@ -186,8 +192,11 @@ mod tests {
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
-            context,
-            store,
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             FileForm {
                 csrf_token,
                 file_name: Some("validation-errors.csv".to_string()),

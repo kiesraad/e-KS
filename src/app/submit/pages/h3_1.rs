@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Config, Context,
+    AppError, AppEvent, Config, RequestCtx,
     core::Pdf,
     submit::{H31, pages::DownloadH31Path},
 };
@@ -7,13 +7,12 @@ use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h3_1(
     path @ DownloadH31Path { list_id, locale }: DownloadH31Path,
-    store: AppStore,
     State(config): State<&Config>,
-    context: Context,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
-    let h3_1 = H31::new(&store, list_id, &context.election, locale)?;
+    let h3_1 = H31::new(&ctx.store, list_id, ctx.election(), locale)?;
 
-    store
+    ctx.store
         .update(AppEvent::DownloadFile {
             file_name: h3_1.filename().to_string(),
             download_path: path.to_string(),
@@ -28,7 +27,7 @@ pub async fn gen_h3_1(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, QueryParamState, RequestCtx,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         core::ModelLocale,
@@ -65,9 +64,12 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            store,
             State(&config),
-            Context::new_test_without_db(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await;
 
@@ -109,9 +111,12 @@ mod tests {
                 list_id,
                 locale: ModelLocale::Nl,
             },
-            store,
             State(&config),
-            Context::new_test_without_db(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await?
         .into_response();

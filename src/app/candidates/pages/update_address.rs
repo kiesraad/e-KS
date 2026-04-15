@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppResponse, Context, Form, HtmlTemplate, QueryParamState, RequestCtx,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::AddressForm,
 };
@@ -45,13 +45,16 @@ pub async fn update_person_address(
 
 pub async fn update_person_address_submit(
     _: CandidateListUpdateAddressPath,
-    context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
-    store: AppStore,
-    Query(query): Query<QueryParamState>,
+    ctx: RequestCtx,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx {
+        context,
+        store,
+        query,
+    } = ctx;
     match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
@@ -77,7 +80,7 @@ pub async fn update_person_address_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, QueryParamState,
+        AppStore, Context, Form, QueryParamState, RequestCtx,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -159,11 +162,13 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            context,
             full_list,
             candidate,
-            store.clone(),
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -217,11 +222,13 @@ mod tests {
                 list_id,
                 person_id: person.id,
             },
-            context,
             full_list,
             candidate,
-            store,
-            Query(QueryParamState::default()),
+            RequestCtx {
+                context,
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?

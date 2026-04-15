@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate,
+    AppError, Context, ElectoralDistrict, Form, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateList, CandidateListCreateForm, pages::CandidateListCreatePath},
     filters,
     form::FormData,
@@ -18,9 +18,9 @@ struct CandidateListCreateTemplate {
 
 pub async fn create_candidate_list(
     _: CandidateListCreatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let has_previous_list = !store.get_candidate_lists().is_empty();
 
@@ -37,10 +37,10 @@ pub async fn create_candidate_list(
 
 pub async fn create_candidate_list_submit(
     _: CandidateListCreatePath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<CandidateListCreateForm>,
 ) -> Result<Response, AppError> {
+    let RequestCtx { context, store, .. } = ctx;
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let should_copy_candidates = form.copy_candidates;
     match form.validate_create(&context.session.csrf_tokens) {
@@ -80,8 +80,8 @@ mod test {
     };
 
     use crate::{
-        AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Province, Session,
-        TokenValue, WaterCouncil,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Province, QueryParamState,
+        Session, TokenValue, WaterCouncil,
         candidate_lists::{CandidateListId, CandidateListSummary},
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -92,8 +92,11 @@ mod test {
         let store = AppStore::new_for_test();
         let response = create_candidate_list(
             CandidateListCreatePath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
         )
         .await?
         .into_response();
@@ -118,8 +121,11 @@ mod test {
 
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -152,8 +158,11 @@ mod test {
 
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -188,8 +197,11 @@ mod test {
 
         create_candidate_list_submit(
             CandidateListCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -265,8 +277,11 @@ mod test {
 
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;
@@ -296,8 +311,11 @@ mod test {
 
         let response = create_candidate_list_submit(
             CandidateListCreatePath {},
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(form),
         )
         .await?;

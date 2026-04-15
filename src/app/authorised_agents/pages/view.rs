@@ -1,6 +1,6 @@
 use super::AuthorisedAgentsPath;
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, RequestCtx,
     authorised_agents::AuthorisedAgent,
     filters,
     list_submitters::ListSubmitter,
@@ -18,16 +18,15 @@ struct AuthorisedAgentsTemplate {
 
 pub async fn list_authorised_agents(
     _: AuthorisedAgentsPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&ctx.store)?;
     Ok(HtmlTemplate(
         AuthorisedAgentsTemplate {
             authorised_agents: steps.authorised_agents.clone(),
             steps,
         },
-        context,
+        ctx.context,
     ))
 }
 
@@ -35,7 +34,7 @@ pub async fn list_authorised_agents(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState,
         authorised_agents::AuthorisedAgentId,
         test_utils::{response_body_string, sample_authorised_agent},
     };
@@ -51,8 +50,11 @@ mod tests {
 
         let response = list_authorised_agents(
             AuthorisedAgentsPath {},
-            Context::new_test_without_db(),
-            store.clone(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap()
@@ -75,8 +77,11 @@ mod tests {
 
         let response = list_authorised_agents(
             AuthorisedAgentsPath {},
-            Context::new_test_without_db(),
-            store.clone(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
         )
         .await
         .unwrap()

@@ -1,7 +1,7 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore, Context, Form, candidate_lists::CandidateList, candidates::Candidate,
+    AppError, Form, RequestCtx, candidate_lists::CandidateList, candidates::Candidate,
     form::EmptyForm, redirect_success,
 };
 
@@ -11,14 +11,13 @@ pub async fn delete_person(
     _: CandidateListDeletePersonPath,
     candidate: Candidate,
     candidate_list: CandidateList,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            candidate.person.delete(&store).await?;
+            candidate.person.delete(&ctx.store).await?;
 
             Ok(redirect_success(candidate_list.view_path()))
         }
@@ -29,7 +28,7 @@ pub async fn delete_person(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Form, QueryParamState,
+        AppStore, Context, Form, QueryParamState, RequestCtx,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
@@ -65,8 +64,11 @@ mod tests {
             },
             candidate,
             list.clone(),
-            context,
-            store.clone(),
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Form(EmptyForm::new(csrf_token)),
         )
         .await?;

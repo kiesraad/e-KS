@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, RequestCtx,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
     filters,
     persons::Person,
@@ -17,18 +17,17 @@ struct CandidateListIndexTemplate {
 
 pub async fn list_candidate_lists(
     _: CandidateListsPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store)?;
-    let total_persons = store.get_person_count();
+    let candidate_lists = CandidateListSummary::list(&ctx.store)?;
+    let total_persons = ctx.store.get_person_count();
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
             candidate_lists,
             total_persons,
         },
-        context,
+        ctx.context,
     ))
 }
 
@@ -36,7 +35,7 @@ pub async fn list_candidate_lists(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, QueryParamState,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -48,10 +47,16 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 
-        let response =
-            list_candidate_lists(CandidateListsPath {}, Context::new_test_without_db(), store)
-                .await?
-                .into_response();
+        let response = list_candidate_lists(
+            CandidateListsPath {},
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
+        )
+        .await?
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

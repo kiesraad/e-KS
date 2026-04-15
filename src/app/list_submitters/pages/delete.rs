@@ -1,23 +1,21 @@
 use axum::response::Response;
 
 use crate::{
-    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
-    redirect_success,
+    AppError, Form, RequestCtx, form::EmptyForm, list_submitters::ListSubmitter, redirect_success,
 };
 
 use super::ListSubmitterDeletePath;
 
 pub async fn delete_list_submitter(
     _: ListSubmitterDeletePath,
-    context: Context,
+    ctx: RequestCtx,
     submitter: ListSubmitter,
-    store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(ctx.csrf()) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            submitter.delete(&store).await?;
+            submitter.delete(&ctx.store).await?;
 
             Ok(redirect_success(ListSubmitter::list_path()))
         }
@@ -48,9 +46,12 @@ mod tests {
 
         let response = delete_list_submitter(
             ListSubmitterDeletePath { submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             submitter,
-            store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -88,9 +89,12 @@ mod tests {
 
         let response = delete_list_submitter(
             ListSubmitterDeletePath { submitter_id },
-            context,
+            RequestCtx {
+                context,
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             list_submitter.clone(),
-            store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

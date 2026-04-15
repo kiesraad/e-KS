@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, Context, HtmlTemplate, RequestCtx,
     audit_log::{AuditLogEntry, pages::AuditLogPath},
     filters,
     pagination::Pagination,
@@ -127,18 +127,18 @@ pub struct NoSort;
 
 pub async fn audit_log(
     _: AuditLogPath,
-    context: Context,
-    store: AppStore,
+    ctx: RequestCtx,
     pagination: Pagination<NoSort>,
     Query(filter): Query<AuditLogFilter>,
 ) -> Result<impl IntoResponse, AppError> {
-    let locale = context.session.locale;
+    let locale = ctx.locale();
 
     let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
     let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
 
     // Convert all events to entries, applying event_type filter early
-    let all_entries: Vec<AuditLogEntry> = store
+    let all_entries: Vec<AuditLogEntry> = ctx
+        .store
         .get_events()
         .into_iter()
         .rev()
@@ -176,7 +176,7 @@ pub async fn audit_log(
             filter,
             event_types_by_category: EVENT_TYPES_BY_CATEGORY,
         },
-        context,
+        ctx.context,
     ))
 }
 
@@ -184,7 +184,7 @@ pub async fn audit_log(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState,
         pagination::Pagination,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_political_group},
@@ -201,8 +201,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             no_filter(),
         )
@@ -227,8 +230,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             no_filter(),
         )
@@ -255,8 +261,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             no_filter(),
         )
@@ -289,8 +298,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             no_filter(),
         )
@@ -318,8 +330,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             Query(AuditLogFilter {
                 event_type: Some("person".to_string()),
@@ -348,8 +363,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             Query(AuditLogFilter {
                 event_type: Some("delete_person".to_string()),
@@ -375,8 +393,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store.clone(),
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store: store.clone(),
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             no_filter(),
         )
@@ -389,8 +410,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             Query(AuditLogFilter {
                 event_type: Some("person".to_string()),
@@ -418,8 +442,11 @@ mod tests {
 
         let response = audit_log(
             AuditLogPath {},
-            Context::new_test_without_db(),
-            store,
+            RequestCtx {
+                context: Context::new_test_without_db(),
+                store,
+                query: QueryParamState::default(),
+            },
             Pagination::default(),
             Query(AuditLogFilter {
                 event_type: None,

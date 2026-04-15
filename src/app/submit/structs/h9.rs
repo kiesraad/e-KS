@@ -35,15 +35,25 @@ impl<'zip> Pdf for H9<'zip> {
     }
 }
 
+pub struct H9Inputs<'a, 'zip> {
+    pub store: &'a AppStore,
+    pub candidate_list: &'a CandidateList,
+    pub ordered_candidates: &'zip Vec<TypstCandidate>,
+    pub candidate: Candidate,
+    pub election: &'a ElectionConfig,
+    pub locale: ModelLocale,
+}
+
 impl<'zip> H9<'zip> {
-    pub fn new(
-        store: &AppStore,
-        candidate_list: &CandidateList,
-        ordered_candidates: &'zip Vec<TypstCandidate>,
-        candidate: Candidate,
-        election: &ElectionConfig,
-        locale: ModelLocale,
-    ) -> Result<Self, AppError> {
+    pub fn new(inputs: H9Inputs<'_, 'zip>) -> Result<Self, AppError> {
+        let H9Inputs {
+            store,
+            candidate_list,
+            ordered_candidates,
+            candidate,
+            election,
+            locale,
+        } = inputs;
         let detailed_candidate = TypstDetailedCandidate::try_from(&candidate, locale)?;
         let filename = format!(
             "model-h9-{}-{}.pdf",
