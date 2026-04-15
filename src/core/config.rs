@@ -9,8 +9,6 @@ use crate::AppError;
 
 #[cfg(feature = "dev-features")]
 mod dev_defaults {
-    use super::*;
-
     #[cfg(feature = "database")]
     pub(super) const STORAGE_URL: &str = "postgres://eks@localhost/eks";
 
@@ -26,7 +24,7 @@ mod dev_defaults {
     pub(super) const DEFAULT_ENCRYPTION_DERIVATION_KEY: &str =
         "eks-dev-encryption-derivation-key-not-for-production";
 
-    pub(super) fn lookup(name: &'static str) -> Result<String, env::VarError> {
+    pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("TYPST_URL", TYPST_URL),
@@ -39,7 +37,7 @@ mod dev_defaults {
         ])
         .get(name)
         .map(|value| (*value).to_string())
-        .ok_or(env::VarError::NotPresent)
+        .ok_or(std::env::VarError::NotPresent)
     }
 }
 
