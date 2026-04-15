@@ -13,8 +13,43 @@ pub(super) fn extract_old_new(
     event: &AppEvent,
     state_before: &AppStoreData,
 ) -> (Option<serde_json::Value>, Option<serde_json::Value>) {
+    macro_rules! add {
+        ($data:expr) => {
+            (None, serde_json::to_value($data).ok())
+        };
+    }
+
+    macro_rules! update {
+        ($kind:ident, $data:expr) => {{
+            let old = state_before
+                .$kind
+                .get(&$data.id)
+                .and_then(|data| serde_json::to_value(data).ok());
+            (old, serde_json::to_value($data).ok())
+        }};
+    }
+
+    macro_rules! delete {
+        ($kind:ident, $id:expr) => {{
+            let old = state_before
+                .$kind
+                .get($id)
+                .and_then(|data| serde_json::to_value(data).ok());
+            (old, None)
+        }};
+    }
+
+    macro_rules! event {
+        ({
+            $($field:ident: $val:expr),* $(,)?
+        }) => {{
+            let val = serde_json::json!({ $(stringify!($field): $val,)* });
+            (None, Some(val))
+        }};
+    }
+
     match event {
-        AppEvent::CreatePerson(person) => (None, serde_json::to_value(person).ok()),
+        AppEvent::CreatePerson(person) => add!(person),
         AppEvent::CreatePersonPersonalData {
             person_id: _,
             name,
@@ -26,39 +61,15 @@ pub(super) fn extract_old_new(
             });
             (None, Some(new_val))
         }
-        AppEvent::CreateCandidateList(cl) => (None, serde_json::to_value(cl).ok()),
-        AppEvent::CreateAuthorisedAgent(aa) => (None, serde_json::to_value(aa).ok()),
-        AppEvent::CreateListSubmitter(ls) => (None, serde_json::to_value(ls).ok()),
-        AppEvent::CreateSubstituteSubmitter(ss) => (None, serde_json::to_value(ss).ok()),
+        AppEvent::CreateCandidateList(cl) => add!(cl),
+        AppEvent::CreateAuthorisedAgent(aa) => add!(aa),
+        AppEvent::CreateListSubmitter(ls) => add!(ls),
+        AppEvent::CreateSubstituteSubmitter(ss) => add!(ss),
 
-        AppEvent::UpdatePerson(person) => {
-            let old = state_before
-                .persons
-                .get(&person.id)
-                .and_then(|p| serde_json::to_value(p).ok());
-            (old, serde_json::to_value(person).ok())
-        }
-        AppEvent::UpdateAuthorisedAgent(aa) => {
-            let old = state_before
-                .authorised_agents
-                .get(&aa.id)
-                .and_then(|a| serde_json::to_value(a).ok());
-            (old, serde_json::to_value(aa).ok())
-        }
-        AppEvent::UpdateListSubmitter(ls) => {
-            let old = state_before
-                .list_submitters
-                .get(&ls.id)
-                .and_then(|l| serde_json::to_value(l).ok());
-            (old, serde_json::to_value(ls).ok())
-        }
-        AppEvent::UpdateSubstituteSubmitter(ss) => {
-            let old = state_before
-                .substitute_submitters
-                .get(&ss.id)
-                .and_then(|s| serde_json::to_value(s).ok());
-            (old, serde_json::to_value(ss).ok())
-        }
+        AppEvent::UpdatePerson(person) => update!(persons, person),
+        AppEvent::UpdateAuthorisedAgent(aa) => update!(authorised_agents, aa),
+        AppEvent::UpdateListSubmitter(ls) => update!(list_submitters, ls),
+        AppEvent::UpdateSubstituteSubmitter(ss) => update!(substitute_submitters, ss),
         AppEvent::UpdatePoliticalGroup(pg) => {
             let old = serde_json::to_value(&state_before.political_group).ok();
             (old, serde_json::to_value(pg).ok())
@@ -153,62 +164,26 @@ pub(super) fn extract_old_new(
             (Some(old_val), None)
         }
 
-        AppEvent::DeletePerson { person_id } => {
-            let old = state_before
-                .persons
-                .get(person_id)
-                .and_then(|p| serde_json::to_value(p).ok());
-            (old, None)
-        }
-        AppEvent::DeleteCandidateList(cl_id) => {
-            let old = state_before
-                .candidate_lists
-                .get(cl_id)
-                .and_then(|cl| serde_json::to_value(cl).ok());
-            (old, None)
-        }
-        AppEvent::DeleteAuthorisedAgent(aa_id) => {
-            let old = state_before
-                .authorised_agents
-                .get(aa_id)
-                .and_then(|a| serde_json::to_value(a).ok());
-            (old, None)
-        }
+        AppEvent::DeletePerson { person_id } => delete!(persons, person_id),
+        AppEvent::DeleteCandidateList(cl_id) => delete!(candidate_lists, cl_id),
+        AppEvent::DeleteAuthorisedAgent(aa_id) => delete!(authorised_agents, aa_id),
         AppEvent::DeleteListSubmitter {
             list_submitter_id: ls_id,
-        } => {
-            let old = state_before
-                .list_submitters
-                .get(ls_id)
-                .and_then(|l| serde_json::to_value(l).ok());
-            (old, None)
-        }
+        } => delete!(list_submitters, ls_id),
         AppEvent::DeleteSubstituteSubmitter {
             substitute_submitter_id: ss_id,
-        } => {
-            let old = state_before
-                .substitute_submitters
-                .get(ss_id)
-                .and_then(|s| serde_json::to_value(s).ok());
-            (old, None)
-        }
+        } => delete!(substitute_submitters, ss_id),
 
-        AppEvent::DeveloperLogin { stream_id } => {
-            let val = serde_json::json!({ "stream_id": stream_id.to_string() });
-            (None, Some(val))
-        }
+        AppEvent::DeveloperLogin { stream_id } => event!({ stream_id: stream_id.to_string() }),
         AppEvent::DownloadFile {
             file_name,
             download_path,
             list_id,
-        } => {
-            let val = serde_json::json!({
-                "file_name": file_name,
-                "download_path": download_path,
-                "list_id": list_id.to_string(),
-            });
-            (None, Some(val))
-        }
+        } => event!({
+            file_name: file_name,
+            download_path: download_path,
+            list_id: list_id.to_string(),
+        }),
         AppEvent::ExportCsv {
             file_name,
             file_size,
@@ -218,13 +193,10 @@ pub(super) fn extract_old_new(
             file_name,
             file_size,
             list_id,
-        } => {
-            let val = serde_json::json!({
-                "file_name": file_name,
-                "file_size": file_size,
-                "list_id": list_id.to_string(),
-            });
-            (None, Some(val))
-        }
+        } => event!({
+            file_name: file_name,
+            file_size: file_size,
+            list_id: list_id.to_string(),
+        }),
     }
 }
