@@ -454,6 +454,128 @@ fn summarize_deleted_files(deleted_files: Vec<PathBuf>) -> Vec<DiffSummaryRow> {
         .collect()
 }
 
+/// Render and compare PDFs for a single input present in both branches.
+async fn diff_changed_input(
+    paths: &WorkspacePaths,
+    current_context: &Arc<PdfContext>,
+    main_context: &Arc<PdfContext>,
+    rel: &Path,
+    template: &str,
+    input_name: &str,
+    input: serde_json::Value,
+    main_input: serde_json::Value,
+    pdf_rel: &Path,
+) -> Result<DiffSummaryRow> {
+    let current_pdf = paths.current_pdfs_root.join(pdf_rel);
+    let main_pdf = paths.main_pdfs_root.join(pdf_rel);
+    let diff_pdf = paths.diffs_root.join(pdf_rel);
+
+    render_pdf(
+        Arc::clone(current_context),
+        template.to_string(),
+        input,
+        rel,
+        &current_pdf,
+    )
+    .await?;
+    render_pdf(
+        Arc::clone(main_context),
+        template.to_string(),
+        main_input,
+        rel,
+        &main_pdf,
+    )
+    .await?;
+
+    let changed = diff_pdfs(&current_pdf, &main_pdf, &diff_pdf).await?;
+    if !changed {
+        let _ = tokio::fs::remove_file(&diff_pdf).await;
+    }
+    let status = if changed { "changed" } else { "identical" };
+    let diff_link = changed.then(|| Path::new(DIFFS_DIR_NAME).join(pdf_rel));
+    Ok((rel.to_path_buf(), Some(input_name.to_string()), status, diff_link))
+}
+
+/// Render a newly-added input's PDF for the current branch.
+async fn render_added_input(
+    paths: &WorkspacePaths,
+    current_context: &Arc<PdfContext>,
+    rel: &Path,
+    template: &str,
+    input_name: &str,
+    input: serde_json::Value,
+    pdf_rel: &Path,
+) -> Result<DiffSummaryRow> {
+    let added_pdf = paths.diffs_root.join(pdf_rel);
+    render_pdf(
+        Arc::clone(current_context),
+        template.to_string(),
+        input,
+        rel,
+        &added_pdf,
+    )
+    .await?;
+    Ok((
+        rel.to_path_buf(),
+        Some(input_name.to_string()),
+        "added",
+        Some(Path::new(DIFFS_DIR_NAME).join(pdf_rel)),
+    ))
+}
+
+/// Process one template that exists in both branches.
+async fn summarize_common_template(
+    paths: &WorkspacePaths,
+    current_context: &Arc<PdfContext>,
+    main_context: &Arc<PdfContext>,
+    rel: PathBuf,
+) -> Result<Vec<DiffSummaryRow>> {
+    let template = template_name(&rel)?;
+    let current_inputs = load_render_inputs(&paths.current_root, &template).await?;
+    let mut main_inputs: HashMap<String, serde_json::Value> =
+        load_render_inputs(&paths.main_root, &template)
+            .await?
+            .into_iter()
+            .collect();
+
+    let mut results = Vec::new();
+    for (input_name, input) in current_inputs {
+        let pdf_rel = pdf_output_rel(&rel, &input_name)?;
+        let row = if let Some(main_input) = main_inputs.remove(&input_name) {
+            diff_changed_input(
+                paths,
+                current_context,
+                main_context,
+                &rel,
+                &template,
+                &input_name,
+                input,
+                main_input,
+                &pdf_rel,
+            )
+            .await?
+        } else {
+            render_added_input(
+                paths,
+                current_context,
+                &rel,
+                &template,
+                &input_name,
+                input,
+                &pdf_rel,
+            )
+            .await?
+        };
+        results.push(row);
+    }
+
+    for input_name in main_inputs.into_keys() {
+        results.push((rel.clone(), Some(input_name), "deleted", None));
+    }
+
+    Ok(results)
+}
+
 /// Render and compare PDFs for templates that exist in both branches.
 async fn summarize_common_files(
     paths: &WorkspacePaths,
@@ -462,71 +584,11 @@ async fn summarize_common_files(
     common_files: Vec<PathBuf>,
 ) -> Result<Vec<DiffSummaryRow>> {
     let mut results = Vec::new();
-
     for rel in common_files {
-        let template = template_name(&rel)?;
-        let current_inputs = load_render_inputs(&paths.current_root, &template).await?;
-        let mut main_inputs: HashMap<String, serde_json::Value> =
-            load_render_inputs(&paths.main_root, &template)
-                .await?
-                .into_iter()
-                .collect();
-
-        for (input_name, input) in current_inputs {
-            let pdf_rel = pdf_output_rel(&rel, &input_name)?;
-
-            if let Some(main_input) = main_inputs.remove(&input_name) {
-                let current_pdf = paths.current_pdfs_root.join(&pdf_rel);
-                let main_pdf = paths.main_pdfs_root.join(&pdf_rel);
-                let diff_pdf = paths.diffs_root.join(&pdf_rel);
-                render_pdf(
-                    Arc::clone(current_context),
-                    template.clone(),
-                    input,
-                    &rel,
-                    &current_pdf,
-                )
-                .await?;
-                render_pdf(
-                    Arc::clone(main_context),
-                    template.clone(),
-                    main_input,
-                    &rel,
-                    &main_pdf,
-                )
-                .await?;
-
-                let changed = diff_pdfs(&current_pdf, &main_pdf, &diff_pdf).await?;
-                if !changed {
-                    let _ = tokio::fs::remove_file(&diff_pdf).await;
-                }
-                let status = if changed { "changed" } else { "identical" };
-                let diff_link = changed.then(|| Path::new(DIFFS_DIR_NAME).join(&pdf_rel));
-                results.push((rel.clone(), Some(input_name), status, diff_link));
-            } else {
-                let added_pdf = paths.diffs_root.join(&pdf_rel);
-                render_pdf(
-                    Arc::clone(current_context),
-                    template.clone(),
-                    input,
-                    &rel,
-                    &added_pdf,
-                )
-                .await?;
-                results.push((
-                    rel.clone(),
-                    Some(input_name),
-                    "added",
-                    Some(Path::new(DIFFS_DIR_NAME).join(pdf_rel)),
-                ));
-            }
-        }
-
-        for input_name in main_inputs.into_keys() {
-            results.push((rel.clone(), Some(input_name), "deleted", None));
-        }
+        let rows =
+            summarize_common_template(paths, current_context, main_context, rel).await?;
+        results.extend(rows);
     }
-
     Ok(results)
 }
 

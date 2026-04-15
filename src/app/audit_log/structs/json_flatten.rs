@@ -42,59 +42,53 @@ fn is_positional_array_key(prefix: &str) -> bool {
     POSITIONAL_ARRAY_KEYS.contains(&leaf)
 }
 
+fn join_key(prefix: &str, segment: &str) -> String {
+    if prefix.is_empty() {
+        segment.to_string()
+    } else {
+        format!("{prefix}.{segment}")
+    }
+}
+
+fn flatten_object(
+    obj: &serde_json::Map<String, serde_json::Value>,
+    prefix: &str,
+) -> BTreeMap<String, String> {
+    let mut map = BTreeMap::new();
+    for (key, val) in obj {
+        let full_key = join_key(prefix, key);
+        map.extend(flatten(val, &full_key));
+    }
+    map
+}
+
+fn flatten_array(arr: &[serde_json::Value], prefix: &str) -> BTreeMap<String, String> {
+    let mut map = BTreeMap::new();
+    let positional = is_positional_array_key(prefix);
+    if !prefix.is_empty() && !positional && arr.iter().all(is_scalar) {
+        map.insert(prefix.to_string(), join_scalars(arr));
+        return map;
+    }
+    for (i, val) in arr.iter().enumerate() {
+        let full_key = join_key(prefix, &i.to_string());
+        map.extend(flatten(val, &full_key));
+    }
+    map
+}
+
 /// Recursively flatten a JSON value into dot-notation key-value pairs.
 pub(super) fn flatten(value: &serde_json::Value, prefix: &str) -> BTreeMap<String, String> {
-    let mut map = BTreeMap::new();
-
     match value {
-        serde_json::Value::Object(obj) => {
-            for (key, val) in obj {
-                let full_key = if prefix.is_empty() {
-                    key.clone()
-                } else {
-                    format!("{prefix}.{key}")
-                };
-                map.extend(flatten(val, &full_key));
-            }
-        }
-        serde_json::Value::Array(arr) => {
-            let positional = is_positional_array_key(prefix);
-            if !prefix.is_empty() && arr.iter().all(is_scalar) && !positional {
-                map.insert(prefix.to_string(), join_scalars(arr));
-            } else {
-                for (i, val) in arr.iter().enumerate() {
-                    let full_key = if prefix.is_empty() {
-                        i.to_string()
-                    } else {
-                        format!("{prefix}.{i}")
-                    };
-                    map.extend(flatten(val, &full_key));
-                }
-            }
-        }
-        serde_json::Value::Null => {
+        serde_json::Value::Object(obj) => flatten_object(obj, prefix),
+        serde_json::Value::Array(arr) => flatten_array(arr, prefix),
+        scalar => {
+            let mut map = BTreeMap::new();
             if !prefix.is_empty() {
-                map.insert(prefix.to_string(), String::new());
+                map.insert(prefix.to_string(), scalar_to_string(scalar));
             }
-        }
-        serde_json::Value::Bool(b) => {
-            if !prefix.is_empty() {
-                map.insert(prefix.to_string(), b.to_string());
-            }
-        }
-        serde_json::Value::Number(n) => {
-            if !prefix.is_empty() {
-                map.insert(prefix.to_string(), n.to_string());
-            }
-        }
-        serde_json::Value::String(s) => {
-            if !prefix.is_empty() {
-                map.insert(prefix.to_string(), s.clone());
-            }
+            map
         }
     }
-
-    map
 }
 
 #[cfg(test)]

@@ -280,86 +280,97 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
             continue;
         }
 
-        attr.parse_nested_meta(|meta| {
-            if meta.path.is_ident("optional") {
-                if opts.flatten || opts.ignore {
-                    return Err(meta.error("optional cannot be combined with flatten or ignore"));
-                }
-                opts.optional = true;
-                return Ok(());
-            }
-            if meta.path.is_ident("not_empty") {
-                if opts.not_empty {
-                    return Err(meta.error("not_empty can only be set once"));
-                }
-                if opts.flatten || opts.ignore || opts.csrf {
-                    return Err(
-                        meta.error("not_empty cannot be combined with flatten, ignore, or csrf")
-                    );
-                }
-                opts.not_empty = true;
-                return Ok(());
-            }
-            if meta.path.is_ident("csrf") {
-                if opts.flatten || opts.ignore || opts.not_empty {
-                    return Err(
-                        meta.error("csrf cannot be combined with flatten, ignore, or not_empty")
-                    );
-                }
-                opts.csrf = true;
-                return Ok(());
-            }
-            if meta.path.is_ident("ignore") {
-                if opts.ignore {
-                    return Err(meta.error("ignore can only be set once"));
-                }
-                if opts.optional
-                    || opts.csrf
-                    || opts.parse_ty.is_some()
-                    || opts.flatten
-                    || opts.not_empty
-                {
-                    return Err(
-                        meta.error("ignore cannot be combined with other validation options")
-                    );
-                }
-                opts.ignore = true;
-                return Ok(());
-            }
-            if meta.path.is_ident("flatten") {
-                if opts.flatten {
-                    return Err(meta.error("flatten can only be set once"));
-                }
-                if opts.optional
-                    || opts.csrf
-                    || opts.parse_ty.is_some()
-                    || opts.ignore
-                    || opts.not_empty
-                {
-                    return Err(
-                        meta.error("flatten cannot be combined with other validation options")
-                    );
-                }
-                opts.flatten = true;
-                return Ok(());
-            }
-            if meta.path.is_ident("parse") {
-                if opts.parse_ty.is_some() {
-                    return Err(meta.error("only one validator kind is allowed per field"));
-                }
-                if opts.flatten || opts.ignore {
-                    return Err(meta.error("parse cannot be combined with flatten or ignore"));
-                }
-                let lit: LitStr = meta.value()?.parse()?;
-                opts.parse_ty = Some(lit.parse::<Type>()?);
-                return Ok(());
-            }
-
-            Err(meta.error("unsupported validate attribute on field"))
-        })?;
+        attr.parse_nested_meta(|meta| apply_field_option(&mut opts, meta))?;
     }
 
     Ok(opts)
+}
+
+fn apply_field_option(
+    opts: &mut FieldOptions,
+    meta: syn::meta::ParseNestedMeta,
+) -> syn::Result<()> {
+    if meta.path.is_ident("optional") {
+        return set_optional(opts, &meta);
+    }
+    if meta.path.is_ident("not_empty") {
+        return set_not_empty(opts, &meta);
+    }
+    if meta.path.is_ident("csrf") {
+        return set_csrf(opts, &meta);
+    }
+    if meta.path.is_ident("ignore") {
+        return set_ignore(opts, &meta);
+    }
+    if meta.path.is_ident("flatten") {
+        return set_flatten(opts, &meta);
+    }
+    if meta.path.is_ident("parse") {
+        return set_parse(opts, meta);
+    }
+
+    Err(meta.error("unsupported validate attribute on field"))
+}
+
+fn set_optional(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.flatten || opts.ignore {
+        return Err(meta.error("optional cannot be combined with flatten or ignore"));
+    }
+    opts.optional = true;
+    Ok(())
+}
+
+fn set_not_empty(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.not_empty {
+        return Err(meta.error("not_empty can only be set once"));
+    }
+    if opts.flatten || opts.ignore || opts.csrf {
+        return Err(meta.error("not_empty cannot be combined with flatten, ignore, or csrf"));
+    }
+    opts.not_empty = true;
+    Ok(())
+}
+
+fn set_csrf(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.flatten || opts.ignore || opts.not_empty {
+        return Err(meta.error("csrf cannot be combined with flatten, ignore, or not_empty"));
+    }
+    opts.csrf = true;
+    Ok(())
+}
+
+fn set_ignore(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.ignore {
+        return Err(meta.error("ignore can only be set once"));
+    }
+    if opts.optional || opts.csrf || opts.parse_ty.is_some() || opts.flatten || opts.not_empty {
+        return Err(meta.error("ignore cannot be combined with other validation options"));
+    }
+    opts.ignore = true;
+    Ok(())
+}
+
+fn set_flatten(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.flatten {
+        return Err(meta.error("flatten can only be set once"));
+    }
+    if opts.optional || opts.csrf || opts.parse_ty.is_some() || opts.ignore || opts.not_empty {
+        return Err(meta.error("flatten cannot be combined with other validation options"));
+    }
+    opts.flatten = true;
+    Ok(())
+}
+
+fn set_parse(opts: &mut FieldOptions, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
+    if opts.parse_ty.is_some() {
+        return Err(meta.error("only one validator kind is allowed per field"));
+    }
+    if opts.flatten || opts.ignore {
+        return Err(meta.error("parse cannot be combined with flatten or ignore"));
+    }
+    let lit: LitStr = meta.value()?.parse()?;
+    opts.parse_ty = Some(lit.parse::<Type>()?);
+    Ok(())
 }
 
 struct FieldValidation {

@@ -94,6 +94,60 @@ fn retain_used(node: &mut LocaleNode, used: &HashSet<String>, prefix: &str) -> b
     }
 }
 
+fn insert_leaf(
+    map: &mut BTreeMap<String, LocaleNode>,
+    key: &str,
+    full_path: &str,
+    file: &Path,
+) -> Result<()> {
+    match map.entry(key.to_string()) {
+        std::collections::btree_map::Entry::Vacant(entry) => {
+            entry.insert(LocaleNode::String(key.to_string()));
+            Ok(())
+        }
+        std::collections::btree_map::Entry::Occupied(entry) => {
+            if matches!(entry.get(), LocaleNode::Map(_)) {
+                anyhow::bail!("expected string for {} in {}", full_path, file.display());
+            }
+            Ok(())
+        }
+    }
+}
+
+fn descend_into<'a>(
+    map: &'a mut BTreeMap<String, LocaleNode>,
+    key: &str,
+    full_path: &str,
+    file: &Path,
+) -> Result<&'a mut LocaleNode> {
+    let entry = map
+        .entry(key.to_string())
+        .or_insert_with(|| LocaleNode::Map(BTreeMap::new()));
+    if matches!(entry, LocaleNode::String(_)) {
+        anyhow::bail!("expected mapping for {} in {}", full_path, file.display());
+    }
+    Ok(entry)
+}
+
+fn insert_segments(
+    node: &mut LocaleNode,
+    segments: &[&str],
+    full_path: &str,
+    file: &Path,
+) -> Result<()> {
+    let LocaleNode::Map(map) = node else {
+        anyhow::bail!("expected mapping for {} in {}", full_path, file.display());
+    };
+
+    let key = segments[0];
+    if segments.len() == 1 {
+        return insert_leaf(map, key, full_path, file);
+    }
+
+    let entry = descend_into(map, key, full_path, file)?;
+    insert_segments(entry, &segments[1..], full_path, file)
+}
+
 /// Ensure the full key path exists, inserting the key value for new leaf values.
 fn insert_used_path(node: &mut LocaleNode, path: &str, file: &Path) -> Result<()> {
     if path.is_empty() {
@@ -101,57 +155,6 @@ fn insert_used_path(node: &mut LocaleNode, path: &str, file: &Path) -> Result<()
     }
 
     let segments: Vec<&str> = path.split('.').collect();
-
-    fn insert_segments(
-        node: &mut LocaleNode,
-        segments: &[&str],
-        full_path: &str,
-        file: &Path,
-    ) -> Result<()> {
-        match node {
-            LocaleNode::Map(map) => {
-                let key = segments[0];
-
-                if segments.len() == 1 {
-                    match map.entry(key.to_string()) {
-                        std::collections::btree_map::Entry::Vacant(entry) => {
-                            entry.insert(LocaleNode::String(key.to_string()));
-                        }
-                        std::collections::btree_map::Entry::Occupied(entry) => {
-                            if matches!(entry.get(), LocaleNode::Map(_)) {
-                                anyhow::bail!(
-                                    "expected string for {} in {}",
-                                    full_path,
-                                    file.display()
-                                );
-                            }
-                        }
-                    }
-
-                    return Ok(());
-                }
-
-                let entry = map
-                    .entry(key.to_string())
-                    .or_insert_with(|| LocaleNode::Map(BTreeMap::new()));
-
-                match entry {
-                    LocaleNode::Map(_) => {
-                        insert_segments(entry, &segments[1..], full_path, file)?;
-                    }
-                    LocaleNode::String(_) => {
-                        anyhow::bail!("expected mapping for {} in {}", full_path, file.display());
-                    }
-                }
-            }
-            LocaleNode::String(_) => {
-                anyhow::bail!("expected mapping for {} in {}", full_path, file.display());
-            }
-        }
-
-        Ok(())
-    }
-
     insert_segments(node, &segments, path, file)
 }
 
@@ -200,122 +203,138 @@ fn collect_leaf_paths(node: &LocaleNode) -> BTreeSet<String> {
     out
 }
 
+#[derive(Default)]
+struct LocaleStats {
+    files_processed: usize,
+    files_changed: usize,
+    total_added: usize,
+    total_removed: usize,
+}
+
+fn parse_locale_root(file: &Path) -> Result<LocaleNode> {
+    let input = std::fs::read_to_string(file)
+        .with_context(|| format!("failed to read locale file {}", file.display()))?;
+
+    let docs = Yaml::load_from_str(&input)
+        .with_context(|| format!("failed to parse YAML in {}", file.display()))?;
+
+    if docs.len() != 1 {
+        anyhow::bail!(
+            "expected exactly one YAML document in {}, found {}",
+            file.display(),
+            docs.len()
+        );
+    }
+
+    let node = yaml_to_node(&docs[0], file, "")?;
+    match node {
+        LocaleNode::Map(_) => Ok(node),
+        LocaleNode::String(_) => {
+            anyhow::bail!("expected mapping at root of {}", file.display());
+        }
+    }
+}
+
+fn used_keys_for_file(used_keys: &[String], basename: &str) -> HashSet<String> {
+    let prefix = format!("{basename}.");
+    used_keys
+        .iter()
+        .filter_map(|key| key.strip_prefix(&prefix).map(str::to_string))
+        .collect()
+}
+
+fn diff_key_sets(
+    existing: &BTreeSet<String>,
+    used: &HashSet<String>,
+) -> (BTreeSet<String>, BTreeSet<String>) {
+    let added: BTreeSet<String> = used
+        .iter()
+        .filter(|k| !existing.contains(*k))
+        .cloned()
+        .collect();
+    let removed: BTreeSet<String> = existing
+        .iter()
+        .filter(|k| !used.contains(*k))
+        .cloned()
+        .collect();
+    (added, removed)
+}
+
+fn print_key_changes(action: &str, keys: &BTreeSet<String>, basename: &str, file: &Path) {
+    for key in keys {
+        let full_key = if key.is_empty() {
+            basename.to_string()
+        } else {
+            format!("{basename}.{key}")
+        };
+        println!("{action} {} ({})", full_key, file.display());
+    }
+}
+
+fn write_locale_file(node: &LocaleNode, file: &Path) -> Result<()> {
+    let yaml_out = node_to_yaml(node);
+    let mut output = String::new();
+    YamlEmitter::new(&mut output)
+        .dump(&yaml_out)
+        .with_context(|| format!("failed to emit YAML for {}", file.display()))?;
+
+    let mut output = output.strip_prefix("---\n").unwrap_or(&output).to_string();
+    output.push('\n');
+
+    std::fs::write(file, output)
+        .with_context(|| format!("failed to write locale file {}", file.display()))
+}
+
+fn process_locale_file(
+    file: &Path,
+    used_keys: &[String],
+    stats: &mut LocaleStats,
+) -> Result<()> {
+    stats.files_processed += 1;
+    let basename = file
+        .file_stem()
+        .and_then(|s| s.to_str())
+        .context("Failed to get locale file stem")?;
+
+    let mut node = parse_locale_root(file)?;
+
+    let existing_keys = collect_leaf_paths(&node);
+    let used_set = used_keys_for_file(used_keys, basename);
+    let (added_keys, removed_keys) = diff_key_sets(&existing_keys, &used_set);
+
+    if !added_keys.is_empty() || !removed_keys.is_empty() {
+        stats.files_changed += 1;
+    }
+
+    print_key_changes("remove", &removed_keys, basename, file);
+    print_key_changes("add", &added_keys, basename, file);
+
+    stats.total_added += added_keys.len();
+    stats.total_removed += removed_keys.len();
+
+    retain_used(&mut node, &used_set, "");
+
+    for used_key in &used_set {
+        insert_used_path(&mut node, used_key, file)?;
+    }
+
+    write_locale_file(&node, file)
+}
+
 fn main() -> Result<()> {
     let used_keys = find_used_keys(Path::new("."));
-    let mut files_processed = 0usize;
-    let mut files_changed = 0usize;
-    let mut total_added = 0usize;
-    let mut total_removed = 0usize;
+    let mut stats = LocaleStats::default();
 
     for lang in &["en", "nl"] {
         let locale_dir = Path::new("locales").join(lang);
-        let locale_files = collect_locale_files(&locale_dir);
-
-        for file in locale_files {
-            files_processed += 1;
-            let basename = file
-                .file_stem()
-                .and_then(|s| s.to_str())
-                .context("Failed to get locale file stem")?;
-
-            let input = std::fs::read_to_string(&file)
-                .with_context(|| format!("failed to read locale file {}", file.display()))?;
-
-            let docs = Yaml::load_from_str(&input)
-                .with_context(|| format!("failed to parse YAML in {}", file.display()))?;
-
-            if docs.len() != 1 {
-                anyhow::bail!(
-                    "expected exactly one YAML document in {}, found {}",
-                    file.display(),
-                    docs.len()
-                );
-            }
-
-            let root = &docs[0];
-
-            let mut node = match yaml_to_node(root, &file, "")? {
-                LocaleNode::Map(map) => LocaleNode::Map(map),
-                LocaleNode::String(_) => {
-                    anyhow::bail!("expected mapping at root of {}", file.display());
-                }
-            };
-
-            let existing_keys = collect_leaf_paths(&node);
-            let prefix = format!("{basename}.");
-            let used_set: HashSet<String> = used_keys
-                .iter()
-                .filter_map(|key| {
-                    if key.starts_with(&prefix) {
-                        Some(key[prefix.len()..].to_string())
-                    } else {
-                        None
-                    }
-                })
-                .collect();
-
-            let mut added_keys = BTreeSet::new();
-            for used_key in &used_set {
-                if !existing_keys.contains(used_key) {
-                    added_keys.insert(used_key.clone());
-                }
-            }
-
-            let mut removed_keys = BTreeSet::new();
-            for existing_key in &existing_keys {
-                if !used_set.contains(existing_key) {
-                    removed_keys.insert(existing_key.clone());
-                }
-            }
-
-            if !added_keys.is_empty() || !removed_keys.is_empty() {
-                files_changed += 1;
-            }
-
-            for removed_key in &removed_keys {
-                let full_key = if removed_key.is_empty() {
-                    basename.to_string()
-                } else {
-                    format!("{basename}.{removed_key}")
-                };
-                println!("remove {} ({})", full_key, file.display());
-            }
-
-            for added_key in &added_keys {
-                let full_key = if added_key.is_empty() {
-                    basename.to_string()
-                } else {
-                    format!("{basename}.{added_key}")
-                };
-                println!("add {} ({})", full_key, file.display());
-            }
-
-            total_added += added_keys.len();
-            total_removed += removed_keys.len();
-
-            retain_used(&mut node, &used_set, "");
-
-            for used_key in &used_set {
-                insert_used_path(&mut node, used_key, &file)?;
-            }
-
-            let yaml_out = node_to_yaml(&node);
-            let mut output = String::new();
-            YamlEmitter::new(&mut output)
-                .dump(&yaml_out)
-                .with_context(|| format!("failed to emit YAML for {}", file.display()))?;
-
-            let mut output = output.strip_prefix("---\n").unwrap_or(&output).to_string();
-            output.push('\n');
-
-            std::fs::write(&file, output)
-                .with_context(|| format!("failed to write locale file {}", file.display()))?;
+        for file in collect_locale_files(&locale_dir) {
+            process_locale_file(&file, &used_keys, &mut stats)?;
         }
     }
 
     println!(
         "Finished processing locale files: processed {} file(s), {} changed, {} added, {} removed.",
-        files_processed, files_changed, total_added, total_removed
+        stats.files_processed, stats.files_changed, stats.total_added, stats.total_removed
     );
 
     Ok(())
