@@ -16,6 +16,20 @@ pub enum ElectionType {
 }
 
 impl ElectionType {
+    /// Short uppercase code identifying the election type (e.g. `"PS"`, `"WS"`).
+    pub fn code(&self) -> &'static str {
+        match self {
+            ElectionType::Tk => "TK",
+            ElectionType::Ek => "EK",
+            ElectionType::Gr => "GR",
+            ElectionType::Ps => "PS",
+            ElectionType::Ws => "WS",
+            ElectionType::Ep => "EP",
+            ElectionType::Kc => "KC",
+            ElectionType::Er => "ER",
+        }
+    }
+
     pub fn title(&self, locale: Locale) -> &'static str {
         match (self, locale) {
             (ElectionType::Tk, Locale::En) => "election of the House of Representatives",
@@ -64,5 +78,22 @@ mod tests {
                 .title(Locale::En)
                 .contains("electoral colleges")
         );
+    }
+
+    #[test]
+    fn election_type_codes_are_two_uppercase_letters() {
+        let cases = [
+            (ElectionType::Tk, "TK"),
+            (ElectionType::Ek, "EK"),
+            (ElectionType::Gr, "GR"),
+            (ElectionType::Ps, "PS"),
+            (ElectionType::Ws, "WS"),
+            (ElectionType::Ep, "EP"),
+            (ElectionType::Kc, "KC"),
+            (ElectionType::Er, "ER"),
+        ];
+        for (election_type, expected) in cases {
+            assert_eq!(election_type.code(), expected);
+        }
     }
 }

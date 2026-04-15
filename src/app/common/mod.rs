@@ -7,7 +7,7 @@ mod forms;
 mod pages;
 mod structs;
 
-pub use forms::{DutchAddressForm, FullNameForm, InternationalAddressForm};
+pub use forms::{DutchAddressForm, FullNameForm, InternationalAddressForm, SwitchElectionForm};
 pub use structs::{
     Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
     DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,

@@ -23,12 +23,16 @@
                         action="{{ crate::common::SwitchElectionPath.to_string() }}">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token.value }}">
                     <input type="hidden" name="election" value="{{ e.code() }}">
-                    {% match e %}
-                    {% when crate::ElectionConfig::PS27 with (p) %}
-                    <input type="hidden" name="province" value="{{ p.code() }}">
-                    {% when crate::ElectionConfig::WS27 with (wc) %}
-                    <input type="hidden" name="water_council" value="{{ wc.code() }}">
-                    {% when _ %}
+                    {% match e.election_type() %}
+                    {% when crate::ElectionType::Ps %}
+                    <input type="hidden"
+                           name="region_province"
+                           value="{{ e.region_code().unwrap_or("") }}">
+                    {% when crate::ElectionType::Ws %}
+                    <input type="hidden"
+                           name="region_water_council"
+                           value="{{ e.region_code().unwrap_or("") }}">
+                  {% else %}
                   {% endmatch %}
                   <button type="submit" class="button secondary">
                     <span>{{ "common.switch_election.resume"|trans }}</span>
@@ -52,31 +56,32 @@
       <select name="election" id="election">
         {% for e in elections %}
           <option value="{{ e.code() }}"
+                  data-region-kind="{% match e.election_type() %}{% when crate::ElectionType::Ps %}province{% when crate::ElectionType::Ws %}water_council{% else %}{% endmatch %}"
                   {% if current_type == e.code() %}selected{% endif %}>{{ e.title(*title_locale) }}</option>
         {% endfor %}
       </select>
     </p>
     <p class="form-field form-field-lg region-select mt-md"
-       data-for-election="PS27">
-      <label for="province">{{ "common.switch_election.province"|trans }}</label>
-      <select name="province" id="province">
+       data-region-kind="province">
+      <label for="region_province">{{ "common.switch_election.province"|trans }}</label>
+      <select name="region_province" id="region_province">
         <option value="">-- {{ "common.switch_election.select_region"|trans }} --</option>
         {% for p in provinces %}
           <option value="{{ p.code() }}"
-                  {% if let Some(sel) = selected_province && *sel == *p %}selected{% endif %}>
+                  {% if let Some(sel) = selected_region && *sel == p.code() %}selected{% endif %}>
             {{ p.title(*title_locale) }}
           </option>
         {% endfor %}
       </select>
     </p>
     <p class="form-field form-field-lg region-select mt-md"
-       data-for-election="WS27">
-      <label for="water_council">{{ "common.switch_election.water_council"|trans }}</label>
-      <select name="water_council" id="water_council">
+       data-region-kind="water_council">
+      <label for="region_water_council">{{ "common.switch_election.water_council"|trans }}</label>
+      <select name="region_water_council" id="region_water_council">
         <option value="">-- {{ "common.switch_election.select_region"|trans }} --</option>
         {% for wc in water_councils %}
           <option value="{{ wc.code() }}"
-                  {% if let Some(sel) = selected_water_council && *sel == *wc %}selected{% endif %}>
+                  {% if let Some(sel) = selected_region && *sel == wc.code() %}selected{% endif %}>
             {{ wc.title(*title_locale) }}
           </option>
         {% endfor %}

@@ -10,9 +10,8 @@
                value="{{ filter.search.as_deref().unwrap_or_default() }}"
                class="form-control"
                aria-label="{{ "audit_log.filter.search"|trans }}" />
-        <select name="event_type"
-                class="form-control"
-                aria-label="{{ "audit_log.filter.event_type"|trans }}">
+        <label for="event_type" class="visually-hidden">{{ "audit_log.filter.event_type"|trans }}</label>
+        <select name="event_type" id="event_type" class="form-control">
           <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
           {% for group in event_types_by_category %}
             {% let category_key = format!("audit_log.filter.category.{}", group.key) %}
