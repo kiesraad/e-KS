@@ -9,7 +9,7 @@ use crate::AppError;
 pub async fn serve(router: Router, listener: TcpListener) -> Result<(), AppError> {
     let addr = listener.local_addr().map_err(AppError::ServerError)?;
 
-    tracing::info!("Starting server on {addr}");
+    tracing::info!("Starting server on http://{addr}");
 
     // Run the server with graceful shutdown
     axum::serve(listener, router)
