@@ -1,50 +1,63 @@
+struct ParsedLine<'a> {
+    indent: usize,
+    key: &'a str,
+    value: &'a str,
+}
+
+fn parse_line(line: &str) -> Option<ParsedLine<'_>> {
+    let trimmed = line.trim();
+    if trimmed.is_empty() || trimmed.starts_with('#') {
+        return None;
+    }
+
+    let (key, value) = trimmed.split_once(':')?;
+    let indent = line.chars().take_while(|c| c.is_whitespace()).count();
+    let key = key.trim();
+    let value = value.trim();
+
+    if key.contains('.') {
+        panic!("Keys containing '.' are not supported in locale YAML files");
+    }
+    if value == "|" || value == ">" {
+        panic!("Multiline values are not supported in locale YAML files");
+    }
+
+    Some(ParsedLine { indent, key, value })
+}
+
+fn pop_to_indent(prefix: &mut Vec<String>, last_indent: usize, indent: usize) {
+    if indent < last_indent {
+        let levels_up = (last_indent - indent) / 2;
+        for _ in 0..levels_up {
+            prefix.pop();
+        }
+    }
+}
+
 /// Parses a minimal YAML mapping into flat `prefix.key` pairs.
 ///
 /// This ignores blank lines and comments, expects indentation in 2-space
 /// steps, and does not support complex YAML features.
 fn naive_yaml_parse(prefix: &str, yml: &str) -> Vec<(String, String)> {
     let mut results = Vec::new();
-    let lines = yml.trim_ascii().lines();
     let mut prefix = vec![prefix.to_string()];
     let mut last_indent: usize = 0;
 
-    for line in lines {
-        let trimmed = line.trim();
-        if trimmed.is_empty() || trimmed.starts_with('#') {
+    for line in yml.trim_ascii().lines() {
+        let Some(parsed) = parse_line(line) else {
             continue;
+        };
+
+        pop_to_indent(&mut prefix, last_indent, parsed.indent);
+
+        if parsed.value.is_empty() {
+            prefix.push(parsed.key.to_string());
+        } else {
+            let value = parsed.value.trim_matches('"').trim_matches('\'').to_string();
+            results.push((format!("{}.{}", prefix.join("."), parsed.key), value));
         }
 
-        if let Some((key, value)) = trimmed.split_once(':') {
-            let indent: usize = line.chars().take_while(|c| c.is_whitespace()).count();
-
-            let key = key.trim();
-            let value = value.trim();
-
-            if key.contains('.') {
-                panic!("Keys containing '.' are not supported in locale YAML files");
-            }
-
-            if value == "|" || value == ">" {
-                panic!("Multiline values are not supported in locale YAML files");
-            }
-
-            if indent < last_indent {
-                let levels_up = (last_indent - indent) / 2;
-                for _ in 0..levels_up {
-                    prefix.pop();
-                }
-            }
-
-            if value.is_empty() {
-                prefix.push(key.to_string());
-            } else {
-                let value = value.trim_matches('"').trim_matches('\'').to_string();
-
-                results.push((format!("{}.{}", prefix.join("."), key), value));
-            }
-
-            last_indent = indent;
-        }
+        last_indent = parsed.indent;
     }
 
     results
