@@ -7,3 +7,4 @@ mod json_flatten;
 
 pub use audit_log_detail::AuditLogDetail;
 pub use audit_log_entry::AuditLogEntry;
+pub use event_info::abbreviate_str;

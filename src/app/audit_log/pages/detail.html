@@ -52,7 +52,7 @@
                   {% for entity_ref in change.old_refs %}
                     <div class="entity-ref">
                       <a href="/audit-log?search={{ entity_ref.id_full }}">
-                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_abbreviated }}</abbr>
+                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
                       </a>
                       {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
                     </div>
@@ -66,7 +66,7 @@
                   {% for entity_ref in change.new_refs %}
                     <div class="entity-ref">
                       <a href="/audit-log?search={{ entity_ref.id_full }}">
-                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_abbreviated }}</abbr>
+                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
                       </a>
                       {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
                     </div>

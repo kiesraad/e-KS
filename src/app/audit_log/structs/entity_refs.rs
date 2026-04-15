@@ -7,13 +7,10 @@ use crate::{
     persons::PersonId,
 };
 
-use super::event_info::abbreviate_str;
-
 /// A reference to another entity mentioned inside a diff value. Rendered in
 /// the template as an abbreviated link + the entity's description.
 pub struct EntityRef {
     pub id_full: String,
-    pub id_abbreviated: String,
     pub description: String,
 }
 
@@ -60,7 +57,6 @@ pub(super) fn build_refs_for_key(key: &str, value: &str, state: &AppStoreData) -
         .filter(|s| !s.is_empty())
         .map(|id_str| EntityRef {
             id_full: id_str.to_string(),
-            id_abbreviated: abbreviate_str(id_str),
             description: describe_entity(&kind, id_str, state),
         })
         .collect()

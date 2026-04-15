@@ -43,7 +43,6 @@ pub struct AuditLogDetail {
     pub event_id: usize,
     pub description: String,
     pub details: String,
-    pub subject_id: String,
     pub subject_id_full: String,
     pub subject_path: String,
     pub created_at: DateTime<Utc>,
@@ -83,7 +82,6 @@ impl AuditLogDetail {
             event_id: entry.event_id,
             description: entry.description,
             details: entry.details,
-            subject_id: entry.subject_id,
             subject_id_full: entry.subject_id_full,
             subject_path: entry.subject_path,
             created_at: entry.created_at,
@@ -522,7 +520,6 @@ mod tests {
 
         assert_eq!(change.old_refs.len(), 1);
         assert_eq!(change.old_refs[0].id_full, old_submitter_id.to_string());
-        assert_eq!(change.old_refs[0].id_abbreviated.len(), 8);
         assert_eq!(change.old_refs[0].description, old_submitter_name);
 
         assert_eq!(change.new_refs.len(), 1);

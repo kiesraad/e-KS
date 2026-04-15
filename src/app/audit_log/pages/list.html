@@ -59,7 +59,7 @@
               <td>{{ entry.details }}</td>
               <td class="subject-id">
                 <a href="/audit-log?search={{ entry.subject_id_full }}">
-                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id }}</abbr>
+                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id_full|abbreviate_str }}</abbr>
                 </a>
               </td>
               <td>
