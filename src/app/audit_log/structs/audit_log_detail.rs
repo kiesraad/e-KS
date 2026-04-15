@@ -85,7 +85,7 @@ impl AuditLogDetail {
         let state_before = replay(&events[..target_index]);
         let state_after = replay(&events[..=target_index]);
 
-        let (old_json, new_json) = extract_old_new(&target_event.payload, &state_before);
+        let (old_json, new_json) = extract_old_new(&target_event.payload, &state_before, &state_after);
         let old_flat = old_json
             .as_ref()
             .map(|v| flatten(v, ""))
