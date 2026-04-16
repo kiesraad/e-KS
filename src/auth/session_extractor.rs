@@ -12,14 +12,15 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
+use secrecy::SecretString;
 
-use crate::{AppError, AppState, ElectionConfig, Locale, Session, common::Bsn};
+use crate::{AppError, AppState, ElectionConfig, Locale, Session};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 
 /// Default BSN used when no session cookie is present (dev/test only).
-const DEV_BSN: &str = "999999990";
+const DEV_ID_CODE: &str = "999999990";
 
 /// Builds an HTTP-only cookie that carries the session token.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
@@ -70,13 +71,13 @@ pub async fn session_middleware(
             state.sessions.cleanup_expired();
             let locale = request_locale(request.headers());
             let mut new_session = Session::new_with_locale(locale);
-            let dev_bsn: Bsn = DEV_BSN.parse().expect("DEV_BSN is a valid BSN");
+            let dev_code: SecretString = DEV_ID_CODE.into();
             new_session.set_stream_id(
                 state
-                    .bsn_id_deriver
-                    .derive_stream_id(&dev_bsn, ElectionConfig::EK27),
+                    .id_deriver
+                    .derive_stream_id(&dev_code, ElectionConfig::EK27),
             );
-            new_session.bsn = Some(dev_bsn);
+            new_session.id_code = Some(dev_code);
             state.sessions.insert(new_session.clone());
             request.extensions_mut().insert(new_session.clone());
             let response = next.run(request).await;

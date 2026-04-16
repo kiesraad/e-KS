@@ -3,12 +3,12 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::CookieJar;
+use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Session, StreamId,
-    auth::session_extractor::build_session_cookie, common::Bsn, political_groups::PoliticalGroup,
-    store::Store,
+    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup, store::Store,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -26,16 +26,14 @@ pub async fn dev_login(
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
     let election = ElectionConfig::EK27;
-    let bsn: Option<Bsn> = query
+    let id_code: Option<SecretString> = query
         .bsn
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(|s| s.parse())
-        .transpose()
-        .map_err(|_| AppError::InternalServerError)?;
+        .map(SecretString::from);
 
-    let stream_id = match &bsn {
-        Some(bsn) => state.bsn_id_deriver.derive_stream_id(bsn, election),
+    let stream_id = match &id_code {
+        Some(id_code) => state.id_deriver.derive_stream_id(id_code, election),
         None => StreamId::new(),
     };
 
@@ -49,7 +47,7 @@ pub async fn dev_login(
     let locale = request_locale(&headers);
     let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
-    session.bsn = bsn;
+    session.id_code = id_code;
 
     state.sessions.cleanup_expired();
     state.sessions.insert(session.clone());
@@ -100,19 +98,17 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{
-        AppState, common::Bsn, router, store::StoreEvent, test_utils::response_body_string,
-    };
+    use crate::{AppState, router, store::StoreEvent, test_utils::response_body_string};
 
     use super::*;
 
-    const TEST_BSN: &str = "999999990";
+    const TEST_ID_CODE: &str = "999999990";
 
-    fn derive_test_id(state: &AppState, bsn_str: &str) -> StreamId {
-        let bsn: Bsn = bsn_str.parse().expect("valid test BSN");
+    fn derive_test_id(state: &AppState, id_code_str: &str) -> StreamId {
+        let id_code: SecretString = id_code_str.into();
         state
-            .bsn_id_deriver
-            .derive_stream_id(&bsn, ElectionConfig::EK27)
+            .id_deriver
+            .derive_stream_id(&id_code, ElectionConfig::EK27)
     }
 
     fn cookie_value(response: &axum::response::Response) -> &str {
@@ -132,7 +128,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap(),
@@ -149,7 +145,10 @@ mod tests {
             .expect("session token");
         let session = state.sessions.get(token).expect("session");
         assert_eq!(session.locale, Locale::En);
-        assert_eq!(session.stream_id, Some(derive_test_id(&state, TEST_BSN)));
+        assert_eq!(
+            session.stream_id,
+            Some(derive_test_id(&state, TEST_ID_CODE))
+        );
     }
 
     #[tokio::test]
@@ -161,7 +160,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -183,7 +182,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
@@ -202,7 +201,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -224,7 +223,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
@@ -255,7 +254,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=true"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=true"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -264,7 +263,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)

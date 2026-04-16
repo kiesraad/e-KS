@@ -4,7 +4,7 @@ use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 use std::time::{Duration, Instant};
 
-use crate::{CsrfTokens, Locale, StreamId, common::Bsn};
+use crate::{CsrfTokens, Locale, StreamId};
 
 /// Idle timeout after which a session is considered expired.
 pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
@@ -56,8 +56,8 @@ pub struct Session {
     pub last_activity: Instant,
     /// Stream (BSN + election scoped) associated with this session (set on login).
     pub stream_id: Option<StreamId>,
-    /// BSN used to derive stream IDs (kept for election switching).
-    pub bsn: Option<Bsn>,
+    /// ID code used to derive stream IDs (kept for election switching).
+    pub id_code: Option<SecretString>,
     /// Active locale for the session.
     pub locale: Locale,
     /// CSRF tokens scoped to this session.
@@ -95,7 +95,7 @@ impl Session {
             token: generate_session_token(),
             last_activity: Instant::now(),
             stream_id: None,
-            bsn: None,
+            id_code: None,
             locale,
             csrf_tokens: CsrfTokens::default(),
         }
