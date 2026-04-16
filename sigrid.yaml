@@ -41,3 +41,8 @@ architecture:
 
 thirdpartyfindings:
   enabled: true
+  exclude:
+    - ".*[.]md"
+    - ".*/deploy/.*"
+    - ".*/offline/.*"
+    - ".*/development/.*"
