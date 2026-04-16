@@ -30,8 +30,8 @@ pub async fn switch_election(
     State(state): State<AppState>,
     context: Context,
 ) -> Result<Response, AppError> {
-    let existing_elections = match &context.session.bsn {
-        Some(bsn) => state.existing_elections_for_bsn(bsn).await?,
+    let existing_elections = match &context.session.id_code {
+        Some(code) => state.existing_elections_for_code(code).await?,
         None => Vec::new(),
     };
 
@@ -72,12 +72,12 @@ pub async fn switch_election_submit(
         return Ok(Redirect::to("/switch-election").into_response());
     };
 
-    let stream_id = match &session.bsn {
-        Some(bsn) => state.bsn_id_deriver.derive_stream_id(bsn, election),
+    let stream_id = match &session.id_code {
+        Some(code) => state.id_deriver.derive_stream_id(code, election),
         None => crate::StreamId::new(),
     };
 
-    // Short-circuit if already on this election (same BSN + election = same stream)
+    // Short-circuit if already on this election (same ID code + election = same stream)
     if Some(stream_id) == session.stream_id {
         return Ok(Redirect::to("/").into_response());
     }
@@ -171,8 +171,8 @@ mod tests {
 
         // Verify session stream was updated
         let session = state.sessions.get(token_value).expect("session");
-        let expected_stream_id = state.bsn_id_deriver.derive_stream_id(
-            &session.bsn.clone().expect("bsn"),
+        let expected_stream_id = state.id_deriver.derive_stream_id(
+            &session.id_code.clone().expect("id_code"),
             ElectionConfig::PS27(Province::GR),
         );
         assert_eq!(session.stream_id, Some(expected_stream_id));

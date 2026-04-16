@@ -1,7 +1,7 @@
 //! Authentication and session helpers.
 
 /// BSN-based identifier derivation using HKDF-SHA256.
-pub mod bsn_id;
+pub mod derive_id;
 #[cfg(feature = "dev-features")]
 pub mod dev_login;
 /// Session model and token utilities.
