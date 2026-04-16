@@ -25,7 +25,7 @@ jobs:
           persist-credentials: false
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@81e265f85c71d8d8003da171e2b054bbcab93f5f # main
+        uses: Software-Improvement-Group/sigridci@e1f6c2571641f0ec2f7e29bbd90db8cd4fb7f54e # main
         with:
           customer: kiesraad
           system: e-ks
@@ -35,7 +35,7 @@ jobs:
           SIGRID_CI_TOKEN: "${{ secrets.SIGRID_CI_TOKEN }}"
 
       - name: "Sigrid PR feedback"
-        uses: actions/github-script@ed597411d8f924073f98dfc5c65a23a2325f34cd # v8.0.0
+        uses: actions/github-script@3a2844b7e9c422d3c10d287c895573f7108da1b3 # v9.0.0
         if: always()
         with:
           script: |
