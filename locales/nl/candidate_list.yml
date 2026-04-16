@@ -6,9 +6,9 @@ actions:
   back_to_list: Terug
   delete_list: Kandidatenlijst verwijderen
   edit: Aanpassen
-  export_csv: CSV bestand downloaden
-  import_csv: CSV bestand uploaden
-  import_export: Kandidaten importeren / exporteren
+  export_csv: Download CSV bestand
+  import_csv: Upload CSV bestand
+  import_export: Import en export kandidatenlijst
   import_export_csv: CSV
   select_all_districts: Selecteer alle kieskringen
 add_all: Alle kandidaten toevoegen
@@ -54,10 +54,10 @@ import_errors:
   missing_file: Selecteer een CSV-bestand om te importeren.
   parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
 import_export:
-  export_title: Exporteer kandidaten
+  export_title: Exporteren
   import_description: Gebruik een CSV-bestand om kandidaten op deze lijst te importeren.
   import_failed: Importeren niet gelukt
-  import_title: Importeer kandidaten
+  import_title: Importeren
   overwrite_title: Let op!
 import_warning: Deze lijst bevat al kandidaten. Het importeren van kandidaten zal de huidige kandidaten in deze lijst overschrijven. Weet u zeker dat u door wilt gaan?
 not_found: "Kandidatenlijst {} niet gevonden."

@@ -6,9 +6,9 @@ actions:
   back_to_list: Back
   delete_list: Delete candidate list
   edit: Edit list
-  export_csv: Export as CSV
-  import_csv: Import as CSV
-  import_export: Import/export candidates
+  export_csv: Download CSV file
+  import_csv: Upload CSV file
+  import_export: Import and export candidate list
   import_export_csv: CSV
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
@@ -54,10 +54,10 @@ import_errors:
   missing_file: Please select a CSV file to import.
   parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
 import_export:
-  export_title: Export candidates
+  export_title: Export
   import_description: Use a CSV file to replace the candidates on this list.
   import_failed: Import failed
-  import_title: Import candidates
+  import_title: Import
   overwrite_title: Warning
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."

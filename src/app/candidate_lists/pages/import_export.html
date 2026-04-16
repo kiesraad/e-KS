@@ -6,7 +6,7 @@
     <h2>{{ "candidate_list.import_export.export_title"|trans }}</h2>
     <p class="mb-xl">
       <a href="{{ list.export_path() }}"
-         class="button secondary icon-down"
+         class="button icon-down"
          type="button">{{ "candidate_list.actions.export_csv"|trans }}</a>
     </p>
     <h2>{{ "candidate_list.import_export.import_title"|trans }}</h2>
@@ -25,7 +25,7 @@
     <p>
       {% if list.candidates.len() > 0 %}
         {# open a modal with overwrite confirmation #}
-        <button class="button secondary icon-up open-modal" type="button">
+        <button class="button icon-up open-modal" type="button">
           {{ "candidate_list.actions.import_csv"|trans }}
         </button>
         <dialog class="modal">
