@@ -55,10 +55,13 @@ Deze termen zijn allemaal te vinden op <https://english.kiesraad.nl/>.
 | kandidatenlijst                                          |           | list of candidates                          |             |
 | kandidaat                                                |           | candidate                                   |             |
 | lijst inleveraar                                         |           | submitter of the list                       |             |
-| vervanger herstel verzuim                                |           | substitute submitter of the list            |             |
+| vervanger herstel verzuim                                |           | substitute submitter of the list            | See below   |
 | centraal stembureau                                      | CSB       | central electoral committee                 |             |
 | college van burgemeester en wethouders                   | B&W       | municipal executive of mayor and aldermen   |             |
 | ministerie van Binnenlandse Zaken en Koninkrijksrelaties | BZK       | ministry for Interior and Kingdom Relations |             |
+
+Note that "vervanger herstel verzuim" is called "plaatsvervanger van de inleveraar" in EML-NL. Normally speaking, the list submitter also handles any "verzuim", but in case the original list submitter becomes unavailable, the "vervanger" can do this instead. If the list submitter becomes unavailable *before* handing in the files, a different list submitter will need to be set and put on the models such that the initial submission is always done by the list submitter.
+
 
 ## Kandidaatstelling
 
