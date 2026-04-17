@@ -2,11 +2,11 @@
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
 use crate::{
-    AppError, AppStore, AppStoreData, BsnIdDeriver, Config, ElectionConfig, SessionStore, StreamId,
-    common::Bsn,
+    AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, SessionStore, StreamId,
     store::{EventEncryption, StoreRegistry},
 };
 use axum::extract::FromRef;
+use secrecy::SecretString;
 
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
@@ -15,7 +15,7 @@ pub struct AppState {
     pub store_registry: StoreRegistry<AppStoreData>,
     /// Active in-memory sessions for this application instance.
     pub sessions: SessionStore,
-    pub bsn_id_deriver: BsnIdDeriver,
+    pub id_deriver: IdDeriver,
 }
 
 impl AppState {
@@ -28,13 +28,13 @@ impl AppState {
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
         let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
-        let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
+        let id_deriver = IdDeriver::new(&config.id_derivation_key);
 
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions: SessionStore::new(),
-            bsn_id_deriver,
+            id_deriver,
         })
     }
 
@@ -63,14 +63,14 @@ impl AppState {
     }
 
     /// Find which elections already have persisted data for the given BSN.
-    pub async fn existing_elections_for_bsn(
+    pub async fn existing_elections_for_code(
         &self,
-        bsn: &Bsn,
+        code: &SecretString,
     ) -> Result<Vec<ElectionConfig>, AppError> {
         let all = ElectionConfig::all();
         let stream_ids: Vec<_> = all
             .iter()
-            .map(|e| self.bsn_id_deriver.derive_stream_id(bsn, *e).uuid())
+            .map(|e| self.id_deriver.derive_stream_id(code, *e).uuid())
             .collect();
 
         let found = self.store_registry.streams_with_data(&stream_ids).await?;
@@ -86,7 +86,7 @@ impl AppState {
     #[cfg(test)]
     pub async fn new_for_tests() -> Self {
         let config = Config::new_test();
-        let bsn_id_deriver = BsnIdDeriver::new(&config.id_derivation_key);
+        let id_deriver = IdDeriver::new(&config.id_derivation_key);
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
 
         Self {
@@ -95,7 +95,7 @@ impl AppState {
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions: SessionStore::new(),
-            bsn_id_deriver,
+            id_deriver,
         }
     }
 }
