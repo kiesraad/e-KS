@@ -21,7 +21,7 @@ impl AppStore {
 
         let mut lists: Vec<CandidateList> = data.candidate_lists.values().cloned().collect();
 
-        lists.sort_unstable_by(|a, b| a.created_at.cmp(&b.created_at));
+        lists.sort_unstable_by_key(|l| l.created_at);
 
         lists
     }
