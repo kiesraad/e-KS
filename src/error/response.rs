@@ -202,7 +202,7 @@ mod tests {
             .layer(middleware::from_fn_with_state(state, render_error_pages));
 
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let mut session = crate::Session::new_with_locale(Locale::En);
+        let mut session = crate::Session::new_test_with_locale(Locale::En);
         session.set_stream_id(crate::StreamId::new());
         request.extensions_mut().insert(session);
         request.extensions_mut().insert(store);
@@ -228,7 +228,7 @@ mod tests {
             )
             .layer(middleware::from_fn_with_state(state, render_error_pages));
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let mut session = crate::Session::new_with_locale(Locale::En);
+        let mut session = crate::Session::new_test_with_locale(Locale::En);
         session.set_stream_id(crate::StreamId::new());
         request.extensions_mut().insert(session);
         request.extensions_mut().insert(store);
@@ -251,7 +251,7 @@ mod tests {
             )
             .layer(middleware::from_fn_with_state(state, render_error_pages));
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let mut session = crate::Session::new_with_locale(Locale::En);
+        let mut session = crate::Session::new_test_with_locale(Locale::En);
         session.set_stream_id(crate::StreamId::new());
         request.extensions_mut().insert(session);
         request.extensions_mut().insert(store);

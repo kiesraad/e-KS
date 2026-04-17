@@ -7,7 +7,10 @@ mod forms;
 mod pages;
 mod structs;
 
-pub use forms::{DutchAddressForm, FullNameForm, InternationalAddressForm, SwitchElectionForm};
+pub use forms::{
+    DutchAddressForm, FullNameForm, InternationalAddressForm, SelectElectionForm,
+    SwitchElectionForm,
+};
 pub use structs::{
     Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
     DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,
@@ -16,4 +19,7 @@ pub use structs::{
     UtcDateTime,
 };
 
-pub use pages::{IndexPath, SwitchElectionPath, SwitchLanguagePath, not_found, router};
+pub use pages::{
+    IndexPath, SelectElectionPath, SwitchElectionPath, SwitchLanguagePath, not_found, router,
+    select_election_router,
+};
