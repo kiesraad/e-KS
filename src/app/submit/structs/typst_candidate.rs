@@ -43,7 +43,7 @@ pub fn ordered_candidates(
     candidates: &mut [crate::candidates::Candidate],
     locale: ModelLocale,
 ) -> Result<Vec<TypstCandidate>, AppError> {
-    candidates.sort_by(|a, b| a.position.cmp(&b.position));
+    candidates.sort_by_key(|candidate| candidate.position);
     for (i, candidate) in candidates.iter().enumerate() {
         if candidate.position != i + 1 {
             error!(

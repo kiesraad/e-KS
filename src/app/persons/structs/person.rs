@@ -188,9 +188,6 @@ impl Person {
             persons.reverse();
         }
 
-        let offset = offset.max(0);
-        let limit = limit.max(0);
-
         Ok(persons.into_iter().skip(offset).take(limit).collect())
     }
 }
