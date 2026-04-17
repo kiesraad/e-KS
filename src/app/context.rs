@@ -49,7 +49,7 @@ impl Context {
     pub fn new_test_without_db() -> Self {
         let store = AppStore::new_for_test();
 
-        Self::new(&store, Session::new_with_locale(Locale::En))
+        Self::new(&store, Session::new_test_with_locale(Locale::En))
     }
 
     pub fn livereload_enabled() -> bool {

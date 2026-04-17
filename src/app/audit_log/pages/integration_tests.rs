@@ -6,7 +6,7 @@ use axum::{
 use tower::ServiceExt;
 
 use crate::{
-    AppState, AppStore, Locale, Session,
+    AppState, AppStore, ElectionConfig, Locale, Session, StreamId,
     persons::PersonId,
     test_utils::{response_body_string, sample_person, sample_political_group},
 };
@@ -15,11 +15,19 @@ async fn setup() -> (Router, AppStore, String) {
     let state = AppState::new_for_tests().await;
     let app: Router = crate::router::create(state.clone()).with_state(state.clone());
 
-    let session = Session::new_with_locale(Locale::En);
+    let stream_id = StreamId::new();
+    // Prime the registry with an empty store so `store_middleware` returns the
+    // same instance the test uses to seed events (bypassing fixture loading).
+    let store = state
+        .store_registry
+        .get_or_create(stream_id.uuid(), ElectionConfig::EK27)
+        .await
+        .expect("store");
+
+    let mut session = Session::new_test_with_locale(Locale::En);
+    session.set_stream_id(stream_id);
     let token = session.token().to_exposed_string();
     state.sessions.insert(session);
-
-    let store = AppStore::new_for_test();
 
     (app, store, token)
 }

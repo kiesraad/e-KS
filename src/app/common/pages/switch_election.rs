@@ -9,7 +9,7 @@ use crate::{
     Session, TokenValue, WaterCouncil, common::SwitchElectionForm, filters,
 };
 
-use super::SwitchElectionPath;
+use super::{IndexPath, SwitchElectionPath};
 
 #[derive(Template)]
 #[template(path = "common/pages/switch_election.html")]
@@ -30,10 +30,9 @@ pub async fn switch_election(
     State(state): State<AppState>,
     context: Context,
 ) -> Result<Response, AppError> {
-    let existing_elections = match &context.session.id_code {
-        Some(code) => state.existing_elections_for_code(code).await?,
-        None => Vec::new(),
-    };
+    let existing_elections = state
+        .existing_elections_for_code(&context.session.id_code)
+        .await?;
 
     let csrf_token = context.session.csrf_tokens.issue();
     let elections = ElectionConfig::type_options();
@@ -69,26 +68,25 @@ pub async fn switch_election_submit(
     }
 
     let Some(election) = form.into_election_config() else {
-        return Ok(Redirect::to("/switch-election").into_response());
+        return Ok(Redirect::to(&SwitchElectionPath.to_string()).into_response());
     };
 
-    let stream_id = match &session.id_code {
-        Some(code) => state.id_deriver.derive_stream_id(code, election),
-        None => crate::StreamId::new(),
-    };
+    let stream_id = state
+        .id_deriver
+        .derive_stream_id(&session.id_code, election);
 
     // Short-circuit if already on this election (same ID code + election = same stream)
     if Some(stream_id) == session.stream_id {
-        return Ok(Redirect::to("/").into_response());
+        return Ok(Redirect::to(&IndexPath.to_string()).into_response());
     }
 
     // Ensure the stream/store exists for the new election
-    state.store_for_stream(stream_id, election).await?;
+    state.store_for_stream(stream_id, election, false).await?;
 
     session.set_stream_id(stream_id);
     state.sessions.insert(session);
 
-    Ok(Redirect::to("/").into_response())
+    Ok(Redirect::to(&IndexPath.to_string()).into_response())
 }
 
 #[cfg(test)]
@@ -103,6 +101,7 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::{AppState, ElectionConfig, Province, session_middleware, store_middleware};
+    use secrecy::SecretString;
 
     use super::*;
 
@@ -122,31 +121,23 @@ mod tests {
             ))
             .with_state(state.clone());
 
-        // First request to get a session cookie
-        let first = app
-            .clone()
-            .oneshot(
-                Request::builder()
-                    .uri("/switch-election")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+        // Pre-create a session with a stream
+        let id_code: SecretString = "999999990".into();
+        let stream_id = state
+            .id_deriver
+            .derive_stream_id(&id_code, ElectionConfig::EK27);
+        state
+            .store_for_stream(stream_id, ElectionConfig::EK27, false)
             .await
-            .expect("response");
+            .expect("store");
 
-        assert_eq!(first.status(), StatusCode::OK);
-
-        let cookie = first
-            .headers()
-            .get(header::SET_COOKIE)
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(';').next())
-            .expect("cookie");
-
-        // Issue a CSRF token for the session
-        let token_value = cookie.split_once('=').map(|(_, v)| v).expect("token value");
-        let session = state.sessions.get(token_value).expect("session");
+        let mut session = crate::Session::new(&id_code);
+        session.set_stream_id(stream_id);
+        let token_value = session.token().to_exposed_string();
         let csrf_token = session.csrf_tokens.issue();
+        state.sessions.insert(session);
+
+        let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);
 
         // Submit switch to PS27 Groningen
         let body = format!(
@@ -158,7 +149,7 @@ mod tests {
                 Request::builder()
                     .method("POST")
                     .uri("/switch-election")
-                    .header(header::COOKIE, cookie)
+                    .header(header::COOKIE, &cookie)
                     .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
                     .body(Body::from(body))
                     .unwrap(),
@@ -170,11 +161,10 @@ mod tests {
         assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
 
         // Verify session stream was updated
-        let session = state.sessions.get(token_value).expect("session");
-        let expected_stream_id = state.id_deriver.derive_stream_id(
-            &session.id_code.clone().expect("id_code"),
-            ElectionConfig::PS27(Province::GR),
-        );
+        let session = state.sessions.get(&token_value).expect("session");
+        let expected_stream_id = state
+            .id_deriver
+            .derive_stream_id(&id_code, ElectionConfig::PS27(Province::GR));
         assert_eq!(session.stream_id, Some(expected_stream_id));
     }
 }

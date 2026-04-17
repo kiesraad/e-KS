@@ -48,11 +48,11 @@ async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
     let state = AppState::new_with_config(config).await?;
     let stream_id = StreamId::new();
     let store = state
-        .store_for_stream(stream_id, ElectionConfig::EK27)
+        .store_for_stream(stream_id, ElectionConfig::EK27, true)
         .await?;
     sample_political_group().update(&store).await?;
 
-    let mut session = Session::new_with_locale(Locale::En);
+    let mut session = Session::new_test_with_locale(Locale::En);
     session.set_stream_id(stream_id);
 
     Ok((super::router().with_state(state), store, session))
