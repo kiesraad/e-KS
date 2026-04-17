@@ -25,4 +25,13 @@ async selectedElection(election: string) {
 await expect(this.page.getByRole('cell', { name: election })).toBeVisible();
   }
 
-}
+  async verifyElectionExists(election: string, region: string) {
+    let tableRows = await this.page.locator('table tbody tr').all();
+    console.log(await tableRows.length);
+    let row = tableRows.filter({ has: this.page.getByRole('cell', { name: election }) });
+    console.log(await row.count());
+    row = row.filter({ has: this.page.getByRole('cell', { name: region }) });
+    await expect(row).toBeVisible();
+    await expect(row).toHaveCount(1);
+  }
+  }

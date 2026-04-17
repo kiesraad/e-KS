@@ -5,7 +5,7 @@ import type { ListSubmitter } from "./models/listSubmitter.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ChooseListSubmitterPage } from "./pages/chooseListSubmitterPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
-import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {
@@ -14,7 +14,7 @@ test.describe("add candidate list", async () => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
-    await new SelectElectoralDistrictsPage(page).selectDistricts([
+    await new EditListDetailsPage(page).addDistricts([
       "Drenthe",
       "Groningen",
       "Overijssel",
@@ -56,38 +56,39 @@ test.describe("add candidate list", async () => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
-    await new SelectElectoralDistrictsPage(page).selectDistricts([
+    await new EditListDetailsPage(page).addDistricts([
       "Zeeland",
       "Limburg",
       "Overijssel",
     ]);
+    await expect(page.getByRole("heading", { name: "Kandidatenlijst" })).toBeVisible();
+    const candidatelistURL = page.url();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeList();
-    for (const district of ["Zeeland", "Limburg", "Overijssel"]) {
-      await expect(
-        await manageCandidateListPage.getDistrictLocator(district),
-      ).toHaveCount(0);
-    }
+    await page.goto(candidatelistURL);
+    await expect(page.getByRole("heading", { name: "Not found" })).toBeVisible();
   });
 
   test("edit electoral districts", async ({ login: page }) => {
-    const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
     await page.goto("/candidate-lists");
-    await candidateListsOverviewPage.linkCandidateList.first().click();
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await new EditListDetailsPage(page).addDistricts([
+      "Zeeland",
+      "Groningen",
+      "Overijssel",
+    ]);
+    await expect(page.locator("//li/span[text()='Zeeland']")).toBeVisible();
+    await expect(page.locator("//li/span[text()='Groningen']")).toBeVisible();
+    await expect(page.locator("//li/span[text()='Overijssel']")).toBeVisible();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeDistricts([
-      "Utrecht",
-      "Flevoland",
-      "Kiescollege Saba",
+      "Zeeland",
+      "Overijssel",
     ]);
-
-    await page.goto("/candidate-lists");
-
-    for (const district of ["Utrecht", "Flevoland", "Kiescollege Saba"]) {
-      await expect(
-        await manageCandidateListPage.getDistrictLocator(district),
-      ).toHaveCount(0);
-    }
+    await expect(page.locator("//li/span[text()='Zeeland']")).not.toBeVisible();
+    await expect(page.locator("//li/span[text()='Groningen']")).toBeVisible();
+    await expect(page.locator("//li/span[text()='Overijssel']")).not.toBeVisible();
   });
 
   test("edit list submitters", async ({ login: page }) => {

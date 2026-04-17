@@ -20,9 +20,11 @@ test.describe("switch election", async () => {
     await page.goto("/switch-election");
     const switchElectionPage = new SwitchElectionPage(page);
     await expect(switchElectionPage.headerSwitchElection).toBeVisible();
-    await switchElectionPage.dropdownElections.selectOption("Waterschapverkiezingen 2027");
+    await switchElectionPage.dropdownElections.selectOption("Waterschapsverkiezingen 2027");
     await switchElectionPage.dropdownWaterAuthorities.selectOption("Hunze en Aa's");
     await switchElectionPage.buttonSwitch.click();
+    await page.goto("/switch-election");
+    await switchElectionPage.verifyElectionExists("Waterschapsverkiezingen 2027", "Hunze en Aa's");
   });
 });
 

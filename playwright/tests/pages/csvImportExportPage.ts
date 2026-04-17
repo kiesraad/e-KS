@@ -1,4 +1,5 @@
 import type { Locator, Page } from "@playwright/test";
+import path from "node:path";
 
 export class CsvImportExportPage {
   readonly buttonDownload: Locator;
@@ -28,4 +29,13 @@ export class CsvImportExportPage {
   async getValidationErrors(validationError: string) {
     return this.page.getByText(`Controleer veld ${validationError}`);
   }
+
+  async uploadCsvFile(filePath: string) {
+    await this.buttonUpload.click();
+        const [fileChooser] = await Promise.all([
+          this.page.waitForEvent("filechooser"),
+          this.buttonContinue.click(),
+        ]);
+        await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
+      }
 }
