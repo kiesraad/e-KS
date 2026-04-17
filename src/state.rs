@@ -1,12 +1,23 @@
 //! Application state container and request extractors.
 //! Holds, among others: configuration, store, and CSRF tokens for handlers.
 
-use crate::{
-    AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, SessionStore, StreamId,
-    store::{EventEncryption, StoreRegistry},
+use auth_service::AuthState;
+use axum::{
+    extract::FromRef,
+    http::HeaderMap,
+    response::{IntoResponse, Redirect, Response},
 };
-use axum::extract::FromRef;
+use axum_extra::extract::{CookieJar, cookie::Cookie};
 use secrecy::SecretString;
+
+use crate::{
+    AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, Session, SessionStore,
+    StreamId,
+    auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
+    common::{IndexPath, SelectElectionPath},
+    store::{EventEncryption, StoreRegistry},
+    utils::random_bsn,
+};
 
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
@@ -42,12 +53,13 @@ impl AppState {
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
+        load_fixtures: bool,
     ) -> Result<AppStore, AppError> {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
                 .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
-                    if store.data.read().events.is_empty() && !election.has_only_one_district() {
+                    if store.data.read().events.is_empty() && load_fixtures {
                         crate::fixtures::load(&store, election).await?;
                     }
                     Ok(())
@@ -56,6 +68,8 @@ impl AppState {
         }
         #[cfg(not(feature = "fixtures"))]
         {
+            let _ = load_fixtures; // avoid unused parameter warning
+
             self.store_registry
                 .get_or_create(stream_id.uuid(), election)
                 .await
@@ -97,6 +111,59 @@ impl AppState {
             sessions: SessionStore::new(),
             id_deriver,
         }
+    }
+}
+
+fn request_locale(headers: &HeaderMap) -> crate::Locale {
+    headers
+        .get(axum::http::header::ACCEPT_LANGUAGE)
+        .and_then(|value| value.to_str().ok())
+        .and_then(crate::Locale::from_accept_language)
+        .unwrap_or_default()
+}
+
+impl AuthState for AppState {
+    async fn on_authenticated(&self, jar: CookieJar, headers: &HeaderMap) -> Response {
+        let id_code = random_bsn();
+        let mut session = Session::new_with_locale(&id_code, request_locale(headers));
+
+        let existing_election = self
+            .existing_elections_for_code(&id_code)
+            .await
+            .ok()
+            .and_then(|list| list.into_iter().next());
+
+        let redirect_to = if let Some(election) = existing_election {
+            let stream_id = self.id_deriver.derive_stream_id(&id_code, election);
+
+            if let Err(err) = self.store_for_stream(stream_id, election, false).await {
+                return err.into_response();
+            }
+
+            session.set_stream_id(stream_id);
+
+            IndexPath.to_string()
+        } else {
+            SelectElectionPath.to_string()
+        };
+
+        self.sessions.cleanup_expired();
+        self.sessions.insert(session.clone());
+
+        (
+            jar.add(build_session_cookie(&session)),
+            Redirect::to(&redirect_to),
+        )
+            .into_response()
+    }
+
+    async fn logout_session(&self, jar: CookieJar) -> Option<CookieJar> {
+        let token = jar.get(SESSION_COOKIE_NAME)?.value().to_string();
+        let _session = self.sessions.remove(&token)?;
+        let mut clear = Cookie::from(SESSION_COOKIE_NAME);
+        clear.set_path("/");
+
+        Some(jar.remove(clear))
     }
 }
 

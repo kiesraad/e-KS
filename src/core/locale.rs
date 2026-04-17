@@ -107,7 +107,7 @@ mod tests {
             .unwrap();
         request
             .extensions_mut()
-            .insert(Session::new_with_locale(Locale::En));
+            .insert(Session::new_test_with_locale(Locale::En));
         let (mut parts, _body) = request.into_parts();
 
         let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();

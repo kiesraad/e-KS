@@ -59,17 +59,25 @@ pub fn create(state: AppState) -> Router<AppState> {
         .layer(middleware::from_fn_with_state(
             state.clone(),
             store_middleware,
-        ))
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            session_middleware,
         ));
+
+    // select-election needs session but NOT store middleware
+    // (the store requires a stream_id which is chosen on this page)
+    let app_router =
+        app_router
+            .merge(common::select_election_router())
+            .layer(middleware::from_fn_with_state(
+                state.clone(),
+                session_middleware,
+            ));
 
     #[cfg(feature = "dev-features")]
     let router = Router::new().merge(dev_router).merge(app_router);
 
     #[cfg(not(feature = "dev-features"))]
     let router = app_router;
+
+    let router = router.merge(auth_service::router());
 
     let router = router
         .layer(SetResponseHeaderLayer::if_not_present(
@@ -145,7 +153,8 @@ mod tests {
         let app: Router = create(state.clone()).with_state(state.clone());
 
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
-        let session = crate::Session::new();
+        let mut session = crate::Session::new_test();
+        session.set_stream_id(crate::StreamId::new());
         let token = session.token().to_exposed_string();
         state.sessions.insert(session);
         let store = crate::AppStore::new_for_test();
@@ -172,7 +181,8 @@ mod tests {
             .uri("/missing")
             .body(Body::empty())
             .unwrap();
-        let session = crate::Session::new();
+        let mut session = crate::Session::new_test();
+        session.set_stream_id(crate::StreamId::new());
         let token = session.token().to_exposed_string();
         state.sessions.insert(session);
         let store = crate::AppStore::new_for_test();

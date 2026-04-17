@@ -8,7 +8,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Session, StreamId,
-    auth::session_extractor::build_session_cookie, political_groups::PoliticalGroup, store::Store,
+    auth::session_extractor::build_session_cookie, common::IndexPath,
+    political_groups::PoliticalGroup, store::Store, utils::random_bsn,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -26,16 +27,14 @@ pub async fn dev_login(
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
     let election = ElectionConfig::EK27;
-    let id_code: Option<SecretString> = query
+    let id_code: SecretString = query
         .bsn
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(SecretString::from);
+        .map(SecretString::from)
+        .unwrap_or_else(random_bsn);
 
-    let stream_id = match &id_code {
-        Some(id_code) => state.id_deriver.derive_stream_id(id_code, election),
-        None => StreamId::new(),
-    };
+    let stream_id = state.id_deriver.derive_stream_id(&id_code, election);
 
     let load_fixtures = query.fixtures.unwrap_or(false);
     let (store, was_new) = ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
@@ -45,14 +44,16 @@ pub async fn dev_login(
     }
 
     let locale = request_locale(&headers);
-    let mut session = Session::new_with_locale(locale);
+    let mut session = Session::new_with_locale(&id_code, locale);
     session.set_stream_id(stream_id);
-    session.id_code = id_code;
 
     state.sessions.cleanup_expired();
     state.sessions.insert(session.clone());
 
-    Ok((jar.add(build_session_cookie(&session)), Redirect::to("/")))
+    Ok((
+        jar.add(build_session_cookie(&session)),
+        Redirect::to(&IndexPath.to_string()),
+    ))
 }
 
 pub(crate) fn request_locale(headers: &axum::http::HeaderMap) -> Locale {

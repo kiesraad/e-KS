@@ -54,10 +54,10 @@ pub struct Session {
     token: SessionToken,
     /// Timestamp of the last activity for idle-timeout validation.
     pub last_activity: Instant,
+    /// ID code used to identify the user and derive stream IDs (kept for election switching).
+    pub id_code: SecretString,
     /// Stream (BSN + election scoped) associated with this session (set on login).
     pub stream_id: Option<StreamId>,
-    /// ID code used to derive stream IDs (kept for election switching).
-    pub id_code: Option<SecretString>,
     /// Active locale for the session.
     pub locale: Locale,
     /// CSRF tokens scoped to this session.
@@ -85,17 +85,27 @@ impl Eq for Session {}
 
 impl Session {
     /// Creates a new session with a cryptographically strong random token.
-    pub fn new() -> Self {
-        Self::new_with_locale(Locale::default())
+    pub fn new(id_code: &SecretString) -> Self {
+        Self::new_with_locale(id_code, Locale::default())
+    }
+
+    #[cfg(test)]
+    pub fn new_test() -> Self {
+        Self::new_with_locale(&"test_id_code".into(), Locale::default())
+    }
+
+    #[cfg(test)]
+    pub fn new_test_with_locale(locale: Locale) -> Self {
+        Self::new_with_locale(&"test_id_code".into(), locale)
     }
 
     /// Creates a new session using the provided locale.
-    pub fn new_with_locale(locale: Locale) -> Self {
+    pub fn new_with_locale(id_code: &SecretString, locale: Locale) -> Self {
         Self {
             token: generate_session_token(),
             last_activity: Instant::now(),
             stream_id: None,
-            id_code: None,
+            id_code: id_code.clone(),
             locale,
             csrf_tokens: CsrfTokens::default(),
         }
@@ -117,9 +127,10 @@ impl Session {
     }
 }
 
+#[cfg(test)]
 impl Default for Session {
     fn default() -> Self {
-        Self::new()
+        Self::new_test()
     }
 }
 
@@ -142,7 +153,7 @@ mod tests {
     /// Ensures session tokens are 42-char base62 strings (~250-bit entropy).
     #[test]
     fn new_generates_base62_token() {
-        let session = Session::new();
+        let session = Session::new_test();
 
         assert_eq!(session.token().expose().len(), 42);
         assert!(
@@ -157,7 +168,7 @@ mod tests {
     /// Confirms idle timeout invalidates stale sessions.
     #[test]
     fn session_expires_after_idle_timeout() {
-        let mut session = Session::new();
+        let mut session = Session::new_test();
         session.last_activity = Instant::now() - SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
 
         assert!(session.is_expired());

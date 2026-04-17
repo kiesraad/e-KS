@@ -16,6 +16,11 @@ languages:
   frisian: Frisian
 no_label: "No"
 save_success: saved
+select_election:
+  description: Select the election you want to work on to continue.
+  label: Select election
+  load_fixtures: Load fixture data for this election
+  submit: Continue
 step: "Step {}"
 steps: Steps
 submit: Finalize
