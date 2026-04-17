@@ -2,52 +2,87 @@
 {% set close_action = list.view_path() %}
 {% block overlay_title %}{{ "candidate_list.actions.import_export"|trans }}{% endblock %}
 {% block overlay_content %}
-  <div class="form overlay-content">
-    <h2>{{ "candidate_list.import_export.export_title"|trans }}</h2>
-    <p class="mb-xl">
-      <a href="{{ list.export_path() }}"
-         class="button icon-down"
-         type="button">{{ "candidate_list.actions.export_csv"|trans }}</a>
-    </p>
-    <h2>{{ "candidate_list.import_export.import_title"|trans }}</h2>
-    <p class="font-italic mb-md">{{ "candidate_list.import_export.import_description"|trans }}</p>
-    <p class="mb-md" data-import-file-field>
-      <input type="file"
-             name="file_data"
-             id="import_file"
-             accept=".csv,text/csv"
-             required />
-    </p>
-    {% if !import_errors.is_empty() %}
-      <h4 class="warning-text">{{ "candidate_list.import_export.import_failed"|trans }}</h4>
-      {% for error in import_errors %}<div class="alert alert-warning">{{ error }}</div>{% endfor %}
-    {% endif %}
-    <p>
-      {% if list.candidates.len() > 0 %}
-        {# open a modal with overwrite confirmation #}
-        <button class="button icon-up open-modal" type="button">
-          {{ "candidate_list.actions.import_csv"|trans }}
-        </button>
-        <dialog class="modal">
-          <button class="close-modal" aria-label="{{ "action.close"|trans }}">
-            <span>{{ "action.close"|trans }}</span>
-          </button>
-          <h3>{{ "candidate_list.import_export.overwrite_title"|trans }}</h3>
-          <p class="mb-md">{{ "candidate_list.import_warning"|trans }}</p>
-          <button type="submit"
-                  class="button primary"
-                  data-import-file-trigger
-                  formenctype="multipart/form-data">{{ "action.continue"|trans }}</button>
-          <button type="button" class="button secondary close">{{ "action.cancel"|trans }}</button>
-        </dialog>
-      {% else %}
-        {# directly perform import #}
-        <button class="button secondary icon-up"
-                data-import-file-trigger
-                type="submit"
-                formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
-      {% endif %}
-    </p>
+  <div class="form overlay-content columns">
+      <div class="column">
+        <h2>{{ "candidate_list.import_export.import_title"|trans }}</h2>
+        <p class="mb-md" data-import-file-field>
+          <input type="file"
+                 name="file_data"
+                 id="import_file"
+                 accept=".csv,text/csv"
+                 required />
+        </p>
+        {% if !import_errors.is_empty() %}
+          <h4 class="warning-text">{{ "candidate_list.import_export.import_failed"|trans }}</h4>
+          {% for error in import_errors %}<div class="alert alert-warning">{{ error }}</div>{% endfor %}
+        {% endif %}
+        <p>
+          {% if list.candidates.len() > 0 %}
+            {# open a modal with overwrite confirmation #}
+            <button class="button icon-upload open-modal" type="button">{{ "candidate_list.actions.import_csv"|trans }}</button>
+            <dialog class="modal">
+              <button class="close-modal" aria-label="{{ "action.close"|trans }}">
+                <span>{{ "action.close"|trans }}</span>
+              </button>
+              <h3>{{ "candidate_list.import_export.overwrite_title"|trans }}</h3>
+              <p class="mb-md">{{ "candidate_list.import_warning"|trans }}</p>
+              <button type="submit"
+                      class="button primary"
+                      data-import-file-trigger
+                      formenctype="multipart/form-data">{{ "action.continue"|trans }}</button>
+              <button type="button" class="button secondary close">{{ "action.cancel"|trans }}</button>
+            </dialog>
+          {% else %}
+            {# directly perform import #}
+            <button class="button icon-upload"
+                    data-import-file-trigger
+                    type="submit"
+                    formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
+          {% endif %}
+          <div class="alert alert-info float-root">
+            <h4 class="mb-md font-bold">CSV-import instructies kandidatenlijst</h4>
+            <p>
+              Gebruik een CSV-bestand om kandidaten naar deze lijst te importeren. Het bestand moet aan de volgende eisen voldoen:
+            </p>
+            <p class="read-more-button mt-md" target="import-extra-info">Lees meer</p>
+            <div id="import-extra-info" class="hidden mt-md">
+              <p class="font-bold">Kopregels</p>
+              <p>Gebruik de correcte kolomnamen. Download het export-CSV-bestand en gebruik dit als sjabloon.</p>
+              <!-- Volgorde:
+    De volgorde van personen in het CSV-bestand bepaalt de volgorde op de kandidatenlijst.
+    Verplichte velden:
+    Minimaal de volgende velden moeten ingevuld zijn:
+        Voorletters
+        Achternaam
+    Geboortedatum:
+    Gebruik het formaat dd-mm-jjjj (bijvoorbeeld: 31-12-1990).
+
+    Geslacht:
+      Alleen de volgende waarden worden geaccepteerd:
+
+        female | frou | vrouw | f | v
+
+        male | man | m 
+    Adresgegevens:
+    Er zijn twee typen adressen:
+        Vul het correspondentieadres in als de persoon in Nederland woont.
+        Woont de persoon niet in Nederland, vul dan de gegevens van de gemachtigde in.
+    Postcode:
+Gebruik het formaat 1234AB -->
+              <p class="read-less-button mt-md">Lees minder</p>
+            </div>
+            <a href="{{ CandidateList::import_template_path() }}" class="button secondary icon-download float-right">Download CSV sjabloon</a>
+          </div>
+        </p>
+      </div>
+      <div class="column">
+        <h2>{{ "candidate_list.import_export.export_title"|trans }}</h2>
+        <p class="mb-xl">
+          <a href="{{ list.export_path() }}"
+             class="button icon-download"
+             type="button">{{ "candidate_list.actions.export_csv"|trans }}</a>
+        </p>
+      </div>
   </div>
 {% endblock %}
 {% block overlay_footer %}{% endblock %}

@@ -121,6 +121,10 @@ a.disabled {
   width: 100%;
 }
 
+.float-root {
+  display: flow-root;
+}
+
 .float-right {
   float: right;
 }
