@@ -175,7 +175,7 @@ impl ErrorResponse {
             },
             AppError::UserError(msg) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
-                message: msg.to_string(),
+                message: format!("Bad request: {msg}"),
             },
         }
     }

@@ -82,7 +82,7 @@ async fn ensure_dev_store(
     if load_fixtures {
         #[cfg(feature = "fixtures")]
         {
-            crate::fixtures::load(&store).await?;
+            crate::fixtures::load(&store, election).await?;
             return Ok((store, store_is_empty));
         }
     }

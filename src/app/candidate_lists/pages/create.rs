@@ -327,4 +327,100 @@ mod test {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn single_district_election_blocks_2nd_create_on_get() -> Result<(), AppError> {
+        let store =
+            AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::AaEnMaas));
+
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
+        context.election = ElectionConfig::WS27(WaterCouncil::AaEnMaas); // select election with only one district
+        sample_candidate_list(CandidateListId::new())
+            .create(&store)
+            .await?;
+
+        // test
+        let error = create_candidate_list(CandidateListCreatePath {}, context, store.clone())
+            .await
+            .err()
+            .unwrap();
+
+        // verify
+        match error {
+            AppError::UserError(msg) => assert_eq!(
+                msg,
+                "Cannot create more than one candidate list for single district elections"
+                    .to_string()
+            ),
+            _ => panic!("should be user error"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn single_district_election_blocks_create_on_post() -> Result<(), AppError> {
+        let store =
+            AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::AaEnMaas));
+
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
+        context.election = ElectionConfig::WS27(WaterCouncil::AaEnMaas); // select election with only one district
+
+        // test
+        let error = create_candidate_list_submit(
+            CandidateListCreatePath {},
+            context,
+            store,
+            Form(CandidateListCreateForm {
+                ..Default::default()
+            }),
+        )
+        .await
+        .err()
+        .unwrap();
+
+        // verify
+        match error {
+            AppError::UserError(msg) => assert_eq!(
+                msg,
+                "Not available for single district elections".to_string()
+            ),
+            _ => panic!("should be user error"),
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn district_outside_election_is_ignored() -> Result<(), AppError> {
+        // setup
+        let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
+        context.election = ElectionConfig::EK27;
+        let csrf_token = context.session.csrf_tokens.issue().value;
+
+        // test
+        let response = create_candidate_list_submit(
+            CandidateListCreatePath {},
+            context,
+            store.clone(),
+            Form(CandidateListCreateForm {
+                electoral_districts: vec![ElectoralDistrict::WsFryslan, ElectoralDistrict::UT],
+                copy_candidates: false,
+                csrf_token,
+            }),
+        )
+        .await?;
+
+        // verify
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let lists = store.get_candidate_lists();
+        assert_eq!(lists.len(), 1);
+        let list = &lists[0];
+        // WsFryslan got dropped because it's not part of EK27
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
+
+        Ok(())
+    }
 }
