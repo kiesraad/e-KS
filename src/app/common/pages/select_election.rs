@@ -20,7 +20,7 @@ struct SelectElectionTemplate {
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
     csrf_token: crate::CsrfToken,
-    dev_features: bool,
+    fixtures: bool,
 }
 
 struct LocaleValues {
@@ -54,7 +54,7 @@ pub async fn select_election(
         provinces: Province::ALL,
         water_councils: WaterCouncil::ALL,
         csrf_token,
-        dev_features: cfg!(feature = "dev-features"),
+        fixtures: cfg!(feature = "fixtures"),
     };
 
     let values = LocaleValues {
