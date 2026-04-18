@@ -1,8 +1,12 @@
 use chrono::NaiveDate;
+use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::str::FromStr;
+use std::{str::FromStr, sync::LazyLock};
 
 use crate::{constants::DEFAULT_DATE_FORMAT, form::ValidationError};
+
+static DATE_FORMAT_REGEX: LazyLock<Regex> =
+    LazyLock::new(|| Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap());
 
 #[derive(Debug, Clone, Eq, PartialEq, Serialize, Deserialize)]
 #[serde(transparent)]
@@ -26,6 +30,10 @@ impl FromStr for DateOfBirth {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
+        if !DATE_FORMAT_REGEX.is_match(value) {
+            return Err(ValidationError::InvalidValue);
+        }
+
         let naive_date = NaiveDate::parse_from_str(value, DEFAULT_DATE_FORMAT)
             .map_err(|_| ValidationError::InvalidValue)?;
 
@@ -61,5 +69,19 @@ mod tests {
         ));
 
         assert!("06-04-2001".parse::<DateOfBirth>().is_ok());
+    }
+
+    #[test]
+    fn format() {
+        assert!("12-12-0009".parse::<DateOfBirth>().is_ok());
+        assert!("12-12-1909".parse::<DateOfBirth>().is_ok());
+        assert!(matches!(
+            "12-12-09".parse::<DateOfBirth>(),
+            Err(ValidationError::InvalidValue)
+        ));
+        assert!(matches!(
+            "12-12-9".parse::<DateOfBirth>(),
+            Err(ValidationError::InvalidValue)
+        ));
     }
 }
