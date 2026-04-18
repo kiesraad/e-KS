@@ -49,9 +49,16 @@ pub async fn update_candidate_list_submit(
     candidate_list: CandidateList,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<CandidateListForm>,
+    Form(mut form): Form<CandidateListForm>,
 ) -> Result<Response, AppError> {
+    if context.election.has_only_one_district() {
+        return Err(AppError::UserError(
+            "Not available for single district elections".to_string(),
+        ));
+    }
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    form.electoral_districts
+        .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
@@ -75,7 +82,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -211,6 +218,48 @@ mod tests {
             candidate_list.electoral_districts,
             updated_list.electoral_districts
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn district_outside_election_is_ignored() -> Result<(), AppError> {
+        // setup
+        let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_tokens.issue().value;
+        let candidate_list = CandidateList {
+            electoral_districts: vec![ElectoralDistrict::UT],
+            ..Default::default()
+        };
+        candidate_list.create(&store).await?;
+
+        let form = CandidateListForm {
+            electoral_districts: vec![ElectoralDistrict::DR, ElectoralDistrict::WsFryslan],
+            csrf_token,
+        };
+
+        // test
+        let response = update_candidate_list_submit(
+            CandidateListUpdatePath {
+                list_id: candidate_list.id,
+            },
+            context,
+            candidate_list.clone(),
+            store.clone(),
+            Query(QueryParamState::default()),
+            Form(form),
+        )
+        .await?;
+
+        // verify
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let lists = store.get_candidate_lists();
+        assert_eq!(lists.len(), 1);
+        let list = &lists[0];
+        // WsFryslan got dropped because it's not part of EK27
+        assert_eq!(list.electoral_districts, vec![ElectoralDistrict::DR]);
 
         Ok(())
     }

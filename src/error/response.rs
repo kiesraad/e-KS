@@ -173,6 +173,10 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Missing data when generating PDF: {err}"),
             },
+            AppError::UserError(msg) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("Bad request: {msg}"),
+            },
         }
     }
 }

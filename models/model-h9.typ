@@ -32,7 +32,7 @@
 
 #if input.electoral_districts.tag != "OnlyOne" [
   = #trans("Kieskringen", "Kiesrûnten")
-  // TODO: this is slightly different from the h1, should we allow people to only agree for certain electoral districts?
+  // NOTE: This text slightly differs from the reference H9 but is confirmed to be legal
   #trans("Mijn instemming geldt voor:", "Myn ynstimming jildt foar:")
   #if input.electoral_districts.tag == "All" {
     trans([*alle kieskringen*], [*alle kiesrûnten*])
