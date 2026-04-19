@@ -53,9 +53,8 @@ pub(super) fn build_ref_diffs_for_key(
     new_value: &str,
     state_after: &AppStoreData,
 ) -> Option<(Vec<EntityRef>, Vec<EntityRef>)> {
-    let Some(kind) = entity_kind_for_key(key) else {
-        return None;
-    };
+    let kind = entity_kind_for_key(key)?;
+
     let old_refs = old_value
         .split(", ")
         .filter(|s| !s.is_empty())
