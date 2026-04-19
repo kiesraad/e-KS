@@ -33,6 +33,8 @@ livereload = []
 memory-serve = ["dep:memory-serve"]
 # Run the embedded Typst webservice in-process.
 embed-typst = ["dep:typst-webservice"]
+# Embed the bag address lookup library
+embed-bag = ["dep:bag_address_lookup"]
 
 [dependencies]
 # tokio universe
@@ -77,9 +79,10 @@ urlencoding = "2.1.3" # 174M downloads (Kornel)
 
 # tweedegolf
 memory-serve = { version = "2.1.0", optional = true }
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.6.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.7.0", optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.5.0", default-features = false, features = ["compressed_database"], optional = true }
 
 [build-dependencies]
 memory-serve = { version = "2.1.0", optional = true }

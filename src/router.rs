@@ -32,23 +32,31 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(candidates::router());
 
     #[cfg(feature = "dev-features")]
-    let bag_service_url = crate::get_env("BAG_SERVICE_URL")
-        .expect("BAG_SERVICE_URL must be set in dev-features mode");
+    let dev_router = Router::new().route(
+        crate::auth::dev_login::DEV_LOGIN_PATH,
+        get(crate::auth::dev_login::dev_login),
+    );
 
-    #[cfg(feature = "dev-features")]
-    let dev_router = Router::new()
-        .route(
-            crate::auth::dev_login::DEV_LOGIN_PATH,
-            get(crate::auth::dev_login::dev_login),
-        )
-        .route(
-            "/lookup",
-            crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
-        )
-        .route(
-            "/suggest",
-            crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
-        );
+    // /lookup and /suggest are served by the embedded bag-address-lookup
+    // library when `embed-bag` is on; otherwise they proxy to an external
+    // bag-service (dev-features only).
+    #[cfg(feature = "embed-bag")]
+    let bag_router: Router<AppState> = crate::utils::embed_bag::router();
+
+    #[cfg(all(feature = "dev-features", not(feature = "embed-bag")))]
+    let bag_router: Router<AppState> = {
+        let bag_service_url = crate::get_env("BAG_SERVICE_URL")
+            .expect("BAG_SERVICE_URL must be set in dev-features mode");
+        Router::new()
+            .route(
+                "/lookup",
+                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
+            )
+            .route(
+                "/suggest",
+                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
+            )
+    };
 
     let app_router = app_router
         .fallback(get(common::not_found))
@@ -76,6 +84,9 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     #[cfg(not(feature = "dev-features"))]
     let router = app_router;
+
+    #[cfg(any(feature = "embed-bag", feature = "dev-features"))]
+    let router = router.merge(bag_router);
 
     let router = router.merge(auth_service::router());
 

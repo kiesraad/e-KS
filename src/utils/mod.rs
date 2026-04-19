@@ -18,6 +18,9 @@ pub mod proxy;
 #[cfg(feature = "embed-typst")]
 pub mod embed_typst;
 
+#[cfg(feature = "embed-bag")]
+pub mod embed_bag;
+
 #[cfg(test)]
 pub mod test_utils;
 
