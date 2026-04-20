@@ -16,6 +16,11 @@ languages:
   frisian: Fries
 no_label: Nee
 save_success: opgeslagen
+select_election:
+  description: Kies de verkiezing waar je mee wilt werken om verder te gaan.
+  label: Kies een verkiezing
+  load_fixtures: Voorbeelddata laden voor deze verkiezing
+  submit: Verder
 step: "Stap {}"
 steps: Stappen
 submit: Afronden

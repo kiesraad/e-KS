@@ -6,21 +6,17 @@ use axum::{
     extract::{FromRequestParts, Request, State},
     http::request::Parts,
     middleware::Next,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
-use secrecy::SecretString;
 
-use crate::{AppError, AppState, ElectionConfig, Locale, Session};
+use crate::{AppError, AppState, ElectionConfig, Session, common::SelectElectionPath};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
-
-/// Default BSN used when no session cookie is present (dev/test only).
-const DEV_ID_CODE: &str = "999999990";
 
 /// Builds an HTTP-only cookie that carries the session token.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
@@ -50,41 +46,9 @@ pub async fn session_middleware(
 
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
-    let mut session = match state.sessions.get_existing(token) {
-        Some(existing) => existing,
-        None => {
-            // TEMPORARY (pre-auth): reuse any existing session when the cookie is missing.
-            // This must be removed once login/auth flows own session creation.
-            if token.is_none()
-                && let Some(mut existing) = state.sessions.get_any_active_for_dev()
-            {
-                existing.last_activity = Instant::now();
-                state.sessions.insert(existing.clone());
-                request.extensions_mut().insert(existing.clone());
-                let response = next.run(request).await;
-                let jar = jar.add(build_session_cookie(&existing));
-
-                return (jar, response).into_response();
-            }
-
-            // TODO: only create a new session after a successfull login
-            state.sessions.cleanup_expired();
-            let locale = request_locale(request.headers());
-            let mut new_session = Session::new_with_locale(locale);
-            let dev_code: SecretString = DEV_ID_CODE.into();
-            new_session.set_stream_id(
-                state
-                    .id_deriver
-                    .derive_stream_id(&dev_code, ElectionConfig::EK27),
-            );
-            new_session.id_code = Some(dev_code);
-            state.sessions.insert(new_session.clone());
-            request.extensions_mut().insert(new_session.clone());
-            let response = next.run(request).await;
-            let jar = jar.add(build_session_cookie(&new_session));
-
-            return (jar, response).into_response();
-        }
+    let Some(mut session) = state.sessions.get_existing(token) else {
+        // redirect to home (/), which will show a login button
+        return Redirect::to("/login").into_response();
     };
 
     session.last_activity = Instant::now();
@@ -94,22 +58,9 @@ pub async fn session_middleware(
     next.run(request).await
 }
 
-fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
-    #[cfg(feature = "dev-features")]
-    {
-        crate::auth::dev_login::request_locale(headers)
-    }
-    #[cfg(not(feature = "dev-features"))]
-    {
-        headers
-            .get(axum::http::header::ACCEPT_LANGUAGE)
-            .and_then(|value| value.to_str().ok())
-            .and_then(Locale::from_accept_language)
-            .unwrap_or_default()
-    }
-}
-
 /// Middleware that resolves the scoped store for the session's political group.
+/// Redirects to `/select-election` when the session has not yet picked an
+/// election, so the user cannot reach a route that needs a store without one.
 pub async fn store_middleware(
     State(state): State<AppState>,
     mut request: Request,
@@ -120,14 +71,14 @@ pub async fn store_middleware(
     };
 
     let Some(stream_id) = session.stream_id else {
-        return next.run(request).await;
+        return Redirect::to(&SelectElectionPath.to_string()).into_response();
     };
 
     // The init value (EK27) is only used if the registry doesn't yet have
     // a store for this stream. In practice, login paths always prime the
     // registry with the correct election before this middleware runs.
     let store = match state
-        .store_for_stream(stream_id, ElectionConfig::EK27)
+        .store_for_stream(stream_id, ElectionConfig::EK27, false)
         .await
     {
         Ok(store) => store,
@@ -170,9 +121,9 @@ mod tests {
 
     use crate::{AppState, Session, test_utils::response_body_string};
 
-    /// Returns the session token and sets a cookie on first request.
+    /// Redirects to /login when no session cookie is present.
     #[tokio::test]
-    async fn middleware_sets_cookie_and_injects_session() {
+    async fn middleware_redirects_to_login_without_cookie() {
         let state = AppState::new_for_tests().await;
         let app = Router::new()
             .route(
@@ -190,17 +141,8 @@ mod tests {
             .await
             .expect("response");
 
-        assert_eq!(response.status(), StatusCode::OK);
-        let set_cookie = response
-            .headers()
-            .get(header::SET_COOKIE)
-            .and_then(|value| value.to_str().ok())
-            .expect("set-cookie header");
-        assert!(set_cookie.contains(SESSION_COOKIE_NAME));
-        #[cfg(feature = "dev-features")]
-        assert!(!set_cookie.contains("Secure"));
-        #[cfg(not(feature = "dev-features"))]
-        assert!(set_cookie.contains("Secure"));
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/login");
     }
 
     /// Reuses the existing session when the cookie is provided.
@@ -216,39 +158,29 @@ mod tests {
                 state.clone(),
                 session_middleware,
             ))
-            .with_state(state);
+            .with_state(state.clone());
 
-        let first = app
-            .clone()
-            .oneshot(HttpRequest::builder().uri("/").body(Body::empty()).unwrap())
-            .await
-            .expect("response");
+        let session = Session::new_test();
+        let token = session.token().to_exposed_string();
+        state.sessions.insert(session);
+        let cookie_value = format!("{SESSION_COOKIE_NAME}={token}");
 
-        let set_cookie = first
-            .headers()
-            .get(header::SET_COOKIE)
-            .and_then(|value| value.to_str().ok())
-            .map(str::to_string)
-            .expect("set-cookie header");
-        let first_token = response_body_string(first).await;
-        let cookie_value = set_cookie.split(';').next().expect("cookie value");
-
-        let second = app
+        let response = app
             .oneshot(
                 HttpRequest::builder()
                     .uri("/")
-                    .header(header::COOKIE, cookie_value)
+                    .header(header::COOKIE, &cookie_value)
                     .body(Body::empty())
                     .unwrap(),
             )
             .await
             .expect("response");
 
-        let second_status = second.status();
-        let second_sets_cookie = second.headers().get(header::SET_COOKIE).is_some();
-        let second_token = response_body_string(second).await;
-        assert_eq!(second_status, StatusCode::OK);
-        assert!(!second_sets_cookie);
-        assert_eq!(first_token, second_token);
+        let status = response.status();
+        let sets_cookie = response.headers().get(header::SET_COOKIE).is_some();
+        let returned_token = response_body_string(response).await;
+        assert_eq!(status, StatusCode::OK);
+        assert!(!sets_cookie);
+        assert_eq!(returned_token, token);
     }
 }

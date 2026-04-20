@@ -63,27 +63,43 @@ async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), App
 mod tests {
     use super::*;
     use axum::http::StatusCode;
-    use reqwest::{Client, Error as ReqwestError};
+    use reqwest::Client;
     use std::net::TcpListener as StdTcpListener;
     use tokio::{
         net::TcpListener,
         time::{Duration, sleep},
     };
 
-    async fn fetch(url: &str) -> (StatusCode, String) {
-        let client = Client::new();
-        let resp = client.get(url).send().await.unwrap();
+    async fn fetch_with_cookie(url: &str, cookie: &str) -> (StatusCode, String) {
+        let client = Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let resp = client
+            .get(url)
+            .header("Cookie", cookie)
+            .send()
+            .await
+            .unwrap();
         let status = resp.status();
         let body = resp.text().await.expect("body text");
         (status, body)
     }
 
-    async fn try_fetch(url: &str) -> Result<(StatusCode, String), ReqwestError> {
-        let client = Client::new();
-        let resp = client.get(url).send().await?;
-        let status = resp.status();
-        let body = resp.text().await?;
-        Ok((status, body))
+    async fn dev_login(base: &str) -> String {
+        let client = Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
+        let url = format!("{base}/dev/login?bsn=999999990&fixtures=false");
+        let resp = client.get(&url).send().await.unwrap();
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        resp.headers()
+            .get("set-cookie")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(';').next())
+            .expect("session cookie")
+            .to_string()
     }
 
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
@@ -95,11 +111,14 @@ mod tests {
             run(listener, None).await.unwrap();
         });
 
-        let (status, body) = fetch(&format!("http://{addr}/")).await;
+        let base = format!("http://{addr}");
+        let cookie = dev_login(&base).await;
+
+        let (status, body) = fetch_with_cookie(&format!("{base}/"), &cookie).await;
         assert_eq!(status, StatusCode::OK);
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
-        let (status, body) = fetch(&format!("http://{addr}/missing")).await;
+        let (status, body) = fetch_with_cookie(&format!("{base}/missing"), &cookie).await;
         assert_eq!(status, StatusCode::NOT_FOUND);
         assert!(body.contains("Pagina niet gevonden"));
 
@@ -108,7 +127,7 @@ mod tests {
 
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
-    async fn start_binds_and_serves_homepage() {
+    async fn start_binds_and_serves_login_flow() {
         let port = StdTcpListener::bind("127.0.0.1:0")
             .unwrap()
             .local_addr()
@@ -120,13 +139,17 @@ mod tests {
             start(address).await;
         });
 
-        let url = format!("http://127.0.0.1:{port}/");
+        let base = format!("http://127.0.0.1:{port}");
+        let no_redirect = Client::builder()
+            .redirect(reqwest::redirect::Policy::none())
+            .build()
+            .unwrap();
 
-        let mut ready = None;
+        let mut ready = false;
         for _ in 0..20 {
-            match try_fetch(&url).await {
-                Ok(result) => {
-                    ready = Some(result);
+            match no_redirect.get(format!("{base}/login")).send().await {
+                Ok(_) => {
+                    ready = true;
                     break;
                 }
                 Err(_) => {
@@ -134,10 +157,30 @@ mod tests {
                 }
             }
         }
+        assert!(ready, "server never became ready");
 
-        let (status, body) = ready.expect("server never became ready");
+        // /login creates a new session and redirects to /select-election
+        // (no existing election for a fresh user)
+        let resp = no_redirect
+            .get(format!("{base}/login"))
+            .send()
+            .await
+            .unwrap();
+        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        let location = resp.headers().get("location").unwrap().to_str().unwrap();
+        assert_eq!(location, "/select-election");
+        let cookie = resp
+            .headers()
+            .get("set-cookie")
+            .and_then(|v| v.to_str().ok())
+            .and_then(|v| v.split(';').next())
+            .expect("session cookie")
+            .to_string();
+
+        // Follow the redirect to /select-election with the session cookie
+        let (status, body) = fetch_with_cookie(&format!("{base}{location}"), &cookie).await;
         assert_eq!(status, StatusCode::OK);
-        assert!(body.contains("Kiesraad - Kandidaatstelling"));
+        assert!(body.contains("select-election") || body.contains("Verkiezing"));
 
         server.abort();
     }
