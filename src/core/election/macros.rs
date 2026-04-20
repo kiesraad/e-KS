@@ -148,4 +148,62 @@ macro_rules! define_elections {
     };
 }
 
+/// Macro to define electoral districts with localized titles.
+/// Frisian and English titles are optional, and will default to the Dutch title.
+macro_rules! define_districts {
+    (
+        $(
+            $name:ident ( $region_number:expr, $code:expr, $title_nl:expr
+                $(, fry: $title_fry:expr)?
+                $(, en: $title_en:expr)?
+            )
+        ),* $(,)?
+    ) => {
+        /// Electoral districts used for nomination and submission flows.
+        #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, serde::Serialize, serde::Deserialize)]
+        pub enum ElectoralDistrict {
+            $(
+                $name,
+            )*
+        }
+
+        impl ElectoralDistrict {
+            pub fn title(&self, locale: AnyLocale) -> &'static str {
+                match (self, locale) {
+                    $(
+                        (Self::$name, AnyLocale::Nl) => $title_nl,
+                        (Self::$name, AnyLocale::Fry) => $crate::core::election::define_districts!(@title_or_default $title_nl $(, $title_fry)?),
+                        (Self::$name, AnyLocale::En) => $crate::core::election::define_districts!(@title_or_default $title_nl $(, $title_en)?),
+                    )*
+                }
+            }
+
+            pub fn code(&self) -> &'static str {
+                match self {
+                    $(
+                        Self::$name => $code,
+                    )*
+                }
+            }
+
+            pub fn region_number(&self) -> &'static str {
+                match self {
+                    $(
+                        Self::$name => $region_number,
+                    )*
+                }
+            }
+        }
+    };
+
+    (@title_or_default $default:expr) => {
+        $default
+    };
+
+    (@title_or_default $default:expr, $value:expr) => {
+        $value
+    };
+}
+
+pub(crate) use define_districts;
 pub(crate) use define_elections;

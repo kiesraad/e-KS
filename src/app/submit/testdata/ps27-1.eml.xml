@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <EML xmlns="urn:oasis:names:tc:evs:schema:eml" xmlns:kr="http://www.kiesraad.nl/extensions" xmlns:xal="urn:oasis:names:tc:ciq:xsdschema:xAL:2.0" xmlns:xnl="urn:oasis:names:tc:ciq:xsdschema:xNL:2.0" Id="210" SchemaVersion="5">
-    <TransactionId>6</TransactionId>
+    <TransactionId>7</TransactionId>
     <IssueDate>2026-04-16</IssueDate>
     <kr:CreationDateTime>2026-04-16T13:56:21.742621259+00:00</kr:CreationDateTime>
     <Nomination>
@@ -18,7 +18,11 @@
                 <RegisteredName>Kiesraad Demo Partij</RegisteredName>
             </AffiliationIdentifier>
             <Type>op zichzelf staande lijst</Type>
-            <kr:ListData PublishGender="true"/>
+            <kr:ListData PublishGender="true">
+                <kr:Contests>
+                    <kr:Contest Id="1">Groningen</kr:Contest>
+                </kr:Contests>
+            </kr:ListData>
             <Candidate>
                 <CandidateIdentifier Id="1"/>
                 <CandidateFullName>

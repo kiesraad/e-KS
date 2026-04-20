@@ -5,8 +5,8 @@ use axum::{
 use chrono::Datelike;
 use eml_nl::{
     common::{
-        CandidateIdentifier, CountryNameCode, FirstName, LastName, ListData, NameLineInitials,
-        NamePrefix, PersonName,
+        CandidateIdentifier, CountryNameCode, FirstName, LastName, ListData, ListDataContest,
+        NameLineInitials, NamePrefix, PersonName,
     },
     documents::{
         EML,
@@ -21,7 +21,7 @@ use eml_nl::{
 };
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, ElectionConfig,
+    AnyLocale, AppError, AppEvent, AppStore, Context, ElectionConfig,
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
@@ -42,7 +42,7 @@ impl From<ElectionType> for eml_nl::utils::ElectionCategory {
             ElectionType::Ps => eml_nl::utils::ElectionCategory::PS,
             ElectionType::Ws => eml_nl::utils::ElectionCategory::AB,
             ElectionType::Ep => eml_nl::utils::ElectionCategory::EP,
-            ElectionType::Kc => todo!("Figure out what to do with kiescolleges"),
+            ElectionType::Kc => todo!("Kiescolleges don't have an official code yet in EML-NL"),
             ElectionType::Er => eml_nl::utils::ElectionCategory::ER,
         }
     }
@@ -75,7 +75,7 @@ impl From<&ElectionConfig> for eml_nl::utils::ElectionSubcategory {
                 }
             }
             ElectionType::Ep => eml_nl::utils::ElectionSubcategory::EP,
-            ElectionType::Kc => todo!("Figure out what to do with kiescolleges"),
+            ElectionType::Kc => todo!("Kiescolleges don't have an official code yet in EML-NL"),
             ElectionType::Er => eml_nl::utils::ElectionSubcategory::ER1,
         }
     }
@@ -273,12 +273,29 @@ pub async fn gen_eml210(
         "inleveraar",
     )?);
 
-    for id in list.substitute_list_submitter_ids {
+    for id in &list.substitute_list_submitter_ids {
         nominated.push(nomination_proposer(
-            store.get_substitute_submitter(id)?,
+            store.get_substitute_submitter(*id)?,
             "plaatsvervanger van de inleveraar",
         )?);
     }
+
+    // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
+    let list_data = ListData {
+        // We always publish genders, but the individual candidates may leave the gender unspecified
+        publish_gender: StringValue::Parsed(true),
+        publication_language: None,
+        belongs_to_set: None,
+        belongs_to_combination: None,
+        contests: list
+            .electoral_districts
+            .iter()
+            .map(|d| {
+                Ok(ListDataContest::new(ContestId::new(d.region_number())?)
+                    .with_name(d.title(AnyLocale::Nl)))
+            })
+            .collect::<Result<Vec<ListDataContest>, AppError>>()?,
+    };
 
     let nomination = Nomination::builder()
         .transaction_id(
@@ -290,9 +307,17 @@ pub async fn gen_eml210(
         .election_identifier(NominationElectionIdentifier::try_from(context.election)?)
         .contest_identifier(if context.election.has_only_one_district() {
             NominationContestIdentifier::new(ContestId::geen(), "")
-        } else {
-            // TODO: support non-alle electoral districts
+        } else if list.contains_all_districts(&context.election) {
             NominationContestIdentifier::new(ContestId::alle(), "")
+        } else {
+            // If there are multiple districts but this list is not linked to all districts,
+            // we always choose the first district (to avoid collisions with other lists).
+            // The full set of electoral districts can be found in the ListData.
+            let district = list.electoral_districts[0];
+            NominationContestIdentifier::new(
+                ContestId::new(district.region_number())?,
+                district.title(AnyLocale::Nl),
+            )
         })
         .affiliation(NominationAffiliation {
             registered_name: context
@@ -301,7 +326,7 @@ pub async fn gen_eml210(
                 .ok_or(AppError::IncompleteData("missing legal name"))?
                 .to_string(),
             affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
-            list_data: ListData::new(true),
+            list_data,
             candidates: candidates
                 .iter()
                 .map(TryInto::try_into)
@@ -337,7 +362,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        AppError, AppStore,
+        AppError, AppStore, ElectoralDistrict,
         candidate_lists::{CandidateListId, FullCandidateList},
         common::CountryCode,
         list_submitters::ListSubmitterId,
@@ -463,7 +488,9 @@ mod tests {
         let store = AppStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::PS27(crate::Province::GR);
-        let list = create_sample_list(&store).await.unwrap();
+        let mut list = create_sample_list(&store).await.unwrap();
+        list.list.electoral_districts = vec![ElectoralDistrict::PsGroningen];
+        list.list.update_districts(&store).await.unwrap();
 
         // test
         let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
@@ -480,7 +507,10 @@ mod tests {
         let store = AppStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::PS27(crate::Province::LI);
-        let list = create_sample_list(&store).await.unwrap();
+        let mut list = create_sample_list(&store).await.unwrap();
+        list.list.electoral_districts =
+            vec![ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo];
+        list.list.update_districts(&store).await.unwrap();
 
         // test
         let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
@@ -497,7 +527,9 @@ mod tests {
         let store = AppStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::WS27(crate::WaterCouncil::AaEnMaas);
-        let list = create_sample_list(&store).await.unwrap();
+        let mut list = create_sample_list(&store).await.unwrap();
+        list.list.electoral_districts = vec![ElectoralDistrict::WsAaEnMaas];
+        list.list.update_districts(&store).await.unwrap();
 
         // test
         let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)

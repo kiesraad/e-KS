@@ -1,67 +1,63 @@
-use serde::{Deserialize, Serialize};
-
 use crate::core::AnyLocale;
 
-/// Electoral districts used for nomination and submission flows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
-pub enum ElectoralDistrict {
-    GR,
-    PsGroningen,
-    FR,
-    PsLeeuwarden,
-    DR,
-    PsAssen,
-    OV,
-    PsZwolle,
-    FL,
-    PsLelystad,
-    GE,
-    PsNijmegen,
-    PsArnhem,
-    UT,
-    PsUtrecht,
-    NH,
-    PsAmsterdam,
-    PsHaarlem,
-    PsDenHelder,
-    ZH,
-    PsDenHaag,
-    PsRotterdam,
-    PsDordrecht,
-    PsLeiden,
-    ZE,
-    PsMiddelburg,
-    NB,
-    PsTilburg,
-    PsDenBosch,
-    LI,
-    PsMaastricht,
-    PsVenlo,
-    BO,
-    SE,
-    SA,
-    KN,
-    WsNoorderzijlvest,
-    WsFryslan,
-    WsHunzeEnAas,
-    WsDrentsOverijsselseDelta,
-    WsVechtstromen,
-    WsValleiEnVeluwe,
-    WsRijnEnIJssel,
-    WsDeStichtseRijnlanden,
-    WsAmstelGooiEnVecht,
-    WsHollandsNoorderkwartier,
-    WsRijnland,
-    WsDelfland,
-    WsSchielandEnDeKrimpenerwaard,
-    WsRivierenland,
-    WsHollandseDelta,
-    WsScheldestromen,
-    WsBrabantseDelta,
-    WsDeDommel,
-    WsAaEnMaas,
-    WsLimburg,
-    WsZuiderzeeland,
+super::define_districts! {
+    GR("1", "GR", "Groningen", fry: "Grinslân"),
+    PsGroningen("1", "GRQ", "Groningen"),
+    FR("2", "FR", "Friesland", fry: "Fryslân"),
+    PsLeeuwarden("2", "LWR", "Leeuwarden", fry: "Ljouwert"),
+    DR("3", "DR", "Drenthe", fry: "Drinte"),
+    PsAssen("3", "ASS", "Assen"),
+    OV("4", "OV", "Overijssel", fry: "Oerisel"),
+    PsZwolle("4", "ZWO", "Zwolle"),
+    FL("5", "FL", "Flevoland", fry: "Flevolân"),
+    PsLelystad("5", "LEY", "Lelystad"),
+    GE("6", "GE", "Gelderland", fry: "Gelderlân"),
+    PsNijmegen("6", "NIJ", "Nijmegen"),
+    PsArnhem("7", "ARN", "Arnhem"),
+    UT("7", "UT", "Utrecht", fry: "Utert"),
+    PsUtrecht("8", "UTC", "Utrecht"),
+    NH("8", "NH", "Noord-Holland", fry: "Noard-Hollân", en: "North Holland"),
+    PsAmsterdam("9", "AMS", "Amsterdam"),
+    PsHaarlem("10", "HAA", "Haarlem"),
+    PsDenHelder("11", "DHR", "Den Helder"),
+    ZH("9", "ZH", "Zuid-Holland", fry: "Súd-Hollân", en: "South Holland"),
+    PsDenHaag("12", "HAG", "'s-Gravenhage", en: "The Hague"),
+    PsRotterdam("13", "RTM", "Rotterdam"),
+    PsDordrecht("14", "DOR", "Dordrecht"),
+    PsLeiden("15", "LID", "Leiden"),
+    ZE("10", "ZE", "Zeeland", fry: "Seelân"),
+    PsMiddelburg("16", "MDL", "Middelburg"),
+    NB("11", "NB", "Noord-Brabant", fry: "Noard-Brabân", en: "North Brabant"),
+    PsTilburg("17", "TLB", "Tilburg"),
+    PsDenBosch("18", "HTB", "'s-Hertogenbosch"),
+    LI("12", "LI", "Limburg", fry: "Limboarch"),
+    PsMaastricht("19", "MST", "Maastricht"),
+    PsVenlo("20", "VEN", "Venlo"),
+    BO("13", "BO", "Kiescollege Bonaire", fry: "Kieskolleezje Bonêre", en: "Electoral College Bonaire"),
+    SE("14", "SE", "Kiescollege Sint Eustatius", fry: "Kieskolleezje Sint Eustaasjus", en: "Electoral College Sint Eustatius"),
+    SA("15", "SA", "Kiescollege Saba", fry: "Kieskolleezje Saba", en: "Electoral College Saba"),
+    KN("16", "KN", "Kiescollege Niet-Ingezetenen", fry: "Kieskolleezje Net-Ynwenners", en: "Electoral College Non-Residents"),
+    WsNoorderzijlvest("1", "WS-NZV", "Noorderzijlvest"),
+    WsFryslan("2", "WS-FRY", "Fryslân"),
+    WsHunzeEnAas("3", "WS-HEA", "Hunze en Aa's"),
+    WsDrentsOverijsselseDelta("24", "WS-DOD", "Drents Overijsselse Delta"),
+    WsVechtstromen("5", "WS-VST", "Vechtstromen"),
+    WsValleiEnVeluwe("7", "WS-VEV", "Vallei en Veluwe"),
+    WsRijnEnIJssel("8", "WS-REI", "Rijn en IJssel"),
+    WsDeStichtseRijnlanden("9", "WS-SRL", "De Stichtse Rijnlanden"),
+    WsAmstelGooiEnVecht("10", "WS-AGV", "Amstel, Gooi en Vecht"),
+    WsHollandsNoorderkwartier("11", "WS-HNK", "Hollands Noorderkwartier"),
+    WsRijnland("12", "WS-RNL", "Rijnland"),
+    WsDelfland("13", "WS-DFL", "Delfland"),
+    WsSchielandEnDeKrimpenerwaard("14", "WS-SKW", "Schieland en de Krimpenerwaard"),
+    WsRivierenland("15", "WS-RVL", "Rivierenland"),
+    WsHollandseDelta("16", "WS-HDT", "Hollandse Delta"),
+    WsScheldestromen("17", "WS-SDS", "Scheldestromen"),
+    WsBrabantseDelta("18", "WS-BDT", "Brabantse Delta"),
+    WsDeDommel("19", "WS-DDM", "De Dommel"),
+    WsAaEnMaas("20", "WS-AEM", "Aa en Maas"),
+    WsLimburg("25", "WS-LMB", "Limburg"),
+    WsZuiderzeeland("23", "WS-ZZL", "Zuiderzeeland"),
 }
 
 impl ElectoralDistrict {
@@ -93,155 +89,6 @@ impl ElectoralDistrict {
             .and_then(serde_json::from_value)
             .expect("unit enum variant serializes to a string")
     }
-
-    pub fn title(&self, locale: AnyLocale) -> &'static str {
-        match (self, locale) {
-            (Self::GR, AnyLocale::Nl | AnyLocale::En) => "Groningen",
-            (Self::GR, AnyLocale::Fry) => "Grinslân",
-            (Self::PsGroningen, _) => "Groningen",
-            (Self::FR, AnyLocale::Nl | AnyLocale::En) => "Friesland",
-            (Self::FR, AnyLocale::Fry) => "Fryslân",
-            (Self::PsLeeuwarden, AnyLocale::Nl | AnyLocale::En) => "Leeuwarden",
-            (Self::PsLeeuwarden, AnyLocale::Fry) => "Ljouwert",
-            (Self::DR, AnyLocale::Nl | AnyLocale::En) => "Drenthe",
-            (Self::DR, AnyLocale::Fry) => "Drinte",
-            (Self::PsAssen, _) => "Assen",
-            (Self::OV, AnyLocale::Nl | AnyLocale::En) => "Overijssel",
-            (Self::OV, AnyLocale::Fry) => "Oerisel",
-            (Self::PsZwolle, _) => "Zwolle",
-            (Self::FL, AnyLocale::Nl | AnyLocale::En) => "Flevoland",
-            (Self::FL, AnyLocale::Fry) => "Flevolân",
-            (Self::PsLelystad, _) => "Lelystad",
-            (Self::GE, AnyLocale::Nl | AnyLocale::En) => "Gelderland",
-            (Self::GE, AnyLocale::Fry) => "Gelderlân",
-            (Self::PsNijmegen, _) => "Nijmegen",
-            (Self::PsArnhem, _) => "Arnhem",
-            (Self::UT, AnyLocale::Nl | AnyLocale::En) => "Utrecht",
-            (Self::UT, AnyLocale::Fry) => "Utert",
-            (Self::PsUtrecht, _) => "Utrecht",
-            (Self::NH, AnyLocale::Nl) => "Noord-Holland",
-            (Self::NH, AnyLocale::En) => "North Holland",
-            (Self::NH, AnyLocale::Fry) => "Noard-Hollân",
-            (Self::PsAmsterdam, _) => "Amsterdam",
-            (Self::PsHaarlem, _) => "Haarlem",
-            (Self::PsDenHelder, _) => "Den Helder",
-            (Self::ZH, AnyLocale::Nl) => "Zuid-Holland",
-            (Self::ZH, AnyLocale::En) => "South Holland",
-            (Self::ZH, AnyLocale::Fry) => "Súd-Hollân",
-            (Self::PsDenHaag, AnyLocale::Nl | AnyLocale::Fry) => "'s-Gravenhage",
-            (Self::PsDenHaag, AnyLocale::En) => "The Hague",
-            (Self::PsRotterdam, _) => "Rotterdam",
-            (Self::PsDordrecht, _) => "Dordrecht",
-            (Self::PsLeiden, _) => "Leiden",
-            (Self::ZE, AnyLocale::Nl | AnyLocale::En) => "Zeeland",
-            (Self::ZE, AnyLocale::Fry) => "Seelân",
-            (Self::PsMiddelburg, _) => "Middelburg",
-            (Self::NB, AnyLocale::Nl) => "Noord-Brabant",
-            (Self::NB, AnyLocale::En) => "North Brabant",
-            (Self::NB, AnyLocale::Fry) => "Noard-Brabân",
-            (Self::PsTilburg, _) => "Tilburg",
-            (Self::PsDenBosch, _) => "'s-Hertogenbosch",
-            (Self::LI, AnyLocale::Nl | AnyLocale::En) => "Limburg",
-            (Self::LI, AnyLocale::Fry) => "Limboarch",
-            (Self::PsMaastricht, _) => "Maastricht",
-            (Self::PsVenlo, _) => "Venlo",
-            (Self::BO, AnyLocale::Nl) => "Kiescollege Bonaire",
-            (Self::BO, AnyLocale::En) => "Electoral College Bonaire",
-            (Self::BO, AnyLocale::Fry) => "Kieskolleezje Bonêre",
-            (Self::SE, AnyLocale::Nl) => "Kiescollege Sint Eustatius",
-            (Self::SE, AnyLocale::En) => "Electoral College Sint Eustatius",
-            (Self::SE, AnyLocale::Fry) => "Kieskolleezje Sint Eustaasjus",
-            (Self::SA, AnyLocale::Nl) => "Kiescollege Saba",
-            (Self::SA, AnyLocale::En) => "Electoral College Saba",
-            (Self::SA, AnyLocale::Fry) => "Kieskolleezje Saba",
-            (Self::KN, AnyLocale::Nl) => "Kiescollege Niet-Ingezetenen",
-            (Self::KN, AnyLocale::En) => "Electoral College Non-Residents",
-            (Self::KN, AnyLocale::Fry) => "Kieskolleezje Net-Ynwenners",
-            (Self::WsNoorderzijlvest, _) => "Noorderzijlvest",
-            (Self::WsFryslan, _) => "Fryslân",
-            (Self::WsHunzeEnAas, _) => "Hunze en Aa's",
-            (Self::WsDrentsOverijsselseDelta, _) => "Drents Overijsselse Delta",
-            (Self::WsVechtstromen, _) => "Vechtstromen",
-            (Self::WsValleiEnVeluwe, _) => "Vallei en Veluwe",
-            (Self::WsRijnEnIJssel, _) => "Rijn en IJssel",
-            (Self::WsDeStichtseRijnlanden, _) => "De Stichtse Rijnlanden",
-            (Self::WsAmstelGooiEnVecht, _) => "Amstel, Gooi en Vecht",
-            (Self::WsHollandsNoorderkwartier, _) => "Hollands Noorderkwartier",
-            (Self::WsRijnland, _) => "Rijnland",
-            (Self::WsDelfland, _) => "Delfland",
-            (Self::WsSchielandEnDeKrimpenerwaard, _) => "Schieland en de Krimpenerwaard",
-            (Self::WsRivierenland, _) => "Rivierenland",
-            (Self::WsHollandseDelta, _) => "Hollandse Delta",
-            (Self::WsScheldestromen, _) => "Scheldestromen",
-            (Self::WsBrabantseDelta, _) => "Brabantse Delta",
-            (Self::WsDeDommel, _) => "De Dommel",
-            (Self::WsAaEnMaas, _) => "Aa en Maas",
-            (Self::WsLimburg, _) => "Limburg",
-            (Self::WsZuiderzeeland, _) => "Zuiderzeeland",
-        }
-    }
-
-    pub fn code(&self) -> &'static str {
-        match self {
-            Self::GR => "GR",
-            Self::PsGroningen => "GRQ",
-            Self::FR => "FR",
-            Self::PsLeeuwarden => "LWR",
-            Self::DR => "DR",
-            Self::PsAssen => "ASS",
-            Self::OV => "OV",
-            Self::PsZwolle => "ZWO",
-            Self::FL => "FL",
-            Self::PsLelystad => "LEY",
-            Self::GE => "GE",
-            Self::PsNijmegen => "NIJ",
-            Self::PsArnhem => "ARN",
-            Self::UT => "UT",
-            Self::PsUtrecht => "UTC",
-            Self::NH => "NH",
-            Self::PsAmsterdam => "AMS",
-            Self::PsHaarlem => "HAA",
-            Self::PsDenHelder => "DHR",
-            Self::ZH => "ZH",
-            Self::PsDenHaag => "HAG",
-            Self::PsRotterdam => "RTM",
-            Self::PsDordrecht => "DOR",
-            Self::PsLeiden => "LID",
-            Self::ZE => "ZE",
-            Self::PsMiddelburg => "MDL",
-            Self::NB => "NB",
-            Self::PsTilburg => "TLB",
-            Self::PsDenBosch => "HTB",
-            Self::LI => "LI",
-            Self::PsMaastricht => "MST",
-            Self::PsVenlo => "VEN",
-            Self::BO => "BO",
-            Self::SE => "SE",
-            Self::SA => "SA",
-            Self::KN => "KN",
-            Self::WsNoorderzijlvest => "WS-NZV",
-            Self::WsFryslan => "WS-FRY",
-            Self::WsHunzeEnAas => "WS-HEA",
-            Self::WsDrentsOverijsselseDelta => "WS-DOD",
-            Self::WsVechtstromen => "WS-VST",
-            Self::WsValleiEnVeluwe => "WS-VEV",
-            Self::WsRijnEnIJssel => "WS-REI",
-            Self::WsDeStichtseRijnlanden => "WS-SRL",
-            Self::WsAmstelGooiEnVecht => "WS-AGV",
-            Self::WsHollandsNoorderkwartier => "WS-HNK",
-            Self::WsRijnland => "WS-RNL",
-            Self::WsDelfland => "WS-DFL",
-            Self::WsSchielandEnDeKrimpenerwaard => "WS-SKW",
-            Self::WsRivierenland => "WS-RVL",
-            Self::WsHollandseDelta => "WS-HDT",
-            Self::WsScheldestromen => "WS-SDS",
-            Self::WsBrabantseDelta => "WS-BDT",
-            Self::WsDeDommel => "WS-DDM",
-            Self::WsAaEnMaas => "WS-AEM",
-            Self::WsLimburg => "WS-LMB",
-            Self::WsZuiderzeeland => "WS-ZZL",
-        }
-    }
 }
 
 #[cfg(test)]
@@ -251,10 +98,12 @@ mod tests {
     #[test]
     fn district_title_and_code_match() {
         assert_eq!(ElectoralDistrict::UT.code(), "UT");
+        assert_eq!(ElectoralDistrict::UT.region_number(), "7");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Nl), "Utrecht");
         assert_eq!(ElectoralDistrict::UT.title(AnyLocale::Fry), "Utert");
 
         assert_eq!(ElectoralDistrict::PsArnhem.code(), "ARN");
+        assert_eq!(ElectoralDistrict::PsArnhem.region_number(), "7");
         assert_eq!(ElectoralDistrict::PsArnhem.title(AnyLocale::Nl), "Arnhem");
         assert_eq!(
             ElectoralDistrict::PsDenHaag.title(AnyLocale::Nl),
@@ -266,11 +115,13 @@ mod tests {
         );
 
         assert_eq!(ElectoralDistrict::WsHunzeEnAas.code(), "WS-HEA");
+        assert_eq!(ElectoralDistrict::WsHunzeEnAas.region_number(), "3");
         assert_eq!(
             ElectoralDistrict::WsHunzeEnAas.title(AnyLocale::Nl),
             "Hunze en Aa's"
         );
         assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.code(), "WS-AGV");
+        assert_eq!(ElectoralDistrict::WsAmstelGooiEnVecht.region_number(), "10");
         assert_eq!(
             ElectoralDistrict::WsAmstelGooiEnVecht.title(AnyLocale::Nl),
             "Amstel, Gooi en Vecht"
@@ -287,6 +138,13 @@ mod tests {
             ElectoralDistrict::PsLeeuwarden.title(AnyLocale::Fry),
             "Ljouwert"
         );
+
+        assert_eq!(ElectoralDistrict::KN.region_number(), "16");
+        assert_eq!(
+            ElectoralDistrict::WsDrentsOverijsselseDelta.region_number(),
+            "24"
+        );
+        assert_eq!(ElectoralDistrict::WsLimburg.region_number(), "25");
     }
 
     #[test]
