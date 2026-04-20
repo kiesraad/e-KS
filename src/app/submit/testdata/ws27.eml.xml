@@ -139,6 +139,7 @@
                     </MailingAddress>
                 </Contact>
                 <JobTitle>plaatsvervanger van de inleveraar</JobTitle>
+                <Id>1</Id>
             </Proposer>
             <Proposer>
                 <Name>
@@ -159,6 +160,7 @@
                     </MailingAddress>
                 </Contact>
                 <JobTitle>plaatsvervanger van de inleveraar</JobTitle>
+                <Id>2</Id>
             </Proposer>
         </Nominate>
     </Nomination>
