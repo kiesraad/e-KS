@@ -3,9 +3,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{AppEvent, Locale, audit_log::AuditLogDetailPath, store::StoreEvent};
 
-use super::event_info::{
-    abbreviate_str, event_description, event_details, subject_id_full, subject_path,
-};
+use super::event_info::{event_description, event_details, subject_id_full, subject_path};
 
 /// A single entry in the audit log, representing one application event.
 pub struct AuditLogEntry {
@@ -13,7 +11,6 @@ pub struct AuditLogEntry {
     pub event_type: &'static str,
     pub description: String,
     pub details: String,
-    pub subject_id: String,
     pub subject_id_full: String,
     pub subject_path: String,
     pub created_at: DateTime<Utc>,
@@ -27,7 +24,6 @@ impl AuditLogEntry {
             event_type: event.payload.event_category(),
             description: event_description(&event.payload, locale),
             details: event_details(&event.payload),
-            subject_id: abbreviate_str(&full_id),
             subject_id_full: full_id,
             subject_path: subject_path(&event.payload),
             created_at: event.created_at,
@@ -46,7 +42,6 @@ impl AuditLogEntry {
         let query = query.to_lowercase();
         self.details.to_lowercase().contains(&query)
             || self.subject_id_full.to_lowercase().contains(&query)
-            || self.subject_id.to_lowercase().contains(&query)
             || self.description.to_lowercase().contains(&query)
     }
 }
@@ -56,6 +51,7 @@ mod tests {
     use super::{super::event_info::DEFAULT_DETAILS, *};
     use crate::{
         Locale, StreamId,
+        audit_log::abbreviate_str,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
@@ -232,7 +228,7 @@ mod tests {
         let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
         let entry = AuditLogEntry::new(event, EN);
 
-        assert!(entry.matches_search(&entry.subject_id));
+        assert!(entry.matches_search(&abbreviate_str(&entry.subject_id_full)));
         assert!(entry.matches_search(&entry.subject_id_full));
     }
 

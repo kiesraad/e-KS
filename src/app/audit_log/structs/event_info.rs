@@ -15,7 +15,7 @@ use crate::{
 pub(super) const DEFAULT_DETAILS: &str = "-";
 
 /// Abbreviate a string to its first 8 characters (used for UUID previews).
-pub(super) fn abbreviate_str(s: &str) -> String {
+pub fn abbreviate_str(s: &str) -> String {
     s[..8.min(s.len())].to_string()
 }
 
