@@ -249,8 +249,9 @@ impl crate::store::Store<AppStoreData> {
         let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
             stream_id,
+            election,
             persistence: crate::store::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, election),
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }

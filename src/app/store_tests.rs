@@ -335,6 +335,7 @@ mod database_tests {
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
             group_id.uuid(),
+            ElectionConfig::EK27,
             &encryption,
             ElectionConfig::EK27,
         )
@@ -351,6 +352,7 @@ mod database_tests {
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
             group_id.uuid(),
+            ElectionConfig::EK27,
             &encryption,
             ElectionConfig::EK27,
         )
@@ -375,6 +377,7 @@ mod database_tests {
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
             group_id.uuid(),
+            ElectionConfig::EK27,
             &encryption,
             ElectionConfig::EK27,
         )
@@ -387,26 +390,33 @@ mod database_tests {
 
         // Insert invalid encrypted payload (random bytes that won't decrypt correctly)
         let invalid_payload: Vec<u8> = vec![0u8; 64];
+        let election_id = ElectionConfig::EK27.stable_id();
         sqlx::query(
-            r#"INSERT INTO events (stream_id, event_id, created_at, payload)
-            VALUES ($1, $2, $3, $4)"#,
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, payload)
+            VALUES ($1, $2, $3, $4, $5)"#,
         )
         .bind(store.stream_id)
+        .bind(&election_id)
         .bind(2_i64)
         .bind(Utc::now())
         .bind(invalid_payload)
         .execute(&pool)
         .await?;
 
-        sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-            .bind(store.stream_id)
-            .bind(2_i64)
-            .execute(&pool)
-            .await?;
+        sqlx::query(
+            r#"UPDATE streams SET last_event_id = $3
+               WHERE stream_id = $1 AND election = $2"#,
+        )
+        .bind(store.stream_id)
+        .bind(&election_id)
+        .bind(2_i64)
+        .execute(&pool)
+        .await?;
 
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
             group_id.uuid(),
+            ElectionConfig::EK27,
             &encryption,
             ElectionConfig::EK27,
         )

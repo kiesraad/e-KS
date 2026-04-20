@@ -21,7 +21,7 @@ use tokio::{
 };
 
 use super::{Store, StoreData, StoreEvent, encryption::EventCipher};
-use crate::AppError;
+use crate::{AppError, ElectionConfig};
 
 const FRAME_HEADER_LEN: usize = 4;
 
@@ -58,7 +58,14 @@ where
         created_at: Utc::now(),
     };
 
-    append_once(dir, store.stream_id, &store.cipher, &store_event).await?;
+    append_once(
+        dir,
+        store.stream_id,
+        store.election,
+        &store.cipher,
+        &store_event,
+    )
+    .await?;
 
     store.apply_event(next_id, store_event);
 
@@ -70,7 +77,7 @@ where
     D: StoreData,
     D::Event: DeserializeOwned,
 {
-    let path = stream_path(dir, store.stream_id);
+    let path = stream_path(dir, store.stream_id, store.election);
     let mut file = match File::open(&path).await {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(0),
@@ -126,26 +133,87 @@ where
     Ok(last_file_id)
 }
 
-/// Check which of the given stream IDs have persisted events on disk.
+/// Check which of the given stream IDs have persisted events on disk (any election).
 pub async fn streams_with_data(
     dir: &Path,
     stream_ids: &[uuid::Uuid],
 ) -> std::collections::HashSet<uuid::Uuid> {
-    let mut result = std::collections::HashSet::new();
-    for &id in stream_ids {
-        let path = stream_path(dir, id);
-        if let Ok(meta) = fs::metadata(&path).await
-            && meta.len() > 0
-        {
-            result.insert(id);
+    let wanted: std::collections::HashSet<uuid::Uuid> = stream_ids.iter().copied().collect();
+    let mut found = std::collections::HashSet::new();
+
+    visit_non_empty_stream_files(dir, |stream_id, _election| {
+        if wanted.contains(&stream_id) {
+            found.insert(stream_id);
         }
-    }
+    })
+    .await;
+
+    found
+}
+
+/// List the elections that have persisted events under the given stream.
+pub async fn elections_for_stream(dir: &Path, stream_id: uuid::Uuid) -> Vec<ElectionConfig> {
+    let mut result = Vec::new();
+    visit_non_empty_stream_files(dir, |id, election| {
+        if id == stream_id {
+            result.push(election);
+        }
+    })
+    .await;
     result
 }
 
+/// Iterate non-empty `{stream_id}_{election}.bin` files in `dir`, invoking
+/// `callback` for each successfully parsed entry. Directory read errors and
+/// unparseable filenames are ignored.
+async fn visit_non_empty_stream_files(
+    dir: &Path,
+    mut callback: impl FnMut(uuid::Uuid, ElectionConfig),
+) {
+    let Ok(mut entries) = fs::read_dir(dir).await else {
+        return;
+    };
+
+    while let Ok(Some(entry)) = entries.next_entry().await {
+        let Some((stream_id, election)) = parse_stream_filename(&entry.file_name()) else {
+            continue;
+        };
+        if let Ok(meta) = entry.metadata().await
+            && meta.len() > 0
+        {
+            callback(stream_id, election);
+        }
+    }
+}
+
+/// Parse a filename of the form `{uuid}_{election_stable_id}.bin` back into its
+/// `(stream_id, election)` parts. Returns `None` for unrelated files.
+fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(uuid::Uuid, ElectionConfig)> {
+    let name = file_name.to_str()?;
+    let stem = name.strip_suffix(".bin")?;
+    let (id_str, election_segment) = stem.split_once('_')?;
+    let stream_id = uuid::Uuid::parse_str(id_str).ok()?;
+    let election = parse_stable_id(election_segment)?;
+    Some((stream_id, election))
+}
+
+/// Parse the filename-safe form of `stable_id()` (with `:` replaced by `_`,
+/// see [`stream_path`]) back into an `ElectionConfig`.
+fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
+    let (code, region) = match value.split_once('_') {
+        Some((code, region)) => (code, Some(region)),
+        None => (value, None),
+    };
+    ElectionConfig::from_code_and_region(code, region)
+}
+
 /// Ensure a stream file exists for local storage.
-pub async fn ensure_stream_file(dir: &Path, stream_id: uuid::Uuid) -> Result<(), AppError> {
-    let path = stream_path(dir, stream_id);
+pub async fn ensure_stream_file(
+    dir: &Path,
+    stream_id: uuid::Uuid,
+    election: ElectionConfig,
+) -> Result<(), AppError> {
+    let path = stream_path(dir, stream_id, election);
     OpenOptions::new()
         .create(true)
         .write(true)
@@ -160,10 +228,11 @@ pub async fn ensure_stream_file(dir: &Path, stream_id: uuid::Uuid) -> Result<(),
 async fn append_once<E: Serialize>(
     dir: &Path,
     stream_id: uuid::Uuid,
+    election: ElectionConfig,
     cipher: &EventCipher,
     event: &StoreEvent<E>,
 ) -> Result<(), AppError> {
-    let path = stream_path(dir, stream_id);
+    let path = stream_path(dir, stream_id, election);
     let mut file = OpenOptions::new()
         .create(true)
         .append(true)
@@ -205,8 +274,11 @@ async fn append_once<E: Serialize>(
     Ok(())
 }
 
-fn stream_path(dir: &Path, stream_id: uuid::Uuid) -> PathBuf {
-    dir.join(format!("{stream_id}.bin"))
+fn stream_path(dir: &Path, stream_id: uuid::Uuid, election: ElectionConfig) -> PathBuf {
+    // Election identifiers can contain ':' (e.g. `PS27:GR`); replace with '_'
+    // so the filename stays portable on all filesystems.
+    let election_segment = election.stable_id().replace(':', "_");
+    dir.join(format!("{stream_id}_{election_segment}.bin"))
 }
 
 #[cfg(test)]
@@ -251,6 +323,8 @@ mod tests {
         EventEncryption::new(&SecretString::from("test-secret"))
     }
 
+    const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
+
     async fn temp_dir() -> PathBuf {
         let mut dir = std::env::temp_dir();
         dir.push(format!("eks-store-test-{}", uuid::Uuid::new_v4()));
@@ -262,8 +336,9 @@ mod tests {
         let encryption = test_encryption();
         Store {
             stream_id,
+            election: TEST_ELECTION,
             persistence: super::super::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
             data: Arc::new(RwLock::new(TestData::default())),
         }
     }
@@ -299,7 +374,7 @@ mod tests {
         )
         .await?;
 
-        let path = stream_path(&dir, store.stream_id);
+        let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
         let file_contents = fs::read(&path).await.expect("read log");
         // Binary file should not be empty
         assert!(!file_contents.is_empty());
@@ -336,9 +411,9 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = uuid::Uuid::new_v4();
-        ensure_stream_file(&dir, stream_id).await?;
+        ensure_stream_file(&dir, stream_id, TEST_ELECTION).await?;
 
-        let path = stream_path(&dir, stream_id);
+        let path = stream_path(&dir, stream_id, TEST_ELECTION);
         let metadata = fs::metadata(&path).await.map_err(AppError::ServerError)?;
         assert_eq!(metadata.len(), 0);
 
@@ -358,7 +433,7 @@ mod tests {
             },
             Utc::now(),
         );
-        append_once(&dir, store.stream_id, &store.cipher, &first).await?;
+        append_once(&dir, store.stream_id, TEST_ELECTION, &store.cipher, &first).await?;
         update_in_filesystem(
             &store,
             &dir,
@@ -373,6 +448,7 @@ mod tests {
         // But test_store creates a new encryption instance - same secret though, so same key.
         let fresh = Store {
             stream_id: store.stream_id,
+            election: TEST_ELECTION,
             persistence: super::super::StorePersistence::None,
             cipher: store.cipher.clone(),
             data: Arc::new(RwLock::new(TestData::default())),
@@ -407,8 +483,9 @@ mod tests {
         let other_enc = EventEncryption::new(&SecretString::from("wrong-secret"));
         let wrong_store = Store {
             stream_id,
+            election: TEST_ELECTION,
             persistence: super::super::StorePersistence::None,
-            cipher: other_enc.derive_cipher(stream_id),
+            cipher: other_enc.derive_cipher(stream_id, TEST_ELECTION),
             data: Arc::new(RwLock::new(TestData::default())),
         };
 

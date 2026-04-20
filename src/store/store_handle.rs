@@ -4,20 +4,23 @@ use std::sync::Arc;
 
 use uuid::Uuid;
 
-use crate::AppError;
+use crate::{AppError, ElectionConfig};
 
 use super::{
     StoreData, StoreEvent, StorePersistence,
     encryption::{EventCipher, EventEncryption},
 };
 
-/// Event-sourced store handle for a single stream.
+/// Event-sourced store handle for a single (stream, election) pair.
 pub struct Store<D> {
-    /// Stream identifier used to partition events.
+    /// Stream identifier. One stream per user; events are partitioned by
+    /// `(stream_id, election)`.
     pub stream_id: Uuid,
+    /// Election this store instance is scoped to.
+    pub election: ElectionConfig,
     /// Persistence backend used for load/update operations.
     pub persistence: StorePersistence,
-    /// Per-stream cipher for encrypting/decrypting event payloads.
+    /// Per-(stream, election) cipher for encrypting/decrypting event payloads.
     pub(crate) cipher: EventCipher,
     /// In-memory projection for the stream.
     pub(crate) data: Arc<parking_lot::RwLock<D>>,
@@ -28,6 +31,7 @@ impl<D> Clone for Store<D> {
     fn clone(&self) -> Self {
         Self {
             stream_id: self.stream_id,
+            election: self.election,
             persistence: self.persistence.clone(),
             cipher: self.cipher.clone(),
             data: self.data.clone(),
@@ -39,68 +43,55 @@ impl<D> Store<D>
 where
     D: StoreData,
 {
-    /// Create a new store and initialize persistence from the provided storage URL.
-    pub async fn new(
-        storage_url: &str,
-        encryption: &EventEncryption,
-        init: D::Init,
-    ) -> Result<Self, AppError> {
-        Self::new_for_stream(storage_url, Uuid::new_v4(), encryption, init).await
-    }
-
-    /// Create a new store scoped to a specific stream ID.
+    /// Create a new store scoped to a specific (stream_id, election) pair.
     pub async fn new_for_stream(
         storage_url: &str,
         stream_id: Uuid,
+        election: ElectionConfig,
         encryption: &EventEncryption,
         init: D::Init,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, encryption, init).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption, init)
+            .await
     }
 
     /// Create a new store for a stream using an already-initialized persistence backend.
     pub async fn new_for_stream_with_persistence(
         persistence: StorePersistence,
         stream_id: Uuid,
+        election: ElectionConfig,
         encryption: &EventEncryption,
         init: D::Init,
     ) -> Result<Self, AppError> {
-        let cipher = encryption.derive_cipher(stream_id);
+        let cipher = encryption.derive_cipher(stream_id, election);
         let store = Store {
             stream_id,
+            election,
             persistence,
             cipher,
             data: Arc::new(parking_lot::RwLock::new(D::new(init))),
         };
 
-        store.persistence.ensure_stream(stream_id).await?;
+        store.persistence.ensure_stream(stream_id, election).await?;
 
         Ok(store)
     }
 
     #[cfg(feature = "database")]
-    /// Create a new store backed by the provided database pool.
-    pub async fn new_with_pool(
-        pool: sqlx::PgPool,
-        encryption: &EventEncryption,
-        init: D::Init,
-    ) -> Result<Self, AppError> {
-        Self::new_with_pool_for_stream(pool, Uuid::new_v4(), encryption, init).await
-    }
-
-    #[cfg(feature = "database")]
-    /// Create a new store backed by the provided database pool for a stream.
+    /// Create a new store backed by the provided database pool for a (stream, election).
     pub async fn new_with_pool_for_stream(
         pool: sqlx::PgPool,
         stream_id: Uuid,
+        election: ElectionConfig,
         encryption: &EventEncryption,
         init: D::Init,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, encryption, init).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption, init)
+            .await
     }
 
     /// Synchronize the in-memory store with the persistence by replaying any missing events.
@@ -122,6 +113,8 @@ where
 mod tests {
     use super::*;
     use secrecy::SecretString;
+
+    const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
 
     #[derive(Default)]
     struct TestData {
@@ -156,8 +149,9 @@ mod tests {
         let stream_id = Uuid::new_v4();
         Store {
             stream_id,
+            election: TEST_ELECTION,
             persistence: StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
             data: Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }

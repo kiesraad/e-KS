@@ -280,10 +280,7 @@ mod test {
     async fn create_candidate_list_with_district_election_persists() -> Result<(), AppError> {
         let store =
             AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::Fryslan));
-        let context = Context::new(
-            &store,
-            Session::new_with_locale(&"test_id_code".into(), Locale::En),
-        );
+        let context = Context::new(&store, Session::new_with_locale(Locale::En));
 
         let response =
             create_candidate_list(CandidateListCreatePath {}, context, store.clone()).await?;
@@ -336,10 +333,7 @@ mod test {
         let store =
             AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::AaEnMaas));
 
-        let mut context = Context::new(
-            &store,
-            Session::new_with_locale(&"test_id_code".into(), Locale::En),
-        );
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
         context.election = ElectionConfig::WS27(WaterCouncil::AaEnMaas); // select election with only one district
         sample_candidate_list(CandidateListId::new())
             .create(&store)
@@ -369,10 +363,7 @@ mod test {
         let store =
             AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::AaEnMaas));
 
-        let mut context = Context::new(
-            &store,
-            Session::new_with_locale(&"test_id_code".into(), Locale::En),
-        );
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
         context.election = ElectionConfig::WS27(WaterCouncil::AaEnMaas); // select election with only one district
 
         // test
@@ -404,10 +395,7 @@ mod test {
     async fn district_outside_election_is_ignored() -> Result<(), AppError> {
         // setup
         let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
-        let mut context = Context::new(
-            &store,
-            Session::new_with_locale(&"test_id_code".into(), Locale::En),
-        );
+        let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
         context.election = ElectionConfig::EK27;
         let csrf_token = context.session.csrf_tokens.issue().value;
 

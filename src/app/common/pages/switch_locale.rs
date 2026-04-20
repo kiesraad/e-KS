@@ -16,7 +16,7 @@ pub async fn switch_language(
     Form(form): Form<LanguageSwitch>,
 ) -> Redirect {
     session.locale = form.lang;
-    state.sessions.insert(session);
+    state.sessions.insert(session).await;
 
     Redirect::to(&referer.to_string())
 }
@@ -49,7 +49,7 @@ mod tests {
 
         let session = crate::Session::new_test();
         let token = session.token().to_exposed_string();
-        state.sessions.insert(session);
+        state.sessions.insert(session).await;
 
         let request = Request::builder()
             .method("POST")
@@ -71,7 +71,7 @@ mod tests {
             "https://example.com/return"
         );
 
-        let session = state.sessions.get(&token).expect("session");
+        let session = state.sessions.get(&token).await.expect("session");
         assert_eq!(session.locale, Locale::En);
     }
 }
