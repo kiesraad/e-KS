@@ -350,6 +350,14 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "be5eb007b7cacc6c660343e96f650fedf4b5a77512399eb952ca6642cf8d13f7"
 
 [[package]]
+name = "bag_address_lookup"
+version = "0.5.0"
+source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.5.0#ff52e9ffa161998ed640bee084a4cd519d2a6b80"
+dependencies = [
+ "flate2",
+]
+
+[[package]]
 name = "base64"
 version = "0.22.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -922,6 +930,7 @@ dependencies = [
  "auth-service",
  "axum",
  "axum-extra",
+ "bag_address_lookup",
  "bytes",
  "chrono",
  "csv",
@@ -4404,8 +4413,8 @@ dependencies = [
 
 [[package]]
 name = "typst-webservice"
-version = "0.6.0"
-source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.6.0#e589489330a35ef6caea9c083a8efef937c9bd98"
+version = "0.7.0"
+source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.7.0#e7bf1c5d969986a100855d6abd4eaa736e608e02"
 dependencies = [
  "async_zip",
  "axum",
