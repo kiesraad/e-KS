@@ -5,8 +5,9 @@ use axum::{
 use chrono::Datelike;
 use eml_nl::{
     common::{
-        CandidateIdentifier, CountryNameCode, FirstName, LastName, ListData, ListDataContest,
-        NameLineInitials, NamePrefix, PersonName,
+        AuthorityIdentifier, CandidateIdentifier, CountryNameCode, CreatedByAuthority, FirstName,
+        LastName, ListData, ListDataContest, ManagingAuthority, NameLineInitials, NamePrefix,
+        PersonName,
     },
     documents::{
         EML,
@@ -17,7 +18,7 @@ use eml_nl::{
         },
     },
     io::EMLWrite,
-    utils::{AffiliationType, CandidateId, ContestId, ElectionId, StringValue},
+    utils::{AffiliationType, AuthorityId, CandidateId, ContestId, ElectionId, StringValue},
 };
 
 use crate::{
@@ -303,6 +304,13 @@ pub async fn gen_eml210(
         .transaction_id(
             u64::try_from(store.data.read().last_event_id())
                 .map_err(|_| AppError::InternalServerError)?,
+        )
+        .managing_authority(
+            ManagingAuthority::new(AuthorityIdentifier::new(AuthorityId::new("0000")?))
+                .with_created_by_authority(
+                    CreatedByAuthority::new(AuthorityId::new("0000")?)
+                        .with_name("De politieke partij"),
+                ),
         )
         .issue_date(chrono::Utc::now().date_naive())
         .creation_date_time(chrono::Utc::now())
