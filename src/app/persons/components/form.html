@@ -43,14 +43,36 @@
     {% for error in form|error("personal_data.bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
   <p class="form-field form-field-md {% if form.data.personal_data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
-    <label for="date_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
-    <input type="text"
-           placeholder=" "
-           name="date_of_birth"
-           id="date_of_birth"
-           value="{{ form.data.personal_data.date_of_birth }}"
-           placeholder="dd-mm-jjjj"
-           inputmode="numeric" />
+    <label for="day_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
+    <span class="date-input-row">
+      <input type="hidden"
+             class="day"
+             placeholder="dd"
+             name="day_of_birth"
+             id="day_of_birth"
+             inputmode="numeric" />
+      <span class="mt-md dash hidden">-</span>
+      <input type="hidden"
+             class="month"
+             placeholder="mm"
+             name="month_of_birth"
+             id="month_of_birth"
+             inputmode="numeric" />
+      <span class="mt-md dash hidden">-</span>
+      <input type="hidden"
+             class="year"
+             placeholder="yyyy"
+             name="year_of_birth"
+             id="year_of_birth"
+             inputmode="numeric" />
+      <input type="text"
+             placeholder=" "
+             name="date_of_birth"
+             id="date_of_birth"
+             value="{{ form.data.personal_data.date_of_birth }}"
+             placeholder="dd-mm-jjjj"
+             inputmode="numeric" />
+    </span>
     {% for error in form|error("personal_data.date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
 </div>
