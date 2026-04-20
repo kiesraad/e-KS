@@ -246,12 +246,12 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
 
 fn nomination_proposer(
     submitter: ListSubmitter,
-    role: &'static str,
+    job_title: eml_nl::utils::NominationJobTitle,
 ) -> Result<eml_nl::documents::nomination::NominationProposer, AppError> {
     Ok(eml_nl::documents::nomination::NominationProposer {
         name: (&submitter.name).into(),
         contact: (&submitter.address).try_into()?,
-        job_title: role.to_string(),
+        job_title: StringValue::Parsed(job_title),
         id: None,
         living_address: None,
     })
@@ -270,13 +270,13 @@ pub async fn gen_eml210(
             list.list_submitter_id
                 .ok_or(AppError::IncompleteData("missing list submitter"))?,
         )?,
-        "inleveraar",
+        eml_nl::utils::NominationJobTitle::Submitter,
     )?);
 
     for id in &list.substitute_list_submitter_ids {
         nominated.push(nomination_proposer(
             store.get_substitute_submitter(*id)?,
-            "plaatsvervanger van de inleveraar",
+            eml_nl::utils::NominationJobTitle::DeputySubmitter,
         )?);
     }
 
