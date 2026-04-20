@@ -7,6 +7,7 @@ actions:
   delete_list: Delete candidate list
   edit: Edit list
   export_csv: Download CSV file
+  export_csv_template: Download CSV template
   import_csv: Upload CSV file
   import_export: Import and export candidate list
   import_export_csv: CSV
@@ -57,6 +58,9 @@ import_export:
   export_title: Export
   import_description: Use a CSV file to replace the candidates on this list.
   import_failed: Import failed
+  import_instructions: "<p><strong>Kopregels</strong><br> Gebruik de correcte kolomnamen. Download het export-CSV-bestand en gebruik dit als sjabloon.</p> <br> <p><strong>Volgorde</strong><br> De volgorde van personen in het CSV-bestand bepaalt de volgorde op de kandidatenlijst.</p> <br> <p><strong>Verplichte velden</strong><br> Minimaal de volgende velden moeten ingevuld zijn: <ul> <li>Voorletters</li> <li>Achternaam</li> </ul> </p> <br> <p><strong>Geboortedatum</strong><br> Gebruik het formaat <code>dd-mm-jjjj</code> (bijvoorbeeld: 31-12-1990).</p> <br> <p><strong>Geslacht</strong><br> Alleen de volgende waarden worden geaccepteerd: <ul> <li><code>female</code> | <code>frou</code> | <code>vrouw</code> | <code>f</code> | <code>v</code></li> <li><code>male</code> | <code>man</code> | <code>m</code></li> </ul> </p> <br> <p><strong>Adresgegevens</strong><br> Er zijn twee typen adressen: <ul> <li>Vul het <strong>correspondentieadres</strong> in als de persoon in Nederland woont.</li> <li>Woont de persoon niet in Nederland, vul dan de gegevens van de <strong>gemachtigde</strong> in.</li> </ul> </p> <br> <p><strong>Postcode</strong><br> Gebruik het formaat <code>1234AB</code></p>"
+  import_instructions_header: Import instructions candidate list
+  import_instructions_intro: "Use a CSV file to import candidates into this list. The file must meet the following requirements:"
   import_title: Import
   overwrite_title: Warning
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?

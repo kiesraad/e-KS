@@ -40,14 +40,14 @@
                     formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
           {% endif %}
           <div class="alert alert-info float-root">
-            <h4 class="mb-md font-bold">CSV-import instructies kandidatenlijst</h4>
+            <h4 class="mb-md font-bold">{{ "candidate_list.import_export.import_instructions_header"|trans }}</h4>
             <p>
-              Gebruik een CSV-bestand om kandidaten naar deze lijst te importeren. Het bestand moet aan de volgende eisen voldoen:
+              {{ "candidate_list.import_export.import_instructions_intro"|trans }}
             </p>
-            <p class="read-more-button mt-md" target="import-extra-info">Lees meer</p>
+            <p class="read-more-button mt-md" target="import-extra-info">{{ "action.read_more"|trans }}</p>
             <div id="import-extra-info" class="hidden mt-md">
-              <p class="font-bold">Kopregels</p>
-              <p>Gebruik de correcte kolomnamen. Download het export-CSV-bestand en gebruik dit als sjabloon.</p>
+              
+              <p>{{ "candidate_list.import_export.import_instructions"|trans|safe }}</p>
               <!-- Volgorde:
     De volgorde van personen in het CSV-bestand bepaalt de volgorde op de kandidatenlijst.
     Verplichte velden:
@@ -69,9 +69,9 @@
         Woont de persoon niet in Nederland, vul dan de gegevens van de gemachtigde in.
     Postcode:
 Gebruik het formaat 1234AB -->
-              <p class="read-less-button mt-md">Lees minder</p>
+              <p class="read-less-button mt-md">{{ "action.read_less"|trans }}</p>
             </div>
-            <a href="{{ CandidateList::import_template_path() }}" class="button secondary icon-download float-right">Download CSV sjabloon</a>
+            <a href="{{ CandidateList::import_template_path() }}" class="button secondary icon-download float-right">{{ "candidate_list.actions.export_csv_template"|trans }}</a>
           </div>
         </p>
       </div>
