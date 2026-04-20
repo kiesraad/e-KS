@@ -7,13 +7,11 @@ use crate::{
     persons::PersonId,
 };
 
-use super::event_info::abbreviate_str;
-
 /// A reference to another entity mentioned inside a diff value. Rendered in
 /// the template as an abbreviated link + the entity's description.
+#[cfg_attr(test, derive(Debug, PartialEq))]
 pub struct EntityRef {
     pub id_full: String,
-    pub id_abbreviated: String,
     pub description: String,
 }
 
@@ -48,22 +46,32 @@ fn entity_kind_for_key(key: &str) -> Option<EntityKind> {
 /// Build `EntityRef`s for a diff cell value, if the key references known
 /// entities. The value may be a single UUID or a comma-separated list of
 /// UUIDs (from the scalar-array CSV collapsing performed in `flatten`).
-pub(super) fn build_refs_for_key(key: &str, value: &str, state: &AppStoreData) -> Vec<EntityRef> {
-    let Some(kind) = entity_kind_for_key(key) else {
-        return Vec::new();
-    };
-    if value.is_empty() {
-        return Vec::new();
-    }
-    value
+pub(super) fn build_ref_diffs_for_key(
+    key: &str,
+    old_value: &str,
+    state_before: &AppStoreData,
+    new_value: &str,
+    state_after: &AppStoreData,
+) -> Option<(Vec<EntityRef>, Vec<EntityRef>)> {
+    let kind = entity_kind_for_key(key)?;
+
+    let old_refs = old_value
         .split(", ")
         .filter(|s| !s.is_empty())
         .map(|id_str| EntityRef {
             id_full: id_str.to_string(),
-            id_abbreviated: abbreviate_str(id_str),
-            description: describe_entity(&kind, id_str, state),
+            description: describe_entity(&kind, id_str, state_before),
         })
-        .collect()
+        .collect();
+    let new_refs = new_value
+        .split(", ")
+        .filter(|s| !s.is_empty())
+        .map(|id_str| EntityRef {
+            id_full: id_str.to_string(),
+            description: describe_entity(&kind, id_str, state_after),
+        })
+        .collect();
+    Some((old_refs, new_refs))
 }
 
 fn describe_entity(kind: &EntityKind, id_str: &str, state: &AppStoreData) -> String {
