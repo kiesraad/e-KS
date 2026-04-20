@@ -46,38 +46,37 @@
             <tr class="{{ change.change_kind() }}">
               {% match change %}
               {% when FieldChange::Regular with { field, old_value, new_value } %}
-                <td>{{ field }}</td>
-                <td>{{ old_value }}</td>
-                <td>{{ new_value }}</td>
-
+              <td>{{ field }}</td>
+              <td>{{ old_value }}</td>
+              <td>{{ new_value }}</td>
               {% when FieldChange::Entities with { field, old_refs, new_refs } %}
-                <td>{{ field }}</td>
-                <td>
-                  {% for entity_ref in old_refs %}
-                    <div class="entity-ref">
-                      <a href="/audit-log?search={{ entity_ref.id_full }}">
-                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
-                      </a>
-                      {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
-                    </div>
-                  {% endfor %}
-                </td>
-                <td>
-                  {% for entity_ref in new_refs %}
-                    <div class="entity-ref">
-                      <a href="/audit-log?search={{ entity_ref.id_full }}">
-                        <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
-                      </a>
-                      {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
-                    </div>
-                  {% endfor %}
-                </td>
-              {% endmatch %}
-            </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-    {% endif %}
-  </div>
+              <td>{{ field }}</td>
+              <td>
+                {% for entity_ref in old_refs %}
+                  <div class="entity-ref">
+                    <a href="/audit-log?search={{ entity_ref.id_full }}">
+                      <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
+                    </a>
+                    {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
+                  </div>
+                {% endfor %}
+              </td>
+              <td>
+                {% for entity_ref in new_refs %}
+                  <div class="entity-ref">
+                    <a href="/audit-log?search={{ entity_ref.id_full }}">
+                      <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
+                    </a>
+                    {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
+                  </div>
+                {% endfor %}
+              </td>
+            {% endmatch %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+</div>
 {% endblock %}
 {% block overlay_actions %}{% endblock %}
