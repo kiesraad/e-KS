@@ -9,11 +9,11 @@ tools:
     base_url: "https://github.com/biomejs/biome/releases/download/@biomejs/biome@"
   - name: bag-service
     # https://github.com/tweedegolf/bag-address-lookup/releases
-    version: "0.4.0"
+    version: "0.5.0"
     base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
   - name: typst-webservice
     # https://github.com/tweedegolf/typst-webservice/releases
-    version: "0.6.0"
+    version: "0.7.0"
     base_url: "https://github.com/tweedegolf/typst-webservice/releases/download"
 commands:
   docker_compose_rm:
