@@ -1,9 +1,9 @@
-use chrono::NaiveDate;
+use chrono::{Datelike, NaiveDate};
 
 use crate::{
     ElectoralDistrict,
     core::{
-        AnyLocale, ElectionType,
+        AnyLocale, ElectionType, ModelLocale,
         election::{Province, WaterCouncil},
     },
 };
@@ -97,6 +97,74 @@ impl ElectionConfig {
         } else {
             code.to_string()
         }
+    }
+
+    /// The election title to be followed by the phrase "Het gaat om de verkiezing van ...", as written on the models.
+    ///
+    /// Specifies the region, but not the year of the election.
+    pub fn formal_title(&self, locale: ModelLocale) -> String {
+        let region = || {
+            self.region_title(AnyLocale::from(locale))
+                .expect("region title required for this election type")
+        };
+
+        match (self.election_type(), locale) {
+            (ElectionType::Tk, ModelLocale::Nl) => {
+                "de Tweede Kamer der Staten-Generaal".to_string()
+            }
+            (ElectionType::Tk, ModelLocale::Fry) => {
+                "de Twadde Keamer fan de Steaten-Generaal".to_string()
+            }
+
+            (ElectionType::Ek, ModelLocale::Nl) => {
+                "de Eerste Kamer der Staten-Generaal".to_string()
+            }
+            (ElectionType::Ek, ModelLocale::Fry) => {
+                "de Earste Keamer fan de Steaten-Generaal".to_string()
+            }
+
+            (ElectionType::Gr, ModelLocale::Nl) => {
+                format!("de gemeenteraad van {}", region())
+            }
+            (ElectionType::Gr, ModelLocale::Fry) => {
+                format!("de gemeenterie fan {}", region())
+            }
+
+            (ElectionType::Ps, ModelLocale::Nl) => {
+                format!("de provinciale staten van {}", region())
+            }
+            (ElectionType::Ps, ModelLocale::Fry) => {
+                format!("de Provinsjale Steaten fan {}", region())
+            }
+
+            (ElectionType::Ws, ModelLocale::Nl) => {
+                format!("het algemeen bestuur van het waterschap {}", region())
+            }
+            (ElectionType::Ws, ModelLocale::Fry) => {
+                format!("it algemien bestjoer fan it wetterskip {}", region())
+            }
+
+            (ElectionType::Ep, ModelLocale::Nl) => "het Europees Parlement".to_string(),
+            (ElectionType::Ep, ModelLocale::Fry) => "het Europees Parlement".to_string(),
+
+            (ElectionType::Kc, _) => todo!("Support electoral college regions"),
+            (ElectionType::Er, _) => todo!("Support island regions"),
+        }
+    }
+
+    /// The full formal election title including the region and year, as listed in the EML 210.
+    ///
+    /// E.g. "Verkiezing van de gemeenteraad van Voorne aan Zee 2026"
+    pub fn full_formal_title(&self, locale: ModelLocale) -> String {
+        format!(
+            "{} {} {}",
+            match locale {
+                ModelLocale::Fry => "Ferkiezing fan",
+                ModelLocale::Nl => "Verkiezing van",
+            },
+            self.formal_title(locale),
+            self.election_date().year()
+        )
     }
 
     /// Returns all concrete election configurations.
@@ -246,5 +314,43 @@ mod tests {
             None
         );
         assert_eq!(ElectionConfig::from_code_and_region("", None), None);
+    }
+
+    #[test]
+    fn formal_title() {
+        assert_eq!(
+            ElectionConfig::EK27.formal_title(ModelLocale::Nl),
+            "de Eerste Kamer der Staten-Generaal"
+        );
+        assert_eq!(
+            ElectionConfig::EK27.formal_title(ModelLocale::Fry),
+            "de Earste Keamer fan de Steaten-Generaal"
+        );
+        assert_eq!(
+            ElectionConfig::EK27.full_formal_title(ModelLocale::Nl),
+            "Verkiezing van de Eerste Kamer der Staten-Generaal 2027"
+        );
+        assert_eq!(
+            ElectionConfig::EK27.full_formal_title(ModelLocale::Fry),
+            "Ferkiezing fan de Earste Keamer fan de Steaten-Generaal 2027"
+        );
+
+        assert_eq!(
+            ElectionConfig::PS27(Province::DR).formal_title(ModelLocale::Nl),
+            "de provinciale staten van Drenthe"
+        );
+        assert_eq!(
+            ElectionConfig::PS27(Province::DR).full_formal_title(ModelLocale::Nl),
+            "Verkiezing van de provinciale staten van Drenthe 2027"
+        );
+
+        assert_eq!(
+            ElectionConfig::WS27(WaterCouncil::Fryslan).formal_title(ModelLocale::Fry),
+            "it algemien bestjoer fan it wetterskip Fryslân"
+        );
+        assert_eq!(
+            ElectionConfig::WS27(WaterCouncil::Fryslan).full_formal_title(ModelLocale::Fry),
+            "Ferkiezing fan it algemien bestjoer fan it wetterskip Fryslân 2027"
+        );
     }
 }

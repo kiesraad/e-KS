@@ -100,6 +100,7 @@ impl TryFrom<ElectionConfig> for eml_nl::documents::nomination::NominationElecti
         };
 
         Ok(NominationElectionIdentifier::builder()
+            .name(value.full_formal_title(crate::core::ModelLocale::Nl))
             .category(category)
             .subcategory(&value)
             .election_date(value.election_date())
@@ -265,19 +266,17 @@ pub async fn gen_eml210(
 ) -> Result<Response, AppError> {
     let FullCandidateList { list, candidates } = FullCandidateList::get(&store, list_id)?;
 
-    let mut nominated = Vec::with_capacity(1 + list.substitute_list_submitter_ids.len());
+    let substitutes = store.get_substitute_submitters();
+    let mut nominated = Vec::with_capacity(1 + substitutes.len());
     nominated.push(nomination_proposer(
-        store.get_list_submitter(
-            list.list_submitter_id
-                .ok_or(AppError::IncompleteData("missing list submitter"))?,
-        )?,
+        store.get_list_submitter(),
         eml_nl::utils::NominationJobTitle::Submitter,
         None,
     )?);
 
-    for (i, id) in list.substitute_list_submitter_ids.iter().enumerate() {
+    for (i, sub) in substitutes.into_iter().enumerate() {
         nominated.push(nomination_proposer(
-            store.get_substitute_submitter(*id)?,
+            sub,
             eml_nl::utils::NominationJobTitle::DeputySubmitter,
             Some((i + 1).to_string()),
         )?);
@@ -403,9 +402,7 @@ mod tests {
 
         let mut submitter = sample_list_submitter(ListSubmitterId::new());
         submitter.name.last_name = "Submitter".parse().unwrap();
-        submitter.create(store).await?;
-
-        list.list_submitter_id = Some(submitter.id);
+        submitter.update(store).await?;
 
         let mut sub_submitter1 = sample_list_submitter(ListSubmitterId::new());
         sub_submitter1.name.last_name = "Sub Submitter I".parse().unwrap();
@@ -413,8 +410,6 @@ mod tests {
         sub_submitter2.name.last_name = "Sub Submitter II".parse().unwrap();
         sub_submitter1.create_substitute(store).await?;
         sub_submitter2.create_substitute(store).await?;
-
-        list.substitute_list_submitter_ids = vec![sub_submitter1.id, sub_submitter2.id];
 
         list.create(store).await?;
 

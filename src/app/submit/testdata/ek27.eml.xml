@@ -5,6 +5,7 @@
     <kr:CreationDateTime>2026-04-16T12:56:49.072741932+00:00</kr:CreationDateTime>
     <Nomination>
         <ElectionIdentifier Id="EK2027">
+            <ElectionName>Verkiezing van de Eerste Kamer der Staten-Generaal 2027</ElectionName>
             <ElectionCategory>EK</ElectionCategory>
             <kr:ElectionSubcategory>EK</kr:ElectionSubcategory>
             <kr:ElectionDate>2027-05-24</kr:ElectionDate>
