@@ -23,12 +23,17 @@
           {% endfor %}
         </div>
       {% endif %}
-      <p class="mt-lg">
-        <a href="{{ ListSubmitter::create_path() }}"
-           class="button secondary icon-plus"
-           type="button">{{ "political_group.add_list_submitter"|trans }}</a>
-      </p>
-      <div class="alert alert-info">{{ "political_group.multiple_submitter_info"|trans }}</div>
+      {% let election = "election"|election_value %}
+      {% if !election.has_only_one_district() || list_submitters.len() == 0 %}
+        <p class="mt-lg">
+          <a href="{{ ListSubmitter::create_path() }}"
+             class="button secondary icon-plus"
+             type="button">{{ "political_group.add_list_submitter"|trans }}</a>
+        </p>
+      {% endif %}
+      {% if !election.has_only_one_district() %}
+        <div class="alert alert-info">{{ "political_group.multiple_submitter_info"|trans }}</div>
+      {% endif %}
       <h2 class="mt-lg">{{ "political_group.substitute_submitter_data"|trans }}</h2>
       <p class="info">{{ "political_group.substitute_submitters_info"|trans }}</p>
       {% if substitute_submitters.is_empty() %}
