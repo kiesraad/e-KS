@@ -46,29 +46,7 @@
             </p>
             <p class="read-more-button mt-md" target="import-extra-info">{{ "action.read_more"|trans }}</p>
             <div id="import-extra-info" class="hidden mt-md">
-              
               <p>{{ "candidate_list.import_export.import_instructions"|trans|safe }}</p>
-              <!-- Volgorde:
-    De volgorde van personen in het CSV-bestand bepaalt de volgorde op de kandidatenlijst.
-    Verplichte velden:
-    Minimaal de volgende velden moeten ingevuld zijn:
-        Voorletters
-        Achternaam
-    Geboortedatum:
-    Gebruik het formaat dd-mm-jjjj (bijvoorbeeld: 31-12-1990).
-
-    Geslacht:
-      Alleen de volgende waarden worden geaccepteerd:
-
-        female | frou | vrouw | f | v
-
-        male | man | m 
-    Adresgegevens:
-    Er zijn twee typen adressen:
-        Vul het correspondentieadres in als de persoon in Nederland woont.
-        Woont de persoon niet in Nederland, vul dan de gegevens van de gemachtigde in.
-    Postcode:
-Gebruik het formaat 1234AB -->
               <p class="read-less-button mt-md">{{ "action.read_less"|trans }}</p>
             </div>
             <a href="{{ CandidateList::import_template_path() }}" class="button secondary icon-download float-right">{{ "candidate_list.actions.export_csv_template"|trans }}</a>
