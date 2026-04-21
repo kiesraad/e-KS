@@ -22,6 +22,7 @@ fields:
   state_or_province: State / province
   street_name: Street name
   updated_at: Updated at
+  year_placeholder: yyyy
 form:
   create:
     title: Add person

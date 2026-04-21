@@ -42,7 +42,7 @@ function getDateInputs(): DateField[] {
 }
 
 function sanitize(input: HTMLInputElement) {
-  input.value = input.value.replaceAll(/[^\d-]/g, "");
+  input.value = input.value.replaceAll(/[^\d]/g, "");
 }
 
 function handleDayInput(
