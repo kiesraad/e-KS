@@ -16,7 +16,7 @@ pub use structs::{
     DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,
     HouseNumberAddition, Initials, InternationalAddress, InternationalPostalCode, LastName,
     LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, StateOrProvince, StreetName,
-    UtcDateTime,
+    UtcDateTime, Completable, IncompleteItem
 };
 
 pub use pages::{

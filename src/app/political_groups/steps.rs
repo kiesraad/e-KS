@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
+    AppError, AppStore, authorised_agents::AuthorisedAgent, common::Completable, list_submitters::ListSubmitter
 };
 
 #[derive(Clone, Debug)]
@@ -21,7 +21,7 @@ impl PoliticalGroupSteps {
         let substitute_submitters = store.get_substitute_submitters();
 
         Ok(Self {
-            basic_state: if political_group.is_basic_info_complete() {
+            basic_state: if political_group.is_complete() {
                 "ok"
             } else if political_group.is_basic_info_empty() {
                 "empty"

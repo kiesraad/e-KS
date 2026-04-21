@@ -39,7 +39,7 @@ pub async fn index(
 ) -> Result<impl IntoResponse, AppError> {
     let election = context.election;
 
-    let candidate_lists = CandidateListSummary::list(&store)?
+    let candidate_lists = CandidateListSummary::list(&store, context.max_candidates)?
         .into_iter()
         .map(|summary| {
             let has_required_list_data = summary.person_count > 0

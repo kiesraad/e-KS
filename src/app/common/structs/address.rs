@@ -25,6 +25,20 @@ pub struct DutchAddress {
     pub postal_code: Option<PostalCode>,
 }
 
+// impl Completable for DutchAddress {
+//     fn incomplete_items(&self) -> Vec<IncompleteItem<&Self>> {
+//         let mut items = vec![];
+//         if self.street_name.is_none() {
+//             items.push(IncompleteItem::MISSING(self.street_name));
+//         }
+//         items
+//     }
+
+//     fn is_complete(&self) -> bool {
+//         todo!()
+//     }
+// }
+
 impl DutchAddress {
     /// Returns `true` when all required address parts are present.
     pub fn is_complete(&self) -> bool {

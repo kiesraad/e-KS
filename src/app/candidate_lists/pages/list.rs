@@ -20,7 +20,7 @@ pub async fn list_candidate_lists(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store)?;
+    let candidate_lists = CandidateListSummary::list(&store, context.max_candidates)?;
     let total_persons = store.get_person_count();
 
     Ok(HtmlTemplate(
