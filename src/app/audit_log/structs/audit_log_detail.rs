@@ -85,7 +85,8 @@ impl AuditLogDetail {
         let state_before = replay(&events[..target_index]);
         let state_after = replay(&events[..=target_index]);
 
-        let (old_json, new_json) = extract_old_new(&target_event.payload, &state_before);
+        let (old_json, new_json) =
+            extract_old_new(&target_event.payload, &state_before, &state_after);
         let old_flat = old_json
             .as_ref()
             .map(|v| flatten(v, ""))
@@ -128,12 +129,11 @@ fn diff(
     locale: Locale,
 ) -> Vec<FieldChange> {
     let mut changes = Vec::new();
-    let mut all_keys: BTreeMap<&str, ()> = BTreeMap::new();
-    for key in old.keys().chain(new.keys()) {
-        all_keys.insert(key.as_str(), ());
-    }
+    let mut all_keys: Vec<&str> = old.keys().chain(new.keys()).map(String::as_str).collect();
+    all_keys.sort_unstable_by(|a, b| natural_cmp(a, b));
+    all_keys.dedup();
 
-    for key in all_keys.keys() {
+    for key in &all_keys {
         if EXCLUDED_FIELDS
             .iter()
             .any(|ex| *key == *ex || key.ends_with(&format!(".{ex}")))
@@ -165,6 +165,30 @@ fn diff(
     }
 
     changes
+}
+
+/// Compare dot-separated paths with all-digit segments ordered numerically, so
+/// positional-array keys like `candidates.10` sort after `candidates.2`.
+fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let mut a_iter = a.split('.');
+    let mut b_iter = b.split('.');
+    loop {
+        match (a_iter.next(), b_iter.next()) {
+            (None, None) => return Ordering::Equal,
+            (None, Some(_)) => return Ordering::Less,
+            (Some(_), None) => return Ordering::Greater,
+            (Some(a_seg), Some(b_seg)) => {
+                let ord = match (a_seg.parse::<u64>(), b_seg.parse::<u64>()) {
+                    (Ok(an), Ok(bn)) => an.cmp(&bn),
+                    _ => a_seg.cmp(b_seg),
+                };
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+        }
+    }
 }
 
 /// Translate a flattened field name to a human-readable label.
@@ -401,6 +425,74 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert!(changes.is_empty());
+    }
+
+    #[test]
+    fn diff_orders_positional_array_keys_numerically() {
+        // Populate candidates.0 .. candidates.11 with distinct old/new values
+        // so every index becomes a change. Without natural ordering these
+        // would come out in lexicographic order (#1, #10, #11, #2, ...).
+        let mut old = BTreeMap::new();
+        let mut new = BTreeMap::new();
+        for i in 0..12 {
+            old.insert(format!("candidates.{i}"), format!("old-{i}"));
+            new.insert(format!("candidates.{i}"), format!("new-{i}"));
+        }
+
+        let state = empty_state();
+        let changes = diff(&old, &new, &state, &state, EN);
+
+        let fields: Vec<&str> = changes.iter().map(FieldChange::field).collect();
+        let expected: Vec<String> = (1..=12).map(|n| format!("Candidates #{n}")).collect();
+        assert_eq!(
+            fields,
+            expected.iter().map(String::as_str).collect::<Vec<_>>()
+        );
+    }
+
+    // --- natural_cmp() ---
+
+    #[test]
+    fn natural_cmp_equal_strings() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates.0", "candidates.0"), Ordering::Equal);
+    }
+
+    #[test]
+    fn natural_cmp_numeric_leaves_ordered_numerically() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates.2", "candidates.10"), Ordering::Less);
+        assert_eq!(
+            natural_cmp("candidates.10", "candidates.11"),
+            Ordering::Less
+        );
+        assert_eq!(
+            natural_cmp("candidates.11", "candidates.2"),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn natural_cmp_nested_numeric_segments_ordered_numerically() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            natural_cmp("candidates.2.name", "candidates.10.name"),
+            Ordering::Less
+        );
+    }
+
+    #[test]
+    fn natural_cmp_non_numeric_segments_fall_back_to_string_order() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("a.1", "b.0"), Ordering::Less);
+        assert_eq!(natural_cmp("candidates.x", "candidates.y"), Ordering::Less);
+    }
+
+    #[test]
+    fn natural_cmp_shorter_path_sorts_before_its_extension() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates", "candidates.0"), Ordering::Less);
+        assert_eq!(natural_cmp("candidates.0", "candidates"), Ordering::Greater);
     }
 
     // --- translate_field_name() ---
@@ -722,5 +814,42 @@ mod tests {
         assert_eq!(change.old_refs().len(), 1);
         assert_eq!(change.old_refs()[0].description, person_name);
         change.assert_no_new();
+    }
+
+    #[test]
+    fn compute_create_candidate_list_orders_candidates_numerically() {
+        // Regression test: for a candidate list with 10+ candidates the detail
+        // view used to render rows in lexicographic order of the array index
+        // (#1, #10, #11, ..., #19, #2, ...). The rows should instead follow
+        // nomination order (#1, #2, ..., #12).
+        let list_id = CandidateListId::new();
+        let persons: Vec<_> = (0..12).map(|_| sample_person(PersonId::new())).collect();
+
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = persons.iter().map(|p| p.id).collect();
+
+        let mut events: Vec<_> = persons
+            .iter()
+            .enumerate()
+            .map(|(i, p)| StoreEvent::new(i + 1, AppEvent::CreatePerson(p.clone())))
+            .collect();
+        events.push(StoreEvent::new(
+            persons.len() + 1,
+            AppEvent::CreateCandidateList(list),
+        ));
+
+        let detail = AuditLogDetail::compute(&events, persons.len() + 1, Locale::En).unwrap();
+        let candidate_fields: Vec<&str> = detail
+            .changes
+            .iter()
+            .map(FieldChange::field)
+            .filter(|f| f.starts_with("Candidates #"))
+            .collect();
+
+        let expected: Vec<String> = (1..=12).map(|n| format!("Candidates #{n}")).collect();
+        assert_eq!(
+            candidate_fields,
+            expected.iter().map(String::as_str).collect::<Vec<_>>()
+        );
     }
 }
