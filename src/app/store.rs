@@ -13,9 +13,6 @@ use crate::{
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair.
-///
-/// The election isn't stored here anymore — it lives on the enclosing
-/// `Store<D>` wrapper as the second key axis alongside the stream id.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,

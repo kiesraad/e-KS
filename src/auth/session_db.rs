@@ -34,10 +34,6 @@ type SessionRow = (
     DateTime<Utc>,
 );
 
-fn serde_error(e: serde_json::Error) -> AppError {
-    AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
-}
-
 /// Serialize the session's live CSRF tokens to a JSONB-ready value.
 fn csrf_tokens_to_json(session: &Session) -> Result<serde_json::Value, AppError> {
     let rows: Vec<CsrfTokenRow> = session
@@ -46,7 +42,8 @@ fn csrf_tokens_to_json(session: &Session) -> Result<serde_json::Value, AppError>
         .into_iter()
         .map(|(value, expires_at)| CsrfTokenRow { value, expires_at })
         .collect();
-    serde_json::to_value(&rows).map_err(serde_error)
+
+    Ok(serde_json::to_value(&rows)?)
 }
 
 /// Insert or update a session row.
@@ -56,8 +53,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     let current_election_json = session
         .current_election
         .map(serde_json::to_value)
-        .transpose()
-        .map_err(serde_error)?;
+        .transpose()?;
 
     sqlx::query(
         r#"
@@ -103,10 +99,9 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
 
     let current_election = current_election_json
         .map(serde_json::from_value::<ElectionConfig>)
-        .transpose()
-        .map_err(serde_error)?;
+        .transpose()?;
 
-    let csrf_rows: Vec<CsrfTokenRow> = serde_json::from_value(csrf_json).map_err(serde_error)?;
+    let csrf_rows: Vec<CsrfTokenRow> = serde_json::from_value(csrf_json)?;
     let csrf_map: HashMap<TokenValue, DateTime<Utc>> = csrf_rows
         .into_iter()
         .map(|row| (row.value, row.expires_at))

@@ -35,7 +35,7 @@ const EVENT_KEY_INFO_PREFIX: &[u8] = b"event-key:";
 /// Each call to [`derive_cipher`](EventEncryption::derive_cipher) runs only
 /// the cheaper HKDF-Expand step.
 ///
-/// Because a single `stream_id` now covers all of a user's elections, the
+/// Because a single `stream_id` covers all of a user's elections, the
 /// `election` is mixed into the info string so events from different
 /// elections retain independent keys.
 #[derive(Clone)]
