@@ -20,7 +20,7 @@ async fn setup() -> (Router, AppStore, String) {
     // same instance the test uses to seed events (bypassing fixture loading).
     let store = state
         .store_registry
-        .get_or_create(stream_id.uuid(), ElectionConfig::EK27, ElectionConfig::EK27)
+        .get_or_create(stream_id.uuid(), ElectionConfig::EK27)
         .await
         .expect("store");
 

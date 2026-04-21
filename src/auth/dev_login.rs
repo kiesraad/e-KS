@@ -74,7 +74,7 @@ async fn ensure_dev_store(
 ) -> Result<(Store<AppStoreData>, bool), AppError> {
     let store = state
         .store_registry
-        .get_or_create(stream_id.uuid(), election, election)
+        .get_or_create(stream_id.uuid(), election)
         .await?;
     let store_is_empty = store.data.read().events.is_empty();
 
@@ -186,11 +186,7 @@ mod tests {
         let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
-            .get_or_create(
-                expected_id.uuid(),
-                ElectionConfig::EK27,
-                ElectionConfig::EK27,
-            )
+            .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
             .await
             .expect("store");
         assert_eq!(store.get_person_count(), 0);
@@ -231,11 +227,7 @@ mod tests {
         let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
-            .get_or_create(
-                expected_id.uuid(),
-                ElectionConfig::EK27,
-                ElectionConfig::EK27,
-            )
+            .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
             .await
             .expect("store");
 
@@ -275,11 +267,7 @@ mod tests {
         let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
-            .get_or_create(
-                expected_id.uuid(),
-                ElectionConfig::EK27,
-                ElectionConfig::EK27,
-            )
+            .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
             .await
             .expect("store");
         assert!(store.get_person_count() > 0);

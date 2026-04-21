@@ -49,12 +49,10 @@ where
         stream_id: Uuid,
         election: ElectionConfig,
         encryption: &EventEncryption,
-        init: D::Init,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption, init)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Create a new store for a stream using an already-initialized persistence backend.
@@ -63,7 +61,6 @@ where
         stream_id: Uuid,
         election: ElectionConfig,
         encryption: &EventEncryption,
-        init: D::Init,
     ) -> Result<Self, AppError> {
         let cipher = encryption.derive_cipher(stream_id, election);
         let store = Store {
@@ -71,7 +68,7 @@ where
             election,
             persistence,
             cipher,
-            data: Arc::new(parking_lot::RwLock::new(D::new(init))),
+            data: Arc::new(parking_lot::RwLock::new(D::default())),
         };
 
         store.persistence.ensure_stream(stream_id, election).await?;
@@ -86,12 +83,10 @@ where
         stream_id: Uuid,
         election: ElectionConfig,
         encryption: &EventEncryption,
-        init: D::Init,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption, init)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Synchronize the in-memory store with the persistence by replaying any missing events.
@@ -124,11 +119,6 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = usize;
-        type Init = ();
-
-        fn new(_: ()) -> Self {
-            Self::default()
-        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;

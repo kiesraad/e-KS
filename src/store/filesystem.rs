@@ -303,11 +303,6 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = TestEvent;
-        type Init = ();
-
-        fn new(_: ()) -> Self {
-            Self::default()
-        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;

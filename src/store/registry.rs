@@ -72,9 +72,8 @@ where
         &self,
         stream_id: Uuid,
         election: ElectionConfig,
-        store_init: D::Init,
     ) -> Result<Store<D>, AppError> {
-        self.get_or_create_with_init(stream_id, election, store_init, |_| async { Ok(()) })
+        self.get_or_create_with_init(stream_id, election, |_| async { Ok(()) })
             .await
     }
 
@@ -83,7 +82,6 @@ where
         &self,
         stream_id: Uuid,
         election: ElectionConfig,
-        store_init: D::Init,
         init: F,
     ) -> Result<Store<D>, AppError>
     where
@@ -100,7 +98,6 @@ where
             stream_id,
             election,
             &self.encryption,
-            store_init,
         )
         .await?;
         store.load().await?;

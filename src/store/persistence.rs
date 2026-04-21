@@ -256,11 +256,6 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = usize;
-        type Init = ();
-
-        fn new(_: ()) -> Self {
-            Self::default()
-        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
@@ -310,7 +305,6 @@ mod tests {
             stream_id,
             TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -322,7 +316,6 @@ mod tests {
             stream_id,
             TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
         fresh.load().await?;
@@ -346,7 +339,6 @@ mod tests {
             stream_id,
             TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -359,7 +351,6 @@ mod tests {
             stream_id,
             TEST_ELECTION,
             &wrong_encryption,
-            (),
         )
         .await?;
 
@@ -386,7 +377,6 @@ mod tests {
             stream_a,
             TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -403,7 +393,6 @@ mod tests {
             stream_b,
             TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 

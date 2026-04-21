@@ -58,7 +58,7 @@ impl AppState {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
-                .get_or_create_with_init(stream_id.uuid(), election, election, |store| async move {
+                .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
                         crate::fixtures::load(&store, election).await?;
                     }
@@ -71,7 +71,7 @@ impl AppState {
             let _ = load_fixtures; // avoid unused parameter warning
 
             self.store_registry
-                .get_or_create(stream_id.uuid(), election, election)
+                .get_or_create(stream_id.uuid(), election)
                 .await
         }
     }
