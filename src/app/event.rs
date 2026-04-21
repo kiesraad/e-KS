@@ -46,11 +46,6 @@ pub enum AppEvent {
         list_id: CandidateListId,
         candidates: Vec<PersonId>,
     },
-    UpdateCandidateListSubmitters {
-        list_id: CandidateListId,
-        list_submitter_id: Option<ListSubmitterId>,
-        substitute_list_submitter_ids: Vec<ListSubmitterId>,
-    },
     AddCandidateToCandidateList {
         list_id: CandidateListId,
         person_id: PersonId,
@@ -65,11 +60,7 @@ pub enum AppEvent {
     UpdateAuthorisedAgent(AuthorisedAgent),
     DeleteAuthorisedAgent(AuthorisedAgentId),
 
-    CreateListSubmitter(ListSubmitter),
     UpdateListSubmitter(ListSubmitter),
-    DeleteListSubmitter {
-        list_submitter_id: ListSubmitterId,
-    },
 
     CreateSubstituteSubmitter(ListSubmitter),
     UpdateSubstituteSubmitter(ListSubmitter),
@@ -115,16 +106,13 @@ impl AppEvent {
             AppEvent::CreateCandidateList(_)
             | AppEvent::UpdateCandidateListDistricts { .. }
             | AppEvent::UpdateCandidateListOrder { .. }
-            | AppEvent::UpdateCandidateListSubmitters { .. }
             | AppEvent::AddCandidateToCandidateList { .. }
             | AppEvent::RemoveCandidateFromCandidateList { .. }
             | AppEvent::DeleteCandidateList(_) => "candidate_list",
             AppEvent::CreateAuthorisedAgent(_)
             | AppEvent::UpdateAuthorisedAgent(_)
             | AppEvent::DeleteAuthorisedAgent(_) => "authorised_agent",
-            AppEvent::CreateListSubmitter(_)
-            | AppEvent::UpdateListSubmitter(_)
-            | AppEvent::DeleteListSubmitter { .. } => "list_submitter",
+            AppEvent::UpdateListSubmitter(_) => "list_submitter",
             AppEvent::CreateSubstituteSubmitter(_)
             | AppEvent::UpdateSubstituteSubmitter(_)
             | AppEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
@@ -153,16 +141,13 @@ impl AppEvent {
             AppEvent::CreateCandidateList(_) => "create_candidate_list",
             AppEvent::UpdateCandidateListDistricts { .. } => "update_candidate_list_districts",
             AppEvent::UpdateCandidateListOrder { .. } => "update_candidate_list_order",
-            AppEvent::UpdateCandidateListSubmitters { .. } => "update_candidate_list_submitters",
             AppEvent::AddCandidateToCandidateList { .. } => "add_candidate_to_list",
             AppEvent::RemoveCandidateFromCandidateList { .. } => "remove_candidate_from_list",
             AppEvent::DeleteCandidateList(_) => "delete_candidate_list",
             AppEvent::CreateAuthorisedAgent(_) => "create_authorised_agent",
             AppEvent::UpdateAuthorisedAgent(_) => "update_authorised_agent",
             AppEvent::DeleteAuthorisedAgent(_) => "delete_authorised_agent",
-            AppEvent::CreateListSubmitter(_) => "create_list_submitter",
             AppEvent::UpdateListSubmitter(_) => "update_list_submitter",
-            AppEvent::DeleteListSubmitter { .. } => "delete_list_submitter",
             AppEvent::CreateSubstituteSubmitter(_) => "create_substitute_submitter",
             AppEvent::UpdateSubstituteSubmitter(_) => "update_substitute_submitter",
             AppEvent::DeleteSubstituteSubmitter { .. } => "delete_substitute_submitter",

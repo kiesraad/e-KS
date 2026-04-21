@@ -49,12 +49,11 @@ pub(super) fn extract_old_new(
         AppEvent::CreatePersonPersonalData { person_id, .. } => update!(persons, person_id),
         AppEvent::CreateCandidateList(cl) => update!(candidate_lists, cl.id),
         AppEvent::CreateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
-        AppEvent::CreateListSubmitter(ls) => update!(list_submitters, ls.id),
         AppEvent::CreateSubstituteSubmitter(ss) => update!(substitute_submitters, ss.id),
 
         AppEvent::UpdatePerson(person) => update!(persons, person.id),
         AppEvent::UpdateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
-        AppEvent::UpdateListSubmitter(ls) => update!(list_submitters, ls.id),
+        AppEvent::UpdateListSubmitter(_) => update!(list_submitter),
         AppEvent::UpdateSubstituteSubmitter(ss) => update!(substitute_submitters, ss.id),
         AppEvent::UpdatePoliticalGroup(_) => update!(political_group),
 
@@ -62,8 +61,7 @@ pub(super) fn extract_old_new(
         | AppEvent::UpdatePersonAddress { person_id, .. }
         | AppEvent::UpdatePersonRepresentative { person_id, .. } => update!(persons, person_id),
         AppEvent::UpdateCandidateListDistricts { list_id, .. }
-        | AppEvent::UpdateCandidateListOrder { list_id, .. }
-        | AppEvent::UpdateCandidateListSubmitters { list_id, .. } => {
+        | AppEvent::UpdateCandidateListOrder { list_id, .. } => {
             update!(candidate_lists, list_id)
         }
 
@@ -79,9 +77,6 @@ pub(super) fn extract_old_new(
         AppEvent::DeletePerson { person_id } => update!(persons, person_id),
         AppEvent::DeleteCandidateList(cl_id) => update!(candidate_lists, cl_id),
         AppEvent::DeleteAuthorisedAgent(aa_id) => update!(authorised_agents, aa_id),
-        AppEvent::DeleteListSubmitter {
-            list_submitter_id: ls_id,
-        } => update!(list_submitters, ls_id),
         AppEvent::DeleteSubstituteSubmitter {
             substitute_submitter_id: ss_id,
         } => update!(substitute_submitters, ss_id),
@@ -162,24 +157,6 @@ mod tests {
         );
         assert!(old.is_none());
         assert_eq!(new, serde_json::to_value(&list).ok());
-    }
-
-    #[test]
-    fn create_list_submitter_pulls_new_from_state_after() {
-        let submitter = sample_list_submitter(ListSubmitterId::new());
-        let before = empty_state();
-        let mut after = empty_state();
-        after
-            .list_submitters
-            .insert(submitter.id, submitter.clone());
-
-        let (old, new) = extract_old_new(
-            &AppEvent::CreateListSubmitter(submitter.clone()),
-            &before,
-            &after,
-        );
-        assert!(old.is_none());
-        assert_eq!(new, serde_json::to_value(&submitter).ok());
     }
 
     #[test]
@@ -327,26 +304,6 @@ mod tests {
             &after,
         );
         assert_eq!(old, serde_json::to_value(&person).ok());
-        assert!(new.is_none());
-    }
-
-    #[test]
-    fn delete_list_submitter_returns_old_from_state_before() {
-        let submitter = sample_list_submitter(ListSubmitterId::new());
-        let mut before = empty_state();
-        before
-            .list_submitters
-            .insert(submitter.id, submitter.clone());
-        let after = empty_state();
-
-        let (old, new) = extract_old_new(
-            &AppEvent::DeleteListSubmitter {
-                list_submitter_id: submitter.id,
-            },
-            &before,
-            &after,
-        );
-        assert_eq!(old, serde_json::to_value(&submitter).ok());
         assert!(new.is_none());
     }
 

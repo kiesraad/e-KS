@@ -3,7 +3,6 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     candidate_lists::CandidateList,
-    list_submitters::ListSubmitterId,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
 };
@@ -38,12 +37,6 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let person_ids = collect_person_ids(persons);
     let valid_person_ids = collect_person_ids(valid_persons);
 
-    let submitter_id: ListSubmitterId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_list_submitter").into();
-
-    let substitute_submitter_id: ListSubmitterId =
-        Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_1").into();
-
     let candidate_list = CandidateList {
         id: Uuid::new_v5(
             &Uuid::NAMESPACE_OID,
@@ -52,8 +45,6 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         .into(),
         electoral_districts: vec![election.electoral_districts()[0]],
         candidates: person_ids,
-        list_submitter_id: Some(submitter_id),
-        substitute_list_submitter_ids: vec![substitute_submitter_id],
         ..Default::default()
     };
 

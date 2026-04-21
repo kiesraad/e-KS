@@ -20,7 +20,6 @@ detail:
     last_name_prefix: Last name prefix
     legal_name: Full statutory name
     list_id: List ID
-    list_submitter_id: List submitter
     locality: Locality
     long_list_allowed: Long list allowed
     person_id: Person ID
@@ -29,7 +28,6 @@ detail:
     postal_code: Postal code
     state_or_province: State / province
     street_name: Street name
-    substitute_list_submitter_ids: Substitute list submitters
   new_value: New value
   no_changes: No field changes recorded for this event.
   old_value: Old value
@@ -39,12 +37,10 @@ event:
   add_candidate_to_list: Added candidate to list
   create_authorised_agent: Created authorised agent
   create_candidate_list: Created list of candidates
-  create_list_submitter: Created submitter of the list
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
   delete_authorised_agent: Deleted authorised agent
   delete_candidate_list: Deleted list of candidates
-  delete_list_submitter: Deleted submitter of the list
   delete_person: Deleted person
   delete_substitute_submitter: Deleted substitute submitter of the list
   developer_login: Developer login
@@ -55,7 +51,6 @@ event:
   update_authorised_agent: Updated authorised agent
   update_candidate_list_districts: Updated electoral districts of list
   update_candidate_list_order: Updated order of list of candidates
-  update_candidate_list_submitters: Updated submitters of list
   update_list_submitter: Updated submitter of the list
   update_person: Updated person
   update_person_address: Updated person address

@@ -1,20 +1,11 @@
 {% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
-{% set close_action = ListSubmitter::list_path() %}
+{% set close_action = ListSubmitter::view_path() %}
 {% block overlay_title %}{{ "political_group.edit_list_submitter"|trans }}{% endblock %}
 {% block overlay_steps %}<div class="steps-nav"></div>{% endblock %}
 {% block overlay_form %}
   {% set should_warn = true %}
   <fieldset>
-    {% include "common/components/name_fields.html" %}
+    {% include "list_submitters/components/name_fields.html" %}
     {% include "list_submitters/components/address_fields.html" %}
   </fieldset>
-  <button class="button tertiary-destructive icon-trash open-modal mb-lg"
-          type="button">{{ "political_group.actions.delete_list_submitter"|trans }}</button>
-{% endblock %}
-{% block overlay_end %}
-  {{ macros::delete_modal(list_submitter.delete_path() ,
-  "political_group.actions.delete_list_submitter"|trans,
-  "political_group.delete_list_submitter_warning_text"|trans
-  ) }}
 {% endblock %}

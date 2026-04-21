@@ -266,37 +266,21 @@ fn apply_update_candidate_list_order_replaces_candidates() {
 }
 
 #[test]
-fn apply_update_candidate_list_submitters_sets_ids() {
+fn apply_update_list_submitter_replaces_single_submitter() {
     let mut data = AppStoreData::new(ElectionConfig::EK27);
-    let list_id = CandidateListId::new();
-    let mut list = sample_candidate_list(list_id);
-    list.list_submitter_id = None;
-    list.substitute_list_submitter_ids = Vec::new();
 
+    assert!(data.list_submitter.is_empty());
+
+    let submitter = crate::test_utils::sample_list_submitter(ListSubmitterId::new());
     let created_at = Utc::now() - Duration::seconds(30);
     data.apply(StoreEvent::new_at(
         1,
-        AppEvent::CreateCandidateList(list),
+        AppEvent::UpdateListSubmitter(submitter.clone()),
         created_at,
     ));
 
-    let list_submitter_id = Some(ListSubmitterId::new());
-    let substitute_ids = vec![ListSubmitterId::new(), ListSubmitterId::new()];
-    let updated_at = Utc::now() - Duration::seconds(15);
-
-    data.apply(StoreEvent::new_at(
-        2,
-        AppEvent::UpdateCandidateListSubmitters {
-            list_id,
-            list_submitter_id,
-            substitute_list_submitter_ids: substitute_ids.clone(),
-        },
-        updated_at,
-    ));
-
-    let updated = data.candidate_lists.get(&list_id).expect("list exists");
-    assert_eq!(updated.list_submitter_id, list_submitter_id);
-    assert_eq!(updated.substitute_list_submitter_ids, substitute_ids);
+    assert_eq!(data.list_submitter.id, submitter.id);
+    assert_eq!(data.list_submitter.name.last_name, submitter.name.last_name);
 }
 
 #[tokio::test]

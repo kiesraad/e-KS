@@ -76,23 +76,13 @@ impl ListSubmitter {
         self.name.is_complete() && self.address.is_complete()
     }
 
-    pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
-        store
-            .update(AppEvent::CreateListSubmitter(self.clone()))
-            .await
+    pub fn is_empty(&self) -> bool {
+        self.name.is_empty() && self.address.is_empty()
     }
 
     pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdateListSubmitter(self.clone()))
-            .await
-    }
-
-    pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
-        store
-            .update(AppEvent::DeleteListSubmitter {
-                list_submitter_id: self.id,
-            })
             .await
     }
 

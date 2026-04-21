@@ -8,18 +8,18 @@ use crate::{
 use super::SubstituteSubmitterDeletePath;
 
 pub async fn delete_substitute_submitter(
-    _: SubstituteSubmitterDeletePath,
+    SubstituteSubmitterDeletePath { sub_submitter_id }: SubstituteSubmitterDeletePath,
     context: Context,
-    substitute_submitter: ListSubmitter,
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_tokens) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
+            let substitute_submitter = store.get_substitute_submitter(sub_submitter_id)?;
             substitute_submitter.delete_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -50,7 +50,6 @@ mod tests {
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
-            substitute_submitter,
             store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
@@ -66,7 +65,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
@@ -90,7 +89,6 @@ mod tests {
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
-            substitute_submitter.clone(),
             store.clone(),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )

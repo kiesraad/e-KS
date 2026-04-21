@@ -1,7 +1,7 @@
 use crate::{
     TokenValue,
-    common::{FullNameForm, InternationalAddressForm},
-    list_submitters::{ListSubmitter, ListSubmitterData},
+    common::InternationalAddressForm,
+    list_submitters::{ListSubmitter, ListSubmitterData, SubmitterNameForm},
 };
 use serde::Deserialize;
 use validate::Validate;
@@ -12,7 +12,7 @@ use validate::Validate;
 pub struct ListSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]
-    pub name: FullNameForm,
+    pub name: SubmitterNameForm,
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: InternationalAddressForm,
@@ -25,7 +25,7 @@ impl From<ListSubmitter> for ListSubmitterForm {
         let value = ListSubmitterData::from(value);
 
         ListSubmitterForm {
-            name: FullNameForm::from(value.name),
+            name: SubmitterNameForm::from(value.name),
             address: InternationalAddressForm::from(value.address),
             csrf_token: Default::default(),
         }
@@ -42,8 +42,7 @@ mod tests {
         let csrf_tokens = crate::CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = ListSubmitterForm {
-            name: FullNameForm {
-                first_name: String::new(),
+            name: SubmitterNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -73,8 +72,7 @@ mod tests {
         let csrf_tokens = crate::CsrfTokens::default();
         let csrf_token = csrf_tokens.issue().value;
         let form = ListSubmitterForm {
-            name: FullNameForm {
-                first_name: String::new(),
+            name: SubmitterNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),

@@ -77,12 +77,13 @@ impl H31 {
                 ))?
                 .to_string(),
             candidates: ordered_candidates(&mut candidates, locale)?,
-            list_submitter: store
-                .get_list_submitter(
-                    list.list_submitter_id
-                        .ok_or(AppError::IncompleteData("Missing list submitter"))?,
-                )?
-                .try_into()?,
+            list_submitter: {
+                let ls = store.get_list_submitter();
+                if !ls.is_complete() {
+                    return Err(AppError::IncompleteData("Missing list submitter"));
+                }
+                ls.try_into()?
+            },
             authorised_agent: (&authorised_agents[0]).into(),
             timestamp: TypstDatetime::now(),
             locale,

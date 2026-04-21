@@ -18,10 +18,11 @@ struct SubstituteSubmitterUpdateTemplate {
 }
 
 pub async fn update_substitute_submitter(
-    _: SubstituteSubmitterUpdatePath,
+    SubstituteSubmitterUpdatePath { sub_submitter_id }: SubstituteSubmitterUpdatePath,
     context: Context,
-    substitute_submitter: ListSubmitter,
+    store: AppStore,
 ) -> Result<Response, AppError> {
+    let substitute_submitter = store.get_substitute_submitter(sub_submitter_id)?;
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
@@ -36,12 +37,12 @@ pub async fn update_substitute_submitter(
 }
 
 pub async fn update_substitute_submitter_submit(
-    _: SubstituteSubmitterUpdatePath,
+    SubstituteSubmitterUpdatePath { sub_submitter_id }: SubstituteSubmitterUpdatePath,
     context: Context,
-    substitute_submitter: ListSubmitter,
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
+    let substitute_submitter = store.get_substitute_submitter(sub_submitter_id)?;
     match form.validate_update(
         &ListSubmitterData::from(substitute_submitter.clone()),
         &context.session.csrf_tokens,
@@ -61,7 +62,7 @@ pub async fn update_substitute_submitter_submit(
             };
             updated.update_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -93,7 +94,7 @@ mod tests {
         let response = update_substitute_submitter(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             Context::new_test_without_db(),
-            substitute_submitter.clone(),
+            store,
         )
         .await
         .unwrap()
@@ -122,7 +123,6 @@ mod tests {
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
-            substitute_submitter.clone(),
             store.clone(),
             Form(form),
         )
@@ -138,7 +138,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
@@ -165,7 +165,6 @@ mod tests {
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
-            substitute_submitter.clone(),
             store,
             Form(form),
         )

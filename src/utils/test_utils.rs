@@ -240,7 +240,11 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
-        name: sample_full_name_form("", "Bos", "", "E.F."),
+        name: crate::list_submitters::SubmitterNameForm {
+            last_name: "Bos".to_string(),
+            last_name_prefix: String::new(),
+            initials: "E.F.".to_string(),
+        },
         address: InternationalAddressForm {
             country: String::new(),
             locality: "Rotterdam".to_string(),

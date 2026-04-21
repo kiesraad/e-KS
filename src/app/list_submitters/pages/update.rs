@@ -13,22 +13,18 @@ use super::ListSubmitterUpdatePath;
 #[derive(Template)]
 #[template(path = "list_submitters/pages/update.html")]
 struct ListSubmitterUpdateTemplate {
-    list_submitter: ListSubmitter,
     form: FormData<ListSubmitterForm>,
 }
 
 pub async fn update_list_submitter(
     _: ListSubmitterUpdatePath,
     context: Context,
-    list_submitter: ListSubmitter,
+    store: AppStore,
 ) -> Result<Response, AppError> {
+    let list_submitter = store.get_list_submitter();
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(
-                list_submitter.clone().into(),
-                &context.session.csrf_tokens,
-            ),
-            list_submitter,
+            form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_tokens),
         },
         context,
     )
@@ -38,19 +34,16 @@ pub async fn update_list_submitter(
 pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
     context: Context,
-    list_submitter: ListSubmitter,
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
+    let list_submitter = store.get_list_submitter();
     match form.validate_update(
         &ListSubmitterData::from(list_submitter.clone()),
         &context.session.csrf_tokens,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterUpdateTemplate {
-                list_submitter,
-                form: form_data,
-            },
+            ListSubmitterUpdateTemplate { form: form_data },
             context,
         )
         .into_response()),
@@ -61,7 +54,7 @@ pub async fn update_list_submitter_submit(
             };
             updated.update(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -71,7 +64,6 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
-        list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{
@@ -84,14 +76,13 @@ mod tests {
     async fn update_list_submitter_renders_existing_submitter() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
-        list_submitter.create(&store).await?;
+        let list_submitter = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
+        list_submitter.update(&store).await?;
 
         let response = update_list_submitter(
-            ListSubmitterUpdatePath { submitter_id },
+            ListSubmitterUpdatePath {},
             Context::new_test_without_db(),
-            list_submitter.clone(),
+            store,
         )
         .await
         .unwrap()
@@ -108,19 +99,14 @@ mod tests {
     async fn update_list_submitter_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
-        list_submitter.create(&store).await?;
-
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
         let response = update_list_submitter_submit(
-            ListSubmitterUpdatePath { submitter_id },
+            ListSubmitterUpdatePath {},
             context,
-            list_submitter.clone(),
             store.clone(),
             Form(form),
         )
@@ -136,12 +122,12 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
 
-        let updated = store.get_list_submitter(submitter_id)?;
+        let updated = store.get_list_submitter();
         assert_eq!(updated.name.last_name.to_string(), "Updated");
 
         Ok(())
@@ -151,25 +137,16 @@ mod tests {
     async fn update_list_submitter_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let submitter_id = ListSubmitterId::new();
-        let list_submitter = sample_list_submitter(submitter_id);
-        list_submitter.create(&store).await?;
-
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_tokens.issue().value;
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response = update_list_submitter_submit(
-            ListSubmitterUpdatePath { submitter_id },
-            context,
-            list_submitter.clone(),
-            store,
-            Form(form),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response =
+            update_list_submitter_submit(ListSubmitterUpdatePath {}, context, store, Form(form))
+                .await
+                .unwrap()
+                .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
