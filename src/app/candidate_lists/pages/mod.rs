@@ -139,7 +139,7 @@ impl CandidateList {
     pub fn export_path(&self) -> impl TypedPath {
         CandidateListExportPath { list_id: self.id }
     }
-    
+
     pub fn import_path(&self) -> impl TypedPath {
         CandidateListImportPath { list_id: self.id }
     }

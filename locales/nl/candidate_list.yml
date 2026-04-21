@@ -56,7 +56,6 @@ import_errors:
   parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
 import_export:
   export_title: Exporteren
-  import_description: Gebruik een CSV-bestand om kandidaten op deze lijst te importeren.
   import_failed: Importeren niet gelukt
   import_instructions: "<strong>Kopregels</strong><br> Gebruik de correcte kolomnamen. Download het export-CSV-bestand en gebruik dit als sjabloon.<br><br> <strong>Volgorde</strong><br> De volgorde van personen in het CSV-bestand bepaalt de volgorde op de kandidatenlijst.<br><br> <strong>Verplichte velden</strong><br> Minimaal de volgende velden moeten ingevuld zijn:<ul> <li>Voorletters</li> <li>Achternaam</li> </ul> <strong>Geboortedatum</strong><br> Gebruik het formaat <code>dd-mm-jjjj</code> (bijvoorbeeld: 31-12-1990).<br><br> <strong>Geslacht</strong><br> Alleen de volgende waarden worden geaccepteerd:<ul> <li><code>female</code> | <code>frou</code> | <code>vrouw</code> | <code>f</code> | <code>v</code></li> <li><code>male</code> | <code>man</code> | <code>m</code></li> </ul> <strong>Adresgegevens</strong><br> Er zijn twee typen adressen:<ul> <li>Vul het <strong>correspondentieadres</strong> in als de persoon in Nederland woont.</li> <li>Woont de persoon niet in Nederland, vul dan de gegevens van de <strong>gemachtigde</strong> in.</li> </ul> <strong>Postcode</strong><br> Gebruik het formaat <code>1234AB</code>"
   import_instructions_header: CSV-import instructies kandidatenlijst

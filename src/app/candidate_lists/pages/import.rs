@@ -2,11 +2,17 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate, candidate_lists::{
+    AppError, AppEvent, AppStore, Context, HtmlTemplate, 
+    candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
-        pages::{CandidateListImportPath, CandidateListImportTemplatePath}, structs::{CSV_HEADERS, CandidateRecordCsv},
-    }, core::Csv, filters, form::{EmptyForm, FileForm, FormData}, redirect_success, trans
+        pages::{CandidateListImportPath, CandidateListImportTemplatePath}, 
+        structs::{CSV_HEADERS, CandidateRecordCsv},
+    }, 
+    core::Csv, 
+    filters, 
+    form::{EmptyForm, FileForm, FormData}, 
+    redirect_success, trans
 };
 
 #[derive(Template)]
@@ -109,7 +115,8 @@ pub async fn download_import_template(
         filename: "kandidatenlijst-export-sjabloon.csv".to_string(),
         headers: Some(CSV_HEADERS.to_vec()),
         records: vec![],
-    }.generate_csv_response()?;
+    }
+    .generate_csv_response()?;
 
     Ok(response)
 }

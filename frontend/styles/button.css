@@ -235,7 +235,6 @@ label.button {
     background-size: 18px;
   }
 
-  
   &.icon-download {
     background-repeat: no-repeat;
     background-position: left var(--space-md) center;
@@ -247,7 +246,6 @@ label.button {
     &:not(.secondary) {
       background-image: url("../icons/download.svg");
     }
-
   }
 
   &.icon-upload {
@@ -271,10 +269,10 @@ label.button {
   padding-right: 1rem;
   font-weight: bold;
   /*TODO chevron down */
-  background-image: url('../icons/select.svg');
+  background-image: url("../icons/select.svg");
   background-repeat: no-repeat;
   background-position: right center;
-  background-size: .7rem;
+  background-size: 0.7rem;
 }
 
 .read-less-button {
@@ -283,8 +281,8 @@ label.button {
   padding-right: 1rem;
   font-weight: bold;
   /*TODO chevron up */
-  background-image: url('../icons/deselect.svg');
+  background-image: url("../icons/deselect.svg");
   background-repeat: no-repeat;
   background-position: right center;
-  background-size: .7rem;
+  background-size: 0.7rem;
 }
