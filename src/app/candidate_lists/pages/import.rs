@@ -2,17 +2,17 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate, 
+    AppError, AppEvent, AppStore, Context, HtmlTemplate,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
-        pages::{CandidateListImportPath, CandidateListImportTemplatePath}, 
+        pages::{CandidateListImportPath, CandidateListImportTemplatePath},
         structs::{CSV_HEADERS, CandidateRecordCsv},
-    }, 
-    core::Csv, 
-    filters, 
-    form::{EmptyForm, FileForm, FormData}, 
-    redirect_success, trans
+    },
+    core::Csv,
+    filters,
+    form::{EmptyForm, FileForm, FormData},
+    redirect_success, trans,
 };
 
 #[derive(Template)]
