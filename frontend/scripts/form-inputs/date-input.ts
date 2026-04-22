@@ -93,7 +93,15 @@ function formatSingleDigit(input: HTMLInputElement) {
 }
 
 function updateActual(input: Inputs) {
-  input.actual.value = `${input.dayInput.value}-${input.monthInput.value}-${input.yearInput.value}`;
+  if (
+    input.dayInput.value.length === 0 &&
+    input.monthInput.value.length === 0 &&
+    input.yearInput.value.length === 0
+  ) {
+    input.actual.value = "";
+  } else {
+    input.actual.value = `${input.dayInput.value}-${input.monthInput.value}-${input.yearInput.value}`;
+  }
 }
 
 function updateVisible(field: DateField) {
