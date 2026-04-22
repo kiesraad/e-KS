@@ -55,7 +55,7 @@ function handleDayInput(
   }
   dayInput.value = dayInput.value.slice(0, DAY_DIGITS);
   if (dayInput.value.length === DAY_DIGITS) {
-    month_input.focus();
+    month_input.select();
     return true;
   }
   return false;
@@ -71,7 +71,7 @@ function handleMonthInput(
   }
   monthInput.value = monthInput.value.slice(0, MONTH_DIGITS);
   if (monthInput.value.length === MONTH_DIGITS) {
-    year_input.focus();
+    year_input.select();
     return true;
   }
   return false;
@@ -163,7 +163,10 @@ export default function dateInput() {
     });
 
     [dayInput, monthInput].forEach((input) => {
-      input.addEventListener("blur", (_) => formatSingleDigit(input));
+      input.addEventListener("blur", (_) => {
+        formatSingleDigit(input);
+        updateActual(field.inputs);
+      });
     });
   });
 }
