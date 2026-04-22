@@ -1,11 +1,10 @@
 use crate::{
-    AppError, AppEvent, AppStore, AppStoreData, ElectionConfig, ElectoralDistrict,
+    AppError, AppEvent, AppStore, AppStoreData, ElectoralDistrict,
     candidate_lists::CandidateListId,
     common::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
         PostalCode, StreetName, UtcDateTime,
     },
-    list_submitters::ListSubmitterId,
     persons::{PersonId, Representative},
     store::{StoreData, StoreEvent},
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
@@ -14,7 +13,7 @@ use chrono::{Duration, Utc};
 
 #[test]
 fn apply_update_person_address_and_representative() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let person_id = PersonId::new();
     let person = sample_person(person_id);
     data.persons.insert(person_id, person);
@@ -98,7 +97,7 @@ fn apply_update_person_address_and_representative() {
 
 #[test]
 fn apply_add_candidate_to_list_deduplicates() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let list_id = CandidateListId::new();
     let list = sample_candidate_list(list_id);
 
@@ -133,7 +132,7 @@ fn apply_add_candidate_to_list_deduplicates() {
 
 #[test]
 fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let person_id = PersonId::new();
     let base_time = Utc::now();
 
@@ -177,7 +176,7 @@ fn apply_delete_person_updates_only_candidate_lists_with_that_candidate() {
 
 #[test]
 fn apply_remove_candidate_from_candidate_list_updates_list() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let list_id = CandidateListId::new();
     let person_id = PersonId::new();
     let other_person_id = PersonId::new();
@@ -205,7 +204,7 @@ fn apply_remove_candidate_from_candidate_list_updates_list() {
 
 #[test]
 fn apply_update_candidate_list_districts_replaces_districts() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let list_id = CandidateListId::new();
     let base_time = Utc::now();
 
@@ -235,7 +234,7 @@ fn apply_update_candidate_list_districts_replaces_districts() {
 
 #[test]
 fn apply_update_candidate_list_order_replaces_candidates() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
+    let mut data = AppStoreData::default();
     let list_id = CandidateListId::new();
     let person_id = PersonId::new();
     let other_person_id = PersonId::new();
@@ -265,24 +264,6 @@ fn apply_update_candidate_list_order_replaces_candidates() {
     assert_eq!(updated.candidates, new_order);
 }
 
-#[test]
-fn apply_update_list_submitter_replaces_single_submitter() {
-    let mut data = AppStoreData::new(ElectionConfig::EK27);
-
-    assert!(data.list_submitter.is_empty());
-
-    let submitter = crate::test_utils::sample_list_submitter(ListSubmitterId::new());
-    let created_at = Utc::now() - Duration::seconds(30);
-    data.apply(StoreEvent::new_at(
-        1,
-        AppEvent::UpdateListSubmitter(submitter.clone()),
-        created_at,
-    ));
-
-    assert_eq!(data.list_submitter.id, submitter.id);
-    assert_eq!(data.list_submitter.name.last_name, submitter.name.last_name);
-}
-
 #[tokio::test]
 async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
     let store = AppStore::new_for_test();
@@ -300,7 +281,7 @@ async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
 #[cfg(feature = "database")]
 mod database_tests {
     use super::*;
-    use crate::{StreamId, persons::PersonId, test_utils::sample_person};
+    use crate::{ElectionConfig, StreamId, persons::PersonId, test_utils::sample_person};
     use chrono::Utc;
     use sqlx::PgPool;
 
@@ -319,8 +300,8 @@ mod database_tests {
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
             group_id.uuid(),
-            &encryption,
             ElectionConfig::EK27,
+            &encryption,
         )
         .await
         .unwrap();
@@ -335,8 +316,8 @@ mod database_tests {
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
             group_id.uuid(),
-            &encryption,
             ElectionConfig::EK27,
+            &encryption,
         )
         .await
         .unwrap();
@@ -359,8 +340,8 @@ mod database_tests {
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
             group_id.uuid(),
-            &encryption,
             ElectionConfig::EK27,
+            &encryption,
         )
         .await
         .unwrap();
@@ -371,28 +352,34 @@ mod database_tests {
 
         // Insert invalid encrypted payload (random bytes that won't decrypt correctly)
         let invalid_payload: Vec<u8> = vec![0u8; 64];
+        let election_id = ElectionConfig::EK27.stable_id();
         sqlx::query(
-            r#"INSERT INTO events (stream_id, event_id, created_at, payload)
-            VALUES ($1, $2, $3, $4)"#,
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, payload)
+            VALUES ($1, $2, $3, $4, $5)"#,
         )
         .bind(store.stream_id)
+        .bind(&election_id)
         .bind(2_i64)
         .bind(Utc::now())
         .bind(invalid_payload)
         .execute(&pool)
         .await?;
 
-        sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-            .bind(store.stream_id)
-            .bind(2_i64)
-            .execute(&pool)
-            .await?;
+        sqlx::query(
+            r#"UPDATE streams SET last_event_id = $3
+               WHERE stream_id = $1 AND election = $2"#,
+        )
+        .bind(store.stream_id)
+        .bind(&election_id)
+        .bind(2_i64)
+        .execute(&pool)
+        .await?;
 
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
             group_id.uuid(),
-            &encryption,
             ElectionConfig::EK27,
+            &encryption,
         )
         .await
         .unwrap();

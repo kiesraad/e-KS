@@ -73,6 +73,18 @@ impl CsrfTokens {
         let now = Utc::now();
         tokens.retain(|_, expires_at| *expires_at > now);
     }
+
+    /// Snapshot the inner token map for serialization (e.g. persisting a session).
+    pub fn to_map(&self) -> HashMap<TokenValue, DateTime<Utc>> {
+        self.tokens.read().clone()
+    }
+
+    /// Construct a `CsrfTokens` from a previously snapshotted map.
+    pub fn from_map(map: HashMap<TokenValue, DateTime<Utc>>) -> Self {
+        Self {
+            tokens: Arc::new(RwLock::new(map)),
+        }
+    }
 }
 
 pub trait WithCsrfToken: Default {

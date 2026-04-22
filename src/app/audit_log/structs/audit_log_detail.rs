@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppEvent, AppStoreData, ElectionConfig, Locale,
+    AppEvent, AppStoreData, Locale,
     store::{StoreData, StoreEvent},
     trans,
 };
@@ -80,8 +80,6 @@ impl AuditLogDetail {
         let target_index = events.iter().position(|e| e.event_id == target_event_id)?;
         let target_event = &events[target_index];
 
-        // ElectionConfig here only seeds the projection's unused `election`
-        // field; it does not influence diffing.
         let state_before = replay(&events[..target_index]);
         let state_after = replay(&events[..=target_index]);
 
@@ -112,7 +110,7 @@ impl AuditLogDetail {
 }
 
 fn replay(events: &[StoreEvent<AppEvent>]) -> AppStoreData {
-    let mut state = AppStoreData::new(ElectionConfig::EK27);
+    let mut state = AppStoreData::default();
     for event in events {
         state.apply(event.clone());
     }
@@ -312,7 +310,7 @@ mod tests {
     const EN: Locale = Locale::En;
 
     fn empty_state() -> AppStoreData {
-        AppStoreData::new(ElectionConfig::EK27)
+        AppStoreData::default()
     }
 
     // --- diff() ---

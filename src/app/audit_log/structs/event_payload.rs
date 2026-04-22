@@ -112,13 +112,12 @@ pub(super) fn extract_old_new(
 mod tests {
     use super::*;
     use crate::{
-        ElectionConfig, ElectoralDistrict, StreamId,
+        ElectoralDistrict, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         political_groups::PoliticalGroup,
-        store::StoreData,
         test_utils::{
             sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
             sample_political_group,
@@ -126,7 +125,7 @@ mod tests {
     };
 
     fn empty_state() -> AppStoreData {
-        AppStoreData::new(ElectionConfig::EK27)
+        AppStoreData::default()
     }
 
     // --- Create events: entity absent in `state_before`, present in `state_after` ---

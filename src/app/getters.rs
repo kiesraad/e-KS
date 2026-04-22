@@ -11,9 +11,7 @@ use crate::store::StoreEvent;
 
 impl AppStore {
     pub fn get_election(&self) -> ElectionConfig {
-        let data = self.data.read();
-
-        data.election
+        self.election
     }
 
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {

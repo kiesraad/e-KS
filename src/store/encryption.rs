@@ -24,16 +24,20 @@ use serde::{Serialize, de::DeserializeOwned};
 use sha2::Sha256;
 use uuid::Uuid;
 
-use crate::AppError;
+use crate::{AppError, ElectionConfig};
 
 const HKDF_SALT: &[u8] = b"e-KS event encryption v1";
 const EVENT_KEY_INFO_PREFIX: &[u8] = b"event-key:";
 
-/// Derives per-stream encryption keys from a master secret.
+/// Derives per-(stream, election) encryption keys from a master secret.
 ///
 /// Holds a pre-extracted HKDF PRK computed once at startup.
 /// Each call to [`derive_cipher`](EventEncryption::derive_cipher) runs only
 /// the cheaper HKDF-Expand step.
+///
+/// Because a single `stream_id` covers all of a user's elections, the
+/// `election` is mixed into the info string so events from different
+/// elections retain independent keys.
 #[derive(Clone)]
 pub struct EventEncryption {
     hk: Hkdf<Sha256>,
@@ -45,11 +49,14 @@ impl EventEncryption {
         Self { hk }
     }
 
-    /// Derive an [`EventCipher`] for the given stream.
-    pub fn derive_cipher(&self, stream_id: Uuid) -> EventCipher {
+    /// Derive an [`EventCipher`] for the given (stream, election) pair.
+    pub fn derive_cipher(&self, stream_id: Uuid, election: ElectionConfig) -> EventCipher {
+        let election_id = election.stable_id();
         let info: Vec<u8> = EVENT_KEY_INFO_PREFIX
             .iter()
             .chain(stream_id.as_bytes())
+            .chain(b":")
+            .chain(election_id.as_bytes())
             .copied()
             .collect();
 
@@ -148,10 +155,12 @@ mod tests {
         SecretString::from("test-encryption-secret")
     }
 
+    const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
+
     #[test]
     fn round_trip_encrypt_decrypt() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher = enc.derive_cipher(Uuid::new_v4());
+        let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let original: Vec<u8> = vec![1, 2, 3, 4, 5];
         let encrypted = cipher.encrypt(&original).unwrap();
@@ -163,8 +172,8 @@ mod tests {
     #[test]
     fn different_streams_produce_different_ciphertexts() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher_a = enc.derive_cipher(Uuid::new_v4());
-        let cipher_b = enc.derive_cipher(Uuid::new_v4());
+        let cipher_a = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
+        let cipher_b = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let data = "same payload";
         let enc_a = cipher_a.encrypt(&data).unwrap();
@@ -177,8 +186,8 @@ mod tests {
     #[test]
     fn wrong_stream_fails_decryption() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher_a = enc.derive_cipher(Uuid::new_v4());
-        let cipher_b = enc.derive_cipher(Uuid::new_v4());
+        let cipher_a = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
+        let cipher_b = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let encrypted = cipher_a.encrypt(&42u32).unwrap();
         let result = cipher_b.decrypt::<u32>(&encrypted);
@@ -187,11 +196,24 @@ mod tests {
     }
 
     #[test]
+    fn different_elections_fail_decryption() {
+        let enc = EventEncryption::new(&test_secret());
+        let stream_id = Uuid::new_v4();
+        let cipher_ek = enc.derive_cipher(stream_id, ElectionConfig::EK27);
+        let cipher_ps = enc.derive_cipher(stream_id, ElectionConfig::PS27(crate::Province::GR));
+
+        let encrypted = cipher_ek.encrypt(&42u32).unwrap();
+        let result = cipher_ps.decrypt::<u32>(&encrypted);
+
+        assert!(result.is_err());
+    }
+
+    #[test]
     fn wrong_secret_fails_decryption() {
         let stream_id = Uuid::new_v4();
-        let cipher_a = EventEncryption::new(&test_secret()).derive_cipher(stream_id);
-        let cipher_b =
-            EventEncryption::new(&SecretString::from("different-secret")).derive_cipher(stream_id);
+        let cipher_a = EventEncryption::new(&test_secret()).derive_cipher(stream_id, TEST_ELECTION);
+        let cipher_b = EventEncryption::new(&SecretString::from("different-secret"))
+            .derive_cipher(stream_id, TEST_ELECTION);
 
         let encrypted = cipher_a.encrypt(&42u32).unwrap();
         let result = cipher_b.decrypt::<u32>(&encrypted);
@@ -202,7 +224,7 @@ mod tests {
     #[test]
     fn tampered_ciphertext_fails() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher = enc.derive_cipher(Uuid::new_v4());
+        let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let mut encrypted = cipher.encrypt(&"hello").unwrap();
         // Flip a bit in the ciphertext (after the nonce)
@@ -216,7 +238,7 @@ mod tests {
     #[test]
     fn decrypt_too_short_data_fails() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher = enc.derive_cipher(Uuid::new_v4());
+        let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let result = cipher.decrypt::<u32>(&[0u8; 5]);
         assert!(result.is_err());
@@ -225,7 +247,7 @@ mod tests {
     #[test]
     fn same_plaintext_produces_different_ciphertexts() {
         let enc = EventEncryption::new(&test_secret());
-        let cipher = enc.derive_cipher(Uuid::new_v4());
+        let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let data = "repeated";
         let enc1 = cipher.encrypt(&data).unwrap();
