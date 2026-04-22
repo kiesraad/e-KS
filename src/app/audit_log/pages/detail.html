@@ -11,7 +11,7 @@
       </dd>
       <dt>{{ "audit_log.fields.timestamp"|trans }}</dt>
       <dd>
-        {{ detail.created_at|datetime_seconds }}
+        {{ detail.created_at|datetime_seconds }} (UTC)
       </dd>
       {% if !detail.details.is_empty() %}
         <dt>{{ "audit_log.fields.details"|trans }}</dt>

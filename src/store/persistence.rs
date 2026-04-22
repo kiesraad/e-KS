@@ -5,7 +5,7 @@ use std::path::PathBuf;
 use url::Url;
 use uuid::Uuid;
 
-use crate::AppError;
+use crate::{AppError, ElectionConfig};
 
 use super::{
     Store, StoreData, StoreEvent,
@@ -83,15 +83,19 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Ensure the given stream exists in the selected backend.
-    pub async fn ensure_stream(&self, stream_id: Uuid) -> Result<(), AppError> {
+    /// Ensure the given (stream, election) exists in the selected backend.
+    pub async fn ensure_stream(
+        &self,
+        stream_id: Uuid,
+        election: ElectionConfig,
+    ) -> Result<(), AppError> {
         match self {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
-                database::ensure_stream(pool, stream_id).await?;
+                database::ensure_stream(pool, stream_id, election).await?;
             }
             StorePersistence::Local(dir) => {
-                filesystem::ensure_stream_file(dir, stream_id).await?;
+                filesystem::ensure_stream_file(dir, stream_id, election).await?;
             }
             StorePersistence::None => {}
         }
@@ -99,7 +103,7 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Check which of the given stream IDs have persisted events.
+    /// Check which of the given stream IDs have any persisted events (in any election).
     pub async fn streams_with_data(
         &self,
         stream_ids: &[Uuid],
@@ -113,6 +117,23 @@ impl StorePersistence {
                 Ok(filesystem::streams_with_data(dir, stream_ids).await)
             }
             StorePersistence::None => Ok(std::collections::HashSet::new()),
+        }
+    }
+
+    /// List the elections under the given stream that have persisted events.
+    pub async fn elections_for_stream(
+        &self,
+        stream_id: Uuid,
+    ) -> Result<Vec<ElectionConfig>, AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                super::database::elections_for_stream(pool, stream_id).await
+            }
+            StorePersistence::Local(dir) => {
+                Ok(filesystem::elections_for_stream(dir, stream_id).await)
+            }
+            StorePersistence::None => Ok(Vec::new()),
         }
     }
 }
@@ -163,6 +184,8 @@ mod tests {
     use secrecy::SecretString;
     use std::{fs, path::PathBuf};
     use uuid::Uuid;
+
+    const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
 
     fn temp_dir() -> PathBuf {
         let dir = std::env::temp_dir().join(format!("store-test-{}", Uuid::new_v4()));
@@ -233,11 +256,6 @@ mod tests {
 
     impl StoreData for TestData {
         type Event = usize;
-        type Init = ();
-
-        fn new(_: ()) -> Self {
-            Self::default()
-        }
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
@@ -254,8 +272,9 @@ mod tests {
         let stream_id = Uuid::new_v4();
         Store {
             stream_id,
+            election: TEST_ELECTION,
             persistence: StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
             data: std::sync::Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
@@ -284,8 +303,8 @@ mod tests {
         let store = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_id,
+            TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -295,8 +314,8 @@ mod tests {
         let fresh = Store::<TestData>::new_for_stream_with_persistence(
             persistence,
             stream_id,
+            TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
         fresh.load().await?;
@@ -318,8 +337,8 @@ mod tests {
         let store = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_id,
+            TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -330,8 +349,8 @@ mod tests {
         let wrong_store = Store::<TestData>::new_for_stream_with_persistence(
             persistence,
             stream_id,
+            TEST_ELECTION,
             &wrong_encryption,
-            (),
         )
         .await?;
 
@@ -356,8 +375,8 @@ mod tests {
         let store_a = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_a,
+            TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
@@ -365,15 +384,15 @@ mod tests {
 
         // Manually copy stream_a's file to stream_b's path so stream_b
         // tries to read data encrypted with stream_a's key.
-        let src = dir.join(format!("{stream_a}.bin"));
-        let dst = dir.join(format!("{stream_b}.bin"));
+        let src = dir.join(format!("{stream_a}_{}.bin", TEST_ELECTION.stable_id()));
+        let dst = dir.join(format!("{stream_b}_{}.bin", TEST_ELECTION.stable_id()));
         std::fs::copy(&src, &dst).expect("copy stream file");
 
         let store_b = Store::<TestData>::new_for_stream_with_persistence(
             persistence,
             stream_b,
+            TEST_ELECTION,
             &encryption,
-            (),
         )
         .await?;
 
