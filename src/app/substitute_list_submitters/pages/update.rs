@@ -18,11 +18,10 @@ struct SubstituteSubmitterUpdateTemplate {
 }
 
 pub async fn update_substitute_submitter(
-    SubstituteSubmitterUpdatePath { sub_submitter_id }: SubstituteSubmitterUpdatePath,
+    _: SubstituteSubmitterUpdatePath,
     context: Context,
-    store: AppStore,
+    substitute_submitter: ListSubmitter,
 ) -> Result<Response, AppError> {
-    let substitute_submitter = store.get_substitute_submitter(sub_submitter_id)?;
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
@@ -37,12 +36,12 @@ pub async fn update_substitute_submitter(
 }
 
 pub async fn update_substitute_submitter_submit(
-    SubstituteSubmitterUpdatePath { sub_submitter_id }: SubstituteSubmitterUpdatePath,
+    _: SubstituteSubmitterUpdatePath,
     context: Context,
+    substitute_submitter: ListSubmitter,
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let substitute_submitter = store.get_substitute_submitter(sub_submitter_id)?;
     match form.validate_update(
         &ListSubmitterData::from(substitute_submitter.clone()),
         &context.session.csrf_tokens,
@@ -94,7 +93,7 @@ mod tests {
         let response = update_substitute_submitter(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             Context::new_test_without_db(),
-            store,
+            substitute_submitter.clone(),
         )
         .await
         .unwrap()
@@ -123,6 +122,7 @@ mod tests {
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
+            substitute_submitter.clone(),
             store.clone(),
             Form(form),
         )
@@ -165,6 +165,7 @@ mod tests {
         let response = update_substitute_submitter_submit(
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             context,
+            substitute_submitter.clone(),
             store,
             Form(form),
         )

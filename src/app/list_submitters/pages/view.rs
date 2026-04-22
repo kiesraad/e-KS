@@ -92,4 +92,27 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn view_list_submitter_hides_add_button_when_submitter_exists() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+
+        let submitter = sample_list_submitter(ListSubmitterId::new());
+        submitter.update(&store).await?;
+
+        let response = view_list_submitter(
+            ListSubmitterViewPath {},
+            Context::new_test_without_db(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("Add list submitter"));
+
+        Ok(())
+    }
 }
