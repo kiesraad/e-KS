@@ -34,7 +34,8 @@ pub async fn dev_login(
         .map(SecretString::from)
         .unwrap_or_else(random_bsn);
 
-    let stream_id = state.id_deriver.derive_stream_id(&id_code, election);
+    let stream_id = state.id_deriver.derive_stream_id(&id_code);
+    drop(id_code);
 
     let load_fixtures = query.fixtures.unwrap_or(false);
     let (store, was_new) = ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
@@ -44,11 +45,12 @@ pub async fn dev_login(
     }
 
     let locale = request_locale(&headers);
-    let mut session = Session::new_with_locale(&id_code, locale);
+    let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
+    session.set_current_election(election);
 
-    state.sessions.cleanup_expired();
-    state.sessions.insert(session.clone());
+    state.sessions.cleanup_expired().await;
+    state.sessions.insert(session.clone()).await;
 
     Ok((
         jar.add(build_session_cookie(&session)),
@@ -107,9 +109,7 @@ mod tests {
 
     fn derive_test_id(state: &AppState, id_code_str: &str) -> StreamId {
         let id_code: SecretString = id_code_str.into();
-        state
-            .id_deriver
-            .derive_stream_id(&id_code, ElectionConfig::EK27)
+        state.id_deriver.derive_stream_id(&id_code)
     }
 
     fn cookie_value(response: &axum::response::Response) -> &str {
@@ -144,7 +144,7 @@ mod tests {
             .split_once('=')
             .map(|(_, value)| value)
             .expect("session token");
-        let session = state.sessions.get(token).expect("session");
+        let session = state.sessions.get(token).await.expect("session");
         assert_eq!(session.locale, Locale::En);
         assert_eq!(
             session.stream_id,

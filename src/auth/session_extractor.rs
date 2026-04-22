@@ -1,7 +1,5 @@
 //! Session middleware and request extraction.
 
-use std::time::Instant;
-
 use axum::{
     extract::{FromRequestParts, Request, State},
     http::request::Parts,
@@ -12,8 +10,9 @@ use axum_extra::extract::{
     CookieJar,
     cookie::{Cookie, SameSite},
 };
+use chrono::Utc;
 
-use crate::{AppError, AppState, ElectionConfig, Session, common::SelectElectionPath};
+use crate::{AppError, AppState, Session, common::SelectElectionPath};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
@@ -46,19 +45,33 @@ pub async fn session_middleware(
 
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
-    let Some(mut session) = state.sessions.get_existing(token) else {
+    let Some(mut session) = state.sessions.get_existing(token).await else {
         // redirect to home (/), which will show a login button
         return Redirect::to("/login").into_response();
     };
 
-    session.last_activity = Instant::now();
-    state.sessions.insert(session.clone());
-    request.extensions_mut().insert(session.clone());
+    session.last_activity = Utc::now();
+    state.sessions.insert(session.clone()).await;
 
-    next.run(request).await
+    // Keep a handle that shares the same `Arc<RwLock<CsrfTokens>>` as the
+    // session we hand off to the handler, so CSRF tokens issued or consumed
+    // during the request can be flushed back to the backend afterwards.
+    let session_for_csrf_sync = session.clone();
+    request.extensions_mut().insert(session);
+
+    let response = next.run(request).await;
+
+    // Flush CSRF-token mutations made during the handler. For in-memory this
+    // is a no-op; for database storage this writes the tokens column.
+    state
+        .sessions
+        .sync_csrf_tokens(&session_for_csrf_sync)
+        .await;
+
+    response
 }
 
-/// Middleware that resolves the scoped store for the session's political group.
+/// Middleware that resolves the scoped store for the session's current election.
 /// Redirects to `/select-election` when the session has not yet picked an
 /// election, so the user cannot reach a route that needs a store without one.
 pub async fn store_middleware(
@@ -70,17 +83,11 @@ pub async fn store_middleware(
         return next.run(request).await;
     };
 
-    let Some(stream_id) = session.stream_id else {
+    let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {
         return Redirect::to(&SelectElectionPath.to_string()).into_response();
     };
 
-    // The init value (EK27) is only used if the registry doesn't yet have
-    // a store for this stream. In practice, login paths always prime the
-    // registry with the correct election before this middleware runs.
-    let store = match state
-        .store_for_stream(stream_id, ElectionConfig::EK27, false)
-        .await
-    {
+    let store = match state.store_for_stream(stream_id, election, false).await {
         Ok(store) => store,
         Err(err) => return err.into_response(),
     };
@@ -162,7 +169,7 @@ mod tests {
 
         let session = Session::new_test();
         let token = session.token().to_exposed_string();
-        state.sessions.insert(session);
+        state.sessions.insert(session).await;
         let cookie_value = format!("{SESSION_COOKIE_NAME}={token}");
 
         let response = app

@@ -67,7 +67,7 @@ pub use app::{
 };
 pub use auth::{
     derive_id::IdDeriver,
-    session::{SESSION_IDLE_TIMEOUT, Session},
+    session::{Session, session_idle_timeout},
     session_extractor::{SESSION_COOKIE_NAME, session_middleware, store_middleware},
     session_store::SessionStore,
 };
