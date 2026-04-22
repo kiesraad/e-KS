@@ -166,7 +166,7 @@ pub(super) fn subject_path(event: &AppEvent) -> String {
             ls.update_path().to_string()
         }
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
-            ss.update_path().to_string()
+            ss.substitute_update_path().to_string()
         }
         AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
             candidate_list_path(*list_id)
