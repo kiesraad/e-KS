@@ -97,7 +97,7 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           stream_id UUID,
           current_election JSONB,
           locale TEXT NOT NULL,
-          csrf_tokens JSONB NOT NULL,
+          csrf_token TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL
         )
         "#,

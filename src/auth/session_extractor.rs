@@ -53,22 +53,9 @@ pub async fn session_middleware(
     session.last_activity = Utc::now();
     state.sessions.insert(session.clone()).await;
 
-    // Keep a handle that shares the same `Arc<RwLock<CsrfTokens>>` as the
-    // session we hand off to the handler, so CSRF tokens issued or consumed
-    // during the request can be flushed back to the backend afterwards.
-    let session_for_csrf_sync = session.clone();
     request.extensions_mut().insert(session);
 
-    let response = next.run(request).await;
-
-    // Flush CSRF-token mutations made during the handler. For in-memory this
-    // is a no-op; for database storage this writes the tokens column.
-    state
-        .sessions
-        .sync_csrf_tokens(&session_for_csrf_sync)
-        .await;
-
-    response
+    next.run(request).await
 }
 
 /// Middleware that resolves the scoped store for the session's current election.

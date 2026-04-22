@@ -19,7 +19,7 @@ struct SelectElectionTemplate {
     title_locale: AnyLocale,
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
-    csrf_token: crate::CsrfToken,
+    csrf_token: crate::TokenValue,
     fixtures: bool,
 }
 
@@ -45,7 +45,7 @@ pub async fn select_election(
         return Ok(Redirect::to(&IndexPath.to_string()).into_response());
     }
 
-    let csrf_token = session.csrf_tokens.issue();
+    let csrf_token = session.csrf_token.clone();
     state.sessions.insert(session.clone()).await;
 
     let template = SelectElectionTemplate {
@@ -182,9 +182,9 @@ mod tests {
         assert_eq!(get.status(), StatusCode::OK);
 
         let session = state.sessions.get(&token).await.expect("session");
-        let csrf = session.csrf_tokens.issue();
+        let csrf = session.csrf_token.clone();
 
-        let body = format!("csrf_token={}&election=EK27", csrf.value);
+        let body = format!("csrf_token={csrf}&election=EK27");
         let response = app
             .oneshot(
                 Request::builder()

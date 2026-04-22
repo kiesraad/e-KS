@@ -25,30 +25,32 @@ impl From<CandidateList> for CandidateListForm {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CsrfTokens, ElectoralDistrict, form::ValidationError};
+    use crate::{
+        ElectoralDistrict,
+        form::{ValidationError, generate_csrf_token},
+    };
 
     #[tokio::test]
     async fn builds_candidate_list_with_valid_csrf() {
-        let tokens = CsrfTokens::default();
-        let csrf_token = tokens.issue().value;
+        let csrf_token = generate_csrf_token();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
-            csrf_token,
+            csrf_token: csrf_token.clone(),
         };
 
-        let list = form.validate_create(&tokens).unwrap();
+        let list = form.validate_create(&csrf_token).unwrap();
         assert_eq!(list.electoral_districts, vec![ElectoralDistrict::UT]);
     }
 
     #[tokio::test]
     async fn rejects_invalid_csrf_token() {
-        let tokens = CsrfTokens::default();
+        let csrf_token = generate_csrf_token();
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             csrf_token: TokenValue("invalid".to_string()),
         };
 
-        let Err(data) = form.validate_create(&tokens) else {
+        let Err(data) = form.validate_create(&csrf_token) else {
             panic!("expected validation errors");
         };
 

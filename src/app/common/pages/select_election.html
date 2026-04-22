@@ -11,7 +11,7 @@
     <form method="post"
           action="{{ crate::common::SelectElectionPath.to_string() }}"
           class="form election-switch mt-xl">
-      <input type="hidden" name="csrf_token" value="{{ csrf_token.value }}">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
       <fieldset>
         <p class="form-field form-field-lg">
           <label for="election">{{ "common.switch_election.election"|trans }}</label>
