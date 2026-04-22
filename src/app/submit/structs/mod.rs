@@ -10,6 +10,7 @@ pub mod typst_electoral_districts;
 mod typst_person;
 mod typst_postal_address;
 mod typst_util;
+mod incomplete_items;
 
 use typst_candidate::{TypstCandidate, ordered_candidates};
 use typst_datetime::TypstDatetime;
