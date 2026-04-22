@@ -27,6 +27,23 @@
       }
     }
 
+    .date-input-row {
+      display: flex;
+      gap: 1rem;
+
+      & input.day {
+        flex: 1;
+      }
+
+      & input.month {
+        flex: 1;
+      }
+
+      & input.year {
+        flex: 2;
+      }
+    }
+
     &.actions {
       flex-direction: row;
       justify-content: flex-start;
