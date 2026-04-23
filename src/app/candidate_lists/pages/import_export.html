@@ -42,13 +42,16 @@
         <div class="alert alert-info float-root mt-xl">
           <h4 class="mb-md font-bold">{{ "candidate_list.import_export.import_instructions_header"|trans }}</h4>
           <p>{{ "candidate_list.import_export.import_instructions_intro"|trans }}</p>
-          <p class="read-more-button mt-md" target="import-extra-info">{{ "action.read_more"|trans }}</p>
-          <div id="import-extra-info" class="hidden mt-md">
-            <p>{{ "candidate_list.import_export.import_instructions"|trans|safe }}</p>
-            <p class="read-less-button mt-md">{{ "action.read_less"|trans }}</p>
+          <div class="read-more mt-md">
+            <input id="import-extra-info-toggle" class="toggle" type="checkbox" hidden>
+            <label for="import-extra-info-toggle" class="more-less open">{{ "action.read_more"|trans }}</label>
+            <div class="content">
+              <p>{{ "candidate_list.import_export.import_instructions"|trans|safe }}</p>
+              <label for="import-extra-info-toggle" class="more-less close mt-md">{{ "action.read_less"|trans }}</label>
+            </div>
           </div>
           <a href="{{ CandidateList::import_template_path() }}"
-             class="button secondary icon-download float-right">{{ "candidate_list.actions.export_csv_template"|trans }}</a>
+             class="button secondary icon-download float-right mt-md">{{ "candidate_list.actions.export_csv_template"|trans }}</a>
         </div>
       </p>
     </div>
