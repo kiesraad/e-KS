@@ -29,7 +29,7 @@ pub async fn update_representative(
             should_warn: query.should_warn(),
             form: FormData::new_with_data(
                 RepresentativeForm::from(person.clone().representative.unwrap_or_default()),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             person,
         },
@@ -46,7 +46,7 @@ pub async fn update_representative_submit(
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
     let representative = person.clone().representative.unwrap_or_default();
-    match form.validate_update(&representative, &context.session.csrf_tokens) {
+    match form.validate_update(&representative, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -116,7 +116,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_tokens = context.session.csrf_tokens.clone();
+        let expected_csrf = context.session.csrf_token.clone();
 
         let response = update_representative(
             UpdateRepresentativePath { person_id },
@@ -131,7 +131,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         let csrf_token = extract_csrf_token(&body).expect("csrf token");
-        assert!(csrf_tokens.consume(&csrf_token));
+        assert_eq!(csrf_token, expected_csrf);
 
         Ok(())
     }
@@ -145,7 +145,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_representative_form(&csrf_token);
         form.name.last_name = "Smit".to_string();
         let expected_path = person.highlight_success_path().to_string();
@@ -188,7 +188,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_representative_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 

@@ -14,12 +14,12 @@ pub async fn delete_substitute_submitter(
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_token) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             substitute_submitter.delete_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -45,12 +45,12 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
-            substitute_submitter,
+            substitute_submitter.clone(),
             store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
@@ -66,7 +66,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );

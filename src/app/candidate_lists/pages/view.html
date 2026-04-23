@@ -2,10 +2,7 @@
 {% block page_title %}
   {{ "candidate_list.title_single"|trans }}
   {% let election = "election"|election_value %}
-  {% if election.has_only_one_district() %}
-    <a href="{{ full_list.list.update_list_submitter_path() }}"
-       class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
-  {% else %}
+  {% if !election.has_only_one_district() %}
     <a href="{{ full_list.list.update_path() }}"
        class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
   {% endif %}
@@ -43,7 +40,7 @@
       <div>
         <p>{{ "candidate_list.actions.import_export"|trans }}:</p>
         <a href="{{ full_list.list.import_path() }}"
-           class="button secondary icon-file">{{ "candidate_list.actions.import_export_csv"|trans }}</a>
+           class="button secondary icon-download">{{ "candidate_list.actions.import_export_csv"|trans }}</a>
       </div>
       <div>
         <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>

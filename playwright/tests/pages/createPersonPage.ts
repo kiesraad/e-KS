@@ -8,7 +8,9 @@ export class CreatePersonPage {
   readonly textfieldFirstName: Locator;
   readonly textfieldCountryCode: Locator;
   readonly selectGender: Locator;
-  readonly textfieldDateOfBirth: Locator;
+  readonly textfieldDayOfBirth: Locator;
+  readonly textfieldMonthOfBirth: Locator;
+  readonly textfieldYearOfBirth: Locator;
   readonly buttonNext: Locator;
 
   constructor(protected readonly page: Page) {
@@ -20,9 +22,18 @@ export class CreatePersonPage {
       name: "Landcode",
     });
     this.selectGender = this.page.getByLabel("Geslacht");
-    this.textfieldDateOfBirth = this.page.getByRole("textbox", {
+
+    this.textfieldDayOfBirth = this.page.getByRole("textbox", {
       name: "Geboortedatum",
     });
+    this.textfieldMonthOfBirth = this.page.getByRole("textbox", {
+      name: "mm",
+      exact: true,
+    });
+    this.textfieldYearOfBirth = this.page.getByRole("textbox", {
+      name: "jjjj",
+    });
+
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
   }
 
@@ -35,7 +46,10 @@ export class CreatePersonPage {
       await this.textfieldCountryCode.fill(candidate.countryCode);
     }
     await this.selectGender.selectOption(candidate.gender ?? "");
-    await this.textfieldDateOfBirth.fill(candidate.dateOfBirth ?? "");
+
+    await this.textfieldDayOfBirth.fill(candidate.dateOfBirth?.day ?? "");
+    await this.textfieldMonthOfBirth.fill(candidate.dateOfBirth?.month ?? "");
+    await this.textfieldYearOfBirth.fill(candidate.dateOfBirth?.year ?? "");
 
     await this.buttonNext.click();
   }

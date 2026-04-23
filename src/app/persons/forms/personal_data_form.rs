@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    AppStore, CsrfTokens, ElectionConfig, OptionStringExt, TokenValue,
+    AppStore, ElectionConfig, OptionStringExt, TokenValue,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, PlaceOfResidence,
     },
@@ -76,12 +76,12 @@ impl PersonalDataForm {
     /// Also checks person uniqueness and date of birth
     pub fn validate_create_with_checks(
         self,
-        csrf_tokens: &CsrfTokens,
+        csrf_token: &TokenValue,
         store: &AppStore,
         election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
-        let person = self.clone().validate_create(csrf_tokens)?;
+        let person = self.clone().validate_create(csrf_token)?;
         let mut errors = PersonalDataForm::uniqueness_errors(&person, &existing);
         errors.append(&mut PersonalDataForm::date_of_birth_check(
             &person, election,
@@ -91,9 +91,7 @@ impl PersonalDataForm {
             Ok(person)
         } else {
             Err(Box::new(FormData::new_with_errors(
-                self,
-                csrf_tokens,
-                errors,
+                self, csrf_token, errors,
             )))
         }
     }
@@ -102,19 +100,17 @@ impl PersonalDataForm {
     pub fn validate_update_with_checks(
         self,
         current: &Person,
-        csrf_tokens: &CsrfTokens,
+        csrf_token: &TokenValue,
         election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
-        let person = self.clone().validate_update(current, csrf_tokens)?;
+        let person = self.clone().validate_update(current, csrf_token)?;
         let errors = PersonalDataForm::date_of_birth_check(&person, election);
 
         if errors.is_empty() {
             Ok(person)
         } else {
             Err(Box::new(FormData::new_with_errors(
-                self,
-                csrf_tokens,
-                errors,
+                self, csrf_token, errors,
             )))
         }
     }
@@ -178,9 +174,9 @@ mod tests {
 
     use super::*;
     use crate::{
-        CsrfTokens, OptionAsStrExt,
+        OptionAsStrExt,
         common::{DutchAddress, UtcDateTime},
-        form::ValidationError,
+        form::{ValidationError, generate_csrf_token},
         persons::PersonId,
         test_utils::{
             parse_country_code, parse_last_name, parse_place_of_residence, sample_person_with,
@@ -202,7 +198,7 @@ mod tests {
             street_name: Some("Spoorstraat".parse().expect("street name")),
         };
         current.updated_at = UtcDateTime::default();
-        let tokens = CsrfTokens::default();
+        let csrf_token = generate_csrf_token();
 
         let form = PersonalDataForm {
             name: FullNameForm {
@@ -218,10 +214,10 @@ mod tests {
                 place_of_residence: "Waterdam".to_string(),
                 country: " nl ".to_string(),
             },
-            csrf_token: tokens.issue().value,
+            csrf_token: csrf_token.clone(),
         };
 
-        let updated = form.validate_update(&current, &tokens).unwrap();
+        let updated = form.validate_update(&current, &csrf_token).unwrap();
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.personal_data.gender, Some(Gender::Male));
@@ -299,7 +295,7 @@ mod tests {
 
     #[test]
     fn personal_data_form_collects_validation_errors() {
-        let tokens = CsrfTokens::default();
+        let csrf_token = generate_csrf_token();
         let form = PersonalDataForm {
             name: FullNameForm {
                 first_name: " B ".to_string(),
@@ -314,10 +310,10 @@ mod tests {
                 place_of_residence: "x".to_string(),
                 country: "xx".to_string(),
             },
-            csrf_token: tokens.issue().value,
+            csrf_token: csrf_token.clone(),
         };
 
-        let Err(data) = form.validate_create(&tokens) else {
+        let Err(data) = form.validate_create(&csrf_token) else {
             panic!("expected validation errors");
         };
 

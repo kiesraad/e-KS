@@ -69,7 +69,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
         }),
     }
-    .create(store)
+    .update(store)
     .await?;
 
     ListSubmitter {
@@ -125,8 +125,8 @@ mod tests {
         let store = AppStore::new_for_test();
         load(&store).await.unwrap();
 
-        let list_submitters = store.get_list_submitters();
-        assert_eq!(list_submitters.len(), 1);
+        let list_submitter = store.get_list_submitter();
+        assert!(list_submitter.is_complete());
 
         let substitute_submitters = store.get_substitute_submitters();
         assert_eq!(substitute_submitters.len(), 2);

@@ -1,12 +1,18 @@
 import type { AuthorisedPerson } from "./authorisedPerson";
 
+export interface DateOfBirth {
+  day?: string;
+  month?: string;
+  year?: string;
+}
+
 export interface Candidate {
   initials: string;
   lastNamePrefix?: string;
   lastName: string;
   firstName?: string;
   gender?: string;
-  dateOfBirth?: string;
+  dateOfBirth?: DateOfBirth;
   postalCode?: string;
   houseNumber?: string;
   houseNumberAddition?: string;

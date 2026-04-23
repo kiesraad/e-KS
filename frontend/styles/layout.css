@@ -161,3 +161,16 @@ footer {
     text-align: center;
   }
 }
+
+.columns {
+  display: flex;
+}
+
+.columns > .column:not(:last-child) {
+  border-right: 1px solid var(--border-color-default);
+}
+
+.columns > .column {
+  flex: 1;
+  margin: var(--space-md);
+}

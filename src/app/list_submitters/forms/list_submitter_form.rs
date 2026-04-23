@@ -1,7 +1,7 @@
 use crate::{
     TokenValue,
-    common::{FullNameForm, InternationalAddressForm},
-    list_submitters::{ListSubmitter, ListSubmitterData},
+    common::InternationalAddressForm,
+    list_submitters::{ListSubmitter, ListSubmitterData, SubmitterNameForm},
 };
 use serde::Deserialize;
 use validate::Validate;
@@ -12,7 +12,7 @@ use validate::Validate;
 pub struct ListSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]
-    pub name: FullNameForm,
+    pub name: SubmitterNameForm,
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: InternationalAddressForm,
@@ -25,7 +25,7 @@ impl From<ListSubmitter> for ListSubmitterForm {
         let value = ListSubmitterData::from(value);
 
         ListSubmitterForm {
-            name: FullNameForm::from(value.name),
+            name: SubmitterNameForm::from(value.name),
             address: InternationalAddressForm::from(value.address),
             csrf_token: Default::default(),
         }
@@ -39,11 +39,9 @@ mod tests {
 
     #[test]
     fn validate_create_uses_dutch_address_when_country_is_empty() {
-        let csrf_tokens = crate::CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: FullNameForm {
-                first_name: String::new(),
+            name: SubmitterNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -57,24 +55,19 @@ mod tests {
                 house_number_addition: "B".to_string(),
                 street_name: "Coolsingel".to_string(),
             },
-            csrf_token,
+            csrf_token: csrf_token.clone(),
         };
 
-        let submitter: ListSubmitter = form
-            .validate_create(&csrf_tokens)
-            .expect("submitter")
-            .into();
+        let submitter: ListSubmitter = form.validate_create(&csrf_token).expect("submitter").into();
 
         assert!(matches!(submitter.address, Address::Dutch(_)));
     }
 
     #[test]
     fn validate_create_uses_international_address_when_country_is_foreign() {
-        let csrf_tokens = crate::CsrfTokens::default();
-        let csrf_token = csrf_tokens.issue().value;
+        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: FullNameForm {
-                first_name: String::new(),
+            name: SubmitterNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -88,13 +81,10 @@ mod tests {
                 house_number_addition: String::new(),
                 street_name: "Wetstraat".to_string(),
             },
-            csrf_token,
+            csrf_token: csrf_token.clone(),
         };
 
-        let submitter: ListSubmitter = form
-            .validate_create(&csrf_tokens)
-            .expect("submitter")
-            .into();
+        let submitter: ListSubmitter = form.validate_create(&csrf_token).expect("submitter").into();
 
         match submitter.address {
             Address::International(address) => {

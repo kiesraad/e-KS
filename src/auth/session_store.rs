@@ -115,30 +115,6 @@ impl SessionStore {
         session
     }
 
-    /// Sync only the `csrf_tokens` state of a session to the backend.
-    ///
-    /// Used by the session middleware after a handler runs so CSRF tokens
-    /// issued or consumed during the request (which mutate a shared
-    /// `Arc<RwLock<…>>`) are durable even when the handler itself doesn't
-    /// re-insert the session. In-memory is a no-op because the `Arc` is
-    /// already shared across requests.
-    pub async fn sync_csrf_tokens(
-        &self,
-        #[cfg_attr(not(feature = "database"), allow(unused_variables))] session: &Session,
-    ) {
-        match self {
-            SessionStore::InMemory(_) => {
-                // Arc sharing already keeps the in-memory copy in sync.
-            }
-            #[cfg(feature = "database")]
-            SessionStore::Database(pool) => {
-                if let Err(err) = session_db::sync_csrf(pool, session).await {
-                    error!("failed to sync csrf tokens: {err}");
-                }
-            }
-        }
-    }
-
     /// Removes all expired sessions from the store.
     pub async fn cleanup_expired(&self) {
         match self {

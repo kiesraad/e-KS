@@ -6,8 +6,10 @@ use crate::{
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
-        pages::CandidateListImportPath,
+        pages::{CandidateListImportPath, CandidateListImportTemplatePath},
+        structs::{CSV_HEADERS, CandidateRecordCsv},
     },
+    core::Csv,
     filters,
     form::{EmptyForm, FileForm, FormData},
     redirect_success, trans,
@@ -30,7 +32,7 @@ fn render_import_export(
         ImportExportTemplate {
             list,
             import_errors,
-            form: FormData::new(&context.session.csrf_tokens),
+            form: FormData::new(&context.session.csrf_token),
         },
         context,
     )
@@ -61,7 +63,7 @@ pub async fn import_candidate_list(
     };
 
     if csrf_form
-        .validate_create(&context.session.csrf_tokens)
+        .validate_create(&context.session.csrf_token)
         .is_err()
     {
         return Err(AppError::CsrfTokenInvalid);
@@ -84,7 +86,7 @@ pub async fn import_candidate_list(
         &mut list,
         &store,
         &csv_data,
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
         context.session.locale,
     )
     .await
@@ -104,6 +106,19 @@ pub async fn import_candidate_list(
             Ok(render_import_export(list.clone(), messages, context))
         }
     }
+}
+
+pub async fn download_import_template(
+    _: CandidateListImportTemplatePath,
+) -> Result<Response, AppError> {
+    let (response, _) = Csv::<CandidateRecordCsv> {
+        filename: "kandidatenlijst-export-sjabloon.csv".to_string(),
+        headers: Some(CSV_HEADERS.to_vec()),
+        records: vec![],
+    }
+    .generate_csv_response()?;
+
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -150,7 +165,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
@@ -182,7 +197,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
@@ -230,5 +245,35 @@ mod tests {
             csv_headers(),
             "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
+    }
+
+    #[tokio::test]
+    async fn download_csv_template() -> Result<(), AppError> {
+        let response = download_import_template(CandidateListImportTemplatePath {}).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Disposition")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "attachment; filename=\"kandidatenlijst-export-sjabloon.csv\""
+        );
+
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Type")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "text/csv"
+        );
+        let body = response_body_string(response).await;
+        assert_eq!(body.trim_end_matches('\n'), csv_headers());
+
+        Ok(())
     }
 }

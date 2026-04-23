@@ -43,7 +43,7 @@ pub async fn create_candidate_list(
     let has_previous_list = !store.get_candidate_lists().is_empty();
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
-            form: FormData::new(&context.session.csrf_tokens),
+            form: FormData::new(&context.session.csrf_token),
             available_districts,
             has_previous_list,
         },
@@ -68,7 +68,7 @@ pub async fn create_candidate_list_submit(
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
 
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
                 form: form_data,
@@ -134,7 +134,7 @@ mod test {
     async fn create_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             copy_candidates: false,
@@ -194,7 +194,7 @@ mod test {
     async fn create_candidate_list_copies_previous_candidates() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person_a = sample_person(PersonId::new());
@@ -301,7 +301,7 @@ mod test {
     async fn create_candidate_list_with_provincial_election_persists() -> Result<(), AppError> {
         let store = AppStore::new_for_test_with_election(ElectionConfig::PS27(Province::GE));
         let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::PsNijmegen],
             copy_candidates: false,
@@ -397,7 +397,7 @@ mod test {
         let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
         let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
         context.election = ElectionConfig::EK27;
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         // test
         let response = create_candidate_list_submit(

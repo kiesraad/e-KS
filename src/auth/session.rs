@@ -4,7 +4,7 @@ use chrono::{DateTime, Duration, Utc};
 use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::{AppError, CsrfTokens, ElectionConfig, Locale, StreamId, TokenValue};
+use crate::{AppError, ElectionConfig, Locale, StreamId, TokenValue, form::generate_csrf_token};
 
 /// Idle timeout (in seconds) after which a session is considered expired.
 const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60;
@@ -69,8 +69,9 @@ pub struct Session {
     pub current_election: Option<ElectionConfig>,
     /// Active locale for the session.
     pub locale: Locale,
-    /// CSRF tokens scoped to this session.
-    pub csrf_tokens: CsrfTokens,
+    /// CSRF token scoped to this session. Fixed for the session's lifetime;
+    /// rotation happens when the session itself is replaced (login/logout).
+    pub csrf_token: TokenValue,
 }
 
 impl std::fmt::Debug for Session {
@@ -117,7 +118,7 @@ impl Session {
             stream_id: None,
             current_election: None,
             locale,
-            csrf_tokens: CsrfTokens::default(),
+            csrf_token: generate_csrf_token(),
         }
     }
 
@@ -141,10 +142,10 @@ impl Session {
         Utc::now() - self.last_activity >= session_idle_timeout()
     }
 
-    /// Consume a CSRF token from the session, returning
-    /// [`AppError::CsrfTokenInvalid`] if it is not recognised.
+    /// Verify a submitted CSRF token against the session's token, returning
+    /// [`AppError::CsrfTokenInvalid`] if it does not match.
     pub fn consume_csrf(&self, token: &str) -> Result<(), AppError> {
-        if self.csrf_tokens.consume(&TokenValue(token.to_string())) {
+        if self.csrf_token.0 == token {
             Ok(())
         } else {
             Err(AppError::CsrfTokenInvalid)

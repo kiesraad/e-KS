@@ -19,7 +19,7 @@ pub struct AppStoreData {
     pub(crate) persons: HashMap<PersonId, Person>,
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
     pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
-    pub(crate) list_submitters: HashMap<ListSubmitterId, ListSubmitter>,
+    pub(crate) list_submitter: ListSubmitter,
     pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
 
     // Download path, file name, downloader id
@@ -122,16 +122,6 @@ impl StoreData for AppStoreData {
                     existing.candidates = candidates;
                 });
             }
-            AppEvent::UpdateCandidateListSubmitters {
-                list_id,
-                list_submitter_id,
-                substitute_list_submitter_ids,
-            } => {
-                self.candidate_lists.entry(list_id).and_modify(|existing| {
-                    existing.list_submitter_id = list_submitter_id;
-                    existing.substitute_list_submitter_ids = substitute_list_submitter_ids;
-                });
-            }
             AppEvent::AddCandidateToCandidateList { list_id, person_id } => {
                 self.candidate_lists.entry(list_id).and_modify(|existing| {
                     if !existing.candidates.contains(&person_id) {
@@ -159,26 +149,8 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteAuthorisedAgent(aa_id) => {
                 self.authorised_agents.remove(&aa_id);
             }
-            AppEvent::CreateListSubmitter(ls) => {
-                self.list_submitters.insert(ls.id, ls);
-            }
             AppEvent::UpdateListSubmitter(ls) => {
-                let ls_id = ls.id;
-                self.list_submitters.entry(ls_id).and_modify(|existing| {
-                    *existing = ls;
-                });
-            }
-            AppEvent::DeleteListSubmitter {
-                list_submitter_id: ls_id,
-            } => {
-                self.candidate_lists
-                    .values_mut()
-                    .filter(|list| list.list_submitter_id == Some(ls_id))
-                    .for_each(|list| {
-                        list.list_submitter_id = None;
-                    });
-
-                self.list_submitters.remove(&ls_id);
+                self.list_submitter = ls;
             }
             AppEvent::CreateSubstituteSubmitter(ss) => {
                 self.substitute_submitters.insert(ss.id, ss);
@@ -194,13 +166,6 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteSubstituteSubmitter {
                 substitute_submitter_id: ss_id,
             } => {
-                self.candidate_lists
-                    .values_mut()
-                    .filter(|list| list.substitute_list_submitter_ids.contains(&ss_id))
-                    .for_each(|list| {
-                        list.substitute_list_submitter_ids.retain(|id| *id != ss_id);
-                    });
-
                 self.substitute_submitters.remove(&ss_id);
             }
 
