@@ -20,14 +20,7 @@ services:
     command: ["/app/eks"]
     environment:
       STORAGE_URL: memory://ephemeral
-      BAG_SERVICE_URL: http://bag-service:8080
       LOAD_FIXTURES: "true"
-    depends_on:
-      - bag-service
-    networks: [pw_network]
-
-  bag-service:
-    image: ghcr.io/tweedegolf/bag-address-lookup:0.3.2
     networks: [pw_network]
 
 networks:

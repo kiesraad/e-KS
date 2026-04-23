@@ -86,7 +86,7 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         if opts.csrf {
             has_csrf = true;
             let block = quote! {
-                if !csrf_tokens.consume(&self.#ident) {
+                if self.#ident != *csrf_token {
                     errors.push((
                         #field_name.to_string(),
                         crate::form::ValidationError::InvalidCsrfToken,
@@ -154,10 +154,10 @@ fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2
     if has_csrf {
         quote! {
             impl crate::form::WithCsrfToken for #struct_name {
-                fn with_csrf_token(self, csrf_token: crate::form::CsrfToken) -> Self {
+                fn with_csrf_token(self, csrf_token: crate::form::TokenValue) -> Self {
                     #[allow(clippy::needless_update)]
                     #struct_name {
-                        csrf_token: csrf_token.value,
+                        csrf_token,
                         ..self
                     }
                 }
@@ -166,7 +166,7 @@ fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2
     } else {
         quote! {
             impl crate::form::WithCsrfToken for #struct_name {
-                fn with_csrf_token(self, _csrf_token: crate::form::CsrfToken) -> Self {
+                fn with_csrf_token(self, _csrf_token: crate::form::TokenValue) -> Self {
                     self
                 }
             }
@@ -193,7 +193,7 @@ fn build_validate_impl(
         impl #struct_name {
             pub fn validate_create(
                 self,
-                csrf_tokens: &crate::form::CsrfTokens,
+                csrf_token: &crate::form::TokenValue,
             ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
 
@@ -203,7 +203,7 @@ fn build_validate_impl(
                     tracing::debug!("Validation errors: {errors:?}");
                     return Err(crate::form::FormData::new_with_errors(
                         self,
-                        csrf_tokens,
+                        csrf_token,
                         errors,
                     ));
                 }
@@ -218,7 +218,7 @@ fn build_validate_impl(
             pub fn validate_update(
                 self,
                 current: &#target,
-                csrf_tokens: &crate::form::CsrfTokens,
+                csrf_token: &crate::form::TokenValue,
             ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
 
@@ -228,7 +228,7 @@ fn build_validate_impl(
                     tracing::debug!("Validation errors: {errors:?}");
                     return Err(crate::form::FormData::new_with_errors(
                         self,
-                        csrf_tokens,
+                        csrf_token,
                         errors,
                     ));
                 }
@@ -423,13 +423,13 @@ fn build_flatten_validation(
         }));
     };
     let create_expr = quote!({
-        match self.#ident.clone().validate_create(csrf_tokens) {
+        match self.#ident.clone().validate_create(csrf_token) {
             Ok(value) => Some(value),
             Err(form_data) => { #extend_errors None }
         }
     });
     let update_expr = quote!({
-        match self.#ident.clone().validate_update(&current.#ident, csrf_tokens) {
+        match self.#ident.clone().validate_update(&current.#ident, csrf_token) {
             Ok(value) => Some(value),
             Err(form_data) => { #extend_errors None }
         }
@@ -449,7 +449,7 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
     };
     let create_expr = quote!({
         match self.#ident.clone() {
-            Some(value) => match value.validate_create(csrf_tokens) {
+            Some(value) => match value.validate_create(csrf_token) {
                 Ok(value) => Some(Some(value)),
                 Err(form_data) => { #extend_errors None }
             },
@@ -459,11 +459,11 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
     let update_expr = quote!({
         match self.#ident.clone() {
             Some(value) => match current.#ident.as_ref() {
-                Some(current_value) => match value.validate_update(current_value, csrf_tokens) {
+                Some(current_value) => match value.validate_update(current_value, csrf_token) {
                     Ok(value) => Some(Some(value)),
                     Err(form_data) => { #extend_errors None }
                 },
-                None => match value.validate_create(csrf_tokens) {
+                None => match value.validate_create(csrf_token) {
                     Ok(value) => Some(Some(value)),
                     Err(form_data) => { #extend_errors None }
                 },

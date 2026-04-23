@@ -59,7 +59,7 @@ pub async fn update_list_submitter(
 
     let form = FormData::new_with_data(
         ListSubmitterForm::from(candidate_list.clone()),
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
     );
 
     render_submitter_form(context, candidate_list, &store, query.should_warn(), form)
@@ -73,7 +73,7 @@ pub async fn update_list_submitter_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.session.csrf_token) {
         Err(form_data) => render_submitter_form(
             context,
             candidate_list,
@@ -116,7 +116,7 @@ mod tests {
         list_submitter.create(&store).await?;
         substitute_submitter.create(&store).await?;
 
-        let context = Context::new(&store, Session::new_with_locale(Locale::En));
+        let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
 
         let response = update_list_submitter(
             UpdateListSubmitterPath {
@@ -147,7 +147,7 @@ mod tests {
     #[tokio::test]
     async fn update_list_submitter_selects_defaults_on_initial_query() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        let context = Context::new(&store, Session::new_with_locale(Locale::En));
+        let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
         let candidate_list = sample_candidate_list(CandidateListId::new());
 
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
@@ -184,8 +184,8 @@ mod tests {
     async fn update_list_submitters_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let context = Context::new(&store, Session::new_with_locale(Locale::En));
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
+        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -258,7 +258,7 @@ mod tests {
     async fn update_list_submitters_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let context = Context::new(&store, Session::new_with_locale(Locale::En));
+        let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
         let candidate_list = sample_candidate_list(CandidateListId::new());
         let list_submitter = sample_list_submitter(ListSubmitterId::new());
         let substitute_submitter = sample_list_submitter(ListSubmitterId::new());

@@ -26,7 +26,7 @@ pub async fn update_list_submitter(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(
                 list_submitter.clone().into(),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             list_submitter,
         },
@@ -44,7 +44,7 @@ pub async fn update_list_submitter_submit(
 ) -> Result<Response, AppError> {
     match form.validate_update(
         &ListSubmitterData::from(list_submitter.clone()),
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
@@ -113,7 +113,7 @@ mod tests {
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -156,7 +156,7 @@ mod tests {
         list_submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

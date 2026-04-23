@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::{
-    ElectionConfig, ElectoralDistrict, Locale,
+    ElectionConfig, ElectoralDistrict, Locale, audit_log,
     constants::DEFAULT_DATE_TIME_FORMAT,
     core::AnyLocale,
     form::{FormData, WithCsrfToken},
@@ -184,6 +184,11 @@ pub fn error<T: WithCsrfToken>(
     let locale: Locale = *askama::get_value(values, "locale")?;
 
     Ok(form.error(name, locale))
+}
+
+#[askama::filter_fn]
+pub fn abbreviate_str(s: &str, _: &dyn askama::Values) -> askama::Result<String> {
+    Ok(audit_log::abbreviate_str(s))
 }
 
 /// Returns a cache buster string based on the current git commit hash (set during build on github).

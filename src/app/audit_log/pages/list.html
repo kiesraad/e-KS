@@ -43,7 +43,7 @@
         <thead>
           <tr>
             <th scope="col">{{ "audit_log.fields.event_id"|trans }}</th>
-            <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.timestamp"|trans }} (UTC)</th>
             <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.details"|trans }}</th>
             <th scope="col">{{ "audit_log.fields.subject_id"|trans }}</th>
@@ -59,7 +59,7 @@
               <td>{{ entry.details }}</td>
               <td class="subject-id">
                 <a href="/audit-log?search={{ entry.subject_id_full }}">
-                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id }}</abbr>
+                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id_full|abbreviate_str }}</abbr>
                 </a>
               </td>
               <td>

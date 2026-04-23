@@ -1,20 +1,25 @@
 //! Session model and token generation.
 
+use chrono::{DateTime, Duration, Utc};
 use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
-use std::time::{Duration, Instant};
 
-use crate::{CsrfTokens, Locale, StreamId, common::Bsn};
+use crate::{AppError, ElectionConfig, Locale, StreamId, TokenValue, form::generate_csrf_token};
+
+/// Idle timeout (in seconds) after which a session is considered expired.
+const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60;
 
 /// Idle timeout after which a session is considered expired.
-pub const SESSION_IDLE_TIMEOUT: Duration = Duration::from_secs(10 * 60);
+pub fn session_idle_timeout() -> Duration {
+    Duration::seconds(SESSION_IDLE_TIMEOUT_SECS)
+}
 
-/// Server-side session model stored in memory and attached to requests.
+/// Opaque session token kept secret until explicitly exposed.
 #[derive(Clone)]
 pub struct SessionToken(SecretString);
 
 impl SessionToken {
-    fn new(value: String) -> Self {
+    pub(crate) fn new(value: String) -> Self {
         Self(SecretString::from(value))
     }
 
@@ -47,21 +52,26 @@ impl std::hash::Hash for SessionToken {
     }
 }
 
-/// Server-side session data persisted in memory.
+/// Server-side session data.
+///
+/// Persisted either in memory or the database depending on `STORAGE_URL`.
+/// Carries no BSN/`id_code`: the user's stream id is pre-derived at login
+/// and the election is tracked on the session directly.
 #[derive(Clone)]
 pub struct Session {
     /// Opaque, random token that identifies the session.
-    token: SessionToken,
+    pub(crate) token: SessionToken,
     /// Timestamp of the last activity for idle-timeout validation.
-    pub last_activity: Instant,
-    /// Stream (BSN + election scoped) associated with this session (set on login).
+    pub last_activity: DateTime<Utc>,
+    /// Stream belonging to the user (set on login).
     pub stream_id: Option<StreamId>,
-    /// BSN used to derive stream IDs (kept for election switching).
-    pub bsn: Option<Bsn>,
+    /// Election the user is currently working on (set after login).
+    pub current_election: Option<ElectionConfig>,
     /// Active locale for the session.
     pub locale: Locale,
-    /// CSRF tokens scoped to this session.
-    pub csrf_tokens: CsrfTokens,
+    /// CSRF token scoped to this session. Fixed for the session's lifetime;
+    /// rotation happens when the session itself is replaced (login/logout).
+    pub csrf_token: TokenValue,
 }
 
 impl std::fmt::Debug for Session {
@@ -70,6 +80,7 @@ impl std::fmt::Debug for Session {
             .field("token", &"***")
             .field("last_activity", &self.last_activity)
             .field("stream_id", &self.stream_id)
+            .field("current_election", &self.current_election)
             .field("locale", &self.locale)
             .finish()
     }
@@ -89,21 +100,36 @@ impl Session {
         Self::new_with_locale(Locale::default())
     }
 
+    #[cfg(test)]
+    pub fn new_test() -> Self {
+        Self::new_with_locale(Locale::default())
+    }
+
+    #[cfg(test)]
+    pub fn new_test_with_locale(locale: Locale) -> Self {
+        Self::new_with_locale(locale)
+    }
+
     /// Creates a new session using the provided locale.
     pub fn new_with_locale(locale: Locale) -> Self {
         Self {
             token: generate_session_token(),
-            last_activity: Instant::now(),
+            last_activity: Utc::now(),
             stream_id: None,
-            bsn: None,
+            current_election: None,
             locale,
-            csrf_tokens: CsrfTokens::default(),
+            csrf_token: generate_csrf_token(),
         }
     }
 
     /// Assigns the stream for this session.
     pub fn set_stream_id(&mut self, stream_id: StreamId) {
         self.stream_id = Some(stream_id);
+    }
+
+    /// Assigns the current election for this session.
+    pub fn set_current_election(&mut self, election: ElectionConfig) {
+        self.current_election = Some(election);
     }
 
     /// Returns the session token (kept secret until explicitly exposed).
@@ -113,7 +139,17 @@ impl Session {
 
     /// Returns true when the session has been idle past the configured timeout.
     pub fn is_expired(&self) -> bool {
-        self.last_activity.elapsed() >= SESSION_IDLE_TIMEOUT
+        Utc::now() - self.last_activity >= session_idle_timeout()
+    }
+
+    /// Verify a submitted CSRF token against the session's token, returning
+    /// [`AppError::CsrfTokenInvalid`] if it does not match.
+    pub fn consume_csrf(&self, token: &str) -> Result<(), AppError> {
+        if self.csrf_token.0 == token {
+            Ok(())
+        } else {
+            Err(AppError::CsrfTokenInvalid)
+        }
     }
 }
 
@@ -123,7 +159,7 @@ impl Default for Session {
     }
 }
 
-/// Generates a random session token with ~256 bits of entropy.
+/// Generates a random session token with ~250 bits of entropy.
 fn generate_session_token() -> SessionToken {
     // 62-character alphabet => log2(62) ~= 5.95 bits per char.
     // 42 chars gives ~250 bits of entropy (42 * 5.95 ~= 250) - the answer, obviously.
@@ -142,7 +178,7 @@ mod tests {
     /// Ensures session tokens are 42-char base62 strings (~250-bit entropy).
     #[test]
     fn new_generates_base62_token() {
-        let session = Session::new();
+        let session = Session::new_test();
 
         assert_eq!(session.token().expose().len(), 42);
         assert!(
@@ -157,8 +193,8 @@ mod tests {
     /// Confirms idle timeout invalidates stale sessions.
     #[test]
     fn session_expires_after_idle_timeout() {
-        let mut session = Session::new();
-        session.last_activity = Instant::now() - SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
+        let mut session = Session::new_test();
+        session.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
 
         assert!(session.is_expired());
     }

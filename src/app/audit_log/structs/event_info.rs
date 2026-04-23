@@ -15,7 +15,7 @@ use crate::{
 pub(super) const DEFAULT_DETAILS: &str = "-";
 
 /// Abbreviate a string to its first 8 characters (used for UUID previews).
-pub(super) fn abbreviate_str(s: &str) -> String {
+pub fn abbreviate_str(s: &str) -> String {
     s[..8.min(s.len())].to_string()
 }
 
@@ -166,7 +166,7 @@ pub(super) fn subject_path(event: &AppEvent) -> String {
             ls.update_path().to_string()
         }
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
-            ss.update_path().to_string()
+            ss.substitute_update_path().to_string()
         }
         AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
             candidate_list_path(*list_id)

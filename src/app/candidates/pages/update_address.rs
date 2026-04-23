@@ -29,7 +29,7 @@ pub async fn update_person_address(
 ) -> AppResponse<impl IntoResponse> {
     let form = FormData::new_with_data(
         AddressForm::from(candidate.person.clone()),
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
     );
 
     Ok(HtmlTemplate(
@@ -52,7 +52,7 @@ pub async fn update_person_address_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&candidate.person, &context.session.csrf_tokens) {
+    match form.validate_update(&candidate.person, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -146,7 +146,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_address_form(&csrf_token);
         form.address.locality = "Rotterdam".to_string();
         let expected_path = full_list
@@ -208,7 +208,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_address_form(&csrf_token);
         form.address.postal_code = "a".to_string();
 

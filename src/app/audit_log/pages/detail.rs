@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
-    audit_log::{AuditLogDetail, AuditLogPath, pages::AuditLogDetailPath},
+    audit_log::{AuditLogDetail, AuditLogPath, pages::AuditLogDetailPath, structs::FieldChange},
     filters,
 };
 

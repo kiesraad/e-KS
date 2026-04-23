@@ -58,6 +58,6 @@ test.describe("import and export candidates with csv file", () => {
       page.waitForEvent("download"),
       csvImportExport.buttonDownload.click(),
     ]);
-    expect(download.suggestedFilename()).toMatch(/[0-9a-f]{8}-nh\.csv/);
+    expect(download.suggestedFilename()).toMatch(/[0-9a-f]{8}-gr\.csv/);
   });
 });

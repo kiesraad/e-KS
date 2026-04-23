@@ -1,0 +1,48 @@
+languages:
+  - name: "css"  
+
+  - name: "typescript"
+    production:
+    test:
+      include:
+        - ".*/playwright/tests/.*"
+
+  - name: "rust"
+    production:
+    test:
+      include:
+        - ".*_tests?[.]rs"
+        - ".*/test_utils[.]rs"
+
+exclude:
+  - ".*[.]md"
+  - ".*/deploy/.*"
+  - ".*/development/.*"
+  - ".*/docs/.*"
+  - ".*/frontend/fonts/.*"
+  - ".*/frontend/icons/.*"
+  - ".*/locales/.*"
+  - ".*/models/.*"
+  - ".*/offline/.*"
+  - ".*/src/fixtures/.*"
+  - ".*/tooling/.*"
+  - ".*/validate/.*"
+
+dependencychecker:
+  blocklist:
+    - "eks"
+    - "validate"
+    - "memory-serve"
+    - "typst-webservice"
+  transitive: true
+
+architecture:
+  enabled: true
+
+thirdpartyfindings:
+  enabled: true
+  exclude:
+    - ".*[.]md"
+    - ".*/deploy/.*"
+    - ".*/offline/.*"
+    - ".*/development/.*"

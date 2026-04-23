@@ -3,12 +3,13 @@ use axum::{
     response::{IntoResponse, Redirect},
 };
 use axum_extra::extract::CookieJar;
+use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Session, StreamId,
-    auth::session_extractor::build_session_cookie, common::Bsn, political_groups::PoliticalGroup,
-    store::Store,
+    auth::session_extractor::build_session_cookie, common::IndexPath,
+    political_groups::PoliticalGroup, store::Store, utils::random_bsn,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -26,18 +27,15 @@ pub async fn dev_login(
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
     let election = ElectionConfig::EK27;
-    let bsn: Option<Bsn> = query
+    let id_code: SecretString = query
         .bsn
         .as_deref()
         .filter(|s| !s.is_empty())
-        .map(|s| s.parse())
-        .transpose()
-        .map_err(|_| AppError::InternalServerError)?;
+        .map(SecretString::from)
+        .unwrap_or_else(random_bsn);
 
-    let stream_id = match &bsn {
-        Some(bsn) => state.bsn_id_deriver.derive_stream_id(bsn, election),
-        None => StreamId::new(),
-    };
+    let stream_id = state.id_deriver.derive_stream_id(&id_code);
+    drop(id_code);
 
     let load_fixtures = query.fixtures.unwrap_or(false);
     let (store, was_new) = ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
@@ -49,12 +47,15 @@ pub async fn dev_login(
     let locale = request_locale(&headers);
     let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
-    session.bsn = bsn;
+    session.set_current_election(election);
 
-    state.sessions.cleanup_expired();
-    state.sessions.insert(session.clone());
+    state.sessions.cleanup_expired().await;
+    state.sessions.insert(session.clone()).await;
 
-    Ok((jar.add(build_session_cookie(&session)), Redirect::to("/")))
+    Ok((
+        jar.add(build_session_cookie(&session)),
+        Redirect::to(&IndexPath.to_string()),
+    ))
 }
 
 pub(crate) fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
@@ -84,7 +85,7 @@ async fn ensure_dev_store(
     if load_fixtures {
         #[cfg(feature = "fixtures")]
         {
-            crate::fixtures::load(&store).await?;
+            crate::fixtures::load(&store, election).await?;
             return Ok((store, store_is_empty));
         }
     }
@@ -100,19 +101,15 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{
-        AppState, common::Bsn, router, store::StoreEvent, test_utils::response_body_string,
-    };
+    use crate::{AppState, router, store::StoreEvent, test_utils::response_body_string};
 
     use super::*;
 
-    const TEST_BSN: &str = "999999990";
+    const TEST_ID_CODE: &str = "999999990";
 
-    fn derive_test_id(state: &AppState, bsn_str: &str) -> StreamId {
-        let bsn: Bsn = bsn_str.parse().expect("valid test BSN");
-        state
-            .bsn_id_deriver
-            .derive_stream_id(&bsn, ElectionConfig::EK27)
+    fn derive_test_id(state: &AppState, id_code_str: &str) -> StreamId {
+        let id_code: SecretString = id_code_str.into();
+        state.id_deriver.derive_stream_id(&id_code)
     }
 
     fn cookie_value(response: &axum::response::Response) -> &str {
@@ -132,7 +129,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .header(header::ACCEPT_LANGUAGE, "en")
                     .body(Body::empty())
                     .unwrap(),
@@ -147,9 +144,12 @@ mod tests {
             .split_once('=')
             .map(|(_, value)| value)
             .expect("session token");
-        let session = state.sessions.get(token).expect("session");
+        let session = state.sessions.get(token).await.expect("session");
         assert_eq!(session.locale, Locale::En);
-        assert_eq!(session.stream_id, Some(derive_test_id(&state, TEST_BSN)));
+        assert_eq!(
+            session.stream_id,
+            Some(derive_test_id(&state, TEST_ID_CODE))
+        );
     }
 
     #[tokio::test]
@@ -161,7 +161,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -183,7 +183,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
@@ -202,7 +202,7 @@ mod tests {
             .clone()
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=false"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=false"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -224,7 +224,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
@@ -255,7 +255,7 @@ mod tests {
         let response = app
             .oneshot(
                 Request::builder()
-                    .uri(format!("/dev/login?bsn={TEST_BSN}&fixtures=true"))
+                    .uri(format!("/dev/login?bsn={TEST_ID_CODE}&fixtures=true"))
                     .body(Body::empty())
                     .unwrap(),
             )
@@ -264,7 +264,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let expected_id = derive_test_id(&state, TEST_BSN);
+        let expected_id = derive_test_id(&state, TEST_ID_CODE);
         let store = state
             .store_registry
             .get_or_create(expected_id.uuid(), ElectionConfig::EK27)

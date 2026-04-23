@@ -11,9 +11,7 @@ use crate::store::StoreEvent;
 
 impl AppStore {
     pub fn get_election(&self) -> ElectionConfig {
-        let data = self.data.read();
-
-        data.election
+        self.election
     }
 
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
@@ -21,7 +19,7 @@ impl AppStore {
 
         let mut lists: Vec<CandidateList> = data.candidate_lists.values().cloned().collect();
 
-        lists.sort_unstable_by(|a, b| a.created_at.cmp(&b.created_at));
+        lists.sort_unstable_by_key(|l| l.created_at);
 
         lists
     }
