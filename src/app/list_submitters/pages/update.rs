@@ -24,7 +24,7 @@ pub async fn update_list_submitter(
     let list_submitter = store.get_list_submitter();
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_tokens),
+            form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
         },
         context,
     )
@@ -40,7 +40,7 @@ pub async fn update_list_submitter_submit(
     let list_submitter = store.get_list_submitter();
     match form.validate_update(
         &ListSubmitterData::from(list_submitter.clone()),
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate { form: form_data },
@@ -100,7 +100,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -138,7 +138,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

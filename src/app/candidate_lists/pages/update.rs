@@ -32,7 +32,7 @@ pub async fn update_candidate_list(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
                 CandidateListForm::from(candidate_list.clone()),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             should_warn: query.should_warn(),
             candidate_list,
@@ -59,7 +59,7 @@ pub async fn update_candidate_list_submit(
     let available_districts = CandidateList::available_districts(&store, &context.election);
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
-    match form.validate_update(&candidate_list, &context.session.csrf_tokens) {
+    match form.validate_update(&candidate_list, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -124,7 +124,7 @@ mod tests {
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -227,7 +227,7 @@ mod tests {
         // setup
         let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()

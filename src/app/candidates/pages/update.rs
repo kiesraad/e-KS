@@ -31,7 +31,7 @@ pub async fn update_person(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
                 PersonalDataForm::from(candidate.person.clone()),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             on_candidate_lists: store.count_candidate_lists(candidate.person.id),
             candidate,
@@ -52,7 +52,7 @@ pub async fn update_person_submit(
 ) -> Result<Response, AppError> {
     match form.validate_update_with_checks(
         &candidate.person,
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
         &context.election,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -150,7 +150,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
         let expected_path = format!("{}?&success=true", candidate.after_update_path());
@@ -206,7 +206,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -250,7 +250,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.personal_data.date_of_birth =
             DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))

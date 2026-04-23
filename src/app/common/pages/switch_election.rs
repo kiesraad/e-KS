@@ -5,8 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, CsrfToken, ElectionConfig, HtmlTemplate, Province,
-    Session, WaterCouncil, common::SwitchElectionForm, filters,
+    AnyLocale, AppError, AppState, Context, ElectionConfig, HtmlTemplate, Province, Session,
+    TokenValue, WaterCouncil, common::SwitchElectionForm, filters,
 };
 
 use super::{IndexPath, SwitchElectionPath};
@@ -22,7 +22,7 @@ struct SwitchElectionTemplate {
     selected_region: Option<&'static str>,
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
-    csrf_token: CsrfToken,
+    csrf_token: TokenValue,
 }
 
 pub async fn switch_election(
@@ -31,7 +31,7 @@ pub async fn switch_election(
     context: Context,
 ) -> Result<Response, AppError> {
     let existing_elections = existing_elections_for(&state, &context.session).await?;
-    let csrf_token = context.session.csrf_tokens.issue();
+    let csrf_token = context.session.csrf_token.clone();
 
     Ok(HtmlTemplate(
         SwitchElectionTemplate {
@@ -132,16 +132,13 @@ mod tests {
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
         let token_value = session.token().to_exposed_string();
-        let csrf_token = session.csrf_tokens.issue();
+        let csrf_token = session.csrf_token.clone();
         state.sessions.insert(session).await;
 
         let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);
 
         // Submit switch to PS27 Groningen
-        let body = format!(
-            "csrf_token={}&election=PS27&region_province=GR",
-            csrf_token.value
-        );
+        let body = format!("csrf_token={csrf_token}&election=PS27&region_province=GR");
         let response = app
             .oneshot(
                 Request::builder()
