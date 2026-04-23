@@ -56,6 +56,10 @@ pub struct CandidateListExportPath {
 }
 
 #[derive(TypedPath, Deserialize)]
+#[typed_path("/candidate-lists/export-template", rejection(AppError))]
+pub struct CandidateListImportTemplatePath;
+
+#[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}/import", rejection(AppError))]
 pub struct CandidateListImportPath {
     pub list_id: CandidateListId,
@@ -115,6 +119,10 @@ impl CandidateList {
     pub fn import_path(&self) -> impl TypedPath {
         CandidateListImportPath { list_id: self.id }
     }
+
+    pub fn import_template_path() -> impl TypedPath {
+        CandidateListImportTemplatePath
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -133,6 +141,7 @@ pub fn router() -> Router<AppState> {
         .typed_get(import::import_export)
         .typed_get(export::export_candidate_list)
         .typed_post(import::import_candidate_list)
+        .typed_get(import::download_import_template)
 }
 
 #[cfg(test)]

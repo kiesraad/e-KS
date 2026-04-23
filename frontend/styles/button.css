@@ -235,9 +235,60 @@ label.button {
     background-size: 18px;
   }
 
+  &.icon-download {
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: 2.6rem;
+    background-size: 18px;
+
+    &.secondary {
+      background-image: url("../icons/download-grey.svg");
+    }
+
+    &:not(.secondary) {
+      background-image: url("../icons/download.svg");
+    }
+  }
+
+  &.icon-upload {
+    background-image: url("../icons/upload.svg");
+    background-repeat: no-repeat;
+    background-position: left var(--space-md) center;
+    padding-left: 2.6rem;
+    background-size: 18px;
+  }
+
   &.no-text {
     padding-left: 1rem;
     padding-right: 2rem;
     padding-bottom: 2rem;
+  }
+}
+
+.read-more {
+  width: fit-content;
+
+  .toggle:not(:checked) ~ .content {
+    display: none;
+  }
+
+  .toggle:checked ~ .open {
+    display: none;
+  }
+
+  .more-less {
+    cursor: pointer;
+    width: fit-content;
+    padding-right: 1rem;
+    font-weight: bold;
+    display: block;
+    background-image: url("../icons/select.svg");
+    background-repeat: no-repeat;
+    background-position: right center;
+    background-size: 0.7rem;
+  }
+
+  .close {
+    background-image: url("../icons/deselect.svg");
   }
 }

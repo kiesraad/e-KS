@@ -6,8 +6,10 @@ use crate::{
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
-        pages::CandidateListImportPath,
+        pages::{CandidateListImportPath, CandidateListImportTemplatePath},
+        structs::{CSV_HEADERS, CandidateRecordCsv},
     },
+    core::Csv,
     filters,
     form::{EmptyForm, FileForm, FormData},
     redirect_success, trans,
@@ -104,6 +106,19 @@ pub async fn import_candidate_list(
             Ok(render_import_export(list.clone(), messages, context))
         }
     }
+}
+
+pub async fn download_import_template(
+    _: CandidateListImportTemplatePath,
+) -> Result<Response, AppError> {
+    let (response, _) = Csv::<CandidateRecordCsv> {
+        filename: "kandidatenlijst-export-sjabloon.csv".to_string(),
+        headers: Some(CSV_HEADERS.to_vec()),
+        records: vec![],
+    }
+    .generate_csv_response()?;
+
+    Ok(response)
 }
 
 #[cfg(test)]
@@ -230,5 +245,35 @@ mod tests {
             csv_headers(),
             "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
+    }
+
+    #[tokio::test]
+    async fn download_csv_template() -> Result<(), AppError> {
+        let response = download_import_template(CandidateListImportTemplatePath {}).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Disposition")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "attachment; filename=\"kandidatenlijst-export-sjabloon.csv\""
+        );
+
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Type")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "text/csv"
+        );
+        let body = response_body_string(response).await;
+        assert_eq!(body.trim_end_matches('\n'), csv_headers());
+
+        Ok(())
     }
 }
