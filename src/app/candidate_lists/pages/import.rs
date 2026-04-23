@@ -246,4 +246,34 @@ mod tests {
             "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
     }
+
+    #[tokio::test]
+    async fn download_csv_template() -> Result<(), AppError> {
+        let response = download_import_template(CandidateListImportTemplatePath {}).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Disposition")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "attachment; filename=\"kandidatenlijst-export-sjabloon.csv\""
+        );
+
+        assert_eq!(
+            response
+                .headers()
+                .get("Content-Type")
+                .unwrap()
+                .to_str()
+                .unwrap(),
+            "text/csv"
+        );
+        let body = response_body_string(response).await;
+        assert_eq!(body.trim_end_matches('\n'), csv_headers());
+
+        Ok(())
+    }
 }
