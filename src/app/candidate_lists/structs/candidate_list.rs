@@ -7,7 +7,6 @@ use crate::{
     common::UtcDateTime,
     core::AnyLocale,
     id_newtype,
-    list_submitters::ListSubmitterId,
     persons::{Person, PersonId},
 };
 use serde::{Deserialize, Serialize};
@@ -19,8 +18,6 @@ pub struct CandidateList {
     pub id: CandidateListId,
     pub electoral_districts: Vec<ElectoralDistrict>,
     pub candidates: Vec<PersonId>,
-    pub list_submitter_id: Option<ListSubmitterId>,
-    pub substitute_list_submitter_ids: Vec<ListSubmitterId>,
     pub created_at: UtcDateTime,
 }
 
@@ -210,37 +207,8 @@ impl CandidateList {
             .await
     }
 
-    pub async fn update_submitters(&self, store: &AppStore) -> Result<(), AppError> {
-        store
-            .update(AppEvent::UpdateCandidateListSubmitters {
-                list_id: self.id,
-                list_submitter_id: self.list_submitter_id,
-                substitute_list_submitter_ids: self.substitute_list_submitter_ids.clone(),
-            })
-            .await
-    }
-
     pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {
         store.update(AppEvent::DeleteCandidateList(self.id)).await
-    }
-
-    pub fn select_default_submitters(&mut self, store: &AppStore) -> Result<(), AppError> {
-        if self.list_submitter_id.is_none() {
-            self.list_submitter_id = store
-                .get_list_submitters()
-                .first()
-                .map(|submitter| submitter.id);
-        }
-
-        if self.substitute_list_submitter_ids.is_empty() {
-            self.substitute_list_submitter_ids = store
-                .get_substitute_submitters()
-                .iter()
-                .map(|submitter| submitter.id)
-                .collect();
-        }
-
-        Ok(())
     }
 
     pub(crate) fn build_full_candidate_list(
@@ -272,7 +240,7 @@ mod tests {
         AppStore,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
-        test_utils::{sample_candidate_list, sample_list_submitter, sample_person_with_last_name},
+        test_utils::{sample_candidate_list, sample_person_with_last_name},
     };
     fn base_candidate_list(electoral_districts: Vec<ElectoralDistrict>) -> CandidateList {
         CandidateList {
@@ -422,40 +390,6 @@ mod tests {
         let loaded = store.get_candidate_list(list.id)?;
 
         assert_eq!(loaded.id, list.id);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn select_default_submitters_uses_store_defaults() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-
-        let list_submitter_a =
-            sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
-        let list_submitter_b =
-            sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
-        list_submitter_a.create(&store).await?;
-        list_submitter_b.create(&store).await?;
-
-        let substitute_a = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
-        let substitute_b = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
-        substitute_a.create_substitute(&store).await?;
-        substitute_b.create_substitute(&store).await?;
-
-        let mut list = sample_candidate_list(CandidateListId::new());
-
-        list.select_default_submitters(&store)?;
-
-        let chosen_list_submitter = list
-            .list_submitter_id
-            .expect("default list submitter selected");
-        assert!([list_submitter_a.id, list_submitter_b.id].contains(&chosen_list_submitter));
-
-        let chosen_substitutes: BTreeSet<_> =
-            list.substitute_list_submitter_ids.iter().copied().collect();
-        let expected_substitutes: BTreeSet<_> =
-            [substitute_a.id, substitute_b.id].into_iter().collect();
-        assert_eq!(expected_substitutes, chosen_substitutes);
 
         Ok(())
     }

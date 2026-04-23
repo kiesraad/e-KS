@@ -61,7 +61,7 @@ pub async fn update_substitute_submitter_submit(
             };
             updated.update_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -138,7 +138,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );

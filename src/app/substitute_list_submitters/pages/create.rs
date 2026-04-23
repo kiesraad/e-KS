@@ -43,7 +43,7 @@ pub async fn create_substitute_submitter_submit(
             let substitute_submitter: ListSubmitter = substitute_submitter_data.into();
             substitute_submitter.create_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -104,7 +104,7 @@ mod tests {
         assert_eq!(submitters.len(), 1);
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );

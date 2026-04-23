@@ -19,7 +19,7 @@ pub async fn delete_substitute_submitter(
         Ok(_) => {
             substitute_submitter.delete_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -50,7 +50,7 @@ mod tests {
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
             context,
-            substitute_submitter,
+            substitute_submitter.clone(),
             store.clone(),
             Form(EmptyForm::new(csrf_token)),
         )
@@ -66,7 +66,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );

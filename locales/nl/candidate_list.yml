@@ -27,9 +27,7 @@ districts:
 edit_position: Volgorde op de lijst
 fields:
   electoral_districts: Kieskringen
-  list_submitter: Gegevens lijstinleveraar
   position: Positie
-  substitute_list_submitters: Vervangers voor het herstel van verzuimen
 form:
   copy_candidates_from_previous: Kopieer kandidaten van de laatst aangemaakte lijst
   copy_candidates_from_previous_legend: Kopieer kandidaten

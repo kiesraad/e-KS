@@ -2,10 +2,7 @@
 {% block page_title %}
   {{ "candidate_list.title_single"|trans }}
   {% let election = "election"|election_value %}
-  {% if election.has_only_one_district() %}
-    <a href="{{ full_list.list.update_list_submitter_path() }}"
-       class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
-  {% else %}
+  {% if !election.has_only_one_district() %}
     <a href="{{ full_list.list.update_path() }}"
        class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
   {% endif %}

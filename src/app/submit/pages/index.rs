@@ -122,16 +122,14 @@ mod tests {
         let store = AppStore::new_for_test();
         let complete_list_id = CandidateListId::new();
         let incomplete_list_id = CandidateListId::new();
-        let list_submitter_id = ListSubmitterId::new();
         let person_id = PersonId::new();
 
-        sample_list_submitter(list_submitter_id)
-            .create(&store)
+        sample_list_submitter(ListSubmitterId::new())
+            .update(&store)
             .await?;
         sample_person(person_id).create(&store).await?;
 
         let mut complete_list = sample_candidate_list(complete_list_id);
-        complete_list.list_submitter_id = Some(list_submitter_id);
         complete_list.create(&store).await?;
         complete_list.append_candidate(&store, person_id).await?;
 

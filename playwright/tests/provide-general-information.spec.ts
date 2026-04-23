@@ -50,37 +50,30 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
   });
 
-  test("provide multiple list submitters", async ({ noExistingData: page }) => {
-    await page.goto("/political-group/list-submitters");
+  test("provide list submitter", async ({ noExistingData: page }) => {
+    await page.goto("/political-group/list-submitter");
 
-    const submitterOne: ListSubmitter = {
+    const submitter: ListSubmitter = {
       initials: "C",
       lastNamePrefix: "de",
       lastName: `Vries ${randomName()}`,
     };
-    const submitterTwo: ListSubmitter = {
-      initials: "Z",
-      lastName: `Zeeman ${randomName()}`,
-    };
     const listSubmittersPage = new ListSubmittersPage(page);
 
-    for (const submitter of [submitterOne, submitterTwo]) {
-      await listSubmittersPage.addListSubmitter(submitter);
-    }
-    for (const submitter of [submitterOne, submitterTwo]) {
-      const submitterLastName = submitter.lastNamePrefix
-        ? `${submitter.lastNamePrefix} ${submitter.lastName}`
-        : submitter.lastName;
-      await expect(
-        listSubmittersPage.getSubmitterLocator(submitterLastName),
-      ).toBeVisible();
-    }
+    await listSubmittersPage.setListSubmitter(submitter);
+
+    const submitterLastName = submitter.lastNamePrefix
+      ? `${submitter.lastNamePrefix} ${submitter.lastName}`
+      : submitter.lastName;
+    await expect(
+      listSubmittersPage.getSubmitterLocator(submitterLastName),
+    ).toBeVisible();
   });
 
   test("provide substitute list submitter", async ({
     noExistingData: page,
   }) => {
-    await page.goto("/political-group/list-submitters");
+    await page.goto("/political-group/list-submitter");
     const submitterOne: ListSubmitter = {
       initials: "B",
       lastNamePrefix: "van",

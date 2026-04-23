@@ -115,6 +115,13 @@ impl Address {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        match self {
+            Address::Dutch(address) => address.is_empty(),
+            Address::International(address) => address.is_empty(),
+        }
+    }
+
     pub fn postal_code(&self) -> Option<String> {
         match self {
             Address::Dutch(address) => address.postal_code.as_ref().map(ToString::to_string),

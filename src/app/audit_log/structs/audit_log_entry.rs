@@ -114,14 +114,14 @@ mod tests {
     }
 
     #[test]
-    fn from_create_list_submitter_event() {
+    fn from_update_list_submitter_event() {
         let submitter = sample_list_submitter(ListSubmitterId::new());
         let expected_name = submitter.name.display();
-        let event = StoreEvent::new(5, AppEvent::CreateListSubmitter(submitter));
+        let event = StoreEvent::new(5, AppEvent::UpdateListSubmitter(submitter));
 
         let entry = AuditLogEntry::new(event, EN);
 
-        assert_eq!(entry.description, "Created submitter of the list");
+        assert_eq!(entry.description, "Updated submitter of the list");
         assert_eq!(entry.details, expected_name);
     }
 

@@ -91,7 +91,7 @@ export class ManageCandidateListPage {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
     await this.buttonNext.click();
-    await this.page.waitForURL("**/list-submitter**");
+    await this.headingCandidateList.waitFor();
   }
 
   async addDistricts(districts: string[]) {
@@ -100,7 +100,7 @@ export class ManageCandidateListPage {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
     await this.buttonNext.click();
-    await this.page.waitForURL("**/list-submitter**");
+    await this.headingCandidateList.waitFor();
   }
 
   async removeList() {
