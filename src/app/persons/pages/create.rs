@@ -19,7 +19,7 @@ pub async fn create_person(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         PersonCreateTemplate {
-            form: FormData::new(&context.session.csrf_tokens),
+            form: FormData::new(&context.session.csrf_token),
         },
         context,
     ))
@@ -31,8 +31,7 @@ pub async fn create_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_tokens, &store, &context.election)
-    {
+    match form.validate_create_with_checks(&context.session.csrf_token, &store, &context.election) {
         Err(form_data) => {
             Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }
@@ -80,7 +79,7 @@ mod tests {
     async fn create_person_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = sample_person_form(&csrf_token);
 
         let response =
@@ -110,7 +109,7 @@ mod tests {
     async fn create_person_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -132,7 +131,7 @@ mod tests {
         existing.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = sample_person_form(&csrf_token);
 
         let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
@@ -151,7 +150,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.personal_data.date_of_birth =
             DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))

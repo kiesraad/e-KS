@@ -1,124 +1,252 @@
-//! In-memory session storage for the application.
+//! Session storage with pluggable in-memory or database backends.
+//!
+//! The backend is selected by `STORAGE_URL`:
+//! - `memory://...` → in-memory (default).
+//! - `local://...` → in-memory (disk is **not** a valid session backend; we
+//!   treat the filesystem as less trusted than application memory).
+//! - `postgres://...` / `postgresql://` → Postgres.
 
-use parking_lot::RwLock;
-use secrecy::SecretString;
 use std::{collections::HashMap, sync::Arc};
 
-use crate::Session;
+use parking_lot::RwLock;
+#[cfg(feature = "database")]
+use tracing::error;
+use tracing::info;
+use url::Url;
 
-/// In-memory, thread-safe storage for active sessions.
-#[derive(Clone, Default)]
-pub struct SessionStore {
-    inner: Arc<RwLock<HashMap<String, Session>>>,
+use crate::{AppError, Locale, Session};
+
+#[cfg(feature = "database")]
+use crate::auth::session_db;
+
+/// Session storage backend.
+#[derive(Clone)]
+pub enum SessionStore {
+    /// Process-local, in-memory storage. Cleared on restart.
+    InMemory(Arc<RwLock<HashMap<String, Session>>>),
+    /// Postgres-backed storage, survives restarts.
+    #[cfg(feature = "database")]
+    Database(sqlx::PgPool),
+}
+
+impl Default for SessionStore {
+    fn default() -> Self {
+        Self::InMemory(Arc::new(RwLock::new(HashMap::new())))
+    }
 }
 
 impl SessionStore {
-    /// Creates an empty session store.
-    pub fn new() -> Self {
-        Self::default()
+    /// Construct a session store from `STORAGE_URL`.
+    ///
+    /// Disk-backed storage (`local://`) is not a valid session backend and
+    /// falls back to an in-memory store (with a log line noting the fallback).
+    pub fn from_storage_url(storage_url: &str) -> Result<Self, AppError> {
+        let url = Url::parse(storage_url)
+            .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
+
+        match url.scheme() {
+            "memory" => Ok(Self::default()),
+            "local" => {
+                info!(
+                    "sessions: STORAGE_URL is local://; falling back to in-memory \
+                     (disk-backed sessions are not supported)"
+                );
+                Ok(Self::default())
+            }
+            "postgres" | "postgresql" => build_database_backend(storage_url),
+            scheme => Err(AppError::ConfigLoadError(format!(
+                "Unsupported storage scheme: {scheme}, supported schemes are: memory://, local://, postgres://"
+            ))),
+        }
     }
 
     /// Returns a session for the provided token, if it exists and is still valid.
-    pub fn get(&self, token: &str) -> Option<Session> {
-        let session = self.inner.read().get(token).cloned()?;
+    pub async fn get(&self, token: &str) -> Option<Session> {
+        let session = self.load(token).await?;
         if session.is_expired() {
-            self.inner.write().remove(token);
+            self.drop_token(token).await;
             return None;
         }
         Some(session)
     }
 
-    /// Inserts a session into the store.
-    pub fn insert(&self, session: Session) {
-        self.inner
-            .write()
-            .insert(session.token().to_exposed_string(), session);
+    /// Returns an existing session if it is still valid.
+    pub async fn get_existing(&self, token: Option<&str>) -> Option<Session> {
+        match token {
+            Some(token) => self.get(token).await,
+            None => None,
+        }
+    }
+
+    /// Inserts or updates a session in the store.
+    pub async fn insert(&self, session: Session) {
+        match self {
+            SessionStore::InMemory(inner) => {
+                inner
+                    .write()
+                    .insert(session.token().to_exposed_string(), session);
+            }
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                if let Err(err) = session_db::upsert(pool, &session).await {
+                    error!("failed to persist session: {err}");
+                }
+            }
+        }
     }
 
     /// Removes a session by its token. Returns the removed session, if any.
-    pub fn remove(&self, token: &str) -> Option<Session> {
-        self.inner.write().remove(token)
-    }
-
-    /// Returns an existing session if it is still valid.
-    pub fn get_existing(&self, token: Option<&str>) -> Option<Session> {
-        token.and_then(|token| self.get(token))
+    pub async fn remove(&self, token: &str) -> Option<Session> {
+        match self {
+            SessionStore::InMemory(inner) => inner.write().remove(token),
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                let session = session_db::load(pool, token).await.ok().flatten();
+                let _ = session_db::delete(pool, token).await;
+                session
+            }
+        }
     }
 
     /// Creates, stores, and returns a new session.
-    pub fn create_new(&self, id_code: &SecretString) -> Session {
-        let session = Session::new(id_code);
-        self.insert(session.clone());
+    pub async fn create_new(&self, locale: Locale) -> Session {
+        let session = Session::new_with_locale(locale);
+        self.insert(session.clone()).await;
         session
     }
 
     /// Removes all expired sessions from the store.
-    pub fn cleanup_expired(&self) {
-        let mut sessions = self.inner.write();
-        sessions.retain(|_, session| !session.is_expired());
+    pub async fn cleanup_expired(&self) {
+        match self {
+            SessionStore::InMemory(inner) => {
+                let mut sessions = inner.write();
+                sessions.retain(|_, session| !session.is_expired());
+            }
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                if let Err(err) = session_db::cleanup_expired(pool).await {
+                    error!("failed to cleanup expired sessions: {err}");
+                }
+            }
+        }
     }
+
+    async fn load(&self, token: &str) -> Option<Session> {
+        match self {
+            SessionStore::InMemory(inner) => inner.read().get(token).cloned(),
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => session_db::load(pool, token).await.ok().flatten(),
+        }
+    }
+
+    async fn drop_token(&self, token: &str) {
+        match self {
+            SessionStore::InMemory(inner) => {
+                inner.write().remove(token);
+            }
+            #[cfg(feature = "database")]
+            SessionStore::Database(pool) => {
+                let _ = session_db::delete(pool, token).await;
+            }
+        }
+    }
+}
+
+#[cfg(feature = "database")]
+fn build_database_backend(storage_url: &str) -> Result<SessionStore, AppError> {
+    let pool = sqlx::PgPool::connect_lazy(storage_url)?;
+    Ok(SessionStore::Database(pool))
+}
+
+#[cfg(not(feature = "database"))]
+fn build_database_backend(_storage_url: &str) -> Result<SessionStore, AppError> {
+    Err(AppError::ConfigLoadError(
+        "Database storage disabled (enable feature \"database\")".to_string(),
+    ))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::time::{Duration, Instant};
+    use crate::auth::session::session_idle_timeout;
+    use chrono::{Duration, Utc};
 
     /// Returns an existing session by token.
-    #[test]
-    fn get_existing_returns_session() {
-        let store = SessionStore::new();
+    #[tokio::test]
+    async fn get_existing_returns_session() {
+        let store = SessionStore::default();
         let session = Session::new_test();
         let token = session.token().to_exposed_string();
-        store.insert(session.clone());
+        store.insert(session.clone()).await;
 
-        let loaded = store.get_existing(Some(&token));
+        let loaded = store.get_existing(Some(&token)).await;
 
         assert_eq!(loaded, Some(session));
     }
 
     /// Creates and stores a new session when requested.
-    #[test]
-    fn create_new_inserts_session() {
-        let store = SessionStore::new();
-        let session = store.create_new(&"test_id_code".into());
+    #[tokio::test]
+    async fn create_new_inserts_session() {
+        let store = SessionStore::default();
+        let session = store.create_new(Locale::default()).await;
 
-        let loaded = store.get(session.token().expose());
+        let loaded = store.get(session.token().expose()).await;
 
         assert_eq!(loaded, Some(session));
     }
 
     /// Removes expired sessions on lookup.
-    #[test]
-    fn get_removes_expired_sessions() {
-        let store = SessionStore::new();
+    #[tokio::test]
+    async fn get_removes_expired_sessions() {
+        let store = SessionStore::default();
         let mut session = Session::new_test();
-        session.last_activity =
-            Instant::now() - crate::SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
+        session.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
         let token = session.token().to_exposed_string();
-        store.insert(session);
+        store.insert(session).await;
 
-        let loaded = store.get(&token);
+        let loaded = store.get(&token).await;
 
         assert!(loaded.is_none());
     }
 
     /// Removes expired sessions in bulk cleanup.
-    #[test]
-    fn cleanup_expired_removes_stale_sessions() {
-        let store = SessionStore::new();
+    #[tokio::test]
+    async fn cleanup_expired_removes_stale_sessions() {
+        let store = SessionStore::default();
         let mut expired = Session::new_test();
-        expired.last_activity =
-            Instant::now() - crate::SESSION_IDLE_TIMEOUT - Duration::from_secs(1);
+        expired.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
         let active = Session::new_test();
         let expired_token = expired.token().to_exposed_string();
         let active_token = active.token().to_exposed_string();
-        store.insert(expired);
-        store.insert(active);
+        store.insert(expired).await;
+        store.insert(active).await;
 
-        store.cleanup_expired();
+        store.cleanup_expired().await;
 
-        assert!(store.get(&expired_token).is_none());
-        assert!(store.get(&active_token).is_some());
+        assert!(store.get(&expired_token).await.is_none());
+        assert!(store.get(&active_token).await.is_some());
+    }
+
+    #[test]
+    fn from_storage_url_memory_is_in_memory() {
+        let store = SessionStore::from_storage_url("memory://").unwrap();
+        assert!(matches!(store, SessionStore::InMemory(_)));
+    }
+
+    #[test]
+    fn from_storage_url_local_falls_back_to_memory() {
+        // local:// with any path — disk is not a valid session backend, so we
+        // expect an in-memory fallback regardless of directory presence.
+        let store = SessionStore::from_storage_url("local:///does-not-matter").unwrap();
+        assert!(matches!(store, SessionStore::InMemory(_)));
+    }
+
+    #[test]
+    fn from_storage_url_rejects_unsupported_scheme() {
+        match SessionStore::from_storage_url("s3://bucket") {
+            Err(AppError::ConfigLoadError(_)) => {}
+            Ok(_) => panic!("expected an error for unsupported scheme"),
+            Err(err) => panic!("unexpected error variant: {err:?}"),
+        }
     }
 }

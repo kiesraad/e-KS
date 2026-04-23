@@ -85,7 +85,7 @@ jobs:
 
       - &tools-cache
         name: Tools cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/bin/*.rs', 'development/*.yml') }}
@@ -135,7 +135,7 @@ jobs:
         run: cargo --locked clippy --all-targets --no-default-features -- -D warnings
 
       - name: Run tests
-        run: cargo --locked test --features embed-typst -- --nocapture
+        run: cargo --locked test --features embed-typst,embed-bag -- --nocapture
 
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
@@ -178,7 +178,7 @@ jobs:
       - name: Upload diff artifacts
         if: ${{ github.event_name == 'pull_request' && steps.diff-artifacts.outputs.has_artifacts == 'true' }}
         id: artifact-upload
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: pdf-diffs
           path: tmp/diffs/
@@ -211,7 +211,7 @@ jobs:
 
       - name: Build
         env:
-          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst"
+          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst,embed-bag"
         run: bin/build
 
       - name: Strip debug symbols
@@ -255,7 +255,7 @@ jobs:
           shared-key: eks
 
       - name: Tools cache
-        uses: actions/cache@668228422ae6a00e4ad889ee87cd7109ec5666a7 # v5.0.4
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae # v5.0.5
         with:
           path: bin
           key: tools-cache-v1-${{ runner.os }}-${{ hashFiles('development/Cargo.toml', 'development/src/*.rs', 'development/*.yml') }}
@@ -267,7 +267,7 @@ jobs:
         run: bin/test
 
       - name: Upload Playwright report
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         if: ${{ !cancelled() }}
         with:
           name: playwright-report
@@ -286,7 +286,7 @@ jobs:
         with:
           persist-credentials: false
 
-      - uses: EmbarkStudios/cargo-deny-action@3fd3802e88374d3fe9159b834c7714ec57d6c979
+      - uses: EmbarkStudios/cargo-deny-action@91bf2b620e09e18d6eb78b92e7861937469acedb
         with:
           arguments: --workspace --all-features
 
@@ -302,4 +302,4 @@ jobs:
           persist-credentials: false
 
       - name: Run zizmor
-        uses: zizmorcore/zizmor-action@71321a20a9ded102f6e9ce5718a2fcec2c4f70d8 # v0.5.2
+        uses: zizmorcore/zizmor-action@b1d7e1fb5de872772f31590499237e7cce841e8e # v0.5.3

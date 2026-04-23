@@ -9,14 +9,14 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppEvent, AppStoreData, ElectionConfig, Locale,
+    AppEvent, AppStoreData, Locale,
     store::{StoreData, StoreEvent},
     trans,
 };
 
 use super::{
     audit_log_entry::AuditLogEntry,
-    entity_refs::{EntityRef, build_refs_for_key},
+    entity_refs::{EntityRef, build_ref_diffs_for_key},
     event_payload::extract_old_new,
     json_flatten::flatten,
 };
@@ -30,12 +30,32 @@ const EXCLUDED_FIELDS: &[&str] = &["id", "updated_at", "created_at"];
 /// carry resolved references so the template can render abbreviated clickable
 /// links plus a human-readable description. Otherwise the raw `old_value` /
 /// `new_value` strings are rendered.
-pub struct FieldChange {
-    pub field: String,
-    pub old_value: String,
-    pub new_value: String,
-    pub old_refs: Vec<EntityRef>,
-    pub new_refs: Vec<EntityRef>,
+#[cfg_attr(test, derive(Debug, PartialEq))]
+pub enum FieldChange {
+    Regular {
+        field: String,
+        old_value: String,
+        new_value: String,
+    },
+    Entities {
+        field: String,
+        old_refs: Vec<EntityRef>,
+        new_refs: Vec<EntityRef>,
+    },
+}
+
+impl FieldChange {
+    pub fn change_kind(&self) -> &'static str {
+        match self {
+            FieldChange::Regular { old_value, .. } if old_value.is_empty() => "added",
+            FieldChange::Regular { new_value, .. } if new_value.is_empty() => "removed",
+            FieldChange::Regular { .. } => "changed",
+
+            FieldChange::Entities { old_refs, .. } if old_refs.is_empty() => "added",
+            FieldChange::Entities { new_refs, .. } if new_refs.is_empty() => "removed",
+            FieldChange::Entities { .. } => "changed",
+        }
+    }
 }
 
 /// Detailed view of an audit log event, including field-level changes.
@@ -43,7 +63,6 @@ pub struct AuditLogDetail {
     pub event_id: usize,
     pub description: String,
     pub details: String,
-    pub subject_id: String,
     pub subject_id_full: String,
     pub subject_path: String,
     pub created_at: DateTime<Utc>,
@@ -61,12 +80,11 @@ impl AuditLogDetail {
         let target_index = events.iter().position(|e| e.event_id == target_event_id)?;
         let target_event = &events[target_index];
 
-        // ElectionConfig here only seeds the projection's unused `election`
-        // field; it does not influence diffing.
         let state_before = replay(&events[..target_index]);
         let state_after = replay(&events[..=target_index]);
 
-        let (old_json, new_json) = extract_old_new(&target_event.payload, &state_before);
+        let (old_json, new_json) =
+            extract_old_new(&target_event.payload, &state_before, &state_after);
         let old_flat = old_json
             .as_ref()
             .map(|v| flatten(v, ""))
@@ -83,7 +101,6 @@ impl AuditLogDetail {
             event_id: entry.event_id,
             description: entry.description,
             details: entry.details,
-            subject_id: entry.subject_id,
             subject_id_full: entry.subject_id_full,
             subject_path: entry.subject_path,
             created_at: entry.created_at,
@@ -93,7 +110,7 @@ impl AuditLogDetail {
 }
 
 fn replay(events: &[StoreEvent<AppEvent>]) -> AppStoreData {
-    let mut state = AppStoreData::new(ElectionConfig::EK27);
+    let mut state = AppStoreData::default();
     for event in events {
         state.apply(event.clone());
     }
@@ -110,12 +127,11 @@ fn diff(
     locale: Locale,
 ) -> Vec<FieldChange> {
     let mut changes = Vec::new();
-    let mut all_keys: BTreeMap<&str, ()> = BTreeMap::new();
-    for key in old.keys().chain(new.keys()) {
-        all_keys.insert(key.as_str(), ());
-    }
+    let mut all_keys: Vec<&str> = old.keys().chain(new.keys()).map(String::as_str).collect();
+    all_keys.sort_unstable_by(|a, b| natural_cmp(a, b));
+    all_keys.dedup();
 
-    for key in all_keys.keys() {
+    for key in &all_keys {
         if EXCLUDED_FIELDS
             .iter()
             .any(|ex| *key == *ex || key.ends_with(&format!(".{ex}")))
@@ -129,18 +145,48 @@ fn diff(
             continue;
         }
 
-        let old_refs = build_refs_for_key(key, &old_val, state_before);
-        let new_refs = build_refs_for_key(key, &new_val, state_after);
-        changes.push(FieldChange {
-            field: translate_field_name(key, locale),
-            old_value: old_val,
-            new_value: new_val,
-            old_refs,
-            new_refs,
-        });
+        if let Some((old_refs, new_refs)) =
+            build_ref_diffs_for_key(key, &old_val, state_before, &new_val, state_after)
+        {
+            changes.push(FieldChange::Entities {
+                field: translate_field_name(key, locale),
+                old_refs,
+                new_refs,
+            });
+        } else {
+            changes.push(FieldChange::Regular {
+                field: translate_field_name(key, locale),
+                old_value: old_val,
+                new_value: new_val,
+            });
+        }
     }
 
     changes
+}
+
+/// Compare dot-separated paths with all-digit segments ordered numerically, so
+/// positional-array keys like `candidates.10` sort after `candidates.2`.
+fn natural_cmp(a: &str, b: &str) -> std::cmp::Ordering {
+    use std::cmp::Ordering;
+    let mut a_iter = a.split('.');
+    let mut b_iter = b.split('.');
+    loop {
+        match (a_iter.next(), b_iter.next()) {
+            (None, None) => return Ordering::Equal,
+            (None, Some(_)) => return Ordering::Less,
+            (Some(_), None) => return Ordering::Greater,
+            (Some(a_seg), Some(b_seg)) => {
+                let ord = match (a_seg.parse::<u64>(), b_seg.parse::<u64>()) {
+                    (Ok(an), Ok(bn)) => an.cmp(&bn),
+                    _ => a_seg.cmp(b_seg),
+                };
+                if ord != Ordering::Equal {
+                    return ord;
+                }
+            }
+        }
+    }
 }
 
 /// Translate a flattened field name to a human-readable label.
@@ -221,10 +267,60 @@ mod tests {
         },
     };
 
+    impl FieldChange {
+        fn field(&self) -> &str {
+            match self {
+                FieldChange::Regular { field, .. } | FieldChange::Entities { field, .. } => field,
+            }
+        }
+
+        fn assert_no_old(&self) {
+            match self {
+                FieldChange::Regular { old_value, .. } => assert!(old_value.is_empty()),
+                FieldChange::Entities { old_refs, .. } => assert!(old_refs.is_empty()),
+            }
+        }
+
+        fn assert_no_new(&self) {
+            match self {
+                FieldChange::Regular { new_value, .. } => assert!(new_value.is_empty()),
+                FieldChange::Entities { new_refs, .. } => assert!(new_refs.is_empty()),
+            }
+        }
+
+        fn old_value(&self) -> &str {
+            match self {
+                FieldChange::Regular { old_value, .. } => old_value,
+                FieldChange::Entities { .. } => unreachable!(),
+            }
+        }
+
+        fn new_value(&self) -> &str {
+            match self {
+                FieldChange::Regular { new_value, .. } => new_value,
+                FieldChange::Entities { .. } => unreachable!(),
+            }
+        }
+
+        fn old_refs(&self) -> &[EntityRef] {
+            match self {
+                FieldChange::Regular { .. } => unreachable!(),
+                FieldChange::Entities { old_refs, .. } => old_refs,
+            }
+        }
+
+        fn new_refs(&self) -> &[EntityRef] {
+            match self {
+                FieldChange::Regular { .. } => unreachable!(),
+                FieldChange::Entities { new_refs, .. } => new_refs,
+            }
+        }
+    }
+
     const EN: Locale = Locale::En;
 
     fn empty_state() -> AppStoreData {
-        AppStoreData::new(ElectionConfig::EK27)
+        AppStoreData::default()
     }
 
     // --- diff() ---
@@ -242,9 +338,9 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].field, "name");
-        assert_eq!(changes[0].old_value, "Alice");
-        assert_eq!(changes[0].new_value, "Bob");
+        assert_eq!(changes[0].field(), "name");
+        assert_eq!(changes[0].old_value(), "Alice");
+        assert_eq!(changes[0].new_value(), "Bob");
     }
 
     #[test]
@@ -256,8 +352,8 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].old_value, "");
-        assert_eq!(changes[0].new_value, "Alice");
+        changes[0].assert_no_old();
+        assert_eq!(changes[0].new_value(), "Alice");
     }
 
     #[test]
@@ -269,8 +365,8 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].old_value, "Alice");
-        assert_eq!(changes[0].new_value, "");
+        assert_eq!(changes[0].old_value(), "Alice");
+        changes[0].assert_no_new();
     }
 
     #[test]
@@ -286,7 +382,7 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].field, "name");
+        assert_eq!(changes[0].field(), "name");
     }
 
     #[test]
@@ -317,7 +413,7 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert_eq!(changes.len(), 1);
-        assert_eq!(changes[0].field, "person.name");
+        assert_eq!(changes[0].field(), "person.name");
     }
 
     #[test]
@@ -327,6 +423,74 @@ mod tests {
         let state = empty_state();
         let changes = diff(&old, &new, &state, &state, EN);
         assert!(changes.is_empty());
+    }
+
+    #[test]
+    fn diff_orders_positional_array_keys_numerically() {
+        // Populate candidates.0 .. candidates.11 with distinct old/new values
+        // so every index becomes a change. Without natural ordering these
+        // would come out in lexicographic order (#1, #10, #11, #2, ...).
+        let mut old = BTreeMap::new();
+        let mut new = BTreeMap::new();
+        for i in 0..12 {
+            old.insert(format!("candidates.{i}"), format!("old-{i}"));
+            new.insert(format!("candidates.{i}"), format!("new-{i}"));
+        }
+
+        let state = empty_state();
+        let changes = diff(&old, &new, &state, &state, EN);
+
+        let fields: Vec<&str> = changes.iter().map(FieldChange::field).collect();
+        let expected: Vec<String> = (1..=12).map(|n| format!("Candidates #{n}")).collect();
+        assert_eq!(
+            fields,
+            expected.iter().map(String::as_str).collect::<Vec<_>>()
+        );
+    }
+
+    // --- natural_cmp() ---
+
+    #[test]
+    fn natural_cmp_equal_strings() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates.0", "candidates.0"), Ordering::Equal);
+    }
+
+    #[test]
+    fn natural_cmp_numeric_leaves_ordered_numerically() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates.2", "candidates.10"), Ordering::Less);
+        assert_eq!(
+            natural_cmp("candidates.10", "candidates.11"),
+            Ordering::Less
+        );
+        assert_eq!(
+            natural_cmp("candidates.11", "candidates.2"),
+            Ordering::Greater
+        );
+    }
+
+    #[test]
+    fn natural_cmp_nested_numeric_segments_ordered_numerically() {
+        use std::cmp::Ordering;
+        assert_eq!(
+            natural_cmp("candidates.2.name", "candidates.10.name"),
+            Ordering::Less
+        );
+    }
+
+    #[test]
+    fn natural_cmp_non_numeric_segments_fall_back_to_string_order() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("a.1", "b.0"), Ordering::Less);
+        assert_eq!(natural_cmp("candidates.x", "candidates.y"), Ordering::Less);
+    }
+
+    #[test]
+    fn natural_cmp_shorter_path_sorts_before_its_extension() {
+        use std::cmp::Ordering;
+        assert_eq!(natural_cmp("candidates", "candidates.0"), Ordering::Less);
+        assert_eq!(natural_cmp("candidates.0", "candidates"), Ordering::Greater);
     }
 
     // --- translate_field_name() ---
@@ -379,7 +543,7 @@ mod tests {
         assert_eq!(detail.description, "Created person");
         assert!(!detail.changes.is_empty());
         for change in &detail.changes {
-            assert!(change.old_value.is_empty());
+            change.assert_no_old();
         }
     }
 
@@ -402,9 +566,9 @@ mod tests {
         let first_name_change = detail
             .changes
             .iter()
-            .find(|c| c.field == "First name")
+            .find(|c| c.field() == "First name")
             .expect("should have first_name change");
-        assert_eq!(first_name_change.new_value, "Updated");
+        assert_eq!(first_name_change.new_value(), "Updated");
     }
 
     #[test]
@@ -420,7 +584,7 @@ mod tests {
         let detail = AuditLogDetail::compute(&events, 2, Locale::En).unwrap();
         assert!(!detail.changes.is_empty());
         for change in &detail.changes {
-            assert!(change.new_value.is_empty());
+            change.assert_no_new();
         }
     }
 
@@ -453,7 +617,7 @@ mod tests {
 
         let detail = AuditLogDetail::compute(&events, 1, Locale::En).unwrap();
         for change in &detail.changes {
-            assert!(change.old_value.is_empty());
+            change.assert_no_old();
         }
     }
 
@@ -478,12 +642,12 @@ mod tests {
         let districts: Vec<_> = detail
             .changes
             .iter()
-            .filter(|c| c.field == "Electoral districts")
+            .filter(|c| c.field() == "Electoral districts")
             .collect();
 
         assert_eq!(districts.len(), 1);
-        assert_eq!(districts[0].old_value, "GR");
-        assert_eq!(districts[0].new_value, "GR, FR");
+        assert_eq!(districts[0].old_value(), "GR");
+        assert_eq!(districts[0].new_value(), "GR, FR");
     }
 
     #[test]
@@ -517,17 +681,23 @@ mod tests {
         let change = detail
             .changes
             .iter()
-            .find(|c| c.field == "List submitter")
+            .find(|c| c.field() == "List submitter")
             .expect("list_submitter_id change");
 
-        assert_eq!(change.old_refs.len(), 1);
-        assert_eq!(change.old_refs[0].id_full, old_submitter_id.to_string());
-        assert_eq!(change.old_refs[0].id_abbreviated.len(), 8);
-        assert_eq!(change.old_refs[0].description, old_submitter_name);
-
-        assert_eq!(change.new_refs.len(), 1);
-        assert_eq!(change.new_refs[0].id_full, new_submitter_id.to_string());
-        assert_eq!(change.new_refs[0].description, new_submitter_name);
+        assert_eq!(
+            change,
+            &FieldChange::Entities {
+                field: "List submitter".to_owned(),
+                old_refs: vec![EntityRef {
+                    id_full: old_submitter_id.to_string(),
+                    description: old_submitter_name
+                }],
+                new_refs: vec![EntityRef {
+                    id_full: new_submitter_id.to_string(),
+                    description: new_submitter_name
+                }]
+            }
+        );
     }
 
     #[test]
@@ -562,27 +732,27 @@ mod tests {
         let candidate_changes: Vec<_> = detail
             .changes
             .iter()
-            .filter(|c| c.field.starts_with("Candidates #"))
+            .filter(|c| c.field().starts_with("Candidates #"))
             .collect();
 
         assert_eq!(candidate_changes.len(), 2);
 
         let pos_1 = candidate_changes
             .iter()
-            .find(|c| c.field == "Candidates #1")
+            .find(|c| c.field() == "Candidates #1")
             .expect("position #1 change");
-        assert_eq!(pos_1.old_refs[0].description, p1_name);
-        assert_eq!(pos_1.new_refs[0].description, p2_name);
+        assert_eq!(pos_1.old_refs()[0].description, p1_name);
+        assert_eq!(pos_1.new_refs()[0].description, p2_name);
 
         let pos_2 = candidate_changes
             .iter()
-            .find(|c| c.field == "Candidates #2")
+            .find(|c| c.field() == "Candidates #2")
             .expect("position #2 change");
-        assert_eq!(pos_2.old_refs[0].description, p2_name);
-        assert_eq!(pos_2.new_refs[0].description, p1_name);
+        assert_eq!(pos_2.old_refs()[0].description, p2_name);
+        assert_eq!(pos_2.new_refs()[0].description, p1_name);
 
         assert!(
-            !detail.changes.iter().any(|c| c.field == "Candidates #3"),
+            !detail.changes.iter().any(|c| c.field() == "Candidates #3"),
             "unchanged position should not appear"
         );
     }
@@ -606,10 +776,12 @@ mod tests {
         let change = detail
             .changes
             .iter()
-            .find(|c| c.field == "First name")
+            .find(|c| c.field() == "First name")
             .expect("first name change");
-        assert!(change.old_refs.is_empty());
-        assert!(change.new_refs.is_empty());
+        match change {
+            FieldChange::Regular { .. } => {}
+            FieldChange::Entities { .. } => panic!(),
+        }
     }
 
     #[test]
@@ -635,10 +807,47 @@ mod tests {
         let change = detail
             .changes
             .iter()
-            .find(|c| c.field == "Person ID")
+            .find(|c| c.field() == "Person ID")
             .expect("person_id change");
-        assert_eq!(change.old_refs.len(), 1);
-        assert_eq!(change.old_refs[0].description, person_name);
-        assert!(change.new_refs.is_empty());
+        assert_eq!(change.old_refs().len(), 1);
+        assert_eq!(change.old_refs()[0].description, person_name);
+        change.assert_no_new();
+    }
+
+    #[test]
+    fn compute_create_candidate_list_orders_candidates_numerically() {
+        // Regression test: for a candidate list with 10+ candidates the detail
+        // view used to render rows in lexicographic order of the array index
+        // (#1, #10, #11, ..., #19, #2, ...). The rows should instead follow
+        // nomination order (#1, #2, ..., #12).
+        let list_id = CandidateListId::new();
+        let persons: Vec<_> = (0..12).map(|_| sample_person(PersonId::new())).collect();
+
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = persons.iter().map(|p| p.id).collect();
+
+        let mut events: Vec<_> = persons
+            .iter()
+            .enumerate()
+            .map(|(i, p)| StoreEvent::new(i + 1, AppEvent::CreatePerson(p.clone())))
+            .collect();
+        events.push(StoreEvent::new(
+            persons.len() + 1,
+            AppEvent::CreateCandidateList(list),
+        ));
+
+        let detail = AuditLogDetail::compute(&events, persons.len() + 1, Locale::En).unwrap();
+        let candidate_fields: Vec<&str> = detail
+            .changes
+            .iter()
+            .map(FieldChange::field)
+            .filter(|f| f.starts_with("Candidates #"))
+            .collect();
+
+        let expected: Vec<String> = (1..=12).map(|n| format!("Candidates #{n}")).collect();
+        assert_eq!(
+            candidate_fields,
+            expected.iter().map(String::as_str).collect::<Vec<_>>()
+        );
     }
 }

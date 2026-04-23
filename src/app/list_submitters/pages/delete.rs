@@ -14,7 +14,7 @@ pub async fn delete_list_submitter(
     store: AppStore,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_token) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
             submitter.delete(&store).await?;
@@ -44,7 +44,7 @@ mod tests {
         submitter.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_list_submitter(
             ListSubmitterDeletePath { submitter_id },

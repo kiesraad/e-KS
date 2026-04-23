@@ -4,7 +4,7 @@ use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StoreEvent};
-use crate::AppError;
+use crate::{AppError, ElectionConfig};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -25,7 +25,7 @@ impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
     }
 }
 
-/// Initialize the database schema for event persistence.
+/// Initialize the database schema for event and session persistence.
 #[cfg(feature = "migrations")]
 pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
     const MIGRATION_LOCK_KEY: i64 = 0x454B53544F52454E; // "EKSTOREN" advisory lock key
@@ -37,31 +37,9 @@ pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
         .await?;
 
     let result = async {
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS streams (
-              stream_id UUID PRIMARY KEY,
-              last_event_id BIGINT NOT NULL
-            )
-            "#,
-        )
-        .execute(&mut *conn)
-        .await?;
-
-        sqlx::query(
-            r#"
-            CREATE TABLE IF NOT EXISTS events (
-              stream_id UUID NOT NULL,
-              event_id BIGINT NOT NULL,
-              created_at timestamp with time zone NOT NULL,
-              payload bytea NOT NULL,
-              PRIMARY KEY (stream_id, event_id)
-            )
-            "#,
-        )
-        .execute(&mut *conn)
-        .await?;
-
+        create_streams_table(&mut conn).await?;
+        create_events_table(&mut conn).await?;
+        create_sessions_table(&mut conn).await?;
         Ok::<(), AppError>(())
     }
     .await;
@@ -74,33 +52,130 @@ pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
     result
 }
 
-/// Ensure a stream row exists for the given stream ID.
-pub async fn ensure_stream(pool: &sqlx::PgPool, stream_id: uuid::Uuid) -> Result<(), AppError> {
+#[cfg(feature = "migrations")]
+async fn create_streams_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
     sqlx::query(
-        r#"INSERT INTO streams (stream_id, last_event_id)
-        VALUES ($1, 0)
-        ON CONFLICT (stream_id) DO NOTHING"#,
+        r#"
+        CREATE TABLE IF NOT EXISTS streams (
+          stream_id UUID NOT NULL,
+          election TEXT NOT NULL,
+          last_event_id BIGINT NOT NULL,
+          PRIMARY KEY (stream_id, election)
+        )
+        "#,
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+#[cfg(feature = "migrations")]
+async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS events (
+          stream_id UUID NOT NULL,
+          election TEXT NOT NULL,
+          event_id BIGINT NOT NULL,
+          created_at timestamp with time zone NOT NULL,
+          payload bytea NOT NULL,
+          PRIMARY KEY (stream_id, election, event_id)
+        )
+        "#,
+    )
+    .execute(&mut *conn)
+    .await?;
+    Ok(())
+}
+
+#[cfg(feature = "migrations")]
+async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS sessions (
+          token TEXT PRIMARY KEY,
+          stream_id UUID,
+          current_election JSONB,
+          locale TEXT NOT NULL,
+          csrf_token TEXT NOT NULL,
+          last_activity TIMESTAMPTZ NOT NULL
+        )
+        "#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    sqlx::query(
+        r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx
+           ON sessions(last_activity)"#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
+}
+
+/// Ensure a stream row exists for the given (stream_id, election).
+pub async fn ensure_stream(
+    pool: &sqlx::PgPool,
+    stream_id: uuid::Uuid,
+    election: ElectionConfig,
+) -> Result<(), AppError> {
+    sqlx::query(
+        r#"INSERT INTO streams (stream_id, election, last_event_id)
+        VALUES ($1, $2, 0)
+        ON CONFLICT (stream_id, election) DO NOTHING"#,
     )
     .bind(stream_id)
+    .bind(election.stable_id())
     .execute(pool)
     .await?;
 
     Ok(())
 }
 
-/// Check which of the given stream IDs have persisted events.
+/// Check which of the given stream IDs have persisted events in any election.
 pub async fn streams_with_data(
     pool: &sqlx::PgPool,
     stream_ids: &[uuid::Uuid],
 ) -> Result<std::collections::HashSet<uuid::Uuid>, AppError> {
     let rows: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        "SELECT stream_id FROM streams WHERE stream_id = ANY($1) AND last_event_id > 0",
+        "SELECT DISTINCT stream_id FROM streams
+         WHERE stream_id = ANY($1) AND last_event_id > 0",
     )
     .bind(stream_ids)
     .fetch_all(pool)
     .await?;
 
     Ok(rows.into_iter().map(|(id,)| id).collect())
+}
+
+/// List the elections that have persisted events under the given stream.
+pub async fn elections_for_stream(
+    pool: &sqlx::PgPool,
+    stream_id: uuid::Uuid,
+) -> Result<Vec<ElectionConfig>, AppError> {
+    let rows: Vec<(String,)> = sqlx::query_as(
+        "SELECT election FROM streams
+         WHERE stream_id = $1 AND last_event_id > 0",
+    )
+    .bind(stream_id)
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(code,)| parse_stable_id(&code))
+        .collect())
+}
+
+/// Parse a `stable_id()` string (e.g. `"EK27"`, `"PS27:GR"`) back to an `ElectionConfig`.
+fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
+    let (code, region) = match value.split_once(':') {
+        Some((code, region)) => (code, Some(region)),
+        None => (value, None),
+    };
+    ElectionConfig::from_code_and_region(code, region)
 }
 
 /// Load and replay missing events from the database into the store.
@@ -169,14 +244,16 @@ where
     D::Event: DeserializeOwned,
 {
     let last_id: usize = store.data.read().last_event_id();
+    let election_id = store.election.stable_id();
 
     let stream_last_id: i64 = sqlx::query_scalar(
         r#"SELECT last_event_id
         FROM streams
-        WHERE stream_id = $1
+        WHERE stream_id = $1 AND election = $2
         FOR UPDATE"#,
     )
     .bind(store.stream_id)
+    .bind(&election_id)
     .fetch_one(&mut **tx)
     .await?;
 
@@ -184,11 +261,12 @@ where
         r#"
         SELECT event_id, payload, created_at
         FROM events
-        WHERE stream_id = $1 AND event_id > $2
+        WHERE stream_id = $1 AND election = $2 AND event_id > $3
         ORDER BY event_id ASC
         "#,
     )
     .bind(store.stream_id)
+    .bind(&election_id)
     .bind(last_id as i64)
     .fetch_all(&mut **tx)
     .await?;
@@ -222,23 +300,29 @@ where
     D: StoreData,
 {
     let encrypted_payload = store.cipher.encrypt(&event.payload)?;
+    let election_id = store.election.stable_id();
 
     sqlx::query(
-        r#"INSERT INTO events (stream_id, event_id, created_at, payload)
-        VALUES ($1, $2, $3, $4)"#,
+        r#"INSERT INTO events (stream_id, election, event_id, created_at, payload)
+        VALUES ($1, $2, $3, $4, $5)"#,
     )
     .bind(store.stream_id)
+    .bind(&election_id)
     .bind(next_id as i64)
     .bind(event.created_at)
     .bind(encrypted_payload)
     .execute(&mut **tx)
     .await?;
 
-    sqlx::query(r#"UPDATE streams SET last_event_id = $2 WHERE stream_id = $1"#)
-        .bind(store.stream_id)
-        .bind(next_id as i64)
-        .execute(&mut **tx)
-        .await?;
+    sqlx::query(
+        r#"UPDATE streams SET last_event_id = $3
+           WHERE stream_id = $1 AND election = $2"#,
+    )
+    .bind(store.stream_id)
+    .bind(&election_id)
+    .bind(next_id as i64)
+    .execute(&mut **tx)
+    .await?;
 
     Ok(())
 }

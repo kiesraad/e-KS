@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    AppEvent, ElectionConfig,
+    AppEvent,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
@@ -12,10 +12,9 @@ use crate::{
     store::{StoreData, StoreEvent},
 };
 
-/// Event-sourced domain projection for a single stream.
-#[derive(Debug, Serialize, Deserialize)]
+/// Event-sourced domain projection for a single (stream, election) pair.
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AppStoreData {
-    pub(crate) election: ElectionConfig,
     pub(crate) political_group: PoliticalGroup,
     pub(crate) persons: HashMap<PersonId, Person>,
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
@@ -30,21 +29,6 @@ pub struct AppStoreData {
 
 impl StoreData for AppStoreData {
     type Event = AppEvent;
-    type Init = ElectionConfig;
-
-    fn new(election: ElectionConfig) -> Self {
-        Self {
-            election,
-            political_group: PoliticalGroup::default(),
-            persons: HashMap::new(),
-            candidate_lists: HashMap::new(),
-            authorised_agents: HashMap::new(),
-            list_submitters: HashMap::new(),
-            substitute_submitters: HashMap::new(),
-            downloaded_files: Vec::new(),
-            events: Vec::new(),
-        }
-    }
 
     fn apply(&mut self, event: StoreEvent<AppEvent>) {
         self.events.push(event.clone());
@@ -241,16 +225,19 @@ impl crate::store::Store<AppStoreData> {
     }
 
     pub fn new_for_test_with_election(election: crate::ElectionConfig) -> Self {
-        let mut data = AppStoreData::new(election);
-        data.political_group = crate::test_utils::sample_political_group();
+        let data = AppStoreData {
+            political_group: crate::test_utils::sample_political_group(),
+            ..AppStoreData::default()
+        };
 
         let encryption =
             crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"));
         let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
             stream_id,
+            election,
             persistence: crate::store::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, election),
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }
