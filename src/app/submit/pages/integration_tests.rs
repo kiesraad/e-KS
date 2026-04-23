@@ -75,11 +75,9 @@ async fn setup_download_test_state(
 
     let mut list = sample_candidate_list(list_id);
     if include_list_submitter {
-        let list_submitter_id = ListSubmitterId::new();
-        sample_list_submitter(list_submitter_id)
-            .create(&store)
+        sample_list_submitter(ListSubmitterId::new())
+            .update(&store)
             .await?;
-        list.list_submitter_id = Some(list_submitter_id);
     }
     list.create(&store).await?;
 

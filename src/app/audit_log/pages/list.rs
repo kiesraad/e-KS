@@ -47,7 +47,6 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
             "create_candidate_list",
             "update_candidate_list_districts",
             "update_candidate_list_order",
-            "update_candidate_list_submitters",
             "add_candidate_to_list",
             "remove_candidate_from_list",
             "delete_candidate_list",
@@ -63,11 +62,7 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     },
     EventTypeCategory {
         key: "list_submitter",
-        event_types: &[
-            "create_list_submitter",
-            "update_list_submitter",
-            "delete_list_submitter",
-        ],
+        event_types: &["update_list_submitter"],
     },
     EventTypeCategory {
         key: "substitute_submitter",

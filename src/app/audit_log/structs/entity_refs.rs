@@ -1,11 +1,8 @@
-//! Resolve ID-like diff values (person_id, list_submitter_id, etc.) into
+//! Resolve ID-like diff values (person_id, etc.) into
 //! `EntityRef`s the template can render as abbreviated clickable links plus a
 //! human-readable description.
 
-use crate::{
-    AppStoreData, candidate_lists::CandidateListId, list_submitters::ListSubmitterId,
-    persons::PersonId,
-};
+use crate::{AppStoreData, candidate_lists::CandidateListId, persons::PersonId};
 
 /// A reference to another entity mentioned inside a diff value. Rendered in
 /// the template as an abbreviated link + the entity's description.
@@ -18,8 +15,6 @@ pub struct EntityRef {
 /// Entity types that can appear as ID references inside diff values.
 enum EntityKind {
     Person,
-    ListSubmitter,
-    SubstituteSubmitter,
     CandidateList,
 }
 
@@ -36,8 +31,6 @@ fn entity_kind_for_key(key: &str) -> Option<EntityKind> {
     };
     match semantic {
         "person_id" | "candidates" => Some(EntityKind::Person),
-        "list_submitter_id" => Some(EntityKind::ListSubmitter),
-        "substitute_list_submitter_ids" => Some(EntityKind::SubstituteSubmitter),
         "list_id" => Some(EntityKind::CandidateList),
         _ => None,
     }
@@ -81,18 +74,6 @@ fn describe_entity(kind: &EntityKind, id_str: &str, state: &AppStoreData) -> Str
             .ok()
             .and_then(|id| state.persons.get(&id))
             .map(|p| p.name.display())
-            .unwrap_or_default(),
-        EntityKind::ListSubmitter => id_str
-            .parse::<ListSubmitterId>()
-            .ok()
-            .and_then(|id| state.list_submitters.get(&id))
-            .map(|ls| ls.name.display())
-            .unwrap_or_default(),
-        EntityKind::SubstituteSubmitter => id_str
-            .parse::<ListSubmitterId>()
-            .ok()
-            .and_then(|id| state.substitute_submitters.get(&id))
-            .map(|ss| ss.name.display())
             .unwrap_or_default(),
         EntityKind::CandidateList => id_str
             .parse::<CandidateListId>()

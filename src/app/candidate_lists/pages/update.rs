@@ -73,7 +73,7 @@ pub async fn update_candidate_list_submit(
         Ok(candidate_list) => {
             candidate_list.update_districts(&store).await?;
 
-            Ok(query.redirect_or(candidate_list.update_list_submitter_path()))
+            Ok(query.redirect_or(candidate_list.view_path()))
         }
     }
 }
@@ -164,7 +164,7 @@ mod tests {
 
         assert_eq!(
             updated_list
-                .update_list_submitter_path()
+                .view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string(),
             location

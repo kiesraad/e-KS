@@ -26,9 +26,7 @@ districts:
 edit_position: Position on the list
 fields:
   electoral_districts: Electoral districts
-  list_submitter: Submitter of the list
   position: Position
-  substitute_list_submitters: Substitute list submitters
 form:
   copy_candidates_from_previous: Copy candidates from the last created list
   copy_candidates_from_previous_legend: Copy candidates

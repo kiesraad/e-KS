@@ -15,7 +15,6 @@ mod import;
 mod list;
 mod reorder;
 mod update;
-mod update_list_submitter;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
@@ -47,21 +46,6 @@ pub struct CandidateListsDeletePath {
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/candidate-lists/{list_id}/reorder", rejection(AppError))]
 pub struct CandidateListReorderPath {
-    pub list_id: CandidateListId,
-}
-
-#[derive(TypedPath, Deserialize)]
-#[typed_path("/candidate-lists/{list_id}/list-submitter", rejection(AppError))]
-pub struct UpdateListSubmitterPath {
-    pub list_id: CandidateListId,
-}
-
-#[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/candidate-lists/{list_id}/substitute-list-submitters",
-    rejection(AppError)
-)]
-pub struct UpdateSubstituteListSubmittersPath {
     pub list_id: CandidateListId,
 }
 
@@ -108,14 +92,6 @@ impl CandidateList {
         ViewCandidateListPath { list_id: self.id }
     }
 
-    pub fn update_list_submitter_path(&self) -> impl TypedPath {
-        UpdateListSubmitterPath { list_id: self.id }
-    }
-
-    pub fn update_substitute_list_submitters_path(&self) -> impl TypedPath {
-        UpdateSubstituteListSubmittersPath { list_id: self.id }
-    }
-
     pub fn reorder_path(&self) -> impl TypedPath {
         CandidateListReorderPath { list_id: self.id }
     }
@@ -129,7 +105,7 @@ impl CandidateList {
     }
 
     pub fn after_create_path(&self) -> impl TypedPath {
-        UpdateListSubmitterPath { list_id: self.id }.with_query_params(QueryParamState::created())
+        ViewCandidateListPath { list_id: self.id }.with_query_params(QueryParamState::created())
     }
 
     pub fn export_path(&self) -> impl TypedPath {
@@ -152,8 +128,6 @@ pub fn router() -> Router<AppState> {
         .typed_get(view::view_candidate_list)
         .typed_get(update::update_candidate_list)
         .typed_post(update::update_candidate_list_submit)
-        .typed_get(update_list_submitter::update_list_submitter)
-        .typed_post(update_list_submitter::update_list_submitter_submit)
         .typed_post(delete::delete_candidate_list)
         .typed_post(reorder::reorder_candidate_list)
         .typed_get(import::import_export)
@@ -188,14 +162,6 @@ mod tests {
             format!("/candidate-lists/{}", list.id)
         );
         assert_eq!(
-            list.update_list_submitter_path().to_string(),
-            format!("/candidate-lists/{}/list-submitter", list.id)
-        );
-        assert_eq!(
-            list.update_substitute_list_submitters_path().to_string(),
-            format!("/candidate-lists/{}/substitute-list-submitters", list.id)
-        );
-        assert_eq!(
             list.reorder_path().to_string(),
             format!("/candidate-lists/{}/reorder", list.id)
         );
@@ -220,10 +186,7 @@ mod tests {
     #[test]
     fn candidate_list_after_create_path_includes_initial_query() {
         let list = sample_candidate_list(CandidateListId::new());
-        let expected = format!(
-            "/candidate-lists/{}/list-submitter?&initial=true&success=true",
-            list.id
-        );
+        let expected = format!("/candidate-lists/{}?&initial=true&success=true", list.id);
 
         assert_eq!(list.after_create_path().to_string(), expected);
     }
