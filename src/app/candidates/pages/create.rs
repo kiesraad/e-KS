@@ -25,7 +25,7 @@ pub async fn create_person_candidate_list(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&context.session.csrf_tokens),
+            form: FormData::new(&context.session.csrf_token),
         },
         context,
     )
@@ -39,8 +39,7 @@ pub async fn create_person_candidate_list_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_tokens, &store, &context.election)
-    {
+    match form.validate_create_with_checks(&context.session.csrf_token, &store, &context.election) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
@@ -112,7 +111,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = sample_person_form(&csrf_token);
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -150,7 +149,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -181,7 +180,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.personal_data.date_of_birth =
             DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))

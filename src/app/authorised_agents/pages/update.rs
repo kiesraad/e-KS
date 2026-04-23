@@ -27,7 +27,7 @@ pub async fn update_authorised_agent(
         AuthorisedAgentUpdateTemplate {
             form: FormData::new_with_data(
                 authorised_agent.clone().into(),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             authorised_agent,
         },
@@ -43,7 +43,7 @@ pub async fn update_authorised_agent_submit(
     store: AppStore,
     Form(form): Form<AuthorisedAgentForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&authorised_agent, &context.session.csrf_tokens) {
+    match form.validate_update(&authorised_agent, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             AuthorisedAgentUpdateTemplate {
                 authorised_agent,
@@ -108,7 +108,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_authorised_agent_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -151,7 +151,7 @@ mod tests {
         authorised_agent.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_authorised_agent_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

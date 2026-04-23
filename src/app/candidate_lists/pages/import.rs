@@ -30,7 +30,7 @@ fn render_import_export(
         ImportExportTemplate {
             list,
             import_errors,
-            form: FormData::new(&context.session.csrf_tokens),
+            form: FormData::new(&context.session.csrf_token),
         },
         context,
     )
@@ -61,7 +61,7 @@ pub async fn import_candidate_list(
     };
 
     if csrf_form
-        .validate_create(&context.session.csrf_tokens)
+        .validate_create(&context.session.csrf_token)
         .is_err()
     {
         return Err(AppError::CsrfTokenInvalid);
@@ -84,7 +84,7 @@ pub async fn import_candidate_list(
         &mut list,
         &store,
         &csv_data,
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
         context.session.locale,
     )
     .await
@@ -150,7 +150,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
@@ -182,7 +182,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
