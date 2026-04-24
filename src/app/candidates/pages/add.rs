@@ -128,7 +128,7 @@ pub async fn add_existing_person(
             list_id,
             None,
             &store,
-            FormData::new(&context.session.csrf_tokens),
+            FormData::new(&context.session.csrf_token),
         )?,
         context,
     ))
@@ -143,7 +143,7 @@ pub async fn add_person_to_candidate_list(
 ) -> Result<Response, AppError> {
     context.show_success_alert = true;
 
-    match form.validate_create(&context.session.csrf_tokens) {
+    match form.validate_create(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             AddExistingPersonTemplate::from(
                 full_list.list.id,
@@ -162,7 +162,7 @@ pub async fn add_person_to_candidate_list(
                     full_list.list.id,
                     add_person.added_position,
                     &store,
-                    FormData::new_with_data(add_person.into(), &context.session.csrf_tokens),
+                    FormData::new_with_data(add_person.into(), &context.session.csrf_token),
                 )?,
                 context,
             )
@@ -221,7 +221,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: person.id.to_string(),
             added_position: String::new(),
@@ -262,7 +262,7 @@ mod tests {
         new_person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: new_person.id.to_string(),
             added_position: String::new(),
@@ -306,7 +306,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: AddPersonAction::AddAll.to_string(),
             added_position: String::new(),
@@ -355,7 +355,7 @@ mod tests {
         let add_all_form = AddPersonForm {
             action: AddPersonAction::AddAll.to_string(),
             added_position: String::new(),
-            csrf_token: add_all_context.session.csrf_tokens.issue().value,
+            csrf_token: add_all_context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -375,7 +375,7 @@ mod tests {
         let remove_all_form = AddPersonForm {
             action: AddPersonAction::RemoveAll.to_string(),
             added_position: "2".into(),
-            csrf_token: remove_all_context.session.csrf_tokens.issue().value,
+            csrf_token: remove_all_context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -413,7 +413,7 @@ mod tests {
         let form = AddPersonForm {
             action: person.id.to_string(),
             added_position: String::new(),
-            csrf_token: context.session.csrf_tokens.issue().value,
+            csrf_token: context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -486,7 +486,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: remove_person.id.to_string(),
             added_position: String::new(),

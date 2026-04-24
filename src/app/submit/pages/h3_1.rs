@@ -86,11 +86,10 @@ mod tests {
     async fn gen_h3_1_returns_pdf_response() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
-        let list_submitter_id = ListSubmitterId::new();
         let person_id = PersonId::new();
 
-        sample_list_submitter(list_submitter_id)
-            .create(&store)
+        sample_list_submitter(ListSubmitterId::new())
+            .update(&store)
             .await?;
         sample_person(person_id).create(&store).await?;
         sample_authorised_agent(AuthorisedAgentId::new())
@@ -98,7 +97,6 @@ mod tests {
             .await?;
 
         let mut list = sample_candidate_list(list_id);
-        list.list_submitter_id = Some(list_submitter_id);
         list.create(&store).await?;
         list.append_candidate(&store, person_id).await?;
 

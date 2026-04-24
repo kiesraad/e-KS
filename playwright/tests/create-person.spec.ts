@@ -16,7 +16,7 @@ test.describe("create new person", async () => {
     lastNamePrefix: "van",
     firstName: "Henk",
     gender: "male",
-    dateOfBirth: "12-08-1977",
+    dateOfBirth: { day: "12", month: "08", year: "1977" },
     postalCode: "6512EX",
     houseNumber: "26",
     streetName: "Castellastraat",

@@ -15,4 +15,4 @@ mod incomplete_items;
 use typst_candidate::{TypstCandidate, ordered_candidates};
 use typst_datetime::TypstDatetime;
 use typst_electoral_districts::TypstElectoralDistricts;
-use typst_person::{TypstPerson, substitute_submitter_from_ids};
+use typst_person::TypstPerson;

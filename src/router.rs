@@ -166,8 +166,9 @@ mod tests {
         let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
+        session.set_current_election(crate::ElectionConfig::EK27);
         let token = session.token().to_exposed_string();
-        state.sessions.insert(session);
+        state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,
@@ -194,8 +195,9 @@ mod tests {
             .unwrap();
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
+        session.set_current_election(crate::ElectionConfig::EK27);
         let token = session.token().to_exposed_string();
-        state.sessions.insert(session);
+        state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,

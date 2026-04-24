@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppEvent, AppStoreData, ElectionConfig, Locale,
+    AppEvent, AppStoreData, Locale,
     store::{StoreData, StoreEvent},
     trans,
 };
@@ -80,8 +80,6 @@ impl AuditLogDetail {
         let target_index = events.iter().position(|e| e.event_id == target_event_id)?;
         let target_event = &events[target_index];
 
-        // ElectionConfig here only seeds the projection's unused `election`
-        // field; it does not influence diffing.
         let state_before = replay(&events[..target_index]);
         let state_after = replay(&events[..=target_index]);
 
@@ -112,7 +110,7 @@ impl AuditLogDetail {
 }
 
 fn replay(events: &[StoreEvent<AppEvent>]) -> AppStoreData {
-    let mut state = AppStoreData::new(ElectionConfig::EK27);
+    let mut state = AppStoreData::default();
     for event in events {
         state.apply(event.clone());
     }
@@ -232,13 +230,6 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         // Candidate list fields
         "electoral_districts" => trans!("audit_log.detail.fields.electoral_districts", locale),
         "candidates" => trans!("audit_log.detail.fields.candidates", locale),
-        "list_submitter_id" => trans!("audit_log.detail.fields.list_submitter_id", locale),
-        "substitute_list_submitter_ids" => {
-            trans!(
-                "audit_log.detail.fields.substitute_list_submitter_ids",
-                locale
-            )
-        }
         // System event fields
         "person_id" => trans!("audit_log.detail.fields.person_id", locale),
         "political_group_id" => trans!("audit_log.detail.fields.political_group_id", locale),
@@ -262,11 +253,8 @@ mod tests {
         ElectoralDistrict, Locale,
         candidate_lists::CandidateListId,
         common::FullName,
-        list_submitters::ListSubmitterId,
         persons::PersonId,
-        test_utils::{
-            sample_candidate_list, sample_list_submitter, sample_person, sample_political_group,
-        },
+        test_utils::{sample_candidate_list, sample_person, sample_political_group},
     };
 
     impl FieldChange {
@@ -322,7 +310,7 @@ mod tests {
     const EN: Locale = Locale::En;
 
     fn empty_state() -> AppStoreData {
-        AppStoreData::new(ElectionConfig::EK27)
+        AppStoreData::default()
     }
 
     // --- diff() ---
@@ -650,56 +638,6 @@ mod tests {
         assert_eq!(districts.len(), 1);
         assert_eq!(districts[0].old_value(), "GR");
         assert_eq!(districts[0].new_value(), "GR, FR");
-    }
-
-    #[test]
-    fn compute_id_field_includes_entity_refs() {
-        let list_id = CandidateListId::new();
-        let old_submitter_id = ListSubmitterId::new();
-        let new_submitter_id = ListSubmitterId::new();
-        let old_submitter = sample_list_submitter(old_submitter_id);
-        let old_submitter_name = old_submitter.name.display();
-        let new_submitter = sample_list_submitter(new_submitter_id);
-        let new_submitter_name = new_submitter.name.display();
-
-        let mut list = sample_candidate_list(list_id);
-        list.list_submitter_id = Some(old_submitter_id);
-
-        let events = vec![
-            StoreEvent::new(1, AppEvent::CreateListSubmitter(old_submitter)),
-            StoreEvent::new(2, AppEvent::CreateListSubmitter(new_submitter)),
-            StoreEvent::new(3, AppEvent::CreateCandidateList(list)),
-            StoreEvent::new(
-                4,
-                AppEvent::UpdateCandidateListSubmitters {
-                    list_id,
-                    list_submitter_id: Some(new_submitter_id),
-                    substitute_list_submitter_ids: vec![],
-                },
-            ),
-        ];
-
-        let detail = AuditLogDetail::compute(&events, 4, Locale::En).unwrap();
-        let change = detail
-            .changes
-            .iter()
-            .find(|c| c.field() == "List submitter")
-            .expect("list_submitter_id change");
-
-        assert_eq!(
-            change,
-            &FieldChange::Entities {
-                field: "List submitter".to_owned(),
-                old_refs: vec![EntityRef {
-                    id_full: old_submitter_id.to_string(),
-                    description: old_submitter_name
-                }],
-                new_refs: vec![EntityRef {
-                    id_full: new_submitter_id.to_string(),
-                    description: new_submitter_name
-                }]
-            }
-        );
     }
 
     #[test]

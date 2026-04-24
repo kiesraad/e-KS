@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    AppEvent, ElectionConfig,
+    AppEvent,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
@@ -12,15 +12,14 @@ use crate::{
     store::{StoreData, StoreEvent},
 };
 
-/// Event-sourced domain projection for a single stream.
-#[derive(Debug, Serialize, Deserialize)]
+/// Event-sourced domain projection for a single (stream, election) pair.
+#[derive(Debug, Default, Serialize, Deserialize)]
 pub struct AppStoreData {
-    pub(crate) election: ElectionConfig,
     pub(crate) political_group: PoliticalGroup,
     pub(crate) persons: HashMap<PersonId, Person>,
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
     pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
-    pub(crate) list_submitters: HashMap<ListSubmitterId, ListSubmitter>,
+    pub(crate) list_submitter: ListSubmitter,
     pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
 
     // Download path, file name, downloader id
@@ -30,21 +29,6 @@ pub struct AppStoreData {
 
 impl StoreData for AppStoreData {
     type Event = AppEvent;
-    type Init = ElectionConfig;
-
-    fn new(election: ElectionConfig) -> Self {
-        Self {
-            election,
-            political_group: PoliticalGroup::default(),
-            persons: HashMap::new(),
-            candidate_lists: HashMap::new(),
-            authorised_agents: HashMap::new(),
-            list_submitters: HashMap::new(),
-            substitute_submitters: HashMap::new(),
-            downloaded_files: Vec::new(),
-            events: Vec::new(),
-        }
-    }
 
     fn apply(&mut self, event: StoreEvent<AppEvent>) {
         self.events.push(event.clone());
@@ -138,16 +122,6 @@ impl StoreData for AppStoreData {
                     existing.candidates = candidates;
                 });
             }
-            AppEvent::UpdateCandidateListSubmitters {
-                list_id,
-                list_submitter_id,
-                substitute_list_submitter_ids,
-            } => {
-                self.candidate_lists.entry(list_id).and_modify(|existing| {
-                    existing.list_submitter_id = list_submitter_id;
-                    existing.substitute_list_submitter_ids = substitute_list_submitter_ids;
-                });
-            }
             AppEvent::AddCandidateToCandidateList { list_id, person_id } => {
                 self.candidate_lists.entry(list_id).and_modify(|existing| {
                     if !existing.candidates.contains(&person_id) {
@@ -175,26 +149,8 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteAuthorisedAgent(aa_id) => {
                 self.authorised_agents.remove(&aa_id);
             }
-            AppEvent::CreateListSubmitter(ls) => {
-                self.list_submitters.insert(ls.id, ls);
-            }
             AppEvent::UpdateListSubmitter(ls) => {
-                let ls_id = ls.id;
-                self.list_submitters.entry(ls_id).and_modify(|existing| {
-                    *existing = ls;
-                });
-            }
-            AppEvent::DeleteListSubmitter {
-                list_submitter_id: ls_id,
-            } => {
-                self.candidate_lists
-                    .values_mut()
-                    .filter(|list| list.list_submitter_id == Some(ls_id))
-                    .for_each(|list| {
-                        list.list_submitter_id = None;
-                    });
-
-                self.list_submitters.remove(&ls_id);
+                self.list_submitter = ls;
             }
             AppEvent::CreateSubstituteSubmitter(ss) => {
                 self.substitute_submitters.insert(ss.id, ss);
@@ -210,13 +166,6 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteSubstituteSubmitter {
                 substitute_submitter_id: ss_id,
             } => {
-                self.candidate_lists
-                    .values_mut()
-                    .filter(|list| list.substitute_list_submitter_ids.contains(&ss_id))
-                    .for_each(|list| {
-                        list.substitute_list_submitter_ids.retain(|id| *id != ss_id);
-                    });
-
                 self.substitute_submitters.remove(&ss_id);
             }
 
@@ -241,16 +190,19 @@ impl crate::store::Store<AppStoreData> {
     }
 
     pub fn new_for_test_with_election(election: crate::ElectionConfig) -> Self {
-        let mut data = AppStoreData::new(election);
-        data.political_group = crate::test_utils::sample_political_group();
+        let data = AppStoreData {
+            political_group: crate::test_utils::sample_political_group(),
+            ..AppStoreData::default()
+        };
 
         let encryption =
             crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"));
         let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
             stream_id,
+            election,
             persistence: crate::store::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id),
+            cipher: encryption.derive_cipher(stream_id, election),
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }

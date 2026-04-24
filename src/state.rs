@@ -8,7 +8,6 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::{CookieJar, cookie::Cookie};
-use secrecy::SecretString;
 
 use crate::{
     AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, Session, SessionStore,
@@ -24,7 +23,7 @@ use crate::{
 pub struct AppState {
     pub config: &'static Config,
     pub store_registry: StoreRegistry<AppStoreData>,
-    /// Active in-memory sessions for this application instance.
+    /// Active sessions for this application instance (backed by the configured storage).
     pub sessions: SessionStore,
     pub id_deriver: IdDeriver,
 }
@@ -39,12 +38,13 @@ impl AppState {
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
         let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
+        let sessions = SessionStore::from_storage_url(&config.storage_url)?;
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
 
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
-            sessions: SessionStore::new(),
+            sessions,
             id_deriver,
         })
     }
@@ -76,25 +76,35 @@ impl AppState {
         }
     }
 
-    /// Find which elections already have persisted data for the given BSN.
-    pub async fn existing_elections_for_code(
+    /// List which elections already have persisted data under the user's stream.
+    pub async fn existing_elections_for_stream(
         &self,
-        code: &SecretString,
+        stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {
-        let all = ElectionConfig::all();
-        let stream_ids: Vec<_> = all
-            .iter()
-            .map(|e| self.id_deriver.derive_stream_id(code, *e).uuid())
-            .collect();
+        self.store_registry
+            .elections_for_stream(stream_id.uuid())
+            .await
+    }
 
-        let found = self.store_registry.streams_with_data(&stream_ids).await?;
-
-        Ok(all
-            .into_iter()
-            .zip(stream_ids.iter())
-            .filter(|(_, id)| found.contains(id))
-            .map(|(election, _)| election)
-            .collect())
+    /// If the stream already has data for some election, prime its store and
+    /// set it as the session's current election. Returns `true` when an
+    /// election was attached.
+    async fn attach_existing_election(
+        &self,
+        session: &mut Session,
+        stream_id: StreamId,
+    ) -> Result<bool, AppError> {
+        let Some(election) = self
+            .existing_elections_for_stream(stream_id)
+            .await
+            .ok()
+            .and_then(|list| list.into_iter().next())
+        else {
+            return Ok(false);
+        };
+        self.store_for_stream(stream_id, election, false).await?;
+        session.set_current_election(election);
+        Ok(true)
     }
 
     #[cfg(test)]
@@ -102,13 +112,15 @@ impl AppState {
         let config = Config::new_test();
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
+        let sessions = SessionStore::from_storage_url(&config.storage_url)
+            .expect("test SessionStore must initialize");
 
         Self {
             store_registry: StoreRegistry::new(config.storage_url.to_string(), encryption)
                 .await
                 .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
-            sessions: SessionStore::new(),
+            sessions,
             id_deriver,
         }
     }
@@ -124,31 +136,24 @@ fn request_locale(headers: &HeaderMap) -> crate::Locale {
 
 impl AuthState for AppState {
     async fn on_authenticated(&self, jar: CookieJar, headers: &HeaderMap) -> Response {
-        let id_code = random_bsn();
-        let mut session = Session::new_with_locale(&id_code, request_locale(headers));
-
-        let existing_election = self
-            .existing_elections_for_code(&id_code)
-            .await
-            .ok()
-            .and_then(|list| list.into_iter().next());
-
-        let redirect_to = if let Some(election) = existing_election {
-            let stream_id = self.id_deriver.derive_stream_id(&id_code, election);
-
-            if let Err(err) = self.store_for_stream(stream_id, election, false).await {
-                return err.into_response();
-            }
-
-            session.set_stream_id(stream_id);
-
-            IndexPath.to_string()
-        } else {
-            SelectElectionPath.to_string()
+        let stream_id = {
+            let id_code = random_bsn();
+            // id_code is intentionally dropped here: after this point the stream
+            // is the only user handle we carry, and we never persist the BSN.
+            self.id_deriver.derive_stream_id(&id_code)
         };
 
-        self.sessions.cleanup_expired();
-        self.sessions.insert(session.clone());
+        let mut session = Session::new_with_locale(request_locale(headers));
+        session.set_stream_id(stream_id);
+
+        let redirect_to = match self.attach_existing_election(&mut session, stream_id).await {
+            Ok(true) => IndexPath.to_string(),
+            Ok(false) => SelectElectionPath.to_string(),
+            Err(err) => return err.into_response(),
+        };
+
+        self.sessions.cleanup_expired().await;
+        self.sessions.insert(session.clone()).await;
 
         (
             jar.add(build_session_cookie(&session)),
@@ -159,7 +164,7 @@ impl AuthState for AppState {
 
     async fn logout_session(&self, jar: CookieJar) -> Option<CookieJar> {
         let token = jar.get(SESSION_COOKIE_NAME)?.value().to_string();
-        let _session = self.sessions.remove(&token)?;
+        let _session = self.sessions.remove(&token).await?;
         let mut clear = Cookie::from(SESSION_COOKIE_NAME);
         clear.set_path("/");
 

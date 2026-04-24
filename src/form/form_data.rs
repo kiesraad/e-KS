@@ -1,5 +1,5 @@
 use crate::{
-    CsrfTokens, Locale,
+    Locale, TokenValue,
     form::{FieldErrors, WithCsrfToken},
 };
 
@@ -10,23 +10,23 @@ pub struct FormData<T> {
 }
 
 impl<T: WithCsrfToken> FormData<T> {
-    pub fn new(csrf_tokens: &CsrfTokens) -> Self {
+    pub fn new(csrf_token: &TokenValue) -> Self {
         Self {
-            data: T::default().with_csrf_token(csrf_tokens.issue()),
+            data: T::default().with_csrf_token(csrf_token.clone()),
             errors: Vec::new(),
         }
     }
 
-    pub fn new_with_data(data: T, csrf_tokens: &CsrfTokens) -> Self {
+    pub fn new_with_data(data: T, csrf_token: &TokenValue) -> Self {
         Self {
-            data: data.with_csrf_token(csrf_tokens.issue()),
+            data: data.with_csrf_token(csrf_token.clone()),
             errors: Vec::new(),
         }
     }
 
-    pub fn new_with_errors(data: T, csrf_tokens: &CsrfTokens, errors: FieldErrors) -> Self {
+    pub fn new_with_errors(data: T, csrf_token: &TokenValue, errors: FieldErrors) -> Self {
         Self {
-            data: data.with_csrf_token(csrf_tokens.issue()),
+            data: data.with_csrf_token(csrf_token.clone()),
             errors,
         }
     }
@@ -47,13 +47,13 @@ impl<T: WithCsrfToken> FormData<T> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CsrfToken, Locale, form::ValidationError};
+    use crate::{Locale, form::ValidationError};
 
     #[derive(Default)]
     struct DummyForm;
 
     impl WithCsrfToken for DummyForm {
-        fn with_csrf_token(self, _csrf_token: CsrfToken) -> Self {
+        fn with_csrf_token(self, _csrf_token: TokenValue) -> Self {
             self
         }
     }
@@ -62,7 +62,7 @@ mod tests {
     fn collects_errors_for_named_field() {
         let form: FormData<DummyForm> = FormData::new_with_errors(
             Default::default(),
-            &CsrfTokens::default(),
+            &TokenValue::default(),
             vec![
                 ("name".to_string(), ValidationError::ValueShouldNotBeEmpty),
                 ("other".to_string(), ValidationError::InvalidValue),

@@ -4,7 +4,7 @@ use crate::{
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
-        substitute_submitter_from_ids, typst_util,
+        typst_util,
     },
 };
 use serde::Serialize;
@@ -54,6 +54,17 @@ impl H1 {
 
         let election_type = election.election_type();
 
+        let list_submitter = store.get_list_submitter();
+        if !list_submitter.is_complete() {
+            return Err(AppError::IncompleteData("Missing list submitter"));
+        }
+
+        let substitute_submitter = store
+            .get_substitute_submitters()
+            .into_iter()
+            .map(TypstPerson::try_from)
+            .collect::<Result<Vec<_>, _>>()?;
+
         Ok(Self {
             election_name: typst_util::generate_election_title(election, locale),
             election_type,
@@ -67,13 +78,8 @@ impl H1 {
                 .to_string(),
             candidates: ordered_candidates(&mut candidates, locale)?,
             previously_seated: true,
-            list_submitter: store
-                .get_list_submitter(
-                    list.list_submitter_id
-                        .ok_or(AppError::IncompleteData("Missing list submitter"))?,
-                )?
-                .try_into()?,
-            substitute_submitter: substitute_submitter_from_ids(&list, store.clone())?,
+            list_submitter: list_submitter.try_into()?,
+            substitute_submitter,
             timestamp: TypstDatetime::now(),
             locale,
             filename,

@@ -28,7 +28,7 @@ pub async fn update_person(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
                 PersonalDataForm::from(person.clone()),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             on_candidate_lists: store.count_candidate_lists(person.id),
             person,
@@ -45,7 +45,7 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(&person, &context.session.csrf_tokens, &context.election)
+    match form.validate_update_with_checks(&person, &context.session.csrf_token, &context.election)
     {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
@@ -116,7 +116,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
         let expected_path = format!("{}?&success=true", person.after_update_path());
@@ -156,7 +156,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
@@ -187,7 +187,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_person_form(&csrf_token);
         form.personal_data.date_of_birth =
             DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))

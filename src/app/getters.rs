@@ -11,9 +11,7 @@ use crate::store::StoreEvent;
 
 impl AppStore {
     pub fn get_election(&self) -> ElectionConfig {
-        let data = self.data.read();
-
-        data.election
+        self.election
     }
 
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
@@ -52,12 +50,6 @@ impl AppStore {
         let data = self.data.read();
 
         data.authorised_agents.values().cloned().collect()
-    }
-
-    pub fn get_list_submitters(&self) -> Vec<ListSubmitter> {
-        let data = self.data.read();
-
-        data.list_submitters.values().cloned().collect()
     }
 
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
@@ -108,16 +100,10 @@ impl AppStore {
         }
     }
 
-    pub fn get_list_submitter(
-        &self,
-        list_submitter_id: ListSubmitterId,
-    ) -> Result<ListSubmitter, AppError> {
+    pub fn get_list_submitter(&self) -> ListSubmitter {
         let data = self.data.read();
 
-        match data.list_submitters.get(&list_submitter_id) {
-            Some(submitter) => Ok(submitter.clone()),
-            None => Err(AppError::GenericNotFound),
-        }
+        data.list_submitter.clone()
     }
 
     pub fn get_substitute_submitter(

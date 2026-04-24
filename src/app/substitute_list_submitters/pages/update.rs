@@ -26,7 +26,7 @@ pub async fn update_substitute_submitter(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
                 substitute_submitter.clone().into(),
-                &context.session.csrf_tokens,
+                &context.session.csrf_token,
             ),
             substitute_submitter,
         },
@@ -44,7 +44,7 @@ pub async fn update_substitute_submitter_submit(
 ) -> Result<Response, AppError> {
     match form.validate_update(
         &ListSubmitterData::from(substitute_submitter.clone()),
-        &context.session.csrf_tokens,
+        &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
@@ -61,7 +61,7 @@ pub async fn update_substitute_submitter_submit(
             };
             updated.update_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::list_path()))
+            Ok(redirect_success(ListSubmitter::view_path()))
         }
     }
 }
@@ -115,7 +115,7 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = "Updated".to_string();
 
@@ -138,7 +138,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            ListSubmitter::list_path()
+            ListSubmitter::view_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
@@ -158,7 +158,7 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_tokens.issue().value;
+        let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 

@@ -178,7 +178,6 @@ __Niveau:__ Gebruikersdoel, zee, 🌊
 __Hoofdscenario:__
 
 1. De politieke groepering geeft aan dat ze meedoen met een samengevoegde aanduiding
-2. De politieke groepering geeft aan met welke andere aanduidingen ze meedoen
-3. De applicatie zorgt ervoor dat als de andere aanduidingen inloggen, ze ook de gegevens kunnen inzien. *hier moeten we nog even over nadenken, que security is dit natuurlijk niet top*
-4. De politieke groepering vult de aanduiding in, deze is max 35 leestekens*.
+2. De politieke groepering vult één samengevoegde aanduiding in
+3. De politieke groepering vult voor elke partij een gemachtigde in
 

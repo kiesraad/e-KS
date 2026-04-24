@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{ElectoralDistrict, core::AnyLocale};
 
 /// Regions for the elections of the provincial councils
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum Province {
     GR,
     FR,
@@ -68,7 +68,7 @@ impl From<Province> for ElectoralDistrict {
 }
 
 /// Regions for the elections of the water authorities
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash, Serialize, Deserialize)]
 pub enum WaterCouncil {
     Noorderzijlvest,
     Fryslan,
