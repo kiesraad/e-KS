@@ -8,19 +8,18 @@ pub struct IncompleteItems {
 }
 
 impl IncompleteItems {
-    #[allow(unreachable_code)]
     pub fn find_all(store: &AppStore) -> Self {
         let political_group_items = store.get_political_group().incomplete_items();
 
         Self {
-            general_items: GeneralItems([political_group_items, todo!("issue #607")].concat()),
-            candidate_items: todo!("issue #605"),
-            list_items: todo!("issue #608"),
+            general_items: GeneralItems([political_group_items].concat()), // TODO: complete in issue #607
+            candidate_items: vec![], // TODO: complete in issue #605
+            list_items: vec![],      // TODO: complete in issue #608
         }
     }
 
     pub fn is_printable(&self) -> bool {
-        [
+        ![
             self.general_items.0.clone(),
             self.candidate_items
                 .iter()
@@ -49,7 +48,7 @@ pub struct ListItems {
     pub items: Vec<IncompleteItem>,
 }
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub enum IncompleteItem {
     // candidate list
     NoCandidates,
@@ -87,5 +86,55 @@ pub trait Completable {
 
     fn is_complete(&self) -> bool {
         self.incomplete_items().is_empty()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        candidate_lists::CandidateListId,
+        persons::PersonId,
+        test_utils::{sample_candidate_list, sample_person},
+    };
+
+    use super::*;
+
+    #[test]
+    fn is_printable() {
+        assert!(
+            IncompleteItems {
+                general_items: GeneralItems(vec![]),
+                candidate_items: vec![],
+                list_items: vec![],
+            }
+            .is_printable()
+        );
+
+        assert!(
+            IncompleteItems {
+                general_items: GeneralItems(vec![]),
+                candidate_items: vec![],
+                list_items: vec![ListItems {
+                    list: sample_candidate_list(CandidateListId::new()),
+                    items: vec![IncompleteItem::TooManyCandidates {
+                        actual: 12,
+                        max: 12
+                    }],
+                }],
+            }
+            .is_printable()
+        );
+
+        assert!(
+            !IncompleteItems {
+                general_items: GeneralItems(vec![]),
+                candidate_items: vec![CandidateItems {
+                    person: sample_person(PersonId::new()),
+                    items: vec![IncompleteItem::NoCandidates]
+                }],
+                list_items: vec![],
+            }
+            .is_printable()
+        );
     }
 }

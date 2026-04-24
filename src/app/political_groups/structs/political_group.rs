@@ -47,3 +47,36 @@ impl PoliticalGroup {
             .await
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use std::str::FromStr;
+
+    use super::*;
+
+    #[test]
+    fn incomplete_items_empty() {
+        let empty_items = PoliticalGroup {
+            long_list_allowed: None,
+            legal_name: None,
+            display_name: None,
+        }
+        .incomplete_items();
+
+        assert_eq!(empty_items.len(), 2);
+        assert!(empty_items.contains(&IncompleteItem::NoLegalName));
+        assert!(empty_items.contains(&IncompleteItem::NoDisplayName));
+    }
+
+    #[test]
+    fn incomplete_items_complete() {
+        let complete_items = PoliticalGroup {
+            long_list_allowed: Some(true),
+            legal_name: LegalName::from_str("test").ok(),
+            display_name: DisplayName::from_str("test").ok(),
+        }
+        .incomplete_items();
+
+        assert!(complete_items.is_empty());
+    }
+}
