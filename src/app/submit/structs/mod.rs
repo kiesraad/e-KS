@@ -2,6 +2,7 @@ pub mod h1;
 pub mod h3_1;
 pub mod h4;
 pub mod h9;
+pub mod incomplete_items;
 mod typst_authorised_agent;
 pub mod typst_candidate;
 mod typst_datetime;
@@ -10,7 +11,6 @@ pub mod typst_electoral_districts;
 mod typst_person;
 mod typst_postal_address;
 mod typst_util;
-mod incomplete_items;
 
 use typst_candidate::{TypstCandidate, ordered_candidates};
 use typst_datetime::TypstDatetime;

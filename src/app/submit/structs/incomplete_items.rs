@@ -1,10 +1,40 @@
-use crate::{AppStore, ElectoralDistrict, candidate_lists::CandidateList, list_submitters, persons::Person};
+use crate::{AppStore, ElectoralDistrict, candidate_lists::CandidateList, persons::Person};
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
 pub struct IncompleteItems {
     pub general_items: GeneralItems,
     pub candidate_items: Vec<CandidateItems>,
     pub list_items: Vec<ListItems>,
+}
+
+impl IncompleteItems {
+    #[allow(unreachable_code)]
+    pub fn find_all(store: &AppStore) -> Self {
+        let political_group_items = store.get_political_group().incomplete_items();
+
+        Self {
+            general_items: GeneralItems([political_group_items, todo!("issue #607")].concat()),
+            candidate_items: todo!("issue #605"),
+            list_items: todo!("issue #608"),
+        }
+    }
+
+    pub fn is_printable(&self) -> bool {
+        [
+            self.general_items.0.clone(),
+            self.candidate_items
+                .iter()
+                .flat_map(|ci| ci.items.clone())
+                .collect(),
+            self.list_items
+                .iter()
+                .flat_map(|li| li.items.clone())
+                .collect(),
+        ]
+        .concat()
+        .iter()
+        .any(|i| i.severity() == Severity::Error)
+    }
 }
 
 pub struct GeneralItems(Vec<IncompleteItem>);
@@ -19,34 +49,43 @@ pub struct ListItems {
     pub items: Vec<IncompleteItem>,
 }
 
+#[derive(Clone)]
 pub enum IncompleteItem {
     // candidate list
     NoCandidates,
     TooManyCandidates { actual: usize, max: usize },
     DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
     // political group
-    LongListAllowedIsNone,
     NoLegalName,
     NoDisplayName,
 }
 
-impl IncompleteItems {
-    pub fn find_all(store: &AppStore) -> Self {
-        let political_group = store.get_political_group();
-        let authorised_agent = store.get_authorised_agents()[0]; // TODO is this correct? Is there always only one authorised agent?
-        /* NOTE: we're ahead of the curve here. currently, multiple list submitters are possible 
-        (separate submitters per list) but in PR #585  this will change to only one submitter */
-        let list_submitter = store.get_list_submitters()[0];
-        let substitute_submitters = store.get_substitute_submitters();
-
-        Self {
-            general_items: GeneralItems([].concat()),
-            candidate_items: todo!(),
-            list_items: todo!(),
+impl IncompleteItem {
+    pub fn severity(&self) -> Severity {
+        match &self {
+            // candidate list
+            IncompleteItem::NoCandidates => Severity::Error,
+            IncompleteItem::TooManyCandidates { .. } => Severity::Warn,
+            IncompleteItem::DuplicateDistricts { .. } => Severity::Error,
+            // political group
+            IncompleteItem::NoLegalName => Severity::Warn,
+            IncompleteItem::NoDisplayName => Severity::Error,
         }
     }
 }
+
+#[derive(PartialEq)]
+pub enum Severity {
+    Info,
+    Warn,
+    Error,
+}
+
 pub trait Completable {
-    /// returns all incomplete items of its own and of all child objects
+    /// returns all incomplete items of its own and of all children
     fn incomplete_items(&self) -> Vec<IncompleteItem>;
+
+    fn is_complete(&self) -> bool {
+        self.incomplete_items().is_empty()
+    }
 }

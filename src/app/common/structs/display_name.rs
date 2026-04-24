@@ -2,6 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     form::{ValidationError, validate_teletex_chars},
+    submit::{Completable, IncompleteItem},
     transparent_string,
 };
 
@@ -28,6 +29,22 @@ impl FromStr for DisplayName {
         }
         validate_teletex_chars(&trimmed_value)?;
         Ok(DisplayName(trimmed_value))
+    }
+}
+
+impl DisplayName {
+    pub fn create_empty() -> Self {
+        DisplayName("".to_string())
+    }
+}
+
+impl Completable for DisplayName {
+    fn incomplete_items(&self) -> Vec<IncompleteItem> {
+        if self.is_empty() {
+            vec![IncompleteItem::NoDisplayName]
+        } else {
+            vec![]
+        }
     }
 }
 
