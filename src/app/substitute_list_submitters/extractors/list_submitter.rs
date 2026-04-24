@@ -7,12 +7,6 @@ use crate::{
 };
 
 #[derive(Deserialize)]
-struct ListSubmitterPathParams {
-    #[serde(alias = "submitter_id")]
-    submitter_id: ListSubmitterId,
-}
-
-#[derive(Deserialize)]
 struct SubstituteSubmitterPathParams {
     #[serde(alias = "sub_submitter_id")]
     submitter_id: ListSubmitterId,
@@ -30,21 +24,10 @@ where
         state: &S,
     ) -> Result<Self, Self::Rejection> {
         let store = AppStore::from_request_parts(parts, state).await?;
+        let Path(SubstituteSubmitterPathParams { submitter_id }) =
+            Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
 
-        let submitter_id = match Path::<ListSubmitterPathParams>::from_request_parts(parts, state)
-            .await
-        {
-            Ok(Path(params)) => params.submitter_id,
-            Err(_) => {
-                // Try to extract substitute submitter path params if regular submitter params are not present
-                let Path(params) =
-                    Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
-
-                return store.get_substitute_submitter(params.submitter_id);
-            }
-        };
-
-        store.get_list_submitter(submitter_id)
+        store.get_substitute_submitter(submitter_id)
     }
 }
 
@@ -65,26 +48,29 @@ mod tests {
     };
 
     #[tokio::test]
-    async fn list_submitter_extractor_loads_submitter() {
-        let list_submitter = sample_list_submitter(ListSubmitterId::new());
+    async fn substitute_submitter_extractor_loads_submitter() {
+        let substitute_submitter = sample_list_submitter(ListSubmitterId::new());
 
         let app_state = AppState::new_for_tests().await;
         let store = AppStore::new_for_test();
-        list_submitter.create(&store).await.unwrap();
+        substitute_submitter
+            .create_substitute(&store)
+            .await
+            .unwrap();
 
         let app = Router::new()
             .route(
-                "/political-group/list-submitters/{submitter_id}",
-                get(|list_submitter: ListSubmitter| async move {
-                    list_submitter.name.last_name.to_string()
+                "/political-group/substitute-submitters/{sub_submitter_id}",
+                get(|substitute_submitter: ListSubmitter| async move {
+                    substitute_submitter.name.last_name.to_string()
                 }),
             )
             .with_state(app_state);
 
         let mut request = Request::builder()
             .uri(format!(
-                "/political-group/list-submitters/{}",
-                list_submitter.id
+                "/political-group/substitute-submitters/{}",
+                substitute_submitter.id
             ))
             .body(Body::empty())
             .unwrap();

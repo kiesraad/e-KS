@@ -9,11 +9,5 @@
         </a>
       </li>
     {% endif %}
-    <li>
-      <a href="{{ candidate_list.update_list_submitter_path() }}"
-         class="{% if should_warn|default(true) %}{% if candidate_list.list_submitter_id.is_some() %}ok{% else %}warning{% endif %}{% endif %}">
-        {{ "candidate_list.fields.list_submitter"|trans }}
-      </a>
-    </li>
   </ul>
 </div>

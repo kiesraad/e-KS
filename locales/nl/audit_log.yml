@@ -20,7 +20,6 @@ detail:
     last_name_prefix: Voorvoegsel
     legal_name: Volledige statutaire naam
     list_id: Lijst-ID
-    list_submitter_id: Lijstinleveraar
     locality: Woonplaats
     long_list_allowed: Lange lijst toegestaan
     person_id: Persoon-ID
@@ -29,7 +28,6 @@ detail:
     postal_code: Postcode
     state_or_province: Staat / provincie
     street_name: Straatnaam
-    substitute_list_submitter_ids: Vervangers herstel verzuim
   new_value: Nieuwe waarde
   no_changes: Geen veldwijzigingen vastgelegd voor deze gebeurtenis.
   old_value: Oude waarde
@@ -39,12 +37,10 @@ event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   create_authorised_agent: Gemachtigde aangemaakt
   create_candidate_list: Kandidatenlijst aangemaakt
-  create_list_submitter: Lijstinleveraar aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
   delete_authorised_agent: Gemachtigde verwijderd
   delete_candidate_list: Kandidatenlijst verwijderd
-  delete_list_submitter: Lijstinleveraar verwijderd
   delete_person: Persoon verwijderd
   delete_substitute_submitter: Vervanger herstel verzuim verwijderd
   developer_login: Ontwikkelaar ingelogd
@@ -55,7 +51,6 @@ event:
   update_authorised_agent: Gemachtigde bijgewerkt
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
-  update_candidate_list_submitters: Lijstinleveraars van kandidatenlijst bijgewerkt
   update_list_submitter: Lijstinleveraar bijgewerkt
   update_person: Persoon bijgewerkt
   update_person_address: Adres van persoon bijgewerkt

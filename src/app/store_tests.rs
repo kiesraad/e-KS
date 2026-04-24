@@ -5,7 +5,6 @@ use crate::{
         DutchAddress, FullName, HouseNumber, HouseNumberAddition, Initials, LastName, Locality,
         PostalCode, StreetName, UtcDateTime,
     },
-    list_submitters::ListSubmitterId,
     persons::{PersonId, Representative},
     store::{StoreData, StoreEvent},
     test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
@@ -263,40 +262,6 @@ fn apply_update_candidate_list_order_replaces_candidates() {
 
     let updated = data.candidate_lists.get(&list_id).expect("list exists");
     assert_eq!(updated.candidates, new_order);
-}
-
-#[test]
-fn apply_update_candidate_list_submitters_sets_ids() {
-    let mut data = AppStoreData::default();
-    let list_id = CandidateListId::new();
-    let mut list = sample_candidate_list(list_id);
-    list.list_submitter_id = None;
-    list.substitute_list_submitter_ids = Vec::new();
-
-    let created_at = Utc::now() - Duration::seconds(30);
-    data.apply(StoreEvent::new_at(
-        1,
-        AppEvent::CreateCandidateList(list),
-        created_at,
-    ));
-
-    let list_submitter_id = Some(ListSubmitterId::new());
-    let substitute_ids = vec![ListSubmitterId::new(), ListSubmitterId::new()];
-    let updated_at = Utc::now() - Duration::seconds(15);
-
-    data.apply(StoreEvent::new_at(
-        2,
-        AppEvent::UpdateCandidateListSubmitters {
-            list_id,
-            list_submitter_id,
-            substitute_list_submitter_ids: substitute_ids.clone(),
-        },
-        updated_at,
-    ));
-
-    let updated = data.candidate_lists.get(&list_id).expect("list exists");
-    assert_eq!(updated.list_submitter_id, list_submitter_id);
-    assert_eq!(updated.substitute_list_submitter_ids, substitute_ids);
 }
 
 #[tokio::test]

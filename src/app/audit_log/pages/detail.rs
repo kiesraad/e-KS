@@ -62,21 +62,21 @@ mod tests {
 
     #[tokio::test]
     async fn renders_entity_ref_link_and_description_for_id_diff() -> Result<(), AppError> {
-        use crate::test_utils::{sample_candidate_list, sample_list_submitter};
+        use crate::test_utils::{sample_candidate_list, sample_person_with_last_name};
 
         let store = AppStore::new_for_test();
 
-        let submitter = sample_list_submitter(crate::list_submitters::ListSubmitterId::new());
-        let submitter_id = submitter.id;
-        let submitter_name = submitter.name.display();
-        submitter.create(&store).await?;
+        let person = sample_person_with_last_name(PersonId::new(), "Janssen");
+        let person_id = person.id;
+        let person_name = person.name.display();
+        person.create(&store).await?;
 
         let list_id = crate::candidate_lists::CandidateListId::new();
-        let mut list = sample_candidate_list(list_id);
+        let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
-        list.list_submitter_id = Some(submitter_id);
-        list.update_submitters(&store).await?;
+        let mut list = store.get_candidate_list(list_id)?;
+        list.append_candidate(&store, person_id).await?;
 
         let events = store.get_events();
         let target_event_id = events.last().unwrap().event_id;
@@ -94,18 +94,18 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        let full_id = submitter_id.to_string();
+        let full_id = person_id.to_string();
         assert!(
             body.contains(&format!("<abbr title=\"{full_id}\">")),
             "expected abbreviated link with full id in title; body: {body}"
         );
         assert!(
             body.contains(&format!("/audit-log?search={full_id}")),
-            "expected link href to filter audit log by submitter id"
+            "expected link href to filter audit log by person id"
         );
         assert!(
-            body.contains(&submitter_name),
-            "expected submitter display name to appear next to the abbreviated id"
+            body.contains(&person_name),
+            "expected person display name to appear next to the abbreviated id"
         );
 
         Ok(())

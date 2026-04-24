@@ -1,9 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate";
-import type { ListSubmitter } from "./models/listSubmitter.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { ChooseListSubmitterPage } from "./pages/chooseListSubmitterPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 import { randomName } from "./utils/random";
@@ -89,41 +87,5 @@ test.describe("add candidate list", async () => {
     await expect(page.locator("//li/span[text()='Zeeland']")).not.toBeVisible();
     await expect(page.locator("//li/span[text()='Groningen']")).toBeVisible();
     await expect(page.locator("//li/span[text()='Overijssel']")).not.toBeVisible();
-  });
-
-  test("edit list submitters", async ({ login: page }) => {
-    await page.goto("/candidate-lists");
-    await new CandidateListsOverviewPage(page).linkCandidateList
-      .first()
-      .click();
-    const manageCandidateListPage = new ManageCandidateListPage(page);
-    await manageCandidateListPage.buttonEditList.click();
-    await manageCandidateListPage.buttonNext.click();
-    const chooseListSubmitterPage = new ChooseListSubmitterPage(page);
-    await expect(chooseListSubmitterPage.headerListSubmitter).toBeVisible();
-
-    const submitterOne: ListSubmitter = {
-      initials: "G.H.",
-      lastName: "Smit",
-      lastNamePrefix: "van",
-    };
-
-    const submitterTwo: ListSubmitter = {
-      initials: "I.J.",
-      lastName: "Jong",
-    };
-
-    await chooseListSubmitterPage.removeSubstituteSubmitter(submitterOne);
-    await chooseListSubmitterPage.selectSubstituteSubmitter(submitterTwo);
-    await chooseListSubmitterPage.buttonSave.click();
-    await manageCandidateListPage.buttonEditList.click();
-    await manageCandidateListPage.buttonNext.click();
-
-    await expect(
-      chooseListSubmitterPage.getSubstituteSubmitterLocator(submitterOne),
-    ).not.toBeChecked();
-    await expect(
-      chooseListSubmitterPage.getSubstituteSubmitterLocator(submitterTwo),
-    ).toBeChecked();
   });
 });

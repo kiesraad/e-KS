@@ -4,6 +4,7 @@ import path from "node:path";
 export class CsvImportExportPage {
   readonly buttonDownload: Locator;
   readonly buttonUpload: Locator;
+  readonly buttonDownloadTemplate: Locator;
   readonly buttonContinue: Locator;
   readonly buttonCancel: Locator;
   readonly buttonClose: Locator;
@@ -12,16 +13,19 @@ export class CsvImportExportPage {
 
   constructor(protected readonly page: Page) {
     this.buttonDownload = this.page.getByRole("link", {
-      name: "CSV bestand downloaden",
+      name: "Download CSV bestand",
     });
     this.buttonUpload = this.page.getByRole("button", {
-      name: "CSV bestand uploaden",
+      name: "Upload CSV bestand",
+    });
+    this.buttonDownloadTemplate = this.page.getByRole("button", {
+      name: "Download CSV sjabloon",
     });
     this.buttonContinue = this.page.getByRole("button", { name: "Doorgaan" });
     this.buttonCancel = this.page.getByRole("button", { name: "Annuleren" });
     this.buttonClose = this.page.getByRole("link", { name: "Sluiten" });
     this.headerImport = this.page.getByRole("heading", {
-      name: "Kandidaten importeren / exporteren",
+      name: "Import en export kandidatenlijst",
     });
     this.textFailure = this.page.getByText("Importeren niet gelukt");
   }
