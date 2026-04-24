@@ -18,7 +18,7 @@ impl IncompleteItems {
         }
     }
 
-    pub fn is_printable(&self) -> bool {
+    pub fn models_downloadable(&self) -> bool {
         ![
             self.general_items.0.clone(),
             self.candidate_items
@@ -36,7 +36,7 @@ impl IncompleteItems {
     }
 }
 
-pub struct GeneralItems(Vec<IncompleteItem>);
+pub struct GeneralItems(pub Vec<IncompleteItem>);
 
 pub struct CandidateItems {
     pub person: Person,
@@ -107,7 +107,7 @@ mod tests {
                 candidate_items: vec![],
                 list_items: vec![],
             }
-            .is_printable()
+            .models_downloadable()
         );
 
         assert!(
@@ -122,7 +122,7 @@ mod tests {
                     }],
                 }],
             }
-            .is_printable()
+            .models_downloadable()
         );
 
         assert!(
@@ -134,7 +134,7 @@ mod tests {
                 }],
                 list_items: vec![],
             }
-            .is_printable()
+            .models_downloadable()
         );
     }
 }
