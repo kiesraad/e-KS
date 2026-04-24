@@ -15,6 +15,7 @@ mod dev_defaults {
     #[cfg(not(feature = "database"))]
     pub(super) const STORAGE_URL: &str = "memory://ephemeral";
 
+    #[cfg(not(feature = "embed-typst"))]
     pub(super) const TYPST_URL: &str = "http://localhost:8080";
 
     pub(super) const BAG_SERVICE_URL: &str = "http://localhost:8090";
@@ -27,6 +28,7 @@ mod dev_defaults {
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
+            #[cfg(not(feature = "embed-typst"))]
             ("TYPST_URL", TYPST_URL),
             ("BAG_SERVICE_URL", BAG_SERVICE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
@@ -45,6 +47,7 @@ mod dev_defaults {
 #[derive(Debug, Clone)]
 pub struct Config {
     pub storage_url: String,
+    #[cfg(not(feature = "embed-typst"))]
     pub typst_url: String,
     pub id_derivation_key: SecretString,
     pub encryption_derivation_key: SecretString,
@@ -69,25 +72,24 @@ where
 }
 
 impl Config {
-    pub fn from_env(typst_url: Option<String>) -> Result<Self, AppError> {
-        Self::from_env_with(typst_url, env::var)
+    pub fn from_env() -> Result<Self, AppError> {
+        Self::from_env_with(env::var)
     }
 
-    fn from_env_with<F>(typst_url: Option<String>, mut lookup: F) -> Result<Self, AppError>
+    fn from_env_with<F>(mut lookup: F) -> Result<Self, AppError>
     where
         F: FnMut(&'static str) -> Result<String, env::VarError>,
     {
         let storage_url = get_env_with("STORAGE_URL", &mut lookup)?;
-        let typst_url = match typst_url {
-            Some(value) => value,
-            None => get_env_with("TYPST_URL", &mut lookup)?,
-        };
+        #[cfg(not(feature = "embed-typst"))]
+        let typst_url = get_env_with("TYPST_URL", &mut lookup)?;
         let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
         let encryption_derivation_key = get_env_with("ENCRYPTION_DERIVATION_KEY", &mut lookup)?;
 
         Ok(Self {
             storage_url,
+            #[cfg(not(feature = "embed-typst"))]
             typst_url,
             id_derivation_key: SecretString::from(id_derivation_key),
             encryption_derivation_key: SecretString::from(encryption_derivation_key),
@@ -98,6 +100,7 @@ impl Config {
     pub fn new_test() -> Self {
         Self {
             storage_url: "memory://".to_string(),
+            #[cfg(not(feature = "embed-typst"))]
             typst_url: "http://localhost:8080".to_string(),
             id_derivation_key: SecretString::from("test-secret-123"),
             encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
@@ -130,6 +133,7 @@ mod tests {
         assert_eq!(value, "present");
     }
 
+    #[cfg(not(feature = "embed-typst"))]
     #[test]
     fn from_env_uses_env_values() {
         let map = HashMap::from([
@@ -139,26 +143,24 @@ mod tests {
         ]);
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(None, lookup).expect("config");
+        let config = Config::from_env_with(lookup).expect("config");
 
         assert_eq!(config.storage_url, "memory://test");
         assert_eq!(config.typst_url, "http://typst.test");
     }
 
+    #[cfg(feature = "embed-typst")]
     #[test]
-    fn from_env_prefers_override() {
+    fn from_env_uses_env_values_with_embed_typst() {
         let map = HashMap::from([
-            ("STORAGE_URL", "memory://override"),
-            ("TYPST_URL", "http://typst.env"),
+            ("STORAGE_URL", "memory://test"),
             ("ID_DERIVATION_KEY", "test-secret-123"),
         ]);
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(Some("http://typst.override".to_string()), lookup)
-            .expect("config");
+        let config = Config::from_env_with(lookup).expect("config");
 
-        assert_eq!(config.storage_url, "memory://override");
-        assert_eq!(config.typst_url, "http://typst.override");
+        assert_eq!(config.storage_url, "memory://test");
     }
 
     #[cfg(feature = "dev-features")]
@@ -186,16 +188,27 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "dev-features")]
+    #[cfg(all(feature = "dev-features", not(feature = "embed-typst")))]
     #[test]
     fn from_env_uses_defaults_in_dev_features() {
         let map = HashMap::new();
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(None, lookup).expect("dev defaults");
+        let config = Config::from_env_with(lookup).expect("dev defaults");
 
         assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
         assert_eq!(config.typst_url, dev_defaults::TYPST_URL);
+    }
+
+    #[cfg(all(feature = "dev-features", feature = "embed-typst"))]
+    #[test]
+    fn from_env_uses_defaults_in_dev_features() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("dev defaults");
+
+        assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
     }
 
     #[cfg(not(feature = "dev-features"))]
@@ -204,7 +217,7 @@ mod tests {
         let map = HashMap::new();
         let lookup = lookup_from(&map);
 
-        let err = Config::from_env_with(None, lookup).expect_err("missing storage");
+        let err = Config::from_env_with(lookup).expect_err("missing storage");
 
         assert_eq!(
             err.to_string(),
