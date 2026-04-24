@@ -16,12 +16,12 @@ impl Completable for PoliticalGroup {
     fn incomplete_items(&self) -> Vec<IncompleteItem> {
         [
             self.legal_name
-                .as_ref()
-                .unwrap_or(&LegalName::create_empty())
+                .clone()
+                .unwrap_or_default()
                 .incomplete_items(),
             self.display_name
-                .as_ref()
-                .unwrap_or(&DisplayName::create_empty())
+                .clone()
+                .unwrap_or_default()
                 .incomplete_items(),
         ]
         .concat()
