@@ -48,10 +48,12 @@ import_errors:
     unknown: "the file could not be processed. {}"
     utf8: "field {} contains unreadable text. Please save the file as UTF-8 and try again. {}"
     utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
+  file_too_large: "The selected file is too large. The maximum size is {} MB."
   format_error: "The candidate on line {} could not be imported: {}"
   invalid_headers: Use the same column names as in the exported CSV file.
   missing_file: Please select a CSV file to import.
   parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"
+  upload_failed: Your file could not be uploaded. Please try again.
 import_export:
   export_title: Export
   import_failed: Import failed
@@ -59,6 +61,7 @@ import_export:
   import_instructions_header: Import instructions candidate list
   import_instructions_intro: "Use a CSV file to import candidates into this list. The file must meet the following requirements:"
   import_title: Import
+  max_file_size: "Maximum file size: {} MB."
   overwrite_title: Warning
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."

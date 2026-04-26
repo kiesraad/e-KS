@@ -11,6 +11,7 @@
                id="import_file"
                accept=".csv,text/csv"
                required />
+        <span class="hint">{{ "candidate_list.import_export.max_file_size"|trans(max_file_size_mb.as_str() ) }}</span>
       </p>
       {% if !import_errors.is_empty() %}
         <h4 class="warning-text">{{ "candidate_list.import_export.import_failed"|trans }}</h4>

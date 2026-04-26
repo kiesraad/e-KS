@@ -1,8 +1,11 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    http::StatusCode,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate,
+    AppError, AppEvent, AppStore, Context, HtmlTemplate, Locale,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -15,11 +18,15 @@ use crate::{
     redirect_success, trans,
 };
 
+pub(crate) const MAX_IMPORT_SIZE_BYTES: usize = 5 * 1024 * 1024;
+const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
+
 #[derive(Template)]
 #[template(path = "candidate_lists/pages/import_export.html")]
 struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,
+    max_file_size_mb: String,
     form: FormData<EmptyForm>,
 }
 
@@ -32,6 +39,7 @@ fn render_import_export(
         ImportExportTemplate {
             list,
             import_errors,
+            max_file_size_mb: MAX_IMPORT_SIZE_MB.to_string(),
             form: FormData::new(&context.session.csrf_token),
         },
         context,
@@ -55,9 +63,18 @@ pub async fn import_candidate_list(
     CandidateListImportPath { list_id }: CandidateListImportPath,
     context: Context,
     store: AppStore,
-    import_data: FileForm,
+    import_data: Result<FileForm, AppError>,
 ) -> Result<Response, AppError> {
     let mut list = store.get_candidate_list(list_id)?;
+
+    let import_data = match import_data {
+        Ok(form) => form,
+        Err(err) => match upload_error_messages(&err, context.session.locale) {
+            Some(messages) => return Ok(render_import_export(list, messages, context)),
+            None => return Err(err),
+        },
+    };
+
     let csrf_form = EmptyForm {
         csrf_token: import_data.csrf_token,
     };
@@ -108,6 +125,26 @@ pub async fn import_candidate_list(
     }
 }
 
+/// Translate a `FileForm` extraction failure into inline error messages, or
+/// `None` for failures that should keep falling through to the global error
+/// page (e.g. unrelated `AppError` variants).
+fn upload_error_messages(err: &AppError, locale: Locale) -> Option<Vec<String>> {
+    match err {
+        AppError::MultipartFormError(e) if e.status() == StatusCode::PAYLOAD_TOO_LARGE => {
+            Some(vec![trans!(
+                "candidate_list.import_errors.file_too_large",
+                locale,
+                MAX_IMPORT_SIZE_MB
+            )])
+        }
+        AppError::MultipartFormError(_) | AppError::MultipartError(_) => Some(vec![trans!(
+            "candidate_list.import_errors.upload_failed",
+            locale
+        )]),
+        _ => None,
+    }
+}
+
 pub async fn download_import_template(
     _: CandidateListImportTemplatePath,
 ) -> Result<Response, AppError> {
@@ -124,12 +161,65 @@ pub async fn download_import_template(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Bytes, http::StatusCode};
+    use axum::{
+        Router,
+        body::{Body, Bytes},
+        extract::DefaultBodyLimit,
+        http::{Request, StatusCode},
+    };
+    use axum_extra::routing::RouterExt;
+    use tower::ServiceExt;
 
     use crate::{
+        AppState, Locale, Session, StreamId,
         candidate_lists::CandidateListId,
         test_utils::{response_body_string, sample_candidate_list},
     };
+
+    const TEST_BOUNDARY: &str = "----eks-test-boundary";
+
+    fn multipart_body(csrf_token: &str, csv: &str) -> String {
+        format!(
+            "--{TEST_BOUNDARY}\r\n\
+             Content-Disposition: form-data; name=\"csrf_token\"\r\n\r\n\
+             {csrf_token}\r\n\
+             --{TEST_BOUNDARY}\r\n\
+             Content-Disposition: form-data; name=\"file_data\"; filename=\"candidates.csv\"\r\n\
+             Content-Type: text/csv\r\n\r\n\
+             {csv}\r\n\
+             --{TEST_BOUNDARY}--\r\n"
+        )
+    }
+
+    async fn import_via_router(
+        store: AppStore,
+        list_id: CandidateListId,
+        body: Body,
+        body_limit: usize,
+    ) -> axum::response::Response {
+        let app_state = AppState::new_for_tests().await;
+        let app: Router = Router::new()
+            .typed_post(import_candidate_list)
+            .layer(DefaultBodyLimit::max(body_limit))
+            .with_state(app_state);
+
+        let mut request = Request::builder()
+            .method("POST")
+            .uri(format!("/candidate-lists/{list_id}/import"))
+            .header(
+                "Content-Type",
+                format!("multipart/form-data; boundary={TEST_BOUNDARY}"),
+            )
+            .body(body)
+            .unwrap();
+
+        let mut session = Session::new_test_with_locale(Locale::En);
+        session.set_stream_id(StreamId::new());
+        request.extensions_mut().insert(session);
+        request.extensions_mut().insert(store);
+
+        app.oneshot(request).await.expect("router responds")
+    }
 
     #[tokio::test]
     async fn import_export_renders_multipart_file_form() -> Result<(), AppError> {
@@ -154,6 +244,7 @@ mod tests {
         assert!(body.contains("data-import-file-trigger"));
         assert!(body.contains("formenctype=\"multipart/form-data\""));
         assert!(!body.contains("one-click-upload"));
+        assert!(body.contains("Maximum file size: 5 MB."));
 
         Ok(())
     }
@@ -171,11 +262,11 @@ mod tests {
             CandidateListImportPath { list_id: list.id },
             context,
             store.clone(),
-            FileForm {
+            Ok(FileForm {
                 csrf_token,
                 file_name: Some("invalid.csv".to_string()),
                 file_data: Some(Bytes::from(invalid_csv())),
-            },
+            }),
         )
         .await?;
 
@@ -203,11 +294,11 @@ mod tests {
             CandidateListImportPath { list_id: list.id },
             context,
             store,
-            FileForm {
+            Ok(FileForm {
                 csrf_token,
                 file_name: Some("validation-errors.csv".to_string()),
                 file_data: Some(Bytes::from(csv_with_multiple_validation_errors())),
-            },
+            }),
         )
         .await?;
 
@@ -245,6 +336,52 @@ mod tests {
             csv_headers(),
             "JD,Henk,,Jansen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1000,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
         )
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_oversized_file_renders_inline_error() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        // Use a tiny body limit so we can trigger PAYLOAD_TOO_LARGE without
+        // generating MAX_IMPORT_SIZE_BYTES of data. The translation message
+        // still reports the production limit (5 MB).
+        let body = multipart_body("csrf-token", &"a".repeat(2048));
+        let response = import_via_router(store, list.id, Body::from(body), 1024).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert!(body.contains("The selected file is too large. The maximum size is 5 MB."));
+        assert_eq!(body.matches("alert alert-warning").count(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_malformed_multipart_renders_inline_error() -> Result<(), AppError>
+    {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        // Truncated multipart body — the boundary is opened but the field
+        // header is cut off, which causes `next_field()` to return a parse
+        // error.
+        let truncated = format!("--{TEST_BOUNDARY}\r\nContent-Disposition: form-data; name=\"fiel");
+        let response =
+            import_via_router(store, list.id, Body::from(truncated), MAX_IMPORT_SIZE_BYTES).await;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert!(body.contains("Your file could not be uploaded. Please try again."));
+        assert_eq!(body.matches("alert alert-warning").count(), 1);
+
+        Ok(())
     }
 
     #[tokio::test]

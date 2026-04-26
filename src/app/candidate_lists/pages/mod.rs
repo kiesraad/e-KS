@@ -1,4 +1,4 @@
-use axum::Router;
+use axum::{Router, extract::DefaultBodyLimit};
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
@@ -140,7 +140,11 @@ pub fn router() -> Router<AppState> {
         .typed_post(reorder::reorder_candidate_list)
         .typed_get(import::import_export)
         .typed_get(export::export_candidate_list)
-        .typed_post(import::import_candidate_list)
+        .merge(
+            Router::new()
+                .typed_post(import::import_candidate_list)
+                .layer(DefaultBodyLimit::max(import::MAX_IMPORT_SIZE_BYTES)),
+        )
         .typed_get(import::download_import_template)
 }
 
