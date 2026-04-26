@@ -50,6 +50,7 @@ import_errors:
     utf8_with_position: "record {} on line {} contains unreadable text in field {} near character {}. Please save the file as UTF-8 and try again. {}"
   file_too_large: "The selected file is too large. The maximum size is {} MB."
   format_error: "The candidate on line {} could not be imported: {}"
+  invalid_file_type: Only CSV files (.csv) are accepted.
   invalid_headers: Use the same column names as in the exported CSV file.
   missing_file: Please select a CSV file to import.
   parse_error: "The candidate on line {} could not be imported. Please check field '{}': {}"

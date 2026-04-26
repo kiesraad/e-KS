@@ -86,6 +86,19 @@ pub async fn import_candidate_list(
         return Err(AppError::CsrfTokenInvalid);
     }
 
+    if let Some(name) = &import_data.file_name
+        && !has_csv_extension(name)
+    {
+        return Ok(render_import_export(
+            list,
+            vec![trans!(
+                "candidate_list.import_errors.invalid_file_type",
+                context.session.locale
+            )],
+            context,
+        ));
+    }
+
     let Some(csv_data) = import_data.file_data else {
         return Ok(render_import_export(
             list.clone(),
@@ -123,6 +136,14 @@ pub async fn import_candidate_list(
             Ok(render_import_export(list.clone(), messages, context))
         }
     }
+}
+
+/// The upload field's HTML `accept=".csv,text/csv"` hint is browser-side only.
+/// Reject any uploaded file whose name does not end in `.csv` (case-insensitive)
+/// before handing it to the CSV parser.
+fn has_csv_extension(name: &str) -> bool {
+    let lowered = name.to_ascii_lowercase();
+    lowered.ends_with(".csv") && lowered.len() > ".csv".len()
 }
 
 /// Translate a `FileForm` extraction failure into inline error messages, or
@@ -355,6 +376,49 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Import failed"));
         assert!(body.contains("The selected file is too large. The maximum size is 5 MB."));
+        assert_eq!(body.matches("alert alert-warning").count(), 1);
+
+        Ok(())
+    }
+
+    #[test]
+    fn has_csv_extension_only_accepts_csv() {
+        assert!(has_csv_extension("candidates.csv"));
+        assert!(has_csv_extension("CANDIDATES.CSV"));
+        assert!(has_csv_extension("a.b.csv"));
+        assert!(!has_csv_extension(".csv"));
+        assert!(!has_csv_extension("candidates.txt"));
+        assert!(!has_csv_extension("candidates"));
+        assert!(!has_csv_extension("candidates.csv.exe"));
+        assert!(!has_csv_extension(""));
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_rejects_non_csv_extension() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token.clone();
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store,
+            Ok(FileForm {
+                csrf_token,
+                file_name: Some("payload.exe".to_string()),
+                file_data: Some(Bytes::from("anything")),
+            }),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Import failed"));
+        assert!(body.contains("Only CSV files (.csv) are accepted."));
         assert_eq!(body.matches("alert alert-warning").count(), 1);
 
         Ok(())

@@ -50,6 +50,7 @@ import_errors:
     utf8_with_position: "record {} op regel {} bevat onleesbare tekst in veld {} rond teken {}. Sla het bestand op als UTF-8 en probeer het opnieuw. {}"
   file_too_large: "Het geselecteerde bestand is te groot. De maximale grootte is {} MB."
   format_error: "De kandidaat op regel {} kon niet worden geïmporteerd: {}"
+  invalid_file_type: Alleen CSV-bestanden (.csv) worden geaccepteerd.
   invalid_headers: Gebruik dezelfde kolomnamen als in het geëxporteerde CSV-bestand.
   missing_file: Selecteer een CSV-bestand om te importeren.
   parse_error: "De kandidaat op regel {} kon niet worden geïmporteerd. Controleer veld '{}': {}"
