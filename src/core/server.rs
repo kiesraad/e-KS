@@ -57,9 +57,14 @@ mod tls {
         /// Read TLS configuration from `TLS_CERT_PATH` and `TLS_KEY_PATH`.
         /// Both must be set together; if neither is set, returns `Ok(None)`.
         pub fn from_env() -> Result<Option<Self>, AppError> {
-            let cert = std::env::var("TLS_CERT_PATH").ok();
-            let key = std::env::var("TLS_KEY_PATH").ok();
-            match (cert, key) {
+            Self::from_env_with(|name| std::env::var(name).ok())
+        }
+
+        pub(super) fn from_env_with<F>(mut lookup: F) -> Result<Option<Self>, AppError>
+        where
+            F: FnMut(&'static str) -> Option<String>,
+        {
+            match (lookup("TLS_CERT_PATH"), lookup("TLS_KEY_PATH")) {
                 (Some(cert), Some(key)) => Ok(Some(Self {
                     cert_path: PathBuf::from(cert),
                     key_path: PathBuf::from(key),
@@ -147,4 +152,67 @@ async fn shutdown_signal() {
     wait_for_signal().await;
     tracing::info!("Received shutdown signal, no graceful shutdown in development mode.");
     std::process::exit(0);
+}
+
+#[cfg(all(test, feature = "tls"))]
+mod tests {
+    use std::{collections::HashMap, path::PathBuf};
+
+    use tokio::net::TcpListener;
+
+    use super::tls::TlsConfig;
+    use crate::AppError;
+
+    fn lookup_from(
+        map: HashMap<&'static str, &'static str>,
+    ) -> impl FnMut(&'static str) -> Option<String> {
+        move |key| map.get(key).map(|value| (*value).to_string())
+    }
+
+    #[test]
+    fn tls_config_from_env_returns_none_when_unset() {
+        let result = TlsConfig::from_env_with(lookup_from(HashMap::new())).expect("ok");
+        assert!(result.is_none());
+    }
+
+    #[test]
+    fn tls_config_from_env_returns_some_when_both_set() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+        ]);
+        let tls = TlsConfig::from_env_with(lookup_from(map))
+            .expect("ok")
+            .expect("some");
+        assert_eq!(tls.cert_path, PathBuf::from("/etc/tls/cert.pem"));
+        assert_eq!(tls.key_path, PathBuf::from("/etc/tls/key.pem"));
+    }
+
+    #[test]
+    fn tls_config_from_env_errors_when_only_cert_set() {
+        let map = HashMap::from([("TLS_CERT_PATH", "/etc/tls/cert.pem")]);
+        let err = TlsConfig::from_env_with(lookup_from(map)).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn tls_config_from_env_errors_when_only_key_set() {
+        let map = HashMap::from([("TLS_KEY_PATH", "/etc/tls/key.pem")]);
+        let err = TlsConfig::from_env_with(lookup_from(map)).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[tokio::test]
+    async fn serve_tls_errors_for_missing_cert_file() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let tls = TlsConfig {
+            cert_path: PathBuf::from("/nonexistent/cert.pem"),
+            key_path: PathBuf::from("/nonexistent/key.pem"),
+        };
+
+        let err = super::serve_tls(axum::Router::new(), listener, tls)
+            .await
+            .expect_err("missing cert");
+        assert!(matches!(err, AppError::ServerError(_)));
+    }
 }
