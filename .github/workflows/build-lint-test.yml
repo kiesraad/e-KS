@@ -211,7 +211,7 @@ jobs:
 
       - name: Build
         env:
-          CARGO_SET_FEATURES: "memory-serve,fixtures,embed-typst,embed-bag"
+          CARGO_SET_FEATURES: "memory-serve,fixtures,migrations,tls,database,embed-typst,embed-bag"
         run: bin/build
 
       - name: Strip debug symbols

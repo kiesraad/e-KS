@@ -1,3 +1,5 @@
+#[cfg(feature = "tls")]
+use eks::server::TlsConfig;
 use eks::{AppError, AppState, logging, router, server};
 use tokio::net::TcpListener;
 
@@ -15,6 +17,16 @@ async fn main() {
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
+
+    // Resolve optional TLS configuration before binding so misconfiguration fails fast.
+    #[cfg(feature = "tls")]
+    let tls = match TlsConfig::from_env() {
+        Ok(tls) => tls,
+        Err(err) => {
+            tracing::error!("Invalid TLS configuration: {err}");
+            std::process::exit(1);
+        }
+    };
 
     // Create a `TcpListener` using tokio.
     let listener = match TcpListener::bind(&address).await {
@@ -39,14 +51,30 @@ async fn start(address: String) {
     let typst_url = None;
 
     // Run the application
-    if let Err(err) = run(listener, typst_url).await {
+    let result = {
+        #[cfg(feature = "tls")]
+        {
+            run(listener, tls, typst_url).await
+        }
+        #[cfg(not(feature = "tls"))]
+        {
+            run(listener, typst_url).await
+        }
+    };
+    if let Err(err) = result {
         tracing::error!("Application error: {}", err);
         std::process::exit(1);
     }
 }
 
-/// Runs the application with the given TCP listener and optional typst URL. Initializes logging, application state, loads data, and starts the server.
-async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), AppError> {
+/// Runs the application with the given TCP listener, optional TLS config (when the
+/// `tls` feature is enabled), and optional typst URL. Initializes logging,
+/// application state, loads data, and starts the server.
+async fn run(
+    listener: TcpListener,
+    #[cfg(feature = "tls")] tls: Option<TlsConfig>,
+    typst_url: Option<String>,
+) -> Result<(), AppError> {
     // Create application state
     let state = AppState::new(typst_url).await?;
 
@@ -54,6 +82,13 @@ async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), App
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
+
+    #[cfg(feature = "tls")]
+    match tls {
+        Some(tls) => server::serve_tls(router, listener, tls).await?,
+        None => server::serve(router, listener).await?,
+    }
+    #[cfg(not(feature = "tls"))]
     server::serve(router, listener).await?;
 
     Ok(())
@@ -108,6 +143,9 @@ mod tests {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
+            #[cfg(feature = "tls")]
+            run(listener, None, None).await.unwrap();
+            #[cfg(not(feature = "tls"))]
             run(listener, None).await.unwrap();
         });
 

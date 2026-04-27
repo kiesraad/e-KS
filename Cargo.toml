@@ -35,11 +35,14 @@ memory-serve = ["dep:memory-serve"]
 embed-typst = ["dep:typst-webservice"]
 # Embed the bag address lookup library
 embed-bag = ["dep:bag_address_lookup"]
+# Serve over HTTPS via rustls (production deployments).
+tls = ["dep:axum-server"]
 
 [dependencies]
 # tokio universe
 axum = { version = "0.8.9", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12.6", features = ["routing", "typed-routing", "form", "cookie", "typed-header"] }
+axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
 tower-http = { version = "0.6.8", features = ["set-header"] }
