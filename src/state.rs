@@ -30,7 +30,7 @@ pub struct AppState {
 
 impl AppState {
     pub async fn new(typst_url: Option<String>) -> Result<Self, AppError> {
-        let config = Config::from_env(typst_url)?;
+        let config = Config::from_env(typst_url).await?;
 
         Self::new_with_config(config).await
     }
