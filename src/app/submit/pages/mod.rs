@@ -71,9 +71,9 @@ mod tests {
     use serde_json::Value;
     use tokio::{net::TcpListener, task::JoinHandle};
 
-    use crate::Config;
+    use crate::TypstRenderer;
 
-    pub async fn setup_typst_webservice_stub() -> (JoinHandle<()>, Config) {
+    pub async fn setup_typst_webservice_stub() -> (JoinHandle<()>, TypstRenderer) {
         let router = Router::new()
             .route(
                 "/render-pdf/{template}/{file_name}",
@@ -98,14 +98,8 @@ mod tests {
             axum::serve(listener, router).await.unwrap();
         });
 
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str()).to_string();
-        let config = Config {
-            storage_url: "memory:".to_string(),
-            typst_url,
-            id_derivation_key: secrecy::SecretString::from("test-key"),
-            encryption_derivation_key: secrecy::SecretString::from("test-encryption-key"),
-        };
+        let renderer = TypstRenderer::http(format!("http://{addr}"));
 
-        (server, config)
+        (server, renderer)
     }
 }

@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Config, Context,
+    AppError, AppEvent, AppStore, Context, TypstRenderer,
     core::Pdf,
     submit::{H1, pages::DownloadH1Path},
 };
@@ -8,7 +8,7 @@ use axum::{extract::State, response::IntoResponse};
 pub async fn gen_h1(
     path @ DownloadH1Path { list_id, locale }: DownloadH1Path,
     store: AppStore,
-    State(config): State<&Config>,
+    State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     let h1 = H1::new(&store, list_id, &context.election, locale)?;
@@ -21,7 +21,7 @@ pub async fn gen_h1(
         })
         .await?;
 
-    h1.generate(&config.typst_url).await
+    h1.generate(&renderer).await
 }
 
 #[cfg(test)]
@@ -49,7 +49,7 @@ mod tests {
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
-        let config = Config::new_test();
+        let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         let result = gen_h1(
             DownloadH1Path {
@@ -57,7 +57,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await;
@@ -88,7 +88,7 @@ mod tests {
         list.create(&store).await?;
         list.append_candidate(&store, person_id).await?;
 
-        let (server, config) = setup_typst_webservice_stub().await;
+        let (server, renderer) = setup_typst_webservice_stub().await;
 
         let response = gen_h1(
             DownloadH1Path {
@@ -96,7 +96,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await?

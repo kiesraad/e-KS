@@ -4,6 +4,14 @@
 {% block content %}
   {% let max_candidates = "max_candidates"|integer_value %}
   {% let election = "election"|election_value %}
+  <h1>Fouten</h1>
+  <h2>Basisgegevens</h2>
+  <p class="mb-xl">{{ incomplete_items.general_items.0.len() }} fouten</p>
+  <h2>Kandidaten</h2>
+  <p class="mb-xl">{{ incomplete_items.candidate_items.len() }} fouten</p>
+  <h2>Kandidatenlijsten</h2>
+  <p class="mb-xl">{{ incomplete_items.list_items.len() }} fouten</p>
+  <h1>Downloads</h1>
   <section>
     <div class="cards cards-candidate-lists">
       {% for candidate_list in candidate_lists %}
@@ -26,7 +34,7 @@
             </ul>
           {% endif %}
           <div class="card-actions">
-            {% if candidate_list.can_download %}
+            {% if incomplete_items.models_downloadable() %}
               <a href="{{ candidate_list.download_h1_path_nl }}"
                  class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
               <a href="{{ candidate_list.download_h1_path_fry }}"

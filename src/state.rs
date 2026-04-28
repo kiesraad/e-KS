@@ -11,7 +11,7 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 
 use crate::{
     AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, Session, SessionStore,
-    StreamId,
+    StreamId, TypstRenderer,
     auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
     common::{IndexPath, SelectElectionPath},
     store::{EventEncryption, StoreRegistry},
@@ -26,11 +26,12 @@ pub struct AppState {
     /// Active sessions for this application instance (backed by the configured storage).
     pub sessions: SessionStore,
     pub id_deriver: IdDeriver,
+    pub typst_renderer: TypstRenderer,
 }
 
 impl AppState {
-    pub async fn new(typst_url: Option<String>) -> Result<Self, AppError> {
-        let config = Config::from_env(typst_url)?;
+    pub async fn new() -> Result<Self, AppError> {
+        let config = Config::from_env()?;
 
         Self::new_with_config(config).await
     }
@@ -40,12 +41,14 @@ impl AppState {
         let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
         let sessions = SessionStore::from_storage_url(&config.storage_url)?;
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
+        let typst_renderer = build_typst_renderer(&config);
 
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
             sessions,
             id_deriver,
+            typst_renderer,
         })
     }
 
@@ -114,6 +117,7 @@ impl AppState {
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
         let sessions = SessionStore::from_storage_url(&config.storage_url)
             .expect("test SessionStore must initialize");
+        let typst_renderer = build_typst_renderer(&config);
 
         Self {
             store_registry: StoreRegistry::new(config.storage_url.to_string(), encryption)
@@ -122,8 +126,19 @@ impl AppState {
             config: Box::leak(Box::new(config)),
             sessions,
             id_deriver,
+            typst_renderer,
         }
     }
+}
+
+#[cfg(feature = "embed-typst")]
+fn build_typst_renderer(_config: &Config) -> TypstRenderer {
+    TypstRenderer::embedded(crate::utils::embed_typst::pdf_context())
+}
+
+#[cfg(not(feature = "embed-typst"))]
+fn build_typst_renderer(config: &Config) -> TypstRenderer {
+    TypstRenderer::http(config.typst_url.clone())
 }
 
 fn request_locale(headers: &HeaderMap) -> crate::Locale {
