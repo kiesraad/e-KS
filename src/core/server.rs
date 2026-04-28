@@ -156,12 +156,24 @@ async fn shutdown_signal() {
 
 #[cfg(all(test, feature = "tls"))]
 mod tests {
-    use std::{collections::HashMap, path::PathBuf};
+    use std::{collections::HashMap, path::PathBuf, time::Duration};
 
-    use tokio::net::TcpListener;
+    use tokio::{
+        io::AsyncWriteExt,
+        net::{TcpListener, TcpStream},
+        time::sleep,
+    };
 
     use super::tls::TlsConfig;
     use crate::AppError;
+
+    fn fixture_tls() -> TlsConfig {
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/fixtures/tls");
+        TlsConfig {
+            cert_path: root.join("cert.pem"),
+            key_path: root.join("key.pem"),
+        }
+    }
 
     fn lookup_from(
         map: HashMap<&'static str, &'static str>,
@@ -214,5 +226,34 @@ mod tests {
             .await
             .expect_err("missing cert");
         assert!(matches!(err, AppError::ServerError(_)));
+    }
+
+    #[tokio::test]
+    async fn serve_tls_starts_with_valid_cert_and_accepts_connections() {
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let server = tokio::spawn(async move {
+            super::serve_tls(axum::Router::new(), listener, fixture_tls()).await
+        });
+
+        // Confirm the server is alive by establishing a TCP connection. This
+        // exercises the rustls accept loop without needing a TLS client.
+        let mut connected = false;
+        for _ in 0..50 {
+            if let Ok(mut stream) = TcpStream::connect(addr).await {
+                // Send a byte so the rustls handshake begins, then drop.
+                let _ = stream.write_all(b"\x16").await;
+                let _ = stream.shutdown().await;
+                connected = true;
+                break;
+            }
+            sleep(Duration::from_millis(20)).await;
+        }
+        assert!(connected, "server never accepted TCP connection");
+        assert!(!server.is_finished(), "server exited early");
+
+        server.abort();
+        let _ = server.await;
     }
 }

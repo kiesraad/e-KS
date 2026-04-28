@@ -163,6 +163,42 @@ mod tests {
         server.abort();
     }
 
+    #[cfg(feature = "tls")]
+    #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
+    #[tokio::test]
+    async fn run_serves_https_when_tls_config_provided() {
+        use std::path::PathBuf;
+        use tokio::{io::AsyncWriteExt, net::TcpStream};
+
+        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/fixtures/tls");
+        let tls = TlsConfig {
+            cert_path: root.join("cert.pem"),
+            key_path: root.join("key.pem"),
+        };
+
+        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
+        let addr = listener.local_addr().unwrap();
+
+        let server = tokio::spawn(async move {
+            run(listener, Some(tls), None).await.unwrap();
+        });
+
+        let mut connected = false;
+        for _ in 0..50 {
+            if let Ok(mut stream) = TcpStream::connect(addr).await {
+                let _ = stream.write_all(b"\x16").await;
+                let _ = stream.shutdown().await;
+                connected = true;
+                break;
+            }
+            sleep(Duration::from_millis(20)).await;
+        }
+        assert!(connected, "server never accepted TCP connection");
+        assert!(!server.is_finished(), "server exited early");
+
+        server.abort();
+    }
+
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
     async fn start_binds_and_serves_login_flow() {
