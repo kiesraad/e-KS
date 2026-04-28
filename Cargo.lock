@@ -4535,14 +4535,11 @@ version = "0.7.0"
 source = "git+https://github.com/tweedegolf/typst-webservice.git?tag=0.7.0#e7bf1c5d969986a100855d6abd4eaa736e608e02"
 dependencies = [
  "async_zip",
- "axum",
- "axum-extra",
  "chrono",
  "serde",
  "serde_json",
  "thiserror",
  "tokio",
- "tokio-util",
  "tracing",
  "tracing-subscriber",
  "typst",
