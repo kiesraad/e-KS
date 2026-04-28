@@ -2,8 +2,8 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { Candidate } from "./models/candidate";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
+import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {
@@ -59,12 +59,16 @@ test.describe("add candidate list", async () => {
       "Limburg",
       "Overijssel",
     ]);
-    await expect(page.getByRole("heading", { name: "Kandidatenlijst" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Kandidatenlijst" }),
+    ).toBeVisible();
     const candidatelistURL = page.url();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeList();
     await page.goto(candidatelistURL);
-    await expect(page.getByRole("heading", { name: "Not found" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", { name: "Not found" }),
+    ).toBeVisible();
   });
 
   test("edit electoral districts", async ({ login: page }) => {
@@ -80,12 +84,11 @@ test.describe("add candidate list", async () => {
     await expect(page.locator("//li/span[text()='Groningen']")).toBeVisible();
     await expect(page.locator("//li/span[text()='Overijssel']")).toBeVisible();
     const manageCandidateListPage = new ManageCandidateListPage(page);
-    await manageCandidateListPage.removeDistricts([
-      "Zeeland",
-      "Overijssel",
-    ]);
+    await manageCandidateListPage.removeDistricts(["Zeeland", "Overijssel"]);
     await expect(page.locator("//li/span[text()='Zeeland']")).not.toBeVisible();
     await expect(page.locator("//li/span[text()='Groningen']")).toBeVisible();
-    await expect(page.locator("//li/span[text()='Overijssel']")).not.toBeVisible();
+    await expect(
+      page.locator("//li/span[text()='Overijssel']"),
+    ).not.toBeVisible();
   });
 });

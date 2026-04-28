@@ -1,30 +1,62 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
+import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
+import { OverviewPage } from "./pages/overviewPage.ts";
 import { SwitchElectionPage } from "./pages/switchElectionPage.ts";
 
+test.describe("switch election", () => {
+  test.beforeEach(
+    "navigate to switch election page",
+    async ({ login: page }) => {
+      await page.goto(`/dev/login?fixtures=true`);
+      await page.goto("/switch-election");
+      const switchElectionPage = new SwitchElectionPage(page);
+      await expect(switchElectionPage.headerSwitchElection).toBeVisible();
+      expect(switchElectionPage.selectedElection("Eerste Kamerverkiezing der"));
+    },
+  );
 
-test.describe("switch election", async () => {
   test("provincial council", async ({ login: page }) => {
-    await page.goto(`/dev/login?fixtures=true`);
-    await page.goto("/switch-election");
     const switchElectionPage = new SwitchElectionPage(page);
-    await expect(switchElectionPage.headerSwitchElection).toBeVisible();
-    await expect(switchElectionPage.selectedElection("Eerste Kamerverkiezing der")).toBeVisible();
-    await switchElectionPage.dropdownElections.selectOption("Provinciale Statenverkiezingen 2027");
+    await switchElectionPage.dropdownElections.selectOption(
+      "Provinciale Statenverkiezingen 2027",
+    );
     await switchElectionPage.dropdownProvinces.selectOption("Limburg");
     await switchElectionPage.buttonSwitch.click();
+
+    const overviewPage = new OverviewPage(page);
+    await overviewPage.selectedElection(
+      "Provinciale Statenverkiezingen 2027 - Limburg",
+    );
+    await overviewPage.linkCandidateList.click();
+
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await new EditListDetailsPage(page).addDistricts(["Venlo"]);
+
+    await expect(page.locator("//li/span[text()='Venlo']")).toBeVisible();
   });
 
   test("water authority", async ({ login: page }) => {
-    await page.goto(`/dev/login?fixtures=true`);
-    await page.goto("/switch-election");
     const switchElectionPage = new SwitchElectionPage(page);
-    await expect(switchElectionPage.headerSwitchElection).toBeVisible();
-    await switchElectionPage.dropdownElections.selectOption("Waterschapsverkiezingen 2027");
-    await switchElectionPage.dropdownWaterAuthorities.selectOption("Hunze en Aa's");
+    await switchElectionPage.dropdownElections.selectOption(
+      "Waterschapsverkiezingen 2027",
+    );
+    await switchElectionPage.dropdownWaterAuthorities.selectOption(
+      "Hunze en Aa's",
+    );
     await switchElectionPage.buttonSwitch.click();
-    await page.goto("/switch-election");
-    await switchElectionPage.verifyElectionExists("Waterschapsverkiezingen 2027", "Hunze en Aa's");
+
+    const overviewPage = new OverviewPage(page);
+    await overviewPage.selectedElection(
+      "Waterschapsverkiezingen 2027 - Hunze en Aa's",
+    );
+    await overviewPage.linkCandidateList.click();
+
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await expect(new ManageCandidateListPage(page).buttonCSV).toBeVisible();
   });
 });
-

@@ -36,5 +36,4 @@ export class EditListDetailsPage {
     await this.buttonRemoveList.click();
     await this.buttonConfirmRemoveList.click();
   }
-  
 }

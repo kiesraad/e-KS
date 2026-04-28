@@ -2,8 +2,8 @@ import { stat } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
+import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
 
 test.describe("download PDF", async () => {

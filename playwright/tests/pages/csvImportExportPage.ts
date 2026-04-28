@@ -1,5 +1,5 @@
-import type { Locator, Page } from "@playwright/test";
 import path from "node:path";
+import type { Locator, Page } from "@playwright/test";
 
 export class CsvImportExportPage {
   readonly buttonDownload: Locator;
@@ -36,10 +36,10 @@ export class CsvImportExportPage {
 
   async uploadCsvFile(filePath: string) {
     await this.buttonUpload.click();
-        const [fileChooser] = await Promise.all([
-          this.page.waitForEvent("filechooser"),
-          this.buttonContinue.click(),
-        ]);
-        await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
-      }
+    const [fileChooser] = await Promise.all([
+      this.page.waitForEvent("filechooser"),
+      this.buttonContinue.click(),
+    ]);
+    await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
+  }
 }

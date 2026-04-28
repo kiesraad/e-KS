@@ -6,14 +6,12 @@ import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 
 test.describe("import and export candidates with csv file", () => {
   test.beforeEach("navigate to csv page", async ({ login: page }) => {
-   await page.goto("/candidate-lists");
+    await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).linkCandidateList
       .first()
       .click();
     await new ManageCandidateListPage(page).buttonCSV.click();
-    
   });
- 
 
   test("import successful", async ({ login: page }) => {
     const csvImportExport = new CsvImportExportPage(page);
