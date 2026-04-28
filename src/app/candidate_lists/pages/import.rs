@@ -26,7 +26,6 @@ const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
 struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,
-    max_file_size_mb: String,
     form: FormData<EmptyForm>,
 }
 
@@ -39,7 +38,6 @@ fn render_import_export(
         ImportExportTemplate {
             list,
             import_errors,
-            max_file_size_mb: MAX_IMPORT_SIZE_MB.to_string(),
             form: FormData::new(&context.session.csrf_token),
         },
         context,
@@ -265,7 +263,6 @@ mod tests {
         assert!(body.contains("data-import-file-trigger"));
         assert!(body.contains("formenctype=\"multipart/form-data\""));
         assert!(!body.contains("one-click-upload"));
-        assert!(body.contains("Maximum file size: 5 MB."));
 
         Ok(())
     }

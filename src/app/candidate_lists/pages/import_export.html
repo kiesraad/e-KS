@@ -11,7 +11,6 @@
                id="import_file"
                accept=".csv,text/csv"
                required />
-        <span class="hint">{{ "candidate_list.import_export.max_file_size"|trans(max_file_size_mb.as_str() ) }}</span>
       </p>
       {% if !import_errors.is_empty() %}
         <h4 class="warning-text">{{ "candidate_list.import_export.import_failed"|trans }}</h4>
@@ -19,8 +18,13 @@
       {% endif %}
       <p class="mb-xl">
         {% if list.candidates.len() > 0 %}
-          {# open a modal with overwrite confirmation #}
-          <button class="button icon-upload open-modal" type="button">{{ "candidate_list.actions.import_csv"|trans }}</button>
+          {# open a modal with overwrite confirmation; without JS the button submits directly #}
+          <noscript>
+            <div class="alert alert-warning mb-md">{{ "candidate_list.import_warning"|trans }}</div>
+          </noscript>
+          <button class="button icon-upload open-modal"
+                  type="submit"
+                  formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
           <dialog class="modal">
             <button class="close-modal" aria-label="{{ "action.close"|trans }}">
               <span>{{ "action.close"|trans }}</span>
