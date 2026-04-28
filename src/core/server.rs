@@ -6,17 +6,24 @@
 use axum::Router;
 use tokio::{net::TcpListener, signal};
 
-use crate::AppError;
+use crate::{AppError, Config};
 
-#[cfg(feature = "tls")]
-pub use tls::TlsConfig;
+/// Start the HTTP(S) server. With the `tls` feature, dispatches to the
+/// rustls-backed server when `config.tls` is `Some`; otherwise serves plain
+/// HTTP via `axum::serve`.
+pub async fn serve(router: Router, listener: TcpListener, config: &Config) -> Result<(), AppError> {
+    #[cfg(feature = "tls")]
+    if let Some(tls_config) = config.tls.as_ref() {
+        return tls::serve(router, listener, tls_config).await;
+    }
 
-pub async fn serve(router: Router, listener: TcpListener) -> Result<(), AppError> {
+    #[cfg(not(feature = "tls"))]
+    let _ = config;
+
     let addr = listener.local_addr().map_err(AppError::ServerError)?;
 
     tracing::info!("Starting server on http://{addr}");
 
-    // Run the server with graceful shutdown
     axum::serve(listener, router)
         .with_graceful_shutdown(shutdown_signal())
         .await
@@ -26,67 +33,43 @@ pub async fn serve(router: Router, listener: TcpListener) -> Result<(), AppError
 }
 
 #[cfg(feature = "tls")]
-pub async fn serve_tls(
-    router: Router,
-    listener: TcpListener,
-    tls: TlsConfig,
-) -> Result<(), AppError> {
-    tls::serve(router, listener, tls).await
-}
-
-#[cfg(feature = "tls")]
 mod tls {
     #[cfg(not(debug_assertions))]
     use std::time::Duration;
-    use std::{net::SocketAddr, path::PathBuf};
+    use std::{net::SocketAddr, sync::Arc};
 
-    use axum::Router;
+    use axum::{
+        Router,
+        http::{HeaderValue, header},
+    };
     use axum_server::{Handle, tls_rustls::RustlsConfig};
+    use rustls::{
+        ServerConfig,
+        crypto::aws_lc_rs::{self, cipher_suite, kx_group},
+        pki_types::{CertificateDer, PrivateKeyDer, pem::PemObject},
+    };
     use tokio::net::TcpListener;
+    use tower_http::set_header::SetResponseHeaderLayer;
 
-    use crate::AppError;
-
-    /// TLS configuration for serving HTTPS via rustls.
-    #[derive(Debug, Clone)]
-    pub struct TlsConfig {
-        pub cert_path: PathBuf,
-        pub key_path: PathBuf,
-    }
-
-    impl TlsConfig {
-        /// Read TLS configuration from `TLS_CERT_PATH` and `TLS_KEY_PATH`.
-        /// Both must be set together; if neither is set, returns `Ok(None)`.
-        pub fn from_env() -> Result<Option<Self>, AppError> {
-            Self::from_env_with(|name| std::env::var(name).ok())
-        }
-
-        pub(super) fn from_env_with<F>(mut lookup: F) -> Result<Option<Self>, AppError>
-        where
-            F: FnMut(&'static str) -> Option<String>,
-        {
-            match (lookup("TLS_CERT_PATH"), lookup("TLS_KEY_PATH")) {
-                (Some(cert), Some(key)) => Ok(Some(Self {
-                    cert_path: PathBuf::from(cert),
-                    key_path: PathBuf::from(key),
-                })),
-                (None, None) => Ok(None),
-                _ => Err(AppError::ConfigLoadError(
-                    "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
-                )),
-            }
-        }
-    }
+    use crate::{AppError, TlsConfig};
 
     pub async fn serve(
         router: Router,
         listener: TcpListener,
-        tls: TlsConfig,
+        tls: &TlsConfig,
     ) -> Result<(), AppError> {
         let addr = listener.local_addr().map_err(AppError::ServerError)?;
 
-        let config = RustlsConfig::from_pem_file(&tls.cert_path, &tls.key_path)
-            .await
-            .map_err(AppError::ServerError)?;
+        let server_config = build_server_config(tls).await?;
+        let config = RustlsConfig::from_config(Arc::new(server_config));
+
+        // HSTS: served only over TLS, so the header is meaningful here.
+        // 1 year + includeSubDomains matches NCSC HTTPS guidance; preload is
+        // intentionally omitted (requires explicit registration).
+        let router = router.layer(SetResponseHeaderLayer::if_not_present(
+            header::STRICT_TRANSPORT_SECURITY,
+            HeaderValue::from_static("max-age=31536000; includeSubDomains"),
+        ));
 
         tracing::info!("Starting server on https://{addr}");
 
@@ -103,6 +86,46 @@ mod tls {
             .map_err(AppError::ServerError)?;
 
         Ok(())
+    }
+
+    /// Builds a rustls `ServerConfig` aligned with NCSC TLS 2025-05:
+    /// TLS 1.3 only ("Goed"), AEAD cipher suites, post-quantum hybrid key
+    /// exchange (X25519MLKEM768) preferred.
+    async fn build_server_config(tls: &TlsConfig) -> Result<ServerConfig, AppError> {
+        let cert_bytes = tokio::fs::read(&tls.cert_path)
+            .await
+            .map_err(AppError::ServerError)?;
+        let key_bytes = tokio::fs::read(&tls.key_path)
+            .await
+            .map_err(AppError::ServerError)?;
+
+        let cert_chain: Vec<CertificateDer<'static>> = CertificateDer::pem_slice_iter(&cert_bytes)
+            .collect::<Result<_, _>>()
+            .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS cert PEM: {e}")))?;
+        let key = PrivateKeyDer::from_pem_slice(&key_bytes)
+            .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS key PEM: {e}")))?;
+
+        let mut provider = aws_lc_rs::default_provider();
+        // TLS 1.3 AEAD cipher suites: Goed first, Voldoende last.
+        provider.cipher_suites = vec![
+            cipher_suite::TLS13_AES_256_GCM_SHA384,
+            cipher_suite::TLS13_CHACHA20_POLY1305_SHA256,
+            cipher_suite::TLS13_AES_128_GCM_SHA256,
+        ];
+        // X25519MLKEM768 is "Goed" (post-quantum hybrid); the rest are "Voldoende".
+        provider.kx_groups = vec![
+            kx_group::X25519MLKEM768,
+            kx_group::X25519,
+            kx_group::SECP256R1,
+            kx_group::SECP384R1,
+        ];
+
+        ServerConfig::builder_with_provider(Arc::new(provider))
+            .with_protocol_versions(&[&rustls::version::TLS13])
+            .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS protocol versions: {e}")))?
+            .with_no_client_auth()
+            .with_single_cert(cert_chain, key)
+            .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS cert/key: {e}")))
     }
 
     async fn graceful_shutdown_handle(handle: Handle<SocketAddr>) {
@@ -156,16 +179,11 @@ async fn shutdown_signal() {
 
 #[cfg(all(test, feature = "tls"))]
 mod tests {
-    use std::{collections::HashMap, path::PathBuf, time::Duration};
+    use std::{path::PathBuf, time::Duration};
 
-    use tokio::{
-        io::AsyncWriteExt,
-        net::{TcpListener, TcpStream},
-        time::sleep,
-    };
+    use tokio::{net::TcpListener, time::sleep};
 
-    use super::tls::TlsConfig;
-    use crate::AppError;
+    use crate::{Config, TlsConfig};
 
     fn fixture_tls() -> TlsConfig {
         let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/fixtures/tls");
@@ -175,82 +193,52 @@ mod tests {
         }
     }
 
-    fn lookup_from(
-        map: HashMap<&'static str, &'static str>,
-    ) -> impl FnMut(&'static str) -> Option<String> {
-        move |key| map.get(key).map(|value| (*value).to_string())
-    }
-
-    #[test]
-    fn tls_config_from_env_returns_none_when_unset() {
-        let result = TlsConfig::from_env_with(lookup_from(HashMap::new())).expect("ok");
-        assert!(result.is_none());
-    }
-
-    #[test]
-    fn tls_config_from_env_returns_some_when_both_set() {
-        let map = HashMap::from([
-            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
-            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
-        ]);
-        let tls = TlsConfig::from_env_with(lookup_from(map))
-            .expect("ok")
-            .expect("some");
-        assert_eq!(tls.cert_path, PathBuf::from("/etc/tls/cert.pem"));
-        assert_eq!(tls.key_path, PathBuf::from("/etc/tls/key.pem"));
-    }
-
-    #[test]
-    fn tls_config_from_env_errors_when_only_cert_set() {
-        let map = HashMap::from([("TLS_CERT_PATH", "/etc/tls/cert.pem")]);
-        let err = TlsConfig::from_env_with(lookup_from(map)).expect_err("err");
-        assert!(matches!(err, AppError::ConfigLoadError(_)));
-    }
-
-    #[test]
-    fn tls_config_from_env_errors_when_only_key_set() {
-        let map = HashMap::from([("TLS_KEY_PATH", "/etc/tls/key.pem")]);
-        let err = TlsConfig::from_env_with(lookup_from(map)).expect_err("err");
-        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    fn config_with_tls(tls: TlsConfig) -> Config {
+        let mut config = Config::new_test();
+        config.tls = Some(tls);
+        config
     }
 
     #[tokio::test]
-    async fn serve_tls_errors_for_missing_cert_file() {
+    async fn serve_errors_for_missing_cert_file() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let tls = TlsConfig {
+        let config = config_with_tls(TlsConfig {
             cert_path: PathBuf::from("/nonexistent/cert.pem"),
             key_path: PathBuf::from("/nonexistent/key.pem"),
-        };
+        });
 
-        let err = super::serve_tls(axum::Router::new(), listener, tls)
+        let err = super::serve(axum::Router::new(), listener, &config)
             .await
             .expect_err("missing cert");
-        assert!(matches!(err, AppError::ServerError(_)));
+        assert!(matches!(err, crate::AppError::ServerError(_)));
     }
 
     #[tokio::test]
-    async fn serve_tls_starts_with_valid_cert_and_accepts_connections() {
+    async fn serve_starts_with_valid_cert_and_accepts_https_connections() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let config = config_with_tls(fixture_tls());
 
-        let server = tokio::spawn(async move {
-            super::serve_tls(axum::Router::new(), listener, fixture_tls()).await
-        });
+        let server =
+            tokio::spawn(async move { super::serve(axum::Router::new(), listener, &config).await });
 
-        // Confirm the server is alive by establishing a TCP connection. This
-        // exercises the rustls accept loop without needing a TLS client.
-        let mut connected = false;
+        // Hit the server over HTTPS — getting any response proves the server
+        // is speaking TLS, not merely accepting TCP. The fixture cert is
+        // self-signed, so cert validation is disabled.
+        let client = reqwest::Client::builder()
+            .danger_accept_invalid_certs(true)
+            .build()
+            .unwrap();
+
+        let mut https_ok = false;
         for _ in 0..50 {
-            if let Ok(mut stream) = TcpStream::connect(addr).await {
-                // Send a byte so the rustls handshake begins, then drop.
-                let _ = stream.write_all(b"\x16").await;
-                let _ = stream.shutdown().await;
-                connected = true;
+            if client.get(format!("https://{addr}/")).send().await.is_ok() {
+                https_ok = true;
                 break;
             }
             sleep(Duration::from_millis(20)).await;
         }
-        assert!(connected, "server never accepted TCP connection");
+        assert!(https_ok, "HTTPS request to server never succeeded");
         assert!(!server.is_finished(), "server exited early");
 
         server.abort();

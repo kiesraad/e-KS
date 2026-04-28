@@ -1,6 +1,4 @@
-#[cfg(feature = "tls")]
-use eks::server::TlsConfig;
-use eks::{AppError, AppState, logging, router, server};
+use eks::{AppError, AppState, Config, logging, router, server};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -20,12 +18,11 @@ async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
 
-    // Resolve optional TLS configuration before binding so misconfiguration fails fast.
-    #[cfg(feature = "tls")]
-    let tls = match TlsConfig::from_env() {
-        Ok(tls) => tls,
+    // Load and validate configuration before binding so misconfiguration fails fast.
+    let config = match Config::from_env() {
+        Ok(config) => config,
         Err(err) => {
-            tracing::error!("Invalid TLS configuration: {err}");
+            tracing::error!("Invalid configuration: {err}");
             std::process::exit(1);
         }
     };
@@ -40,44 +37,23 @@ async fn start(address: String) {
     };
 
     // Run the application
-    let result = {
-        #[cfg(feature = "tls")]
-        {
-            run(listener, tls).await
-        }
-        #[cfg(not(feature = "tls"))]
-        {
-            run(listener).await
-        }
-    };
-    if let Err(err) = result {
+    if let Err(err) = run(listener, config).await {
         tracing::error!("Application error: {}", err);
         std::process::exit(1);
     }
 }
 
-/// Runs the application with the given TCP listener and optional TLS config (when the
-/// `tls` feature is enabled). Initializes logging, application state, loads data, and
-/// starts the server.
-async fn run(
-    listener: TcpListener,
-    #[cfg(feature = "tls")] tls: Option<TlsConfig>,
-) -> Result<(), AppError> {
+/// Runs the application with the given TCP listener and resolved configuration.
+/// Initializes application state, builds the router, and starts the server.
+async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
     // Create application state
-    let state = AppState::new().await?;
+    let state = AppState::new_with_config(config).await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
-
-    #[cfg(feature = "tls")]
-    match tls {
-        Some(tls) => server::serve_tls(router, listener, tls).await?,
-        None => server::serve(router, listener).await?,
-    }
-    #[cfg(not(feature = "tls"))]
-    server::serve(router, listener).await?;
+    server::serve(router, listener, state.config).await?;
 
     Ok(())
 }
@@ -130,11 +106,9 @@ mod tests {
     async fn serves_homepage_and_not_found() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let config = Config::from_env().expect("config");
         let server = tokio::spawn(async move {
-            #[cfg(feature = "tls")]
-            run(listener, None).await.unwrap();
-            #[cfg(not(feature = "tls"))]
-            run(listener).await.unwrap();
+            run(listener, config).await.unwrap();
         });
 
         let base = format!("http://{addr}");
@@ -147,42 +121,6 @@ mod tests {
         let (status, body) = fetch_with_cookie(&format!("{base}/missing"), &cookie).await;
         assert_eq!(status, StatusCode::NOT_FOUND);
         assert!(body.contains("Pagina niet gevonden"));
-
-        server.abort();
-    }
-
-    #[cfg(feature = "tls")]
-    #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
-    #[tokio::test]
-    async fn run_serves_https_when_tls_config_provided() {
-        use std::path::PathBuf;
-        use tokio::{io::AsyncWriteExt, net::TcpStream};
-
-        let root = PathBuf::from(env!("CARGO_MANIFEST_DIR")).join("src/fixtures/tls");
-        let tls = TlsConfig {
-            cert_path: root.join("cert.pem"),
-            key_path: root.join("key.pem"),
-        };
-
-        let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
-        let addr = listener.local_addr().unwrap();
-
-        let server = tokio::spawn(async move {
-            run(listener, Some(tls)).await.unwrap();
-        });
-
-        let mut connected = false;
-        for _ in 0..50 {
-            if let Ok(mut stream) = TcpStream::connect(addr).await {
-                let _ = stream.write_all(b"\x16").await;
-                let _ = stream.shutdown().await;
-                connected = true;
-                break;
-            }
-            sleep(Duration::from_millis(20)).await;
-        }
-        assert!(connected, "server never accepted TCP connection");
-        assert!(!server.is_finished(), "server exited early");
 
         server.abort();
     }
