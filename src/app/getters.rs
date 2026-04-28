@@ -55,7 +55,7 @@ impl AppStore {
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        data.substitute_submitters.values().cloned().collect()
+        data.substitute_submitters.clone()
     }
 
     pub fn get_person_count(&self) -> usize {
@@ -112,7 +112,11 @@ impl AppStore {
     ) -> Result<ListSubmitter, AppError> {
         let data = self.data.read();
 
-        match data.substitute_submitters.get(&substitute_submitter_id) {
+        match data
+            .substitute_submitters
+            .iter()
+            .find(|submitter| submitter.id == substitute_submitter_id)
+        {
             Some(submitter) => Ok(submitter.clone()),
             None => Err(AppError::GenericNotFound),
         }
