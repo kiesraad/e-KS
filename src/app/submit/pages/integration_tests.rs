@@ -4,8 +4,6 @@ use axum::{
     http::{Request, StatusCode, header},
 };
 use http_body_util::BodyExt;
-use reqwest::Client;
-use tokio::time::{Duration, sleep};
 use tower::ServiceExt;
 use tracing_test::traced_test;
 
@@ -23,27 +21,8 @@ use crate::{
 
 use super::{DownloadH1Path, DownloadH4Path, DownloadH9Path, DownloadH31Path};
 
-async fn typst_url() -> String {
-    let url = crate::utils::embed_typst::start()
-        .await
-        .expect("start embedded typst server");
-    let client = Client::new();
-
-    for _ in 0..20 {
-        if let Ok(response) = client.get(&url).send().await
-            && response.status() == StatusCode::OK
-        {
-            return url;
-        }
-        sleep(Duration::from_millis(25)).await;
-    }
-
-    panic!("embedded typst server did not return 200 OK on /");
-}
-
 async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
-    let mut config = Config::new_test();
-    config.typst_url = typst_url().await;
+    let config = Config::new_test();
 
     let state = AppState::new_with_config(config).await?;
     let stream_id = StreamId::new();

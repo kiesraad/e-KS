@@ -13,7 +13,9 @@ async fn main() {
     start(address).await;
 }
 
-/// Starts the server on the given address. If the "embed-typst" feature is enabled, also starts the embedded typst webservice.
+/// Starts the server on the given address. If the "embed-typst" feature is
+/// enabled, PDFs are rendered in-process using the embedded typst-webservice
+/// library; otherwise an external typst-webservice is contacted over HTTP.
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
@@ -37,28 +39,15 @@ async fn start(address: String) {
         }
     };
 
-    // Start embedded typst webservice if the feature is enabled
-    #[cfg(feature = "embed-typst")]
-    let typst_url = match eks::utils::embed_typst::start().await {
-        Ok(url) => Some(url),
-        Err(err) => {
-            tracing::error!("Failed to start typst webservice: {err}");
-            std::process::exit(1);
-        }
-    };
-
-    #[cfg(not(feature = "embed-typst"))]
-    let typst_url = None;
-
     // Run the application
     let result = {
         #[cfg(feature = "tls")]
         {
-            run(listener, tls, typst_url).await
+            run(listener, tls).await
         }
         #[cfg(not(feature = "tls"))]
         {
-            run(listener, typst_url).await
+            run(listener).await
         }
     };
     if let Err(err) = result {
@@ -67,16 +56,15 @@ async fn start(address: String) {
     }
 }
 
-/// Runs the application with the given TCP listener, optional TLS config (when the
-/// `tls` feature is enabled), and optional typst URL. Initializes logging,
-/// application state, loads data, and starts the server.
+/// Runs the application with the given TCP listener and optional TLS config (when the
+/// `tls` feature is enabled). Initializes logging, application state, loads data, and
+/// starts the server.
 async fn run(
     listener: TcpListener,
     #[cfg(feature = "tls")] tls: Option<TlsConfig>,
-    typst_url: Option<String>,
 ) -> Result<(), AppError> {
     // Create application state
-    let state = AppState::new(typst_url).await?;
+    let state = AppState::new().await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
 
@@ -144,9 +132,9 @@ mod tests {
         let addr = listener.local_addr().unwrap();
         let server = tokio::spawn(async move {
             #[cfg(feature = "tls")]
-            run(listener, None, None).await.unwrap();
-            #[cfg(not(feature = "tls"))]
             run(listener, None).await.unwrap();
+            #[cfg(not(feature = "tls"))]
+            run(listener).await.unwrap();
         });
 
         let base = format!("http://{addr}");
@@ -180,7 +168,7 @@ mod tests {
         let addr = listener.local_addr().unwrap();
 
         let server = tokio::spawn(async move {
-            run(listener, Some(tls), None).await.unwrap();
+            run(listener, Some(tls)).await.unwrap();
         });
 
         let mut connected = false;

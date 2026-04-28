@@ -5,6 +5,7 @@ mod locale;
 mod model_locale;
 mod pdf;
 mod templates;
+mod typst_renderer;
 
 pub mod constants;
 pub mod logging;
@@ -18,3 +19,4 @@ pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
 pub use pdf::{Pdf, PdfZip};
 pub use templates::HtmlTemplate;
+pub use typst_renderer::TypstRenderer;
