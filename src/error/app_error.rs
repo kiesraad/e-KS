@@ -25,6 +25,8 @@ pub enum AppError {
     UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
+    #[cfg(feature = "embed-typst")]
+    TypstError(typst_webservice::AppError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
 
@@ -60,6 +62,8 @@ impl Display for AppError {
             AppError::CsrfTokenInvalid => write!(f, "CSRF token is invalid"),
             #[cfg(feature = "database")]
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
+            #[cfg(feature = "embed-typst")]
+            AppError::TypstError(err) => write!(f, "Typst error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
@@ -90,6 +94,13 @@ impl std::error::Error for AppError {}
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
         AppError::DatabaseError(err)
+    }
+}
+
+#[cfg(feature = "embed-typst")]
+impl From<typst_webservice::AppError> for AppError {
+    fn from(err: typst_webservice::AppError) -> Self {
+        AppError::TypstError(err)
     }
 }
 
