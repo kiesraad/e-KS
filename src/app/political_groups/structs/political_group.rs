@@ -15,16 +15,12 @@ pub struct PoliticalGroup {
 impl Completable for PoliticalGroup {
     fn incomplete_items(&self) -> Vec<IncompleteItem> {
         [
-            self.legal_name
-                .clone()
-                .unwrap_or_default()
-                .incomplete_items(),
-            self.display_name
-                .clone()
-                .unwrap_or_default()
-                .incomplete_items(),
+            self.legal_name.incomplete_items(),
+            self.display_name.incomplete_items(),
         ]
-        .concat()
+        .into_iter()
+        .flatten()
+        .collect()
     }
 }
 

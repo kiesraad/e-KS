@@ -1,6 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
+    OptionAsStrExt,
     form::{ValidationError, validate_length, validate_teletex_chars},
     submit::{Completable, IncompleteItem},
     transparent_string,
@@ -28,18 +29,12 @@ impl FromStr for ConstrainedString {
     }
 }
 
-impl ConstrainedString {
-    pub fn create_empty() -> Self {
-        Self("".to_string())
-    }
-}
-
-impl Completable for LegalName {
+impl Completable for Option<LegalName> {
     fn incomplete_items(&self) -> Vec<IncompleteItem> {
-        if self.is_empty() {
+        if self.is_empty_or_none() {
             vec![IncompleteItem::NoLegalName]
         } else {
-            vec![]
+            Vec::new()
         }
     }
 }

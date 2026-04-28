@@ -19,20 +19,14 @@ impl IncompleteItems {
     }
 
     pub fn models_downloadable(&self) -> bool {
-        ![
-            self.general_items.0.clone(),
-            self.candidate_items
-                .iter()
-                .flat_map(|ci| ci.items.clone())
-                .collect(),
-            self.list_items
-                .iter()
-                .flat_map(|li| li.items.clone())
-                .collect(),
-        ]
-        .concat()
-        .iter()
-        .any(|i| i.severity() == Severity::Error)
+        let candidate_iter = self.candidate_items.iter().flat_map(|ci| &ci.items);
+        let list_iter = self.list_items.iter().flat_map(|ci| &ci.items);
+        let general_iter = self.general_items.0.iter();
+
+        !candidate_iter
+            .chain(list_iter)
+            .chain(general_iter)
+            .any(|ii| ii.severity() == Severity::Error)
     }
 }
 
