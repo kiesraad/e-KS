@@ -20,17 +20,9 @@ fn main() {
                 let tokio_listener = tokio::net::TcpListener::from_std(std_listener)
                     .map_err(eks::AppError::ServerError)?;
 
-                // Start embedded Typst server
-                let typst_url = eks::utils::embed_typst::start()
-                    .await
-                    .map_err(eks::AppError::ServerError)?;
-
-                // Create application state
-                let state = eks::AppState::new_with_config(eks::Config {
-                    storage_url: "memory://".to_string(),
-                    typst_url,
-                })
-                .await?;
+                // Create application state. PDFs are rendered in-process via
+                // the embedded Typst library (feature `embed-typst`).
+                let state = eks::AppState::new().await?;
 
                 // Start the server
                 let router = eks::router::create(state.clone()).with_state(state);

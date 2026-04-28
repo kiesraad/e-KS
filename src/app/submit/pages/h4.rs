@@ -1,7 +1,7 @@
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppEvent, AppStore, Config, Context,
+    AppError, AppEvent, AppStore, Context, TypstRenderer,
     core::Pdf,
     submit::{pages::DownloadH4Path, structs::h4::H4},
 };
@@ -9,7 +9,7 @@ use crate::{
 pub async fn gen_h4(
     path @ DownloadH4Path { list_id, locale }: DownloadH4Path,
     store: AppStore,
-    State(config): State<&Config>,
+    State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     let h4 = H4::new(&store, list_id, &context.election, locale)?;
@@ -22,7 +22,7 @@ pub async fn gen_h4(
         })
         .await?;
 
-    h4.generate(&config.typst_url).await
+    h4.generate(&renderer).await
 }
 
 #[cfg(test)]
@@ -51,7 +51,7 @@ mod tests {
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
-        let config = Config::new_test();
+        let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         let result = gen_h4(
             DownloadH4Path {
@@ -59,7 +59,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await;
@@ -85,7 +85,7 @@ mod tests {
         let list = sample_candidate_list(list_id);
         list.create(&store).await?;
 
-        let (server, config) = setup_typst_webservice_stub().await;
+        let (server, renderer) = setup_typst_webservice_stub().await;
 
         let response = gen_h4(
             DownloadH4Path {
@@ -93,7 +93,7 @@ mod tests {
                 locale: ModelLocale::Nl,
             },
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await?
