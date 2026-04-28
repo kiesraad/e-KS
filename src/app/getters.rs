@@ -132,3 +132,23 @@ impl AppStore {
         data.events.clone()
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::{AppStore, list_submitters::ListSubmitterId, test_utils::sample_list_submitter};
+
+    #[tokio::test]
+    async fn substitute_submitters_remain_in_order() {
+        let store = AppStore::new_for_test();
+
+        for i in 0..100 {
+            let mut sub_submitter = sample_list_submitter(ListSubmitterId::new());
+            sub_submitter.name.last_name = i.to_string().parse().unwrap();
+            sub_submitter.create_substitute(&store).await.unwrap();
+        }
+
+        for (i, s) in store.get_substitute_submitters().iter().enumerate() {
+            assert_eq!(s.name.last_name.to_string(), i.to_string());
+        }
+    }
+}
