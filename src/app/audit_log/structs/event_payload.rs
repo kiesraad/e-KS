@@ -115,6 +115,7 @@ mod tests {
         ElectoralDistrict, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
+        common::PreviousElectionResults,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         political_groups::PoliticalGroup,
@@ -248,7 +249,7 @@ mod tests {
         before.political_group = sample_political_group();
         let mut after = empty_state();
         after.political_group = PoliticalGroup {
-            long_list_allowed: Some(true),
+            previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
             ..sample_political_group()
         };
 

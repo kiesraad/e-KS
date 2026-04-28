@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt, TokenValue,
-    common::{DisplayName, LegalName},
+    common::{DisplayName, LegalName, PreviousElectionResults},
     political_groups::PoliticalGroup,
 };
 
@@ -11,8 +11,8 @@ use crate::{
 #[validate(target = "PoliticalGroup")]
 #[serde(default)]
 pub struct PoliticalGroupForm {
-    #[validate(parse = "bool", optional)]
-    pub long_list_allowed: String,
+    #[validate(parse = "PreviousElectionResults", optional)]
+    pub previous_election_results: String,
     #[validate(parse = "LegalName", optional)]
     pub legal_name: String,
     #[validate(parse = "DisplayName", optional)]
@@ -24,8 +24,8 @@ pub struct PoliticalGroupForm {
 impl From<PoliticalGroup> for PoliticalGroupForm {
     fn from(value: PoliticalGroup) -> Self {
         PoliticalGroupForm {
-            long_list_allowed: value
-                .long_list_allowed
+            previous_election_results: value
+                .previous_election_results
                 .map(|b| b.to_string())
                 .unwrap_or_default(),
             legal_name: value.legal_name.to_string_or_default(),

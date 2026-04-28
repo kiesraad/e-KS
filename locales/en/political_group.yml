@@ -17,10 +17,10 @@ general_information: General
 legal_name: Full statutory name
 list_submitter_data: List submitter data
 list_type: "Type list designation:"
-long_list_allowed: "Your party obtained 16 or more seats in the previous {}:"
 no_authorised_agents: No authorised agents
 no_list_submitter: No list submitter
 no_substitute_submitters: No substitute submitters
+previous_election_results: "In the previous {}, your party obtained:"
 select_default_list_submitter_info: The list submitter is the only person authorised to submit the candidate list and to remedy omissions.
 substitute_submitter_data: Substitute submitter data
 substitute_submitters_info: "The central electoral committee verifies the documents that get submitted on nomination day. In case of omissions, you will receive a written notice. This notice will also mention the deadline to rectify the omissions."
@@ -30,8 +30,11 @@ type:
   blank_name_hint: There is no registered designation.
   display_name_hint: The name that is registered with the central electoral committee. This name will be displayed on the ballot paper.
   legal_name_hint: The name registered in the notarial deed and with the Chamber of Commerce.
-  long_list_allowed_hint: This determines whether you may include 50 or 80 candidates on each list.
   name_combination: Combination of multiple registered names
   name_combination_hint: "The party has formed an alliance with one or more other registered parties. Together, they nominate all candidates for the candidate list."
+  one_to_fifteen_seats: 1 to 15 seats
+  previous_election_results_hint: "This determines whether a deposit needs to be paid, and whether you may include 50 or 80 candidates on each list."
   registered_name: Standalone registered name
   registered_name_hint: "The party participates in the election as a single, unified party."
+  sixteen_or_more_seats: 16 or more seats
+  zero_seats: "0 seats, or not did not participate"

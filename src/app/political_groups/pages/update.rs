@@ -76,6 +76,7 @@ mod tests {
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
         authorised_agents::AuthorisedAgentId,
+        common::PreviousElectionResults,
         test_utils::{response_body_string, sample_authorised_agent, sample_political_group_form},
     };
     use axum::{
@@ -146,7 +147,10 @@ mod tests {
         );
 
         let updated = store.get_political_group();
-        assert_eq!(updated.long_list_allowed, Some(true));
+        assert_eq!(
+            updated.previous_election_results,
+            Some(PreviousElectionResults::OneToFifteenSeats)
+        );
         assert_eq!(
             updated.legal_name.as_deref().map(|v| v.to_string()),
             Some("Updated Legal Name".to_string())

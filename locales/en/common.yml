@@ -13,7 +13,6 @@ keywords: "Kiesraad, kandidaatstelling, elections, Netherlands"
 languages:
   dutch: Dutch
   frisian: Frisian
-no_label: "No"
 save_success: saved
 select_election:
   description: Select the election you want to work on to continue.
@@ -40,4 +39,3 @@ switch_election:
   water_council: Water authority
 title: Kiesraad - Kandidaatstelling
 version: Version
-yes_label: "Yes"
