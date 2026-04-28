@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     ElectionConfig, ElectoralDistrict, Locale, audit_log,
-    constants::DEFAULT_DATE_TIME_FORMAT,
+    constants::{DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIMEZONE},
     core::AnyLocale,
     form::{FormData, WithCsrfToken},
     persons::Person,
@@ -20,12 +20,14 @@ pub fn display<T: std::fmt::Display>(
 
 #[askama::filter_fn]
 pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(value.format(DEFAULT_DATE_TIME_FORMAT).to_string())
+    let local_time = value.with_timezone(DEFAULT_TIMEZONE);
+    Ok(local_time.format(DEFAULT_DATE_TIME_FORMAT).to_string())
 }
 
 #[askama::filter_fn]
 pub fn datetime_seconds(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(value.format("%d-%m-%Y %H:%M:%S").to_string())
+    let local_time = value.with_timezone(DEFAULT_TIMEZONE);
+    Ok(local_time.format("%d-%m-%Y %H:%M:%S").to_string())
 }
 
 #[askama::filter_fn]

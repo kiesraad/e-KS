@@ -68,6 +68,7 @@ reqwest = { version = "0.13.2", default-features = false, features = ["json", "s
 
 # well maintained + many downloads
 askama = "0.15.6" # 31M downloads (Dirkjan Ochtman)
+chrono-tz = "0.10.4" # 103M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 136M downloads (Andrew Gallant)
 phf = { version = "0.13.1", default-features = false } # 247M downloads (Steven Fackler)
 aes-gcm = "0.10.3" # 92M downloads (RustCrypto)
