@@ -3,7 +3,7 @@ import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
-import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage.ts";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
 
 test.describe("download PDF", async () => {
@@ -12,7 +12,7 @@ test.describe("download PDF", async () => {
   async function setupCandidateList(page: Page, district: string) {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
-    await new SelectElectoralDistrictsPage(page).selectDistricts([district]);
+    await new EditListDetailsPage(page).addDistricts([district]);
     await new ManageCandidateListPage(page).addExistingCandidates(
       existingCandidates,
     );
