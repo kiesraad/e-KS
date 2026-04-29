@@ -4,7 +4,7 @@
 //! For each configuration name `<NAME>`, an operator may set `<NAME>_FILE`
 //! pointing at a file whose contents are the value.
 
-use std::env;
+use std::{env, path::PathBuf};
 
 use secrecy::SecretString;
 
@@ -46,6 +46,13 @@ mod dev_defaults {
     }
 }
 
+/// TLS configuration for serving HTTPS via rustls.
+#[derive(Debug, Clone)]
+pub struct TlsConfig {
+    pub cert_path: PathBuf,
+    pub key_path: PathBuf,
+}
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
@@ -54,6 +61,7 @@ pub struct Config {
     pub typst_url: String,
     pub id_derivation_key: SecretString,
     pub encryption_derivation_key: SecretString,
+    pub tls: Option<TlsConfig>,
 }
 
 /// Sync env-only lookup for non-secret configuration. Does not support the
@@ -126,12 +134,26 @@ impl Config {
         let encryption_derivation_key =
             get_secret_with("ENCRYPTION_DERIVATION_KEY", &mut lookup).await?;
 
+        let tls = match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
+            (Some(cert), Some(key)) => Some(TlsConfig {
+                cert_path: PathBuf::from(cert),
+                key_path: PathBuf::from(key),
+            }),
+            (None, None) => None,
+            _ => {
+                return Err(AppError::ConfigLoadError(
+                    "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
+                ));
+            }
+        };
+
         Ok(Self {
             storage_url,
             #[cfg(not(feature = "embed-typst"))]
             typst_url,
             id_derivation_key: SecretString::from(id_derivation_key),
             encryption_derivation_key: SecretString::from(encryption_derivation_key),
+            tls,
         })
     }
 
@@ -143,6 +165,7 @@ impl Config {
             typst_url: "http://localhost:8080".to_string(),
             id_derivation_key: SecretString::from("test-secret-123"),
             encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
+            tls: None,
         }
     }
 }
@@ -391,5 +414,48 @@ mod tests {
             err.to_string(),
             AppError::MissingEnvVar("STORAGE_URL").to_string()
         );
+    }
+
+    #[test]
+    fn from_env_returns_no_tls_when_unset() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+
+        assert!(config.tls.is_none());
+    }
+
+    #[test]
+    fn from_env_returns_tls_when_both_set() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+        let tls = config.tls.expect("tls present");
+
+        assert_eq!(tls.cert_path, std::path::PathBuf::from("/etc/tls/cert.pem"));
+        assert_eq!(tls.key_path, std::path::PathBuf::from("/etc/tls/key.pem"));
+    }
+
+    #[test]
+    fn from_env_errors_when_only_tls_cert_set() {
+        let map = HashMap::from([("TLS_CERT_PATH", "/etc/tls/cert.pem")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_only_tls_key_set() {
+        let map = HashMap::from([("TLS_KEY_PATH", "/etc/tls/key.pem")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
     }
 }

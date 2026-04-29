@@ -12,7 +12,7 @@ pub mod logging;
 pub mod server;
 pub mod translate;
 
-pub use config::{Config, get_env};
+pub use config::{Config, TlsConfig, get_env};
 pub use csv::{Csv, CsvError};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict, Province, WaterCouncil};
 pub use locale::Locale;

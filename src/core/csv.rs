@@ -1,11 +1,11 @@
-use std::fmt::Display;
+use std::{borrow::Cow, fmt::Display};
 
 use axum::{
     body::Body,
     http::{HeaderValue, Response},
     response::IntoResponse,
 };
-use csv::{Reader, WriterBuilder};
+use csv::{Reader, ReaderBuilder, Writer, WriterBuilder};
 use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{AppError, Locale, OptionStringExt, trans, utils::no_cache_headers};
@@ -159,7 +159,7 @@ impl<T: Serialize> Csv<T> {
         }
 
         for record in &self.records {
-            csv_writer.serialize(record)?;
+            write_record_safely(&mut csv_writer, record)?;
         }
 
         let data = if let Ok(data) = csv_writer.into_inner() {
@@ -176,6 +176,51 @@ impl<T: Serialize> Csv<T> {
         )?;
 
         Ok(((headers, data).into_response(), size))
+    }
+}
+
+/// Serialize a record and write it to `writer` after neutralising any cells
+/// that would otherwise be interpreted as spreadsheet formulas.
+///
+/// Why: when a recipient opens an exported CSV in Excel/LibreOffice, a cell
+/// whose first character is `=`, `+`, `-`, `@`, tab, or CR is evaluated as a
+/// formula (CWE-1236). Prefixing such cells with `'` is the OWASP-recommended
+/// neutralisation: the leading quote is stripped on display but suppresses
+/// formula evaluation.
+fn write_record_safely<T, W>(writer: &mut Writer<W>, record: &T) -> csv::Result<()>
+where
+    T: Serialize,
+    W: std::io::Write,
+{
+    let mut staging = WriterBuilder::new()
+        .has_headers(false)
+        .from_writer(Vec::new());
+    staging.serialize(record)?;
+    let bytes = staging.into_inner().map_err(|err| err.into_error())?;
+
+    let mut reader = ReaderBuilder::new()
+        .has_headers(false)
+        .from_reader(bytes.as_slice());
+    if let Some(row) = reader.records().next() {
+        let row = row?;
+        let escaped: Vec<Cow<'_, str>> = row.iter().map(escape_csv_formula).collect();
+        writer.write_record(escaped.iter().map(|cell| cell.as_ref()))?;
+    }
+    Ok(())
+}
+
+/// Prefix a single quote to any cell whose first byte is one of the
+/// spreadsheet-formula trigger characters. ASCII-only matching is sufficient
+/// since none of the trigger characters are multi-byte UTF-8.
+fn escape_csv_formula(cell: &str) -> Cow<'_, str> {
+    match cell.as_bytes().first() {
+        Some(b'=' | b'+' | b'-' | b'@' | b'\t' | b'\r') => {
+            let mut out = String::with_capacity(cell.len() + 1);
+            out.push('\'');
+            out.push_str(cell);
+            Cow::Owned(out)
+        }
+        _ => Cow::Borrowed(cell),
     }
 }
 
@@ -462,6 +507,84 @@ mod tests {
         assert_eq!(
             message,
             "De kandidaat op regel 1 kon niet worden geïmporteerd: het bestand bevat een waarde die niet verwerkt kon worden. invalid record"
+        );
+    }
+
+    #[test]
+    fn escape_csv_formula_neutralises_leading_special_characters() {
+        for trigger in ["=", "+", "-", "@", "\t", "\r"] {
+            let cell = format!("{trigger}HYPERLINK(\"x\")");
+            let escaped = escape_csv_formula(&cell);
+            assert!(
+                escaped.starts_with('\''),
+                "{cell:?} should be prefixed with a single quote, got {escaped:?}"
+            );
+            assert!(escaped.ends_with(&cell));
+        }
+    }
+
+    #[test]
+    fn escape_csv_formula_leaves_safe_cells_untouched() {
+        for safe in ["", "Henk", "1234AB", "Stationsstraat 5", "  =not-leading"] {
+            assert_eq!(escape_csv_formula(safe), Cow::Borrowed(safe));
+        }
+    }
+
+    #[test]
+    fn generate_csv_response_neutralises_formula_records() {
+        #[derive(Serialize)]
+        struct Row {
+            name: String,
+            note: String,
+        }
+
+        let csv = Csv {
+            filename: "out.csv".to_string(),
+            headers: Some(vec!["name", "note"]),
+            records: vec![
+                Row {
+                    name: "=cmd|'/c calc'!A1".to_string(),
+                    note: "@SUM(1+1)".to_string(),
+                },
+                Row {
+                    name: "Henk".to_string(),
+                    note: "-1".to_string(),
+                },
+            ],
+        };
+
+        let (_response, _size) = csv
+            .generate_csv_response()
+            .expect("response should generate");
+
+        // Re-render the same payload to bytes through a parallel Writer so we
+        // can assert the on-disk content. The header row is static and not
+        // escaped; record fields with leading triggers are prefixed with `'`.
+        let mut writer = WriterBuilder::new()
+            .has_headers(false)
+            .from_writer(Vec::new());
+        writer.write_record(["name", "note"]).unwrap();
+        for row in &csv.records {
+            write_record_safely(&mut writer, row).unwrap();
+        }
+        let bytes = writer.into_inner().unwrap();
+        let rendered = String::from_utf8(bytes).unwrap();
+
+        assert!(
+            rendered.contains("'=cmd|'/c calc'!A1"),
+            "leading `=` should be escaped, got: {rendered}"
+        );
+        assert!(
+            rendered.contains("'@SUM(1+1)"),
+            "leading `@` should be escaped, got: {rendered}"
+        );
+        assert!(
+            rendered.contains("'-1"),
+            "leading `-` should be escaped, got: {rendered}"
+        );
+        assert!(
+            rendered.contains("Henk"),
+            "non-trigger cells should be left intact, got: {rendered}"
         );
     }
 }

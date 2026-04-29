@@ -55,7 +55,7 @@ impl AppStore {
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        data.substitute_submitters.values().cloned().collect()
+        data.substitute_submitters.clone()
     }
 
     pub fn get_person_count(&self) -> usize {
@@ -112,7 +112,11 @@ impl AppStore {
     ) -> Result<ListSubmitter, AppError> {
         let data = self.data.read();
 
-        match data.substitute_submitters.get(&substitute_submitter_id) {
+        match data
+            .substitute_submitters
+            .iter()
+            .find(|submitter| submitter.id == substitute_submitter_id)
+        {
             Some(submitter) => Ok(submitter.clone()),
             None => Err(AppError::GenericNotFound),
         }
@@ -130,5 +134,25 @@ impl AppStore {
     pub fn get_events(&self) -> Vec<StoreEvent<crate::AppEvent>> {
         let data = self.data.read();
         data.events.clone()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{AppStore, list_submitters::ListSubmitterId, test_utils::sample_list_submitter};
+
+    #[tokio::test]
+    async fn substitute_submitters_remain_in_order() {
+        let store = AppStore::new_for_test();
+
+        for i in 0..100 {
+            let mut sub_submitter = sample_list_submitter(ListSubmitterId::new());
+            sub_submitter.name.last_name = i.to_string().parse().unwrap();
+            sub_submitter.create_substitute(&store).await.unwrap();
+        }
+
+        for (i, s) in store.get_substitute_submitters().iter().enumerate() {
+            assert_eq!(s.name.last_name.to_string(), i.to_string());
+        }
     }
 }

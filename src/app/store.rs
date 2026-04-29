@@ -6,7 +6,7 @@ use crate::{
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
-    list_submitters::{ListSubmitter, ListSubmitterId},
+    list_submitters::ListSubmitter,
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
     store::{StoreData, StoreEvent},
@@ -20,7 +20,7 @@ pub struct AppStoreData {
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
     pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
     pub(crate) list_submitter: ListSubmitter,
-    pub(crate) substitute_submitters: HashMap<ListSubmitterId, ListSubmitter>,
+    pub(crate) substitute_submitters: Vec<ListSubmitter>,
 
     // Download path, file name, downloader id
     pub(crate) downloaded_files: Vec<(String, String, CandidateListId)>,
@@ -153,20 +153,23 @@ impl StoreData for AppStoreData {
                 self.list_submitter = ls;
             }
             AppEvent::CreateSubstituteSubmitter(ss) => {
-                self.substitute_submitters.insert(ss.id, ss);
+                self.substitute_submitters.push(ss);
             }
             AppEvent::UpdateSubstituteSubmitter(ss) => {
                 let ss_id = ss.id;
-                self.substitute_submitters
-                    .entry(ss_id)
-                    .and_modify(|existing| {
-                        *existing = ss;
-                    });
+                if let Some(existing) = self
+                    .substitute_submitters
+                    .iter_mut()
+                    .find(|existing| existing.id == ss_id)
+                {
+                    *existing = ss;
+                }
             }
             AppEvent::DeleteSubstituteSubmitter {
                 substitute_submitter_id: ss_id,
             } => {
-                self.substitute_submitters.remove(&ss_id);
+                self.substitute_submitters
+                    .retain(|submitter| submitter.id != ss_id);
             }
 
             AppEvent::DeveloperLogin { .. }
