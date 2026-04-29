@@ -2,6 +2,7 @@ use chrono::NaiveDate;
 
 use crate::{
     ElectoralDistrict,
+    common::PreviousElectionResults,
     core::{
         AnyLocale, ElectionType,
         election::{Province, WaterCouncil},
@@ -112,8 +113,12 @@ impl ElectionConfig {
             .collect()
     }
 
-    pub fn get_max_candidates(&self, long_list_allowed: bool) -> usize {
-        if long_list_allowed { 80 } else { 50 }
+    pub fn get_max_candidates(&self, previous_election_results: PreviousElectionResults) -> usize {
+        if previous_election_results == PreviousElectionResults::SixteenOrMoreSeats {
+            80
+        } else {
+            50
+        }
     }
 
     pub fn available_districts(

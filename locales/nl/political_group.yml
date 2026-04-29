@@ -17,10 +17,10 @@ general_information: Algemeen
 legal_name: Volledige statutaire naam
 list_submitter_data: Gegevens lijstinleveraar
 list_type: "Type lijstaanduiding:"
-long_list_allowed: "Uw partij heeft bij de vorige {} 16 zetels of meer behaald:"
 no_authorised_agents: Geen gemachtigden
 no_list_submitter: Geen lijstinleveraar
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen
+previous_election_results: "Bij de vorige {} had uw partij:"
 select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 substitute_submitter_data: Vervangers voor het herstel van verzuimen
 substitute_submitters_info: "Het centraal stembureau controleert de stukken die worden overhandigd op de dag van kandidaatstelling. Mochten hierbij verzuimen worden vastgesteld, dan ontvangt u hierover schriftelijk bericht. In het bericht dat u van het centraal stembureau ontvangt staat ook tot wanneer verzuimen kunnen worden hersteld."
@@ -30,8 +30,11 @@ type:
   blank_name_hint: Er is geen geregistreerde aanduiding.
   display_name_hint: De naam die is geregistreerd bij het centraal stembureau. Deze komt op het stembiljet te staan.
   legal_name_hint: De naam die is vastgelegd in de notariële akte en bij de Kamer van Koophandel.
-  long_list_allowed_hint: Dit bepaalt of u 50 of 80 kandidaten per lijst op mag voeren.
   name_combination: Combinatie van meerdere geregistreerde namen
   name_combination_hint: De partij heeft een samenwerkingsverband met één of meer andere geregistreerde partijen. Samen leveren zij alle kandidaten voor de kandidatenlijst.
+  one_to_fifteen_seats: 1 tot 15 zetels
+  previous_election_results_hint: "Dit bepaalt of uw partij een waarborgsom moet betalen, en of u 50 of 80 kandidaten per lijst op mag voeren."
   registered_name: Op zichzelf staande geregistreerde naam
   registered_name_hint: De partij neemt als één eenduidige partij deel aan de verkiezing.
+  sixteen_or_more_seats: 16 of meer zetels
+  zero_seats: "0 zetels, of niet meegedaan"
