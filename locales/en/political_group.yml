@@ -37,4 +37,4 @@ type:
   registered_name: Standalone registered name
   registered_name_hint: "The party participates in the election as a single, unified party."
   sixteen_or_more_seats: 16 or more seats
-  zero_seats: "0 seats, or not did not participate"
+  zero_seats: "0 seats, or did not participate"
