@@ -11,8 +11,12 @@ export class PoliticalGroupPage {
     this.buttonSaveandNext = this.page.getByRole("button", {
       name: "Opslaan en volgende",
     });
-    this.selectMoreThan16Seats = this.page.getByRole("radio", { name: "Ja" });
-    this.selectLessThan16Seats = this.page.getByRole("radio", { name: "Nee" });
+    this.selectMoreThan16Seats = this.page.getByRole("radio", {
+      name: "16 of meer zetels",
+    });
+    this.selectLessThan16Seats = this.page.getByRole("radio", {
+      name: "1 tot 15 zetels",
+    });
     this.textfieldRegisteredDesignation = this.page.getByRole("textbox", {
       name: "Geregistreerde aanduiding",
     });
@@ -32,8 +36,7 @@ export class PoliticalGroupPage {
   }
 
   /**
-   * Selects whether a political group had 16 or more seats in previous election
-   * @param input accepted values "Ja" or "Nee"
+   * Selects the previous election result using the visible radio label.
    */
   async selectHasMoreThan16Seats(input: string) {
     await this.page.getByRole("radio", { name: input }).check();

@@ -9,7 +9,7 @@ use crate::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
         DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
         HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
-        LegalName, Locality, PlaceOfResidence, PostalCode, StreetName,
+        LegalName, Locality, PlaceOfResidence, PostalCode, PreviousElectionResults, StreetName,
     },
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
@@ -196,7 +196,7 @@ pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm
 
 pub fn sample_political_group() -> PoliticalGroup {
     PoliticalGroup {
-        long_list_allowed: Some(false),
+        previous_election_results: Some(PreviousElectionResults::ZeroSeats),
         legal_name: Some(
             "Kiesraad Demo Partij"
                 .parse::<LegalName>()
@@ -260,7 +260,7 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
 
 pub fn sample_political_group_form(csrf_token: &TokenValue) -> PoliticalGroupForm {
     PoliticalGroupForm {
-        long_list_allowed: "true".to_string(),
+        previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
         legal_name: "Updated Legal Name".to_string(),
         display_name: "Updated Display Name".to_string(),
         csrf_token: csrf_token.clone(),
