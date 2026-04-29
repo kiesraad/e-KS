@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::{BTreeMap, BTreeSet, HashMap};
 
 use crate::{
     AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict,
@@ -8,6 +8,7 @@ use crate::{
     core::AnyLocale,
     id_newtype,
     persons::{Person, PersonId},
+    submit::{Completable, IncompleteItem},
 };
 use serde::{Deserialize, Serialize};
 
@@ -230,6 +231,47 @@ impl CandidateList {
             .collect::<Result<Vec<Candidate>, AppError>>()?;
 
         Ok(FullCandidateList { list, candidates })
+    }
+}
+
+impl Completable for CandidateList {
+    fn incomplete_items(&self) -> Vec<crate::submit::IncompleteItem> {
+        // TODO: How to get the max number allowed?
+        let mut ii = match self.candidates.len() {
+            0 => vec![IncompleteItem::NoCandidates],
+            1..=50 => vec![],
+            51.. => vec![IncompleteItem::TooManyCandidates {
+                actual: self.candidates.len(),
+                max: 50,
+            }],
+        };
+
+        if self.candidates.is_empty() {
+            ii.push(IncompleteItem::NoDistricts);
+            return ii;
+        }
+
+        let mut duplicates: HashMap<_, usize> = HashMap::new();
+        for electoral_district in &self.electoral_districts {
+            *duplicates.entry(electoral_district).or_default() += 1
+        }
+
+        let duplicates: Vec<_> = duplicates
+            .iter()
+            .filter_map(|(electoral_district, count)| {
+                if *count > 1 {
+                    Some(**electoral_district)
+                } else {
+                    None
+                }
+            })
+            .collect();
+
+        if !duplicates.is_empty() {
+            ii.push(IncompleteItem::DuplicateDistricts { duplicates })
+        }
+
+        ii
     }
 }
 

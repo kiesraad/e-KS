@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::core::AnyLocale;
 
 /// Electoral districts used for nomination and submission flows.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Serialize, Deserialize, Hash)]
 pub enum ElectoralDistrict {
     GR,
     PsGroningen,

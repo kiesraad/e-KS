@@ -10,11 +10,25 @@ pub struct IncompleteItems {
 impl IncompleteItems {
     pub fn find_all(store: &AppStore) -> Self {
         let political_group_items = store.get_political_group().incomplete_items();
+        let candidate_lists = store.get_candidate_lists();
 
         Self {
             general_items: GeneralItems([political_group_items].concat()), // TODO: complete in issue #607
             candidate_items: vec![], // TODO: complete in issue #605
-            list_items: vec![],      // TODO: complete in issue #608
+            list_items: candidate_lists
+                .iter()
+                .filter_map(|candidate_list| {
+                    let items = candidate_list.incomplete_items();
+                    if items.is_empty() {
+                        None
+                    } else {
+                        Some(ListItems {
+                            list: candidate_list.clone(),
+                            items,
+                        })
+                    }
+                })
+                .collect(),
         }
     }
 
@@ -48,6 +62,7 @@ pub enum IncompleteItem {
     NoCandidates,
     TooManyCandidates { actual: usize, max: usize },
     DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
+    NoDistricts,
     // political group
     NoLegalName,
     NoDisplayName,
@@ -60,6 +75,7 @@ impl IncompleteItem {
             IncompleteItem::NoCandidates => Severity::Error,
             IncompleteItem::TooManyCandidates { .. } => Severity::Warn,
             IncompleteItem::DuplicateDistricts { .. } => Severity::Error,
+            IncompleteItem::NoDistricts => Severity::Error,
             // political group
             IncompleteItem::NoLegalName => Severity::Warn,
             IncompleteItem::NoDisplayName => Severity::Error,
