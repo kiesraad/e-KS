@@ -18,7 +18,7 @@ mod integration_tests;
 pub struct SubmitPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/generate/{list_id}/eml210.xml", rejection(AppError))]
+#[typed_path("/generate/{list_id}/eml210.eml.xml", rejection(AppError))]
 pub struct DownloadEml210Path {
     list_id: CandidateListId,
 }

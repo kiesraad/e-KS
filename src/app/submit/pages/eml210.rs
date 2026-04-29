@@ -300,6 +300,7 @@ pub async fn gen_eml210(
             .collect::<Result<Vec<ListDataContest>, AppError>>()?,
     };
 
+    let now = chrono::Utc::now();
     let nomination = Nomination::builder()
         .transaction_id(
             u64::try_from(store.data.read().last_event_id())
@@ -312,8 +313,8 @@ pub async fn gen_eml210(
                         .with_name("De politieke partij"),
                 ),
         )
-        .issue_date(chrono::Utc::now().date_naive())
-        .creation_date_time(chrono::Utc::now())
+        .issue_date(now.date_naive())
+        .creation_date_time(now)
         .election_identifier(NominationElectionIdentifier::try_from(context.election)?)
         .contest_identifier(if context.election.has_only_one_district() {
             NominationContestIdentifier::new(ContestId::geen(), "")
@@ -395,8 +396,7 @@ mod tests {
 
         let person_id2 = PersonId::new();
         let mut sample_person2 = sample_person(person_id2);
-        sample_person1.name.last_name = "Candidate II".parse().unwrap();
-        // sample_person1.a
+        sample_person2.name.last_name = "Candidate II".parse().unwrap();
         sample_person2.personal_data.bsn = Some("999995972".parse().unwrap());
         sample_person2.personal_data.country = CountryCode::from_str("BE").ok();
         sample_person2.personal_data.gender = None;
