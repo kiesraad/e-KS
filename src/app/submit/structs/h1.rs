@@ -5,7 +5,6 @@ use crate::{
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
-        typst_util,
     },
 };
 use serde::Serialize;
@@ -69,7 +68,7 @@ impl H1 {
         let group = store.get_political_group();
 
         Ok(Self {
-            election_name: typst_util::generate_election_title(election, locale),
+            election_name: election.formal_title(locale),
             election_type,
             electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
             designation: group

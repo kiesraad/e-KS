@@ -88,7 +88,7 @@ fn sample_full_name_form(
     }
 }
 
-fn sample_dutch_address(
+pub fn sample_dutch_address(
     locality: &str,
     postal_code: &str,
     house_number: &str,

@@ -21,6 +21,7 @@ struct SubmitCandidateList {
     download_h4_path_fry: String,
     download_h9_path_nl: String,
     download_h9_path_fry: String,
+    download_eml_210_path: String,
     person_count: usize,
     duplicate_districts: Vec<ElectoralDistrict>,
 }
@@ -79,6 +80,10 @@ pub async fn index(
                 download_h9_path_fry: super::DownloadH9Path {
                     list_id: summary.list.id,
                     locale: ModelLocale::Fry,
+                }
+                .to_string(),
+                download_eml_210_path: super::DownloadEml210Path {
+                    list_id: summary.list.id,
                 }
                 .to_string(),
                 list: summary.list,

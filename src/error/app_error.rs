@@ -47,6 +47,8 @@ pub enum AppError {
     /// Missing data when generating a PDF.
     IncompleteData(&'static str),
 
+    EmlError(eml_nl::EMLError),
+
     NoStorageConfigured,
     IntegrityViolation,
 
@@ -84,6 +86,7 @@ impl Display for AppError {
             AppError::UpstreamError(err) => write!(f, "Upstream error: {err}"),
             AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
             AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),
+            AppError::EmlError(err) => write!(f, "EML error: {err}"),
         }
     }
 }
@@ -173,6 +176,12 @@ impl From<serde_json::Error> for AppError {
 impl From<csv::Error> for AppError {
     fn from(_: csv::Error) -> Self {
         AppError::InternalServerError
+    }
+}
+
+impl From<eml_nl::EMLError> for AppError {
+    fn from(err: eml_nl::EMLError) -> Self {
+        AppError::EmlError(err)
     }
 }
 
