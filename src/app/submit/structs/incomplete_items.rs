@@ -1,6 +1,9 @@
+use tracing::warn;
+
 use crate::{AppStore, ElectoralDistrict, candidate_lists::CandidateList, persons::Person};
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
+#[derive(Debug)]
 pub struct IncompleteItems {
     pub general_items: GeneralItems,
     pub candidate_items: Vec<CandidateItems>,
@@ -44,19 +47,22 @@ impl IncompleteItems {
     }
 }
 
+#[derive(Debug)]
 pub struct GeneralItems(pub Vec<IncompleteItem>);
 
+#[derive(Debug)]
 pub struct CandidateItems {
     pub person: Person,
     pub items: Vec<IncompleteItem>,
 }
 
+#[derive(Debug)]
 pub struct ListItems {
     pub list: CandidateList,
     pub items: Vec<IncompleteItem>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum IncompleteItem {
     // candidate list
     NoCandidates,

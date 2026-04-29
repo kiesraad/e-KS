@@ -236,17 +236,19 @@ impl CandidateList {
 
 impl Completable for CandidateList {
     fn incomplete_items(&self) -> Vec<crate::submit::IncompleteItem> {
+        let mut ii = Vec::new();
+
         // TODO: How to get the max number allowed?
-        let mut ii = match self.candidates.len() {
-            0 => vec![IncompleteItem::NoCandidates],
-            1..=50 => vec![],
-            51.. => vec![IncompleteItem::TooManyCandidates {
+        if self.candidates.is_empty() {
+            ii.push(IncompleteItem::NoCandidates);
+        } else if self.candidates.len() > 50 {
+            ii.push(IncompleteItem::TooManyCandidates {
                 actual: self.candidates.len(),
                 max: 50,
-            }],
-        };
+            });
+        }
 
-        if self.candidates.is_empty() {
+        if self.electoral_districts.is_empty() {
             ii.push(IncompleteItem::NoDistricts);
             return ii;
         }
