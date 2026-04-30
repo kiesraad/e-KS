@@ -35,11 +35,15 @@ memory-serve = ["dep:memory-serve"]
 embed-typst = ["dep:typst-webservice"]
 # Embed the bag address lookup library
 embed-bag = ["dep:bag_address_lookup"]
+# Serve over HTTPS via rustls (production deployments).
+tls = ["dep:axum-server", "dep:rustls"]
 
 [dependencies]
 # tokio universe
 axum = { version = "0.8.9", features = ["multipart", "macros"] }
 axum-extra = { version = "0.12.6", features = ["routing", "typed-routing", "form", "cookie", "typed-header"] }
+axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
+rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
 tower-http = { version = "0.6.8", features = ["set-header"] }
@@ -64,7 +68,7 @@ sqlx = { version = "0.8.6", optional = true, features = ["runtime-tokio", "postg
 uuid = { version = "1.23.1", features = ["serde", "v4", "v5", "v8"] }
 url = "2.5.8"
 # for now, we don't need TLS in reqwest as we only use it for cluster internal traffic with Typst
-reqwest = { version = "0.13.2", default-features = false, features = ["json", "stream"] }
+reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
 askama = "0.15.6" # 31M downloads (Dirkjan Ochtman)
@@ -85,6 +89,9 @@ auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.7.0", default-features = false, optional = true }
 bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.5.0", default-features = false, features = ["compressed_database"], optional = true }
 
+# kiesraad
+eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git", branch = "nomination-210-support" } # TODO: replace with crates.io version when the branch gets merged
+
 [build-dependencies]
 memory-serve = { version = "2.1.0", optional = true }
 phf_codegen = "0.13.1"
@@ -93,6 +100,9 @@ phf_codegen = "0.13.1"
 http-body-util = "0.1"
 tower = "0.5"
 tracing-test = "0.2.6"
+# Adds rustls to reqwest for TLS server tests. Dev-only: the production
+# binary still builds reqwest without any TLS backend.
+reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
 
 [lints.rust]
 unsafe_code = "forbid"

@@ -31,13 +31,15 @@ impl Context {
     pub fn new(store: &AppStore, session: Session) -> Self {
         let election = store.get_election();
         let political_group = store.get_political_group();
-        let long_list_allowed = political_group.long_list_allowed.unwrap_or(false);
+        let previous_election_results = political_group
+            .previous_election_results
+            .unwrap_or(super::common::PreviousElectionResults::ZeroSeats);
         let multiple_candidate_lists = store.get_candidate_list_count() > 1;
 
         Self {
             election,
             political_group,
-            max_candidates: election.get_max_candidates(long_list_allowed),
+            max_candidates: election.get_max_candidates(previous_election_results),
             multiple_candidate_lists,
             show_success_alert: false,
             overlay_referrer: false,

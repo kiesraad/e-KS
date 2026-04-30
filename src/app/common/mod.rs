@@ -15,8 +15,8 @@ pub use structs::{
     Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
     DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,
     HouseNumberAddition, Initials, InternationalAddress, InternationalPostalCode, LastName,
-    LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, StateOrProvince, StreetName,
-    UtcDateTime,
+    LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, PreviousElectionResults,
+    StateOrProvince, StreetName, UtcDateTime,
 };
 
 pub use pages::{

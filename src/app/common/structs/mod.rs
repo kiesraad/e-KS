@@ -14,6 +14,7 @@ mod last_name;
 mod last_name_prefix;
 mod name;
 mod postal_code;
+mod previous_election_results;
 mod utc_date_time;
 
 pub use address::{Address, DutchAddress, InternationalAddress};
@@ -34,4 +35,5 @@ pub use last_name::LastName;
 pub use last_name_prefix::LastNamePrefix;
 pub use name::FullName;
 pub use postal_code::{InternationalPostalCode, PostalCode};
+pub use previous_election_results::PreviousElectionResults;
 pub use utc_date_time::UtcDateTime;

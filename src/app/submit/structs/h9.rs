@@ -7,7 +7,7 @@ use crate::{
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts,
-        typst_detailed_candidate::TypstDetailedCandidate, typst_util,
+        typst_detailed_candidate::TypstDetailedCandidate,
     },
     utils::slugify_teletex,
 };
@@ -47,14 +47,14 @@ impl<'zip> H9<'zip> {
         let detailed_candidate = TypstDetailedCandidate::try_from(&candidate, locale)?;
         let filename = format!(
             "model-h9-{}-{}.pdf",
-            slugify_teletex(&detailed_candidate.candidate.last_name),
+            slugify_teletex(&detailed_candidate.candidate.last_name, true),
             detailed_candidate.candidate.position
         );
 
         let election_type = election.election_type();
 
         Ok(Self {
-            election_name: typst_util::generate_election_title(election, locale),
+            election_name: election.formal_title(locale),
             election_type,
             electoral_districts: TypstElectoralDistricts::from(candidate_list, election, locale),
             designation: store

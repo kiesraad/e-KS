@@ -7,7 +7,7 @@ use crate::{
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h9(
-    path: DownloadH9Path,
+    path @ DownloadH9Path { list_id, locale }: DownloadH9Path,
     list: FullCandidateList,
     store: AppStore,
     State(renderer): State<TypstRenderer>,
@@ -15,7 +15,7 @@ pub async fn gen_h9(
 ) -> Result<impl IntoResponse, AppError> {
     // front load the ordering and Typst conversion of candidates
     // so we only need to do it once for all H9 models
-    let ordered_candidates = ordered_candidates(&mut list.candidates.clone(), path.locale)?;
+    let ordered_candidates = ordered_candidates(&mut list.candidates.clone(), locale)?;
 
     let mut h9s = vec![];
     for candidate in list.candidates {
@@ -25,7 +25,7 @@ pub async fn gen_h9(
             &ordered_candidates,
             candidate,
             &context.election,
-            path.locale,
+            locale,
         );
         h9s.push(h9_model?);
     }
@@ -40,7 +40,7 @@ pub async fn gen_h9(
         .update(AppEvent::DownloadFile {
             file_name: filename.clone(),
             download_path: path.to_string(),
-            list_id: path.list_id,
+            list_id,
         })
         .await?;
 

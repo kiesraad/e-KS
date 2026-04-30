@@ -1,13 +1,13 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
-    common::{DisplayName, LegalName},
+    common::{DisplayName, LegalName, PreviousElectionResults},
     submit::{Completable, IncompleteItem},
 };
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
 pub struct PoliticalGroup {
-    pub long_list_allowed: Option<bool>,
+    pub previous_election_results: Option<PreviousElectionResults>,
     pub legal_name: Option<LegalName>,
     pub display_name: Option<DisplayName>,
 }
@@ -26,7 +26,7 @@ impl Completable for PoliticalGroup {
 
 impl PoliticalGroup {
     pub fn is_basic_info_empty(&self) -> bool {
-        self.long_list_allowed.is_none()
+        self.previous_election_results.is_none()
             && self.legal_name.is_empty_or_none()
             && self.display_name.is_empty_or_none()
     }
@@ -53,7 +53,7 @@ mod tests {
     #[test]
     fn incomplete_items_empty() {
         let empty_items = PoliticalGroup {
-            long_list_allowed: None,
+            previous_election_results: None,
             legal_name: None,
             display_name: None,
         }
@@ -67,7 +67,7 @@ mod tests {
     #[test]
     fn incomplete_items_complete() {
         let complete_items = PoliticalGroup {
-            long_list_allowed: Some(true),
+            previous_election_results: Some(PreviousElectionResults::OneToFifteenSeats),
             legal_name: LegalName::from_str("test").ok(),
             display_name: DisplayName::from_str("test").ok(),
         }

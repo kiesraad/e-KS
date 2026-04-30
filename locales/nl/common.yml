@@ -13,7 +13,6 @@ keywords: "Kiesraad, kandidaatstelling, verkiezingen, Nederland"
 languages:
   dutch: Nederlands
   frisian: Fries
-no_label: Nee
 save_success: opgeslagen
 select_election:
   description: Kies de verkiezing waar je mee wilt werken om verder te gaan.
@@ -40,4 +39,3 @@ switch_election:
   water_council: Waterschap
 title: Kiesraad - Kandidaatstelling
 version: Versie
-yes_label: Ja

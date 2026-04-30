@@ -3,6 +3,7 @@ actions:
   delete: Kandidaat verwijderen
 autoformat_initials: Automatisch opmaken
 correspondence_address: Correspondentieadres
+correspondence_address_info: Dit adres wordt gebruikt om de benoemingsbrief naartoe te sturen.
 fields:
   bsn: Burgerservicenummer (BSN)
   country: Landcode
@@ -40,7 +41,7 @@ not_found: "Persoon {} niet gevonden."
 not_found_in_candidate_list: Kandidaat niet gevonden in kandidatenlijst.
 personal_details: Persoonlijke gegevens
 representative: Gemachtigde van kandidaat
-representative_info: "Omdat de kandidaat in het buitenland woont, is een gemachtigde nodig."
+representative_info: "Omdat de kandidaat in het buitenland woont, is een gemachtigde nodig. De gemachtigde zal de benoemingsbrief voor u ontvangen."
 title: Alle kandidaten
 total: "<strong>{}</strong> kandidaten toegevoegd"
 view:

@@ -1,10 +1,10 @@
 use crate::{
     AppError, AppStore, ElectionConfig,
     candidate_lists::{CandidateListId, FullCandidateList},
+    common::PreviousElectionResults,
     core::{ElectionType, ModelLocale, Pdf},
     submit::structs::{
         TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson, ordered_candidates,
-        typst_util,
     },
 };
 use serde::Serialize;
@@ -65,19 +65,22 @@ impl H1 {
             .map(TypstPerson::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
+        let group = store.get_political_group();
+
         Ok(Self {
-            election_name: typst_util::generate_election_title(election, locale),
+            election_name: election.formal_title(locale),
             election_type,
             electoral_districts: TypstElectoralDistricts::from(&list, election, locale),
-            designation: store
-                .get_political_group()
+            designation: group
                 .display_name
                 .ok_or(AppError::IncompleteData(
                     "Missing registered designation from political group",
                 ))?
                 .to_string(),
             candidates: ordered_candidates(&mut candidates, locale)?,
-            previously_seated: true,
+            previously_seated: group
+                .previous_election_results
+                .is_some_and(|r| r != PreviousElectionResults::ZeroSeats),
             list_submitter: list_submitter.try_into()?,
             substitute_submitter,
             timestamp: TypstDatetime::now(),

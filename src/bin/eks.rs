@@ -1,4 +1,4 @@
-use eks::{AppError, AppState, logging, router, server};
+use eks::{AppError, AppState, Config, logging, router, server};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -18,6 +18,15 @@ async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
 
+    // Load and validate configuration before binding so misconfiguration fails fast.
+    let config = match Config::from_env() {
+        Ok(config) => config,
+        Err(err) => {
+            tracing::error!("Invalid configuration: {err}");
+            std::process::exit(1);
+        }
+    };
+
     // Create a `TcpListener` using tokio.
     let listener = match TcpListener::bind(&address).await {
         Ok(listener) => listener,
@@ -28,22 +37,23 @@ async fn start(address: String) {
     };
 
     // Run the application
-    if let Err(err) = run(listener).await {
+    if let Err(err) = run(listener, config).await {
         tracing::error!("Application error: {}", err);
         std::process::exit(1);
     }
 }
 
-/// Runs the application with the given TCP listener. Initializes logging, application state, loads data, and starts the server.
-async fn run(listener: TcpListener) -> Result<(), AppError> {
+/// Runs the application with the given TCP listener and resolved configuration.
+/// Initializes application state, builds the router, and starts the server.
+async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
     // Create application state
-    let state = AppState::new().await?;
+    let state = AppState::new_with_config(config).await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
-    server::serve(router, listener).await?;
+    server::serve(router, listener, state.config).await?;
 
     Ok(())
 }
@@ -96,8 +106,9 @@ mod tests {
     async fn serves_homepage_and_not_found() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let config = Config::from_env().expect("config");
         let server = tokio::spawn(async move {
-            run(listener).await.unwrap();
+            run(listener, config).await.unwrap();
         });
 
         let base = format!("http://{addr}");
