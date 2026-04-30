@@ -1144,7 +1144,7 @@ version = "0.5.0"
 source = "git+https://github.com/kiesraad/rust-eml-nl.git?branch=nomination-210-support#31bb7fb748f6bb466c9603d025fbb078d3d63fa3"
 dependencies = [
  "chrono",
- "quick-xml",
+ "quick-xml 0.38.4",
  "regex",
  "thiserror",
  "tracing",

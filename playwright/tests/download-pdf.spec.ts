@@ -117,9 +117,13 @@ test.describe("download PDF", async () => {
   test("EML 210", async ({ deleteExistingCandidateLists: page }) => {
     await setupCandidateList(page, "Friesland");
     await page.goto("/submit");
-
+    
     const downloadPromise = page.waitForEvent("download");
-    await new SubmitPage(page).linkEML210Download.click();
+    const submitPage = new SubmitPage(page);
+     await submitPage.linkEML210Download.evaluate((el) =>
+      el.setAttribute("download", ""),
+    );
+    await submitPage.linkEML210Download.click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/eml210\.eml\.xml/);
