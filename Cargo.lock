@@ -404,8 +404,8 @@ checksum = "be5eb007b7cacc6c660343e96f650fedf4b5a77512399eb952ca6642cf8d13f7"
 
 [[package]]
 name = "bag_address_lookup"
-version = "0.5.0"
-source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.5.0#ff52e9ffa161998ed640bee084a4cd519d2a6b80"
+version = "0.5.2"
+source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.5.2#0ecab45075c547162370578f956179e9bd00e538"
 dependencies = [
  "flate2",
 ]
@@ -1141,10 +1141,10 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 [[package]]
 name = "eml-nl"
 version = "0.5.0"
-source = "git+https://github.com/kiesraad/rust-eml-nl.git?branch=nomination-210-support#31bb7fb748f6bb466c9603d025fbb078d3d63fa3"
+source = "git+https://github.com/kiesraad/rust-eml-nl.git#19ca942df3da1901d170c349f5c72f1e8a120b89"
 dependencies = [
  "chrono",
- "quick-xml",
+ "quick-xml 0.38.4",
  "regex",
  "thiserror",
  "tracing",

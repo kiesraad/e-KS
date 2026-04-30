@@ -248,7 +248,7 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
 
 fn nomination_proposer(
     submitter: ListSubmitter,
-    job_title: eml_nl::utils::NominationJobTitle,
+    job_title: eml_nl::documents::nomination::NominationJobTitle,
     id: Option<String>,
 ) -> Result<eml_nl::documents::nomination::NominationProposer, AppError> {
     Ok(eml_nl::documents::nomination::NominationProposer {
@@ -271,14 +271,14 @@ pub async fn gen_eml210(
     let mut nominated = Vec::with_capacity(1 + substitutes.len());
     nominated.push(nomination_proposer(
         store.get_list_submitter(),
-        eml_nl::utils::NominationJobTitle::Submitter,
+        eml_nl::documents::nomination::NominationJobTitle::Submitter,
         None,
     )?);
 
     for (i, sub) in substitutes.into_iter().enumerate() {
         nominated.push(nomination_proposer(
             sub,
-            eml_nl::utils::NominationJobTitle::DeputySubmitter,
+            eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
             Some((i + 1).to_string()),
         )?);
     }
