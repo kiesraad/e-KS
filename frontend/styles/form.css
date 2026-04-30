@@ -69,6 +69,22 @@
     &.warning {
       input:placeholder-shown {
         border-color: var(--color-warning-darker);
+        background-image: url("../icons/warning.svg");
+        background-repeat: no-repeat;
+        background-position: right 1em center;
+        background-size: 1.5em;
+        padding-right: 1em;
+      }
+    }
+
+    &:has(.error) {
+      input {
+        border-color: var(--color-error-darker);
+        background-image: url("../icons/error.svg");
+        background-repeat: no-repeat;
+        background-position: right 1em center;
+        background-size: 1.5em;
+        padding-right: 1em;
       }
     }
 
