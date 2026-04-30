@@ -106,7 +106,7 @@ mod tests {
         let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 3);
-        assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE);
+        assert_eq!(lists[0].candidate_count(), FIXTURE_CANDIDATE_LIST_SIZE);
         for list in &lists {
             for district in &list.list.electoral_districts {
                 assert!(

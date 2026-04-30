@@ -11,7 +11,6 @@ use crate::{
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CandidateListSummary {
     pub list: CandidateList,
-    pub person_count: usize,
     pub max_count: usize,
     pub duplicate_districts: Vec<ElectoralDistrict>,
 }
@@ -19,11 +18,11 @@ pub struct CandidateListSummary {
 impl Completable for CandidateListSummary {
     fn incomplete_items(&self) -> Vec<IncompleteItem> {
         let mut items = vec![];
-        if self.person_count == 0 {
+        if self.candidate_count() == 0 {
             items.push(IncompleteItem::NoCandidates);
-        } else if self.person_count > self.max_count {
+        } else if self.candidate_count() > self.max_count {
             items.push(IncompleteItem::TooManyCandidates {
-                actual: self.person_count,
+                actual: self.candidate_count(),
                 max: self.max_count,
             });
         }
@@ -56,7 +55,6 @@ impl CandidateListSummary {
         lists
             .into_iter()
             .map(|list| {
-                let person_count = list.candidates.len();
                 let max_count = store.get_political_group().get_max_candidates();
                 let duplicate_districts = list
                     .electoral_districts
@@ -67,11 +65,72 @@ impl CandidateListSummary {
 
                 CandidateListSummary {
                     list,
-                    person_count,
                     max_count,
                     duplicate_districts,
                 }
             })
             .collect()
+    }
+
+    pub fn candidate_count(&self) -> usize {
+        self.list.candidates.len()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        candidate_lists::CandidateListId, persons::PersonId, test_utils::sample_candidate_list,
+    };
+
+    use super::*;
+
+    #[test]
+    fn no_incomplete_items() {
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.candidates.push(PersonId::new());
+        let list_summary = CandidateListSummary {
+            list,
+            max_count: 200,
+            duplicate_districts: Vec::new(),
+        };
+
+        assert!(list_summary.incomplete_items().is_empty());
+    }
+
+    #[test]
+    fn empty_list_incomplete_items() {
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.electoral_districts = Vec::new();
+        let list_summary = CandidateListSummary {
+            list,
+            max_count: 200,
+            duplicate_districts: Vec::new(),
+        };
+
+        let items = list_summary.incomplete_items();
+
+        assert_eq!(items.len(), 2);
+        assert!(items.contains(&IncompleteItem::NoCandidates));
+        assert!(items.contains(&IncompleteItem::NoDistricts));
+    }
+
+    #[test]
+    fn list_incomplete_items_too_many() {
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.candidates.push(PersonId::new());
+        let list_summary = CandidateListSummary {
+            list,
+            max_count: 0,
+            duplicate_districts: vec![ElectoralDistrict::PsAmsterdam],
+        };
+
+        let items = list_summary.incomplete_items();
+
+        assert_eq!(items.len(), 2);
+        assert!(items.contains(&IncompleteItem::TooManyCandidates { actual: 1, max: 0 }));
+        assert!(items.contains(&IncompleteItem::DuplicateDistricts {
+            duplicates: vec![ElectoralDistrict::PsAmsterdam]
+        }));
     }
 }

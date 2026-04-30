@@ -41,6 +41,7 @@ pub async fn index(
     let candidate_lists = CandidateListSummary::list(&store)
         .into_iter()
         .map(|summary| {
+            let person_count = summary.candidate_count();
             Ok(SubmitCandidateList {
                 download_h1_path_nl: super::DownloadH1Path {
                     list_id: summary.list.id,
@@ -87,7 +88,7 @@ pub async fn index(
                 }
                 .to_string(),
                 list: summary.list,
-                person_count: summary.person_count,
+                person_count,
                 duplicate_districts: summary.duplicate_districts,
             })
         })

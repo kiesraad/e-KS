@@ -301,7 +301,7 @@ mod tests {
         let lists = CandidateListSummary::list(&store);
         assert_eq!(1, lists.len());
         assert_eq!(list.id, lists[0].list.id);
-        assert_eq!(0, lists[0].person_count);
+        assert_eq!(0, lists[0].candidate_count());
         assert_eq!(0, lists[0].duplicate_districts.len());
 
         Ok(())
@@ -519,7 +519,7 @@ mod tests {
 
         assert_eq!(1, lists.len());
         assert_eq!(list_b.id, lists[0].list.id);
-        assert_eq!(1, lists[0].person_count);
+        assert_eq!(1, lists[0].candidate_count());
         assert_eq!(person_b.id, list_b_from_db.candidates[0].person.id);
         assert_eq!(0, lists[0].duplicate_districts.len());
 
