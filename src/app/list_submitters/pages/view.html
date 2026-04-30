@@ -27,7 +27,7 @@
       <h2 class="mt-lg">{{ "political_group.substitute_submitter_data"|trans }}</h2>
       <p class="info">{{ "political_group.substitute_submitters_info"|trans }}</p>
       {% if substitute_submitters.is_empty() %}
-        <p>{{ "political_group.no_substitute_submitters"|trans }}</p>
+        <p class="mt-md font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
       {% else %}
         <div class="substitute-list-submitters">
           {% for submitter in substitute_submitters %}
