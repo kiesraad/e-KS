@@ -1,6 +1,8 @@
-use tracing::warn;
-
-use crate::{AppStore, ElectoralDistrict, candidate_lists::CandidateList, persons::Person};
+use crate::{
+    AppStore, ElectoralDistrict,
+    candidate_lists::{CandidateList, CandidateListSummary},
+    persons::Person,
+};
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
 #[derive(Debug)]
@@ -13,7 +15,7 @@ pub struct IncompleteItems {
 impl IncompleteItems {
     pub fn find_all(store: &AppStore) -> Self {
         let political_group_items = store.get_political_group().incomplete_items();
-        let candidate_lists = store.get_candidate_lists();
+        let candidate_lists = CandidateListSummary::list(store);
 
         Self {
             general_items: GeneralItems([political_group_items].concat()), // TODO: complete in issue #607
@@ -21,13 +23,12 @@ impl IncompleteItems {
             list_items: candidate_lists
                 .iter()
                 .filter_map(|candidate_list| {
-                    let items = candidate_list.incomplete_items();
-                    if items.is_empty() {
+                    if candidate_list.is_complete() {
                         None
                     } else {
                         Some(ListItems {
-                            list: candidate_list.clone(),
-                            items,
+                            list: candidate_list.list.clone(),
+                            items: candidate_list.incomplete_items(),
                         })
                     }
                 })

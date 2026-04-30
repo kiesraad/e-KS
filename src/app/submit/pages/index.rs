@@ -38,7 +38,7 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store)?
+    let candidate_lists = CandidateListSummary::list(&store)
         .into_iter()
         .map(|summary| {
             Ok(SubmitCandidateList {

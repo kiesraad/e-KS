@@ -103,7 +103,7 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 3);
         assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE);
@@ -125,7 +125,7 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 1);
         assert_eq!(
@@ -143,7 +143,7 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 2);
         for list in &lists {

@@ -1,4 +1,4 @@
-use std::collections::{BTreeMap, BTreeSet, HashMap};
+use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict,
@@ -8,7 +8,6 @@ use crate::{
     core::AnyLocale,
     id_newtype,
     persons::{Person, PersonId},
-    submit::{Completable, IncompleteItem},
 };
 use serde::{Deserialize, Serialize};
 
@@ -234,49 +233,6 @@ impl CandidateList {
     }
 }
 
-impl Completable for CandidateList {
-    fn incomplete_items(&self) -> Vec<crate::submit::IncompleteItem> {
-        let mut ii = Vec::new();
-
-        // TODO: How to get the max number allowed?
-        if self.candidates.is_empty() {
-            ii.push(IncompleteItem::NoCandidates);
-        } else if self.candidates.len() > 50 {
-            ii.push(IncompleteItem::TooManyCandidates {
-                actual: self.candidates.len(),
-                max: 50,
-            });
-        }
-
-        if self.electoral_districts.is_empty() {
-            ii.push(IncompleteItem::NoDistricts);
-            return ii;
-        }
-
-        let mut duplicates: HashMap<_, usize> = HashMap::new();
-        for electoral_district in &self.electoral_districts {
-            *duplicates.entry(electoral_district).or_default() += 1
-        }
-
-        let duplicates: Vec<_> = duplicates
-            .iter()
-            .filter_map(|(electoral_district, count)| {
-                if *count > 1 {
-                    Some(**electoral_district)
-                } else {
-                    None
-                }
-            })
-            .collect();
-
-        if !duplicates.is_empty() {
-            ii.push(IncompleteItem::DuplicateDistricts { duplicates })
-        }
-
-        ii
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -342,7 +298,7 @@ mod tests {
 
         list.create(&store).await?;
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(1, lists.len());
         assert_eq!(list.id, lists[0].list.id);
         assert_eq!(0, lists[0].person_count);
@@ -361,7 +317,7 @@ mod tests {
         let list3 = insert_list(&store, vec![ElectoralDistrict::OV, ElectoralDistrict::GR]).await?;
 
         // test
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
 
         // verification
         assert_eq!(3, lists.len());
@@ -558,7 +514,7 @@ mod tests {
 
         list_a.delete(&store).await?;
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         let list_b_from_db = FullCandidateList::get(&store, list_b.id).unwrap();
 
         assert_eq!(1, lists.len());

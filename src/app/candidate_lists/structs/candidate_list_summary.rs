@@ -2,17 +2,45 @@ use std::collections::BTreeMap;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{AppError, AppStore, ElectoralDistrict, candidate_lists::CandidateList};
+use crate::{
+    AppStore, ElectoralDistrict,
+    candidate_lists::CandidateList,
+    submit::{Completable, IncompleteItem},
+};
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
 pub struct CandidateListSummary {
     pub list: CandidateList,
     pub person_count: usize,
+    pub max_count: usize,
     pub duplicate_districts: Vec<ElectoralDistrict>,
 }
 
+impl Completable for CandidateListSummary {
+    fn incomplete_items(&self) -> Vec<IncompleteItem> {
+        let mut items = vec![];
+        if self.person_count == 0 {
+            items.push(IncompleteItem::NoCandidates);
+        } else if self.person_count > self.max_count {
+            items.push(IncompleteItem::TooManyCandidates {
+                actual: self.person_count,
+                max: self.max_count,
+            });
+        }
+        if !self.duplicate_districts.is_empty() {
+            items.push(IncompleteItem::DuplicateDistricts {
+                duplicates: self.duplicate_districts.clone(),
+            });
+        }
+        if self.list.electoral_districts.is_empty() {
+            items.push(IncompleteItem::NoDistricts)
+        }
+        items
+    }
+}
+
 impl CandidateListSummary {
-    pub fn list(store: &AppStore) -> Result<Vec<CandidateListSummary>, AppError> {
+    pub fn list(store: &AppStore) -> Vec<CandidateListSummary> {
         let lists = store.get_candidate_lists();
 
         let mut district_count = BTreeMap::<ElectoralDistrict, usize>::new();
@@ -25,10 +53,11 @@ impl CandidateListSummary {
             }
         }
 
-        let summaries = lists
+        lists
             .into_iter()
             .map(|list| {
                 let person_count = list.candidates.len();
+                let max_count = store.get_political_group().get_max_candidates();
                 let duplicate_districts = list
                     .electoral_districts
                     .iter()
@@ -39,11 +68,10 @@ impl CandidateListSummary {
                 CandidateListSummary {
                     list,
                     person_count,
+                    max_count,
                     duplicate_districts,
                 }
             })
-            .collect();
-
-        Ok(summaries)
+            .collect()
     }
 }
