@@ -15,6 +15,7 @@ edit_list_submitter: Edit list submitter
 edit_substitute_submitter: Edit substitute submitter
 general_information: General
 legal_name: Full statutory name
+list_submitter_address_info: This address will be used to send the notice of omissions
 list_submitter_data: List submitter data
 list_type: "Type list designation:"
 no_authorised_agents: No authorised agents
