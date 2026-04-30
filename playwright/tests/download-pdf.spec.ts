@@ -113,4 +113,16 @@ test.describe("download PDF", async () => {
     expect(download.suggestedFilename()).toMatch(/model-h9-ze\.zip/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
+
+  test("EML 210", async ({ deleteExistingCandidateLists: page }) => {
+    await setupCandidateList(page, "Friesland");
+    await page.goto("/submit");
+
+    const downloadPromise = page.waitForEvent("download");
+    await new SubmitPage(page).linkEML210Download.click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/eml210\.eml\.xml/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+  });
 });
