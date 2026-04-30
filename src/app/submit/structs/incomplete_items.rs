@@ -9,13 +9,19 @@ pub struct IncompleteItems {
 
 impl IncompleteItems {
     pub fn find_all(store: &AppStore) -> Self {
-        let political_group_items = store.get_political_group().incomplete_items();
 
         Self {
-            general_items: GeneralItems([political_group_items].concat()), // TODO: complete in issue #607
+            general_items: Self::find_general_items(store),
             candidate_items: vec![], // TODO: complete in issue #605
             list_items: vec![],      // TODO: complete in issue #608
         }
+    }
+
+    fn find_general_items(store: &AppStore) -> GeneralItems {
+        let political_group_items = store.get_political_group().incomplete_items();
+        let authorized_agent_items = store.get_authorised_agents().iter().map(|a| a.incomplete_items()).flatten().collect();
+
+        GeneralItems(vec![])
     }
 
     pub fn models_downloadable(&self) -> bool {

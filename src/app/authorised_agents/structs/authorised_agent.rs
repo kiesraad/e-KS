@@ -1,4 +1,4 @@
-use crate::{AppError, AppEvent, AppStore, common::FullName, id_newtype};
+use crate::{AppError, AppEvent, AppStore, common::FullName, id_newtype, submit::Completable};
 use serde::{Deserialize, Serialize};
 
 id_newtype!(pub struct AuthorisedAgentId);
@@ -7,6 +7,12 @@ id_newtype!(pub struct AuthorisedAgentId);
 pub struct AuthorisedAgent {
     pub id: AuthorisedAgentId,
     pub name: FullName,
+}
+
+impl Completable for AuthorisedAgent {
+    fn incomplete_items(&self) -> Vec<crate::submit::IncompleteItem> {
+        todo!()
+    }
 }
 
 impl AuthorisedAgent {
