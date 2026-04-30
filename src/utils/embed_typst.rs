@@ -1,56 +1,33 @@
-//! Embedded Typst webservice helpers for local PDF generation.
-use typst_webservice::{PdfContext, start_server};
+//! Embedded Typst renderer: builds and caches a [`PdfContext`] from assets
+//! baked into the binary at compile time.
+use std::sync::{Arc, OnceLock};
+
+use typst_webservice::PdfContext;
 
 const TYPST_FILES: &[(&str, &[u8])] = include!(concat!(env!("OUT_DIR"), "/typst_files.rs"));
 
-pub async fn start() -> Result<String, std::io::Error> {
-    // bind to random port
-    let listener = tokio::net::TcpListener::bind("127.0.0.1:0").await?;
-    let address = listener.local_addr()?;
-    tracing::info!("Typst webservice listening on {address}");
+static CONTEXT: OnceLock<Arc<PdfContext>> = OnceLock::new();
 
-    // Start the typst webservice in the background
-    tokio::spawn(async move {
-        let context = PdfContext::from_assets(TYPST_FILES).unwrap();
-        start_server(listener, context).await.unwrap();
-    });
-
-    Ok(format!("http://{address}"))
+/// Returns a shared, lazily-initialized [`PdfContext`] built from the embedded
+/// Typst assets. The context is cloned cheaply on subsequent calls.
+pub fn pdf_context() -> Arc<PdfContext> {
+    CONTEXT
+        .get_or_init(|| {
+            Arc::new(
+                PdfContext::from_assets(TYPST_FILES).expect("failed to load embedded Typst assets"),
+            )
+        })
+        .clone()
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use std::{net::SocketAddr, str::FromStr};
-    use tokio::{
-        net::TcpStream,
-        time::{Duration, sleep, timeout},
-    };
 
-    async fn wait_for_server(addr: SocketAddr) -> bool {
-        for _ in 0..10 {
-            if TcpStream::connect(addr).await.is_ok() {
-                return true;
-            }
-            sleep(Duration::from_millis(25)).await;
-        }
-        false
-    }
-
-    #[tokio::test]
-    async fn start_returns_local_url_and_accepts_connections() {
-        let url = start().await.expect("start typst server");
-        assert!(url.starts_with("http://127.0.0.1:"));
-
-        let addr = url
-            .strip_prefix("http://")
-            .and_then(|value| SocketAddr::from_str(value).ok())
-            .expect("valid socket address");
-
-        let ready = timeout(Duration::from_secs(2), wait_for_server(addr))
-            .await
-            .unwrap_or(false);
-
-        assert!(ready, "typst server did not accept connections");
+    #[test]
+    fn pdf_context_initializes_and_is_cached() {
+        let first = pdf_context();
+        let second = pdf_context();
+        assert!(Arc::ptr_eq(&first, &second));
     }
 }

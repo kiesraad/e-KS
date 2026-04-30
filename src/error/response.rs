@@ -157,6 +157,11 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::InternalServerError,
                 message: "An internal server error occurred.".to_string(),
             },
+            #[cfg(feature = "embed-typst")]
+            AppError::TypstError(_) => ErrorResponse {
+                error: ErrorResponseVariant::InternalServerError,
+                message: "An internal server error occurred.".to_string(),
+            },
             AppError::InternalServerError
             | AppError::NoStorageConfigured
             | AppError::IntegrityViolation
@@ -176,6 +181,10 @@ impl ErrorResponse {
             AppError::UserError(msg) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {msg}"),
+            },
+            AppError::EmlError(err) => ErrorResponse {
+                error: ErrorResponseVariant::BadRequest,
+                message: format!("EML error: {err}"),
             },
         }
     }

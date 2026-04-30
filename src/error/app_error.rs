@@ -25,6 +25,8 @@ pub enum AppError {
     UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
+    #[cfg(feature = "embed-typst")]
+    TypstError(typst_webservice::AppError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
 
@@ -45,6 +47,8 @@ pub enum AppError {
     /// Missing data when generating a PDF.
     IncompleteData(&'static str),
 
+    EmlError(eml_nl::EMLError),
+
     NoStorageConfigured,
     IntegrityViolation,
 
@@ -60,6 +64,8 @@ impl Display for AppError {
             AppError::CsrfTokenInvalid => write!(f, "CSRF token is invalid"),
             #[cfg(feature = "database")]
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
+            #[cfg(feature = "embed-typst")]
+            AppError::TypstError(err) => write!(f, "Typst error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
@@ -80,6 +86,7 @@ impl Display for AppError {
             AppError::UpstreamError(err) => write!(f, "Upstream error: {err}"),
             AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
             AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),
+            AppError::EmlError(err) => write!(f, "EML error: {err}"),
         }
     }
 }
@@ -90,6 +97,13 @@ impl std::error::Error for AppError {}
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
         AppError::DatabaseError(err)
+    }
+}
+
+#[cfg(feature = "embed-typst")]
+impl From<typst_webservice::AppError> for AppError {
+    fn from(err: typst_webservice::AppError) -> Self {
+        AppError::TypstError(err)
     }
 }
 
@@ -162,6 +176,12 @@ impl From<serde_json::Error> for AppError {
 impl From<csv::Error> for AppError {
     fn from(_: csv::Error) -> Self {
         AppError::InternalServerError
+    }
+}
+
+impl From<eml_nl::EMLError> for AppError {
+    fn from(err: eml_nl::EMLError) -> Self {
+        AppError::EmlError(err)
     }
 }
 

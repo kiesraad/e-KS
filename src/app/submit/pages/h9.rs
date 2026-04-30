@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Config, Context,
+    AppError, AppEvent, AppStore, Context, TypstRenderer,
     candidate_lists::FullCandidateList,
     core::PdfZip,
     submit::{H9, pages::DownloadH9Path, structs::typst_candidate::ordered_candidates},
@@ -7,15 +7,15 @@ use crate::{
 use axum::{extract::State, response::IntoResponse};
 
 pub async fn gen_h9(
-    path: DownloadH9Path,
+    path @ DownloadH9Path { list_id, locale }: DownloadH9Path,
     list: FullCandidateList,
     store: AppStore,
-    State(config): State<&Config>,
+    State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     // front load the ordering and Typst conversion of candidates
     // so we only need to do it once for all H9 models
-    let ordered_candidates = ordered_candidates(&mut list.candidates.clone(), path.locale)?;
+    let ordered_candidates = ordered_candidates(&mut list.candidates.clone(), locale)?;
 
     let mut h9s = vec![];
     for candidate in list.candidates {
@@ -25,7 +25,7 @@ pub async fn gen_h9(
             &ordered_candidates,
             candidate,
             &context.election,
-            path.locale,
+            locale,
         );
         h9s.push(h9_model?);
     }
@@ -40,7 +40,7 @@ pub async fn gen_h9(
         .update(AppEvent::DownloadFile {
             file_name: filename.clone(),
             download_path: path.to_string(),
-            list_id: path.list_id,
+            list_id,
         })
         .await?;
 
@@ -48,7 +48,7 @@ pub async fn gen_h9(
         filename,
         pdfs: h9s,
     }
-    .generate(&config.typst_url)
+    .generate(&renderer)
     .await
 }
 
@@ -99,7 +99,7 @@ mod tests {
                 person: sample_person,
             }],
         };
-        let config = Config::new_test();
+        let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         // test
         let result = gen_h9(
@@ -109,7 +109,7 @@ mod tests {
             },
             full_list,
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await;
@@ -163,7 +163,7 @@ mod tests {
             ],
         };
 
-        let (server, config) = setup_typst_webservice_stub().await;
+        let (server, renderer) = setup_typst_webservice_stub().await;
 
         // test
         let response = gen_h9(
@@ -173,7 +173,7 @@ mod tests {
             },
             full_list,
             store,
-            State(&config),
+            State(renderer),
             Context::new_test_without_db(),
         )
         .await

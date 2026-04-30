@@ -21,6 +21,20 @@ pub(super) fn extract_old_new(
             (old, new)
         }};
 
+        (Vec, $kind:ident, $id:expr) => {{
+            let old = state_before
+                .$kind
+                .iter()
+                .find(|data| data.id == $id)
+                .and_then(|data| serde_json::to_value(data).ok());
+            let new = state_after
+                .$kind
+                .iter()
+                .find(|data| data.id == $id)
+                .and_then(|data| serde_json::to_value(data).ok());
+            (old, new)
+        }};
+
         ($kind:ident, $id:expr) => {{
             let old = state_before
                 .$kind
@@ -49,12 +63,12 @@ pub(super) fn extract_old_new(
         AppEvent::CreatePersonPersonalData { person_id, .. } => update!(persons, person_id),
         AppEvent::CreateCandidateList(cl) => update!(candidate_lists, cl.id),
         AppEvent::CreateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
-        AppEvent::CreateSubstituteSubmitter(ss) => update!(substitute_submitters, ss.id),
+        AppEvent::CreateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
 
         AppEvent::UpdatePerson(person) => update!(persons, person.id),
         AppEvent::UpdateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
         AppEvent::UpdateListSubmitter(_) => update!(list_submitter),
-        AppEvent::UpdateSubstituteSubmitter(ss) => update!(substitute_submitters, ss.id),
+        AppEvent::UpdateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
         AppEvent::UpdatePoliticalGroup(_) => update!(political_group),
 
         AppEvent::UpdatePersonPersonalData { person_id, .. }
@@ -79,7 +93,7 @@ pub(super) fn extract_old_new(
         AppEvent::DeleteAuthorisedAgent(aa_id) => update!(authorised_agents, aa_id),
         AppEvent::DeleteSubstituteSubmitter {
             substitute_submitter_id: ss_id,
-        } => update!(substitute_submitters, ss_id),
+        } => update!(Vec, substitute_submitters, *ss_id),
 
         AppEvent::DeveloperLogin { stream_id } => event!({ stream_id: stream_id.to_string() }),
         AppEvent::DownloadFile {
@@ -115,6 +129,7 @@ mod tests {
         ElectoralDistrict, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
+        common::PreviousElectionResults,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         political_groups::PoliticalGroup,
@@ -163,9 +178,7 @@ mod tests {
         let submitter = sample_list_submitter(ListSubmitterId::new());
         let before = empty_state();
         let mut after = empty_state();
-        after
-            .substitute_submitters
-            .insert(submitter.id, submitter.clone());
+        after.substitute_submitters.push(submitter.clone());
 
         let (old, new) = extract_old_new(
             &AppEvent::CreateSubstituteSubmitter(submitter.clone()),
@@ -248,7 +261,7 @@ mod tests {
         before.political_group = sample_political_group();
         let mut after = empty_state();
         after.political_group = PoliticalGroup {
-            long_list_allowed: Some(true),
+            previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
             ..sample_political_group()
         };
 

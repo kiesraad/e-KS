@@ -1,4 +1,4 @@
-use eks::{AppError, AppState, logging, router, server};
+use eks::{AppError, AppState, Config, logging, router, server};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -11,10 +11,21 @@ async fn main() {
     start(address).await;
 }
 
-/// Starts the server on the given address. If the "embed-typst" feature is enabled, also starts the embedded typst webservice.
+/// Starts the server on the given address. If the "embed-typst" feature is
+/// enabled, PDFs are rendered in-process using the embedded typst-webservice
+/// library; otherwise an external typst-webservice is contacted over HTTP.
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();
+
+    // Load and validate configuration before binding so misconfiguration fails fast.
+    let config = match Config::from_env() {
+        Ok(config) => config,
+        Err(err) => {
+            tracing::error!("Invalid configuration: {err}");
+            std::process::exit(1);
+        }
+    };
 
     // Create a `TcpListener` using tokio.
     let listener = match TcpListener::bind(&address).await {
@@ -25,36 +36,24 @@ async fn start(address: String) {
         }
     };
 
-    // Start embedded typst webservice if the feature is enabled
-    #[cfg(feature = "embed-typst")]
-    let typst_url = match eks::utils::embed_typst::start().await {
-        Ok(url) => Some(url),
-        Err(err) => {
-            tracing::error!("Failed to start typst webservice: {err}");
-            std::process::exit(1);
-        }
-    };
-
-    #[cfg(not(feature = "embed-typst"))]
-    let typst_url = None;
-
     // Run the application
-    if let Err(err) = run(listener, typst_url).await {
+    if let Err(err) = run(listener, config).await {
         tracing::error!("Application error: {}", err);
         std::process::exit(1);
     }
 }
 
-/// Runs the application with the given TCP listener and optional typst URL. Initializes logging, application state, loads data, and starts the server.
-async fn run(listener: TcpListener, typst_url: Option<String>) -> Result<(), AppError> {
+/// Runs the application with the given TCP listener and resolved configuration.
+/// Initializes application state, builds the router, and starts the server.
+async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
     // Create application state
-    let state = AppState::new(typst_url).await?;
+    let state = AppState::new_with_config(config).await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
-    server::serve(router, listener).await?;
+    server::serve(router, listener, state.config).await?;
 
     Ok(())
 }
@@ -107,8 +106,9 @@ mod tests {
     async fn serves_homepage_and_not_found() {
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let addr = listener.local_addr().unwrap();
+        let config = Config::from_env().expect("config");
         let server = tokio::spawn(async move {
-            run(listener, None).await.unwrap();
+            run(listener, config).await.unwrap();
         });
 
         let base = format!("http://{addr}");

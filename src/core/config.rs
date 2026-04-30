@@ -1,7 +1,7 @@
 //! Loads runtime configuration from environment variables for AppState.
 //! Used by AppState::new to construct service URLs and storage settings.
 
-use std::env;
+use std::{env, path::PathBuf};
 
 use secrecy::SecretString;
 
@@ -15,6 +15,7 @@ mod dev_defaults {
     #[cfg(not(feature = "database"))]
     pub(super) const STORAGE_URL: &str = "memory://ephemeral";
 
+    #[cfg(not(feature = "embed-typst"))]
     pub(super) const TYPST_URL: &str = "http://localhost:8080";
 
     pub(super) const BAG_SERVICE_URL: &str = "http://localhost:8090";
@@ -27,6 +28,7 @@ mod dev_defaults {
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
+            #[cfg(not(feature = "embed-typst"))]
             ("TYPST_URL", TYPST_URL),
             ("BAG_SERVICE_URL", BAG_SERVICE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
@@ -41,13 +43,22 @@ mod dev_defaults {
     }
 }
 
+/// TLS configuration for serving HTTPS via rustls.
+#[derive(Debug, Clone)]
+pub struct TlsConfig {
+    pub cert_path: PathBuf,
+    pub key_path: PathBuf,
+}
+
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
     pub storage_url: String,
+    #[cfg(not(feature = "embed-typst"))]
     pub typst_url: String,
     pub id_derivation_key: SecretString,
     pub encryption_derivation_key: SecretString,
+    pub tls: Option<TlsConfig>,
 }
 
 /// Helper function to get environment variable or return an error
@@ -69,28 +80,41 @@ where
 }
 
 impl Config {
-    pub fn from_env(typst_url: Option<String>) -> Result<Self, AppError> {
-        Self::from_env_with(typst_url, env::var)
+    pub fn from_env() -> Result<Self, AppError> {
+        Self::from_env_with(env::var)
     }
 
-    fn from_env_with<F>(typst_url: Option<String>, mut lookup: F) -> Result<Self, AppError>
+    fn from_env_with<F>(mut lookup: F) -> Result<Self, AppError>
     where
         F: FnMut(&'static str) -> Result<String, env::VarError>,
     {
         let storage_url = get_env_with("STORAGE_URL", &mut lookup)?;
-        let typst_url = match typst_url {
-            Some(value) => value,
-            None => get_env_with("TYPST_URL", &mut lookup)?,
-        };
+        #[cfg(not(feature = "embed-typst"))]
+        let typst_url = get_env_with("TYPST_URL", &mut lookup)?;
         let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
         let encryption_derivation_key = get_env_with("ENCRYPTION_DERIVATION_KEY", &mut lookup)?;
 
+        let tls = match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
+            (Some(cert), Some(key)) => Some(TlsConfig {
+                cert_path: PathBuf::from(cert),
+                key_path: PathBuf::from(key),
+            }),
+            (None, None) => None,
+            _ => {
+                return Err(AppError::ConfigLoadError(
+                    "TLS_CERT_PATH and TLS_KEY_PATH must both be set, or both unset".to_string(),
+                ));
+            }
+        };
+
         Ok(Self {
             storage_url,
+            #[cfg(not(feature = "embed-typst"))]
             typst_url,
             id_derivation_key: SecretString::from(id_derivation_key),
             encryption_derivation_key: SecretString::from(encryption_derivation_key),
+            tls,
         })
     }
 
@@ -98,9 +122,11 @@ impl Config {
     pub fn new_test() -> Self {
         Self {
             storage_url: "memory://".to_string(),
+            #[cfg(not(feature = "embed-typst"))]
             typst_url: "http://localhost:8080".to_string(),
             id_derivation_key: SecretString::from("test-secret-123"),
             encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
+            tls: None,
         }
     }
 }
@@ -130,6 +156,7 @@ mod tests {
         assert_eq!(value, "present");
     }
 
+    #[cfg(not(feature = "embed-typst"))]
     #[test]
     fn from_env_uses_env_values() {
         let map = HashMap::from([
@@ -139,26 +166,24 @@ mod tests {
         ]);
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(None, lookup).expect("config");
+        let config = Config::from_env_with(lookup).expect("config");
 
         assert_eq!(config.storage_url, "memory://test");
         assert_eq!(config.typst_url, "http://typst.test");
     }
 
+    #[cfg(feature = "embed-typst")]
     #[test]
-    fn from_env_prefers_override() {
+    fn from_env_uses_env_values_with_embed_typst() {
         let map = HashMap::from([
-            ("STORAGE_URL", "memory://override"),
-            ("TYPST_URL", "http://typst.env"),
+            ("STORAGE_URL", "memory://test"),
             ("ID_DERIVATION_KEY", "test-secret-123"),
         ]);
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(Some("http://typst.override".to_string()), lookup)
-            .expect("config");
+        let config = Config::from_env_with(lookup).expect("config");
 
-        assert_eq!(config.storage_url, "memory://override");
-        assert_eq!(config.typst_url, "http://typst.override");
+        assert_eq!(config.storage_url, "memory://test");
     }
 
     #[cfg(feature = "dev-features")]
@@ -186,16 +211,27 @@ mod tests {
         );
     }
 
-    #[cfg(feature = "dev-features")]
+    #[cfg(all(feature = "dev-features", not(feature = "embed-typst")))]
     #[test]
     fn from_env_uses_defaults_in_dev_features() {
         let map = HashMap::new();
         let lookup = lookup_from(&map);
 
-        let config = Config::from_env_with(None, lookup).expect("dev defaults");
+        let config = Config::from_env_with(lookup).expect("dev defaults");
 
         assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
         assert_eq!(config.typst_url, dev_defaults::TYPST_URL);
+    }
+
+    #[cfg(all(feature = "dev-features", feature = "embed-typst"))]
+    #[test]
+    fn from_env_uses_defaults_in_dev_features() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("dev defaults");
+
+        assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
     }
 
     #[cfg(not(feature = "dev-features"))]
@@ -204,11 +240,54 @@ mod tests {
         let map = HashMap::new();
         let lookup = lookup_from(&map);
 
-        let err = Config::from_env_with(None, lookup).expect_err("missing storage");
+        let err = Config::from_env_with(lookup).expect_err("missing storage");
 
         assert_eq!(
             err.to_string(),
             AppError::MissingEnvVar("STORAGE_URL").to_string()
         );
+    }
+
+    #[test]
+    fn from_env_returns_no_tls_when_unset() {
+        let map = HashMap::new();
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+
+        assert!(config.tls.is_none());
+    }
+
+    #[test]
+    fn from_env_returns_tls_when_both_set() {
+        let map = HashMap::from([
+            ("TLS_CERT_PATH", "/etc/tls/cert.pem"),
+            ("TLS_KEY_PATH", "/etc/tls/key.pem"),
+        ]);
+        let lookup = lookup_from(&map);
+
+        let config = Config::from_env_with(lookup).expect("config");
+        let tls = config.tls.expect("tls present");
+
+        assert_eq!(tls.cert_path, std::path::PathBuf::from("/etc/tls/cert.pem"));
+        assert_eq!(tls.key_path, std::path::PathBuf::from("/etc/tls/key.pem"));
+    }
+
+    #[test]
+    fn from_env_errors_when_only_tls_cert_set() {
+        let map = HashMap::from([("TLS_CERT_PATH", "/etc/tls/cert.pem")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+    }
+
+    #[test]
+    fn from_env_errors_when_only_tls_key_set() {
+        let map = HashMap::from([("TLS_KEY_PATH", "/etc/tls/key.pem")]);
+        let lookup = lookup_from(&map);
+
+        let err = Config::from_env_with(lookup).expect_err("err");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
     }
 }

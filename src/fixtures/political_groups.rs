@@ -23,7 +23,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_substitute_submitter_2").into();
 
     let political_group = PoliticalGroup {
-        long_list_allowed: None,
+        previous_election_results: None,
         legal_name: Some(
             "Kiesraad Demo Partij"
                 .parse::<LegalName>()

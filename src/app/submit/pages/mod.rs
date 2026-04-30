@@ -4,6 +4,7 @@ use serde::Deserialize;
 
 use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLocale};
 
+mod eml210;
 mod h1;
 mod h3_1;
 mod h4;
@@ -15,6 +16,12 @@ mod integration_tests;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/submit", rejection(AppError))]
 pub struct SubmitPath;
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/generate/{list_id}/eml210.eml.xml", rejection(AppError))]
+pub struct DownloadEml210Path {
+    list_id: CandidateListId,
+}
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{list_id}/{locale}/h1.pdf", rejection(AppError))]
@@ -47,6 +54,7 @@ pub struct DownloadH9Path {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)
+        .typed_get(eml210::gen_eml210)
         .typed_get(h1::gen_h1)
         .typed_get(h3_1::gen_h3_1)
         .typed_get(h4::gen_h4)
@@ -63,9 +71,9 @@ mod tests {
     use serde_json::Value;
     use tokio::{net::TcpListener, task::JoinHandle};
 
-    use crate::Config;
+    use crate::TypstRenderer;
 
-    pub async fn setup_typst_webservice_stub() -> (JoinHandle<()>, Config) {
+    pub async fn setup_typst_webservice_stub() -> (JoinHandle<()>, TypstRenderer) {
         let router = Router::new()
             .route(
                 "/render-pdf/{template}/{file_name}",
@@ -90,14 +98,8 @@ mod tests {
             axum::serve(listener, router).await.unwrap();
         });
 
-        let typst_url = Box::leak(format!("http://{addr}").into_boxed_str()).to_string();
-        let config = Config {
-            storage_url: "memory:".to_string(),
-            typst_url,
-            id_derivation_key: secrecy::SecretString::from("test-key"),
-            encryption_derivation_key: secrecy::SecretString::from("test-encryption-key"),
-        };
+        let renderer = TypstRenderer::http(format!("http://{addr}"));
 
-        (server, config)
+        (server, renderer)
     }
 }

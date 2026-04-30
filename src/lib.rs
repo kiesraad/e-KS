@@ -73,7 +73,8 @@ pub use auth::{
 };
 pub use core::{
     AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,
-    Province, WaterCouncil, constants, get_env, logging, server, translate,
+    Province, TlsConfig, TypstRenderer, WaterCouncil, constants, get_env, logging, server,
+    translate,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{Form, TokenValue};
