@@ -29,25 +29,20 @@
 
     .date-input-row > .date-separate:not(.hidden) {
       display: flex;
-      gap: 0.25rem;
-      padding: 0;
-
-      & input.day {
-        flex: 1;
-      }
-
-      & input.month {
-        flex: 1;
-      }
 
       & input.year {
-        flex: 2;
+        flex: 3.5;
+        min-width: 3.5em;
       }
 
       & > input {
         border: none;
         background: none;
         background-image: none;
+        text-align: center;
+        padding: 1em 0;
+        flex: 2;
+        min-width: 2em;
       }
     }
 
@@ -236,9 +231,7 @@
 .date-separate:not(.hidden) {
   width: 100%;
   max-width: 32rem;
-
   display: flex;
-  padding: 1rem;
   justify-content: space-between;
   align-items: center;
   align-self: stretch;
@@ -246,6 +239,13 @@
   border-width: 2px;
   border-color: var(--bg-gray-darkest);
   background: var(--base-white);
+}
+
+.form input[type="text"],
+.form input[type="number"],
+.form textarea,
+.form select {
+  padding: 1rem;
 }
 
 .form select {
