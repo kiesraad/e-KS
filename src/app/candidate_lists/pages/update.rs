@@ -157,7 +157,7 @@ mod tests {
             .expect("location header value");
 
         // verify updated candidate list object in database
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;
@@ -208,7 +208,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Edit candidate list"));
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 1);
 
         let updated_list = &lists[0].list;

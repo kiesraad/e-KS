@@ -42,6 +42,13 @@ impl PoliticalGroup {
             .update(AppEvent::UpdatePoliticalGroup(self.clone()))
             .await
     }
+
+    pub fn get_max_candidates(&self) -> usize {
+        match self.previous_election_results {
+            Some(PreviousElectionResults::SixteenOrMoreSeats) => 80,
+            _ => 50,
+        }
+    }
 }
 
 #[cfg(test)]
