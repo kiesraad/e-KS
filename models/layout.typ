@@ -66,6 +66,7 @@
 
   table(
     columns: columns,
+    rows: 1.8em,
     table.header(..headers.map(value => { text(style: "italic", value) })),
     ..values.flatten(),
   )

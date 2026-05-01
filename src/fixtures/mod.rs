@@ -1,10 +1,10 @@
-use crate::{AppError, AppStore, ElectionConfig};
+use crate::{AppError, AppStore};
 
 mod candidate_list;
 mod persons;
 mod political_groups;
 
-pub async fn load(store: &AppStore, election: ElectionConfig) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let person_count = store.get_person_count();
     let candidate_list_count = store.get_candidate_list_count();
 
@@ -15,9 +15,7 @@ pub async fn load(store: &AppStore, election: ElectionConfig) -> Result<(), AppE
     }
 
     persons::load(store).await?;
-    if !election.has_only_one_district() {
-        candidate_list::load(store).await?;
-    }
+    candidate_list::load(store).await?;
     political_groups::load(store).await?;
 
     Ok(())
@@ -30,7 +28,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_all_fixtures() {
         let store = AppStore::new_for_test();
-        load(&store, crate::ElectionConfig::EK27).await.unwrap();
+        load(&store).await.unwrap();
         let persons = crate::persons::Person::list(
             &store,
             50,

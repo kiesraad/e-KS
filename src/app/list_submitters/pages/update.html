@@ -6,6 +6,8 @@
   {% set should_warn = true %}
   <fieldset>
     {% include "list_submitters/components/name_fields.html" %}
+    <h3>{{ "person.correspondence_address"|trans }}</h3>
+    <span class="alert alert-info">{{ "political_group.list_submitter_address_info"|trans }}</span>
     {% include "list_submitters/components/address_fields.html" %}
   </fieldset>
 {% endblock %}

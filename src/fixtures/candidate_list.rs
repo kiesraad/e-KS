@@ -44,7 +44,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         )
         .into(),
         electoral_districts: vec![election.electoral_districts()[0]],
-        candidates: person_ids,
+        candidates: valid_person_ids.clone(),
         ..Default::default()
     };
 
@@ -62,7 +62,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
     CandidateList {
         id: Uuid::new_v5(&Uuid::NAMESPACE_OID, b"the_second_fixture_candidate_list").into(),
         electoral_districts: second_districts,
-        candidates: valid_person_ids.clone(),
+        candidates: person_ids.clone(),
         ..candidate_list.clone()
     }
     .create(store)

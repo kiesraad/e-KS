@@ -13,9 +13,7 @@
   {% if !full_list.list.electoral_districts.is_empty() %}
     {% let election = "election"|election_value %}
     <span class="subtitle">
-      {% if full_list.list.contains_all_districts(election) %}
-        {# skip #}
-      {% else %}
+      {% if !full_list.list.contains_all_districts(election) && !election.has_only_one_district() %}
         <ul class="districts">
           {% for district in full_list.list.electoral_districts %}
             <li>
@@ -61,6 +59,9 @@
     {% else %}
       {% let max_candidates = "max_candidates"|integer_value %}
       {% include "candidate_lists/components/candidates_table.html" %}
+      <p class="mt-xl">
+        <a href="{{ crate::submit::SubmitPath{} }}" class="button">{{ "common.continue_to_submit"|trans }}</a>
+      </p>
     {% endif %}
   </section>
 {% endblock %}
