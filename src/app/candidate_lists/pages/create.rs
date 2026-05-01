@@ -157,7 +157,7 @@ mod test {
             .to_str()
             .expect("location header value");
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 1);
 
         let expected = lists[0].list.after_create_path().to_string();
@@ -219,7 +219,7 @@ mod test {
         )
         .await?;
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 2);
         let new_list = &lists[1].list;
         assert_eq!(new_list.candidates, vec![person_a.id, person_b.id]);
@@ -287,7 +287,7 @@ mod test {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 1);
         assert_eq!(
             lists[0].list.electoral_districts,
@@ -318,7 +318,7 @@ mod test {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 1);
         assert_eq!(
             lists[0].list.electoral_districts,

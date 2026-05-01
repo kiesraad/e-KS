@@ -298,10 +298,10 @@ mod tests {
 
         list.create(&store).await?;
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         assert_eq!(1, lists.len());
         assert_eq!(list.id, lists[0].list.id);
-        assert_eq!(0, lists[0].person_count);
+        assert_eq!(0, lists[0].candidate_count());
         assert_eq!(0, lists[0].duplicate_districts.len());
 
         Ok(())
@@ -317,7 +317,7 @@ mod tests {
         let list3 = insert_list(&store, vec![ElectoralDistrict::OV, ElectoralDistrict::GR]).await?;
 
         // test
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
 
         // verification
         assert_eq!(3, lists.len());
@@ -514,12 +514,12 @@ mod tests {
 
         list_a.delete(&store).await?;
 
-        let lists = CandidateListSummary::list(&store)?;
+        let lists = CandidateListSummary::list(&store);
         let list_b_from_db = FullCandidateList::get(&store, list_b.id).unwrap();
 
         assert_eq!(1, lists.len());
         assert_eq!(list_b.id, lists[0].list.id);
-        assert_eq!(1, lists[0].person_count);
+        assert_eq!(1, lists[0].candidate_count());
         assert_eq!(person_b.id, list_b_from_db.candidates[0].person.id);
         assert_eq!(0, lists[0].duplicate_districts.len());
 
