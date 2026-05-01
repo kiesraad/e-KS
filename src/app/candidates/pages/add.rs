@@ -16,7 +16,7 @@ use super::AddCandidatePath;
 #[derive(Template)]
 #[template(path = "candidates/pages/add.html")]
 struct AddExistingPersonTemplate {
-    full_list: FullCandidateList,
+    close_action: String,
     persons: Vec<Person>,
     added_candidates: HashMap<PersonId, usize>,
     form: FormData<AddPersonForm>,
@@ -46,11 +46,19 @@ impl AddExistingPersonTemplate {
         let candidate_ids = added_candidates.keys().cloned().collect::<Vec<_>>();
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
         let show_add_all = persons.len() != candidate_ids.len();
+        let close_action = if !added_candidates.is_empty() {
+            full_list
+                .list
+                .highlight_last_success_path(added_candidates.len())
+                .to_string()
+        } else {
+            full_list.list.view_path().to_string()
+        };
 
         Ok(Self {
+            close_action,
             show_add_all,
             show_remove_all: !show_add_all && !candidate_ids.is_empty(),
-            full_list,
             persons,
             added_candidates,
             form,
@@ -245,6 +253,10 @@ mod tests {
         assert_eq!(full_list.candidates.len(), 1);
         assert_eq!(full_list.candidates[0].person.id, person.id);
 
+        let body = response_body_string(response).await;
+        assert!(body.contains("highlight_last=1"));
+        assert!(body.contains("success=true"));
+
         Ok(())
     }
 
@@ -286,6 +298,10 @@ mod tests {
         assert_eq!(full_list.candidates.len(), 2);
         assert_eq!(full_list.candidates[0].person.id, existing_person.id);
         assert_eq!(full_list.candidates[1].person.id, new_person.id);
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("highlight_last=1"));
+        assert!(body.contains("success=true"));
 
         Ok(())
     }
@@ -331,6 +347,10 @@ mod tests {
         assert!(full_list.contains(existing_person.id));
         assert!(full_list.contains(person_one.id));
         assert!(full_list.contains(person_two.id));
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("highlight_last=2"));
+        assert!(body.contains("success=true"));
 
         Ok(())
     }

@@ -1,28 +1,50 @@
+function getRows(personId: string | null, last: number): Element[] | null {
+  if (personId) {
+    const row = document.querySelector(`tr[data-id="${personId}"]`);
+    if (row) {
+      return [row];
+    }
+  }
+
+  if (last) {
+    const rows = document.querySelectorAll(
+      `tbody > tr:nth-last-child(-n + ${last})`,
+    );
+    return [...rows];
+  }
+
+  return null;
+}
+
 // Highlight a table row when the `highlight` query param is present, then
 // remove the param from the URL to avoid persistent state on refresh/share.
 export default function highlightRow() {
   const url = new URL(globalThis.location.href);
   const personId = url.searchParams.get("highlight");
+  const last = parseInt(url.searchParams.get("highlight_last") ?? "", 10);
   const sticky = document.querySelector(".sticky-nav");
 
-  if (!personId) {
+  if (!personId && !last) {
     return;
   }
 
   // Match rows by data-id so deep links can target a specific person.
-  const row = document.querySelector(`tr[data-id="${personId}"]`);
+  const rows = getRows(personId, last);
 
   // Clean the URL once we've captured the ID.
   url.searchParams.delete("highlight");
+  url.searchParams.delete("highlight_last");
   globalThis.history.replaceState({}, "", url.toString());
 
-  if (!row) {
+  if (!rows || rows.length < 1) {
     return;
   }
 
   // Apply the highlight and bring the row into view.
-  row.classList.add("highlighted");
-  row.scrollIntoView({ behavior: "auto", block: "center" });
+  rows.forEach((row) => {
+    row.classList.add("highlighted");
+  });
+  rows[rows.length - 1].scrollIntoView({ behavior: "auto", block: "center" });
 
   // Do not animate the sticky nav to avoid glitches on page load
   if (sticky) {
@@ -31,7 +53,9 @@ export default function highlightRow() {
 
   // Re-apply highlight after a short delay to ensure animation is visible.
   setTimeout(() => {
-    row.classList.remove("highlighted");
+    rows.forEach((row) => {
+      row.classList.remove("highlighted");
+    });
 
     // After initial page render the sticky-nav can animate again
     if (sticky) {
