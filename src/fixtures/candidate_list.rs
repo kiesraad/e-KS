@@ -44,7 +44,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         )
         .into(),
         electoral_districts: vec![election.electoral_districts()[0]],
-        candidates: person_ids,
+        candidates: valid_person_ids.clone(),
         ..Default::default()
     };
 
@@ -62,7 +62,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
     CandidateList {
         id: Uuid::new_v5(&Uuid::NAMESPACE_OID, b"the_second_fixture_candidate_list").into(),
         electoral_districts: second_districts,
-        candidates: valid_person_ids.clone(),
+        candidates: person_ids.clone(),
         ..candidate_list.clone()
     }
     .create(store)
@@ -103,10 +103,10 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 3);
-        assert_eq!(lists[0].person_count, FIXTURE_CANDIDATE_LIST_SIZE);
+        assert_eq!(lists[0].candidate_count(), FIXTURE_CANDIDATE_LIST_SIZE);
         for list in &lists {
             for district in &list.list.electoral_districts {
                 assert!(
@@ -125,7 +125,7 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 1);
         assert_eq!(
@@ -143,7 +143,7 @@ mod tests {
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
-        let lists = CandidateListSummary::list(&store).unwrap();
+        let lists = CandidateListSummary::list(&store);
 
         assert_eq!(lists.len(), 2);
         for list in &lists {

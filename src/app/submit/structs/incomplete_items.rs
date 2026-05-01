@@ -1,6 +1,11 @@
-use crate::{AppStore, ElectoralDistrict, candidate_lists::CandidateList, persons::Person};
+use crate::{
+    AppStore, ElectoralDistrict,
+    candidate_lists::{CandidateList, CandidateListSummary},
+    persons::Person,
+};
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
+#[derive(Debug)]
 pub struct IncompleteItems {
     pub general_items: GeneralItems,
     pub candidate_items: Vec<CandidateItems>,
@@ -9,11 +14,25 @@ pub struct IncompleteItems {
 
 impl IncompleteItems {
     pub fn find_all(store: &AppStore) -> Self {
+        let political_group_items = store.get_political_group().incomplete_items();
+        let candidate_lists = CandidateListSummary::list(store);
 
         Self {
             general_items: Self::find_general_items(store),
             candidate_items: vec![], // TODO: complete in issue #605
-            list_items: vec![],      // TODO: complete in issue #608
+            list_items: candidate_lists
+                .iter()
+                .filter_map(|candidate_list| {
+                    if candidate_list.is_complete() {
+                        None
+                    } else {
+                        Some(ListItems {
+                            list: candidate_list.list.clone(),
+                            items: candidate_list.incomplete_items(),
+                        })
+                    }
+                })
+                .collect(),
         }
     }
 
@@ -36,24 +55,28 @@ impl IncompleteItems {
     }
 }
 
+#[derive(Debug)]
 pub struct GeneralItems(pub Vec<IncompleteItem>);
 
+#[derive(Debug)]
 pub struct CandidateItems {
     pub person: Person,
     pub items: Vec<IncompleteItem>,
 }
 
+#[derive(Debug)]
 pub struct ListItems {
     pub list: CandidateList,
     pub items: Vec<IncompleteItem>,
 }
 
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Debug)]
 pub enum IncompleteItem {
     // candidate list
     NoCandidates,
     TooManyCandidates { actual: usize, max: usize },
     DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
+    NoDistricts,
     // political group
     NoLegalName,
     NoDisplayName,
@@ -66,6 +89,7 @@ impl IncompleteItem {
             IncompleteItem::NoCandidates => Severity::Error,
             IncompleteItem::TooManyCandidates { .. } => Severity::Warn,
             IncompleteItem::DuplicateDistricts { .. } => Severity::Error,
+            IncompleteItem::NoDistricts => Severity::Error,
             // political group
             IncompleteItem::NoLegalName => Severity::Warn,
             IncompleteItem::NoDisplayName => Severity::Error,
