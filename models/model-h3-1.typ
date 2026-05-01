@@ -83,22 +83,24 @@
   "Ondertekening door de gemachtigde van de politieke groepering",
   "Undertekening troch de lêsthawwer fan de politike groepearring",
 )
-#let agent = input.authorised_agent
-#label_table(values: (
-  (trans("Datum", "Datum"), fill_in()),
-  (
-    trans(
-      "Naam van de gemachtigde van de politieke groepering",
-      "Namme fan de lêsthawwer fan de politike groepearring",
+#block(breakable: false)[
+  #let agent = input.authorised_agent
+  #label_table(values: (
+    (trans("Datum", "Datum"), fill_in()),
+    (
+      trans(
+        "Naam van de gemachtigde van de politieke groepering",
+        "Namme fan de lêsthawwer fan de politike groepearring",
+      ),
+      [#agent.last_name, #agent.initials],
     ),
-    [#agent.last_name, #agent.initials],
-  ),
-  (
-    trans(
-      "Volledige statutaire naam van de politieke groepering",
-      "Folsleine statutêre namme fan de politike groepearring",
+    (
+      trans(
+        "Volledige statutaire naam van de politieke groepering",
+        "Folsleine statutêre namme fan de politike groepearring",
+      ),
+      [#input.legal_name],
     ),
-    [#input.legal_name],
-  ),
-  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-))
+    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+  ))
+]

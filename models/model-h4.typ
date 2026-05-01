@@ -57,15 +57,17 @@
 )
 
 = #trans("Ondertekening door de kiezer", "Undertekening troch de kiezer")
-#trans(
-  "Ik verklaar dat ik de bovengenoemde kandidatenlijst ondersteun.",
-  "Ik ferklearje dat ik de boppeneamde kandidatelist stypje.",
-)
-#label_table(values: (
-  (trans("Datum", "Datum"), fill_in()),
-  (trans("Naam", "Namme"), fill_in()),
-  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-))
+#block(breakable: false)[
+  #trans(
+    "Ik verklaar dat ik de bovengenoemde kandidatenlijst ondersteun.",
+    "Ik ferklearje dat ik de boppeneamde kandidatelist stypje.",
+  )
+  #label_table(values: (
+    (trans("Datum", "Datum"), fill_in()),
+    (trans("Naam", "Namme"), fill_in()),
+    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+  ))
+]
 
 #let gr_or_other = (gr, non_gr) => if input.election_type == "GR" { gr } else { non_gr }
 #if input.election_type != "EK" {
@@ -75,22 +77,23 @@
     ][
       Ferklearring fan de #gr_or_other("boargemaster", "gesachhawwer")
     ]
-    #trans[
-      De #gr_or_other("burgemeester", "gezaghebber") van #fill_in(width: 15em) verklaart dat de ondersteuner in zijn #gr_or_other("gemeente", "openbaar lichaam") als kiezer is geregistreerd.
-    ][
-      De #gr_or_other("burgemeester", "gesachhawwer") fan #fill_in(width: 15em) ferklearret dat de stiper yn syn #gr_or_other("gemeente", "iepenbier lichem") as kiezer registrearre is.
-    ]
-
-    #label_table(values: (
-      (
-        trans(
-          "De kiezer behoort tot kieskring",
-          "De kiezer heart ta kiesrûnte",
+    #block(breakable: false)[
+      #trans[
+        De #gr_or_other("burgemeester", "gezaghebber") van #fill_in(width: 15em) verklaart dat de ondersteuner in zijn #gr_or_other("gemeente", "openbaar lichaam") als kiezer is geregistreerd.
+      ][
+        De #gr_or_other("burgemeester", "gesachhawwer") fan #fill_in(width: 15em) ferklearret dat de stiper yn syn #gr_or_other("gemeente", "iepenbier lichem") as kiezer registrearre is.
+      ]
+      #label_table(values: (
+        (
+          trans(
+            "De kiezer behoort tot kieskring",
+            "De kiezer heart ta kiesrûnte",
+          ),
+          fill_in(),
         ),
-        fill_in(),
-      ),
-      (trans("Datum", "Datum"), fill_in()),
-      (trans("Ondertekening of gemeentestempel", "Undertekening of gemeentestimpel"), fill_in(height: 4em)),
-    ))
+        (trans("Datum", "Datum"), fill_in()),
+        (trans("Ondertekening of gemeentestempel", "Undertekening of gemeentestimpel"), fill_in(height: 4em)),
+      ))
+    ]
   ]
 }

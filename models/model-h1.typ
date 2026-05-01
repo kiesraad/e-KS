@@ -64,27 +64,29 @@
 
 
 = #trans("Vervanger(s) voor het herstel van verzuimen", "Ferfanger(s) foar it ferhelpen fan fersommen")
-#if input.substitute_submitter.len() == 0 {
-  trans([_geen_], [_geen_])
-} else {
-  enumerated_table(
-    columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
-    headers: (
-      trans("naam", "namme"),
-      trans("voorletters", "foarletters"),
-      trans("postadres", "postadres"),
-      trans("postcode", "postkoade"),
-      trans("plaats", "plak"),
-    ),
-    values: input.substitute_submitter.map(s => (
-      s.last_name,
-      s.initials,
-      s.postal_address.street_address,
-      mono(s.postal_address.postal_code),
-      s.postal_address.locality,
-    )),
-  )
-}
+#block(breakable: false)[
+  #if input.substitute_submitter.len() == 0 {
+    trans([_geen_], [_geen_])
+  } else {
+    enumerated_table(
+      columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
+      headers: (
+        trans("naam", "namme"),
+        trans("voorletters", "foarletters"),
+        trans("postadres", "postadres"),
+        trans("postcode", "postkoade"),
+        trans("plaats", "plak"),
+      ),
+      values: input.substitute_submitter.map(s => (
+        s.last_name,
+        s.initials,
+        s.postal_address.street_address,
+        mono(s.postal_address.postal_code),
+        s.postal_address.locality,
+      )),
+    )
+  }
+]
 
 
 = #trans("In te leveren bij de kandidatenlijst", "Yn te leverjen by de kandidatelist")
@@ -100,7 +102,7 @@
   ))
   #if not input.previously_seated {
     checkbox(
-      checked: true, 
+      checked: true,
       trans[
         Verklaringen van kiezers dat zij de lijst ondersteunen, want de lijst komt niet in aanmerking voor de ontheffing van deze verplichting (#if input.election_type == "KCNI" [model Pa 11] else [model H 4]).
       ][
@@ -149,13 +151,15 @@
 ]
 
 = #trans("Ondertekening door de inleveraar", "Undertekening troch dejinge dy’t ynleveret")
-#let submitter = input.list_submitter
-#label_table(values: (
-  (trans("Naam en voorletters", "Namme en foarletters"), [#submitter.last_name, #submitter.initials]),
-  (
-    trans("Postadres, postcode en plaats", "Postadres, postkoade en plak"),
-    [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
-  ),
-  (trans("Datum", "Datum"), fill_in()),
-  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-))
+#block(breakable: false)[
+  #let submitter = input.list_submitter
+  #label_table(values: (
+    (trans("Naam en voorletters", "Namme en foarletters"), [#submitter.last_name, #submitter.initials]),
+    (
+      trans("Postadres, postcode en plaats", "Postadres, postkoade en plak"),
+      [#submitter.postal_address.street_address, #submitter.postal_address.postal_code #submitter.postal_address.locality],
+    ),
+    (trans("Datum", "Datum"), fill_in()),
+    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+  ))
+]
