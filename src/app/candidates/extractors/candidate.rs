@@ -1,14 +1,10 @@
 use axum::extract::{FromRequestParts, Path};
 
-use crate::{AppError, AppStore, Context, candidates::Candidate, trans};
+use crate::{AppError, AppRequestState, AppStore, Context, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
-impl<S> FromRequestParts<S> for Candidate
-where
-    S: Clone + Send + Sync + 'static,
-    AppStore: FromRequestParts<S, Rejection = AppError>,
-{
+impl<S: AppRequestState> FromRequestParts<S> for Candidate {
     type Rejection = AppError;
 
     async fn from_request_parts(

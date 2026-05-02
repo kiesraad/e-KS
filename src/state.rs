@@ -29,6 +29,20 @@ pub struct AppState {
     pub typst_renderer: TypstRenderer,
 }
 
+/// Contract the application's request extractors expect from the router
+/// state. The supertrait bounds (`Send + Sync`) cover what `AppStore`'s
+/// extractor needs; `config()` replaces ad-hoc `FromRef` lookups so each
+/// extractor only has to write `S: AppRequestState`.
+pub trait AppRequestState: Clone + Send + Sync + 'static {
+    fn config(&self) -> &'static Config;
+}
+
+impl AppRequestState for AppState {
+    fn config(&self) -> &'static Config {
+        self.config
+    }
+}
+
 impl AppState {
     pub async fn new() -> Result<Self, AppError> {
         let config = Config::from_env()?;

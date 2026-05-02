@@ -3,7 +3,10 @@
 
 use axum::{extract::FromRequestParts, http::request::Parts};
 
-use crate::{AppError, AppStore, ElectionConfig, Session, political_groups::PoliticalGroup};
+use crate::{
+    AppError, AppRequestState, AppStore, ElectionConfig, Session,
+    political_groups::PoliticalGroup,
+};
 
 #[cfg(test)]
 use crate::Locale;
@@ -25,6 +28,9 @@ pub struct Context {
     pub overlay_referrer: bool,
     /// Session data for locale and CSRF.
     pub session: Session,
+    /// Short identifier of the server this instance runs on (e.g. "S1"),
+    /// rendered next to the version in the layout footer when set.
+    pub server_name: Option<&'static str>,
 }
 
 impl Context {
@@ -42,6 +48,7 @@ impl Context {
             show_success_alert: false,
             overlay_referrer: false,
             session,
+            server_name: None,
         }
     }
 
@@ -68,21 +75,21 @@ impl askama::Values for Context {
                 Some(&self.multiple_candidate_lists as &dyn std::any::Any)
             }
             "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
+            "server_name" => Some(&self.server_name as &dyn std::any::Any),
             _ => None,
         }
     }
 }
 
-impl<S> FromRequestParts<S> for Context
-where
-    S: Clone + Send + Sync + 'static,
-{
+impl<S: AppRequestState> FromRequestParts<S> for Context {
     type Rejection = AppError;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let session = Session::from_request_parts(parts, state).await?;
         let store = AppStore::from_request_parts(parts, state).await?;
         let mut context = Context::new(&store, session);
+
+        context.server_name = state.config().server_name.as_deref();
 
         context.show_success_alert = parts
             .uri

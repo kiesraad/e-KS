@@ -59,6 +59,9 @@ pub struct Config {
     pub id_derivation_key: SecretString,
     pub encryption_derivation_key: SecretString,
     pub tls: Option<TlsConfig>,
+    /// Short identifier of the server this instance runs on (e.g. "S1"),
+    /// rendered next to the version in the layout footer.
+    pub server_name: Option<String>,
 }
 
 /// Helper function to get environment variable or return an error
@@ -108,6 +111,8 @@ impl Config {
             }
         };
 
+        let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
+
         Ok(Self {
             storage_url,
             #[cfg(not(feature = "embed-typst"))]
@@ -115,6 +120,7 @@ impl Config {
             id_derivation_key: SecretString::from(id_derivation_key),
             encryption_derivation_key: SecretString::from(encryption_derivation_key),
             tls,
+            server_name,
         })
     }
 
@@ -127,6 +133,7 @@ impl Config {
             id_derivation_key: SecretString::from("test-secret-123"),
             encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
             tls: None,
+            server_name: None,
         }
     }
 }
