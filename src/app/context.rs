@@ -4,8 +4,7 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 
 use crate::{
-    AppError, AppRequestState, AppStore, ElectionConfig, Session,
-    political_groups::PoliticalGroup,
+    AppError, AppRequestState, AppStore, ElectionConfig, Session, political_groups::PoliticalGroup,
 };
 
 #[cfg(test)]

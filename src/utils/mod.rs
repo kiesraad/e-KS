@@ -1,5 +1,7 @@
 //! Utilities and small helpers shared across the application.
 mod bsn;
+pub mod eks_key;
+pub mod health;
 pub mod no_cache_headers;
 mod option_string_ext;
 mod query_param_state;

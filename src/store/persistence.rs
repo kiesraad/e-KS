@@ -136,6 +136,31 @@ impl StorePersistence {
             StorePersistence::None => Ok(Vec::new()),
         }
     }
+
+    /// Verify the persistence backend is reachable. For the database backend
+    /// this acquires a connection and runs `SELECT 1`; for the local backend
+    /// it checks the storage directory still exists; the in-memory backend is
+    /// always reachable.
+    pub async fn health_check(&self) -> Result<(), AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                sqlx::query("SELECT 1").execute(pool).await?;
+                Ok(())
+            }
+            StorePersistence::Local(dir) => {
+                if dir.is_dir() {
+                    Ok(())
+                } else {
+                    Err(AppError::ConfigLoadError(format!(
+                        "Local storage directory missing: {}",
+                        dir.display()
+                    )))
+                }
+            }
+            StorePersistence::None => Ok(()),
+        }
+    }
 }
 
 impl<D> Store<D>

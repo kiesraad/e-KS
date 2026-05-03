@@ -8,6 +8,7 @@ use axum::{
     response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::{CookieJar, cookie::Cookie};
+use secrecy::ExposeSecret;
 
 use crate::{
     AppError, AppStore, AppStoreData, Config, ElectionConfig, IdDeriver, Session, SessionStore,
@@ -52,8 +53,9 @@ impl AppState {
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
-        let store_registry = StoreRegistry::new(config.storage_url.to_string(), encryption).await?;
-        let sessions = SessionStore::from_storage_url(&config.storage_url)?;
+        let store_registry =
+            StoreRegistry::new(config.storage_url.expose_secret().to_string(), encryption).await?;
+        let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())?;
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
         let typst_renderer = build_typst_renderer(&config);
 
@@ -129,14 +131,17 @@ impl AppState {
         let config = Config::new_test();
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
         let encryption = EventEncryption::new(&config.encryption_derivation_key);
-        let sessions = SessionStore::from_storage_url(&config.storage_url)
+        let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())
             .expect("test SessionStore must initialize");
         let typst_renderer = build_typst_renderer(&config);
 
         Self {
-            store_registry: StoreRegistry::new(config.storage_url.to_string(), encryption)
-                .await
-                .expect("test StoreRegistry must initialize"),
+            store_registry: StoreRegistry::new(
+                config.storage_url.expose_secret().to_string(),
+                encryption,
+            )
+            .await
+            .expect("test StoreRegistry must initialize"),
             config: Box::leak(Box::new(config)),
             sessions,
             id_deriver,
@@ -210,7 +215,10 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let config = Config::new_test();
 
-        assert_eq!(state.config.storage_url, config.storage_url);
+        assert_eq!(
+            state.config.storage_url.expose_secret(),
+            config.storage_url.expose_secret()
+        );
 
         Ok(())
     }
