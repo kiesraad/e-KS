@@ -6,7 +6,10 @@ concurrency:
   cancel-in-progress: true
 
 on:
-  push:
+  workflow_run:
+    workflows: ["Build, lint & test"]
+    types:
+      - completed
     branches:
       - main
 
@@ -70,6 +73,7 @@ jobs:
     name: Make release if necessary
     permissions:
       contents: write # needs write permission to create a release in the repo
+      actions: read # needs read permission to download artifacts from the triggering workflow
     needs:
       - check-version
     if: needs.check-version.outputs.should_run == 'true'
@@ -77,6 +81,7 @@ jobs:
     steps:
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
+          ref: ${{ github.event.workflow_run.head_sha || github.sha }}
           persist-credentials: false
       - uses: psastras/sbom-rs/actions/install-cargo-sbom@9ecc460b937ac5558c4f8ebebc9e07d2bdbef67b # v0.10.0
       - name: Create SBOM
@@ -85,14 +90,24 @@ jobs:
           cargo-sbom --output-format=cyclone_dx_json_1_6 > sbom/cyclone-dx-1-6-sbom.json
           cargo-sbom --output-format=spdx_json_2_3 > sbom/spdx-2-3-sbom.json
 
+      - name: Download binary from triggering workflow
+        uses: actions/download-artifact@3e5f45b2cfb9172054b4087a40e8e0b5a5461e7c # v8.0.1
+        with:
+          name: eks
+          path: bin-release
+          github-token: ${{ github.token }}
+          run-id: ${{ github.event.workflow_run.id }}
+
       - name: Create release
         env:
           GH_TOKEN: ${{ github.token }}
           TAG: ${{ needs.check-version.outputs.version }}
+          TARGET_SHA: ${{ github.event.workflow_run.head_sha || github.sha }}
         run: |
           gh release create "$TAG" \
           sbom/cyclone-dx-1-6-sbom.json \
           sbom/spdx-2-3-sbom.json \
+          bin-release/eks \
           --title "Version $TAG" \
           --generate-notes \
-          --target "$GITHUB_SHA"
+          --target "$TARGET_SHA"
