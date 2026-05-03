@@ -1,8 +1,0 @@
-apiVersion: traefik.io/v1alpha1
-kind: TLSStore
-metadata:
-  name: default
-  namespace: ingress
-spec:
-  defaultCertificate:
-    secretName:  eks-tls-cert
