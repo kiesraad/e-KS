@@ -8,7 +8,6 @@ import { randomName } from "./utils/random";
 
 test.describe("add candidate list", async () => {
   test("add candidate list", async ({ login: page }) => {
-    await page.goto(`/dev/login?fixtures=true`);
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
@@ -50,6 +49,75 @@ test.describe("add candidate list", async () => {
     }
   });
 
+  test("add candidate list provincial council", async ({
+    ProvincialCouncilElection: page,
+  }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await new EditListDetailsPage(page).addDistricts(["Amsterdam", "Haarlem"]);
+
+    const existingCandidates = ["Nagelhout", "Meerman", "Altena"];
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await manageCandidateListPage.addExistingCandidates(existingCandidates);
+    for (const existingCandidate of existingCandidates) {
+      await expect(
+        await manageCandidateListPage.getCandidateLocator(existingCandidate),
+      ).toBeVisible();
+    }
+
+    const candidate: Candidate = {
+      initials: "A",
+      lastName: `Berg ${randomName()}`,
+      firstName: "Anita",
+      locality: "Haarlem",
+    };
+    const candidateTwo: Candidate = {
+      initials: "B",
+      lastName: `Beer ${randomName()}`,
+      firstName: "Bert",
+      locality: "Amsterdam",
+    };
+
+    await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
+    for (const newCandidate of [candidate, candidateTwo]) {
+      await expect(
+        await manageCandidateListPage.getCandidateLocator(
+          newCandidate.lastName,
+        ),
+      ).toBeVisible();
+    }
+  });
+
+  test("add candidate list water authority", async ({
+    WaterAuthorityElection: page,
+  }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    const candidate: Candidate = {
+      initials: "A",
+      lastName: `Berg ${randomName()}`,
+      firstName: "Anita",
+      locality: "Breukelen",
+    };
+    const candidateTwo: Candidate = {
+      initials: "B",
+      lastName: `Beer ${randomName()}`,
+      firstName: "Bert",
+      locality: "Loenen aan de Vecht",
+    };
+
+    await manageCandidateListPage.addNewCandidates([candidate, candidateTwo]);
+    for (const newCandidate of [candidate, candidateTwo]) {
+      await expect(
+        await manageCandidateListPage.getCandidateLocator(
+          newCandidate.lastName,
+        ),
+      ).toBeVisible();
+    }
+  });
+
   test("delete candidate list", async ({ login: page }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
@@ -58,6 +126,28 @@ test.describe("add candidate list", async () => {
       "Zeeland",
       "Limburg",
       "Overijssel",
+    ]);
+    await expect(
+      page.getByRole("heading", { name: "Kandidatenlijst" }),
+    ).toBeVisible();
+    const candidatelistURL = page.url();
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await manageCandidateListPage.removeList();
+    await page.goto(candidatelistURL);
+    await expect(
+      page.getByRole("heading", { name: "Not found" }),
+    ).toBeVisible();
+  });
+
+  test("delete candidate list provincial council", async ({
+    ProvincialCouncilElection: page,
+  }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await new EditListDetailsPage(page).addDistricts([
+      "Den Helder",
+      "Amsterdam",
     ]);
     await expect(
       page.getByRole("heading", { name: "Kandidatenlijst" }),
@@ -90,5 +180,25 @@ test.describe("add candidate list", async () => {
     await expect(
       page.locator("//li/span[text()='Overijssel']"),
     ).not.toBeVisible();
+  });
+
+  test("edit electoral districts provincial council", async ({
+    ProvincialCouncilElection: page,
+  }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+
+    await new EditListDetailsPage(page).addDistricts(["Haarlem", "Den Helder"]);
+    await expect(page.locator("//li/span[text()='Haarlem']")).toBeVisible();
+    await expect(page.locator("//li/span[text()='Den Helder']")).toBeVisible();
+    await expect(
+      page.locator("//li/span[text()='Amsterdam']"),
+    ).not.toBeVisible();
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await manageCandidateListPage.removeDistricts(["Haarlem"]);
+    await manageCandidateListPage.addDistricts(["Amsterdam"]);
+    await expect(page.locator("//li/span[text()='Haarlem']")).not.toBeVisible();
+    await expect(page.locator("//li/span[text()='Den Helder']")).toBeVisible();
+    await expect(page.locator("//li/span[text()='Amsterdam']")).toBeVisible();
   });
 });
