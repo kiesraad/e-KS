@@ -261,7 +261,7 @@ fn nomination_proposer(
 }
 
 pub async fn gen_eml210(
-    path @ DownloadEml210Path { list_id }: DownloadEml210Path,
+    path @ DownloadEml210Path { list_id, locale }: DownloadEml210Path,
     store: AppStore,
     context: Context,
 ) -> Result<Response, AppError> {
@@ -287,7 +287,10 @@ pub async fn gen_eml210(
     let list_data = ListData {
         // We always publish genders, but the individual candidates may leave the gender unspecified
         publish_gender: StringValue::Parsed(true),
-        publication_language: None,
+        publication_language: Some(StringValue::from_value(match locale {
+            crate::core::ModelLocale::Fry => eml_nl::utils::PublicationLanguage::Frisian,
+            crate::core::ModelLocale::Nl => eml_nl::utils::PublicationLanguage::Dutch,
+        })),
         belongs_to_set: None,
         belongs_to_combination: None,
         contests: list
@@ -384,6 +387,7 @@ mod tests {
         AppError, AppStore, ElectoralDistrict,
         candidate_lists::{CandidateListId, FullCandidateList},
         common::CountryCode,
+        core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::{PersonId, Representative},
         test_utils::{
@@ -488,9 +492,16 @@ mod tests {
         let list = create_sample_list(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let response = gen_eml210(
+            DownloadEml210Path {
+                list_id: list.id(),
+                locale: ModelLocale::Nl,
+            },
+            store,
+            context,
+        )
+        .await
+        .unwrap();
 
         // verify
         assert_response(response, include_str!("../testdata/ek27.eml.xml")).await;
@@ -507,9 +518,16 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let response = gen_eml210(
+            DownloadEml210Path {
+                list_id: list.id(),
+                locale: ModelLocale::Nl,
+            },
+            store,
+            context,
+        )
+        .await
+        .unwrap();
 
         // verify
         assert_response(response, include_str!("../testdata/ps27-1.eml.xml")).await;
@@ -527,9 +545,16 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let response = gen_eml210(
+            DownloadEml210Path {
+                list_id: list.id(),
+                locale: ModelLocale::Nl,
+            },
+            store,
+            context,
+        )
+        .await
+        .unwrap();
 
         // verify
         assert_response(response, include_str!("../testdata/ps27-2.eml.xml")).await;
@@ -540,15 +565,22 @@ mod tests {
         // setup
         let store = AppStore::new_for_test();
         let mut context = Context::new_test_without_db();
-        context.election = ElectionConfig::WS27(crate::WaterCouncil::AaEnMaas);
+        context.election = ElectionConfig::WS27(crate::WaterCouncil::Fryslan);
         let mut list = create_sample_list(&store).await.unwrap();
-        list.list.electoral_districts = vec![ElectoralDistrict::WsAaEnMaas];
+        list.list.electoral_districts = vec![ElectoralDistrict::WsFryslan];
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let response = gen_eml210(
+            DownloadEml210Path {
+                list_id: list.id(),
+                locale: ModelLocale::Fry,
+            },
+            store,
+            context,
+        )
+        .await
+        .unwrap();
 
         // verify
         assert_response(response, include_str!("../testdata/ws27.eml.xml")).await;
