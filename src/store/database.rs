@@ -28,28 +28,20 @@ impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
 /// Initialize the database schema for event and session persistence.
 #[cfg(feature = "migrations")]
 pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
-    const MIGRATION_LOCK_KEY: i64 = 0x454B53544F52454E; // "EKSTOREN" advisory lock key
-
     let mut conn = pool.acquire().await?;
-    sqlx::query("SELECT pg_advisory_lock($1)")
-        .bind(MIGRATION_LOCK_KEY)
-        .execute(&mut *conn)
-        .await?;
 
-    let result = async {
+    if let Err(error) = async {
         create_streams_table(&mut conn).await?;
         create_events_table(&mut conn).await?;
         create_sessions_table(&mut conn).await?;
         Ok::<(), AppError>(())
     }
-    .await;
+    .await
+    {
+        tracing::warn!("Database migration failed, there might me a concurrent migration: {error}");
+    }
 
-    let _ = sqlx::query("SELECT pg_advisory_unlock($1)")
-        .bind(MIGRATION_LOCK_KEY)
-        .execute(&mut *conn)
-        .await;
-
-    result
+    Ok(())
 }
 
 #[cfg(feature = "migrations")]

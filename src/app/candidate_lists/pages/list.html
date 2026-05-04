@@ -29,7 +29,7 @@
             <div class="badge"></div>
             <h3>{{ "candidate_list.title_single"|trans }}</h3>
             <p class="statistic">
-              {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
+              {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
             </p>
             {% if !election.has_only_one_district() %}
               <h5>{{ "common.electoral_districts"|trans }}:</h5>

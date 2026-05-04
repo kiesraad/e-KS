@@ -80,6 +80,11 @@ impl CandidateList {
             .with_query_params(QueryParamState::highlight_success(person_id.into()))
     }
 
+    pub fn highlight_last_success_path(&self, last: usize) -> impl TypedPath {
+        ViewCandidateListPath { list_id: self.id }
+            .with_query_params(QueryParamState::highlight_last_success(last))
+    }
+
     pub fn create_path() -> impl TypedPath {
         CandidateListCreatePath {}
     }

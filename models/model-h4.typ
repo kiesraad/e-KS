@@ -80,7 +80,6 @@
     ][
       De #gr_or_other("burgemeester", "gesachhawwer") fan #fill_in(width: 15em) ferklearret dat de stiper yn syn #gr_or_other("gemeente", "iepenbier lichem") as kiezer registrearre is.
     ]
-
     #label_table(values: (
       (
         trans(

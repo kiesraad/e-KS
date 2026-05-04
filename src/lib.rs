@@ -78,7 +78,7 @@ pub use core::{
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{Form, TokenValue};
-pub use state::AppState;
+pub use state::{AppRequestState, AppState};
 pub use utils::{
     OptionAsStrExt, OptionStringExt, QueryParamState, id_newtype, redirect_success,
     transparent_string,

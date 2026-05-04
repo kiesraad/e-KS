@@ -27,20 +27,22 @@
       }
     }
 
-    .date-input-row {
+    .date-input-row > .date-separate:not(.hidden) {
       display: flex;
-      gap: 1rem;
-
-      & input.day {
-        flex: 1;
-      }
-
-      & input.month {
-        flex: 1;
-      }
 
       & input.year {
+        flex: 3.5;
+        min-width: 3.5em;
+      }
+
+      & > input {
+        border: none;
+        background: none;
+        background-image: none;
+        text-align: center;
+        padding: 1em 0;
         flex: 2;
+        min-width: 2em;
       }
     }
 
@@ -67,8 +69,33 @@
     }
 
     &.warning {
-      input:placeholder-shown {
+      input:placeholder-shown:not(.date-separate input),
+      .date-separate {
         border-color: var(--color-warning-darker);
+        background-image: url("../icons/warning.svg");
+        background-repeat: no-repeat;
+        background-position: right 1em center;
+        background-size: 1.5em;
+        padding-right: 3em;
+      }
+    }
+
+    &:has(.error) {
+      input:not(.date-separate input),
+      .date-separate {
+        border-color: var(--color-error-darker);
+        background-image: url("../icons/error.svg");
+        background-repeat: no-repeat;
+        background-position: right 1em center;
+        background-size: 1.5em;
+        padding-right: 3em;
+      }
+    }
+
+    &.success {
+      input {
+        border-color: var(--green-300);
+        background-color: var(--green-50);
       }
     }
 
@@ -200,12 +227,11 @@
 .form input[type="text"],
 .form input[type="number"],
 .form textarea,
-.form select {
+.form select,
+.date-separate:not(.hidden) {
   width: 100%;
   max-width: 32rem;
-
   display: flex;
-  padding: 1rem 1.5rem 1rem 1rem;
   justify-content: space-between;
   align-items: center;
   align-self: stretch;
@@ -213,6 +239,13 @@
   border-width: 2px;
   border-color: var(--bg-gray-darkest);
   background: var(--base-white);
+}
+
+.form input[type="text"],
+.form input[type="number"],
+.form textarea,
+.form select {
+  padding: 1rem;
 }
 
 .form select {
@@ -233,7 +266,8 @@
 .form textarea:focus-visible,
 .form select:hover,
 .form select:focus,
-.form select:focus-visible {
+.form select:focus-visible,
+.date-separate:hover {
   outline: none;
   border-color: var(--border-color-focus);
 }
