@@ -56,29 +56,30 @@
   values: input.candidates.map(c => ([#c.position], c.last_name, c.initials, c.locality)),
 )
 
+
 #if input.detailed_candidate.representative != none [
   = #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
-  #block(breakable: false)[
-    #column_table(
-      columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
-      headers: (
-        trans("naam", "namme"),
-        trans("voorletters", "foarletters"),
-        trans("postadres", "postadres"),
-        trans("postcode", "postkoade"),
-        trans("plaats", "plak"),
+  #column_table(
+    columns: (1fr, 1fr, 1fr, 0.75fr, 1.5fr),
+    headers: (
+      trans("naam", "namme"),
+      trans("voorletters", "foarletters"),
+      trans("postadres", "postadres"),
+      trans("postcode", "postkoade"),
+      trans("plaats", "plak"),
+    ),
+    values: (
+      (
+        input.detailed_candidate.representative.last_name,
+        input.detailed_candidate.representative.initials,
+        input.detailed_candidate.representative.postal_address.street_address,
+        mono(input.detailed_candidate.representative.postal_address.postal_code),
+        input.detailed_candidate.representative.postal_address.locality,
       ),
-      values: (
-        (
-          input.detailed_candidate.representative.last_name,
-          input.detailed_candidate.representative.initials,
-          input.detailed_candidate.representative.postal_address.street_address,
-          mono(input.detailed_candidate.representative.postal_address.postal_code),
-          input.detailed_candidate.representative.postal_address.locality,
-        ),
-      ),
-    )]
+    ),
+  )
 ]
+
 
 #if input.election_type != "KCNI" and input.detailed_candidate.representative == none [
   = #trans("Adres voor de kennisgeving van mijn benoeming", "Adres foar de meidieling fan myn beneaming")
@@ -106,25 +107,23 @@
     "Kennisgeving van mijn benoeming ontvangen langs digitale weg",
     "Kennisjouwing fan myn beneaming fia digitale wei tasjoerd krije",
   )
-  #block(breakable: false)[
-    #checkbox(checked: false)[
-      #trans(
-        "Ik stem ermee in de kennisgeving van mijn benoeming te ontvangen via een digitale berichtenbox waartoe ik toegang kan krijgen met gebruikmaking van een DigiD. Hierbij bevestig ik tevens dat ik een DigiD zal aanvragen indien ik hier nog niet over beschik.",
-        "Ik stim dermei yn dat de kennisjouwing fan myn beneaming my tastjoerd wurdt fia in digitale berjochteboks dêr’t ik tagong ta krije kin mei in DigiD. Ek befêstigje ik dat ik in DigiD oanfreegje sil as ik dy noch net ha.",
-      )
-    ]]
+  #checkbox(checked: false)[
+    #trans(
+      "Ik stem ermee in de kennisgeving van mijn benoeming te ontvangen via een digitale berichtenbox waartoe ik toegang kan krijgen met gebruikmaking van een DigiD. Hierbij bevestig ik tevens dat ik een DigiD zal aanvragen indien ik hier nog niet over beschik.",
+      "Ik stim dermei yn dat de kennisjouwing fan myn beneaming my tastjoerd wurdt fia in digitale berjochteboks dêr’t ik tagong ta krije kin mei in DigiD. Ek befêstigje ik dat ik in DigiD oanfreegje sil as ik dy noch net ha.",
+    )
+  ]
 ]
 
+
 = #trans("Ondertekening door de kandidaat", "Undertekening troch de kandidaat")
-#block(breakable: false)[
-  #label_table(values: (
-    (
-      trans("Naam", "Namme"),
-      [#input.detailed_candidate.candidate.last_name, #input.detailed_candidate.initials_no_gender],
-    ),
-    (trans("Woonplaats", "Wenplak"), input.detailed_candidate.candidate.locality),
-    (trans("Burgerservicenummer", "Boargerservicenûmer"), input.detailed_candidate.bsn),
-    (trans("Datum", "Datum"), fill_in()),
-    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-  ))
-]
+#label_table(values: (
+  (
+    trans("Naam", "Namme"),
+    [#input.detailed_candidate.candidate.last_name, #input.detailed_candidate.initials_no_gender],
+  ),
+  (trans("Woonplaats", "Wenplak"), input.detailed_candidate.candidate.locality),
+  (trans("Burgerservicenummer", "Boargerservicenûmer"), input.detailed_candidate.bsn),
+  (trans("Datum", "Datum"), fill_in()),
+  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+))
