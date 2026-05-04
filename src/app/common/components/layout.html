@@ -63,7 +63,10 @@
   </main>
   <footer>
     <span>{{ "common.title"|trans }}</span>
-    <span>{{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong></span>
+    <span>
+      {{ "common.version"|trans }} <strong>{{ env!("CARGO_PKG_VERSION") }}</strong>
+      {% if let Some(server) = "server_name"|optional_str_value %}· <strong>{{ server }}</strong>{% endif %}
+    </span>
   </footer>
   {% block overlay %}{% endblock %}
   {% if "show_success_alert"|value_true %}

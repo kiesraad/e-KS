@@ -24,17 +24,14 @@ export default function addressLookup() {
   }
 
   const lookup = async () => {
+    resetSuccessHighlight();
+
     postalCodeInput.value = postalCodeInput.value
       .replaceAll(/\s/g, "")
       .toUpperCase();
 
-    // only perform lookup when postal code and house number are filled and locality and street name are empty
-    if (
-      !postalCodeInput.value ||
-      !houseNumberInput.value ||
-      localityInput.value ||
-      streetNameInput.value
-    ) {
+    // only perform lookup when postal code and house number are filled
+    if (!postalCodeInput.value || !houseNumberInput.value) {
       return;
     }
 
@@ -49,15 +46,29 @@ export default function addressLookup() {
 
     if (response.ok) {
       const data = await response.json();
-      if (data.wp) {
+      // fill in locality and street name if data is available
+      if (data.wp && data.pr) {
         localityInput.value = data.wp;
-      }
-      if (data.pr) {
         streetNameInput.value = data.pr;
+
+        // highlight the address fields to indicate they were auto-filled
+        postalCodeInput.closest(".form-field")?.classList.add("success");
+        houseNumberInput.closest(".form-field")?.classList.add("success");
+        localityInput.closest(".form-field")?.classList.add("success");
+        streetNameInput.closest(".form-field")?.classList.add("success");
       }
     }
   };
 
+  function resetSuccessHighlight() {
+    postalCodeInput?.closest(".form-field")?.classList.remove("success");
+    houseNumberInput?.closest(".form-field")?.classList.remove("success");
+    localityInput?.closest(".form-field")?.classList.remove("success");
+    streetNameInput?.closest(".form-field")?.classList.remove("success");
+  }
+
   postalCodeInput.addEventListener("change", lookup);
   houseNumberInput.addEventListener("change", lookup);
+  localityInput.addEventListener("change", resetSuccessHighlight);
+  streetNameInput.addEventListener("change", resetSuccessHighlight);
 }

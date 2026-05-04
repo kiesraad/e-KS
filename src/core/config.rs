@@ -53,12 +53,19 @@ pub struct TlsConfig {
 /// Runtime configuration loaded from environment variables.
 #[derive(Debug, Clone)]
 pub struct Config {
-    pub storage_url: String,
+    pub storage_url: SecretString,
     #[cfg(not(feature = "embed-typst"))]
     pub typst_url: String,
     pub id_derivation_key: SecretString,
     pub encryption_derivation_key: SecretString,
     pub tls: Option<TlsConfig>,
+    /// Short identifier of the server this instance runs on (e.g. "S1"),
+    /// rendered next to the version in the layout footer.
+    pub server_name: Option<String>,
+    /// When set, every request must carry an `x-eks-key` header whose value
+    /// matches this secret. Intended for gating the app behind a known
+    /// upstream (e.g. a load balancer that injects the header).
+    pub eks_key: Option<SecretString>,
 }
 
 /// Helper function to get environment variable or return an error
@@ -108,25 +115,36 @@ impl Config {
             }
         };
 
+        let server_name = lookup("SERVER_NAME").ok().filter(|s| !s.is_empty());
+
+        let eks_key = lookup("EKS_KEY")
+            .ok()
+            .filter(|s| !s.is_empty())
+            .map(SecretString::from);
+
         Ok(Self {
-            storage_url,
+            storage_url: SecretString::from(storage_url),
             #[cfg(not(feature = "embed-typst"))]
             typst_url,
             id_derivation_key: SecretString::from(id_derivation_key),
             encryption_derivation_key: SecretString::from(encryption_derivation_key),
             tls,
+            server_name,
+            eks_key,
         })
     }
 
     #[cfg(test)]
     pub fn new_test() -> Self {
         Self {
-            storage_url: "memory://".to_string(),
+            storage_url: SecretString::from("memory://"),
             #[cfg(not(feature = "embed-typst"))]
             typst_url: "http://localhost:8080".to_string(),
             id_derivation_key: SecretString::from("test-secret-123"),
             encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
             tls: None,
+            server_name: None,
+            eks_key: None,
         }
     }
 }
@@ -134,6 +152,7 @@ impl Config {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use secrecy::ExposeSecret;
     use std::collections::HashMap;
 
     fn lookup_from(
@@ -168,7 +187,7 @@ mod tests {
 
         let config = Config::from_env_with(lookup).expect("config");
 
-        assert_eq!(config.storage_url, "memory://test");
+        assert_eq!(config.storage_url.expose_secret(), "memory://test");
         assert_eq!(config.typst_url, "http://typst.test");
     }
 
@@ -183,7 +202,7 @@ mod tests {
 
         let config = Config::from_env_with(lookup).expect("config");
 
-        assert_eq!(config.storage_url, "memory://test");
+        assert_eq!(config.storage_url.expose_secret(), "memory://test");
     }
 
     #[cfg(feature = "dev-features")]
@@ -219,7 +238,10 @@ mod tests {
 
         let config = Config::from_env_with(lookup).expect("dev defaults");
 
-        assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
+        assert_eq!(
+            config.storage_url.expose_secret(),
+            dev_defaults::STORAGE_URL
+        );
         assert_eq!(config.typst_url, dev_defaults::TYPST_URL);
     }
 
@@ -231,7 +253,10 @@ mod tests {
 
         let config = Config::from_env_with(lookup).expect("dev defaults");
 
-        assert_eq!(config.storage_url, dev_defaults::STORAGE_URL);
+        assert_eq!(
+            config.storage_url.expose_secret(),
+            dev_defaults::STORAGE_URL
+        );
     }
 
     #[cfg(not(feature = "dev-features"))]

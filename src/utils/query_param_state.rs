@@ -13,6 +13,8 @@ pub struct QueryParamState {
     success: bool,
     #[serde(skip_serializing_if = "Option::is_none")]
     highlight: Option<Uuid>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    highlight_last: Option<usize>,
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     redirect_to: Option<String>,
@@ -61,6 +63,14 @@ impl QueryParamState {
         Self {
             success: true,
             highlight: Some(id),
+            ..Default::default()
+        }
+    }
+
+    pub fn highlight_last_success(last: usize) -> Self {
+        Self {
+            success: true,
+            highlight_last: Some(last),
             ..Default::default()
         }
     }

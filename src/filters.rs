@@ -62,6 +62,16 @@ pub fn integer_value(value_name: &str, values: &dyn askama::Values) -> askama::R
 }
 
 #[askama::filter_fn]
+pub fn optional_str_value(
+    value_name: &str,
+    values: &dyn askama::Values,
+) -> askama::Result<Option<&'static str>> {
+    let value = askama::get_value::<Option<&'static str>>(values, value_name)?;
+
+    Ok(*value)
+}
+
+#[askama::filter_fn]
 pub fn initials_as_printed_on_list(
     value: &Person,
     values: &dyn askama::Values,

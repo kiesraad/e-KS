@@ -90,6 +90,8 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     let router = router.merge(auth_service::router());
 
+    let router = router.merge(crate::utils::health::health_router());
+
     let router = router
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
@@ -144,7 +146,10 @@ pub fn create(state: AppState) -> Router<AppState> {
         )),
     );
 
-    router
+    router.layer(middleware::from_fn_with_state(
+        state.clone(),
+        crate::utils::eks_key::eks_key_middleware,
+    ))
 }
 
 #[cfg(test)]
