@@ -21,7 +21,10 @@ function getRows(personId: string | null, last: number): Element[] | null {
 export default function highlightRow() {
   const url = new URL(globalThis.location.href);
   const personId = url.searchParams.get("highlight");
-  const last = parseInt(url.searchParams.get("highlight_last") ?? "", 10);
+  const last = Number.parseInt(
+    url.searchParams.get("highlight_last") ?? "",
+    10,
+  );
   const sticky = document.querySelector(".sticky-nav");
 
   if (!personId && !last) {
@@ -44,7 +47,7 @@ export default function highlightRow() {
   rows.forEach((row) => {
     row.classList.add("highlighted");
   });
-  rows[rows.length - 1].scrollIntoView({ behavior: "auto", block: "center" });
+  rows.at(-1)?.scrollIntoView({ behavior: "auto", block: "center" });
 
   // Do not animate the sticky nav to avoid glitches on page load
   if (sticky) {
