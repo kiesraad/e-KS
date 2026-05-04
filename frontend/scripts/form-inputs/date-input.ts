@@ -3,11 +3,10 @@ const DATE_INPUT_ROW_SELECTOR = 'span[class="date-input-row"]';
 
 const DATE_INPUT_SELECTOR = 'input[name="date_of_birth"]';
 
+const DATE_OF_BIRTH_SEPARATE_SELECTOR = ".date-separate";
 const DAY_INPUT_SELECTOR = 'input[name="day_of_birth"]';
 const MONTH_INPUT_SELECTOR = 'input[name="month_of_birth"]';
 const YEAR_INPUT_SELECTOR = 'input[name="year_of_birth"]';
-
-const DASH_SELECTOR = ".dash";
 
 const DAY_DIGITS = 2;
 const MONTH_DIGITS = 2;
@@ -16,28 +15,24 @@ const YEAR_DIGITS = 4;
 const IGNORE_TAB_DURATION_MS = 400;
 
 type Inputs = {
+  separateInputs: HTMLSpanElement;
   dayInput: HTMLInputElement;
   monthInput: HTMLInputElement;
   yearInput: HTMLInputElement;
   actual: HTMLInputElement;
 };
 
-type DateField = {
-  inputs: Inputs;
-  dashes: NodeListOf<HTMLElement>;
-};
-
 // Collect all date of birth inputs on the page.
-function getDateInputs(): DateField[] {
+function getDateInputs(): Inputs[] {
   const rows = document.querySelectorAll(DATE_INPUT_ROW_SELECTOR);
   return [...rows].map((row) => ({
-    inputs: {
-      dayInput: row.querySelector(DAY_INPUT_SELECTOR) as HTMLInputElement,
-      monthInput: row.querySelector(MONTH_INPUT_SELECTOR) as HTMLInputElement,
-      yearInput: row.querySelector(YEAR_INPUT_SELECTOR) as HTMLInputElement,
-      actual: row.querySelector(DATE_INPUT_SELECTOR) as HTMLInputElement,
-    },
-    dashes: row.querySelectorAll(DASH_SELECTOR),
+    separateInputs: row.querySelector(
+      DATE_OF_BIRTH_SEPARATE_SELECTOR,
+    ) as HTMLSpanElement,
+    dayInput: row.querySelector(DAY_INPUT_SELECTOR) as HTMLInputElement,
+    monthInput: row.querySelector(MONTH_INPUT_SELECTOR) as HTMLInputElement,
+    yearInput: row.querySelector(YEAR_INPUT_SELECTOR) as HTMLInputElement,
+    actual: row.querySelector(DATE_INPUT_SELECTOR) as HTMLInputElement,
   }));
 }
 
@@ -104,25 +99,19 @@ function updateActual(input: Inputs) {
   }
 }
 
-function updateVisible(field: DateField) {
+function updateVisible(inputs: Inputs) {
   // swap inputs for JavaScript enjoyers
-  field.inputs.actual.type = "hidden";
-  field.inputs.dayInput.type = "text";
-  field.inputs.monthInput.type = "text";
-  field.inputs.yearInput.type = "text";
+  inputs.actual.type = "hidden";
+  inputs.separateInputs.classList.remove("hidden");
 
-  field.dashes.forEach((dash) => {
-    dash.classList.remove("hidden");
-  });
-
-  if (field.inputs.actual.value === "") {
+  if (inputs.actual.value === "") {
     return;
   }
 
-  const parts = field.inputs.actual.value.split("-");
-  field.inputs.dayInput.value = parts[0];
-  field.inputs.monthInput.value = parts[1];
-  field.inputs.yearInput.value = parts[2];
+  const parts = inputs.actual.value.split("-");
+  inputs.dayInput.value = parts[0];
+  inputs.monthInput.value = parts[1];
+  inputs.yearInput.value = parts[2];
 }
 
 function tabAdvanceCheck(
@@ -139,27 +128,27 @@ function tabAdvanceCheck(
 // Enforce date format DD-MM-YYYY for date_of_birth inputs.
 export default function dateInput() {
   let ignoreNextTab = false;
-  const dateField = getDateInputs();
+  const all_inputs = getDateInputs();
 
-  dateField.forEach((field) => {
-    const dayInput = field.inputs.dayInput;
-    const monthInput = field.inputs.monthInput;
-    const yearInput = field.inputs.yearInput;
+  all_inputs.forEach((inputs) => {
+    const dayInput = inputs.dayInput;
+    const monthInput = inputs.monthInput;
+    const yearInput = inputs.yearInput;
 
-    updateVisible(field);
+    updateVisible(inputs);
     dayInput.addEventListener("input", () => {
       ignoreNextTab = handleDayInput(dayInput, monthInput);
-      updateActual(field.inputs);
+      updateActual(inputs);
       setTimeout(() => (ignoreNextTab = false), IGNORE_TAB_DURATION_MS);
     });
     monthInput.addEventListener("input", () => {
       ignoreNextTab = handleMonthInput(monthInput, yearInput);
-      updateActual(field.inputs);
+      updateActual(inputs);
       setTimeout(() => (ignoreNextTab = false), IGNORE_TAB_DURATION_MS);
     });
     yearInput.addEventListener("input", () => {
       handleYearInput(yearInput);
-      updateActual(field.inputs);
+      updateActual(inputs);
       setTimeout(() => (ignoreNextTab = false), IGNORE_TAB_DURATION_MS);
     });
 
@@ -171,9 +160,9 @@ export default function dateInput() {
     });
 
     [dayInput, monthInput].forEach((input) => {
-      input.addEventListener("blur", (_) => {
+      input.addEventListener("blur", () => {
         formatSingleDigit(input);
-        updateActual(field.inputs);
+        updateActual(inputs);
       });
     });
   });
