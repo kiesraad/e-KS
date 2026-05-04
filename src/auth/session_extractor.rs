@@ -79,6 +79,11 @@ pub async fn store_middleware(
         Err(err) => return err.into_response(),
     };
 
+    // catch up with the latest events
+    if let Err(err) = store.load().await {
+        return err.into_response();
+    }
+
     request.extensions_mut().insert(store);
 
     next.run(request).await
