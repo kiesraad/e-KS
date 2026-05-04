@@ -11,6 +11,8 @@
     size: 9pt,
   )
 
+  #show par: it => block(sticky: true, it)
+
   #let footer = grid(
     columns: 1fr,
     gutter: .75em,
@@ -64,12 +66,12 @@
     message: "the first row of values does not match the number of columns",
   )
 
-  table(
+  block(breakable: values.len() > 10, table(
     columns: columns,
     rows: 1.8em,
     table.header(..headers.map(value => { text(style: "italic", value) })),
     ..values.flatten(),
-  )
+  ))
 }
 
 /// Table with numbers in the first column
@@ -106,21 +108,24 @@
   let has_content = content != none and content != ""
   let size = 9pt
 
-  grid(
-    columns: if has_content { (14pt, 6pt, auto) } else { (size) },
-    align: horizon + center,
-    box(
-      width: size,
-      height: size,
-      inset: 2.5pt,
-      stroke: if checked == none or checked == true { 0.5pt + black } else {
-        (thickness: 0.4pt, dash: "densely-dotted", cap: "square")
-      },
-      clip: true,
-      fill: if checked == true { black } else { white },
-      if checked == true { checkmark() },
+  block(
+    sticky: true,
+    grid(
+      columns: if has_content { (14pt, 6pt, auto) } else { (size) },
+      align: horizon + center,
+      box(
+        width: size,
+        height: size,
+        inset: 2.5pt,
+        stroke: if checked == none or checked == true { 0.5pt + black } else {
+          (thickness: 0.4pt, dash: "densely-dotted", cap: "square")
+        },
+        clip: true,
+        fill: if checked == true { black } else { white },
+        if checked == true { checkmark() },
+      ),
+      if has_content { " " },
+      if has_content { align(left, content) },
     ),
-    if has_content { " " },
-    if has_content { align(left, content) },
   )
 }
