@@ -1084,6 +1084,7 @@ version = "0.8.0"
 dependencies = [
  "aes-gcm",
  "askama",
+ "async_zip",
  "auth-service",
  "axum",
  "axum-extra",
@@ -1114,6 +1115,7 @@ dependencies = [
  "sha2 0.11.0",
  "sqlx",
  "tokio",
+ "tokio-util",
  "tower",
  "tower-http",
  "tracing",

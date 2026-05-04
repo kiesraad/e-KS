@@ -13,16 +13,8 @@ use super::SubmitPath;
 
 struct SubmitCandidateList {
     list: CandidateList,
-    download_h1_path_nl: String,
-    download_h1_path_fry: String,
-    download_h3_1_path_nl: String,
-    download_h3_1_path_fry: String,
-    download_h4_path_nl: String,
-    download_h4_path_fry: String,
-    download_h9_path_nl: String,
-    download_h9_path_fry: String,
-    download_eml_210_path_nl: String,
-    download_eml_210_path_fry: String,
+    download_path_nl: String,
+    download_path_fry: String,
     person_count: usize,
     duplicate_districts: Vec<ElectoralDistrict>,
 }
@@ -44,52 +36,12 @@ pub async fn index(
         .map(|summary| {
             let person_count = summary.candidate_count();
             Ok(SubmitCandidateList {
-                download_h1_path_nl: super::DownloadH1Path {
+                download_path_nl: super::DownloadDocumentsPath {
                     list_id: summary.list.id,
                     locale: ModelLocale::Nl,
                 }
                 .to_string(),
-                download_h1_path_fry: super::DownloadH1Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h3_1_path_nl: super::DownloadH31Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h3_1_path_fry: super::DownloadH31Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h4_path_nl: super::DownloadH4Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h4_path_fry: super::DownloadH4Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h9_path_nl: super::DownloadH9Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h9_path_fry: super::DownloadH9Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_eml_210_path_nl: super::DownloadEml210Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_eml_210_path_fry: super::DownloadEml210Path {
+                download_path_fry: super::DownloadDocumentsPath {
                     list_id: summary.list.id,
                     locale: ModelLocale::Fry,
                 }
@@ -126,7 +78,7 @@ mod tests {
 
     #[tokio::test]
     #[ignore] // TODO should pass again once #605, #607, and #608 have been implemented
-    async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
+    async fn index_shows_document_downloads_for_complete_lists() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let complete_list_id = CandidateListId::new();
         let incomplete_list_id = CandidateListId::new();
@@ -151,7 +103,7 @@ mod tests {
 
         assert!(
             body.contains(
-                &super::super::DownloadH1Path {
+                &super::super::DownloadDocumentsPath {
                     list_id: complete_list_id,
                     locale: ModelLocale::Nl,
                 }
@@ -161,7 +113,7 @@ mod tests {
 
         assert!(
             !body.contains(
-                &super::super::DownloadH1Path {
+                &super::super::DownloadDocumentsPath {
                     list_id: incomplete_list_id,
                     locale: ModelLocale::Nl,
                 }
