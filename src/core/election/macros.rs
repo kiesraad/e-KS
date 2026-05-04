@@ -13,7 +13,8 @@ macro_rules! define_elections {
                 election_date: $election_date:expr,
                 eligible_date_of_birth: $eligible_date_of_birth:expr,
                 electoral_districts: $electoral_districts:expr $(,)?,
-                nineteen_or_more_seats: $nineteen_or_more_seats:expr
+                nineteen_or_more_seats: $nineteen_or_more_seats:expr,
+                frisian_export_allowed: $frisian_export_allowed:expr
             }
         ),* $(,)?
     ) => {
@@ -127,6 +128,15 @@ macro_rules! define_elections {
                 match self {
                     $(
                         Self::$name $(($binding))? => $nineteen_or_more_seats,
+                    )*
+                }
+            }
+
+            pub fn frisian_export_allowed(&self) -> bool {
+                #[allow(unused)]
+                match self {
+                    $(
+                        Self::$name $(($binding))? => $frisian_export_allowed,
                     )*
                 }
             }
