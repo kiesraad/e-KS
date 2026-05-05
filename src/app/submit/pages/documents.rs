@@ -1,4 +1,5 @@
 use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
+use std::collections::BTreeMap;
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use tracing::error;
@@ -10,24 +11,59 @@ use crate::{
     utils::no_cache_headers,
 };
 
+fn deduplicate_folder_names(bundles: &mut [DocumentData]) {
+    if bundles.len() == 1 {
+        bundles[0].folder_name = None;
+        return;
+    }
+
+    let mut next_suffix = BTreeMap::<String, usize>::new();
+
+    for bundle in bundles {
+        let Some(base_name) = bundle.folder_name.as_ref() else {
+            continue;
+        };
+        let suffix = next_suffix.entry(base_name.clone()).or_insert(0);
+
+        if *suffix > 0 {
+            bundle.folder_name = Some(format!("{base_name}-{suffix}"));
+        }
+
+        *suffix += 1;
+    }
+}
+
 pub async fn gen_documents(
-    path @ DownloadDocumentsPath { list_id, locale }: DownloadDocumentsPath,
+    path @ DownloadDocumentsPath { locale }: DownloadDocumentsPath,
     store: AppStore,
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let bundle = DocumentData::new(&store, &context, list_id, locale)?;
+    let list_ids = store
+        .get_candidate_lists()
+        .into_iter()
+        .map(|list| list.id)
+        .collect::<Vec<_>>();
+    if list_ids.is_empty() {
+        return Err(AppError::IncompleteData("No candidate lists"));
+    }
+
+    let mut bundles = list_ids
+        .iter()
+        .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
+        .collect::<Result<Vec<_>, _>>()?;
+    deduplicate_folder_names(&mut bundles);
+    let filename = DocumentData::archive_filename(locale);
 
     store
         .update(AppEvent::DownloadFile {
-            file_name: bundle.filename.clone(),
+            file_name: filename.clone(),
             download_path: path.to_string(),
-            list_id,
         })
         .await?;
 
     let headers = no_cache_headers::generate_attachment_headers(
-        &bundle.filename,
+        &filename,
         HeaderValue::from_static("application/zip"),
     )?;
 
@@ -35,11 +71,22 @@ pub async fn gen_documents(
     let body = Body::from_stream(ReaderStream::new(reader));
 
     tokio::spawn(async move {
-        if let Err(err) = bundle
-            .write_zip(renderer, ZipResponseWriter::new(writer))
-            .await
-        {
-            error!(error = ?err, "failed to stream submit documents zip");
+        let mut zipper = ZipResponseWriter::new(writer);
+
+        for bundle in bundles {
+            let list_id = bundle.list_id;
+            if let Err(err) = bundle.write_zip(&renderer, &mut zipper).await {
+                error!(
+                    error = ?err,
+                    list_id = %list_id,
+                    "failed to stream submit documents zip"
+                );
+                return;
+            }
+        }
+
+        if let Err(err) = zipper.finish().await {
+            error!(error = ?err, "failed to finalize submit documents zip");
         }
     });
 
@@ -96,14 +143,14 @@ mod tests {
     }
 
     async fn setup_documents_test_state(
+        list_count: usize,
         candidate_count: usize,
         include_list_submitter: bool,
         include_authorised_agent: bool,
         election: ElectionConfig,
-    ) -> Result<(AppStore, CandidateListId, Context), AppError> {
+    ) -> Result<(AppStore, Vec<CandidateListId>, Context), AppError> {
         let store = AppStore::new_for_test_with_election(election);
-        let list_id = CandidateListId::new();
-        let mut list = sample_candidate_list(list_id);
+        let mut list_ids = Vec::new();
 
         if include_list_submitter {
             sample_list_submitter(ListSubmitterId::new())
@@ -117,17 +164,23 @@ mod tests {
                 .await?;
         }
 
-        for _ in 0..candidate_count {
-            let person_id = PersonId::new();
-            sample_person(person_id).create(&store).await?;
-            list.candidates.push(person_id);
-        }
+        for _ in 0..list_count {
+            let list_id = CandidateListId::new();
+            let mut list = sample_candidate_list(list_id);
 
-        list.create(&store).await?;
+            for _ in 0..candidate_count {
+                let person_id = PersonId::new();
+                sample_person(person_id).create(&store).await?;
+                list.candidates.push(person_id);
+            }
+
+            list.create(&store).await?;
+            list_ids.push(list_id);
+        }
 
         Ok((
             store.clone(),
-            list_id,
+            list_ids,
             Context::new(
                 &store,
                 crate::Session::new_test_with_locale(crate::Locale::En),
@@ -137,13 +190,12 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_missing_list_submitter_returns_error() -> Result<(), AppError> {
-        let (store, list_id, context) =
-            setup_documents_test_state(1, false, true, ElectionConfig::EK27).await?;
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, false, true, ElectionConfig::EK27).await?;
         let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         let result = gen_documents(
             DownloadDocumentsPath {
-                list_id,
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
@@ -162,8 +214,8 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_multiple_authorised_agents_return_error() -> Result<(), AppError> {
-        let (store, list_id, context) =
-            setup_documents_test_state(1, true, true, ElectionConfig::EK27).await?;
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
         sample_authorised_agent(AuthorisedAgentId::new())
             .create(&store)
             .await?;
@@ -171,7 +223,6 @@ mod tests {
 
         let result = gen_documents(
             DownloadDocumentsPath {
-                list_id,
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
@@ -192,8 +243,8 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_missing_designation_returns_error() -> Result<(), AppError> {
-        let (store, list_id, context) =
-            setup_documents_test_state(1, true, true, ElectionConfig::EK27).await?;
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
         political_group.display_name = None;
@@ -204,7 +255,6 @@ mod tests {
 
         let result = gen_documents(
             DownloadDocumentsPath {
-                list_id,
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
@@ -223,15 +273,14 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_disallowed_frisian_export_returns_error() -> Result<(), AppError> {
-        let (store, list_id, context) =
-            setup_documents_test_state(1, true, true, ElectionConfig::PS27(crate::Province::GR))
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::PS27(crate::Province::GR))
                 .await?;
 
         let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         let result = gen_documents(
             DownloadDocumentsPath {
-                list_id,
                 locale: ModelLocale::Fry,
             },
             store,
@@ -259,11 +308,10 @@ mod tests {
         };
         use regex::Regex;
 
-        let (store, list_id, context) =
-            setup_documents_test_state(2, true, true, ElectionConfig::EK27).await?;
+        let (store, _list_ids, context) =
+            setup_documents_test_state(2, 2, true, true, ElectionConfig::EK27).await?;
         let response = gen_documents(
             DownloadDocumentsPath {
-                list_id,
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
@@ -284,7 +332,7 @@ mod tests {
             "application/zip"
         );
         assert!(
-            Regex::new("attachment; filename=\"documents-(.{2}-)*(.{2})\\.zip\"")
+            Regex::new("attachment; filename=\"documents\\.zip\"")
                 .unwrap()
                 .is_match(
                     headers
@@ -307,24 +355,74 @@ mod tests {
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
         let entry_names = zip_entry_names(response).await;
+        for folder in ["kieskring-ut", "kieskring-ut-1"] {
+            assert!(entry_names.contains(&format!("{folder}/eml210.eml.xml")));
+            assert!(
+                entry_names
+                    .iter()
+                    .any(|name| name == &format!("{folder}/h1-kandidatenlijst.pdf"))
+            );
+            assert!(
+                entry_names
+                    .iter()
+                    .any(|name| name == &format!("{folder}/h3-1-aanduiding.pdf"))
+            );
+            assert!(
+                entry_names
+                    .iter()
+                    .any(|name| name == &format!("{folder}/h4-ondersteuningsverklaring.pdf"))
+            );
+            assert_eq!(
+                entry_names
+                    .iter()
+                    .filter(|name| {
+                        name.starts_with(&format!("{folder}/h9-instemmingsverklaringen/"))
+                    })
+                    .count(),
+                2
+            );
+        }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn gen_documents_single_list_writes_files_at_zip_root() -> Result<(), AppError> {
+        use axum::response::IntoResponse;
+
+        let (store, _, context) =
+            setup_documents_test_state(1, 2, true, true, ElectionConfig::EK27).await?;
+        let response = gen_documents(
+            DownloadDocumentsPath {
+                locale: crate::core::ModelLocale::Nl,
+            },
+            store,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            context,
+        )
+        .await?
+        .into_response();
+
+        let entry_names = zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
-        assert!(
-            entry_names
-                .iter()
-                .any(|name| name == "h1-kandidatenlijst.pdf")
-        );
-        assert!(entry_names.iter().any(|name| name == "h3-1-aanduiding.pdf"));
-        assert!(
-            entry_names
-                .iter()
-                .any(|name| name == "h4-ondersteuningsverklaring.pdf")
-        );
+        assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
+        assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
+        assert!(entry_names.contains(&"h4-ondersteuningsverklaring.pdf".to_string()));
         assert_eq!(
             entry_names
                 .iter()
                 .filter(|name| name.starts_with("h9-instemmingsverklaringen/"))
                 .count(),
             2
+        );
+        assert!(
+            entry_names
+                .iter()
+                .all(|name| !name.starts_with("documents-")),
+            "did not expect a folder prefix for a single list: {entry_names:?}"
         );
 
         Ok(())

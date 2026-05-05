@@ -2,7 +2,7 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLocale};
+use crate::{AppError, AppState, core::ModelLocale};
 
 mod documents;
 mod index;
@@ -14,9 +14,8 @@ mod integration_tests;
 pub struct SubmitPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/generate/{list_id}/{locale}/documents.zip", rejection(AppError))]
+#[typed_path("/generate/{locale}/documents.zip", rejection(AppError))]
 pub struct DownloadDocumentsPath {
-    list_id: CandidateListId,
     locale: ModelLocale,
 }
 

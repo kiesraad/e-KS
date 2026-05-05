@@ -30,7 +30,7 @@ async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
     let state = AppState::new_with_config(config).await?;
     let stream_id = StreamId::new();
     let store = state
-        .store_for_stream(stream_id, ElectionConfig::EK27, true)
+        .store_for_stream(stream_id, ElectionConfig::EK27, false)
         .await?;
     sample_political_group().update(&store).await?;
 
@@ -44,18 +44,14 @@ struct DownloadTestState {
     app: Router,
     store: AppStore,
     session: Session,
-    list_id: CandidateListId,
 }
 
 async fn setup_download_test_state(
+    list_count: usize,
     candidate_count: usize,
     include_list_submitter: bool,
-    list_id: Option<CandidateListId>,
 ) -> Result<DownloadTestState, AppError> {
     let (app, store, session) = setup_app().await?;
-    let list_id = list_id.unwrap_or_default();
-
-    let mut list = sample_candidate_list(list_id);
     if include_list_submitter {
         sample_list_submitter(ListSubmitterId::new())
             .update(&store)
@@ -66,54 +62,55 @@ async fn setup_download_test_state(
             .create(&store)
             .await?;
     }
-    list.create(&store).await?;
 
-    for _ in 0..candidate_count {
-        let person_id = PersonId::new();
-        sample_person(person_id).create(&store).await?;
-        list.append_candidate(&store, person_id).await?;
+    for _ in 0..list_count {
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        for _ in 0..candidate_count {
+            let person_id = PersonId::new();
+            sample_person(person_id).create(&store).await?;
+            list.append_candidate(&store, person_id).await?;
+        }
     }
 
     Ok(DownloadTestState {
         app,
         store,
         session,
-        list_id,
     })
 }
 
 async fn download_file(
     download_path: &str,
-    list_id: CandidateListId,
     include_list_submitter: bool,
-) -> Result<(String, String, CandidateListId), AppError> {
+) -> Result<Vec<(String, String)>, AppError> {
     let DownloadTestState {
         app,
         store,
         session,
-        list_id: _,
-    } = setup_download_test_state(1, include_list_submitter, Some(list_id)).await?;
+    } = setup_download_test_state(2, 1, include_list_submitter).await?;
 
     app.oneshot(request(download_path.to_string(), session, store.clone()))
         .await
         .unwrap();
 
-    // Consume last event and check that it is a DownloadFile event
-    let mut events = store.get_events();
-    let Some(StoreEvent {
-        payload:
-            AppEvent::DownloadFile {
-                file_name,
-                download_path: actual_download_path,
-                list_id: actual_list_id,
-            },
-        ..
-    }) = events.pop()
-    else {
-        panic!("expected the last event to be a download event")
-    };
-
-    Ok((file_name, actual_download_path, actual_list_id))
+    Ok(store
+        .get_events()
+        .into_iter()
+        .filter_map(|event| match event {
+            StoreEvent {
+                payload:
+                    AppEvent::DownloadFile {
+                        file_name,
+                        download_path,
+                    },
+                ..
+            } => Some((file_name, download_path)),
+            _ => None,
+        })
+        .collect())
 }
 
 fn request(uri: String, session: Session, store: AppStore) -> Request<Body> {
@@ -155,18 +152,16 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
         app,
         store,
         session,
-        list_id,
-    } = setup_download_test_state(2, true, None).await?;
+    } = setup_download_test_state(1, 2, true).await?;
 
     let response = app
         .oneshot(request(
             DownloadDocumentsPath {
-                list_id,
                 locale: ModelLocale::Nl,
             }
             .to_string(),
             session,
-            store,
+            store.clone(),
         ))
         .await
         .expect("submit documents response");
@@ -187,20 +182,12 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
             .get(header::CONTENT_DISPOSITION)
             .and_then(|value| value.to_str().ok())
             .expect("content disposition header")
-            .starts_with("attachment; filename=\"documents-")
+            .starts_with("attachment; filename=\"documents.zip")
     );
     assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
-    assert!(
-        entry_names
-            .iter()
-            .any(|name| name == "h1-kandidatenlijst.pdf")
-    );
-    assert!(entry_names.iter().any(|name| name == "h3-1-aanduiding.pdf"));
-    assert!(
-        entry_names
-            .iter()
-            .any(|name| name == "h4-ondersteuningsverklaring.pdf")
-    );
+    assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
+    assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
+    assert!(entry_names.contains(&"h4-ondersteuningsverklaring.pdf".to_string()));
     assert_eq!(
         entry_names
             .iter()
@@ -208,7 +195,12 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
             .count(),
         2
     );
-    assert!(entry_names.iter().any(|name| name == "eml210.eml.xml"));
+    assert!(
+        entry_names
+            .iter()
+            .all(|name| !name.starts_with("documents-")),
+        "did not expect a folder prefix for a single list: {entry_names:?}"
+    );
 
     Ok(())
 }
@@ -216,19 +208,18 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
 #[tokio::test]
 #[traced_test]
 async fn documents_download_adds_download_event() -> Result<(), AppError> {
-    let list_id = CandidateListId::new();
     let download_path = DownloadDocumentsPath {
-        list_id,
         locale: ModelLocale::Nl,
     }
     .to_string();
 
-    let (file_name, actual_download_path, actual_list_id) =
-        download_file(&download_path, list_id, true).await?;
+    let events = download_file(&download_path, true).await?;
 
-    assert_eq!(file_name, "documents-ut.zip");
-    assert_eq!(download_path, actual_download_path);
-    assert_eq!(list_id, actual_list_id);
+    assert_eq!(events.len(), 1);
+    for (file_name, actual_download_path) in events {
+        assert_eq!(file_name, "documents.zip");
+        assert_eq!(download_path, actual_download_path);
+    }
 
     Ok(())
 }

@@ -26,7 +26,7 @@ test.describe("download documents", async () => {
     await new SubmitPage(page).linkDownloadSingle.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch(/documents-ge\.zip/);
+    expect(download.suggestedFilename()).toMatch("documents.zip");
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 

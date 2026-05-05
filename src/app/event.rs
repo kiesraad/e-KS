@@ -75,7 +75,6 @@ pub enum AppEvent {
     DownloadFile {
         file_name: String,
         download_path: String,
-        list_id: CandidateListId,
     },
 
     ExportCsv {

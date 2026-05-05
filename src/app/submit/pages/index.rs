@@ -2,28 +2,18 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListSummary},
-    core::ModelLocale,
-    filters,
-    submit::IncompleteItems,
+    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters, submit::IncompleteItems,
 };
 
 use super::SubmitPath;
 
-struct SubmitCandidateList {
-    list: CandidateList,
-    download_path_nl: String,
-    download_path_fry: String,
-    person_count: usize,
-    duplicate_districts: Vec<ElectoralDistrict>,
-}
-
 #[derive(Template)]
 #[template(path = "submit/pages/index.html")]
 pub struct IndexTemplate {
-    candidate_lists: Vec<SubmitCandidateList>,
     incomplete_items: IncompleteItems,
+    download_path_nl: String,
+    download_path_fry: String,
+    frisian_export_allowed: bool,
 }
 
 pub async fn index(
@@ -31,32 +21,20 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store)
-        .into_iter()
-        .map(|summary| {
-            let person_count = summary.candidate_count();
-            Ok(SubmitCandidateList {
-                download_path_nl: super::DownloadDocumentsPath {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_path_fry: super::DownloadDocumentsPath {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                list: summary.list,
-                person_count,
-                duplicate_districts: summary.duplicate_districts,
-            })
-        })
-        .collect::<Result<Vec<_>, AppError>>()?;
+    let incomplete_items = IncompleteItems::find_all(&store);
 
     Ok(HtmlTemplate(
         IndexTemplate {
-            candidate_lists,
-            incomplete_items: IncompleteItems::find_all(&store),
+            incomplete_items,
+            download_path_nl: super::DownloadDocumentsPath {
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            download_path_fry: super::DownloadDocumentsPath {
+                locale: ModelLocale::Fry,
+            }
+            .to_string(),
+            frisian_export_allowed: context.election.frisian_export_allowed(),
         },
         context,
     ))
@@ -66,7 +44,7 @@ pub async fn index(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectionConfig, Locale, Session,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Session,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
@@ -104,7 +82,6 @@ mod tests {
         assert!(
             body.contains(
                 &super::super::DownloadDocumentsPath {
-                    list_id: complete_list_id,
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
@@ -112,13 +89,14 @@ mod tests {
         );
 
         assert!(
-            !body.contains(
+            body.matches(
                 &super::super::DownloadDocumentsPath {
-                    list_id: incomplete_list_id,
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
             )
+            .count()
+                == 1
         );
 
         Ok(())
@@ -162,7 +140,6 @@ mod tests {
             assert!(
                 body.contains(
                     &super::super::DownloadDocumentsPath {
-                        list_id: complete_list_id,
                         locale: ModelLocale::Nl,
                     }
                     .to_string()
@@ -172,7 +149,6 @@ mod tests {
             assert!(
                 body.contains(
                     &super::super::DownloadDocumentsPath {
-                        list_id: complete_list_id,
                         locale: ModelLocale::Fry,
                     }
                     .to_string()
@@ -225,7 +201,6 @@ mod tests {
             assert!(
                 body.contains(
                     &super::super::DownloadDocumentsPath {
-                        list_id: complete_list_id,
                         locale: ModelLocale::Nl,
                     }
                     .to_string()
@@ -235,7 +210,6 @@ mod tests {
             assert!(
                 !body.contains(
                     &super::super::DownloadDocumentsPath {
-                        list_id: complete_list_id,
                         locale: ModelLocale::Fry,
                     }
                     .to_string()

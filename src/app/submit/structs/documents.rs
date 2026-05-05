@@ -19,7 +19,8 @@ use crate::{
 };
 
 pub struct DocumentData {
-    pub filename: String,
+    pub list_id: CandidateListId,
+    pub folder_name: Option<String>,
     pub locale: ModelLocale,
     pub timestamp: TypstDatetime,
     pub election: ElectionConfig,
@@ -36,6 +37,14 @@ pub struct DocumentData {
 }
 
 impl DocumentData {
+    pub fn archive_filename(locale: ModelLocale) -> String {
+        let mut parts = vec!["documents".to_string()];
+        if locale != ModelLocale::Nl {
+            parts.push(locale.to_string());
+        }
+        format!("{}.zip", parts.join("-"))
+    }
+
     /// Collect all the necessary data to render the models and the exported EML.
     ///
     /// Collecting the data first prevents errors popping up while the ZIP is streaming,
@@ -100,17 +109,25 @@ impl DocumentData {
         let authorised_agent = (&authorised_agents[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
-        let mut parts = vec!["documents".to_string()];
-        if !list.contains_all_districts(&election) {
-            parts.push(list.districts_codes());
-        }
-        if locale != ModelLocale::Nl {
-            parts.push(locale.to_string());
-        }
-        let filename = format!("{}.zip", parts.join("-"));
+        let folder_name = if list.contains_all_districts(&election) {
+            match locale {
+                ModelLocale::Nl => "alle-kieskringen".to_string(),
+                ModelLocale::Fry => "alle-kiesrunten".to_string(),
+            }
+        } else {
+            format!(
+                "{}-{}",
+                match locale {
+                    ModelLocale::Nl => "kieskring",
+                    ModelLocale::Fry => "kiesrunte",
+                },
+                list.districts_codes()
+            )
+        };
 
         Ok(Self {
-            filename,
+            list_id,
+            folder_name: Some(folder_name),
             locale,
             timestamp: TypstDatetime::now(),
             election,
@@ -131,45 +148,53 @@ impl DocumentData {
 
     pub async fn write_zip(
         self,
-        renderer: TypstRenderer,
-        mut writer: ZipResponseWriter<tokio::io::DuplexStream>,
+        renderer: &TypstRenderer,
+        writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,
     ) -> Result<(), AppError> {
         let h1 = H1::from(&self);
+        let h1_path = self.zip_path(h1.filename());
         writer
-            .add_file(h1.filename(), &h1.generate_bytes(&renderer).await?)
+            .add_file(&h1_path, &h1.generate_bytes(renderer).await?)
             .await?;
 
         let h3_1 = H31::from(&self);
+        let h3_1_path = self.zip_path(h3_1.filename());
         writer
-            .add_file(h3_1.filename(), &h3_1.generate_bytes(&renderer).await?)
+            .add_file(&h3_1_path, &h3_1.generate_bytes(renderer).await?)
             .await?;
 
         let h4 = H4::from(&self);
+        let h4_path = self.zip_path(h4.filename());
         writer
-            .add_file(h4.filename(), &h4.generate_bytes(&renderer).await?)
+            .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
             .await?;
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
-            let filename = format!(
+            let filename = self.zip_path(&format!(
                 "h9-{}/{}",
                 match self.locale {
                     ModelLocale::Nl => "instemmingsverklaringen",
                     ModelLocale::Fry => "ynstimmingsferklearrings",
                 },
                 h9.filename()
-            );
+            ));
             writer
-                .add_file(&filename, &h9.generate_bytes(&renderer).await?)
+                .add_file(&filename, &h9.generate_bytes(renderer).await?)
                 .await?;
         }
 
         writer
-            .add_file("eml210.eml.xml", &self.nomination.build()?)
+            .add_file(&self.zip_path("eml210.eml.xml"), &self.nomination.build()?)
             .await?;
 
-        writer.finish().await?;
-
         Ok(())
+    }
+
+    fn zip_path(&self, relative_path: &str) -> String {
+        match &self.folder_name {
+            Some(folder_name) => format!("{folder_name}/{relative_path}"),
+            None => relative_path.to_string(),
+        }
     }
 }
