@@ -64,7 +64,7 @@
 
 
 = #trans("Vervanger(s) voor het herstel van verzuimen", "Ferfanger(s) foar it ferhelpen fan fersommen")
-#if input.substitute_submitter.len() == 0 {
+#if input.substitute_submitters.len() == 0 {
   trans([_geen_], [_geen_])
 } else {
   enumerated_table(
@@ -76,7 +76,7 @@
       trans("postcode", "postkoade"),
       trans("plaats", "plak"),
     ),
-    values: input.substitute_submitter.map(s => (
+    values: input.substitute_submitters.map(s => (
       s.last_name,
       s.initials,
       s.postal_address.street_address,

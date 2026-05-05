@@ -5,7 +5,6 @@ use serde::Deserialize;
 use crate::{AppError, AppState, candidate_lists::CandidateListId, core::ModelLocale};
 
 mod documents;
-mod eml210;
 mod index;
 #[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
 mod integration_tests;

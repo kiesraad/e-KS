@@ -5,129 +5,10 @@ use tracing::error;
 
 use crate::{
     AppError, AppEvent, AppStore, Context, TypstRenderer,
-    candidate_lists::FullCandidateList,
-    core::{Pdf, ZipResponseWriter},
-    submit::{
-        H1, H9, H31,
-        pages::{DownloadDocumentsPath, eml210::build_eml210},
-        structs::{
-            h4::H4,
-            typst_candidate::{TypstCandidate, ordered_candidates},
-        },
-    },
+    core::ZipResponseWriter,
+    submit::{DocumentData, pages::DownloadDocumentsPath},
     utils::no_cache_headers,
 };
-
-struct DocumentsBundle {
-    filename: String,
-    eml210: Vec<u8>,
-    h1: H1,
-    h3_1: H31,
-    h4: H4,
-    list: crate::candidate_lists::CandidateList,
-    candidates: Vec<crate::candidates::Candidate>,
-    ordered_candidates: Vec<TypstCandidate>,
-    locale: crate::core::ModelLocale,
-}
-
-impl DocumentsBundle {
-    fn new(
-        store: &AppStore,
-        context: &Context,
-        list_id: crate::candidate_lists::CandidateListId,
-        locale: crate::core::ModelLocale,
-    ) -> Result<Self, AppError> {
-        let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
-        let ordered_candidates = ordered_candidates(&mut candidates.clone(), locale)?;
-
-        for candidate in candidates.iter().cloned() {
-            H9::new(
-                store,
-                &list,
-                &ordered_candidates,
-                candidate,
-                &context.election,
-                locale,
-            )?;
-        }
-
-        let filename = if list.contains_all_districts(&context.election) {
-            format!("documents-{locale}.zip")
-        } else {
-            format!("documents-{}-{locale}.zip", list.districts_codes())
-        };
-
-        Ok(Self {
-            filename,
-            eml210: build_eml210(
-                store,
-                &context.election,
-                &context.political_group,
-                list_id,
-                locale,
-            )?,
-            h1: H1::new(store, list_id, &context.election, locale)?,
-            h3_1: H31::new(store, list_id, &context.election, locale)?,
-            h4: H4::new(store, list_id, &context.election, locale)?,
-            list,
-            candidates,
-            ordered_candidates,
-            locale,
-        })
-    }
-
-    async fn write_zip(
-        self,
-        store: AppStore,
-        renderer: TypstRenderer,
-        election: crate::ElectionConfig,
-        mut writer: ZipResponseWriter<tokio::io::DuplexStream>,
-    ) -> Result<(), AppError> {
-        let Self {
-            eml210,
-            h1,
-            h3_1,
-            h4,
-            list,
-            candidates,
-            ordered_candidates,
-            locale,
-            ..
-        } = self;
-
-        writer.add_file("eml210.eml.xml", &eml210).await?;
-
-        let h1_name = h1.filename().to_string();
-        let h1_bytes = h1.generate_bytes(&renderer).await?;
-        writer.add_file(&h1_name, &h1_bytes).await?;
-
-        let h3_1_name = h3_1.filename().to_string();
-        let h3_1_bytes = h3_1.generate_bytes(&renderer).await?;
-        writer.add_file(&h3_1_name, &h3_1_bytes).await?;
-
-        let h4_name = h4.filename().to_string();
-        let h4_bytes = h4.generate_bytes(&renderer).await?;
-        writer.add_file(&h4_name, &h4_bytes).await?;
-
-        for candidate in candidates {
-            let h9 = H9::new(
-                &store,
-                &list,
-                &ordered_candidates,
-                candidate,
-                &election,
-                locale,
-            )?;
-            let name = format!("model-h9/{}", h9.filename());
-            let bytes = h9.generate_bytes(&renderer).await?;
-            writer.add_file(&name, &bytes).await?;
-        }
-
-        writer.finish().await?;
-
-        Ok(())
-    }
-}
 
 pub async fn gen_documents(
     path @ DownloadDocumentsPath { list_id, locale }: DownloadDocumentsPath,
@@ -135,7 +16,7 @@ pub async fn gen_documents(
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let bundle = DocumentsBundle::new(&store, &context, list_id, locale)?;
+    let bundle = DocumentData::new(&store, &context, list_id, locale)?;
 
     store
         .update(AppEvent::DownloadFile {
@@ -152,17 +33,10 @@ pub async fn gen_documents(
 
     let (reader, writer) = duplex(64 * 1024);
     let body = Body::from_stream(ReaderStream::new(reader));
-    let store_for_task = store.clone();
-    let renderer_for_task = renderer.clone();
 
     tokio::spawn(async move {
         if let Err(err) = bundle
-            .write_zip(
-                store_for_task,
-                renderer_for_task,
-                context.election,
-                ZipResponseWriter::new(writer),
-            )
+            .write_zip(renderer, ZipResponseWriter::new(writer))
             .await
         {
             error!(error = ?err, "failed to stream submit documents zip");

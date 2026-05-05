@@ -9,7 +9,7 @@ pub trait Pdf: Sized + Serialize {
 
     fn filename(&self) -> &str;
 
-    async fn generate_bytes(self, renderer: &TypstRenderer) -> Result<Vec<u8>, AppError> {
+    async fn generate_bytes(&self, renderer: &TypstRenderer) -> Result<Vec<u8>, AppError> {
         renderer
             .render_pdf(self.typst_template_name(), self.filename(), &self)
             .await

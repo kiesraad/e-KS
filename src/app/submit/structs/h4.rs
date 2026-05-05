@@ -1,27 +1,25 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, AppStore, ElectionConfig,
-    candidate_lists::{CandidateListId, FullCandidateList},
     core::{ElectionType, ModelLocale, Pdf},
-    submit::structs::{
-        typst_candidate::{TypstCandidate, ordered_candidates},
-        typst_datetime::TypstDatetime,
+    submit::{
+        DocumentData,
+        structs::{typst_candidate::TypstCandidate, typst_datetime::TypstDatetime},
     },
 };
 
 #[derive(Debug, Serialize)]
-pub struct H4 {
+pub struct H4<'a> {
     election_name: String,
     election_type: ElectionType,
-    designation: String,
-    candidates: Vec<TypstCandidate>,
-    timestamp: TypstDatetime,
+    designation: &'a str,
+    candidates: &'a Vec<TypstCandidate>,
+    timestamp: &'a TypstDatetime,
     locale: ModelLocale,
     filename: String,
 }
 
-impl Pdf for H4 {
+impl Pdf for H4<'_> {
     fn typst_template_name(&self) -> &'static str {
         "model-h4.typ"
     }
@@ -31,43 +29,26 @@ impl Pdf for H4 {
     }
 }
 
-impl H4 {
-    pub fn new(
-        store: &AppStore,
-        list_id: CandidateListId,
-        election: &ElectionConfig,
-        locale: ModelLocale,
-    ) -> Result<Self, AppError> {
-        let FullCandidateList {
-            list,
-            mut candidates,
-        } = FullCandidateList::get(store, list_id)?;
+impl<'a> From<&'a DocumentData> for H4<'a> {
+    fn from(data: &'a DocumentData) -> Self {
+        let list = &data.list;
+        let locale = data.locale;
+        let election = data.election;
 
-        let filename = if list.electoral_districts.len() == 1 {
-            format!(
-                "model-h4-({}).pdf",
-                list.electoral_districts[0].title(locale.into())
-            )
-        } else {
+        let filename = if list.contains_all_districts(&election) {
             "model-h4.pdf".to_string()
+        } else {
+            format!("model-h4-{}.pdf", list.districts_codes())
         };
 
-        let election_type = election.election_type();
-
-        Ok(Self {
+        Self {
             election_name: election.formal_title(locale),
-            election_type,
-            designation: store
-                .get_political_group()
-                .display_name
-                .ok_or(AppError::IncompleteData(
-                    "Missing registered designation from political group",
-                ))?
-                .to_string(),
-            candidates: ordered_candidates(&mut candidates, locale)?,
-            timestamp: TypstDatetime::now(),
+            election_type: election.election_type(),
+            designation: &data.designation,
+            candidates: &data.ordered_candidates,
+            timestamp: &data.timestamp,
             locale,
             filename,
-        })
+        }
     }
 }
