@@ -19,7 +19,7 @@ pub struct H1<'a> {
     substitute_submitters: &'a Vec<TypstPerson>,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
-    filename: String,
+    filename: &'static str,
 }
 
 impl Pdf for H1<'_> {
@@ -28,20 +28,18 @@ impl Pdf for H1<'_> {
     }
 
     fn filename(&self) -> &str {
-        &self.filename
+        self.filename
     }
 }
 
 impl<'a> From<&'a DocumentData> for H1<'a> {
     fn from(data: &'a DocumentData) -> Self {
-        let list = &data.list;
         let locale = data.locale;
         let election = data.election;
 
-        let filename = if list.contains_all_districts(&election) {
-            "model-h1.pdf".to_string()
-        } else {
-            format!("model-h1-{}.pdf", list.districts_codes())
+        let filename = match locale {
+            ModelLocale::Nl => "h1-kandidatenlijst.pdf",
+            ModelLocale::Fry => "h1-kandidatelist.pdf",
         };
 
         Self {

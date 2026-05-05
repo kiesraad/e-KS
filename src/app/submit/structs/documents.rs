@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
-    candidate_lists::{CandidateList, CandidateListId, FullCandidateList},
+    candidate_lists::{CandidateListId, FullCandidateList},
     common::PreviousElectionResults,
     core::{ModelLocale, Pdf, ZipResponseWriter},
     submit::structs::{
@@ -23,7 +23,6 @@ pub struct DocumentData {
     pub locale: ModelLocale,
     pub timestamp: TypstDatetime,
     pub election: ElectionConfig,
-    pub list: CandidateList,
     pub electoral_districts: TypstElectoralDistricts,
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
     pub ordered_candidates: Vec<TypstCandidate>,
@@ -115,7 +114,6 @@ impl DocumentData {
             locale,
             timestamp: TypstDatetime::now(),
             election,
-            list,
             electoral_districts,
             detailed_candidates,
             ordered_candidates,
@@ -153,7 +151,14 @@ impl DocumentData {
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
-            let filename = format!("model-h9/{}", h9.filename());
+            let filename = format!(
+                "h9-{}/{}",
+                match self.locale {
+                    ModelLocale::Nl => "instemmingsverklaringen",
+                    ModelLocale::Fry => "ynstimmingsferklearrings",
+                },
+                h9.filename()
+            );
             writer
                 .add_file(&filename, &h9.generate_bytes(&renderer).await?)
                 .await?;

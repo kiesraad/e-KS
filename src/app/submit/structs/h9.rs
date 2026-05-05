@@ -41,7 +41,7 @@ impl<'a> From<(&'a DocumentData, &'a TypstDetailedCandidate)> for H9<'a> {
         let election = data.election;
 
         let filename = format!(
-            "model-h9-{}-{}.pdf",
+            "h9-{}-{}.pdf",
             slugify_teletex(&candidate.candidate.last_name, true),
             candidate.candidate.position
         );

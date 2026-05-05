@@ -22,7 +22,7 @@ pub struct H31<'a> {
     authorised_agent: &'a TypstAuthorisedAgent,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
-    filename: String,
+    filename: &'static str,
 }
 
 impl Pdf for H31<'_> {
@@ -31,20 +31,18 @@ impl Pdf for H31<'_> {
     }
 
     fn filename(&self) -> &str {
-        &self.filename
+        self.filename
     }
 }
 
 impl<'a> From<&'a DocumentData> for H31<'a> {
     fn from(data: &'a DocumentData) -> Self {
-        let list = &data.list;
         let locale = data.locale;
         let election = data.election;
 
-        let filename = if list.contains_all_districts(&election) {
-            "model-h3-1.pdf".to_string()
-        } else {
-            format!("model-h3-1-{}.pdf", list.districts_codes())
+        let filename = match locale {
+            ModelLocale::Nl => "h3-1-aanduiding.pdf",
+            ModelLocale::Fry => "h3-1-oantsjutting.pdf",
         };
 
         Self {

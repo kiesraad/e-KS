@@ -16,7 +16,7 @@ pub struct H4<'a> {
     candidates: &'a Vec<TypstCandidate>,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
-    filename: String,
+    filename: &'static str,
 }
 
 impl Pdf for H4<'_> {
@@ -25,20 +25,18 @@ impl Pdf for H4<'_> {
     }
 
     fn filename(&self) -> &str {
-        &self.filename
+        self.filename
     }
 }
 
 impl<'a> From<&'a DocumentData> for H4<'a> {
     fn from(data: &'a DocumentData) -> Self {
-        let list = &data.list;
         let locale = data.locale;
         let election = data.election;
 
-        let filename = if list.contains_all_districts(&election) {
-            "model-h4.pdf".to_string()
-        } else {
-            format!("model-h4-{}.pdf", list.districts_codes())
+        let filename = match locale {
+            ModelLocale::Nl => "h4-ondersteuningsverklaring.pdf",
+            ModelLocale::Fry => "h4-stipeferklearring.pdf",
         };
 
         Self {

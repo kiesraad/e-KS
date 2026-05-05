@@ -190,17 +190,21 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
             .starts_with("attachment; filename=\"documents-")
     );
     assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
-    assert!(entry_names.iter().any(|name| name.starts_with("model-h1")));
     assert!(
         entry_names
             .iter()
-            .any(|name| name.starts_with("model-h3-1"))
+            .any(|name| name == "h1-kandidatenlijst.pdf")
     );
-    assert!(entry_names.iter().any(|name| name.starts_with("model-h4")));
+    assert!(entry_names.iter().any(|name| name == "h3-1-aanduiding.pdf"));
+    assert!(
+        entry_names
+            .iter()
+            .any(|name| name == "h4-ondersteuningsverklaring.pdf")
+    );
     assert_eq!(
         entry_names
             .iter()
-            .filter(|name| name.starts_with("model-h9/"))
+            .filter(|name| name.starts_with("h9-instemmingsverklaringen/"))
             .count(),
         2
     );
