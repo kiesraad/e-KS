@@ -34,18 +34,29 @@
             </ul>
           {% endif %}
           <div class="card-actions">
-            {% if incomplete_items.models_downloadable() %}
-              <a href="{{ candidate_list.download_path_nl }}"
-                 class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_path_fry }}"
-                 class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+            {% if election.frisian_export_allowed() %}
+              {% if incomplete_items.models_downloadable() %}
+                <a href="{{ candidate_list.download_path_nl }}"
+                   class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+                <a href="{{ candidate_list.download_path_fry }}"
+                   class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+              {% else %}
+                <a class="button secondary icon-download disabled"
+                   disabled
+                   aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
+                <a class="button secondary icon-download disabled"
+                   disabled
+                   aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+              {% endif %}
             {% else %}
-              <a class="button secondary icon-download disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a class="button secondary icon-download disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
+              {% if incomplete_items.models_downloadable() %}
+                <a href="{{ candidate_list.download_path_nl }}"
+                   class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }}</a>
+              {% else %}
+                <a class="button secondary icon-download disabled"
+                   disabled
+                   aria-disabled="true">{{ "action.all_in_one_zip"|trans }}</a>
+              {% endif %}
             {% endif %}
           </div>
         </div>

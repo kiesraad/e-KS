@@ -50,8 +50,10 @@ pub async fn gen_documents(
 mod tests {
     use super::*;
     use crate::{
+        ElectionConfig,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
+        core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         test_utils::{
@@ -97,8 +99,9 @@ mod tests {
         candidate_count: usize,
         include_list_submitter: bool,
         include_authorised_agent: bool,
+        election: ElectionConfig,
     ) -> Result<(AppStore, CandidateListId, Context), AppError> {
-        let store = AppStore::new_for_test();
+        let store = AppStore::new_for_test_with_election(election);
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
 
@@ -122,12 +125,20 @@ mod tests {
 
         list.create(&store).await?;
 
-        Ok((store, list_id, Context::new_test_without_db()))
+        Ok((
+            store.clone(),
+            list_id,
+            Context::new(
+                &store,
+                crate::Session::new_test_with_locale(crate::Locale::En),
+            ),
+        ))
     }
 
     #[tokio::test]
     async fn gen_documents_missing_list_submitter_returns_error() -> Result<(), AppError> {
-        let (store, list_id, context) = setup_documents_test_state(1, false, true).await?;
+        let (store, list_id, context) =
+            setup_documents_test_state(1, false, true, ElectionConfig::EK27).await?;
         let renderer = TypstRenderer::http("http://unused.test".to_string());
 
         let result = gen_documents(
@@ -151,7 +162,8 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_multiple_authorised_agents_return_error() -> Result<(), AppError> {
-        let (store, list_id, context) = setup_documents_test_state(1, true, true).await?;
+        let (store, list_id, context) =
+            setup_documents_test_state(1, true, true, ElectionConfig::EK27).await?;
         sample_authorised_agent(AuthorisedAgentId::new())
             .create(&store)
             .await?;
@@ -180,7 +192,8 @@ mod tests {
 
     #[tokio::test]
     async fn gen_documents_missing_designation_returns_error() -> Result<(), AppError> {
-        let (store, list_id, context) = setup_documents_test_state(1, true, true).await?;
+        let (store, list_id, context) =
+            setup_documents_test_state(1, true, true, ElectionConfig::EK27).await?;
 
         let mut political_group = store.get_political_group();
         political_group.display_name = None;
@@ -208,6 +221,35 @@ mod tests {
         Ok(())
     }
 
+    #[tokio::test]
+    async fn gen_documents_disallowed_frisian_export_returns_error() -> Result<(), AppError> {
+        let (store, list_id, context) =
+            setup_documents_test_state(1, true, true, ElectionConfig::PS27(crate::Province::GR))
+                .await?;
+
+        let renderer = TypstRenderer::http("http://unused.test".to_string());
+
+        let result = gen_documents(
+            DownloadDocumentsPath {
+                list_id,
+                locale: ModelLocale::Fry,
+            },
+            store,
+            State(renderer),
+            context,
+        )
+        .await;
+
+        match result {
+            Err(AppError::UserError(message)) => {
+                assert_eq!(message, "Frisian export not allowed for this election")
+            }
+            _ => panic!("expected disallowed Frisian export error"),
+        }
+
+        Ok(())
+    }
+
     #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_documents_returns_zip_response() -> Result<(), AppError> {
@@ -217,7 +259,8 @@ mod tests {
         };
         use regex::Regex;
 
-        let (store, list_id, context) = setup_documents_test_state(2, true, true).await?;
+        let (store, list_id, context) =
+            setup_documents_test_state(2, true, true, ElectionConfig::EK27).await?;
         let response = gen_documents(
             DownloadDocumentsPath {
                 list_id,

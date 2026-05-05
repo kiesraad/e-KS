@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
-    candidate_lists::{CandidateList, FullCandidateList},
+    candidate_lists::{CandidateList, CandidateListId, FullCandidateList},
     common::PreviousElectionResults,
     core::{ModelLocale, Pdf, ZipResponseWriter},
     submit::structs::{
@@ -44,10 +44,16 @@ impl DocumentData {
     pub fn new(
         store: &AppStore,
         context: &Context,
-        list_id: crate::candidate_lists::CandidateListId,
-        locale: crate::core::ModelLocale,
+        list_id: CandidateListId,
+        locale: ModelLocale,
     ) -> Result<Self, AppError> {
         let election = context.election;
+        if !election.frisian_export_allowed() && locale == ModelLocale::Fry {
+            return Err(AppError::UserError(
+                "Frisian export not allowed for this election".to_string(),
+            ));
+        }
+
         let FullCandidateList {
             list,
             mut candidates,
