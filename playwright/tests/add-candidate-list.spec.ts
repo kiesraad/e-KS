@@ -50,7 +50,7 @@ test.describe("add candidate list", async () => {
   });
 
   test("add candidate list provincial council", async ({
-    ProvincialCouncilElection: page,
+    provincialCouncilElection: page,
   }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
@@ -90,7 +90,7 @@ test.describe("add candidate list", async () => {
   });
 
   test("add candidate list water authority", async ({
-    WaterAuthorityElection: page,
+    waterAuthorityElection: page,
   }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
@@ -140,7 +140,7 @@ test.describe("add candidate list", async () => {
   });
 
   test("delete candidate list provincial council", async ({
-    ProvincialCouncilElection: page,
+    provincialCouncilElection: page,
   }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
@@ -183,7 +183,7 @@ test.describe("add candidate list", async () => {
   });
 
   test("edit electoral districts provincial council", async ({
-    ProvincialCouncilElection: page,
+    provincialCouncilElection: page,
   }) => {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();

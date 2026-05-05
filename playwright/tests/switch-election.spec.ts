@@ -10,11 +10,10 @@ test.describe("switch election", () => {
   test.beforeEach(
     "navigate to switch election page",
     async ({ login: page }) => {
-      await page.goto(`/dev/login?fixtures=true`);
       await page.goto("/switch-election");
       const switchElectionPage = new SwitchElectionPage(page);
       await expect(switchElectionPage.headerSwitchElection).toBeVisible();
-      expect(switchElectionPage.selectedElection("Eerste Kamerverkiezing der"));
+      await switchElectionPage.selectedElection("Eerste Kamerverkiezing der");
     },
   );
 

@@ -8,8 +8,8 @@ type Fixtures = {
   login: Page;
   noExistingData: Page;
   deleteExistingCandidateLists: Page;
-  ProvincialCouncilElection: Page;
-  WaterAuthorityElection: Page;
+  provincialCouncilElection: Page;
+  waterAuthorityElection: Page;
 };
 
 export const test = base.extend<Fixtures>({
@@ -44,7 +44,7 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
 
-  ProvincialCouncilElection: async ({ page }, use) => {
+  provincialCouncilElection: async ({ page }, use) => {
     await page.goto(`/dev/login?fixtures=true`);
     await new OverviewPage(page).linkLogout.click();
     const selectElectionPage = new SelectElectionPage(page);
@@ -57,7 +57,7 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
 
-  WaterAuthorityElection: async ({ page }, use) => {
+  waterAuthorityElection: async ({ page }, use) => {
     await page.goto(`/dev/login?fixtures=true`);
     await new OverviewPage(page).linkLogout.click();
     const selectElectionPage = new SelectElectionPage(page);
