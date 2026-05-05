@@ -222,7 +222,7 @@ async fn documents_download_adds_download_event() -> Result<(), AppError> {
     let (file_name, actual_download_path, actual_list_id) =
         download_file(&download_path, list_id, true).await?;
 
-    assert_eq!(file_name, "documents-ut-nl.zip");
+    assert_eq!(file_name, "documents-ut.zip");
     assert_eq!(download_path, actual_download_path);
     assert_eq!(list_id, actual_list_id);
 

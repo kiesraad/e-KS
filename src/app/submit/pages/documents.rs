@@ -284,7 +284,7 @@ mod tests {
             "application/zip"
         );
         assert!(
-            Regex::new("attachment; filename=\"documents-(.{2}-)*(.{2})-nl\\.zip\"")
+            Regex::new("attachment; filename=\"documents-(.{2}-)*(.{2})\\.zip\"")
                 .unwrap()
                 .is_match(
                     headers

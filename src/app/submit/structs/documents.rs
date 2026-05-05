@@ -101,12 +101,14 @@ impl DocumentData {
         let authorised_agent = (&authorised_agents[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
-
-        let filename = if list.contains_all_districts(&election) {
-            format!("documents-{locale}.zip")
-        } else {
-            format!("documents-{}-{locale}.zip", list.districts_codes())
-        };
+        let mut parts = vec!["documents".to_string()];
+        if !list.contains_all_districts(&election) {
+            parts.push(list.districts_codes());
+        }
+        if locale != ModelLocale::Nl {
+            parts.push(locale.to_string());
+        }
+        let filename = format!("{}.zip", parts.join("-"));
 
         Ok(Self {
             filename,
