@@ -9,13 +9,10 @@ use axum::{
 };
 use tower_http::set_header::SetResponseHeaderLayer;
 
-#[cfg(feature = "http-logging")]
-use tower_http::trace::{DefaultMakeSpan, DefaultOnResponse, TraceLayer};
-
 use crate::{
-    AppState, audit_log, authorised_agents, candidate_lists, candidates, common, list_submitters,
-    persons, political_groups, render_error_pages, session_middleware, store_middleware, submit,
-    substitute_list_submitters,
+    AppState, audit_log, authorised_agents, candidate_lists, candidates, common, http_trace,
+    list_submitters, persons, political_groups, render_error_pages, session_middleware,
+    store_middleware, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -110,12 +107,7 @@ pub fn create(state: AppState) -> Router<AppState> {
             HeaderValue::from_static("same-origin"),
         ));
 
-    #[cfg(feature = "http-logging")]
-    let router = router.layer(
-        TraceLayer::new_for_http()
-            .make_span_with(DefaultMakeSpan::new().level(tracing::Level::INFO))
-            .on_response(DefaultOnResponse::new().level(tracing::Level::INFO)),
-    );
+    let router = router.layer(http_trace::layer());
 
     #[cfg(feature = "livereload")]
     let router = router.merge(crate::utils::livereload::livereload_router());

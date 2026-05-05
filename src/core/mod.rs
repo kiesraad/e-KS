@@ -8,6 +8,7 @@ mod templates;
 mod typst_renderer;
 
 pub mod constants;
+pub mod http_trace;
 pub mod logging;
 pub mod server;
 pub mod translate;
