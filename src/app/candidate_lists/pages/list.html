@@ -36,9 +36,9 @@
               {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
                 <p>{{ "candidate_list.districts.all"|trans }}</p>
               {% else %}
-                <ul class="districts">
+                <ul class="districts tags">
                   {% for district in candidate_list.list.electoral_districts %}
-                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
+                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="tag warning"{% endif %}>
                       <span>{{ district|district_name }}</span>
                     </li>
                   {% endfor %}

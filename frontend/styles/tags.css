@@ -1,0 +1,26 @@
+.tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+}
+
+.tag {
+  display: inline-block;
+  border: 1px solid var(--gray-200);
+  padding: var(--space-xs) var(--space-sm);
+  border-radius: var(--space-xs);
+  max-width: calc(100% - var(--space-md));
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+
+  &:is(.warning) {
+    border-color: var(--orange-700);
+    color: var(--orange-700);
+    padding-left: 2rem;
+    background: url("../icons/warning.svg") no-repeat left var(--space-sm)
+      bottom var(--space-sm);
+    background-size: 1.1rem;
+  }
+}
+

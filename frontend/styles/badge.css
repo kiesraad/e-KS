@@ -1,17 +1,19 @@
 .position-badge,
 .person-badge {
+  background-color: var(--badge-bg, var(--blue-200));
+  border-radius: var(--rounded-xs);
+  color: var(--badge-color, var(--blue-900));
   display: inline-block;
-  width: var(--badge-size);
+  font-family: var(--font-header);
+  font-family: var(--font-header);
+  font-size: var(--badge-font-size, var(--font-size-xl));
+  font-weight: 600;
   height: var(--badge-size);
   line-height: var(--badge-size);
+  margin-right: var(--badge-mr, var(--space-sm));
   text-align: center;
-  border-radius: var(--rounded-sm);
   transition: background-color 0.5s ease-in-out;
-
-  font-family: var(--font-header);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  background-color: var(--blue-200);
+  width: var(--badge-size);
 }
 
 .person-badge {
@@ -23,14 +25,5 @@
 }
 
 h2 {
-  .position-badge,
-  .person-badge {
-    margin-right: var(--space-sm);
-    font-size: var(--font-size-xl);
-    color: var(--text-color-body);
-    width: var(--badge-size-lg);
-    height: var(--badge-size-lg);
-    line-height: var(--badge-size-lg);
-    font-weight: 500;
-  }
+  --badge-size: 2.5rem;
 }

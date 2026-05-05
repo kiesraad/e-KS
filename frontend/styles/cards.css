@@ -232,12 +232,16 @@ ul.districts {
     text-overflow: ellipsis;
 
     &.warning {
-      border-color: var(--orange-200);
-      color: var(--orange-800);
+      border-color: var(--orange-700);
+      color: var(--orange-700);
       padding-left: 2rem;
-      background: url("../icons/warning.svg") no-repeat left var(--space-sm)
-        bottom var(--space-sm);
-      background-size: 1.1rem;
+
+      &::before {
+        aspect-ratio: 1;
+        content: '';
+        mask-image: url('../icons/warning.svg');
+        width: 1rem;
+      }
     }
   }
 }

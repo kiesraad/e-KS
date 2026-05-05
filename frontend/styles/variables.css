@@ -34,11 +34,9 @@
   --font-number: "GeistMono", monospace, monospace;
   --font-flag-emojis: "FlagEmojis", "DMSans";
 
-  --font-size-xs: 0.75rem;
-  --font-size-sm: 0.875rem;
-  --font-size-md: 1rem;
-  --font-size-lg: 1.125rem;
-  --font-size-xl: 1.5rem;
+  --font-weight-light: 300;
+  --font-weight-medium: 500;
+  --font-weight-bold: 700;
 
   /* SPACING */
   --space-xs: 0.25rem;
@@ -49,92 +47,129 @@
   --space-xl: 2.5rem;
   --space-xxl: 5rem;
 
+  --font-size-xs: 0.75rem;
+  --font-size-sm: 0.875rem;
+  --font-size-md: 1rem;
+  --font-size-lg: 1.125rem;
+  --font-size-xl: 1.25rem;
+  --font-size-2xl: 1.5rem;
+  --font-size-3xl: 1.875rem;
+  --font-size-4xl: 2.25rem;
+
+  --leading-xs: 1.5;
+  --leading-sm: 1.5;
+  --leading-md: 1.5;
+  --leading-lg: 1.3;
+  --leading-xl: 1.2;
+  --leading-2xl: 1.1;
+  --leading-3xl: 1.1;
+  --leading-4xl: 1;
+
+  --space-1: 0.25rem;
+  --space-2: 0.5rem;
+  --space-3: 0.75rem;
+  --space-4: 1rem;
+  --space-5: 1.25rem;
+  --space-6: 1.5rem;
+  --space-7: 1.75rem;
+  --space-8: 2rem;
+  --space-9: 2.25rem;
+  --space-10: 2.5rem;
+  --space-12: 3rem;
+  --space-13: 3.25rem;
+  --space-14: 3.5rem;
+  --space-15: 3.75rem;
+  --space-16: 4rem;
+  --space-17: 4.25rem;
+  --space-18: 4.5rem;
+  --space-19: 4.75rem;
+  --space-20: 5rem;
+  --space-21: 5.25rem;
+  --space-22: 5.5rem;
+  --space-23: 5.75rem;
+  --space-24: 6rem;
+
   /* CORNERS */
-  --rounded-sm: 3px;
+  --rounded-xs: 0.125rem;
+  --rounded-sm: 0.1875rem;
+  --rounded-md: 0.25rem;
+  --rounded-lg: 0.5rem;
+
   --rounded-default: 0.5rem;
 
   /* COLORS */
-  --blue-900: #1b3764;
-  --blue-800: #254b89;
-  --blue-700: #2e5eaa;
-  --blue-600: #366fca;
-  --blue-500: #5c8bd6;
-  --blue-400: #82a6e0;
-  --blue-300: #a4bee8;
-  --blue-200: #c5d6f1;
-  --blue-100: #e7eef9;
-  --blue-50: #eff8ff;
+  --blue-1000: #002649;
+  --blue-900: #00305B;
+  --blue-800: #1C4280;
+  --blue-700: #2556A2;
+  --blue-600: #306BC8;
+  --blue-500: #5C8BD6;
+  --blue-400: #82A6E0;
+  --blue-300: #A4BEE8;
+  --blue-200: #C5D6F1;
+  --blue-100: #DFEAFA;
+  --blue-50: #EFF6FF;
 
-  --green-900: #113b26;
+  --green-900: #113B26;
   --green-800: #195738;
-  --green-700: #206c46;
+  --green-700: #206C46;
   --green-600: #248052;
-  --green-500: #329d68;
-  --green-400: #64b58c;
-  --green-300: #8fc9ac;
-  --green-200: #b8ddca;
-  --green-100: #e7f3ee;
-  --green-50: #f6fbf9;
+  --green-500: #329D68;
+  --green-400: #64B58C;
+  --green-300: #8FC9AC;
+  --green-200: #B8DDCA;
+  --green-100: #E7F3EE;
+  --green-50: #F6FBF9;
 
-  --yellow-900: #402d0d;
-  --yellow-800: #644714;
-  --yellow-700: #7c5919;
-  --yellow-600: #926a1c;
-  --yellow-500: #b18322;
-  --yellow-400: #d19c26;
-  --yellow-300: #efc943;
-  --yellow-200: #f5de89;
-  --yellow-100: #fff4d6;
-  --yellow-50: #fdfaf2;
+  --orange-900: #521F09;
+  --orange-800: #7A2E0E;
+  --orange-700: #B54708;
+  --orange-600: #D4690B;
+  --orange-500: #F79009;
+  --orange-400: #FDB022;
+  --orange-300: #FEC84B;
+  --orange-200: #FEDF89;
+  --orange-100: #FEF6DC;
+  --orange-50: #FDFAF2;
 
-  --orange-900: #521f09;
-  --orange-800: #7a2e0e;
-  --orange-700: #b54708;
-  --orange-600: #d4690b;
-  --orange-500: #f79009;
-  --orange-400: #fdb022;
-  --orange-300: #fec84b;
-  --orange-200: #fedf89;
-  --orange-100: #fef4d7;
-  --orange-50: #fdfaf2;
-
-  --red-900: #661a27;
-  --red-800: #8e2437;
-  --red-700: #b02d45;
-  --red-600: #d03651;
-  --red-500: #e35f77;
-  --red-400: #ea889a;
-  --red-300: #f0aab7;
-  --red-200: #f6cad2;
-  --red-100: #fbe9ed;
-  --red-50: #fef9fa;
+  --red-900: #661A27;
+  --red-800: #8E2437;
+  --red-700: #B02D45;
+  --red-600: #D03651;
+  --red-500: #E35F77;
+  --red-400: #EA889A;
+  --red-300: #F0AAB7;
+  --red-200: #F6CAD2;
+  --red-100: #FBE9ED;
+  --red-50: #FEF9FA;
 
   --gray-900: #101828;
-  --gray-800: #1d2939;
+  --gray-800: #1D2939;
   --gray-700: #344054;
   --gray-600: #475467;
   --gray-500: #667085;
-  --gray-450: #8a95a8;
-  --gray-400: #98a2b3;
-  --gray-300: #d0d5dd;
-  --gray-200: #eaecf0;
-  --gray-100: #f2f4f7;
-  --gray-50: #f9fafb;
-  --gray-25: #fcfcfd;
+  --gray-400: #848FA2;
+  --gray-300: #98A2B3;
+  --gray-200: #D0D5DD;
+  --gray-100: #EAECF0;
+  --gray-50: #F2F4F7;
+  --gray-25: #F9FAFB;
+
+  --base-white: #ffffff;
 
   --text-color-header: var(--gray-900);
   --text-color-body: var(--gray-700);
 
-  --button-color-primary: var(--base-dark-blue);
-  --button-color-primary-hover: #00447a;
-  --button-color-primary-focus: var(--base-dark-blue);
-  --button-color-primary-active: #00254e;
+  --button-color-primary: var(--blue-900);
+  --button-color-primary-hover: var(--blue-800);
+  --button-color-primary-focus: var(--blue-1000);
+  --button-color-primary-active: var(--blue-1000);
   --button-color-secondary: var(--base-white);
-  --button-color-secondary-hover: var(--bg-gray);
+  --button-color-secondary-hover: var(--gray-200);
   --button-color-secondary-focus: var(--base-white);
-  --button-color-secondary-active: var(--color-hover);
-  --button-color-disabled: #b3b3b3;
-  --button-color-bg-disabled: #f2f2f2;
+  --button-color-secondary-active: var(--gray-200);
+  --button-color-disabled: var(--gray-300);
+  --button-color-bg-disabled: var(--base-white);
   --button-border-width: 1px;
 
   --checkbox-radio-color-border: var(--gray-400);
@@ -192,11 +227,11 @@
   --bg-highlight: #eff4ff;
 
   --base-black: #000000;
-  --base-brand-blue: #113051;
-  --base-dark-blue: #00305b;
+  --base-brand-blue: var(--blue-900);
+  --base-dark-blue: var(--blue-1000);
   --base-white: #ffffff;
 
-  --accent-orange: #ef8050;
+  --accent-orange: var(--orange-500);
   --accent-blue: #c9d8e9;
 
   --interactive-default: #155eef;

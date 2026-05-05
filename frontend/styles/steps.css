@@ -16,7 +16,7 @@
     li a {
       display: block;
       width: 100%;
-      color: var(--base-black);
+      color: var(--gray-900);
       text-decoration: none;
       padding-left: var(--space-xl);
       background-repeat: no-repeat;
