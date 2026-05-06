@@ -347,17 +347,25 @@ pub async fn gen_eml210(
         .build()?;
 
     let eml = EML::from_nomination_doc(nomination).write_eml_root(true, true)?;
+    let file_name = "eml210.eml.xml";
+
+    tracing::info!(
+        file_name,
+        content_type = "application/xml",
+        size_bytes = eml.len(),
+        "file download served",
+    );
 
     store
         .update(AppEvent::DownloadFile {
-            file_name: "eml210.eml.xml".to_string(),
+            file_name: file_name.to_string(),
             download_path: path.to_string(),
             list_id,
         })
         .await?;
 
     let headers = no_cache_headers::generate_attachment_headers(
-        "eml210.eml.xml",
+        file_name,
         HeaderValue::from_static("application/xml"),
     )?;
 

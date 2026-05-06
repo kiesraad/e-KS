@@ -12,7 +12,7 @@ repository = "https://github.com/kiesraad/e-KS"
 
 [features]
 # Default development-oriented feature set.
-default = ["database", "migrations", "fixtures", "livereload", "dev-features", "http-logging", "db-tests", "net-tests"]
+default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests"]
 # Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
 # Enable database-backed storage via Postgres / SQLx.
@@ -25,8 +25,6 @@ fixtures = []
 db-tests = ["database"]
 # Enable network-dependent tests.
 net-tests = []
-# Enable HTTP request/response tracing via tower-http.
-http-logging = ["tower-http/trace"]
 # Live-reload assets/templates during development.
 livereload = []
 # Serve embedded static assets from memory.
@@ -46,9 +44,9 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.6.8", features = ["set-header"] }
+tower-http = { version = "0.6.8", features = ["set-header", "trace"] }
 tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt"] }
+tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
 bytes = "1.11.1"
 
 # rust-lang

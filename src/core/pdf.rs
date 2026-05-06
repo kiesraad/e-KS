@@ -4,11 +4,14 @@ use crate::{
     utils::no_cache_headers,
 };
 use axum::{
-    body::Body,
+    body::{Body, to_bytes},
     http::{HeaderValue, Response},
     response::IntoResponse,
 };
 use serde::Serialize;
+
+const PDF_CONTENT_TYPE: &str = "application/pdf";
+const ZIP_CONTENT_TYPE: &str = "application/zip";
 
 pub trait Pdf: Sized + Serialize {
     fn typst_template_name(&self) -> &'static str;
@@ -20,13 +23,23 @@ pub trait Pdf: Sized + Serialize {
         let filename = self.filename().to_owned();
 
         let body = renderer.render_pdf(template, &filename, &self).await?;
+        let bytes = to_bytes(body, usize::MAX)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        tracing::info!(
+            file_name = %filename,
+            content_type = PDF_CONTENT_TYPE,
+            size_bytes = bytes.len(),
+            "file download served",
+        );
 
         let headers = no_cache_headers::generate_attachment_headers(
             &filename,
-            HeaderValue::from_static("application/pdf"),
+            HeaderValue::from_static(PDF_CONTENT_TYPE),
         )?;
 
-        Ok((headers, body).into_response())
+        Ok((headers, bytes).into_response())
     }
 }
 
@@ -53,12 +66,22 @@ where
         }
 
         let body = renderer.render_batch(requests).await?;
+        let bytes = to_bytes(body, usize::MAX)
+            .await
+            .map_err(|_| AppError::InternalServerError)?;
+
+        tracing::info!(
+            file_name = %self.filename,
+            content_type = ZIP_CONTENT_TYPE,
+            size_bytes = bytes.len(),
+            "file download served",
+        );
 
         let headers = no_cache_headers::generate_attachment_headers(
             self.filename.as_str(),
-            HeaderValue::from_static("application/zip"),
+            HeaderValue::from_static(ZIP_CONTENT_TYPE),
         )?;
 
-        Ok((headers, body).into_response())
+        Ok((headers, bytes).into_response())
     }
 }
