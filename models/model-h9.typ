@@ -56,6 +56,7 @@
   values: input.candidates.map(c => ([#c.position], c.last_name, c.initials, c.locality)),
 )
 
+
 #if input.detailed_candidate.representative != none [
   = #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
   #column_table(
@@ -79,24 +80,26 @@
   )
 ]
 
+
 #if input.election_type != "KCNI" and input.detailed_candidate.representative == none [
   = #trans("Adres voor de kennisgeving van mijn benoeming", "Adres foar de meidieling fan myn beneaming")
-  // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
-  #if input.detailed_candidate.postal_address == none {
-    trans([_niet van toepassing_], [_net fan tapassing_])
-  } else {
-    column_table(
-      columns: (1fr, 0.5fr, 1fr),
-      headers: (trans("postadres", "postadres"), trans("postcode", "postkoade"), trans("plaats", "plak")),
-      values: (
-        (
-          input.detailed_candidate.postal_address.street_address,
-          mono(input.detailed_candidate.postal_address.postal_code),
-          input.detailed_candidate.postal_address.locality,
+  #block(breakable: false)[
+    // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
+    #if input.detailed_candidate.postal_address == none {
+      trans([_niet van toepassing_], [_net fan tapassing_])
+    } else {
+      column_table(
+        columns: (1fr, 0.5fr, 1fr),
+        headers: (trans("postadres", "postadres"), trans("postcode", "postkoade"), trans("plaats", "plak")),
+        values: (
+          (
+            input.detailed_candidate.postal_address.street_address,
+            mono(input.detailed_candidate.postal_address.postal_code),
+            input.detailed_candidate.postal_address.locality,
+          ),
         ),
-      ),
-    )
-  }
+      )
+    }]
 ]
 
 #if input.election_type == "KCNI" and input.detailed_candidate.representative == none [
@@ -111,6 +114,7 @@
     )
   ]
 ]
+
 
 = #trans("Ondertekening door de kandidaat", "Undertekening troch de kandidaat")
 #label_table(values: (

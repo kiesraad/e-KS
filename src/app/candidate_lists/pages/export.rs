@@ -32,6 +32,13 @@ pub async fn export_candidate_list(
 
     let (response, file_size) = csv.generate_csv_response()?;
 
+    tracing::info!(
+        file_name = %file_name,
+        content_type = "text/csv",
+        size_bytes = file_size,
+        "file download served",
+    );
+
     store
         .update(AppEvent::ExportCsv {
             file_name,
