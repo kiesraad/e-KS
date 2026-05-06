@@ -23,7 +23,7 @@ test.describe("download documents", async () => {
     await page.goto("/submit");
 
     const downloadPromise = page.waitForEvent("download");
-    await new SubmitPage(page).linkDownloadSingle.click();
+    await new SubmitPage(page).linkDownloadNl.click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch("documents.zip");

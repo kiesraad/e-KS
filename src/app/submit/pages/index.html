@@ -16,25 +16,22 @@
   <h1 class="mt-xl">Downloads</h1>
   <section class="mt-md">
     <div class="card-actions mb-xl">
-      {% if frisian_export_allowed %}
-        {% if incomplete_items.models_downloadable() %}
-          <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-          <a href="{{ download_path_fry }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-        {% else %}
-          <a class="button secondary icon-download disabled"
-             disabled
-             aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-          <a class="button secondary icon-download disabled"
-             disabled
-             aria-disabled="true">{{ "action.all_in_one_zip"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-        {% endif %}
+      {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+      {% if incomplete_items.models_downloadable() %}
+        <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }}</a>
       {% else %}
+        <a class="button secondary icon-download disabled"
+           disabled
+           aria-disabled="true">{{ "action.all_in_one_zip"|trans }}</a>
+      {% endif %}
+      {% if frisian_export_allowed %}
+        <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
         {% if incomplete_items.models_downloadable() %}
-          <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }}</a>
+          <a href="{{ download_path_fry }}" class="button secondary icon-download">Alles yn ien zip</a>
         {% else %}
           <a class="button secondary icon-download disabled"
              disabled
-             aria-disabled="true">{{ "action.all_in_one_zip"|trans }}</a>
+             aria-disabled="true">Alles yn ien zip</a>
         {% endif %}
       {% endif %}
     </div>
