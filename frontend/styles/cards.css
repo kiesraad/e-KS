@@ -17,8 +17,8 @@
 }
 
 .cards-candidate-lists {
-  --card-min-width: 19.5rem;
   --card-gap: var(--space-6);
+  --card-min-width: 19.5rem;
   --card-padding: var(--space-6);
 }
 
@@ -31,8 +31,8 @@
 }
 
 .card-locked {
-  --badge-icon: url("../icons/locked-badge.svg");
   --badge-bg: var(--gray-200);
+  --badge-icon: url("../icons/locked-badge.svg");
 }
 
 .card-persons {
