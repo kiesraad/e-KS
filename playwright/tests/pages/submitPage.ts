@@ -9,6 +9,7 @@ export class SubmitPage {
   readonly linkH4FRDownload: Locator;
   readonly linkH9NLDownload: Locator;
   readonly linkH9FRDownload: Locator;
+  readonly linkEML210Download: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkH1NLDownload = this.page.getByRole("link", {
@@ -34,6 +35,9 @@ export class SubmitPage {
     });
     this.linkH9FRDownload = this.page.getByRole("link", {
       name: "H9 downloaden (Fries)",
+    });
+    this.linkEML210Download = this.page.getByRole("link", {
+      name: "EML 210 downloaden",
     });
   }
 }

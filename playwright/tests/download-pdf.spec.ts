@@ -2,8 +2,8 @@ import { stat } from "node:fs/promises";
 import { expect, type Page } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
-import { SelectElectoralDistrictsPage } from "./pages/selectElectoralDistrictsPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
 
 test.describe("download PDF", async () => {
@@ -12,7 +12,7 @@ test.describe("download PDF", async () => {
   async function setupCandidateList(page: Page, district: string) {
     await page.goto("/candidate-lists");
     await new CandidateListsOverviewPage(page).buttonAddList.click();
-    await new SelectElectoralDistrictsPage(page).selectDistricts([district]);
+    await new EditListDetailsPage(page).addDistricts([district]);
     await new ManageCandidateListPage(page).addExistingCandidates(
       existingCandidates,
     );
@@ -111,6 +111,22 @@ test.describe("download PDF", async () => {
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/model-h9-ze\.zip/);
+    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+  });
+
+  test("EML 210", async ({ deleteExistingCandidateLists: page }) => {
+    await setupCandidateList(page, "Friesland");
+    await page.goto("/submit");
+
+    const downloadPromise = page.waitForEvent("download");
+    const submitPage = new SubmitPage(page);
+    await submitPage.linkEML210Download.evaluate((el) =>
+      el.setAttribute("download", ""),
+    );
+    await submitPage.linkEML210Download.click();
+    const download = await downloadPromise;
+
+    expect(download.suggestedFilename()).toMatch(/eml210\.eml\.xml/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
   });
 });
