@@ -12,37 +12,16 @@
   text-align: center;
   transition: background-color 0.5s ease-in-out;
   width: var(--badge-size);
-  background-image: var(--badge-icon, none);
-  background-repeat: no-repeat;
-  background-position: center;
+  position: relative;
+  
+  &::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    mask-image: var(--badge-icon, none);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    background-color: var(--badge-color, var(--gray-800));
+  }
 }
 
-.position-badge,
-.person-badge {
-  background-color: var(--badge-bg, var(--blue-200));
-  border-radius: var(--rounded-xs);
-  color: var(--badge-color, var(--blue-900));
-  display: inline-block;
-  font-family: var(--font-header);
-  font-family: var(--font-header);
-  font-size: var(--badge-font-size, var(--font-size-xl));
-  font-weight: 600;
-  height: var(--badge-size);
-  line-height: var(--badge-size);
-  margin-right: var(--badge-mr, var(--space-sm));
-  text-align: center;
-  transition: background-color 0.5s ease-in-out;
-  width: var(--badge-size);
-}
-
-.person-badge {
-  vertical-align: middle;
-  background-image: url("../icons/politician-badge.svg");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: var(--badge-size) var(--badge-size);
-}
-
-h2 {
-  --badge-size: 2.5rem;
-}

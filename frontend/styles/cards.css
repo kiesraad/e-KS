@@ -22,8 +22,30 @@
   --card-padding: var(--space-6);
 }
 
+.card-data {
+  --badge-icon: url("../icons/data-badge.svg");
+}
+
+.card-candidate-list {
+  --badge-icon: url("../icons/candidate-list-badge.svg");
+}
+
+.card-locked {
+  --badge-icon: url("../icons/locked-badge.svg");
+  --badge-bg: var(--gray-200);
+}
+
+.card-persons {
+  --badge-icon: url("../icons/politician-badge.svg");
+}
+
+.card-warning {
+  --badge-bg: var(--orange-200);
+  --badge-icon: url("../icons/list-warning-badge.svg");
+}
+
 .card {
-  background-color: var(--card-bg, var(--base-white));
+  background-color: var(--base-white);
   border-radius: var(--rounded-lg);
   border: 1px solid var(--card-border-color, var(--gray-200));
   color: inherit;
@@ -58,7 +80,7 @@
     flex-direction: column;
     font-size: var(--font-size-sm);
     font-weight: 300;
-    gap: var(--space-2);
+    gap: var(--space-3);
     line-height: var(--leading-sm);
   }
 
@@ -85,9 +107,3 @@
   }
 }
 
-.card-add-list {
-  aspect-ratio: 4 / 3;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
