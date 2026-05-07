@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono, translator
+#import "layout.typ": checkbox, column_table, conf, date, fill_in, label_table, mono, translator
 
 #let input = json("./input.json")
 #let trans = translator(input.locale)
@@ -9,18 +9,15 @@
     "Machtiging om aanduiding boven kandidatenlijst te plaatsen",
     "Machtiging om oantsjutting boppe kandidatelist te pleatsen",
   ),
-  trans(
-    [
-      Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen.
+  trans[
+    Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen.
 
-      U kunt alleen toestemming geven als u hiertoe gemachtigd bent door uw politieke groepering.
-    ],
-    [
-      Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om de oantsjutting dy’t troch jo politike groepearring registrearre is boppe de kandidatelist te pleatsen.
+    U kunt alleen toestemming geven als u hiertoe gemachtigd bent door uw politieke groepering.
+  ][
+    Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om de oantsjutting dy’t troch jo politike groepearring registrearre is boppe de kandidatelist te pleatsen.
 
-      Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.
-    ],
-  ),
+    Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.
+  ],
   page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
