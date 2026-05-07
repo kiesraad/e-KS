@@ -18,7 +18,7 @@ test.describe("download documents", async () => {
     );
   }
 
-  test("download links", async ({ deleteExistingCandidateLists: page }) => {
+  test("download export", async ({ deleteExistingCandidateLists: page }) => {
     await setupCandidateList(page, "Gelderland");
     await page.goto("/submit");
 
@@ -28,21 +28,27 @@ test.describe("download documents", async () => {
 
     expect(download.suggestedFilename()).toMatch("documents.zip");
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+
+    await expect(new SubmitPage(page).linkDownloadFry).not.toBeVisible();
   });
 
-  test("EML 210", async ({ deleteExistingCandidateLists: page }) => {
-    await setupCandidateList(page, "Friesland");
+  test("download frisian export", async ({
+    provincialCouncilFrisianElection: page,
+  }) => {
     await page.goto("/submit");
 
     const downloadPromise = page.waitForEvent("download");
-    const submitPage = new SubmitPage(page);
-    await submitPage.linkEML210Download.evaluate((el) =>
-      el.setAttribute("download", ""),
-    );
-    await submitPage.linkEML210Download.click();
+    await new SubmitPage(page).linkDownloadNl.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch(/eml210\.eml\.xml/);
+    expect(download.suggestedFilename()).toMatch("documents.zip");
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+
+    const downloadPromise2 = page.waitForEvent("download");
+    await new SubmitPage(page).linkDownloadFry.click();
+    const download2 = await downloadPromise2;
+
+    expect(download2.suggestedFilename()).toMatch("documents-fry.zip");
+    expect((await stat(await download2.path())).size).toBeGreaterThan(1024);
   });
 });

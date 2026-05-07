@@ -9,6 +9,7 @@ type Fixtures = {
   noExistingData: Page;
   deleteExistingCandidateLists: Page;
   provincialCouncilElection: Page;
+  provincialCouncilFrisianElection: Page;
   waterAuthorityElection: Page;
 };
 
@@ -51,6 +52,19 @@ export const test = base.extend<Fixtures>({
     await expect(selectElectionPage.HeaderElections).toBeVisible();
     await selectElectionPage.dropdownElections.selectOption("PS27");
     await selectElectionPage.dropdownProvinces.selectOption("NH");
+    await selectElectionPage.checkboxFixtures.check();
+    await selectElectionPage.buttonContinue.click();
+
+    await use(page);
+  },
+
+  provincialCouncilFrisianElection: async ({ page }, use) => {
+    await page.goto(`/dev/login?fixtures=true`);
+    await new OverviewPage(page).linkLogout.click();
+    const selectElectionPage = new SelectElectionPage(page);
+    await expect(selectElectionPage.HeaderElections).toBeVisible();
+    await selectElectionPage.dropdownElections.selectOption("PS27");
+    await selectElectionPage.dropdownProvinces.selectOption("FR");
     await selectElectionPage.checkboxFixtures.check();
     await selectElectionPage.buttonContinue.click();
 
