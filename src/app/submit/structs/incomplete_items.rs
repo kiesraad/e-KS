@@ -1,6 +1,8 @@
 use crate::{
     AppStore, ElectoralDistrict,
+    authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
+    list_submitters::ListSubmitter,
     persons::Person,
 };
 
@@ -8,13 +10,12 @@ use crate::{
 #[derive(Debug)]
 pub struct IncompleteItems {
     pub general_items: GeneralItems,
-    pub candidate_items: Vec<CandidateItems>,
+    pub candidate_items: Vec<PersonItems<Person>>,
     pub list_items: Vec<ListItems>,
 }
 
 impl IncompleteItems {
     pub fn find_all(store: &AppStore) -> Self {
-        let political_group_items = store.get_political_group().incomplete_items();
         let candidate_lists = CandidateListSummary::list(store);
 
         Self {
@@ -38,15 +39,24 @@ impl IncompleteItems {
 
     fn find_general_items(store: &AppStore) -> GeneralItems {
         let political_group_items = store.get_political_group().incomplete_items();
-        let authorized_agent_items = store.get_authorised_agents().iter().map(|a| a.incomplete_items()).flatten().collect();
+        let authorized_agent_items = store
+            .get_authorised_agents()
+            .into_iter()
+            .map(|aa| PersonItems::new(aa))
+            .collect();
 
-        GeneralItems(vec![])
+        GeneralItems {
+            general: todo!(),
+            authorized_agents: authorized_agent_items,
+            list_submitter: todo!(),
+            substitute_submitters: todo!(),
+        }
     }
 
     pub fn models_downloadable(&self) -> bool {
         let candidate_iter = self.candidate_items.iter().flat_map(|ci| &ci.items);
         let list_iter = self.list_items.iter().flat_map(|ci| &ci.items);
-        let general_iter = self.general_items.0.iter();
+        let general_iter = self.general_items.flatten();
 
         !candidate_iter
             .chain(list_iter)
@@ -56,12 +66,39 @@ impl IncompleteItems {
 }
 
 #[derive(Debug)]
-pub struct GeneralItems(pub Vec<IncompleteItem>);
+pub struct GeneralItems {
+    general: Vec<IncompleteItem>,
+    authorized_agents: Vec<PersonItems<AuthorisedAgent>>,
+    list_submitter: Option<PersonItems<ListSubmitter>>,
+    substitute_submitters: Vec<PersonItems<ListSubmitter>>,
+}
 
+impl GeneralItems {
+    fn flatten(&self) -> Vec<&IncompleteItem> {
+        let mut result = Vec::new();
+
+        result.extend(self.authorized_agents.iter().flat_map(|aa| &aa.items));
+        result.extend(self.substitute_submitters.iter().flat_map(|ss| &ss.items));
+        result.extend(&self.general);
+
+        if let Some(person_items) = &self.list_submitter {
+            result.extend(&person_items.items);
+        }
+
+        result
+    }
+}
 #[derive(Debug)]
-pub struct CandidateItems {
-    pub person: Person,
+pub struct PersonItems<T> {
+    pub person: T,
     pub items: Vec<IncompleteItem>,
+}
+
+impl<T: Completable> PersonItems<T> {
+    fn new(person: T) -> Self {
+        let items = person.incomplete_items();
+        PersonItems { person, items }
+    }
 }
 
 #[derive(Debug)]
@@ -80,6 +117,9 @@ pub enum IncompleteItem {
     // political group
     NoLegalName,
     NoDisplayName,
+    // name related
+    NoInitials(Severity),
+    NoLastName(Severity)
 }
 
 impl IncompleteItem {
@@ -93,11 +133,14 @@ impl IncompleteItem {
             // political group
             IncompleteItem::NoLegalName => Severity::Warn,
             IncompleteItem::NoDisplayName => Severity::Error,
+            // name related
+            IncompleteItem::NoInitials(severity) => *severity,
+            IncompleteItem::NoLastName(severity) => *severity,
         }
     }
 }
 
-#[derive(PartialEq)]
+#[derive(PartialEq, Clone, Debug, Copy)]
 pub enum Severity {
     Info,
     Warn,
@@ -123,20 +166,29 @@ mod tests {
 
     use super::*;
 
+    fn empty_general() -> GeneralItems {
+        GeneralItems {
+            general: Vec::new(),
+            authorized_agents: Vec::new(),
+            list_submitter: None,
+            substitute_submitters: Vec::new(),
+        }
+    }
+
     #[test]
     fn is_printable() {
         assert!(
             IncompleteItems {
-                general_items: GeneralItems(vec![]),
-                candidate_items: vec![],
-                list_items: vec![],
+                general_items: empty_general(),
+                candidate_items: Vec::new(),
+                list_items: Vec::new(),
             }
             .models_downloadable()
         );
 
         assert!(
             IncompleteItems {
-                general_items: GeneralItems(vec![]),
+                general_items: empty_general(),
                 candidate_items: vec![],
                 list_items: vec![ListItems {
                     list: sample_candidate_list(CandidateListId::new()),
@@ -151,12 +203,12 @@ mod tests {
 
         assert!(
             !IncompleteItems {
-                general_items: GeneralItems(vec![]),
-                candidate_items: vec![CandidateItems {
+                general_items: empty_general(),
+                candidate_items: vec![PersonItems {
                     person: sample_person(PersonId::new()),
                     items: vec![IncompleteItem::NoCandidates]
                 }],
-                list_items: vec![],
+                list_items: Vec::new(),
             }
             .models_downloadable()
         );
