@@ -91,6 +91,9 @@
 
   --main-padding-inline: var(--space-20);
 
+  --grid-gutter-sm: var(--space-6);
+  --grid-gutter-md: var(--space-8);
+
   /* CORNERS */
   --rounded-xs: 0.125rem;
   --rounded-sm: 0.1875rem;

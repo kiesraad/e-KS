@@ -13,9 +13,11 @@
   <div class="cards cards-home">
     <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}"
        class="card card-data">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("1") }}</h3>
-      <h4>{{ "common.general_information"|trans }}</h4>
+      <span>
+        <div class="badge"></div>
+        {{ "common.step"|trans("1") }}
+      </span>
+      <h2>{{ "common.general_information"|trans }}</h2>
       <ul class="instruction">
         <li>{{ "common.general_information_description.basic"|trans }}</li>
         <li>{{ "common.general_information_description.submitter"|trans }}</li>
@@ -24,15 +26,18 @@
     </a>
     <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
        class="card card-candidate-list">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("2") }}</h3>
-      <h4>
+      
+      <span>
+        <div class="badge"></div>
+        {{ "common.step"|trans("2") }}
+      </span>
+      <h2>
         {% if "multiple_candidate_lists"|value_true %}
           {{ "candidate_list.title_plural"|trans }}
         {% else %}
           {{ "candidate_list.title_single"|trans }}
         {% endif %}
-      </h4>
+      </h2>
       <ul class="instruction">
         <li>{{ "candidate_list.candidate_list_description.add_candidate"|trans }}</li>
         <li>{{ "candidate_list.candidate_list_description.add_candidate_list"|trans }}</li>
@@ -41,9 +46,12 @@
     </a>
     <a href="{{ crate::submit::SubmitPath{}.to_string() }}"
        class="card card-locked">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("3") }}</h3>
-      <h4>{{ "common.submit"|trans }}</h4>
+      
+      <span>
+        <div class="badge"></div>
+        {{ "common.step"|trans("3") }}
+      </span>
+      <h2>{{ "common.submit"|trans }}</h2>
       <ul class="instruction">
         <li>{{ "common.submit_description.download_documents"|trans }}</li>
         <li>{{ "common.submit_description.view_follow_up_steps"|trans }}</li>
