@@ -93,4 +93,41 @@ header {
       }
     }
   }
+
+  .header-content {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    min-height: 9rem;
+    padding: 0 var(--main-padding-inline);
+    margin: 0;
+
+    h1 {
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+    }
+
+    h1 .button {
+      letter-spacing: initial;
+      margin-left: var(--space-md);
+    }
+
+    div:first-child {
+      flex: 1;
+    }
+
+    .subtitle {
+      display: block;
+      font-size: var(--font-size-md);
+      margin-top: var(--space-sm);
+      color: var(--color-help-text);
+      max-width: 80%;
+      line-height: 1.4;
+    }
+
+    a {
+      max-height: 3rem;
+    }
+  }
 }
