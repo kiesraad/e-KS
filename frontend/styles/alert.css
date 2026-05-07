@@ -2,10 +2,11 @@
   background-color: var(--alert-bg);
   border-left: 4px solid var(--alert-border-color);
   color: var(--alert-color);
-  margin: var(--alert-margin) var(--space-4);
+  margin-block: var(--space-6);
   max-width: var(--alert-max-width);
   padding-block: var(--alert-py, var(--space-4));
   padding-inline: var(--alert-px, var(--space-6));
+  text-wrap: balance;
 
   &.alert-info {
     --alert-bg: var(--blue-100);
@@ -23,8 +24,6 @@
     --alert-bg: var(--green-100);
     --alert-border-color: var(--green-600);
     --alert-color: var(--gray-700);
-
-
     background-color: var(--green-100);
     color: var(--green-700);
     border: 1px solid var(--green-700);
@@ -47,6 +46,10 @@
     margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
     animation: alert-float 4.5s ease-in-out forwards;
+  }
+  
+  .instruction {
+    font-weight: 300;
   }
 }
 

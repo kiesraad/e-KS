@@ -2,7 +2,7 @@ body {
   font-family: var(--font-text), sans-serif;
   font-size: var(--font-size-md);
   line-height: 1.5em;
-  color: var(--gray-900);
+  color: var(--gray-700);
 
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -16,7 +16,7 @@ h3,
 h4,
 h5,
 h6 {
-  font-family: var(--font-header-body), sans-serif;
+  font-family: var(--font-header), sans-serif;
 }
 
 h1,
@@ -94,6 +94,10 @@ a {
 /* Font weight */
 .font-bold {
   font-weight: bold;
+}
+
+.font-light {
+  font-weight: 300;
 }
 
 .font-italic {

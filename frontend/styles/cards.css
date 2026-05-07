@@ -1,7 +1,4 @@
-:root {
-  --card-border-color: var(--gray-200);
-  --card-bg : var(--base-white);
-}
+
 
 .cards {
   display: grid;
@@ -14,32 +11,64 @@
   --card-min-width: 25.25rem;
 }
 
+.cards-candidate-lists {
+  --card-min-width: 19.5rem;
+}
+
 .card {
   --badge-size: 2.5rem;
-  background-color: var(--card-bg);
+  background-color: var(--card-bg, var(--base-white));
   border-radius: var(--rounded-lg);
-  border: 1px solid var(--card-border-color);
+  border: 1px solid var(--card-border-color, var(--gray-200));
+  color: inherit;
+  display: flex;
+  flex-direction: column;
   min-height: var(--card-min-height, auto);
   padding: var(--space-8) var(--space-8) var(--space-7) var(--space-8);
+  text-decoration: none;
 
-  span:has(.badge) {
+  .card-header {
     align-items: center;
+    color: var(--gray-800);
     display: flex;
     font-size: var(--font-size-xl);
     font-weight: 700;
-    gap: var(--space-6);
+    gap: var(--space-3);
     margin-bottom: var(--space-8);
   }
 
-  h2 {
+  .card-title {
+    color: var(--gray-700);
     font-size: var(--font-size-2xl);
+    font-weight: 500;
+    margin-bottom: var(--space-2);
   }
 
-}
+  .card-instruction {
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    font-weight: 300;
+    line-height: var(--leading-sm);
+    list-style-position: inside;
+    list-style-type: disc;
+    padding: 0; 
+  }
 
-a.card {
-  color: inherit;
-  text-decoration: none;
+  .card-footer {
+    color: var(--gray-600);
+    display: flex;
+    font-weight: 500;
+    justify-content: space-between;
+    margin-top: auto;
+
+    &::after {
+      background-color: var(--gray-600);
+      content: '';
+      mask-image: url('../icons/chevronRight.svg');
+      mask-position: center;
+      width: var(--space-5);
+    }
+  }
 }
 
 .card-data {
@@ -51,6 +80,6 @@ a.card {
 }
 
 .card-locked {
-  --badge-icon: url("../icons/locked-badge.svg");
   --badge-bg: var(--gray-200);
+  --badge-icon: url("../icons/locked-badge.svg");
 }
