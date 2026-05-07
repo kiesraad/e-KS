@@ -1,5 +1,4 @@
 use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
-use std::collections::BTreeMap;
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use tracing::error;
@@ -12,28 +11,6 @@ use crate::{
 };
 
 const ZIP_CONTENT_TYPE: &str = "application/zip";
-
-fn deduplicate_folder_names(bundles: &mut [DocumentData]) {
-    if bundles.len() == 1 {
-        bundles[0].folder_name = None;
-        return;
-    }
-
-    let mut next_suffix = BTreeMap::<String, usize>::new();
-
-    for bundle in bundles {
-        let Some(base_name) = bundle.folder_name.as_ref() else {
-            continue;
-        };
-        let suffix = next_suffix.entry(base_name.clone()).or_insert(0);
-
-        if *suffix > 0 {
-            bundle.folder_name = Some(format!("{base_name}-{suffix}"));
-        }
-
-        *suffix += 1;
-    }
-}
 
 pub async fn gen_documents(
     path @ DownloadDocumentsPath { locale }: DownloadDocumentsPath,
@@ -50,11 +27,16 @@ pub async fn gen_documents(
         return Err(AppError::IncompleteData("No candidate lists"));
     }
 
-    let mut bundles = list_ids
-        .iter()
-        .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
-        .collect::<Result<Vec<_>, _>>()?;
-    deduplicate_folder_names(&mut bundles);
+    let bundles = if list_ids.len() == 1 {
+        let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
+        bundle.folder_name = None;
+        vec![bundle]
+    } else {
+        list_ids
+            .iter()
+            .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
+            .collect::<Result<Vec<_>, _>>()?
+    };
     let filename = DocumentData::archive_filename(locale);
 
     tracing::info!(

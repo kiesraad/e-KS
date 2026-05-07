@@ -109,21 +109,14 @@ impl DocumentData {
         let authorised_agent = (&authorised_agents[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
-        let folder_name = if list.contains_all_districts(&election) {
+        let folder_name = format!(
+            "{}-{}",
             match locale {
-                ModelLocale::Nl => "alle-kieskringen".to_string(),
-                ModelLocale::Fry => "alle-kiesrunten".to_string(),
-            }
-        } else {
-            format!(
-                "{}-{}",
-                match locale {
-                    ModelLocale::Nl => "kieskring",
-                    ModelLocale::Fry => "kiesrunte",
-                },
-                list.districts_codes()
-            )
-        };
+                ModelLocale::Nl => "kieskring",
+                ModelLocale::Fry => "kiesrunte",
+            },
+            list.districts_codes()
+        );
 
         Ok(Self {
             list_id,
