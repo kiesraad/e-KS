@@ -90,13 +90,18 @@ mod tests {
     use crate::{
         ElectionConfig,
         authorised_agents::AuthorisedAgentId,
-        candidate_lists::CandidateListId,
+        candidate_lists::{CandidateList, CandidateListId},
         core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::PersonId,
         test_utils::{
             sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
         },
+    };
+    #[cfg(feature = "embed-typst")]
+    use crate::{
+        common::{BsnOrNoneConfirmed, CountryCode, FullName},
+        persons::Representative,
     };
     use axum::extract::State;
 
@@ -158,6 +163,12 @@ mod tests {
         for _ in 0..list_count {
             let list_id = CandidateListId::new();
             let mut list = sample_candidate_list(list_id);
+            if let Some(district) = CandidateList::available_districts(&store, &election)
+                .into_iter()
+                .next()
+            {
+                list.electoral_districts = vec![district];
+            }
 
             for _ in 0..candidate_count {
                 let person_id = PersonId::new();
@@ -299,8 +310,15 @@ mod tests {
         };
         use regex::Regex;
 
-        let (store, _list_ids, context) =
+        let (store, list_ids, context) =
             setup_documents_test_state(2, 2, true, true, ElectionConfig::EK27).await?;
+        let expected_folders = list_ids
+            .iter()
+            .map(|&list_id| {
+                DocumentData::new(&store, &context, list_id, ModelLocale::Nl)
+                    .map(|bundle| bundle.folder_name.expect("folder name"))
+            })
+            .collect::<Result<Vec<_>, _>>()?;
         let response = gen_documents(
             DownloadDocumentsPath {
                 locale: crate::core::ModelLocale::Nl,
@@ -346,7 +364,7 @@ mod tests {
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
         let entry_names = zip_entry_names(response).await;
-        for folder in ["kieskring-ut", "kieskring-ut-1"] {
+        for folder in expected_folders {
             assert!(entry_names.contains(&format!("{folder}/eml210.eml.xml")));
             assert!(
                 entry_names
@@ -414,6 +432,103 @@ mod tests {
                 .iter()
                 .all(|name| !name.starts_with("documents-")),
             "did not expect a folder prefix for a single list: {entry_names:?}"
+        );
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn gen_documents_single_list_allows_candidate_warnings() -> Result<(), AppError> {
+        use axum::response::IntoResponse;
+
+        let (store, list_ids, context) =
+            setup_documents_test_state(1, 2, true, true, ElectionConfig::EK27).await?;
+        let list = store.get_candidate_list(list_ids[0])?;
+
+        let mut dutch_candidate = store.get_person(list.candidates[0])?;
+        dutch_candidate.address.street_name = None;
+        dutch_candidate.address.postal_code = None;
+        dutch_candidate.address.locality = None;
+        dutch_candidate.personal_data.bsn = None;
+        dutch_candidate.update(&store).await?;
+
+        let mut international_candidate = store.get_person(list.candidates[1])?;
+        international_candidate.personal_data.country = Some("BE".parse::<CountryCode>().unwrap());
+        international_candidate.personal_data.bsn = Some(BsnOrNoneConfirmed::NoneConfirmed);
+        international_candidate.representative = Some(Representative::default());
+        international_candidate.update(&store).await?;
+
+        let response = gen_documents(
+            DownloadDocumentsPath {
+                locale: crate::core::ModelLocale::Nl,
+            },
+            store,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            context,
+        )
+        .await?
+        .into_response();
+
+        let entry_names = zip_entry_names(response).await;
+        assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
+        assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
+        assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
+        assert!(entry_names.contains(&"h4-ondersteuningsverklaring.pdf".to_string()));
+        assert_eq!(
+            entry_names
+                .iter()
+                .filter(|name| name.starts_with("h9-instemmingsverklaringen/"))
+                .count(),
+            2
+        );
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn gen_documents_single_list_allows_general_information_warnings() -> Result<(), AppError>
+    {
+        use axum::response::IntoResponse;
+
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
+
+        let mut political_group = store.get_political_group();
+        political_group.legal_name = None;
+        political_group.update(&store).await?;
+
+        let mut authorised_agent = store.get_authorised_agents().remove(0);
+        authorised_agent.name = FullName::default();
+        authorised_agent.update(&store).await?;
+
+        let response = gen_documents(
+            DownloadDocumentsPath {
+                locale: crate::core::ModelLocale::Nl,
+            },
+            store,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            context,
+        )
+        .await?
+        .into_response();
+
+        let entry_names = zip_entry_names(response).await;
+        assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
+        assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
+        assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
+        assert!(entry_names.contains(&"h4-ondersteuningsverklaring.pdf".to_string()));
+        assert_eq!(
+            entry_names
+                .iter()
+                .filter(|name| name.starts_with("h9-instemmingsverklaringen/"))
+                .count(),
+            1
         );
 
         Ok(())

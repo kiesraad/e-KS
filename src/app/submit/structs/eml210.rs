@@ -127,58 +127,52 @@ impl From<&FullName> for eml_nl::common::PersonNameStructure {
     }
 }
 
-impl TryInto<QualifyingAddress> for &Address {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<QualifyingAddress, Self::Error> {
+impl From<&Address> for QualifyingAddress {
+    fn from(address: &Address) -> QualifyingAddress {
         let locality = eml_nl::documents::candidate_lists::QualifyingAddressLocality::new(
-            self.locality()
+            address
+                .locality()
                 .as_ref()
-                .ok_or(AppError::IncompleteData("missing locality"))?
-                .to_string(),
+                .map(|loc| loc.to_string())
+                .unwrap_or_default(),
         )
-        .with_postal_code_option(self.postal_code())
-        .with_address_line_option(self.address_line_1());
+        .with_postal_code_option(address.postal_code())
+        .with_address_line_option(address.address_line_1());
 
-        Ok(QualifyingAddress::Locality(locality))
+        QualifyingAddress::Locality(locality)
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::LivingAddress> for &DutchAddress {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::LivingAddress, Self::Error> {
-        Ok(eml_nl::documents::nomination::LivingAddress::new(
-            self.locality
+impl From<&DutchAddress> for eml_nl::documents::nomination::LivingAddress {
+    fn from(address: &DutchAddress) -> eml_nl::documents::nomination::LivingAddress {
+        eml_nl::documents::nomination::LivingAddress::new(
+            address
+                .locality
                 .as_ref()
-                .ok_or(AppError::IncompleteData("missing locality"))?
-                .to_string(),
-        ))
+                .map(|loc| loc.to_string())
+                .unwrap_or_default(),
+        )
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::NominationContact> for &Address {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::NominationContact, Self::Error> {
-        Ok(eml_nl::documents::nomination::NominationContact {
+impl From<&Address> for eml_nl::documents::nomination::NominationContact {
+    fn from(address: &Address) -> eml_nl::documents::nomination::NominationContact {
+        eml_nl::documents::nomination::NominationContact {
             mailing_address: eml_nl::documents::nomination::MailingAddress {
-                address: self.try_into()?,
+                address: address.into(),
             },
-        })
+        }
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::NominationAgent> for &Representative {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::NominationAgent, Self::Error> {
-        Ok(eml_nl::documents::nomination::NominationAgent {
+impl From<&Representative> for eml_nl::documents::nomination::NominationAgent {
+    fn from(representative: &Representative) -> eml_nl::documents::nomination::NominationAgent {
+        eml_nl::documents::nomination::NominationAgent {
             role: Some("H10".to_string()),
-            agent_identifier: AgentIdentifier::new(&self.name),
-            contact: Some((&Address::Dutch(self.address.clone())).try_into()?),
-            living_address: (&self.address).try_into()?,
-        })
+            agent_identifier: AgentIdentifier::new(&representative.name),
+            contact: Some((&Address::Dutch(representative.address.clone())).into()),
+            living_address: (&representative.address).into(),
+        }
     }
 }
 
@@ -221,22 +215,14 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
             contact: self
                 .person
                 .lives_in_nl()
-                .then(|| (&Address::Dutch(self.person.address.clone())).try_into())
-                .transpose()?,
+                .then(|| (&Address::Dutch(self.person.address.clone())).into()),
             agent: (!self.person.lives_in_nl())
-                .then(|| self.person.representative.as_ref().map(TryInto::try_into))
-                .flatten()
-                .transpose()?,
+                .then(|| self.person.representative.as_ref().map(Into::into))
+                .flatten(),
             date_of_birth_annex: None,
-            national_identification_number: match self
-                .person
-                .personal_data
-                .bsn
-                .as_ref()
-                .ok_or(AppError::IncompleteData("missing bsn"))?
-            {
-                BsnOrNoneConfirmed::Bsn(bsn) => Some(bsn.to_exposed_string()),
-                BsnOrNoneConfirmed::NoneConfirmed => None,
+            national_identification_number: match self.person.personal_data.bsn.as_ref() {
+                Some(BsnOrNoneConfirmed::Bsn(bsn)) => Some(bsn.to_exposed_string()),
+                _ => None,
             },
         })
     }
@@ -249,7 +235,7 @@ fn nomination_proposer(
 ) -> Result<eml_nl::documents::nomination::NominationProposer, AppError> {
     Ok(eml_nl::documents::nomination::NominationProposer {
         name: (&submitter.name).into(),
-        contact: (&submitter.address).try_into()?,
+        contact: (&submitter.address).into(),
         job_title: StringValue::Parsed(job_title),
         id,
         living_address: None,
@@ -336,9 +322,9 @@ impl Eml210 {
             })
             .affiliation(NominationAffiliation {
                 registered_name: political_group
-                    .legal_name
+                    .display_name
                     .as_ref()
-                    .ok_or(AppError::IncompleteData("missing legal name"))?
+                    .ok_or(AppError::IncompleteData("Missing registered display name"))?
                     .to_string(),
                 affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
                 list_data,

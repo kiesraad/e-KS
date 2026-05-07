@@ -75,6 +75,7 @@ impl DocumentData {
         let electoral_districts = TypstElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
+        // Missing designation prevents export
         let designation = group
             .display_name
             .as_ref()
@@ -82,13 +83,12 @@ impl DocumentData {
                 "Missing registered designation from political group",
             ))?
             .to_string();
+        // Missing statutory name does not prevent export
         let legal_name = group
             .legal_name
             .as_ref()
-            .ok_or(AppError::IncompleteData(
-                "Missing statutory name from political group",
-            ))?
-            .to_string();
+            .map(|name| name.to_string())
+            .unwrap_or_default();
 
         let list_submitter = store.get_list_submitter();
         if !list_submitter.is_complete() {
