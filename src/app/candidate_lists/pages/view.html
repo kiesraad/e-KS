@@ -12,11 +12,11 @@
 {% block page_sub_title %}
   {% if !full_list.list.electoral_districts.is_empty() %}
     {% let election = "election"|election_value %}
-    <span class="subtitle">
+    <span class="tags">
       {% if !full_list.list.contains_all_districts(election) && !election.has_only_one_district() %}
-        <ul class="districts">
+        <ul class="tags-list">
           {% for district in full_list.list.electoral_districts %}
-            <li>
+            <li class="tag">
               <span>{{ district|district_name }}</span>
             </li>
           {% endfor %}

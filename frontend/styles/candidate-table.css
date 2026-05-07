@@ -1,4 +1,6 @@
 #candidate-table {
+  color: var(--gray-600);
+
   tr {
     transition: transform 0.3s ease-in-out;
 
@@ -8,7 +10,11 @@
   }
 
   tr:nth-child(even) {
-    background-color: var(--gray-100);
+    background-color: var(--gray-50);
+  }
+
+    tr:nth-child(odd) {
+    background-color: var(--gray-25);
   }
 
   tr:hover {
@@ -17,6 +23,10 @@
 
   th:first-child {
     padding-left: var(--space-md);
+  }
+
+  th {
+    font-weight: 700;
   }
 
   th:last-child {
@@ -63,10 +73,10 @@
     transition: none;
     z-index: 10;
     position: relative;
-    background-color: var(--yellow-100);
+    background-color: var(--orange-100);
 
     .position-badge {
-      background-color: var(--yellow-200);
+      background-color: var(--orange-200);
     }
   }
 
@@ -111,7 +121,7 @@
   }
 
   td:nth-child(3) {
-    border-left: 1px solid var(--gray-300);
+    border-left: 1px solid var(--gray-200);
   }
 }
 
@@ -125,7 +135,7 @@
   }
 
   td:nth-child(2) {
-    border-left: 1px solid var(--gray-300);
+    border-left: 1px solid var(--gray-200);
   }
 
   tr.add-candidate {
