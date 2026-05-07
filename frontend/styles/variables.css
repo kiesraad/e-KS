@@ -89,6 +89,8 @@
   --space-23: 5.75rem;
   --space-24: 6rem;
 
+  --main-padding-inline: var(--space-20);
+
   /* CORNERS */
   --rounded-xs: 0.125rem;
   --rounded-sm: 0.1875rem;

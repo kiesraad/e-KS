@@ -10,110 +10,41 @@ body {
   min-width: 1200px;
 }
 
-header {
-  nav {
+
+.header-content {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  min-height: 9rem;
+  padding: 0 var(--space-xxl);
+  margin: 0;
+
+  h1 {
+    font-weight: 600;
     display: flex;
-    justify-content: space-between;
-    min-height: 3rem;
-    padding: 0 var(--space-xxl);
-
-    background-color: var(--base-brand-blue);
-    color: var(--base-white);
-
-    ul {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-
-      li {
-        a {
-          display: block;
-          height: 100%;
-          text-decoration: none;
-          padding: 0.75rem 1rem 0 1rem;
-          border-bottom: 4px solid var(--base-brand-blue);
-          white-space: nowrap;
-          color: var(--blue-200);
-
-          &:visited {
-            color: var(--blue-200);
-          }
-
-          &:hover {
-            color: var(--base-white);
-          }
-
-          &.logout {
-            text-decoration: underline;
-          }
-
-          &.active {
-            color: var(--base-white);
-            border-bottom: 4px solid var(--accent-orange);
-          }
-
-          &.home {
-            content: " ";
-            width: 3rem;
-            background: url("../icons/home-dark.svg") no-repeat center;
-
-            &:hover,
-            &.active {
-              background-image: url("../icons/home.svg");
-            }
-
-            span {
-              display: none;
-            }
-          }
-        }
-
-        &.user-info {
-          display: flex;
-          align-items: center;
-          gap: var(--space-sm);
-          white-space: nowrap;
-        }
-      }
-    }
+    align-items: center;
   }
 
-  .header-content {
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    min-height: 9rem;
-    padding: 0 var(--space-xxl);
-    margin: 0;
+  h1 .button {
+    letter-spacing: initial;
+    margin-left: var(--space-md);
+  }
 
-    h1 {
-      font-weight: 600;
-      display: flex;
-      align-items: center;
-    }
+  div:first-child {
+    flex: 1;
+  }
 
-    h1 .button {
-      letter-spacing: initial;
-      margin-left: var(--space-md);
-    }
+  .subtitle {
+    display: block;
+    font-size: var(--font-size-md);
+    margin-top: var(--space-sm);
+    color: var(--color-help-text);
+    max-width: 80%;
+    line-height: 1.4;
+  }
 
-    div:first-child {
-      flex: 1;
-    }
-
-    .subtitle {
-      display: block;
-      font-size: var(--font-size-md);
-      margin-top: var(--space-sm);
-      color: var(--color-help-text);
-      max-width: 80%;
-      line-height: 1.4;
-    }
-
-    a {
-      max-height: 3rem;
-    }
+  a {
+    max-height: 3rem;
   }
 }
 
