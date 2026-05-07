@@ -113,7 +113,7 @@
 
   .form-row {
     display: flex;
-    gap: var(--space-xl);
+    gap: var(--space-8);
     align-items: start;
 
     .form-field {

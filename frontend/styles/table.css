@@ -1,79 +1,66 @@
 table {
-  color: var(--color-help-text);
   width: 100%;
   border-collapse: collapse;
+  font-size: var(--font-size-md);
+  line-height: var(--leading-md);
+  color: var(--gray-600);
+
+  tr:nth-child(even) {
+    --table-row-bg: var(--gray-50);
+  }
+
+  tr:nth-child(odd) {
+    --table-row-bg: var(--gray-25);
+  }
+
+  tr {
+    background-color: var(--table-row-bg);
+  }
+
+  tr:is(.dragging) {
+    --table-row-bg: var(--orange-100);
+  }
+
+  tr:is(.flash-success) {
+    --table-row-bg: var(--green-100);
+  }
 
   th,
   td {
-    padding: 0 var(--space-ml);
-    line-height: var(--font-size-lg);
-    border-bottom: 1px solid var(--bg-gray-darkest);
+    text-align: left;
+
+    &:last-child {
+      text-align: right;
+    }
   }
 
   th {
-    height: 2.75rem;
-    text-align: left;
     font-size: var(--font-size-xs);
+    line-height: var(--leading-xs);
+    font-weight: 700;
+  }
 
-    a {
-      color: var(--color-help-text);
-      text-decoration: none;
+  td,
+  th {
+    border-bottom: 1px solid var(--gray-200);
+    padding-block: var(--space-3);
+    padding-inline: var(--space-4);
 
-      &:hover,
-      &:visited,
-      &:focus {
-        color: var(--color-help-text);
-        text-decoration: underline;
-      }
+    &:has(.position-badge) {
+      border-right: 1px solid var(--gray-200);
+      padding-inline: 0;
+      width: var(--space-24);
     }
   }
 
-  td {
-    height: 3rem;
-    font-size: var(--font-size-lg);
-  }
-
-  tr.warning:not(.exceeded) {
-    background-image: url("../icons/warning.svg");
-    background-repeat: no-repeat;
-    background-position: right 3.5rem center;
-  }
-
-  tr.highlighted {
-    background-color: var(--yellow-100);
-
-    .position-badge {
-      background-color: var(--yellow-200);
-    }
-  }
-
-  tr.clickable {
-    td:last-child {
-      text-align: right;
-
-      a,
-      button {
-        display: inline-block;
-        background-color: transparent;
-        border: none;
-        background-image: url("../icons/chevronRight.svg");
-        background-position: right center;
-        background-repeat: no-repeat;
-        background-size: 1.25rem;
-        box-shadow: none;
-        height: 1em;
-        width: var(--space-xxl);
-        cursor: pointer;
-
-        span {
-          display: none;
-        }
-      }
-    }
-
-    &:hover {
-      cursor: pointer;
-      background-color: var(--blue-100);
-    }
+  td.drag-handle {
+    aspect-ratio: 1;
+    background-color: currentColor;
+    cursor: move;
+    mask-image: url("../icons/move.svg");
+    mask-position: center;
+    mask-repeat: no-repeat;
+    padding-inline: 0;
+    width: var(--space-12);
   }
 }
