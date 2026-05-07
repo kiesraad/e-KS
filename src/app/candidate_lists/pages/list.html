@@ -18,8 +18,8 @@
               <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
             </div>
             <div class="card-content">
-              <p class="card-statistic">{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
-              <p class="card-instruction">{{ "candidate_list.all_candidates_note"|trans }}</p>
+              <p>{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
+              <p>{{ "candidate_list.all_candidates_note"|trans }}</p>
             </div>
             <div class="card-footer">{{ "action.manage_candidates"|trans }}</div>
           </a>
@@ -36,23 +36,25 @@
                <h3>{{ "candidate_list.title_single"|trans }}</h3>
              </div>
              <div class="card-content">
-               <p class="card-statistic">
+               <p>
                  {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
                </p>
-               {% if !election.has_only_one_district() %}
-                 <h5>{{ "common.electoral_districts"|trans }}:</h5>
-                 {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-                   <p>{{ "candidate_list.districts.all"|trans }}</p>
-                 {% else %}
-                   <ul class="districts tags">
-                     {% for district in candidate_list.list.electoral_districts %}
-                       <li {% if candidate_list.duplicate_districts.contains(district) %}class="tag warning"{% endif %}>
-                         <span>{{ district|district_name }}</span>
-                       </li>
-                     {% endfor %}
-                   </ul>
-                 {% endif %}
-               {% endif %}
+               <div class="tags">
+                {% if !election.has_only_one_district() %}
+                  <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
+                  {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+                    <p>{{ "candidate_list.districts.all"|trans }}</p>
+                  {% else %}
+                    <ul class="tags-list">
+                      {% for district in candidate_list.list.electoral_districts %}
+                        <li class="tag {% if candidate_list.duplicate_districts.contains(district) %}warning{% endif %}">
+                          <span>{{ district|district_name }}</span>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                {% endif %}
+               </div>
              </div>
             <p class="card-footer">{{ "action.manage_candidate_list"|trans }}</p>
           </a>

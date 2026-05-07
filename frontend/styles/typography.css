@@ -148,3 +148,7 @@ a {
 .font-number-slashed-0 {
   font-family: var(--font-number);
 }
+
+strong {
+  font-weight: 700;
+}

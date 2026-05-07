@@ -2,8 +2,13 @@
 
 .cards {
   display: grid;
-  gap: var(--grid-gutter-md);
+  gap: var(--space-6);
   grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
+}
+
+.card {
+  --badge-size: 2.5rem;
+  --alert-margin-block: 0;
 }
 
 .cards.cards-home {
@@ -12,20 +17,23 @@
 }
 
 .cards-candidate-lists {
-  --card-min-width: 18rem;
+  --card-min-width: 19.5rem;
+  --card-gap: var(--space-6);
+  --card-padding: var(--space-6);
 }
 
 .card {
-  --badge-size: 2.5rem;
   background-color: var(--card-bg, var(--base-white));
   border-radius: var(--rounded-lg);
   border: 1px solid var(--card-border-color, var(--gray-200));
   color: inherit;
   display: flex;
   flex-direction: column;
+  gap: var(--card-gap, var(--space-8));
   min-height: var(--card-min-height, auto);
   padding: var(--card-padding, var(--space-8));
   text-decoration: none;
+  text-wrap: balance;
 
   .card-header {
     align-items: center;
@@ -35,25 +43,22 @@
     font-weight: 700;
     gap: var(--space-3);
     line-height: var(--leading-xl);
-    margin-bottom: var(--space-8);
   }
 
   .card-title {
     color: var(--gray-700);
     font-size: var(--font-size-2xl);
     font-weight: 500;
+    line-height: var(--leading-2xl);
   }
 
   .card-content {
+    color: var(--gray-600);
     display: flex;
     flex-direction: column;
-    gap: var(--space-2);
-  }
-
-  .card-instruction {
-    color: var(--gray-600);
     font-size: var(--font-size-sm);
     font-weight: 300;
+    gap: var(--space-2);
     line-height: var(--leading-sm);
   }
 
@@ -69,7 +74,7 @@
     font-weight: 500;
     justify-content: space-between;
     margin-top: auto;
-
+    
     &::after {
       background-color: var(--gray-600);
       content: '';
@@ -80,27 +85,9 @@
   }
 }
 
-.card-data {
-  --badge-icon: url("../icons/data-badge.svg");
-}
-
-.card-candidate-list {
-  --badge-icon: url("../icons/candidate-list-badge.svg");
-}
-
-.card-locked {
-  --badge-bg: var(--gray-200);
-  --badge-icon: url("../icons/locked-badge.svg");
-}
-
-.card-persons {
-  --card-padding: var(--space-6);
-  --card-border-color: transparent;
-  --badge-icon: url("../icons/politician-badge.svg");
-}
-
-.card-candidate-list {
-  --card-padding: var(--space-6);
-  --card-border-color: transparent;
-  --badge-icon: url("../icons/candidate-list-badge.svg");;  
+.card-add-list {
+  aspect-ratio: 4 / 3;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }

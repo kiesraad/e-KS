@@ -1,14 +1,17 @@
 .candidate-lists {
   align-items: flex-start;
-  display: flex;
-  gap: var(--grid-gutter-md);
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: var(--space-6);
 
   .candidates {
-    max-width: 18.75rem;
-    width: 100%;
+    grid-column: span 1;
+    position: sticky;
+    top: var(--space-6);
+    left: 0;
   }
 
   .cards {
-    flex: 1;
+    grid-column: span 3;
   }
 }
