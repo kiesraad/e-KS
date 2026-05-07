@@ -11,6 +11,8 @@ use crate::{
     utils::no_cache_headers,
 };
 
+const ZIP_CONTENT_TYPE: &str = "application/zip";
+
 fn deduplicate_folder_names(bundles: &mut [DocumentData]) {
     if bundles.len() == 1 {
         bundles[0].folder_name = None;
@@ -55,6 +57,13 @@ pub async fn gen_documents(
     deduplicate_folder_names(&mut bundles);
     let filename = DocumentData::archive_filename(locale);
 
+    tracing::info!(
+        filename,
+        content_type = ZIP_CONTENT_TYPE,
+        lists = list_ids.len(),
+        "file download served",
+    );
+
     store
         .update(AppEvent::DownloadFile {
             file_name: filename.clone(),
@@ -64,7 +73,7 @@ pub async fn gen_documents(
 
     let headers = no_cache_headers::generate_attachment_headers(
         &filename,
-        HeaderValue::from_static("application/zip"),
+        HeaderValue::from_static(ZIP_CONTENT_TYPE),
     )?;
 
     let (reader, writer) = duplex(64 * 1024);

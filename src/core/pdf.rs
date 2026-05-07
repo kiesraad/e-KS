@@ -1,9 +1,6 @@
 use crate::{AppError, core::TypstRenderer};
 use serde::Serialize;
 
-const PDF_CONTENT_TYPE: &str = "application/pdf";
-const ZIP_CONTENT_TYPE: &str = "application/zip";
-
 pub trait Pdf: Sized + Serialize {
     fn typst_template_name(&self) -> &'static str;
 
