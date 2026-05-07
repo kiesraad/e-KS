@@ -1,0 +1,14 @@
+.candidate-lists {
+  align-items: flex-start;
+  display: flex;
+  gap: var(--grid-gutter-md);
+
+  .candidates {
+    max-width: 18.75rem;
+    width: 100%;
+  }
+
+  .cards {
+    flex: 1;
+  }
+}

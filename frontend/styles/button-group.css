@@ -12,8 +12,6 @@
 .language-switch {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--space-md);
-  margin-top: 0.6rem;
   border-radius: var(--rounded-sm);
   overflow: hidden;
 

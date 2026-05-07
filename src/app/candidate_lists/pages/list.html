@@ -9,43 +9,52 @@
 {% block candidate_lists_nav_class %}active{% endblock %}
 {% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
-  <section>
-    <div class="cards cards-candidate-lists">
+  <section class="candidate-lists">
       {% if !candidate_lists.is_empty() %}
-        <a href="{{ Person::list_path() }}" class="card card-persons">
-          <div class="badge"></div>
-          <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
-          <p class="statistic">{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
-          <p class="instruction">{{ "candidate_list.all_candidates_note"|trans }}</p>
-          <p>{{ "action.manage_candidates"|trans }}</p>
-        </a>
+        <div class="candidates">
+          <a href="{{ Person::list_path() }}" class="card card-persons">
+            <div class="card-header">
+              <div class="badge"></div>
+              <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
+            </div>
+            <div class="card-content">
+              <p class="card-statistic">{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
+              <p class="card-instruction">{{ "candidate_list.all_candidates_note"|trans }}</p>
+            </div>
+            <div class="card-footer">{{ "action.manage_candidates"|trans }}</div>
+          </a>
+        </div>
       {% endif %}
-      <div class="cards-right">
+      <div class="cards cards-candidate-lists">
         {% let election = "election"|election_value %}
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
           <a href="{{ candidate_list.list.view_path() }}"
              {% if candidate_list.duplicate_districts.is_empty() %} class="card card-candidate-list" {% else %} class="card card-list-warning" {% endif %}>
-            <div class="badge"></div>
-            <h3>{{ "candidate_list.title_single"|trans }}</h3>
-            <p class="statistic">
-              {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
-            </p>
-            {% if !election.has_only_one_district() %}
-              <h5>{{ "common.electoral_districts"|trans }}:</h5>
-              {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-                <p>{{ "candidate_list.districts.all"|trans }}</p>
-              {% else %}
-                <ul class="districts tags">
-                  {% for district in candidate_list.list.electoral_districts %}
-                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="tag warning"{% endif %}>
-                      <span>{{ district|district_name }}</span>
-                    </li>
-                  {% endfor %}
-                </ul>
-              {% endif %}
-            {% endif %}
-            <p>{{ "action.manage_candidate_list"|trans }}</p>
+             <div class="card-header">
+               <div class="badge"></div>
+               <h3>{{ "candidate_list.title_single"|trans }}</h3>
+             </div>
+             <div class="card-content">
+               <p class="card-statistic">
+                 {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
+               </p>
+               {% if !election.has_only_one_district() %}
+                 <h5>{{ "common.electoral_districts"|trans }}:</h5>
+                 {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+                   <p>{{ "candidate_list.districts.all"|trans }}</p>
+                 {% else %}
+                   <ul class="districts tags">
+                     {% for district in candidate_list.list.electoral_districts %}
+                       <li {% if candidate_list.duplicate_districts.contains(district) %}class="tag warning"{% endif %}>
+                         <span>{{ district|district_name }}</span>
+                       </li>
+                     {% endfor %}
+                   </ul>
+                 {% endif %}
+               {% endif %}
+             </div>
+            <p class="card-footer">{{ "action.manage_candidate_list"|trans }}</p>
           </a>
         {% endfor %}
         {# add new candidate list card #}
@@ -58,6 +67,5 @@
           </div>
         {% endif %}
       </div>
-    </div>
   </section>
 {% endblock %}

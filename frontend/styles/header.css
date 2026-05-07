@@ -17,6 +17,8 @@ header {
       padding: 0;
 
       li {
+        display: flex;
+
         a {
           align-items: center;
           border-inline-end: 1px solid var(--blue-1000);

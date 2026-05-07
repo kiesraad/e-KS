@@ -12,7 +12,7 @@
 }
 
 .cards-candidate-lists {
-  --card-min-width: 19.5rem;
+  --card-min-width: 18rem;
 }
 
 .card {
@@ -24,7 +24,7 @@
   display: flex;
   flex-direction: column;
   min-height: var(--card-min-height, auto);
-  padding: var(--space-8) var(--space-8) var(--space-7) var(--space-8);
+  padding: var(--card-padding, var(--space-8));
   text-decoration: none;
 
   .card-header {
@@ -34,6 +34,7 @@
     font-size: var(--font-size-xl);
     font-weight: 700;
     gap: var(--space-3);
+    line-height: var(--leading-xl);
     margin-bottom: var(--space-8);
   }
 
@@ -41,7 +42,12 @@
     color: var(--gray-700);
     font-size: var(--font-size-2xl);
     font-weight: 500;
-    margin-bottom: var(--space-2);
+  }
+
+  .card-content {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
   }
 
   .card-instruction {
@@ -49,6 +55,9 @@
     font-size: var(--font-size-sm);
     font-weight: 300;
     line-height: var(--leading-sm);
+  }
+
+  ul.card-instruction {
     list-style-position: inside;
     list-style-type: disc;
     padding: 0; 
@@ -82,4 +91,16 @@
 .card-locked {
   --badge-bg: var(--gray-200);
   --badge-icon: url("../icons/locked-badge.svg");
+}
+
+.card-persons {
+  --card-padding: var(--space-6);
+  --card-border-color: transparent;
+  --badge-icon: url("../icons/politician-badge.svg");
+}
+
+.card-candidate-list {
+  --card-padding: var(--space-6);
+  --card-border-color: transparent;
+  --badge-icon: url("../icons/candidate-list-badge.svg");;  
 }
