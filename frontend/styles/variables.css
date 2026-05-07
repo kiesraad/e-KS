@@ -221,8 +221,8 @@
   --color-help-text: var(--gray-600);
   --color-hover: var(--gray-200);
 
-  --bg-gray: var(--gray-50);
-  --bg-gray-darker: var(--gray-100);
+  --bg-gray: var(--gray-25);
+  --bg-gray-darker: var(--gray-50);
   --bg-gray-darkest: var(--gray-300);
   --bg-highlight: #eff4ff;
 
@@ -273,7 +273,7 @@
   --progress-bar-default: var(--blue-600);
   --progress-bar-errors-and-warnings: var(--color-error-darker);
   --progress-bar-unfinished: var(--color-warning);
-  --progress-bar-in-progress: var(--yellow-300);
+  --progress-bar-in-progress: var(--orange-300);
   --progress-bar-first-entry-finished: #66c61c;
   --progress-bar-definitive: var(--color-success);
   --progress-bar-not-started: var(--gray-200);

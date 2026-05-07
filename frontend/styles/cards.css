@@ -158,7 +158,7 @@
 a.card {
   cursor: pointer;
   color: var(--text-color-body);
-  border-color: var(--bg-gray-darkest);
+  border-color: var(--gray-200);
   background-color: var(--button-color-secondary);
   position: relative;
 
