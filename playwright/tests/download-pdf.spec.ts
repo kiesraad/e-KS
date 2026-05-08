@@ -26,7 +26,7 @@ test.describe("download documents", async () => {
     await new SubmitPage(page).linkDownloadNl.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch("documents.zip");
+    expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
 
     await expect(new SubmitPage(page).linkDownloadFry).not.toBeVisible();
@@ -41,14 +41,14 @@ test.describe("download documents", async () => {
     await new SubmitPage(page).linkDownloadNl.click();
     const download = await downloadPromise;
 
-    expect(download.suggestedFilename()).toMatch("documents.zip");
+    expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
 
     const downloadPromise2 = page.waitForEvent("download");
     await new SubmitPage(page).linkDownloadFry.click();
     const download2 = await downloadPromise2;
 
-    expect(download2.suggestedFilename()).toMatch("documents-fry.zip");
+    expect(download2.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+-fry\.zip$/);
     expect((await stat(await download2.path())).size).toBeGreaterThan(1024);
   });
 });
