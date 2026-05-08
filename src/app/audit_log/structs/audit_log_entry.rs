@@ -132,7 +132,6 @@ mod tests {
             AppEvent::DownloadFile {
                 file_name: "model-h1.pdf".to_string(),
                 download_path: "/download/h1".to_string(),
-                list_id: CandidateListId::new(),
             },
         );
 
@@ -212,7 +211,6 @@ mod tests {
             AppEvent::DownloadFile {
                 file_name: "export-report.pdf".to_string(),
                 download_path: "/download/report".to_string(),
-                list_id: CandidateListId::new(),
             },
         );
         let entry = AuditLogEntry::new(event, EN);
