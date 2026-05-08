@@ -1,6 +1,6 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
-#let highlight_color = rgb("EAF2F5")
+#let highlight_color = rgb("F6F6F6")
 
 #let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
 
