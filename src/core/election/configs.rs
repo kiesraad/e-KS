@@ -20,7 +20,8 @@ super::define_elections! {
         election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap(),
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
         electoral_districts: ElectoralDistrict::ek27(),
-        nineteen_or_more_seats: true
+        nineteen_or_more_seats: true,
+        frisian_export_allowed: false
     },
 
     PS27(province: Province) {
@@ -47,7 +48,8 @@ super::define_elections! {
             Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
             Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
         },
-        nineteen_or_more_seats: true // for this election, all provinces have >= 19 seats
+        nineteen_or_more_seats: true, // for this election, all provinces have >= 19 seats
+        frisian_export_allowed: matches!(province, Province::FR)
     },
 
     WS27(water_council: WaterCouncil) {
@@ -83,7 +85,8 @@ super::define_elections! {
             WaterCouncil::Limburg => &[ElectoralDistrict::WsLimburg],
             WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
         },
-        nineteen_or_more_seats: true // for this election, all councils have >= 19 seats
+        nineteen_or_more_seats: true, // for this election, all councils have >= 19 seats
+        frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan)
     }
 }
 
