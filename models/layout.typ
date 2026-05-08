@@ -1,9 +1,10 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
-#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
-)
+#let highlight_color = rgb("F6F6F6")
 
-#let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], input) = [
+#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
+
+#let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], warning: none, input) = [
   #set text(
     lang: "nl",
     region: "nl",
@@ -32,23 +33,22 @@
   )
 
   #set heading(numbering: "1.")
-  #show heading.where(level: 1): set block(above: 3em, below: 1em)
+  #show heading.where(level: 1): set block(above: 2em, below: 0.75em)
 
   #set table(stroke: none, inset: 0.75em, align: horizon)
 
   #grid(
     columns: 1fr,
     gutter: 1.33em,
-    grid.hline(stroke: 1pt),
-    v(0.5em),
     text(size: 1.5em, weight: "bold", model),
     text(size: 2em, weight: "bold", {
       set par(leading: 0.4em)
       name
     }),
     text(explanation),
-    v(0.5em),
-    grid.hline(stroke: 1pt),
+    if (warning != none) {
+      block(fill: highlight_color, inset: 1em, width: 100%, warning)
+    }
   )
 
   #doc
@@ -68,7 +68,8 @@
 
   block(breakable: values.len() > 10, table(
     columns: columns,
-    rows: 1.8em,
+    rows: 1.5em,
+    fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_color },
     table.header(..headers.map(value => { text(style: "italic", value) })),
     ..values.flatten(),
   ))
