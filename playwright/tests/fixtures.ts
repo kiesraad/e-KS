@@ -1,7 +1,6 @@
-import { test as base, expect, type Page } from "@playwright/test";
+import { test as base, type Page } from "@playwright/test";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
-import { OverviewPage } from "./pages/overviewPage";
 import { SelectElectionPage } from "./pages/selectElectionPage";
 
 type Fixtures = {
@@ -46,10 +45,8 @@ export const test = base.extend<Fixtures>({
   },
 
   provincialCouncilElection: async ({ page }, use) => {
-    await page.goto(`/dev/login?fixtures=true`);
-    await new OverviewPage(page).linkLogout.click();
+    await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
-    await expect(selectElectionPage.HeaderElections).toBeVisible();
     await selectElectionPage.dropdownElections.selectOption("PS27");
     await selectElectionPage.dropdownProvinces.selectOption("NH");
     await selectElectionPage.checkboxFixtures.check();
@@ -59,10 +56,8 @@ export const test = base.extend<Fixtures>({
   },
 
   provincialCouncilFrisianElection: async ({ page }, use) => {
-    await page.goto(`/dev/login?fixtures=true`);
-    await new OverviewPage(page).linkLogout.click();
+    await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
-    await expect(selectElectionPage.HeaderElections).toBeVisible();
     await selectElectionPage.dropdownElections.selectOption("PS27");
     await selectElectionPage.dropdownProvinces.selectOption("FR");
     await selectElectionPage.checkboxFixtures.check();
@@ -72,10 +67,8 @@ export const test = base.extend<Fixtures>({
   },
 
   waterAuthorityElection: async ({ page }, use) => {
-    await page.goto(`/dev/login?fixtures=true`);
-    await new OverviewPage(page).linkLogout.click();
+    await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
-    await expect(selectElectionPage.HeaderElections).toBeVisible();
     await selectElectionPage.dropdownElections.selectOption(
       "Waterschapsverkiezingen 2027",
     );
