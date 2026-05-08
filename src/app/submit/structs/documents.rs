@@ -16,6 +16,7 @@ use crate::{
         typst_electoral_districts::TypstElectoralDistricts,
         typst_person::TypstPerson,
     },
+    utils::slugify_teletex,
 };
 
 pub struct DocumentData {
@@ -37,12 +38,23 @@ pub struct DocumentData {
 }
 
 impl DocumentData {
-    pub fn archive_filename(locale: ModelLocale) -> String {
-        let mut parts = vec!["documents".to_string()];
-        if locale != ModelLocale::Nl {
-            parts.push(locale.to_string());
+    pub fn archive_filename(
+        election: &ElectionConfig,
+        locale: ModelLocale,
+        designation: &str,
+        version: usize,
+    ) -> String {
+        let name_slug = slugify_teletex(designation, true);
+        let mut election_slug = election.code().to_lowercase();
+        if let Some(region) = election.region_code() {
+            election_slug.push_str(&region.to_lowercase());
         }
-        format!("{}.zip", parts.join("-"))
+
+        if locale == ModelLocale::Fry {
+            format!("{name_slug}-{election_slug}-v{version}-fry.zip")
+        } else {
+            format!("{name_slug}-{election_slug}-v{version}.zip")
+        }
     }
 
     /// Collect all the necessary data to render the models and the exported EML.

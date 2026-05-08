@@ -177,12 +177,15 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
             .expect("content type header"),
         "application/zip"
     );
+    let content_disposition = headers
+        .get(header::CONTENT_DISPOSITION)
+        .and_then(|value| value.to_str().ok())
+        .expect("content disposition header");
     assert!(
-        headers
-            .get(header::CONTENT_DISPOSITION)
-            .and_then(|value| value.to_str().ok())
-            .expect("content disposition header")
-            .starts_with("attachment; filename=\"documents.zip")
+        regex::Regex::new("^attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"$")
+            .unwrap()
+            .is_match(content_disposition),
+        "unexpected content disposition: {content_disposition}",
     );
     assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
     assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
@@ -216,8 +219,12 @@ async fn documents_download_adds_download_event() -> Result<(), AppError> {
     let events = download_file(&download_path, true).await?;
 
     assert_eq!(events.len(), 1);
+    let filename_pattern = regex::Regex::new("^kiesraad-demo-ek27-v\\d+\\.zip$").unwrap();
     for (file_name, actual_download_path) in events {
-        assert_eq!(file_name, "documents.zip");
+        assert!(
+            filename_pattern.is_match(&file_name),
+            "unexpected file_name: {file_name}",
+        );
         assert_eq!(download_path, actual_download_path);
     }
 

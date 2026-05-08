@@ -23,6 +23,7 @@ pub async fn gen_documents(
         .into_iter()
         .map(|list| list.id)
         .collect::<Vec<_>>();
+
     if list_ids.is_empty() {
         return Err(AppError::IncompleteData("No candidate lists"));
     }
@@ -37,7 +38,15 @@ pub async fn gen_documents(
             .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
             .collect::<Result<Vec<_>, _>>()?
     };
-    let filename = DocumentData::archive_filename(locale);
+
+    let political_group = store.get_political_group();
+    let designation = political_group
+        .display_name
+        .ok_or(AppError::IncompleteData("Missing political group name"))?;
+
+    let version = store.get_events().last().map(|e| e.event_id).unwrap_or(0);
+
+    let filename = DocumentData::archive_filename(&context.election, locale, &designation, version);
 
     tracing::info!(
         filename,
@@ -341,7 +350,7 @@ mod tests {
             "application/zip"
         );
         assert!(
-            Regex::new("attachment; filename=\"documents\\.zip\"")
+            Regex::new("attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"")
                 .unwrap()
                 .is_match(
                     headers

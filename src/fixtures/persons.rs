@@ -125,6 +125,14 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             ))
         })?;
 
+        // Skip records with errors, so we can generate documents
+        // with the default set of fixtures
+        if NaiveDate::parse_from_str(&record.geboortedatum, "%Y%m%d").is_err()
+            || record.woonplaats.is_empty()
+        {
+            continue;
+        }
+
         record.into_person()?.create(store).await?;
     }
 
