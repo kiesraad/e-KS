@@ -51,11 +51,20 @@ impl Problems {
 
         let list_submitter = store.get_list_submitter().get_problems();
 
+        let substitute_submitters = store.get_substitute_submitters();
+        if substitute_submitters.is_empty() {
+            general.push(PotentialProblems::NoSubstituteSubmitter);
+        }
+        let substitute_submitters = substitute_submitters
+            .into_iter()
+            .map(PersonProblems::new)
+            .collect();
+
         GeneralProblems {
             general,
             authorised_agents,
             list_submitter,
-            substitute_submitters: vec![], // TODO
+            substitute_submitters,
         }
     }
 
@@ -127,6 +136,7 @@ pub enum PotentialProblems {
     NoDisplayName,
     NoPreviousElectionResults,
     NoAuthorizedAgent,
+    NoSubstituteSubmitter,
 
     // name related
     NoInitials(Severity),
@@ -154,6 +164,7 @@ impl PotentialProblems {
             PotentialProblems::NoDisplayName => Severity::Error,
             PotentialProblems::NoPreviousElectionResults => Severity::Info,
             PotentialProblems::NoAuthorizedAgent => Severity::Warn,
+            PotentialProblems::NoSubstituteSubmitter => Severity::Info,
 
             // name related
             PotentialProblems::NoInitials(severity) => *severity,
@@ -177,7 +188,7 @@ pub enum Severity {
 }
 
 pub trait Problematic {
-    /// returns all incomplete items of its own and of all children
+    /// returns all potential problems of its own and of all children
     fn get_problems(&self) -> Vec<PotentialProblems>;
 
     fn is_all_good(&self) -> bool {

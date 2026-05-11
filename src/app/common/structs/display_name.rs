@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
     OptionAsStrExt,
     form::{ValidationError, validate_teletex_chars},
-    submit::{Problematic, PotentialProblems},
+    submit::{PotentialProblems, Problematic},
     transparent_string,
 };
 

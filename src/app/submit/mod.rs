@@ -8,7 +8,7 @@ pub use pages::{SubmitPath, router};
 pub use structs::{
     documents::DocumentData,
     potential_problems::{
-        Problematic, GeneralProblems, ListProblems, PersonProblems, PotentialProblems, Problems,
+        GeneralProblems, ListProblems, PersonProblems, PotentialProblems, Problematic, Problems,
         Severity,
     },
 };

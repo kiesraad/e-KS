@@ -235,6 +235,7 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
             "B",
             "Coolsingel",
         )),
+        is_substitute: false,
     }
 }
 

@@ -70,13 +70,21 @@ pub struct ListSubmitter {
     pub id: ListSubmitterId,
     pub name: FullName,
     pub address: Address,
+    #[serde(skip)]
+    pub is_substitute: bool,
 }
 
 impl Problematic for ListSubmitter {
     fn get_problems(&self) -> Vec<PotentialProblems> {
+        let severity = if self.is_substitute {
+            Severity::Info
+        } else {
+            Severity::Error
+        };
+
         [
-            self.name.potential_problems(Severity::Error),
-            self.address.potential_problems(Severity::Error),
+            self.name.potential_problems(severity),
+            self.address.potential_problems(severity),
         ]
         .into_iter()
         .flatten()
@@ -137,4 +145,50 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
             .transpose()
             .ok()?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn incomplete_submitter(is_substitute: bool) -> ListSubmitter {
+        ListSubmitter {
+            id: ListSubmitterId::new(),
+            name: FullName::default(),
+            address: Address::Dutch(crate::common::DutchAddress::default()),
+            is_substitute,
+        }
+    }
+
+    #[test]
+    fn main_submitter_problems_use_error_severity() {
+        let submitter = incomplete_submitter(false);
+
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoLastName(Severity::Error))
+        );
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoStreetName(Severity::Error))
+        );
+    }
+
+    #[test]
+    fn substitute_submitter_problems_use_info_severity() {
+        let submitter = incomplete_submitter(true);
+
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoLastName(Severity::Info))
+        );
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoStreetName(Severity::Info))
+        );
+    }
 }
