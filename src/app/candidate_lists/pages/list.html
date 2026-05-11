@@ -11,7 +11,7 @@
 {% block content %}
   <section>
     <div class="cards cards-candidate-lists">
-      {% if !candidate_lists.is_empty() %}
+      {% if total_persons > 0 %}
         <a href="{{ Person::list_path() }}" class="card card-persons">
           <div class="badge"></div>
           <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
