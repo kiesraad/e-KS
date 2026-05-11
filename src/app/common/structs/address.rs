@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::OptionAsStrExt;
+use crate::{
+    OptionAsStrExt,
+    submit::{IncompleteItem, Severity},
+};
 
 use super::{
     CountryCode, HouseNumber, HouseNumberAddition, InternationalPostalCode, Locality, PostalCode,
@@ -26,6 +29,28 @@ pub struct DutchAddress {
 }
 
 impl DutchAddress {
+    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+        let mut items = Vec::new();
+
+        if self.street_name.is_empty_or_none() {
+            items.push(IncompleteItem::NoStreetName(severity));
+        }
+
+        if self.house_number.is_empty_or_none() {
+            items.push(IncompleteItem::NoHouseNumber(severity));
+        }
+
+        if self.postal_code.is_empty_or_none() {
+            items.push(IncompleteItem::NoPostalCode(severity));
+        }
+
+        if self.locality.is_empty_or_none() {
+            items.push(IncompleteItem::NoLocality(severity));
+        }
+
+        items
+    }
+
     /// Returns `true` when all required address parts are present.
     pub fn is_complete(&self) -> bool {
         self.street_name.is_some()
@@ -67,6 +92,32 @@ pub struct InternationalAddress {
 }
 
 impl InternationalAddress {
+    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+        let mut items = Vec::new();
+
+        if self.street_name.is_empty_or_none() {
+            items.push(IncompleteItem::NoStreetName(severity));
+        }
+
+        if self.house_number.is_empty_or_none() {
+            items.push(IncompleteItem::NoHouseNumber(severity));
+        }
+
+        if self.postal_code.is_empty_or_none() {
+            items.push(IncompleteItem::NoPostalCode(severity));
+        }
+
+        if self.locality.is_empty_or_none() {
+            items.push(IncompleteItem::NoLocality(severity));
+        }
+
+        if self.country.is_empty_or_none() {
+            items.push(IncompleteItem::NoCountry(Severity::Warn));
+        }
+
+        items
+    }
+
     /// Returns `true` when all required address parts are present.
     pub fn is_complete(&self) -> bool {
         self.street_name.is_some()
@@ -101,6 +152,13 @@ impl Default for Address {
 }
 
 impl Address {
+    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+        match self {
+            Address::Dutch(address) => address.completable_items(severity),
+            Address::International(address) => address.completable_items(severity),
+        }
+    }
+
     pub fn as_dutch(&self) -> Option<&DutchAddress> {
         match self {
             Address::Dutch(address) => Some(address),
@@ -320,6 +378,17 @@ mod tests {
         address.country = None;
 
         assert!(!address.is_complete());
+    }
+
+    #[test]
+    fn international_address_adds_country_warning_when_country_missing() {
+        let mut address = sample_international_address();
+        address.country = None;
+
+        assert_eq!(
+            vec![IncompleteItem::NoCountry(Severity::Warn)],
+            address.completable_items(Severity::Error)
+        );
     }
 
     #[test]

@@ -49,10 +49,12 @@ impl IncompleteItems {
             .map(|aa| PersonItems::new(aa))
             .collect();
 
+        let list_submitter_items = store.get_list_submitter().incomplete_items();
+
         GeneralItems {
             general: political_group_items,
             authorized_agents: authorized_agent_items,
-            list_submitter: None,          // TODO
+            list_submitter: list_submitter_items,
             substitute_submitters: vec![], // TODO
         }
     }
@@ -73,7 +75,7 @@ impl IncompleteItems {
 pub struct GeneralItems {
     general: Vec<IncompleteItem>,
     authorized_agents: Vec<PersonItems<AuthorisedAgent>>,
-    list_submitter: Option<PersonItems<ListSubmitter>>,
+    list_submitter: Vec<IncompleteItem>,
     substitute_submitters: Vec<PersonItems<ListSubmitter>>,
 }
 
@@ -81,13 +83,10 @@ impl GeneralItems {
     pub fn flatten(&self) -> Vec<&IncompleteItem> {
         let mut result = Vec::new();
 
+        result.extend(&self.general);
         result.extend(self.authorized_agents.iter().flat_map(|aa| &aa.items));
         result.extend(self.substitute_submitters.iter().flat_map(|ss| &ss.items));
-        result.extend(&self.general);
-
-        if let Some(person_items) = &self.list_submitter {
-            result.extend(&person_items.items);
-        }
+        result.extend(&self.list_submitter);
 
         result
     }
@@ -128,6 +127,13 @@ pub enum IncompleteItem {
     // name related
     NoInitials(Severity),
     NoLastName(Severity),
+
+    // address related
+    NoStreetName(Severity),
+    NoHouseNumber(Severity),
+    NoPostalCode(Severity),
+    NoLocality(Severity),
+    NoCountry(Severity),
 }
 
 impl IncompleteItem {
@@ -148,6 +154,13 @@ impl IncompleteItem {
             // name related
             IncompleteItem::NoInitials(severity) => *severity,
             IncompleteItem::NoLastName(severity) => *severity,
+
+            // address related
+            IncompleteItem::NoStreetName(severity) => *severity,
+            IncompleteItem::NoHouseNumber(severity) => *severity,
+            IncompleteItem::NoPostalCode(severity) => *severity,
+            IncompleteItem::NoLocality(severity) => *severity,
+            IncompleteItem::NoCountry(severity) => *severity,
         }
     }
 }
@@ -182,7 +195,7 @@ mod tests {
         GeneralItems {
             general: Vec::new(),
             authorized_agents: Vec::new(),
-            list_submitter: None,
+            list_submitter: Vec::new(),
             substitute_submitters: Vec::new(),
         }
     }
