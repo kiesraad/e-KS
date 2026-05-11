@@ -1,0 +1,17 @@
+duplicate_districts: "Duplicate districts: {}"
+no_authorised_agent: No authorised agent added
+no_candidates: No candidates added
+no_country: Country is missing
+no_display_name: Registered designation is missing
+no_districts: No districts selected
+no_house_number: House number is missing
+no_initials: Initials are missing
+no_last_name: Last name is missing
+no_legal_name: Statutory name is missing
+no_locality: Locality is missing
+no_postal_code: Postal code is missing
+no_previous_election_results: Previous election results are missing
+no_problems: No problems
+no_street_name: Street name is missing
+no_substitute_submitter: No substitute submitter added
+too_many_candidates: "Too many candidates ({} added, maximum is {})"

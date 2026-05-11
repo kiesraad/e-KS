@@ -1,9 +1,13 @@
+use axum_extra::routing::TypedPath as _;
+
 use crate::{
-    AppStore, ElectoralDistrict,
+    AppStore, ElectoralDistrict, Locale, QueryParamState,
     authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
     list_submitters::ListSubmitter,
     persons::Person,
+    political_groups::PoliticalGroup,
+    trans,
 };
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
@@ -42,7 +46,7 @@ impl Problems {
 
         let authorised_agents = store.get_authorised_agents();
         if authorised_agents.is_empty() {
-            general.push(PotentialProblems::NoAuthorizedAgent);
+            general.push(PotentialProblems::NoAuthorisedAgent);
         }
         let authorised_agents = authorised_agents
             .into_iter()
@@ -82,10 +86,10 @@ impl Problems {
 
 #[derive(Debug)]
 pub struct GeneralProblems {
-    general: Vec<PotentialProblems>,
-    authorised_agents: Vec<PersonProblems<AuthorisedAgent>>,
-    list_submitter: Vec<PotentialProblems>,
-    substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
+    pub general: Vec<PotentialProblems>,
+    pub authorised_agents: Vec<PersonProblems<AuthorisedAgent>>,
+    pub list_submitter: Vec<PotentialProblems>,
+    pub substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
 }
 
 impl GeneralProblems {
@@ -135,7 +139,7 @@ pub enum PotentialProblems {
     NoLegalName,
     NoDisplayName,
     NoPreviousElectionResults,
-    NoAuthorizedAgent,
+    NoAuthorisedAgent,
     NoSubstituteSubmitter,
 
     // name related
@@ -151,6 +155,76 @@ pub enum PotentialProblems {
 }
 
 impl PotentialProblems {
+    pub fn translate(&self, locale: &Locale) -> String {
+        match self {
+            // candidate list
+            PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
+            PotentialProblems::TooManyCandidates { actual, max } => {
+                trans!("problems.too_many_candidates", *locale, actual, max)
+            }
+            PotentialProblems::DuplicateDistricts { duplicates } => {
+                let districts = duplicates
+                    .iter()
+                    .map(|d| d.title((*locale).into()))
+                    .collect::<Vec<_>>()
+                    .join(", ");
+                trans!("problems.duplicate_districts", *locale, districts)
+            }
+            PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
+
+            // political group
+            PotentialProblems::NoLegalName => trans!("problems.no_legal_name", *locale),
+            PotentialProblems::NoDisplayName => trans!("problems.no_display_name", *locale),
+            PotentialProblems::NoPreviousElectionResults => {
+                trans!("problems.no_previous_election_results", *locale)
+            }
+            PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
+            PotentialProblems::NoSubstituteSubmitter => {
+                trans!("problems.no_substitute_submitter", *locale)
+            }
+
+            // name related
+            PotentialProblems::NoInitials(_) => trans!("problems.no_initials", *locale),
+            PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
+
+            // address related
+            PotentialProblems::NoStreetName(_) => trans!("problems.no_street_name", *locale),
+            PotentialProblems::NoHouseNumber(_) => trans!("problems.no_house_number", *locale),
+            PotentialProblems::NoPostalCode(_) => trans!("problems.no_postal_code", *locale),
+            PotentialProblems::NoLocality(_) => trans!("problems.no_locality", *locale),
+            PotentialProblems::NoCountry(_) => trans!("problems.no_country", *locale),
+        }
+    }
+
+    pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
+        match self {
+            PotentialProblems::NoCandidates => list.view_path().to_string(),
+            PotentialProblems::TooManyCandidates { actual, max } => {
+                let overflow = actual.saturating_sub(*max);
+                list.view_path()
+                    .with_query_params(QueryParamState::highlight_last(overflow))
+                    .to_string()
+            }
+            _ => list.update_path().to_string(),
+        }
+    }
+
+    pub fn general_fix_path(&self) -> String {
+        match self {
+            PotentialProblems::NoAuthorisedAgent => AuthorisedAgent::list_path().to_string(),
+            PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
+            _ => PoliticalGroup::update_path().to_string(),
+        }
+    }
+
+    pub fn severity_class(&self) -> &'static str {
+        match self.severity() {
+            Severity::Info => "info",
+            Severity::Warn => "warning",
+            Severity::Error => "error",
+        }
+    }
+
     pub fn severity(&self) -> Severity {
         match &self {
             // candidate list
@@ -163,7 +237,7 @@ impl PotentialProblems {
             PotentialProblems::NoLegalName => Severity::Warn,
             PotentialProblems::NoDisplayName => Severity::Error,
             PotentialProblems::NoPreviousElectionResults => Severity::Info,
-            PotentialProblems::NoAuthorizedAgent => Severity::Warn,
+            PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
 
             // name related

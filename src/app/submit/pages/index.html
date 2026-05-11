@@ -6,12 +6,61 @@
   {% let election = "election"|election_value %}
   <h1>Fouten</h1>
   <section class="mt-md card">
-    <h2>Basisgegevens</h2>
-    <p class="mb-xl">{{ problems.general.flatten().len() }} fouten</p>
-    <h2>Kandidaten</h2>
-    <p class="mb-xl">{{ problems.candidates.len() }} fouten</p>
-    <h2>Kandidatenlijsten</h2>
-    <p class="mb-xl">{{ problems.lists.len() }} fouten</p>
+    <h2 class="mb-sm">{{ "common.general_information"|trans }}</h2>
+    {% if problems.general.flatten().is_empty() %}
+      <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
+    {% else %}
+      <ul class="warnings">
+        {% for problem in problems.general.general %}
+          <li>
+            <a class="{{ problem.severity_class() }}"
+               href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
+          </li>
+        {% endfor %}
+        {% for agent_pp in problems.general.authorised_agents %}
+          {% for problem in &agent_pp.problems %}
+            <li>
+              <a class="{{ problem.severity_class() }}"
+                 href="{{ agent_pp.person.update_path() }}">{{ agent_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
+            </li>
+          {% endfor %}
+        {% endfor %}
+        {% for problem in problems.general.list_submitter %}
+          <li>
+            <a class="{{ problem.severity_class() }}"
+               href="{{ ListSubmitter::update_path() }}">{{ problem.translate(locale) }}</a>
+          </li>
+        {% endfor %}
+        {% for ss_pp in problems.general.substitute_submitters %}
+          {% for problem in &ss_pp.problems %}
+            <li>
+              <a class="{{ problem.severity_class() }}"
+                 href="{{ ss_pp.person.substitute_update_path() }}">{{ ss_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
+            </li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    {% endif %}
+    <h2 class="mt-md mb-sm">{{ "common.candidates"|trans }}</h2>
+    <p class="mb-xl">TODO</p>
+    <h2 class="mt-md mb-sm">{{ "candidate_list.title_plural"|trans }}</h2>
+    {% if problems.lists.is_empty() %}
+      <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
+    {% else %}
+      {% for list_problems in &problems.lists %}
+        <div class="mb-md">
+          <div class="mb-sm">{{ list_problems.list.districts_name(locale.into() ) }}:</div>
+          <ul class="warnings">
+            {% for problem in &list_problems.problems %}
+              <li>
+                <a class="{{ problem.severity_class() }}"
+                   href="{{ problem.candidate_list_fix_path(&list_problems.list) }}">{{ problem.translate(locale) }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+        </div>
+      {% endfor %}
+    {% endif %}
   </section>
   <h1 class="mt-xl">Downloads</h1>
   <section class="mt-md">

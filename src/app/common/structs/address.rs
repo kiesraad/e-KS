@@ -112,7 +112,7 @@ impl InternationalAddress {
         }
 
         if self.country.is_empty_or_none() {
-            items.push(PotentialProblems::NoCountry(Severity::Warn));
+            items.push(PotentialProblems::NoCountry(severity));
         }
 
         items
@@ -386,7 +386,7 @@ mod tests {
         address.country = None;
 
         assert_eq!(
-            vec![PotentialProblems::NoCountry(Severity::Warn)],
+            vec![PotentialProblems::NoCountry(Severity::Error)],
             address.potential_problems(Severity::Error)
         );
     }
