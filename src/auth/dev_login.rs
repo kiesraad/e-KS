@@ -8,8 +8,11 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Session, StreamId,
-    auth::session_extractor::build_session_cookie, common::IndexPath,
-    political_groups::PoliticalGroup, store::Store, utils::random_bsn,
+    auth::session_extractor::build_session_cookie,
+    common::{IndexPath, SelectElectionPath},
+    political_groups::PoliticalGroup,
+    store::Store,
+    utils::random_bsn,
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
@@ -18,6 +21,7 @@ pub const DEV_LOGIN_PATH: &str = "/dev/login";
 pub struct DevLoginQuery {
     bsn: Option<String>,
     fixtures: Option<bool>,
+    select_election: Option<bool>,
 }
 
 pub async fn dev_login(
@@ -26,7 +30,6 @@ pub async fn dev_login(
     Query(query): Query<DevLoginQuery>,
     headers: axum::http::HeaderMap,
 ) -> Result<impl IntoResponse, AppError> {
-    let election = ElectionConfig::EK27;
     let id_code: SecretString = query
         .bsn
         .as_deref()
@@ -37,24 +40,31 @@ pub async fn dev_login(
     let stream_id = state.id_deriver.derive_stream_id(&id_code);
     drop(id_code);
 
-    let load_fixtures = query.fixtures.unwrap_or(false);
-    let (store, was_new) = ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
-
-    if was_new {
-        store.update(AppEvent::DeveloperLogin { stream_id }).await?;
-    }
-
     let locale = request_locale(&headers);
     let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
-    session.set_current_election(election);
+
+    let redirect_to = if query.select_election.unwrap_or(false) {
+        SelectElectionPath.to_string()
+    } else {
+        let election = ElectionConfig::EK27;
+        let load_fixtures = query.fixtures.unwrap_or(false);
+        let (store, was_new) = ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
+
+        if was_new {
+            store.update(AppEvent::DeveloperLogin { stream_id }).await?;
+        }
+
+        session.set_current_election(election);
+        IndexPath.to_string()
+    };
 
     state.sessions.cleanup_expired().await;
     state.sessions.insert(session.clone()).await;
 
     Ok((
         jar.add(build_session_cookie(&session)),
-        Redirect::to(&IndexPath.to_string()),
+        Redirect::to(&redirect_to),
     ))
 }
 
@@ -244,6 +254,41 @@ mod tests {
                 }
             ],
         ))
+    }
+
+    #[tokio::test]
+    async fn dev_login_select_election_skips_election_setup() {
+        let state = AppState::new_for_tests().await;
+        let app = router::create(state.clone()).with_state(state.clone());
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri(format!(
+                        "/dev/login?bsn={TEST_ID_CODE}&select_election=true"
+                    ))
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(
+            response.headers().get(header::LOCATION).unwrap(),
+            "/select-election"
+        );
+
+        let token = cookie_value(&response)
+            .split_once('=')
+            .map(|(_, value)| value)
+            .expect("session token");
+        let session = state.sessions.get(token).await.expect("session");
+        assert_eq!(
+            session.stream_id,
+            Some(derive_test_id(&state, TEST_ID_CODE))
+        );
+        assert_eq!(session.current_election, None);
     }
 
     #[cfg(feature = "fixtures")]
