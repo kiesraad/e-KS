@@ -17,6 +17,10 @@ impl Completable for PoliticalGroup {
         [
             self.legal_name.incomplete_items(),
             self.display_name.incomplete_items(),
+            self.previous_election_results
+                .is_none()
+                .then_some(vec![IncompleteItem::NoPreviousElectionResults])
+                .unwrap_or_default(),
         ]
         .into_iter()
         .flatten()
@@ -66,9 +70,10 @@ mod tests {
         }
         .incomplete_items();
 
-        assert_eq!(empty_items.len(), 2);
+        assert_eq!(empty_items.len(), 3);
         assert!(empty_items.contains(&IncompleteItem::NoLegalName));
         assert!(empty_items.contains(&IncompleteItem::NoDisplayName));
+        assert!(empty_items.contains(&IncompleteItem::NoPreviousElectionResults));
     }
 
     #[test]

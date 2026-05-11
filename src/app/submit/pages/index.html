@@ -7,7 +7,7 @@
   <h1>Fouten</h1>
   <section class="mt-md card">
     <h2>Basisgegevens</h2>
-    <p class="mb-xl">{{ incomplete_items.general_items.0.len() }} fouten</p>
+    <p class="mb-xl">{{ incomplete_items.general_items.flatten().len() }} fouten</p>
     <h2>Kandidaten</h2>
     <p class="mb-xl">{{ incomplete_items.candidate_items.len() }} fouten</p>
     <h2>Kandidatenlijsten</h2>

@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{OptionAsStrExt, submit::{Completable, IncompleteItem, Severity}};
+use crate::{
+    OptionAsStrExt,
+    submit::{IncompleteItem, Severity},
+};
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};
 
@@ -65,7 +68,7 @@ impl FullName {
 
     pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
         let mut items = Vec::new();
-        
+
         if self.initials.is_empty() {
             items.push(IncompleteItem::NoInitials(severity));
         }

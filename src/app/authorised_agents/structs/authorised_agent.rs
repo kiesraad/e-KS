@@ -1,4 +1,9 @@
-use crate::{AppError, AppEvent, AppStore, common::FullName, id_newtype, submit::{Completable, IncompleteItem, Severity}};
+use crate::{
+    AppError, AppEvent, AppStore,
+    common::FullName,
+    id_newtype,
+    submit::{Completable, IncompleteItem, Severity},
+};
 use serde::{Deserialize, Serialize};
 
 id_newtype!(pub struct AuthorisedAgentId);

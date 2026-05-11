@@ -38,18 +38,22 @@ impl IncompleteItems {
     }
 
     fn find_general_items(store: &AppStore) -> GeneralItems {
-        let political_group_items = store.get_political_group().incomplete_items();
-        let authorized_agent_items = store
-            .get_authorised_agents()
+        let mut political_group_items = store.get_political_group().incomplete_items();
+
+        let authorised_agents = store.get_authorised_agents();
+        if authorised_agents.is_empty() {
+            political_group_items.push(IncompleteItem::NoAuthorizedAgent);
+        }
+        let authorized_agent_items = authorised_agents
             .into_iter()
             .map(|aa| PersonItems::new(aa))
             .collect();
 
         GeneralItems {
-            general: todo!(),
+            general: political_group_items,
             authorized_agents: authorized_agent_items,
-            list_submitter: todo!(),
-            substitute_submitters: todo!(),
+            list_submitter: None,          // TODO
+            substitute_submitters: vec![], // TODO
         }
     }
 
@@ -74,7 +78,7 @@ pub struct GeneralItems {
 }
 
 impl GeneralItems {
-    fn flatten(&self) -> Vec<&IncompleteItem> {
+    pub fn flatten(&self) -> Vec<&IncompleteItem> {
         let mut result = Vec::new();
 
         result.extend(self.authorized_agents.iter().flat_map(|aa| &aa.items));
@@ -114,12 +118,16 @@ pub enum IncompleteItem {
     TooManyCandidates { actual: usize, max: usize },
     DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
     NoDistricts,
+
     // political group
     NoLegalName,
     NoDisplayName,
+    NoPreviousElectionResults,
+    NoAuthorizedAgent,
+
     // name related
     NoInitials(Severity),
-    NoLastName(Severity)
+    NoLastName(Severity),
 }
 
 impl IncompleteItem {
@@ -130,9 +138,13 @@ impl IncompleteItem {
             IncompleteItem::TooManyCandidates { .. } => Severity::Warn,
             IncompleteItem::DuplicateDistricts { .. } => Severity::Error,
             IncompleteItem::NoDistricts => Severity::Error,
+
             // political group
             IncompleteItem::NoLegalName => Severity::Warn,
             IncompleteItem::NoDisplayName => Severity::Error,
+            IncompleteItem::NoPreviousElectionResults => Severity::Info,
+            IncompleteItem::NoAuthorizedAgent => Severity::Warn,
+
             // name related
             IncompleteItem::NoInitials(severity) => *severity,
             IncompleteItem::NoLastName(severity) => *severity,
