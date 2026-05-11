@@ -9,8 +9,8 @@
     <IssueDate>2026-04-16</IssueDate>
     <kr:CreationDateTime>2026-04-16T13:59:22.044497154+00:00</kr:CreationDateTime>
     <Nomination>
-        <ElectionIdentifier Id="AB2027_Aa-en-Maas">
-            <ElectionName>Verkiezing van het algemeen bestuur van het waterschap Aa en Maas 2027</ElectionName>
+        <ElectionIdentifier Id="AB2027_Fryslan">
+            <ElectionName>Verkiezing van het algemeen bestuur van het waterschap Fryslân 2027</ElectionName>
             <ElectionCategory>AB</ElectionCategory>
             <kr:ElectionSubcategory>AB2</kr:ElectionSubcategory>
             <kr:ElectionDate>2027-03-17</kr:ElectionDate>
@@ -21,12 +21,12 @@
         </ContestIdentifier>
         <Affiliation>
             <AffiliationIdentifier>
-                <RegisteredName>Kiesraad Demo Partij</RegisteredName>
+                <RegisteredName>Kiesraad Demo</RegisteredName>
             </AffiliationIdentifier>
             <Type>op zichzelf staande lijst</Type>
-            <kr:ListData PublishGender="true">
+            <kr:ListData PublishGender="true" PublicationLanguage="fy">
                 <kr:Contests>
-                    <kr:Contest Id="20">Aa en Maas</kr:Contest>
+                    <kr:Contest Id="2">Fryslân</kr:Contest>
                 </kr:Contests>
             </kr:ListData>
             <Candidate>

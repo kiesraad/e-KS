@@ -30,8 +30,16 @@ where
                     form.csrf_token = TokenValue(field.text().await?);
                 }
                 Some("file_data") => {
+                    let content_type = field.content_type().map(|s| s.to_string());
                     form.file_name = sanitize_file_name(field.file_name());
-                    form.file_data = Some(field.bytes().await?);
+                    let bytes = field.bytes().await?;
+                    tracing::info!(
+                        file_name = form.file_name.as_deref().unwrap_or(""),
+                        content_type = content_type.as_deref().unwrap_or(""),
+                        size_bytes = bytes.len(),
+                        "file upload received",
+                    );
+                    form.file_data = Some(bytes);
                 }
                 _ => {}
             }

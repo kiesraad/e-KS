@@ -1,7 +1,3 @@
-use axum::{
-    http::HeaderValue,
-    response::{IntoResponse, Response},
-};
 use chrono::Datelike;
 use eml_nl::{
     common::{
@@ -22,16 +18,16 @@ use eml_nl::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppEvent, AppStore, Context, ElectionConfig,
+    AnyLocale, AppError, AppStore, ElectionConfig,
     candidate_lists::FullCandidateList,
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
-    core::ElectionType,
+    core::{ElectionType, ModelLocale},
     list_submitters::ListSubmitter,
     persons::Representative,
+    political_groups::PoliticalGroup,
     store::StoreData,
-    submit::pages::DownloadEml210Path,
-    utils::{no_cache_headers, slugify_teletex},
+    utils::slugify_teletex,
 };
 
 impl From<ElectionType> for eml_nl::utils::ElectionCategory {
@@ -131,58 +127,52 @@ impl From<&FullName> for eml_nl::common::PersonNameStructure {
     }
 }
 
-impl TryInto<QualifyingAddress> for &Address {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<QualifyingAddress, Self::Error> {
+impl From<&Address> for QualifyingAddress {
+    fn from(address: &Address) -> QualifyingAddress {
         let locality = eml_nl::documents::candidate_lists::QualifyingAddressLocality::new(
-            self.locality()
+            address
+                .locality()
                 .as_ref()
-                .ok_or(AppError::IncompleteData("missing locality"))?
-                .to_string(),
+                .map(|loc| loc.to_string())
+                .unwrap_or_default(),
         )
-        .with_postal_code_option(self.postal_code())
-        .with_address_line_option(self.address_line_1());
+        .with_postal_code_option(address.postal_code())
+        .with_address_line_option(address.address_line_1());
 
-        Ok(QualifyingAddress::Locality(locality))
+        QualifyingAddress::Locality(locality)
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::LivingAddress> for &DutchAddress {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::LivingAddress, Self::Error> {
-        Ok(eml_nl::documents::nomination::LivingAddress::new(
-            self.locality
+impl From<&DutchAddress> for eml_nl::documents::nomination::LivingAddress {
+    fn from(address: &DutchAddress) -> eml_nl::documents::nomination::LivingAddress {
+        eml_nl::documents::nomination::LivingAddress::new(
+            address
+                .locality
                 .as_ref()
-                .ok_or(AppError::IncompleteData("missing locality"))?
-                .to_string(),
-        ))
+                .map(|loc| loc.to_string())
+                .unwrap_or_default(),
+        )
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::NominationContact> for &Address {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::NominationContact, Self::Error> {
-        Ok(eml_nl::documents::nomination::NominationContact {
+impl From<&Address> for eml_nl::documents::nomination::NominationContact {
+    fn from(address: &Address) -> eml_nl::documents::nomination::NominationContact {
+        eml_nl::documents::nomination::NominationContact {
             mailing_address: eml_nl::documents::nomination::MailingAddress {
-                address: self.try_into()?,
+                address: address.into(),
             },
-        })
+        }
     }
 }
 
-impl TryInto<eml_nl::documents::nomination::NominationAgent> for &Representative {
-    type Error = AppError;
-
-    fn try_into(self) -> Result<eml_nl::documents::nomination::NominationAgent, Self::Error> {
-        Ok(eml_nl::documents::nomination::NominationAgent {
+impl From<&Representative> for eml_nl::documents::nomination::NominationAgent {
+    fn from(representative: &Representative) -> eml_nl::documents::nomination::NominationAgent {
+        eml_nl::documents::nomination::NominationAgent {
             role: Some("H10".to_string()),
-            agent_identifier: AgentIdentifier::new(&self.name),
-            contact: Some((&Address::Dutch(self.address.clone())).try_into()?),
-            living_address: (&self.address).try_into()?,
-        })
+            agent_identifier: AgentIdentifier::new(&representative.name),
+            contact: Some((&Address::Dutch(representative.address.clone())).into()),
+            living_address: (&representative.address).into(),
+        }
     }
 }
 
@@ -225,22 +215,14 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
             contact: self
                 .person
                 .lives_in_nl()
-                .then(|| (&Address::Dutch(self.person.address.clone())).try_into())
-                .transpose()?,
+                .then(|| (&Address::Dutch(self.person.address.clone())).into()),
             agent: (!self.person.lives_in_nl())
-                .then(|| self.person.representative.as_ref().map(TryInto::try_into))
-                .flatten()
-                .transpose()?,
+                .then(|| self.person.representative.as_ref().map(Into::into))
+                .flatten(),
             date_of_birth_annex: None,
-            national_identification_number: match self
-                .person
-                .personal_data
-                .bsn
-                .as_ref()
-                .ok_or(AppError::IncompleteData("missing bsn"))?
-            {
-                BsnOrNoneConfirmed::Bsn(bsn) => Some(bsn.to_exposed_string()),
-                BsnOrNoneConfirmed::NoneConfirmed => None,
+            national_identification_number: match self.person.personal_data.bsn.as_ref() {
+                Some(BsnOrNoneConfirmed::Bsn(bsn)) => Some(bsn.to_exposed_string()),
+                _ => None,
             },
         })
     }
@@ -253,129 +235,125 @@ fn nomination_proposer(
 ) -> Result<eml_nl::documents::nomination::NominationProposer, AppError> {
     Ok(eml_nl::documents::nomination::NominationProposer {
         name: (&submitter.name).into(),
-        contact: (&submitter.address).try_into()?,
+        contact: (&submitter.address).into(),
         job_title: StringValue::Parsed(job_title),
         id,
         living_address: None,
     })
 }
 
-pub async fn gen_eml210(
-    path @ DownloadEml210Path { list_id }: DownloadEml210Path,
-    store: AppStore,
-    context: Context,
-) -> Result<Response, AppError> {
-    let FullCandidateList { list, candidates } = FullCandidateList::get(&store, list_id)?;
+pub struct Eml210(Nomination);
 
-    let substitutes = store.get_substitute_submitters();
-    let mut nominated = Vec::with_capacity(1 + substitutes.len());
-    nominated.push(nomination_proposer(
-        store.get_list_submitter(),
-        eml_nl::documents::nomination::NominationJobTitle::Submitter,
-        None,
-    )?);
+impl Eml210 {
+    pub fn new(
+        store: &AppStore,
+        election: &ElectionConfig,
+        political_group: &PoliticalGroup,
+        list_id: crate::candidate_lists::CandidateListId,
+        locale: ModelLocale,
+    ) -> Result<Self, AppError> {
+        let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
 
-    for (i, sub) in substitutes.into_iter().enumerate() {
+        let substitutes = store.get_substitute_submitters();
+        let mut nominated = Vec::with_capacity(1 + substitutes.len());
         nominated.push(nomination_proposer(
-            sub,
-            eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
-            Some((i + 1).to_string()),
+            store.get_list_submitter(),
+            eml_nl::documents::nomination::NominationJobTitle::Submitter,
+            None,
         )?);
+
+        for (i, sub) in substitutes.into_iter().enumerate() {
+            nominated.push(nomination_proposer(
+                sub,
+                eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
+                Some((i + 1).to_string()),
+            )?);
+        }
+
+        // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
+        let list_data = ListData {
+            // We always publish genders, but the individual candidates may leave the gender unspecified
+            publish_gender: StringValue::Parsed(true),
+            publication_language: Some(StringValue::from_value(match locale {
+                crate::core::ModelLocale::Fry => eml_nl::utils::PublicationLanguage::Frisian,
+                crate::core::ModelLocale::Nl => eml_nl::utils::PublicationLanguage::Dutch,
+            })),
+            belongs_to_set: None,
+            belongs_to_combination: None,
+            contests: list
+                .electoral_districts
+                .iter()
+                .map(|d| {
+                    Ok(ListDataContest::new(ContestId::new(d.region_number())?)
+                        .with_name(d.title(AnyLocale::Nl)))
+                })
+                .collect::<Result<Vec<ListDataContest>, AppError>>()?,
+        };
+
+        let now = chrono::Utc::now();
+        let nomination = Nomination::builder()
+            .transaction_id(
+                u64::try_from(store.data.read().last_event_id())
+                    .map_err(|_| AppError::InternalServerError)?,
+            )
+            .managing_authority(
+                ManagingAuthority::new(AuthorityIdentifier::new(AuthorityId::new("0000")?))
+                    .with_created_by_authority(
+                        CreatedByAuthority::new(AuthorityId::new("0000")?)
+                            .with_name("De politieke partij"),
+                    ),
+            )
+            .issue_date(now.date_naive())
+            .creation_date_time(now)
+            .election_identifier(NominationElectionIdentifier::try_from(*election)?)
+            .contest_identifier(if election.has_only_one_district() {
+                NominationContestIdentifier::new(ContestId::geen(), "")
+            } else if list.contains_all_districts(election) {
+                NominationContestIdentifier::new(ContestId::alle(), "")
+            } else {
+                // If there are multiple districts but this list is not linked to all districts,
+                // we always choose the first district (to avoid collisions with other lists).
+                // The full set of electoral districts can be found in the ListData.
+                let district = list.electoral_districts[0];
+                NominationContestIdentifier::new(
+                    ContestId::new(district.region_number())?,
+                    district.title(AnyLocale::Nl),
+                )
+            })
+            .affiliation(NominationAffiliation {
+                registered_name: political_group
+                    .display_name
+                    .as_ref()
+                    .ok_or(AppError::IncompleteData("Missing registered display name"))?
+                    .to_string(),
+                affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
+                list_data,
+                candidates: candidates
+                    .iter()
+                    .map(TryInto::try_into)
+                    .collect::<Result<Vec<_>, AppError>>()?,
+            })
+            .nominate(NominationNominate::new(nominated))
+            .build()?;
+
+        Ok(Self(nomination))
     }
 
-    // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
-    let list_data = ListData {
-        // We always publish genders, but the individual candidates may leave the gender unspecified
-        publish_gender: StringValue::Parsed(true),
-        publication_language: None,
-        belongs_to_set: None,
-        belongs_to_combination: None,
-        contests: list
-            .electoral_districts
-            .iter()
-            .map(|d| {
-                Ok(ListDataContest::new(ContestId::new(d.region_number())?)
-                    .with_name(d.title(AnyLocale::Nl)))
-            })
-            .collect::<Result<Vec<ListDataContest>, AppError>>()?,
-    };
-
-    let now = chrono::Utc::now();
-    let nomination = Nomination::builder()
-        .transaction_id(
-            u64::try_from(store.data.read().last_event_id())
-                .map_err(|_| AppError::InternalServerError)?,
-        )
-        .managing_authority(
-            ManagingAuthority::new(AuthorityIdentifier::new(AuthorityId::new("0000")?))
-                .with_created_by_authority(
-                    CreatedByAuthority::new(AuthorityId::new("0000")?)
-                        .with_name("De politieke partij"),
-                ),
-        )
-        .issue_date(now.date_naive())
-        .creation_date_time(now)
-        .election_identifier(NominationElectionIdentifier::try_from(context.election)?)
-        .contest_identifier(if context.election.has_only_one_district() {
-            NominationContestIdentifier::new(ContestId::geen(), "")
-        } else if list.contains_all_districts(&context.election) {
-            NominationContestIdentifier::new(ContestId::alle(), "")
-        } else {
-            // If there are multiple districts but this list is not linked to all districts,
-            // we always choose the first district (to avoid collisions with other lists).
-            // The full set of electoral districts can be found in the ListData.
-            let district = list.electoral_districts[0];
-            NominationContestIdentifier::new(
-                ContestId::new(district.region_number())?,
-                district.title(AnyLocale::Nl),
-            )
-        })
-        .affiliation(NominationAffiliation {
-            registered_name: context
-                .political_group
-                .legal_name
-                .ok_or(AppError::IncompleteData("missing legal name"))?
-                .to_string(),
-            affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
-            list_data,
-            candidates: candidates
-                .iter()
-                .map(TryInto::try_into)
-                .collect::<Result<Vec<_>, AppError>>()?,
-        })
-        .nominate(NominationNominate::new(nominated))
-        .build()?;
-
-    let eml = EML::from_nomination_doc(nomination).write_eml_root(true, true)?;
-
-    store
-        .update(AppEvent::DownloadFile {
-            file_name: "eml210.eml.xml".to_string(),
-            download_path: path.to_string(),
-            list_id,
-        })
-        .await?;
-
-    let headers = no_cache_headers::generate_attachment_headers(
-        "eml210.eml.xml",
-        HeaderValue::from_static("application/xml"),
-    )?;
-
-    Ok((headers, eml).into_response())
+    pub fn build(self) -> Result<Vec<u8>, AppError> {
+        Ok(EML::from_nomination_doc(self.0).write_eml_root(true, true)?)
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use axum::{body, response::Response};
-    use reqwest::{StatusCode, header};
-
     use super::*;
     use std::str::FromStr;
 
     use crate::{
-        AppError, AppStore, ElectoralDistrict,
+        AppError, AppStore, Context, ElectoralDistrict,
         candidate_lists::{CandidateListId, FullCandidateList},
         common::CountryCode,
+        core::ModelLocale,
         list_submitters::ListSubmitterId,
         persons::{PersonId, Representative},
         test_utils::{
@@ -424,51 +402,15 @@ mod tests {
         FullCandidateList::get(store, list_id)
     }
 
-    async fn assert_response(response: Response, expected: &str) {
-        assert_eq!(response.status(), StatusCode::OK);
-        let headers = response.headers();
-        assert_eq!(
-            headers
-                .get(header::CONTENT_TYPE)
-                .expect("content type header"),
-            "application/xml"
-        );
-
-        let content_header = headers
-            .get(header::CONTENT_DISPOSITION)
-            .expect("content disposition header")
-            .to_str()
-            .unwrap();
-        assert_eq!(content_header, "attachment; filename=\"eml210.eml.xml\"");
-        assert_eq!(
-            headers
-                .get(header::CACHE_CONTROL)
-                .expect("cache control header"),
-            "no-store, no-cache, must-revalidate, max-age=0"
-        );
-        assert_eq!(
-            headers.get(header::PRAGMA).expect("pragma header"),
-            "no-cache"
-        );
-        assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
-
-        // check response body
-        let body = String::from_utf8(
-            body::to_bytes(response.into_body(), 100_000)
-                .await
-                .unwrap()
-                .to_vec(),
-        )
-        .unwrap();
-
+    async fn check_eml(response: &str, expected: &str) {
         let stringify_nomination_data = |eml: eml_nl::documents::EML| {
             format!("{:?}", eml.as_nomination_doc().unwrap().nomination_data)
         };
 
-        let received = stringify_nomination_data(body.parse().unwrap());
+        let received = stringify_nomination_data(response.parse().unwrap());
         let expected = stringify_nomination_data(expected.parse().unwrap());
 
-        assert_eq!(received, expected, "received XML:\n{}", body);
+        assert_eq!(received, expected, "received XML:\n{}", response);
     }
 
     #[tokio::test]
@@ -480,12 +422,23 @@ mod tests {
         let list = create_sample_list(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let eml = Eml210::new(
+            &store,
+            &context.election,
+            &context.political_group,
+            list.id(),
+            ModelLocale::Nl,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
 
         // verify
-        assert_response(response, include_str!("../testdata/ek27.eml.xml")).await;
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("../testdata/ek27.eml.xml"),
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -499,12 +452,23 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let eml = Eml210::new(
+            &store,
+            &context.election,
+            &context.political_group,
+            list.id(),
+            ModelLocale::Nl,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
 
         // verify
-        assert_response(response, include_str!("../testdata/ps27-1.eml.xml")).await;
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("../testdata/ps27-1.eml.xml"),
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -519,12 +483,23 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let eml = Eml210::new(
+            &store,
+            &context.election,
+            &context.political_group,
+            list.id(),
+            ModelLocale::Nl,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
 
         // verify
-        assert_response(response, include_str!("../testdata/ps27-2.eml.xml")).await;
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("../testdata/ps27-2.eml.xml"),
+        )
+        .await;
     }
 
     #[tokio::test]
@@ -532,17 +507,28 @@ mod tests {
         // setup
         let store = AppStore::new_for_test();
         let mut context = Context::new_test_without_db();
-        context.election = ElectionConfig::WS27(crate::WaterCouncil::AaEnMaas);
+        context.election = ElectionConfig::WS27(crate::WaterCouncil::Fryslan);
         let mut list = create_sample_list(&store).await.unwrap();
-        list.list.electoral_districts = vec![ElectoralDistrict::WsAaEnMaas];
+        list.list.electoral_districts = vec![ElectoralDistrict::WsFryslan];
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let response = gen_eml210(DownloadEml210Path { list_id: list.id() }, store, context)
-            .await
-            .unwrap();
+        let eml = Eml210::new(
+            &store,
+            &context.election,
+            &context.political_group,
+            list.id(),
+            ModelLocale::Fry,
+        )
+        .unwrap()
+        .build()
+        .unwrap();
 
         // verify
-        assert_response(response, include_str!("../testdata/ws27.eml.xml")).await;
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("../testdata/ws27.eml.xml"),
+        )
+        .await;
     }
 }

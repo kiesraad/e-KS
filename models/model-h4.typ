@@ -1,4 +1,4 @@
-#import "layout.typ": checkbox, column_table, conf, date, enumerated_table, fill_in, label_table, mono, translator
+#import "layout.typ": checkbox, column_table, conf, date, fill_in, label_table, mono, translator
 
 
 #let input = json("./input.json")
@@ -12,20 +12,19 @@
     "Ondersteuningsverklaring",
     "Stipeferklearring",
   ),
-  trans(
-    [
-      Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.
+  trans[
+    Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.
+  ][
+    Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.
 
-      *Let op!*\
-      U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.
-    ],
-    [
-      Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.
-
-      *Tink der om!*\
-      Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.
-    ],
-  ),
+  ],
+  warning: trans[
+    *Let op!*\
+    U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.
+  ][
+    *Tink der om!*\
+    Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.
+  ],
   page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
@@ -67,20 +66,26 @@
   (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
 ))
 
-#let gr_or_other = (gr, non_gr) => if input.election_type == "GR" { gr } else { non_gr }
+#let is_municipality = (gr, non_gr) => if input.election_type == "ER" {
+  non_gr
+} else if (input.election_type == "TK") {
+  [#gr / #non_gr]
+} else {
+  gr
+}
+
 #if input.election_type != "EK" {
   [
     = #trans[
-      Verklaring van de #gr_or_other("burgermeester", "gezaghebber")
+      Verklaring van de #is_municipality("burgermeester", "gezaghebber")
     ][
-      Ferklearring fan de #gr_or_other("boargemaster", "gesachhawwer")
+      Ferklearring fan de #is_municipality("boargemaster", "gesachhawwer")
     ]
     #trans[
-      De #gr_or_other("burgemeester", "gezaghebber") van #fill_in(width: 15em) verklaart dat de ondersteuner in zijn #gr_or_other("gemeente", "openbaar lichaam") als kiezer is geregistreerd.
+      De #is_municipality("burgemeester", "gezaghebber") van #fill_in(width: 15em) verklaart dat de ondersteuner in zijn #is_municipality("gemeente", "openbaar lichaam") als kiezer is geregistreerd.
     ][
-      De #gr_or_other("burgemeester", "gesachhawwer") fan #fill_in(width: 15em) ferklearret dat de stiper yn syn #gr_or_other("gemeente", "iepenbier lichem") as kiezer registrearre is.
+      De #is_municipality("boargemaster", "gesachhawwer") fan #fill_in(width: 15em) ferklearret dat de stiper yn syn #is_municipality("gemeente", "iepenbier lichem") as kiezer registrearre is.
     ]
-
     #label_table(values: (
       (
         trans(

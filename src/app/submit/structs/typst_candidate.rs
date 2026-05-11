@@ -48,10 +48,10 @@ pub fn ordered_candidates(
     for (i, candidate) in candidates.iter().enumerate() {
         if candidate.position != i + 1 {
             error!(
-                "Found a hole in candidate list: expected position {}, got {} for candidate {}",
-                i + 1,
-                candidate.position,
-                candidate.person.name.display()
+                expected_position = i + 1,
+                actual_position = candidate.position,
+                person_id = %candidate.person.id,
+                "Found a hole in candidate list",
             );
             return Err(AppError::IntegrityViolation);
         }

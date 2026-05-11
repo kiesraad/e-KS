@@ -3,7 +3,6 @@
 //! server.
 
 use crate::AppError;
-use axum::body::Body;
 use serde::Serialize;
 use tracing::debug;
 
@@ -22,20 +21,6 @@ pub enum TypstRenderer {
     Embedded(Arc<PdfContext>),
 }
 
-/// Request describing one PDF in a batch render call.
-pub struct BatchRenderRequest {
-    pub template: &'static str,
-    pub file_name: String,
-    pub input: serde_json::Value,
-}
-
-#[derive(Serialize)]
-struct HttpBatchRenderRequest {
-    template: &'static str,
-    file_name: String,
-    input: serde_json::Value,
-}
-
 impl TypstRenderer {
     pub fn http(base_url: String) -> Self {
         Self::Http(base_url)
@@ -46,25 +31,26 @@ impl TypstRenderer {
         Self::Embedded(context)
     }
 
-    /// Render a single PDF and return its bytes as an axum [`Body`].
+    /// Render a single PDF and return its bytes in memory.
     pub async fn render_pdf<T: Serialize>(
         &self,
         template: &'static str,
         file_name: &str,
         input: &T,
-    ) -> Result<Body, AppError> {
+    ) -> Result<Vec<u8>, AppError> {
         match self {
             Self::Http(base_url) => {
                 let url = format!("{base_url}/render-pdf/{template}/{file_name}");
                 debug!("Sending PDF generation request to {url}");
-                let stream = reqwest::Client::new()
+                let bytes = reqwest::Client::new()
                     .get(url)
                     .json(input)
                     .send()
                     .await?
                     .error_for_status()?
-                    .bytes_stream();
-                Ok(Body::from_stream(stream))
+                    .bytes()
+                    .await?;
+                Ok(bytes.to_vec())
             }
             #[cfg(feature = "embed-typst")]
             Self::Embedded(context) => {
@@ -77,53 +63,7 @@ impl TypstRenderer {
                 })
                 .await
                 .map_err(typst_webservice::AppError::from)??;
-                Ok(Body::from(bytes))
-            }
-        }
-    }
-
-    /// Render a batch of PDFs into a ZIP archive and return the bytes as an
-    /// axum [`Body`].
-    pub async fn render_batch(&self, requests: Vec<BatchRenderRequest>) -> Result<Body, AppError> {
-        match self {
-            Self::Http(base_url) => {
-                let url = format!("{base_url}/render-pdf/batch");
-                debug!("Sending PDF ZIP generation request to {url}");
-                let payload: Vec<HttpBatchRenderRequest> = requests
-                    .into_iter()
-                    .map(|req| HttpBatchRenderRequest {
-                        template: req.template,
-                        file_name: req.file_name,
-                        input: req.input,
-                    })
-                    .collect();
-
-                let stream = reqwest::Client::new()
-                    .post(url)
-                    .json(&payload)
-                    .send()
-                    .await?
-                    .error_for_status()?
-                    .bytes_stream();
-                Ok(Body::from_stream(stream))
-            }
-            #[cfg(feature = "embed-typst")]
-            Self::Embedded(context) => {
-                debug!(
-                    "Rendering {} PDFs in-process using embedded Typst",
-                    requests.len()
-                );
-                let context = context.clone();
-                let requests = requests
-                    .into_iter()
-                    .map(|req| typst_webservice::BatchRenderRequest {
-                        template: req.template.to_string(),
-                        file_name: req.file_name,
-                        input: req.input,
-                    })
-                    .collect();
-                let bytes = PdfContext::render_batch(context, requests).await?;
-                Ok(Body::from(bytes))
+                Ok(bytes)
             }
         }
     }

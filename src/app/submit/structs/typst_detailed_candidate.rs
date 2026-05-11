@@ -25,34 +25,27 @@ impl TypstDetailedCandidate {
         let (representative, postal_address) = if candidate.person.lives_in_nl() {
             (
                 None,
-                Some(TypstPostalAddress::try_from(&Address::Dutch(
+                Some(TypstPostalAddress::from(&Address::Dutch(
                     candidate.person.address.clone(),
-                ))?),
+                ))),
             )
         } else {
             (
-                Some(TypstPerson::try_from(
+                Some(TypstPerson::from(
                     candidate
                         .person
                         .representative
                         .as_ref()
                         .ok_or(AppError::IncompleteData("missing representative"))?,
-                )?),
+                )),
                 None,
             )
         };
-        let bsn = if candidate.person.personal_data.bsn == Some(BsnOrNoneConfirmed::NoneConfirmed) {
-            None
-        } else {
-            Some(
-                candidate
-                    .person
-                    .personal_data
-                    .bsn
-                    .as_ref()
-                    .ok_or(AppError::IncompleteData("missing bsn"))?
-                    .to_exposed_string(),
-            )
+
+        // BSNs cause warnings but don't prevent export
+        let bsn = match candidate.person.personal_data.bsn.as_ref() {
+            Some(BsnOrNoneConfirmed::Bsn(bsn)) => Some(bsn.to_exposed_string()),
+            _ => None,
         };
 
         Ok(Self {
@@ -73,8 +66,8 @@ mod tests {
     use crate::{
         candidate_lists::CandidateListId,
         common::{
-            CountryCode, DutchAddress, FullName, HouseNumber, Initials, LastName, Locality,
-            PostalCode, StreetName,
+            BsnOrNoneConfirmed, CountryCode, DutchAddress, FullName, HouseNumber, Initials,
+            LastName, Locality, PostalCode, StreetName,
         },
         persons::{PersonId, Representative},
         test_utils::sample_person,
@@ -146,8 +139,9 @@ mod tests {
         };
         candidate.person.personal_data.country = Some(CountryCode::from_str("NL").unwrap());
         candidate.person.address.street_name = None;
-        let err = TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
-        assert!(matches!(err, AppError::IncompleteData(_)));
+        let typst_candidate =
+            TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
+        assert_eq!(typst_candidate.postal_address.unwrap().street_address, "");
     }
 
     #[test]
@@ -188,8 +182,9 @@ mod tests {
 
         candidate.person.personal_data.bsn = None;
 
-        let err = TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
+        let typst_candidate =
+            TypstDetailedCandidate::try_from(&candidate, ModelLocale::Nl).unwrap();
 
-        assert!(matches!(err, AppError::IncompleteData(_)))
+        assert_eq!(typst_candidate.bsn, None);
     }
 }

@@ -6,18 +6,18 @@
   doc,
   "Model H 9",
   trans("Instemmingsverklaring", "Ynstimmingsferklearring"),
-  trans(
-    [
-      Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.
-
-      *Let op!* Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.
-    ],
-    [
-      Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.
-
-      *Tink der om!* Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.
-    ],
-  ),
+  trans[
+    Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.
+  ][
+    Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.
+  ],
+  warning: trans[
+    *Let op!*\
+    Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.
+  ][
+    *Tink der om!*\
+    Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.
+  ],
   page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
@@ -56,6 +56,7 @@
   values: input.candidates.map(c => ([#c.position], c.last_name, c.initials, c.locality)),
 )
 
+
 #if input.detailed_candidate.representative != none [
   = #trans("Gemachtigde voor het aannemen van uw benoeming", "Lêsthawwer foar it oannimmen fan jo beneaming")
   #column_table(
@@ -79,24 +80,26 @@
   )
 ]
 
+
 #if input.election_type != "KCNI" and input.detailed_candidate.representative == none [
   = #trans("Adres voor de kennisgeving van mijn benoeming", "Adres foar de meidieling fan myn beneaming")
-  // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
-  #if input.detailed_candidate.postal_address == none {
-    trans([_niet van toepassing_], [_net fan tapassing_])
-  } else {
-    column_table(
-      columns: (1fr, 0.5fr, 1fr),
-      headers: (trans("postadres", "postadres"), trans("postcode", "postkoade"), trans("plaats", "plak")),
-      values: (
-        (
-          input.detailed_candidate.postal_address.street_address,
-          mono(input.detailed_candidate.postal_address.postal_code),
-          input.detailed_candidate.postal_address.locality,
+  #block(breakable: false)[
+    // deze rubriek is niet van toepassing bij de verkiezing van het kiescollege voor niet-ingezetenen
+    #if input.detailed_candidate.postal_address == none {
+      trans([_niet van toepassing_], [_net fan tapassing_])
+    } else {
+      column_table(
+        columns: (1fr, 0.5fr, 1fr),
+        headers: (trans("postadres", "postadres"), trans("postcode", "postkoade"), trans("plaats", "plak")),
+        values: (
+          (
+            input.detailed_candidate.postal_address.street_address,
+            mono(input.detailed_candidate.postal_address.postal_code),
+            input.detailed_candidate.postal_address.locality,
+          ),
         ),
-      ),
-    )
-  }
+      )
+    }]
 ]
 
 #if input.election_type == "KCNI" and input.detailed_candidate.representative == none [
@@ -111,6 +114,7 @@
     )
   ]
 ]
+
 
 = #trans("Ondertekening door de kandidaat", "Undertekening troch de kandidaat")
 #label_table(values: (

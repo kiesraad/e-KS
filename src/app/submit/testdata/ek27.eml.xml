@@ -21,10 +21,10 @@
         </ContestIdentifier>
         <Affiliation>
             <AffiliationIdentifier>
-                <RegisteredName>Kiesraad Demo Partij</RegisteredName>
+                <RegisteredName>Kiesraad Demo</RegisteredName>
             </AffiliationIdentifier>
             <Type>op zichzelf staande lijst</Type>
-            <kr:ListData PublishGender="true">
+            <kr:ListData PublishGender="true" PublicationLanguage="nl">
                 <kr:Contests>
                     <kr:Contest Id="7">Utrecht</kr:Contest>
                 </kr:Contests>

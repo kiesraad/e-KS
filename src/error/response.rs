@@ -6,7 +6,7 @@ use axum::{
     response::{IntoResponse, Response},
 };
 use serde::Serialize;
-use tracing::error;
+use tracing::{error, warn};
 
 use crate::{AppError, Context, HtmlTemplate, filters};
 
@@ -97,16 +97,18 @@ impl IntoResponse for AppError {
 /// that should not be exposed to the client, but should be logged at this point.
 impl From<AppError> for ErrorResponse {
     fn from(err: AppError) -> Self {
-        error!(?err, "Error while processing request");
-
         ErrorResponse::from_app_error(&err)
     }
 }
 
 impl ErrorResponse {
     fn from_app_error(err: &AppError) -> Self {
-        error!(?err);
+        let response = Self::build(err);
+        log_app_error(err, &response);
+        response
+    }
 
+    fn build(err: &AppError) -> Self {
         match err {
             AppError::NotFound(msg) => ErrorResponse {
                 error: ErrorResponseVariant::NotFound,
@@ -188,6 +190,44 @@ impl ErrorResponse {
             },
         }
     }
+}
+
+/// Emit a single tracing event for an error response.
+fn log_app_error(err: &AppError, response: &ErrorResponse) {
+    match response.error {
+        ErrorResponseVariant::InternalServerError => {
+            error!(error = ?err, "5xx error");
+        }
+        ErrorResponseVariant::BadRequest
+        | ErrorResponseVariant::Unauthorised
+        | ErrorResponseVariant::NotFound => {
+            if message_is_safe_to_log(err) {
+                warn!(error = ?err, "4xx error");
+            } else {
+                // Debug of inner extractor errors can echo request input, so
+                // log only the variant name (the prefix of the Debug output).
+                let dbg = format!("{err:?}");
+                let kind = dbg.split_once('(').map_or(dbg.as_str(), |(n, _)| n);
+                warn!(kind, "4xx error");
+            }
+        }
+    }
+}
+
+/// Return `true` when the user-facing `ErrorResponse.message` for this
+/// variant is a constant or developer-authored string and can be safely
+/// included in the log event. For variants where the message is built from
+/// the inner extractor/validation error (which can echo request input),
+/// this returns `false`.
+fn message_is_safe_to_log(err: &AppError) -> bool {
+    matches!(
+        err,
+        AppError::Unauthorised
+            | AppError::GenericNotFound
+            | AppError::CsrfTokenInvalid
+            | AppError::NotFound(_)
+            | AppError::IncompleteData(_)
+    )
 }
 
 #[cfg(test)]

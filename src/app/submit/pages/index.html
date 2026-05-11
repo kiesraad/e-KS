@@ -5,86 +5,35 @@
   {% let max_candidates = "max_candidates"|integer_value %}
   {% let election = "election"|election_value %}
   <h1>Fouten</h1>
-  <h2>Basisgegevens</h2>
-  <p class="mb-xl">{{ incomplete_items.general_items.0.len() }} fouten</p>
-  <h2>Kandidaten</h2>
-  <p class="mb-xl">{{ incomplete_items.candidate_items.len() }} fouten</p>
-  <h2>Kandidatenlijsten</h2>
-  <p class="mb-xl">{{ incomplete_items.list_items.len() }} fouten</p>
-  <h1>Downloads</h1>
-  <section>
-    <div class="cards cards-candidate-lists">
-      {% for candidate_list in candidate_lists %}
-        <div class="{% if candidate_list.duplicate_districts.is_empty() %}card card-candidate-list{% else %}card card-list-warning{% endif %}">
-          <div class="badge"></div>
-          <h3>{{ "candidate_list.title_single"|trans }}</h3>
-          <p class="statistic">
-            {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
-          </p>
-          <h5>{{ "common.electoral_districts"|trans }}:</h5>
-          {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-            <p>{{ "candidate_list.districts.all"|trans }}</p>
-          {% else %}
-            <ul class="districts">
-              {% for district in candidate_list.list.electoral_districts %}
-                <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
-                  <span>{{ district|district_name }}</span>
-                </li>
-              {% endfor %}
-            </ul>
-          {% endif %}
-          <div class="card-actions">
-            {% if incomplete_items.models_downloadable() %}
-              <a href="{{ candidate_list.download_h1_path_nl }}"
-                 class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_h1_path_fry }}"
-                 class="button secondary icon-print">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a href="{{ candidate_list.download_h3_1_path_nl }}"
-                 class="button secondary icon-print">{{ "action.download_h3_1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_h3_1_path_fry }}"
-                 class="button secondary icon-print">{{ "action.download_h3_1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a href="{{ candidate_list.download_h4_path_nl }}"
-                 class="button secondary icon-print">{{ "action.download_h4"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_h4_path_fry }}"
-                 class="button secondary icon-print">{{ "action.download_h4"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a href="{{ candidate_list.download_h9_path_nl }}"
-                 class="button secondary icon-print">{{ "action.download_h9"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a href="{{ candidate_list.download_h9_path_fry }}"
-                 class="button secondary icon-print">{{ "action.download_h9"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a href="{{ candidate_list.download_eml_210_path }}"
-                 class="button secondary icon-print">{{ "action.download_eml210"|trans }}</a>
-            {% else %}
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h3_1"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h3_1"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h4"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h4"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h9"|trans }} ({{ "common.languages.dutch"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_h9"|trans }} ({{ "common.languages.frisian"|trans }})</a>
-              <a class="button secondary icon-print disabled"
-                 disabled
-                 aria-disabled="true">{{ "action.download_eml210"|trans }}</a>
-            {% endif %}
-          </div>
-        </div>
-      {% endfor %}
+  <section class="mt-md card">
+    <h2>Basisgegevens</h2>
+    <p class="mb-xl">{{ incomplete_items.general_items.0.len() }} fouten</p>
+    <h2>Kandidaten</h2>
+    <p class="mb-xl">{{ incomplete_items.candidate_items.len() }} fouten</p>
+    <h2>Kandidatenlijsten</h2>
+    <p class="mb-xl">{{ incomplete_items.list_items.len() }} fouten</p>
+  </section>
+  <h1 class="mt-xl">Downloads</h1>
+  <section class="mt-md">
+    <div class="card-actions mb-xl">
+      {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+      {% if incomplete_items.models_downloadable() %}
+        <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }}</a>
+      {% else %}
+        <a class="button secondary icon-download disabled"
+           disabled
+           aria-disabled="true">{{ "action.all_in_one_zip"|trans }}</a>
+      {% endif %}
+      {% if frisian_export_allowed %}
+        <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
+        {% if incomplete_items.models_downloadable() %}
+          <a href="{{ download_path_fry }}" class="button secondary icon-download">Alles yn ien zip</a>
+        {% else %}
+          <a class="button secondary icon-download disabled"
+             disabled
+             aria-disabled="true">Alles yn ien zip</a>
+        {% endif %}
+      {% endif %}
     </div>
   </section>
 {% endblock %}
