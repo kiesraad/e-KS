@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    submit::{IncompleteItem, Severity},
+    submit::{PotentialProblems, Severity},
 };
 
 use super::{
@@ -29,23 +29,23 @@ pub struct DutchAddress {
 }
 
 impl DutchAddress {
-    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(IncompleteItem::NoStreetName(severity));
+            items.push(PotentialProblems::NoStreetName(severity));
         }
 
         if self.house_number.is_empty_or_none() {
-            items.push(IncompleteItem::NoHouseNumber(severity));
+            items.push(PotentialProblems::NoHouseNumber(severity));
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(IncompleteItem::NoPostalCode(severity));
+            items.push(PotentialProblems::NoPostalCode(severity));
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(IncompleteItem::NoLocality(severity));
+            items.push(PotentialProblems::NoLocality(severity));
         }
 
         items
@@ -92,27 +92,27 @@ pub struct InternationalAddress {
 }
 
 impl InternationalAddress {
-    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(IncompleteItem::NoStreetName(severity));
+            items.push(PotentialProblems::NoStreetName(severity));
         }
 
         if self.house_number.is_empty_or_none() {
-            items.push(IncompleteItem::NoHouseNumber(severity));
+            items.push(PotentialProblems::NoHouseNumber(severity));
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(IncompleteItem::NoPostalCode(severity));
+            items.push(PotentialProblems::NoPostalCode(severity));
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(IncompleteItem::NoLocality(severity));
+            items.push(PotentialProblems::NoLocality(severity));
         }
 
         if self.country.is_empty_or_none() {
-            items.push(IncompleteItem::NoCountry(Severity::Warn));
+            items.push(PotentialProblems::NoCountry(Severity::Warn));
         }
 
         items
@@ -152,10 +152,10 @@ impl Default for Address {
 }
 
 impl Address {
-    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
         match self {
-            Address::Dutch(address) => address.completable_items(severity),
-            Address::International(address) => address.completable_items(severity),
+            Address::Dutch(address) => address.potential_problems(severity),
+            Address::International(address) => address.potential_problems(severity),
         }
     }
 
@@ -386,8 +386,8 @@ mod tests {
         address.country = None;
 
         assert_eq!(
-            vec![IncompleteItem::NoCountry(Severity::Warn)],
-            address.completable_items(Severity::Error)
+            vec![PotentialProblems::NoCountry(Severity::Warn)],
+            address.potential_problems(Severity::Error)
         );
     }
 

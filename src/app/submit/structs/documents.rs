@@ -3,18 +3,21 @@ use crate::{
     candidate_lists::{CandidateListId, FullCandidateList},
     common::PreviousElectionResults,
     core::{ModelLocale, Pdf, ZipResponseWriter},
-    submit::structs::{
-        eml210::Eml210,
-        h1::H1,
-        h3_1::H31,
-        h4::H4,
-        h9::H9,
-        typst_authorised_agent::TypstAuthorisedAgent,
-        typst_candidate::{TypstCandidate, ordered_candidates},
-        typst_datetime::TypstDatetime,
-        typst_detailed_candidate::TypstDetailedCandidate,
-        typst_electoral_districts::TypstElectoralDistricts,
-        typst_person::TypstPerson,
+    submit::{
+        Problematic,
+        structs::{
+            eml210::Eml210,
+            h1::H1,
+            h3_1::H31,
+            h4::H4,
+            h9::H9,
+            typst_authorised_agent::TypstAuthorisedAgent,
+            typst_candidate::{TypstCandidate, ordered_candidates},
+            typst_datetime::TypstDatetime,
+            typst_detailed_candidate::TypstDetailedCandidate,
+            typst_electoral_districts::TypstElectoralDistricts,
+            typst_person::TypstPerson,
+        },
     },
     utils::slugify_teletex,
 };
@@ -103,7 +106,7 @@ impl DocumentData {
             .unwrap_or_default();
 
         let list_submitter = store.get_list_submitter();
-        if !list_submitter.is_complete() {
+        if !list_submitter.is_all_good() {
             return Err(AppError::IncompleteData("Missing list submitter"));
         }
         let list_submitter = list_submitter.try_into()?;

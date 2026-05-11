@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    submit::{IncompleteItem, Severity},
+    submit::{PotentialProblems, Severity},
 };
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};
@@ -57,7 +57,7 @@ impl FullName {
     }
 
     pub fn is_complete(&self) -> bool {
-        self.completable_items(Severity::Info).is_empty()
+        self.potential_problems(Severity::Info).is_empty()
     }
 
     pub fn is_empty(&self) -> bool {
@@ -66,15 +66,15 @@ impl FullName {
             && self.last_name_prefix.is_empty_or_none()
     }
 
-    pub fn completable_items(&self, severity: Severity) -> Vec<IncompleteItem> {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.initials.is_empty() {
-            items.push(IncompleteItem::NoInitials(severity));
+            items.push(PotentialProblems::NoInitials(severity));
         }
 
         if self.last_name.is_empty() {
-            items.push(IncompleteItem::NoLastName(severity));
+            items.push(PotentialProblems::NoLastName(severity));
         }
 
         items

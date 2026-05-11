@@ -1,7 +1,7 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
     common::{DisplayName, LegalName, PreviousElectionResults},
-    submit::{Completable, IncompleteItem},
+    submit::{PotentialProblems, Problematic},
 };
 use serde::{Deserialize, Serialize};
 
@@ -12,14 +12,14 @@ pub struct PoliticalGroup {
     pub display_name: Option<DisplayName>,
 }
 
-impl Completable for PoliticalGroup {
-    fn incomplete_items(&self) -> Vec<IncompleteItem> {
+impl Problematic for PoliticalGroup {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
         [
-            self.legal_name.incomplete_items(),
-            self.display_name.incomplete_items(),
+            self.legal_name.get_problems(),
+            self.display_name.get_problems(),
             self.previous_election_results
                 .is_none()
-                .then_some(vec![IncompleteItem::NoPreviousElectionResults])
+                .then_some(vec![PotentialProblems::NoPreviousElectionResults])
                 .unwrap_or_default(),
         ]
         .into_iter()
@@ -68,12 +68,12 @@ mod tests {
             legal_name: None,
             display_name: None,
         }
-        .incomplete_items();
+        .get_problems();
 
         assert_eq!(empty_items.len(), 3);
-        assert!(empty_items.contains(&IncompleteItem::NoLegalName));
-        assert!(empty_items.contains(&IncompleteItem::NoDisplayName));
-        assert!(empty_items.contains(&IncompleteItem::NoPreviousElectionResults));
+        assert!(empty_items.contains(&PotentialProblems::NoLegalName));
+        assert!(empty_items.contains(&PotentialProblems::NoDisplayName));
+        assert!(empty_items.contains(&PotentialProblems::NoPreviousElectionResults));
     }
 
     #[test]
@@ -83,7 +83,7 @@ mod tests {
             legal_name: LegalName::from_str("test").ok(),
             display_name: DisplayName::from_str("test").ok(),
         }
-        .incomplete_items();
+        .get_problems();
 
         assert!(complete_items.is_empty());
     }

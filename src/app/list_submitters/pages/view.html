@@ -16,7 +16,7 @@
         </p>
       {% else %}
         <a href="{{ ListSubmitter::update_path() }}"
-           class="person-block{% if !list_submitter.is_complete() %} warning{% endif %}">
+           class="person-block{% if !list_submitter.is_all_good() %} warning{% endif %}">
           {{ list_submitter.name.display() }}
           <br />
           {{ list_submitter.address_line_1() }}
@@ -32,7 +32,7 @@
         <div class="substitute-list-submitters">
           {% for submitter in substitute_submitters %}
             <a href="{{ submitter.substitute_update_path() }}"
-               class="person-block{% if !submitter.is_complete() %} warning{% endif %}">
+               class="person-block{% if !submitter.is_all_good() %} warning{% endif %}">
               {{ submitter.name.display() }}
               <br />
               {{ submitter.address_line_1() }}

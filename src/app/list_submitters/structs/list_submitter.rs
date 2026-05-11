@@ -2,7 +2,7 @@ use crate::{
     AppError, AppEvent, AppStore,
     common::{Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode},
     id_newtype,
-    submit::{Completable, Severity},
+    submit::{PotentialProblems, Problematic, Severity},
 };
 use serde::{Deserialize, Serialize};
 
@@ -72,11 +72,11 @@ pub struct ListSubmitter {
     pub address: Address,
 }
 
-impl Completable for ListSubmitter {
-    fn incomplete_items(&self) -> Vec<crate::submit::IncompleteItem> {
+impl Problematic for ListSubmitter {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
         [
-            self.name.completable_items(Severity::Error),
-            self.address.completable_items(Severity::Error),
+            self.name.potential_problems(Severity::Error),
+            self.address.potential_problems(Severity::Error),
         ]
         .into_iter()
         .flatten()
@@ -85,10 +85,6 @@ impl Completable for ListSubmitter {
 }
 
 impl ListSubmitter {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete() && self.address.is_complete()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.name.is_empty() && self.address.is_empty()
     }

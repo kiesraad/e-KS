@@ -7,17 +7,17 @@
   <h1>Fouten</h1>
   <section class="mt-md card">
     <h2>Basisgegevens</h2>
-    <p class="mb-xl">{{ incomplete_items.general_items.flatten().len() }} fouten</p>
+    <p class="mb-xl">{{ problems.general.flatten().len() }} fouten</p>
     <h2>Kandidaten</h2>
-    <p class="mb-xl">{{ incomplete_items.candidate_items.len() }} fouten</p>
+    <p class="mb-xl">{{ problems.candidates.len() }} fouten</p>
     <h2>Kandidatenlijsten</h2>
-    <p class="mb-xl">{{ incomplete_items.list_items.len() }} fouten</p>
+    <p class="mb-xl">{{ problems.lists.len() }} fouten</p>
   </section>
   <h1 class="mt-xl">Downloads</h1>
   <section class="mt-md">
     <div class="card-actions mb-xl">
       {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
-      {% if incomplete_items.models_downloadable() %}
+      {% if problems.models_downloadable() %}
         <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "action.all_in_one_zip"|trans }}</a>
       {% else %}
         <a class="button secondary icon-download disabled"
@@ -26,7 +26,7 @@
       {% endif %}
       {% if frisian_export_allowed %}
         <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
-        {% if incomplete_items.models_downloadable() %}
+        {% if problems.models_downloadable() %}
           <a href="{{ download_path_fry }}" class="button secondary icon-download">Alles yn ien zip</a>
         {% else %}
           <a class="button secondary icon-download disabled"

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppStore, ElectoralDistrict,
     candidate_lists::CandidateList,
-    submit::{Completable, IncompleteItem},
+    submit::{Problematic, PotentialProblems},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -15,24 +15,24 @@ pub struct CandidateListSummary {
     pub duplicate_districts: Vec<ElectoralDistrict>,
 }
 
-impl Completable for CandidateListSummary {
-    fn incomplete_items(&self) -> Vec<IncompleteItem> {
+impl Problematic for CandidateListSummary {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
         let mut items = vec![];
         if self.candidate_count() == 0 {
-            items.push(IncompleteItem::NoCandidates);
+            items.push(PotentialProblems::NoCandidates);
         } else if self.candidate_count() > self.max_count {
-            items.push(IncompleteItem::TooManyCandidates {
+            items.push(PotentialProblems::TooManyCandidates {
                 actual: self.candidate_count(),
                 max: self.max_count,
             });
         }
         if !self.duplicate_districts.is_empty() {
-            items.push(IncompleteItem::DuplicateDistricts {
+            items.push(PotentialProblems::DuplicateDistricts {
                 duplicates: self.duplicate_districts.clone(),
             });
         }
         if self.list.electoral_districts.is_empty() {
-            items.push(IncompleteItem::NoDistricts)
+            items.push(PotentialProblems::NoDistricts)
         }
         items
     }
@@ -95,7 +95,7 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        assert!(list_summary.incomplete_items().is_empty());
+        assert!(list_summary.get_problems().is_empty());
     }
 
     #[test]
@@ -108,11 +108,11 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        let items = list_summary.incomplete_items();
+        let items = list_summary.get_problems();
 
         assert_eq!(items.len(), 2);
-        assert!(items.contains(&IncompleteItem::NoCandidates));
-        assert!(items.contains(&IncompleteItem::NoDistricts));
+        assert!(items.contains(&PotentialProblems::NoCandidates));
+        assert!(items.contains(&PotentialProblems::NoDistricts));
     }
 
     #[test]
@@ -125,11 +125,11 @@ mod tests {
             duplicate_districts: vec![ElectoralDistrict::PsAmsterdam],
         };
 
-        let items = list_summary.incomplete_items();
+        let items = list_summary.get_problems();
 
         assert_eq!(items.len(), 2);
-        assert!(items.contains(&IncompleteItem::TooManyCandidates { actual: 1, max: 0 }));
-        assert!(items.contains(&IncompleteItem::DuplicateDistricts {
+        assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
+        assert!(items.contains(&PotentialProblems::DuplicateDistricts {
             duplicates: vec![ElectoralDistrict::PsAmsterdam]
         }));
     }

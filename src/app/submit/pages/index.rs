@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters, submit::IncompleteItems,
+    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters, submit::Problems,
 };
 
 use super::SubmitPath;
@@ -10,7 +10,7 @@ use super::SubmitPath;
 #[derive(Template)]
 #[template(path = "submit/pages/index.html")]
 pub struct IndexTemplate {
-    incomplete_items: IncompleteItems,
+    problems: Problems,
     download_path_nl: String,
     download_path_fry: String,
     frisian_export_allowed: bool,
@@ -21,11 +21,11 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let incomplete_items = IncompleteItems::find_all(&store);
+    let problems = Problems::find_all(&store);
 
     Ok(HtmlTemplate(
         IndexTemplate {
-            incomplete_items,
+            problems,
             download_path_nl: super::DownloadDocumentsPath {
                 locale: ModelLocale::Nl,
             }
