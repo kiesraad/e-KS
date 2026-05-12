@@ -424,6 +424,79 @@ mod tests {
     }
 
     #[test]
+    fn complete_person_has_no_problems() {
+        assert!(sample_person(PersonId::new()).get_problems().is_empty());
+    }
+
+    #[test]
+    fn missing_last_name_produces_error() {
+        let mut person = sample_person(PersonId::new());
+        person.name = FullName::default();
+        assert!(
+            person
+                .get_problems()
+                .contains(&PotentialProblems::NoLastName(Severity::Error))
+        );
+    }
+
+    #[test]
+    fn non_dutch_person_without_representative_produces_warning() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country = Some("BE".parse().expect("country code"));
+        person.representative = None;
+        assert!(
+            person
+                .get_problems()
+                .contains(&PotentialProblems::NoRepresentative)
+        );
+    }
+
+    #[test]
+    fn non_dutch_person_with_incomplete_representative_produces_wrapped_problems() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country = Some("BE".parse().expect("country code"));
+        person.representative = Some(Representative::default());
+        let problems = person.get_problems();
+        assert!(
+            problems
+                .iter()
+                .any(|p| matches!(p, PotentialProblems::RepresentativeProblem(_)))
+        );
+        assert!(!problems.contains(&PotentialProblems::NoRepresentative));
+    }
+
+    #[test]
+    fn dutch_person_does_not_require_representative() {
+        let mut person = sample_person(PersonId::new());
+        person.representative = None;
+        assert!(
+            !person
+                .get_problems()
+                .contains(&PotentialProblems::NoRepresentative)
+        );
+    }
+
+    #[test]
+    fn dutch_person_with_incomplete_address_produces_warnings() {
+        let mut person = sample_person(PersonId::new());
+        person.address = DutchAddress::default();
+        let problems = person.get_problems();
+        assert!(problems.contains(&PotentialProblems::NoStreetName(Severity::Warn)));
+        assert!(problems.contains(&PotentialProblems::NoLocality(Severity::Warn)));
+    }
+
+    #[test]
+    fn non_dutch_person_with_representative_does_not_check_address() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country = Some("BE".parse().expect("country code"));
+        person.address = DutchAddress::default();
+        person.representative = Some(complete_representative());
+        let problems = person.get_problems();
+        assert!(!problems.contains(&PotentialProblems::NoStreetName(Severity::Warn)));
+        assert!(!problems.contains(&PotentialProblems::NoRepresentative));
+    }
+
+    #[test]
     fn representative_is_complete_requires_name_and_address() {
         let mut representative = complete_representative();
         assert!(representative.is_complete());
