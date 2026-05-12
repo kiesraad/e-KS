@@ -7,6 +7,7 @@ use crate::{
     id_newtype,
     pagination::SortDirection,
     persons::{PersonSort, PersonalData, structs::person_sort::compare_persons},
+    submit::{PotentialProblems, Problematic, Severity},
 };
 
 id_newtype!(pub struct PersonId);
@@ -21,6 +22,25 @@ pub struct Person {
     pub updated_at: UtcDateTime,
 }
 
+impl Problematic for Person {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        [
+            self.name.potential_problems(Severity::Error),
+            self.personal_data.get_problems(),
+            if self.lives_in_nl() {
+                self.address.potential_problems(Severity::Warn)
+            } else if let Some(representative) = &self.representative {
+                representative.get_problems()
+            } else {
+                vec![PotentialProblems::NoRepresentative]
+            },
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
+}
+
 #[derive(Default, Debug, Eq, PartialEq, Serialize, Deserialize, Clone)]
 pub struct Representative {
     pub name: FullName,
@@ -30,6 +50,18 @@ pub struct Representative {
 impl Representative {
     pub fn is_complete(&self) -> bool {
         self.name.is_complete() && self.address.is_complete()
+    }
+}
+
+impl Problematic for Representative {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        [
+            self.name.potential_problems(Severity::Warn),
+            self.address.potential_problems(Severity::Warn),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
     }
 }
 

@@ -7,9 +7,14 @@ no_districts: Geen kieskringen geselecteerd
 no_house_number: Huisnummer ontbreekt
 no_initials: Initialen ontbreken
 no_last_name: Achternaam ontbreekt
+no_bsn: BSN ontbreekt
+no_country_of_residence: Woonland ontbreekt
+no_date_of_birth: Geboortedatum ontbreekt
 no_legal_name: Statutaire naam ontbreekt
 no_list_submitter: Geen lijstinleveraar toegevoegd
 no_locality: Woonplaats ontbreekt
+no_place_of_residence: Woonplaats ontbreekt
+no_representative: Gemachtigde ontbreekt
 no_postal_code: Postcode ontbreekt
 no_previous_election_results: Resultaten vorige verkiezing ontbreken
 no_problems: Geen problemen

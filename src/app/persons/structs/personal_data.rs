@@ -1,6 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::common::{BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence};
+use crate::{
+    OptionAsStrExt,
+    common::{BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence},
+    submit::{PotentialProblems, Problematic},
+};
 
 #[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct PersonalData {
@@ -11,6 +15,30 @@ pub struct PersonalData {
 
     pub place_of_residence: Option<PlaceOfResidence>,
     pub country: Option<CountryCode>,
+}
+
+impl Problematic for PersonalData {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        let mut items = Vec::new();
+
+        if self.bsn.is_none() {
+            items.push(PotentialProblems::NoBsn);
+        }
+
+        if self.place_of_residence.is_empty_or_none() {
+            items.push(PotentialProblems::NoPlaceOfResidence);
+        }
+
+        if self.country.is_empty_or_none() {
+            items.push(PotentialProblems::NoCountryOfResidence);
+        }
+
+        if self.date_of_birth.is_none() {
+            items.push(PotentialProblems::NoDateOfBirth);
+        }
+
+        items
+    }
 }
 
 impl PersonalData {

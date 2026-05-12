@@ -24,18 +24,27 @@ impl Problems {
 
         Self {
             general: Self::find_general_problems(store),
-            candidates: vec![], // TODO: complete in issue #605
+            candidates: {
+                let mut seen = std::collections::HashSet::new();
+                candidate_lists
+                    .iter()
+                    .flat_map(|list| list.list.candidates.iter())
+                    .filter(|id| seen.insert(*id))
+                    .filter_map(|id| store.get_person(*id).ok())
+                    .filter_map(|person| {
+                        let problems = person.get_problems();
+                        (!problems.is_empty()).then(|| PersonProblems { person, problems })
+                    })
+                    .collect()
+            },
             lists: candidate_lists
                 .iter()
                 .filter_map(|candidate_list| {
-                    if candidate_list.is_all_good() {
-                        None
-                    } else {
-                        Some(ListProblems {
-                            list: candidate_list.list.clone(),
-                            problems: candidate_list.get_problems(),
-                        })
-                    }
+                    let problems = candidate_list.get_problems();
+                    (!problems.is_empty()).then(|| ListProblems {
+                        list: candidate_list.list.clone(),
+                        problems,
+                    })
                 })
                 .collect(),
         }
@@ -147,6 +156,13 @@ pub enum PotentialProblems {
     NoListSubmitter,
     NoSubstituteSubmitter,
 
+    // personal data
+    NoBsn,
+    NoPlaceOfResidence,
+    NoCountryOfResidence,
+    NoDateOfBirth,
+    NoRepresentative,
+
     // name related
     NoInitials(Severity),
     NoLastName(Severity),
@@ -189,6 +205,17 @@ impl PotentialProblems {
                 trans!("problems.no_substitute_submitter", *locale)
             }
 
+            // personal data
+            PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
+            PotentialProblems::NoPlaceOfResidence => {
+                trans!("problems.no_place_of_residence", *locale)
+            }
+            PotentialProblems::NoCountryOfResidence => {
+                trans!("problems.no_country_of_residence", *locale)
+            }
+            PotentialProblems::NoDateOfBirth => trans!("problems.no_date_of_birth", *locale),
+            PotentialProblems::NoRepresentative => trans!("problems.no_representative", *locale),
+
             // name related
             PotentialProblems::NoInitials(_) => trans!("problems.no_initials", *locale),
             PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
@@ -215,9 +242,22 @@ impl PotentialProblems {
         }
     }
 
+    pub fn person_fix_path(&self, person: &Person) -> String {
+        match self {
+            PotentialProblems::NoStreetName(_)
+            | PotentialProblems::NoHouseNumber(_)
+            | PotentialProblems::NoPostalCode(_)
+            | PotentialProblems::NoLocality(_)
+            | PotentialProblems::NoCountry(_) => person.update_address_path().to_string(),
+            PotentialProblems::NoRepresentative => person.update_representative_path().to_string(),
+            _ => person.update_path().to_string(),
+        }
+    }
+
     pub fn general_fix_path(&self) -> String {
         match self {
             PotentialProblems::NoAuthorisedAgent => AuthorisedAgent::list_path().to_string(),
+            PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
             _ => PoliticalGroup::update_path().to_string(),
         }
@@ -246,6 +286,13 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
+
+            // personal data
+            PotentialProblems::NoBsn => Severity::Warn,
+            PotentialProblems::NoPlaceOfResidence => Severity::Error,
+            PotentialProblems::NoCountryOfResidence => Severity::Error,
+            PotentialProblems::NoDateOfBirth => Severity::Error,
+            PotentialProblems::NoRepresentative => Severity::Warn,
 
             // name related
             PotentialProblems::NoInitials(severity) => *severity,

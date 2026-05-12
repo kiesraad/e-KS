@@ -7,9 +7,14 @@ no_districts: No districts selected
 no_house_number: House number is missing
 no_initials: Initials are missing
 no_last_name: Last name is missing
+no_bsn: BSN is missing
+no_country_of_residence: Country of residence is missing
+no_date_of_birth: Date of birth is missing
 no_legal_name: Statutory name is missing
 no_list_submitter: No list submitter added
 no_locality: Locality is missing
+no_place_of_residence: Place of residence is missing
+no_representative: Authorised person is missing
 no_postal_code: Postal code is missing
 no_previous_election_results: Previous election results are missing
 no_problems: No problems

@@ -42,7 +42,20 @@
       </ul>
     {% endif %}
     <h2 class="mt-md mb-sm">{{ "common.candidates"|trans }}</h2>
-    <p class="mb-xl">TODO</p>
+    {% if problems.candidates.is_empty() %}
+      <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
+    {% else %}
+      <ul class="warnings mb-xl">
+        {% for candidate_pp in &problems.candidates %}
+          {% for problem in &candidate_pp.problems %}
+            <li>
+              <a class="{{ problem.severity_class() }}"
+                 href="{{ problem.person_fix_path(&candidate_pp.person) }}">{{ candidate_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
+            </li>
+          {% endfor %}
+        {% endfor %}
+      </ul>
+    {% endif %}
     <h2 class="mt-md mb-sm">{{ "candidate_list.title_plural"|trans }}</h2>
     {% if problems.lists.is_empty() %}
       <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
