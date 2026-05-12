@@ -16,32 +16,42 @@
   --card-min-width: 25.25rem;
 }
 
+ 
 .cards-candidate-lists {
   --card-gap: var(--space-6);
-  --card-min-width: 19.5rem;
+  --card-min-width: 18.875rem;
   --card-padding: var(--space-6);
+  --card-min-height: 18.875rem;
 }
 
-.card-data {
+.card.card-data {
   --badge-icon: url("../icons/data-badge.svg");
 }
 
-.card-candidate-list {
+.card.card-candidate-list {
   --badge-icon: url("../icons/candidate-list-badge.svg");
 }
 
-.card-locked {
+.card.card-locked {
   --badge-bg: var(--gray-200);
   --badge-icon: url("../icons/locked-badge.svg");
 }
 
-.card-persons {
+.card.card-persons {
   --badge-icon: url("../icons/politician-badge.svg");
+  --card-padding: var(--space-6);
 }
 
-.card-warning {
+.card.card-warning {
   --badge-bg: var(--orange-200);
   --badge-icon: url("../icons/list-warning-badge.svg");
+  --card-padding: var(--space-6);
+}
+
+.card.card-add-list {
+  --card-min-height: 18.875rem;
+  align-items: center;
+  justify-content: center;
 }
 
 .card {

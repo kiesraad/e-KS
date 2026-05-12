@@ -16,23 +16,29 @@
     <div class="cards cards-candidate-lists">
       {% for candidate_list in candidate_lists %}
         <div class="{% if candidate_list.duplicate_districts.is_empty() %}card card-candidate-list{% else %}card card-list-warning{% endif %}">
-          <div class="badge"></div>
-          <h3>{{ "candidate_list.title_single"|trans }}</h3>
-          <p class="statistic">
-            {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
-          </p>
-          <h5>{{ "common.electoral_districts"|trans }}:</h5>
-          {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-            <p>{{ "candidate_list.districts.all"|trans }}</p>
-          {% else %}
-            <ul class="districts">
-              {% for district in candidate_list.list.electoral_districts %}
-                <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
-                  <span>{{ district|district_name }}</span>
-                </li>
-              {% endfor %}
-            </ul>
+         <div class="card-header">
+            <div class="badge"></div>
+            <h3 class="card-title">{{ "candidate_list.title_single"|trans }}</h3>
+         </div>
+         <div class="card-content">
+            <p class="statistic">
+              {{ "candidate_list.candidate_count"|trans(&candidate_list.person_count.to_string() , &max_candidates.to_string())|safe }}
+            </p>
+         </div>
+         <div class="tags">
+            <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
+            {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+               <p>{{ "candidate_list.districts.all"|trans }}</p>
+            {% else %}
+               <ul class="tags-list">
+               {% for district in candidate_list.list.electoral_districts %}
+                  <li class="tag{% if candidate_list.duplicate_districts.contains(district) %} warning{% endif %}">
+                     <span>{{ district|district_name }}</span>
+                  </li>
+               {% endfor %}
+               </ul>
           {% endif %}
+          </div>
           <div class="card-actions">
             {% if incomplete_items.models_downloadable() %}
               <a href="{{ candidate_list.download_h1_path_nl }}"
