@@ -264,6 +264,7 @@ ul.warnings {
       border-color: var(--blue-200);
       background-color: var(--blue-100);
       color: var(--blue-800);
+      margin-bottom: 0;
     }
 
     &.warning {

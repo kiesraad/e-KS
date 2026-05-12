@@ -21,21 +21,21 @@
           {% for problem in &agent_pp.problems %}
             <li>
               <a class="{{ problem.severity_class() }}"
-                 href="{{ agent_pp.person.update_path() }}">{{ agent_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
+                 href="{{ agent_pp.person.update_path() }}">{{ "political_group.authorised_agent"|trans }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
         {% endfor %}
         {% for problem in problems.general.list_submitter %}
           <li>
             <a class="{{ problem.severity_class() }}"
-               href="{{ ListSubmitter::update_path() }}">{{ problem.translate(locale) }}</a>
+               href="{{ ListSubmitter::update_path() }}">{{ "political_group.list_submitter"|trans }}: {{ problem.translate(locale) }}</a>
           </li>
         {% endfor %}
         {% for ss_pp in problems.general.substitute_submitters %}
           {% for problem in &ss_pp.problems %}
             <li>
               <a class="{{ problem.severity_class() }}"
-                 href="{{ ss_pp.person.substitute_update_path() }}">{{ ss_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
+                 href="{{ ss_pp.person.substitute_update_path() }}">{{ "political_group.substitute_submitter"|trans }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
         {% endfor %}
