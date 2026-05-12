@@ -10,4 +10,7 @@ pub use forms::{
     RepresentativeForm,
 };
 pub use pages::{UpdatePersonPath, router};
-pub use structs::{Person, PersonId, PersonPagination, PersonSort, PersonalData, Representative};
+pub use structs::{
+    CANDIDATE_WARN_AGE, Person, PersonId, PersonPagination, PersonSort, PersonalData,
+    Representative,
+};

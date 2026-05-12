@@ -5,7 +5,7 @@ use crate::{
     authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
     list_submitters::ListSubmitter,
-    persons::Person,
+    persons::{CANDIDATE_WARN_AGE, Person},
     political_groups::PoliticalGroup,
     trans,
 };
@@ -161,6 +161,7 @@ pub enum PotentialProblems {
 
     // personal data
     NoBsn,
+    VeryOldDateOfBirth,
     NoPlaceOfResidence,
     NoCountryOfResidence,
     NoDateOfBirth,
@@ -217,6 +218,13 @@ impl PotentialProblems {
 
             // personal data
             PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
+            PotentialProblems::VeryOldDateOfBirth => {
+                trans!(
+                    "problems.very_old_date_of_birth",
+                    *locale,
+                    CANDIDATE_WARN_AGE
+                )
+            }
             PotentialProblems::NoPlaceOfResidence => {
                 trans!("problems.no_place_of_residence", *locale)
             }
@@ -304,6 +312,7 @@ impl PotentialProblems {
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
+            PotentialProblems::VeryOldDateOfBirth => Severity::Warn,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,

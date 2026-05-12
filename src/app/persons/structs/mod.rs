@@ -6,4 +6,4 @@ mod personal_data;
 pub use person::{Person, PersonId, Representative};
 pub use person_pagination::PersonPagination;
 pub use person_sort::PersonSort;
-pub use personal_data::PersonalData;
+pub use personal_data::{CANDIDATE_WARN_AGE, PersonalData};

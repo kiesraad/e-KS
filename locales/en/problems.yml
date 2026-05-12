@@ -22,3 +22,4 @@ no_street_name: street name is missing
 no_substitute_submitter: No substitute submitter added
 representative: authorised person
 too_many_candidates: "Too many candidates ({} added, maximum is {})"
+very_old_date_of_birth: "date of birth appears incorrect (more than {} years ago)"

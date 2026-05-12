@@ -6,6 +6,9 @@ use crate::{
     submit::{PotentialProblems, Problematic},
 };
 
+/// The age at which we will start warning that the date of birth might be incorrect
+pub const CANDIDATE_WARN_AGE: u32 = 110;
+
 #[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]
 pub struct PersonalData {
     pub gender: Option<Gender>,
@@ -33,8 +36,17 @@ impl Problematic for PersonalData {
             items.push(PotentialProblems::NoCountryOfResidence);
         }
 
-        if self.date_of_birth.is_none() {
-            items.push(PotentialProblems::NoDateOfBirth);
+        match &self.date_of_birth {
+            None => items.push(PotentialProblems::NoDateOfBirth),
+            Some(dob) => {
+                if chrono::Utc::now()
+                    .date_naive()
+                    .years_since(**dob)
+                    .is_some_and(|y| y >= CANDIDATE_WARN_AGE)
+                {
+                    items.push(PotentialProblems::VeryOldDateOfBirth);
+                }
+            }
         }
 
         items
