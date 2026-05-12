@@ -158,7 +158,10 @@ mod tests {
     fn incomplete_submitter(is_substitute: bool) -> ListSubmitter {
         ListSubmitter {
             id: ListSubmitterId::new(),
-            name: FullName::default(),
+            name: FullName {
+                last_name_prefix: Some("van".parse().unwrap()),
+                ..Default::default()
+            },
             address: Address::Dutch(crate::common::DutchAddress::default()),
             is_substitute,
         }
