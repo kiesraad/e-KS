@@ -20,7 +20,7 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-use super::{Store, StoreData, StoreEvent, encryption::EventCipher};
+use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
 use crate::{AppError, ElectionConfig};
 
 const FRAME_HEADER_LEN: usize = 4;
@@ -30,6 +30,8 @@ enum Frame {
     V1 {
         event_id: u64,
         created_at_micros: i64,
+        /// Chain hash; see [`super::chain_hash`] and [`StoreEvent::hash`].
+        hash: [u8; 32],
         encrypted_payload: Vec<u8>,
     },
 }
@@ -51,23 +53,29 @@ where
 {
     let last_id = replay_from_file(store, dir).await?;
     let next_id = last_id + 1;
+    let created_at = Utc::now();
+    let prev_hash = store.data.read().last_event_hash();
 
-    let store_event = StoreEvent {
-        event_id: next_id,
-        payload: event,
-        created_at: Utc::now(),
-    };
-
-    append_once(
-        dir,
-        store.stream_id,
-        store.election,
+    let path = stream_path(dir, store.stream_id, store.election);
+    let hash = append_event(
+        &path,
         &store.cipher,
-        &store_event,
+        next_id,
+        created_at,
+        &event,
+        &prev_hash,
     )
     .await?;
 
-    store.apply_event(next_id, store_event);
+    store.apply_event(
+        next_id,
+        StoreEvent {
+            event_id: next_id,
+            payload: event,
+            created_at,
+            hash,
+        },
+    );
 
     Ok(())
 }
@@ -104,6 +112,7 @@ where
         let Frame::V1 {
             event_id,
             created_at_micros,
+            hash,
             encrypted_payload,
         } = postcard::from_bytes::<Frame>(&body)
             .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
@@ -112,21 +121,38 @@ where
         let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
 
         last_file_id = last_file_id.max(event_id);
-        events.push((event_id, created_at, encrypted_payload));
+        events.push((event_id, created_at, hash, encrypted_payload));
     }
 
     let mut data = store.data.write();
+    let mut prev_hash = data.last_event_hash();
 
-    for (event_id, created_at, encrypted_payload) in events {
+    for (event_id, created_at, hash, encrypted_payload) in events {
         if data.last_event_id() >= event_id {
             continue;
         }
 
-        let payload = store.cipher.decrypt_owned::<D::Event>(encrypted_payload)?;
+        // Verify the chain over the stored blob before touching the plaintext.
+        // Gated behind a feature flag: it costs a SHA-256 over every loaded
+        // event. (Reordering, removal, and in-place edits are still caught by
+        // the AES-GCM tag, since `prev_hash` is part of the associated data.)
+        #[cfg(feature = "verify-event-hash-chain")]
+        if chain_hash(&prev_hash, event_id, created_at, &encrypted_payload) != hash {
+            return Err(AppError::EventDecodeError(format!(
+                "hash chain broken at event {event_id}"
+            )));
+        }
+
+        let aad = event_aad(event_id, created_at, &prev_hash);
+        let payload = store
+            .cipher
+            .decrypt_owned::<D::Event>(encrypted_payload, &aad)?;
+        prev_hash = hash;
         data.apply(StoreEvent {
             event_id,
             payload,
             created_at,
+            hash,
         });
     }
 
@@ -225,25 +251,25 @@ pub async fn ensure_stream_file(
     Ok(())
 }
 
-async fn append_once<E: Serialize>(
-    dir: &Path,
-    stream_id: uuid::Uuid,
-    election: ElectionConfig,
+/// Encrypt `payload`, append a frame for it to the stream file, and return the
+/// event's chain hash (computed over the encrypted blob).
+async fn append_event<E: Serialize>(
+    path: &Path,
     cipher: &EventCipher,
-    event: &StoreEvent<E>,
-) -> Result<(), AppError> {
-    let path = stream_path(dir, stream_id, election);
-    let mut file = OpenOptions::new()
-        .create(true)
-        .append(true)
-        .open(&path)
-        .await
-        .map_err(AppError::ServerError)?;
+    event_id: usize,
+    created_at: DateTime<Utc>,
+    payload: &E,
+    prev_hash: &[u8; 32],
+) -> Result<[u8; 32], AppError> {
+    let aad = event_aad(event_id, created_at, prev_hash);
+    let encrypted_payload = cipher.encrypt(payload, &aad)?;
+    let hash = chain_hash(prev_hash, event_id, created_at, &encrypted_payload);
 
     let frame = Frame::V1 {
-        event_id: event.event_id as u64,
-        created_at_micros: event.created_at.timestamp_micros(),
-        encrypted_payload: cipher.encrypt(&event.payload)?,
+        event_id: event_id as u64,
+        created_at_micros: created_at.timestamp_micros(),
+        hash,
+        encrypted_payload,
     };
 
     let body = postcard::to_allocvec(&frame).map_err(|e| {
@@ -261,6 +287,13 @@ async fn append_once<E: Serialize>(
     buf.extend_from_slice(&body_len.to_le_bytes());
     buf.extend_from_slice(&body);
 
+    let mut file = OpenOptions::new()
+        .create(true)
+        .append(true)
+        .open(path)
+        .await
+        .map_err(AppError::ServerError)?;
+
     let written = file.write(&buf).await.map_err(AppError::ServerError)?;
     if written != buf.len() {
         return Err(AppError::ServerError(std::io::Error::new(
@@ -271,7 +304,7 @@ async fn append_once<E: Serialize>(
 
     file.sync_data().await.map_err(AppError::ServerError)?;
 
-    Ok(())
+    Ok(hash)
 }
 
 fn stream_path(dir: &Path, stream_id: uuid::Uuid, election: ElectionConfig) -> PathBuf {
@@ -284,7 +317,7 @@ fn stream_path(dir: &Path, stream_id: uuid::Uuid, election: ElectionConfig) -> P
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::store::encryption::EventEncryption;
+    use crate::store::{GENESIS_HASH, encryption::EventEncryption};
     use parking_lot::RwLock;
     use secrecy::SecretString;
     use serde::{Deserialize, Serialize};
@@ -299,6 +332,7 @@ mod tests {
     struct TestData {
         events: Vec<(usize, TestEvent)>,
         last_event_id: usize,
+        last_event_hash: [u8; 32],
     }
 
     impl StoreData for TestData {
@@ -306,11 +340,16 @@ mod tests {
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
+            self.last_event_hash = event.hash;
             self.events.push((event.event_id, event.payload));
         }
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
+        }
+
+        fn last_event_hash(&self) -> [u8; 32] {
+            self.last_event_hash
         }
     }
 
@@ -379,6 +418,7 @@ mod tests {
 
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 2);
+        assert_ne!(data.last_event_hash(), GENESIS_HASH);
         assert_eq!(
             data.events,
             vec![
@@ -396,6 +436,105 @@ mod tests {
                 ),
             ]
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn tampering_with_a_stored_event_breaks_the_chain() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        let store = test_store(stream_id);
+        update_in_filesystem(
+            &store,
+            &dir,
+            TestEvent {
+                label: "one".to_string(),
+            },
+        )
+        .await?;
+        update_in_filesystem(
+            &store,
+            &dir,
+            TestEvent {
+                label: "two".to_string(),
+            },
+        )
+        .await?;
+
+        // Flip the last byte of the first frame (the GCM tag of event 1).
+        let path = stream_path(&dir, stream_id, TEST_ELECTION);
+        let mut bytes = fs::read(&path).await.map_err(AppError::ServerError)?;
+        let frame1_len = u32::from_le_bytes(bytes[..FRAME_HEADER_LEN].try_into().unwrap()) as usize;
+        let last_byte = FRAME_HEADER_LEN + frame1_len - 1;
+        bytes[last_byte] ^= 0x01;
+        fs::write(&path, &bytes)
+            .await
+            .map_err(AppError::ServerError)?;
+
+        let fresh = test_store(stream_id);
+        let err = replay_from_file(&fresh, &dir)
+            .await
+            .expect_err("tampering must be detected");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+        assert!(fresh.data.read().events.is_empty());
+
+        Ok(())
+    }
+
+    #[cfg(feature = "verify-event-hash-chain")]
+    #[tokio::test]
+    async fn rewriting_an_event_hash_is_detected() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        let store = test_store(stream_id);
+        update_in_filesystem(
+            &store,
+            &dir,
+            TestEvent {
+                label: "one".to_string(),
+            },
+        )
+        .await?;
+
+        // Rewrite the stored chain hash. AES-GCM does not cover it, so only the
+        // chain check can catch this; re-encode the frame so it stays well-formed.
+        let path = stream_path(&dir, stream_id, TEST_ELECTION);
+        let bytes = fs::read(&path).await.map_err(AppError::ServerError)?;
+        let body_len = u32::from_le_bytes(bytes[..FRAME_HEADER_LEN].try_into().unwrap()) as usize;
+        let Frame::V1 {
+            event_id,
+            created_at_micros,
+            mut hash,
+            encrypted_payload,
+        } = postcard::from_bytes::<Frame>(&bytes[FRAME_HEADER_LEN..FRAME_HEADER_LEN + body_len])
+            .expect("decode frame");
+        hash[0] ^= 0x01;
+        let new_body = postcard::to_allocvec(&Frame::V1 {
+            event_id,
+            created_at_micros,
+            hash,
+            encrypted_payload,
+        })
+        .expect("encode frame");
+        let mut new_bytes = Vec::new();
+        new_bytes.extend_from_slice(&(new_body.len() as u32).to_le_bytes());
+        new_bytes.extend_from_slice(&new_body);
+        new_bytes.extend_from_slice(&bytes[FRAME_HEADER_LEN + body_len..]);
+        fs::write(&path, &new_bytes)
+            .await
+            .map_err(AppError::ServerError)?;
+
+        let fresh = test_store(stream_id);
+        let err = replay_from_file(&fresh, &dir)
+            .await
+            .expect_err("rewritten hash must be detected");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+        assert!(fresh.data.read().events.is_empty());
 
         Ok(())
     }
@@ -421,14 +560,18 @@ mod tests {
         init_local(&dir).await?;
 
         let store = test_store(uuid::Uuid::new_v4());
-        let first = StoreEvent::new_at(
+        let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
+        append_event(
+            &path,
+            &store.cipher,
             5,
-            TestEvent {
+            Utc::now(),
+            &TestEvent {
                 label: "existing".to_string(),
             },
-            Utc::now(),
-        );
-        append_once(&dir, store.stream_id, TEST_ELECTION, &store.cipher, &first).await?;
+            &GENESIS_HASH,
+        )
+        .await?;
         update_in_filesystem(
             &store,
             &dir,
