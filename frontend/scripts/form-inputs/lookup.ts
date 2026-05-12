@@ -23,8 +23,33 @@ export default function addressLookup() {
     return;
   }
 
+  // `warning` is only meaningful on the lookup-driving inputs; locality and
+  // street are user-editable when no match is found, so they never get warned.
+  const allInputs = [
+    postalCodeInput,
+    houseNumberInput,
+    localityInput,
+    streetNameInput,
+  ];
+  const lookupInputs = [postalCodeInput, houseNumberInput];
+
+  const setHighlight = (
+    inputs: HTMLInputElement[],
+    className: string,
+    on: boolean,
+  ) => {
+    for (const input of inputs) {
+      input.closest(".form-field")?.classList.toggle(className, on);
+    }
+  };
+
+  function resetHighlights() {
+    setHighlight(allInputs, "success", false);
+    setHighlight(allInputs, "warning", false);
+  }
+
   const lookup = async () => {
-    resetSuccessHighlight();
+    resetHighlights();
 
     postalCodeInput.value = postalCodeInput.value
       .replaceAll(/\s/g, "")
@@ -36,7 +61,7 @@ export default function addressLookup() {
     }
 
     // fetch address data from backend
-    const url = `/lookup?pc=${postalCodeInput.value}&n=${houseNumberInput.value}`;
+    const url = `/lookup?pc=${encodeURIComponent(postalCodeInput.value)}&n=${encodeURIComponent(houseNumberInput.value)}`;
     const response = await fetch(url, {
       method: "GET",
       headers: {
@@ -44,31 +69,22 @@ export default function addressLookup() {
       },
     });
 
-    if (response.ok) {
-      const data = await response.json();
-      // fill in locality and street name if data is available
-      if (data.wp && data.pr) {
-        localityInput.value = data.wp;
-        streetNameInput.value = data.pr;
+    const data = response.ok ? await response.json() : null;
+    if (data?.wp && data?.pr) {
+      localityInput.value = data.wp;
+      streetNameInput.value = data.pr;
 
-        // highlight the address fields to indicate they were auto-filled
-        postalCodeInput.closest(".form-field")?.classList.add("success");
-        houseNumberInput.closest(".form-field")?.classList.add("success");
-        localityInput.closest(".form-field")?.classList.add("success");
-        streetNameInput.closest(".form-field")?.classList.add("success");
-      }
+      // highlight the address fields to indicate they were auto-filled
+      setHighlight(allInputs, "success", true);
+    } else {
+      // No usable match — flag the inputs that drive the lookup so the user
+      // knows the combination is unrecognised.
+      setHighlight(lookupInputs, "warning", true);
     }
   };
 
-  function resetSuccessHighlight() {
-    postalCodeInput?.closest(".form-field")?.classList.remove("success");
-    houseNumberInput?.closest(".form-field")?.classList.remove("success");
-    localityInput?.closest(".form-field")?.classList.remove("success");
-    streetNameInput?.closest(".form-field")?.classList.remove("success");
-  }
-
   postalCodeInput.addEventListener("change", lookup);
   houseNumberInput.addEventListener("change", lookup);
-  localityInput.addEventListener("change", resetSuccessHighlight);
-  streetNameInput.addEventListener("change", resetSuccessHighlight);
+  localityInput.addEventListener("change", resetHighlights);
+  streetNameInput.addEventListener("change", resetHighlights);
 }

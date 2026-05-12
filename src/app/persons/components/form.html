@@ -6,9 +6,13 @@
            placeholder=" "
            name="place_of_residence"
            id="locality"
-           value="{{ form.data.personal_data.place_of_residence }}"
-           list="locality-suggestions" />
-    <datalist id="locality-suggestions"></datalist>
+           autocomplete="off"
+           value="{{ form.data.personal_data.place_of_residence }}" />
+    <span id="locality-suggestion"
+          class="suggestion with-municipalities hidden">
+      {{ "person.fields.locality_suggestion"|trans }}
+      <button type="button" id="locality-suggestion-name"></button>
+    </span>
     {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
   <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">

@@ -2,6 +2,7 @@
 mod bsn;
 pub mod eks_key;
 pub mod health;
+pub mod locality_aliases;
 pub mod no_cache_headers;
 mod option_string_ext;
 mod query_param_state;

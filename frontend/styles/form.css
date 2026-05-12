@@ -69,7 +69,7 @@
     }
 
     &.warning {
-      input:placeholder-shown:not(.date-separate input),
+      input:not(.date-separate input),
       .date-separate {
         border-color: var(--color-warning-darker);
         background-image: url("../icons/warning.svg");
@@ -89,13 +89,6 @@
         background-position: right 1em center;
         background-size: 1.5em;
         padding-right: 3em;
-      }
-    }
-
-    &.success {
-      input {
-        border-color: var(--green-300);
-        background-color: var(--green-50);
       }
     }
 
@@ -180,6 +173,29 @@
     font-size: var(--font-size-sm);
     color: var(--color-help-text);
     font-weight: normal;
+  }
+
+  span.suggestion {
+    font-size: var(--font-size-sm);
+    color: var(--color-help-text);
+
+    button {
+      background: none;
+      border: none;
+      padding: 0;
+      font: inherit;
+      color: var(--link-default);
+      text-decoration: underline;
+      cursor: pointer;
+
+      &:hover {
+        color: var(--link-hover);
+      }
+
+      &:active {
+        color: var(--link-active);
+      }
+    }
   }
 
   details.hint {
