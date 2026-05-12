@@ -1,4 +1,12 @@
 duplicate_districts: "Duplicate districts: {}"
+few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"
+few_candidates_with_first_name_one: "Just 1 out of {} candidates has a first name specified"
+few_candidates_with_gender: "Just {} out of {} candidates have a gender specified"
+few_candidates_with_gender_one: "Just 1 out of {} candidates has a gender specified"
+few_candidates_without_first_name: "Just {} out of {} candidates don't have a first name specified"
+few_candidates_without_first_name_one: "Just 1 out of {} candidates doesn't have a first name specified"
+few_candidates_without_gender: "Just {} out of {} candidates don't have a gender specified"
+few_candidates_without_gender_one: "Just 1 out of {} candidates doesn't have a gender specified"
 no_authorised_agent: No authorised agent added
 no_bsn: BSN is missing
 no_candidates: No candidates added

@@ -1,4 +1,12 @@
 duplicate_districts: "Dubbele kieskringen: {}"
+few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
+few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
+few_candidates_with_gender: "Maar {} van de {} kandidaten hebben een geslacht ingevuld"
+few_candidates_with_gender_one: "Maar 1 van de {} kandidaten heeft een geslacht ingevuld"
+few_candidates_without_first_name: "Maar {} van de {} kandidaten hebben geen voornaam"
+few_candidates_without_first_name_one: "Maar 1 van de {} kandidaten heeft geen voornaam"
+few_candidates_without_gender: "Maar {} van de {} kandidaten hebben geen geslacht ingevuld"
+few_candidates_without_gender_one: "Maar 1 van de {} kandidaten heeft geen geslacht ingevuld"
 no_authorised_agent: Geen gemachtigde toegevoegd
 no_bsn: BSN ontbreekt
 no_candidates: Geen kandidaten toegevoegd

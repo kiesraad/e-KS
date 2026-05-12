@@ -3,7 +3,7 @@ use std::collections::BTreeMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppStore, ElectoralDistrict,
+    AppStore, ElectoralDistrict, OptionAsStrExt,
     candidate_lists::CandidateList,
     submit::{PotentialProblems, Problematic},
 };
@@ -18,6 +18,7 @@ pub struct CandidateListSummary {
 impl Problematic for CandidateListSummary {
     fn get_problems(&self) -> Vec<PotentialProblems> {
         let mut items = vec![];
+
         if self.candidate_count() == 0 {
             items.push(PotentialProblems::NoCandidates);
         } else if self.candidate_count() > self.max_count {
@@ -26,14 +27,17 @@ impl Problematic for CandidateListSummary {
                 max: self.max_count,
             });
         }
+
         if !self.duplicate_districts.is_empty() {
             items.push(PotentialProblems::DuplicateDistricts {
                 duplicates: self.duplicate_districts.clone(),
             });
         }
+
         if self.list.electoral_districts.is_empty() {
             items.push(PotentialProblems::NoDistricts)
         }
+
         items
     }
 }
@@ -72,6 +76,67 @@ impl CandidateListSummary {
             .collect()
     }
 
+    pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let mut with_first_name = 0;
+        let mut with_gender = 0;
+        for candidate in &self.list.candidates {
+            let Ok(person) = store.get_person(*candidate) else {
+                continue;
+            };
+
+            if !person.name.first_name.is_empty_or_none() {
+                with_first_name += 1;
+            }
+
+            if person.personal_data.gender.is_some() {
+                with_gender += 1;
+            }
+        }
+
+        let total_candidates = self.candidate_count();
+
+        let mut items = Vec::new();
+
+        if total_candidates > 0 {
+            const MAX_DEVIATION: usize = 20;
+            let without_first_name = total_candidates - with_first_name;
+            let deviating_first_name = with_first_name.min(without_first_name);
+            if deviating_first_name > 0
+                && deviating_first_name * 100 / total_candidates <= MAX_DEVIATION
+            {
+                if with_first_name < without_first_name {
+                    items.push(PotentialProblems::FewCandidatesWithFirstName {
+                        count: with_first_name,
+                        total: total_candidates,
+                    });
+                } else {
+                    items.push(PotentialProblems::FewCandidatesWithoutFirstName {
+                        count: without_first_name,
+                        total: total_candidates,
+                    });
+                }
+            }
+
+            let without_gender = total_candidates - with_gender;
+            let deviating_gender = with_gender.min(without_gender);
+            if deviating_gender > 0 && deviating_gender * 100 / total_candidates <= MAX_DEVIATION {
+                if with_gender < without_gender {
+                    items.push(PotentialProblems::FewCandidatesWithGender {
+                        count: with_gender,
+                        total: total_candidates,
+                    });
+                } else {
+                    items.push(PotentialProblems::FewCandidatesWithoutGender {
+                        count: without_gender,
+                        total: total_candidates,
+                    });
+                }
+            }
+        }
+
+        items
+    }
+
     pub fn candidate_count(&self) -> usize {
         self.list.candidates.len()
     }
@@ -80,10 +145,139 @@ impl CandidateListSummary {
 #[cfg(test)]
 mod tests {
     use crate::{
-        candidate_lists::CandidateListId, persons::PersonId, test_utils::sample_candidate_list,
+        AppError, AppStore,
+        candidate_lists::CandidateListId,
+        persons::PersonId,
+        test_utils::{sample_candidate_list, sample_person, sample_person_with},
     };
 
     use super::*;
+
+    async fn make_store_with_candidates(
+        persons: Vec<crate::persons::Person>,
+    ) -> Result<(AppStore, Vec<PersonId>), AppError> {
+        let store = AppStore::new_for_test();
+        let ids = persons.iter().map(|p| p.id).collect();
+        for person in persons {
+            person.create(&store).await?;
+        }
+        Ok((store, ids))
+    }
+
+    fn summary_with_candidates(ids: Vec<PersonId>) -> CandidateListSummary {
+        let mut list = sample_candidate_list(CandidateListId::new());
+        list.candidates = ids;
+        CandidateListSummary {
+            list,
+            max_count: 200,
+            duplicate_districts: vec![],
+        }
+    }
+
+    #[tokio::test]
+    async fn no_deviation_in_first_name_usage_produces_no_warning() -> Result<(), AppError> {
+        let persons = (0..5).map(|_| sample_person(PersonId::new())).collect();
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(!problems.iter().any(|p| matches!(
+            p,
+            PotentialProblems::FewCandidatesWithFirstName { .. }
+                | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+        )));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn small_minority_with_first_name_produces_warning() -> Result<(), AppError> {
+        let mut persons: Vec<_> = (0..9)
+            .map(|_| sample_person_with(PersonId::new(), None, "Jansen", None, "H."))
+            .collect();
+        persons.push(sample_person(PersonId::new())); // 1 with first name
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(
+            problems.contains(&PotentialProblems::FewCandidatesWithFirstName {
+                count: 1,
+                total: 10
+            })
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn small_minority_without_first_name_produces_warning() -> Result<(), AppError> {
+        let mut persons: Vec<_> = (0..9).map(|_| sample_person(PersonId::new())).collect();
+        persons.push(sample_person_with(
+            PersonId::new(),
+            None,
+            "Jansen",
+            None,
+            "H.",
+        )); // 1 without
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(
+            problems.contains(&PotentialProblems::FewCandidatesWithoutFirstName {
+                count: 1,
+                total: 10
+            })
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn large_minority_in_first_name_usage_produces_no_warning() -> Result<(), AppError> {
+        let mut persons: Vec<_> = (0..7)
+            .map(|_| sample_person_with(PersonId::new(), None, "Jansen", None, "H."))
+            .collect();
+        persons.extend((0..3).map(|_| sample_person(PersonId::new()))); // 3/10 = 30%
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(!problems.iter().any(|p| matches!(
+            p,
+            PotentialProblems::FewCandidatesWithFirstName { .. }
+                | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+        )));
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn small_minority_with_gender_produces_warning() -> Result<(), AppError> {
+        let mut persons: Vec<_> = (0..9)
+            .map(|_| {
+                let mut p = sample_person(PersonId::new());
+                p.personal_data.gender = None;
+                p
+            })
+            .collect();
+        persons.push(sample_person(PersonId::new())); // 1 with gender
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(
+            problems.contains(&PotentialProblems::FewCandidatesWithGender {
+                count: 1,
+                total: 10
+            })
+        );
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn small_minority_without_gender_produces_warning() -> Result<(), AppError> {
+        let mut persons: Vec<_> = (0..9).map(|_| sample_person(PersonId::new())).collect();
+        let mut person_without_gender = sample_person(PersonId::new());
+        person_without_gender.personal_data.gender = None;
+        persons.push(person_without_gender);
+        let (store, ids) = make_store_with_candidates(persons).await?;
+        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        assert!(
+            problems.contains(&PotentialProblems::FewCandidatesWithoutGender {
+                count: 1,
+                total: 10
+            })
+        );
+        Ok(())
+    }
 
     #[test]
     fn no_incomplete_items() {

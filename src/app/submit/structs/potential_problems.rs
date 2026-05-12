@@ -40,7 +40,8 @@ impl Problems {
             lists: candidate_lists
                 .iter()
                 .filter_map(|candidate_list| {
-                    let problems = candidate_list.get_problems();
+                    let mut problems = candidate_list.get_problems();
+                    problems.extend(candidate_list.get_deviation_problems(store));
                     (!problems.is_empty()).then(|| ListProblems {
                         list: candidate_list.list.clone(),
                         problems,
@@ -147,6 +148,10 @@ pub enum PotentialProblems {
     TooManyCandidates { actual: usize, max: usize },
     DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
     NoDistricts,
+    FewCandidatesWithFirstName { count: usize, total: usize },
+    FewCandidatesWithoutFirstName { count: usize, total: usize },
+    FewCandidatesWithGender { count: usize, total: usize },
+    FewCandidatesWithoutGender { count: usize, total: usize },
 
     // political group
     NoLegalName,
@@ -196,6 +201,57 @@ impl PotentialProblems {
                 trans!("problems.duplicate_districts", *locale, districts)
             }
             PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
+            PotentialProblems::FewCandidatesWithFirstName { count, total } => {
+                if *count == 1 {
+                    trans!(
+                        "problems.few_candidates_with_first_name_one",
+                        *locale,
+                        total
+                    )
+                } else {
+                    trans!(
+                        "problems.few_candidates_with_first_name",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
+            PotentialProblems::FewCandidatesWithoutFirstName { count, total } => {
+                if *count == 1 {
+                    trans!(
+                        "problems.few_candidates_without_first_name_one",
+                        *locale,
+                        total
+                    )
+                } else {
+                    trans!(
+                        "problems.few_candidates_without_first_name",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
+            PotentialProblems::FewCandidatesWithGender { count, total } => {
+                if *count == 1 {
+                    trans!("problems.few_candidates_with_gender_one", *locale, total)
+                } else {
+                    trans!("problems.few_candidates_with_gender", *locale, count, total)
+                }
+            }
+            PotentialProblems::FewCandidatesWithoutGender { count, total } => {
+                if *count == 1 {
+                    trans!("problems.few_candidates_without_gender_one", *locale, total)
+                } else {
+                    trans!(
+                        "problems.few_candidates_without_gender",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
 
             // political group
             PotentialProblems::NoLegalName => trans!("problems.no_legal_name", *locale),
@@ -256,6 +312,10 @@ impl PotentialProblems {
                     .with_query_params(QueryParamState::highlight_last(overflow))
                     .to_string()
             }
+            PotentialProblems::FewCandidatesWithFirstName { .. }
+            | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+            | PotentialProblems::FewCandidatesWithGender { .. }
+            | PotentialProblems::FewCandidatesWithoutGender { .. } => list.view_path().to_string(),
             _ => list.update_path().to_string(),
         }
     }
@@ -298,6 +358,10 @@ impl PotentialProblems {
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
             PotentialProblems::DuplicateDistricts { .. } => Severity::Error,
             PotentialProblems::NoDistricts => Severity::Error,
+            PotentialProblems::FewCandidatesWithFirstName { .. } => Severity::Info,
+            PotentialProblems::FewCandidatesWithoutFirstName { .. } => Severity::Info,
+            PotentialProblems::FewCandidatesWithGender { .. } => Severity::Info,
+            PotentialProblems::FewCandidatesWithoutGender { .. } => Severity::Info,
 
             // political group
             PotentialProblems::NoLegalName => Severity::Warn,
