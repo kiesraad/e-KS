@@ -156,6 +156,9 @@ pub enum PotentialProblems {
     NoListSubmitter,
     NoSubstituteSubmitter,
 
+    // representative wrapper
+    RepresentativeProblem(Box<PotentialProblems>),
+
     // personal data
     NoBsn,
     NoPlaceOfResidence,
@@ -205,6 +208,13 @@ impl PotentialProblems {
                 trans!("problems.no_substitute_submitter", *locale)
             }
 
+            // representative wrapper
+            PotentialProblems::RepresentativeProblem(inner) => {
+                let label = trans!("problems.representative", *locale);
+                let problem = inner.translate(locale);
+                format!("{label}: {problem}")
+            }
+
             // personal data
             PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
             PotentialProblems::NoPlaceOfResidence => {
@@ -249,7 +259,9 @@ impl PotentialProblems {
             | PotentialProblems::NoPostalCode(_)
             | PotentialProblems::NoLocality(_)
             | PotentialProblems::NoCountry(_) => person.update_address_path().to_string(),
-            PotentialProblems::NoRepresentative => person.update_representative_path().to_string(),
+            PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
+                person.update_representative_path().to_string()
+            }
             _ => person.update_path().to_string(),
         }
     }
@@ -286,6 +298,9 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
+
+            // representative wrapper
+            PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,

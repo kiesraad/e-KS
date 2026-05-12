@@ -61,6 +61,7 @@ impl Problematic for Representative {
         ]
         .into_iter()
         .flatten()
+        .map(|p| PotentialProblems::RepresentativeProblem(Box::new(p)))
         .collect()
     }
 }
