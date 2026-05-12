@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppStore, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
-    submit::Completable,
+    submit::Problematic,
 };
 
 #[derive(Clone, Debug)]
@@ -22,7 +22,7 @@ impl PoliticalGroupSteps {
         let substitute_submitters = store.get_substitute_submitters();
 
         Ok(Self {
-            basic_state: if political_group.is_complete() {
+            basic_state: if political_group.is_all_good() {
                 "ok"
             } else if political_group.is_basic_info_empty() {
                 "empty"
@@ -38,8 +38,8 @@ impl PoliticalGroupSteps {
             } else {
                 "warning"
             },
-            submitters_state: if list_submitter.is_complete()
-                && substitute_submitters.iter().all(ListSubmitter::is_complete)
+            submitters_state: if list_submitter.is_all_good()
+                && substitute_submitters.iter().all(ListSubmitter::is_all_good)
             {
                 "ok"
             } else if list_submitter.is_empty() && political_group.is_basic_info_empty() {

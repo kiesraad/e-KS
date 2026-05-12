@@ -55,7 +55,14 @@ impl AppStore {
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        data.substitute_submitters.clone()
+        data.substitute_submitters
+            .iter()
+            .cloned()
+            .map(|mut submitter| {
+                submitter.is_substitute = true;
+                submitter
+            })
+            .collect()
     }
 
     pub fn get_person_count(&self) -> usize {
@@ -103,7 +110,9 @@ impl AppStore {
     pub fn get_list_submitter(&self) -> ListSubmitter {
         let data = self.data.read();
 
-        data.list_submitter.clone()
+        let mut submitter = data.list_submitter.clone();
+        submitter.is_substitute = false;
+        submitter
     }
 
     pub fn get_substitute_submitter(
@@ -117,7 +126,11 @@ impl AppStore {
             .iter()
             .find(|submitter| submitter.id == substitute_submitter_id)
         {
-            Some(submitter) => Ok(submitter.clone()),
+            Some(submitter) => {
+                let mut submitter = submitter.clone();
+                submitter.is_substitute = true;
+                Ok(submitter)
+            }
             None => Err(AppError::GenericNotFound),
         }
     }
@@ -154,5 +167,28 @@ mod tests {
         for (i, s) in store.get_substitute_submitters().iter().enumerate() {
             assert_eq!(s.name.last_name.to_string(), i.to_string());
         }
+    }
+
+    #[tokio::test]
+    async fn getters_set_substitute_flag() {
+        let store = AppStore::new_for_test();
+
+        let main_submitter = sample_list_submitter(ListSubmitterId::new());
+        let substitute_submitter = sample_list_submitter(ListSubmitterId::new());
+
+        main_submitter.update(&store).await.unwrap();
+        substitute_submitter
+            .create_substitute(&store)
+            .await
+            .unwrap();
+
+        assert!(!store.get_list_submitter().is_substitute);
+        assert!(store.get_substitute_submitters()[0].is_substitute);
+        assert!(
+            store
+                .get_substitute_submitter(substitute_submitter.id)
+                .unwrap()
+                .is_substitute
+        );
     }
 }

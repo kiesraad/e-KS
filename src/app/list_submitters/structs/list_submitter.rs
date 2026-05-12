@@ -2,6 +2,7 @@ use crate::{
     AppError, AppEvent, AppStore,
     common::{Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode},
     id_newtype,
+    submit::{PotentialProblems, Problematic, Severity},
 };
 use serde::{Deserialize, Serialize};
 
@@ -69,13 +70,33 @@ pub struct ListSubmitter {
     pub id: ListSubmitterId,
     pub name: FullName,
     pub address: Address,
+    #[serde(skip)]
+    pub is_substitute: bool,
+}
+
+impl Problematic for ListSubmitter {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        let severity = if self.is_substitute {
+            Severity::Info
+        } else {
+            Severity::Error
+        };
+
+        if self.is_empty() && !self.is_substitute {
+            return vec![]; // error gets returned in general problems
+        }
+
+        [
+            self.name.potential_problems(severity),
+            self.address.potential_problems(severity),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
+    }
 }
 
 impl ListSubmitter {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete() && self.address.is_complete()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.name.is_empty() && self.address.is_empty()
     }
@@ -128,4 +149,53 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
             .transpose()
             .ok()?,
     })
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn incomplete_submitter(is_substitute: bool) -> ListSubmitter {
+        ListSubmitter {
+            id: ListSubmitterId::new(),
+            name: FullName {
+                last_name_prefix: Some("van".parse().unwrap()),
+                ..Default::default()
+            },
+            address: Address::Dutch(crate::common::DutchAddress::default()),
+            is_substitute,
+        }
+    }
+
+    #[test]
+    fn main_submitter_problems_use_error_severity() {
+        let submitter = incomplete_submitter(false);
+
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoLastName(Severity::Error))
+        );
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoStreetName(Severity::Error))
+        );
+    }
+
+    #[test]
+    fn substitute_submitter_problems_use_info_severity() {
+        let submitter = incomplete_submitter(true);
+
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoLastName(Severity::Info))
+        );
+        assert!(
+            submitter
+                .get_problems()
+                .contains(&PotentialProblems::NoStreetName(Severity::Info))
+        );
+    }
 }

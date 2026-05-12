@@ -86,7 +86,7 @@
     margin-top: auto;
   }
 
-  *:last-child {
+  > :last-child {
     margin-top: auto;
     margin-bottom: 0;
   }
@@ -235,9 +235,55 @@ ul.districts {
       border-color: var(--orange-200);
       color: var(--orange-800);
       padding-left: 2rem;
-      background: url("../icons/warning.svg") no-repeat left var(--space-sm)
-        bottom var(--space-sm);
-      background-size: 1.1rem;
+      background:
+        url("../icons/warning.svg") no-repeat left var(--space-sm) center /
+        1.1rem;
+    }
+  }
+}
+
+ul.warnings {
+  margin: 0;
+  font-size: var(--font-size-sm);
+  padding: 0;
+  list-style: none;
+
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+
+  li a {
+    display: inline-block;
+    color: inherit;
+    text-decoration: none;
+    border: 1px solid var(--gray-200);
+    padding: var(--space-xs) var(--space-sm);
+    border-radius: var(--space-xs);
+
+    &.info {
+      border-color: var(--blue-200);
+      background-color: var(--blue-100);
+      color: var(--blue-800);
+      margin-bottom: 0;
+    }
+
+    &.warning {
+      border-color: var(--orange-200);
+      color: var(--orange-800);
+      padding-left: 2rem;
+      background:
+        url("../icons/warning.svg") no-repeat left var(--space-sm) center /
+        1.2rem,
+        var(--orange-100);
+    }
+
+    &.error {
+      border-color: var(--red-200);
+      color: var(--red-800);
+      padding-left: 2rem;
+      background:
+        url("../icons/error.svg") no-repeat left var(--space-sm) center / 1.2rem,
+        var(--red-100);
     }
   }
 }

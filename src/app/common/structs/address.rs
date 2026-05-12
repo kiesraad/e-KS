@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::OptionAsStrExt;
+use crate::{
+    OptionAsStrExt,
+    submit::{PotentialProblems, Severity},
+};
 
 use super::{
     CountryCode, HouseNumber, HouseNumberAddition, InternationalPostalCode, Locality, PostalCode,
@@ -26,6 +29,28 @@ pub struct DutchAddress {
 }
 
 impl DutchAddress {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+        let mut items = Vec::new();
+
+        if self.street_name.is_empty_or_none() {
+            items.push(PotentialProblems::NoStreetName(severity));
+        }
+
+        if self.house_number.is_empty_or_none() {
+            items.push(PotentialProblems::NoHouseNumber(severity));
+        }
+
+        if self.postal_code.is_empty_or_none() {
+            items.push(PotentialProblems::NoPostalCode(severity));
+        }
+
+        if self.locality.is_empty_or_none() {
+            items.push(PotentialProblems::NoLocality(severity));
+        }
+
+        items
+    }
+
     /// Returns `true` when all required address parts are present.
     pub fn is_complete(&self) -> bool {
         self.street_name.is_some()
@@ -67,6 +92,32 @@ pub struct InternationalAddress {
 }
 
 impl InternationalAddress {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+        let mut items = Vec::new();
+
+        if self.street_name.is_empty_or_none() {
+            items.push(PotentialProblems::NoStreetName(severity));
+        }
+
+        if self.house_number.is_empty_or_none() {
+            items.push(PotentialProblems::NoHouseNumber(severity));
+        }
+
+        if self.postal_code.is_empty_or_none() {
+            items.push(PotentialProblems::NoPostalCode(severity));
+        }
+
+        if self.locality.is_empty_or_none() {
+            items.push(PotentialProblems::NoLocality(severity));
+        }
+
+        if self.country.is_empty_or_none() {
+            items.push(PotentialProblems::NoCountry(severity));
+        }
+
+        items
+    }
+
     /// Returns `true` when all required address parts are present.
     pub fn is_complete(&self) -> bool {
         self.street_name.is_some()
@@ -101,6 +152,13 @@ impl Default for Address {
 }
 
 impl Address {
+    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+        match self {
+            Address::Dutch(address) => address.potential_problems(severity),
+            Address::International(address) => address.potential_problems(severity),
+        }
+    }
+
     pub fn as_dutch(&self) -> Option<&DutchAddress> {
         match self {
             Address::Dutch(address) => Some(address),
@@ -320,6 +378,17 @@ mod tests {
         address.country = None;
 
         assert!(!address.is_complete());
+    }
+
+    #[test]
+    fn international_address_adds_country_warning_when_country_missing() {
+        let mut address = sample_international_address();
+        address.country = None;
+
+        assert_eq!(
+            vec![PotentialProblems::NoCountry(Severity::Error)],
+            address.potential_problems(Severity::Error)
+        );
     }
 
     #[test]

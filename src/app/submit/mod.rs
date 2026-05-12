@@ -5,4 +5,10 @@ mod pages;
 mod structs;
 
 pub use pages::{SubmitPath, router};
-pub use structs::{documents::DocumentData, incomplete_items::*};
+pub use structs::{
+    documents::DocumentData,
+    potential_problems::{
+        GeneralProblems, ListProblems, PersonProblems, PotentialProblems, Problematic, Problems,
+        Severity,
+    },
+};

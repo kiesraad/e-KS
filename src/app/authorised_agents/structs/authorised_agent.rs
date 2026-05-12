@@ -1,4 +1,9 @@
-use crate::{AppError, AppEvent, AppStore, common::FullName, id_newtype};
+use crate::{
+    AppError, AppEvent, AppStore,
+    common::FullName,
+    id_newtype,
+    submit::{PotentialProblems, Problematic, Severity},
+};
 use serde::{Deserialize, Serialize};
 
 id_newtype!(pub struct AuthorisedAgentId);
@@ -7,6 +12,12 @@ id_newtype!(pub struct AuthorisedAgentId);
 pub struct AuthorisedAgent {
     pub id: AuthorisedAgentId,
     pub name: FullName,
+}
+
+impl Problematic for AuthorisedAgent {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        self.name.potential_problems(Severity::Warn)
+    }
 }
 
 impl AuthorisedAgent {

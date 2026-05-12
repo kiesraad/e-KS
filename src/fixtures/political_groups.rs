@@ -68,6 +68,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             ),
             street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
         }),
+        is_substitute: false,
     }
     .update(store)
     .await?;
@@ -87,6 +88,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             house_number_addition: None,
             street_name: Some("Spui".parse::<StreetName>().expect("street name")),
         }),
+        is_substitute: true,
     }
     .create_substitute(store)
     .await?;
@@ -109,6 +111,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             ),
             street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
         }),
+        is_substitute: true,
     }
     .create_substitute(store)
     .await?;
@@ -119,6 +122,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::submit::Problematic;
 
     #[tokio::test]
     async fn test_load() {
@@ -126,7 +130,7 @@ mod tests {
         load(&store).await.unwrap();
 
         let list_submitter = store.get_list_submitter();
-        assert!(list_submitter.is_complete());
+        assert!(list_submitter.is_all_good());
 
         let substitute_submitters = store.get_substitute_submitters();
         assert_eq!(substitute_submitters.len(), 2);

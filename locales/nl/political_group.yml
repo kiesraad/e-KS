@@ -4,6 +4,7 @@ actions:
 add_authorised_agent: Gemachtigde toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
 add_substitute_submitter: Vervanger voor het herstel van verzuimen
+authorised_agent: Gemachtigde
 authorised_agent_data: Gegevens gemachtigde
 authorised_agent_info: Bij het centraal stembureau is een gemachtigde of plaatsvervangend gemachtigde voor de aanduiding geregistreerd. Deze persoon geeft de lijstinleveraar toestemming om de naam van de partij boven de kandidatenlijst te plaatsen. Dit gebeurt met formulier H 3-1 of H 3-2.
 basic_information_political_group: Gegevens politieke groepering
@@ -15,6 +16,7 @@ edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
 general_information: Algemeen
 legal_name: Volledige statutaire naam
+list_submitter: Lijstinleveraar
 list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
 list_submitter_data: Gegevens lijstinleveraar
 list_type: "Type lijstaanduiding:"
@@ -23,6 +25,7 @@ no_list_submitter: Geen lijstinleveraar
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen
 previous_election_results: "Bij de vorige {} had uw partij:"
 select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
+substitute_submitter: Vervanger voor het herstel van verzuimen
 substitute_submitter_data: Vervangers voor het herstel van verzuimen
 substitute_submitters_info: "Het centraal stembureau controleert de stukken die worden overhandigd op de dag van kandidaatstelling. Mochten hierbij verzuimen worden vastgesteld, dan ontvangt u hierover schriftelijk bericht. In het bericht dat u van het centraal stembureau ontvangt staat ook tot wanneer verzuimen kunnen worden hersteld."
 title: Politieke groepering

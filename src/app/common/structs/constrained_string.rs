@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
     OptionAsStrExt,
     form::{ValidationError, validate_length, validate_teletex_chars},
-    submit::{Completable, IncompleteItem},
+    submit::{PotentialProblems, Problematic},
     transparent_string,
 };
 
@@ -29,10 +29,10 @@ impl FromStr for ConstrainedString {
     }
 }
 
-impl Completable for Option<LegalName> {
-    fn incomplete_items(&self) -> Vec<IncompleteItem> {
+impl Problematic for Option<LegalName> {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
         if self.is_empty_or_none() {
-            vec![IncompleteItem::NoLegalName]
+            vec![PotentialProblems::NoLegalName]
         } else {
             Vec::new()
         }

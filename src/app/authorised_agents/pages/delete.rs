@@ -8,7 +8,7 @@ use super::AuthorisedAgentDeletePath;
 
 pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,
-    authorized_agent: AuthorisedAgent,
+    authorised_agent: AuthorisedAgent,
     context: Context,
     store: AppStore,
     Form(form): Form<EmptyForm>,
@@ -16,7 +16,7 @@ pub async fn delete_authorised_agent(
     match form.validate_create(&context.session.csrf_token) {
         Err(_) => Err(AppError::CsrfTokenInvalid),
         Ok(_) => {
-            authorized_agent.delete(&store).await?;
+            authorised_agent.delete(&store).await?;
 
             Ok(redirect_success(AuthorisedAgent::list_path()))
         }
