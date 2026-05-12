@@ -34,6 +34,10 @@
     font-weight: normal;
   }
 
+  td:last-child {
+    padding-inline-end: var(--space-3);
+  }
+
   td.drag-handle {
     width: 4rem;
     padding: 0;

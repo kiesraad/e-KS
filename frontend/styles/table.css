@@ -5,7 +5,7 @@ table {
 
   th,
   td {
-    padding: 0 var(--space-ml);
+    padding: 0 var(--space-6);
     line-height: var(--font-size-lg);
     border-bottom: 1px solid var(--gray-200);
     vertical-align: middle;

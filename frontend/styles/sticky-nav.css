@@ -18,7 +18,7 @@
     p {
       display: block;
       margin: 0;
-      padding-bottom: var(--space-sm);
+      padding-bottom: var(--space-3);
       max-height: 2rem;
       overflow: hidden;
       opacity: 1;
