@@ -52,7 +52,7 @@
 
       &.active {
         background-image: url("../icons/arrowNarrowRight.svg");
-        background-color: var(--gray-200);
+        background-color: var(--gray-100);
         font-weight: 600;
         padding-right: var(--space-md);
       }

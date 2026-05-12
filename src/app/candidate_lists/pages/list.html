@@ -15,7 +15,7 @@
           <a href="{{ Person::list_path() }}" class="card card-persons">
             <div class="card-header">
               <div class="badge"></div>
-              <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
+              <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
             </div>
             <div class="card-content">
               <p>{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
@@ -33,7 +33,7 @@
              {% if candidate_list.duplicate_districts.is_empty() %} class="card card-candidate-list" {% else %} class="card card-warning" {% endif %}>
              <div class="card-header">
                <div class="badge"></div>
-               <h3>{{ "candidate_list.title_single"|trans }}</h3>
+               <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
              </div>
              <div class="card-content">
                <p>
