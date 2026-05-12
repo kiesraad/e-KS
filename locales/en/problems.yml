@@ -8,6 +8,7 @@ no_house_number: House number is missing
 no_initials: Initials are missing
 no_last_name: Last name is missing
 no_legal_name: Statutory name is missing
+no_list_submitter: No list submitter added
 no_locality: Locality is missing
 no_postal_code: Postal code is missing
 no_previous_election_results: Previous election results are missing

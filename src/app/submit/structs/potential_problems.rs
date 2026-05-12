@@ -53,7 +53,11 @@ impl Problems {
             .map(PersonProblems::new)
             .collect();
 
-        let list_submitter = store.get_list_submitter().get_problems();
+        let list_submitter = store.get_list_submitter();
+        if list_submitter.is_empty() {
+            general.push(PotentialProblems::NoListSubmitter);
+        }
+        let list_submitter = list_submitter.get_problems();
 
         let substitute_submitters = store.get_substitute_submitters();
         if substitute_submitters.is_empty() {
@@ -140,6 +144,7 @@ pub enum PotentialProblems {
     NoDisplayName,
     NoPreviousElectionResults,
     NoAuthorisedAgent,
+    NoListSubmitter,
     NoSubstituteSubmitter,
 
     // name related
@@ -178,6 +183,7 @@ impl PotentialProblems {
             PotentialProblems::NoPreviousElectionResults => {
                 trans!("problems.no_previous_election_results", *locale)
             }
+            PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
             PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
             PotentialProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
@@ -237,6 +243,7 @@ impl PotentialProblems {
             PotentialProblems::NoLegalName => Severity::Warn,
             PotentialProblems::NoDisplayName => Severity::Error,
             PotentialProblems::NoPreviousElectionResults => Severity::Info,
+            PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
 

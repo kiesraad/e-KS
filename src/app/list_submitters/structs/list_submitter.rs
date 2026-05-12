@@ -82,6 +82,10 @@ impl Problematic for ListSubmitter {
             Severity::Error
         };
 
+        if self.is_empty() && !self.is_substitute {
+            return vec![]; // error gets returned in general problems
+        }
+
         [
             self.name.potential_problems(severity),
             self.address.potential_problems(severity),

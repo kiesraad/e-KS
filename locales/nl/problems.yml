@@ -8,6 +8,7 @@ no_house_number: Huisnummer ontbreekt
 no_initials: Initialen ontbreken
 no_last_name: Achternaam ontbreekt
 no_legal_name: Statutaire naam ontbreekt
+no_list_submitter: Geen lijstinleveraar toegevoegd
 no_locality: Woonplaats ontbreekt
 no_postal_code: Postcode ontbreekt
 no_previous_election_results: Resultaten vorige verkiezing ontbreken
