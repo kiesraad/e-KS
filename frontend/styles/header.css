@@ -1,7 +1,7 @@
 header {
   --header-height: 3rem;
   --header-bg: var(--base-brand-blue);
-  --header-color: var(--gray-200);
+  --header-color: var(--gray-300);
   --header-padding-inline: var(--main-padding-inline);
 
   nav {
@@ -32,7 +32,7 @@ header {
           white-space: nowrap;
 
           &::after {
-            background-color: var(--accent-orange);
+            background-color: var(--header-item-indicator-bg);
             bottom: 0;
             content: "";
             height: 0.25rem;
@@ -47,7 +47,9 @@ header {
           }
 
           &:hover {
-            --header-item-color: var(--base-white);
+            --header-item-color: var(--gray-200);
+            --header-item-indicator-opacity: 0.5;
+            --header-item-indicator-bg: currentColor;
           }
 
           &.logout {
@@ -57,6 +59,7 @@ header {
 
           &.active {
             --header-item-indicator-opacity: 1;
+            --header-item-indicator-bg: var(--accent-orange);
             --header-item-color: var(--base-white);
             --header-item-font-weight: 700;
           }
@@ -64,6 +67,7 @@ header {
           &.home {
             aspect-ratio: 1;
             position: relative;
+            border-inline-start: 1px solid var(--blue-1000);
 
             &::before {
               background-color: var(--header-item-color, currentColor);
@@ -77,7 +81,7 @@ header {
 
             &:hover,
             &.active {
-              --header-item-color: var(--base-white);
+              --header-item-color: var(--gray-200);
             }
 
             span {
@@ -107,10 +111,10 @@ header {
 
     .tags {
       margin-top: var(--space-6);
+      max-width: 50%;
     }
 
     h1 {
-      font-weight: 600;
       display: flex;
       align-items: center;
     }

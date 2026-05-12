@@ -54,7 +54,7 @@ label.button {
 
   &.secondary {
     color: var(--text-color-body);
-    border-color: var(--bg-gray-darkest);
+    border-color: var(--gray-400);
     background: var(--button-color-secondary);
 
     &:hover {
@@ -80,6 +80,10 @@ label.button {
     background: transparent;
     border-color: transparent;
     color: var(--button-color-primary);
+    box-shadow: none;
+    font-weight: var(--font-weight-medium);
+    color:  var(--gray-500);
+
 
     &:hover {
       background: rgba(16, 48, 81, 0.1);
@@ -188,12 +192,15 @@ label.button {
     width: var(--space-5);
   }
 
-  &.icon-edit {
-    background-image: url("../icons/edit.svg");
-    background-repeat: no-repeat;
-    background-position: right var(--space-md) center;
-    padding-right: var(--space-xl);
-    background-size: 20px;
+  &.icon-edit::after {
+    background-color: currentColor;
+    content: '';
+    height: var(--space-4);
+    mask-image: url("../icons/edit.svg");
+    mask-position: right var(--space-md) center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    width: var(--space-4);
   }
 
   &.icon-trash {
@@ -237,6 +244,7 @@ label.button {
   }
 
   &.icon-download {
+    padding-inline-end: var(--space-4);
     &::before {
       content: '';
       mask-image: url("../icons/download.svg");;

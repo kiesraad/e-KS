@@ -10,10 +10,10 @@
     display: flex;
     justify-content: space-between;
     background-color: var(--base-white);
-    padding: var(--space-lg);
+    padding: var(--space-6);
     border-radius: var(--space-sm);
     overflow-anchor: none;
-    border: 1px solid var(--gray-200);
+    border: 1px solid var(--gray-100);
 
     p {
       display: block;
@@ -64,7 +64,7 @@
   &.is-stuck {
     .sticky-nav-bar {
       padding: var(--space-md) var(--space-lg);
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      box-shadow: var(--shadow-md);
 
       p {
         max-height: 0;

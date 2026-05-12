@@ -19,11 +19,28 @@
 
   .tag {
     border-radius: var(--rounded-md);
-    border: 1px solid var(--gray-50);
-    color: var(--gray-500);
+    border: 1px solid var(--tag-border-color, var(--gray-50));
+    color: var(--tag-color, var(--gray-500));
     font-size: var(--font-size-sm);
     font-weight: 400;
     line-height: var(--leading-sm);
     padding: var(--space-1) var(--space-2);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+
+    &:is(.warning) {
+      --tag-border-color: var(--orange-600);
+      --tag-color: var(--orange-700);
+
+      &::after {
+        content: '';
+        mask-image: url('../icons/warning.svg');
+        mask-size: contain;        
+        width: var(--space-4);
+        height: var(--space-4);
+        background-color: currentColor;
+      }
+    }
   }
 }

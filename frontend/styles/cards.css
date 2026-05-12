@@ -25,7 +25,7 @@
 }
 
 .card.card-data {
-  --badge-icon: url("../icons/data-badge.svg");
+  --badge-icon: url("../icons/badge-data.svg");
 }
 
 .card.card-candidate-list {
@@ -40,6 +40,7 @@
 .card.card-persons {
   --badge-icon: url("../icons/politician-badge.svg");
   --card-padding: var(--space-6);
+  --card-gap: var(--space-6);
 }
 
 .card.card-warning {

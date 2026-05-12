@@ -2,11 +2,11 @@ table {
   color: var(--color-help-text);
   width: 100%;
   border-collapse: collapse;
+  font-weight: var(--font-weight-light);
 
   th,
   td {
     padding: 0 var(--space-6);
-    line-height: var(--font-size-lg);
     border-bottom: 1px solid var(--gray-200);
     vertical-align: middle;
   }
@@ -31,7 +31,8 @@ table {
 
   td {
     height: 3rem;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-md);
   }
 
   tr.warning:not(.exceeded) {

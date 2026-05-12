@@ -103,7 +103,8 @@
 
   --rounded-default: 0.5rem;
 
-  --shadow-xs: 0px 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-xs: 0px 1px 6px rgba(0, 0, 0, 0.08);
+  --shadow-md: 0px 1px 12px rgba(0, 0, 0, 0.12);
 
   /* COLORS */
   --blue-1000: #002649;
@@ -174,7 +175,7 @@
   --button-color-primary-focus: var(--blue-1000);
   --button-color-primary-active: var(--blue-1000);
   --button-color-secondary: var(--base-white);
-  --button-color-secondary-hover: var(--gray-200);
+  --button-color-secondary-hover: var(--gray-100);
   --button-color-secondary-focus: var(--base-white);
   --button-color-secondary-active: var(--gray-200);
   --button-color-disabled: var(--gray-300);

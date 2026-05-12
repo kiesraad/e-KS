@@ -15,7 +15,7 @@ main {
   background-color: var(--bg-gray);
   flex: 1;
   gap: var(--space-lg);
-  padding: var(--space-xl) var(--space-xxl);
+  padding: var(--space-6) var(--space-xxl);
 
   nav {
     min-height: var(--space-xxl);

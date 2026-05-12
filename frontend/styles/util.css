@@ -56,6 +56,10 @@
   padding-top: var(--space-sm);
 }
 
+.pt-6 {
+  padding-top: var(--space-6);
+}
+
 /* Color */
 .bg-gray {
   background-color: var(--bg-gray);
