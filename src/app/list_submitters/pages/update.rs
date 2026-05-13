@@ -14,6 +14,7 @@ use super::ListSubmitterUpdatePath;
 #[template(path = "list_submitters/pages/update.html")]
 struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
+    should_warn: bool,
 }
 
 pub async fn update_list_submitter(
@@ -22,9 +23,11 @@ pub async fn update_list_submitter(
     store: AppStore,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
+    let should_warn = !list_submitter.is_empty();
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
+            should_warn,
         },
         context,
     )
@@ -43,7 +46,10 @@ pub async fn update_list_submitter_submit(
         &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
-            ListSubmitterUpdateTemplate { form: form_data },
+            ListSubmitterUpdateTemplate {
+                form: form_data,
+                should_warn: true,
+            },
             context,
         )
         .into_response()),
