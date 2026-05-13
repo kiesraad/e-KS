@@ -90,10 +90,11 @@ pub struct EventCipher {
 const NONCE_LEN: usize = 12;
 
 impl EventCipher {
-    /// Serialize `event` with postcard and encrypt.
+    /// Serialize `event` with postcard and encrypt, binding `aad` into the
+    /// authentication tag (see [`crate::store::event_aad`]).
     ///
     /// Returns `nonce || ciphertext || tag`.
-    pub fn encrypt<E: Serialize>(&self, event: &E) -> Result<Vec<u8>, AppError> {
+    pub fn encrypt<E: Serialize>(&self, event: &E, aad: &[u8]) -> Result<Vec<u8>, AppError> {
         let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
 
         let mut ciphertext = postcard::to_allocvec(event).map_err(|e| {
@@ -101,7 +102,7 @@ impl EventCipher {
         })?;
 
         self.cipher
-            .encrypt_in_place(&nonce, b"", &mut ciphertext)
+            .encrypt_in_place(&nonce, aad, &mut ciphertext)
             .map_err(|e| AppError::ServerError(std::io::Error::other(e.to_string())))?;
 
         let mut out = Vec::with_capacity(NONCE_LEN + ciphertext.len());
@@ -112,15 +113,21 @@ impl EventCipher {
 
     /// Decrypt and deserialize an event payload from borrowed data.
     ///
-    /// Expects `nonce (12 bytes) || ciphertext || tag`.
-    pub fn decrypt<E: DeserializeOwned>(&self, data: &[u8]) -> Result<E, AppError> {
-        self.decrypt_owned(data.to_vec())
+    /// Expects `nonce (12 bytes) || ciphertext || tag` and the same `aad` used
+    /// when encrypting.
+    pub fn decrypt<E: DeserializeOwned>(&self, data: &[u8], aad: &[u8]) -> Result<E, AppError> {
+        self.decrypt_owned(data.to_vec(), aad)
     }
 
     /// Decrypt and deserialize from an already-owned buffer, avoiding a copy.
     ///
-    /// Expects `nonce (12 bytes) || ciphertext || tag`.
-    pub fn decrypt_owned<E: DeserializeOwned>(&self, mut data: Vec<u8>) -> Result<E, AppError> {
+    /// Expects `nonce (12 bytes) || ciphertext || tag` and the same `aad` used
+    /// when encrypting.
+    pub fn decrypt_owned<E: DeserializeOwned>(
+        &self,
+        mut data: Vec<u8>,
+        aad: &[u8],
+    ) -> Result<E, AppError> {
         if data.len() < NONCE_LEN {
             return Err(AppError::EventDecodeError(
                 "ciphertext too short for nonce".to_string(),
@@ -133,7 +140,7 @@ impl EventCipher {
         // then decrypt in place — this truncates the tag, leaving plaintext.
         let _ = data.drain(..NONCE_LEN);
         self.cipher
-            .decrypt_in_place(&nonce, b"", &mut data)
+            .decrypt_in_place(&nonce, aad, &mut data)
             .map_err(|e| AppError::EventDecodeError(format!("AES-GCM decrypt failed: {e}")))?;
 
         postcard::from_bytes(&data)
@@ -157,14 +164,16 @@ mod tests {
 
     const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
 
+    const NO_AAD: &[u8] = b"";
+
     #[test]
     fn round_trip_encrypt_decrypt() {
         let enc = EventEncryption::new(&test_secret());
         let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let original: Vec<u8> = vec![1, 2, 3, 4, 5];
-        let encrypted = cipher.encrypt(&original).unwrap();
-        let decrypted: Vec<u8> = cipher.decrypt(&encrypted).unwrap();
+        let encrypted = cipher.encrypt(&original, NO_AAD).unwrap();
+        let decrypted: Vec<u8> = cipher.decrypt(&encrypted, NO_AAD).unwrap();
 
         assert_eq!(original, decrypted);
     }
@@ -176,8 +185,8 @@ mod tests {
         let cipher_b = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let data = "same payload";
-        let enc_a = cipher_a.encrypt(&data).unwrap();
-        let enc_b = cipher_b.encrypt(&data).unwrap();
+        let enc_a = cipher_a.encrypt(&data, NO_AAD).unwrap();
+        let enc_b = cipher_b.encrypt(&data, NO_AAD).unwrap();
 
         // Different keys → different ciphertext (with overwhelming probability)
         assert_ne!(enc_a, enc_b);
@@ -189,8 +198,8 @@ mod tests {
         let cipher_a = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
         let cipher_b = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
-        let encrypted = cipher_a.encrypt(&42u32).unwrap();
-        let result = cipher_b.decrypt::<u32>(&encrypted);
+        let encrypted = cipher_a.encrypt(&42u32, NO_AAD).unwrap();
+        let result = cipher_b.decrypt::<u32>(&encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -202,8 +211,8 @@ mod tests {
         let cipher_ek = enc.derive_cipher(stream_id, ElectionConfig::EK27);
         let cipher_ps = enc.derive_cipher(stream_id, ElectionConfig::PS27(crate::Province::GR));
 
-        let encrypted = cipher_ek.encrypt(&42u32).unwrap();
-        let result = cipher_ps.decrypt::<u32>(&encrypted);
+        let encrypted = cipher_ek.encrypt(&42u32, NO_AAD).unwrap();
+        let result = cipher_ps.decrypt::<u32>(&encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -215,8 +224,8 @@ mod tests {
         let cipher_b = EventEncryption::new(&SecretString::from("different-secret"))
             .derive_cipher(stream_id, TEST_ELECTION);
 
-        let encrypted = cipher_a.encrypt(&42u32).unwrap();
-        let result = cipher_b.decrypt::<u32>(&encrypted);
+        let encrypted = cipher_a.encrypt(&42u32, NO_AAD).unwrap();
+        let result = cipher_b.decrypt::<u32>(&encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -226,13 +235,28 @@ mod tests {
         let enc = EventEncryption::new(&test_secret());
         let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
-        let mut encrypted = cipher.encrypt(&"hello").unwrap();
+        let mut encrypted = cipher.encrypt(&"hello", NO_AAD).unwrap();
         // Flip a bit in the ciphertext (after the nonce)
         let last = encrypted.len() - 1;
         encrypted[last] ^= 0x01;
 
-        let result = cipher.decrypt::<String>(&encrypted);
+        let result = cipher.decrypt::<String>(&encrypted, NO_AAD);
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn wrong_aad_fails_decryption() {
+        let enc = EventEncryption::new(&test_secret());
+        let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
+
+        let encrypted = cipher.encrypt(&"hello", b"aad-a").unwrap();
+
+        assert!(cipher.decrypt::<String>(&encrypted, b"aad-b").is_err());
+        assert!(cipher.decrypt::<String>(&encrypted, NO_AAD).is_err());
+        assert_eq!(
+            cipher.decrypt::<String>(&encrypted, b"aad-a").unwrap(),
+            "hello"
+        );
     }
 
     #[test]
@@ -240,7 +264,7 @@ mod tests {
         let enc = EventEncryption::new(&test_secret());
         let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
-        let result = cipher.decrypt::<u32>(&[0u8; 5]);
+        let result = cipher.decrypt::<u32>(&[0u8; 5], NO_AAD);
         assert!(result.is_err());
     }
 
@@ -250,15 +274,15 @@ mod tests {
         let cipher = enc.derive_cipher(Uuid::new_v4(), TEST_ELECTION);
 
         let data = "repeated";
-        let enc1 = cipher.encrypt(&data).unwrap();
-        let enc2 = cipher.encrypt(&data).unwrap();
+        let enc1 = cipher.encrypt(&data, NO_AAD).unwrap();
+        let enc2 = cipher.encrypt(&data, NO_AAD).unwrap();
 
         // Random nonces → different ciphertexts
         assert_ne!(enc1, enc2);
 
         // Both decrypt to the same value
-        let dec1: String = cipher.decrypt(&enc1).unwrap();
-        let dec2: String = cipher.decrypt(&enc2).unwrap();
+        let dec1: String = cipher.decrypt(&enc1, NO_AAD).unwrap();
+        let dec2: String = cipher.decrypt(&enc2, NO_AAD).unwrap();
         assert_eq!(dec1, dec2);
         assert_eq!(dec1, "repeated");
     }

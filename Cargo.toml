@@ -25,6 +25,9 @@ fixtures = []
 db-tests = ["database"]
 # Enable network-dependent tests.
 net-tests = []
+# Verify the per-event hash chain when replaying persisted events. Adds a
+# SHA-256 over every event's stored bytes on load; off by default.
+verify-event-hash-chain = []
 # Live-reload assets/templates during development.
 livereload = []
 # Serve embedded static assets from memory.

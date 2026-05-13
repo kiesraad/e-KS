@@ -114,6 +114,7 @@ mod tests {
     #[derive(Default)]
     struct TestData {
         last_event_id: usize,
+        last_event_hash: [u8; 32],
         applied: Vec<usize>,
     }
 
@@ -122,11 +123,16 @@ mod tests {
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
+            self.last_event_hash = event.hash;
             self.applied.push(event.payload);
         }
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
+        }
+
+        fn last_event_hash(&self) -> [u8; 32] {
+            self.last_event_hash
         }
     }
 
