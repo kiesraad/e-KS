@@ -42,6 +42,30 @@ impl Problematic for CandidateListSummary {
     }
 }
 
+#[derive(PartialEq, Eq, Debug)]
+enum Deviant {
+    FewWith(usize),
+    FewWithout(usize),
+}
+
+const MAX_DEVIATION_PERCENTAGE: usize = 20;
+
+/// Check if the number of things with a certain property are deviant from the rest of the things
+/// based on the `MAX_DEVIATION_PERCENTAGE`
+fn compute_deviation(number_with: usize, total: usize) -> Option<Deviant> {
+    let number_without = total - number_with;
+    let deviating = number_with.min(number_without);
+
+    if deviating == 0 || deviating * 100 > MAX_DEVIATION_PERCENTAGE * total {
+        // all are the same (with or without), or mixed enough that we don't consider them deviant
+        None
+    } else if number_with < number_without {
+        Some(Deviant::FewWith(number_with))
+    } else {
+        Some(Deviant::FewWithout(number_without))
+    }
+}
+
 impl CandidateListSummary {
     pub fn list(store: &AppStore) -> Vec<CandidateListSummary> {
         let lists = store.get_candidate_lists();
@@ -77,6 +101,11 @@ impl CandidateListSummary {
     }
 
     pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let total = self.candidate_count();
+        if total <= 1 {
+            return Vec::new();
+        }
+
         let mut with_first_name = 0;
         let mut with_gender = 0;
         for candidate in &self.list.candidates {
@@ -93,48 +122,27 @@ impl CandidateListSummary {
             }
         }
 
-        let total_candidates = self.candidate_count();
-
-        let mut items = Vec::new();
-
-        if total_candidates > 0 {
-            const MAX_DEVIATION: usize = 20;
-            let without_first_name = total_candidates - with_first_name;
-            let deviating_first_name = with_first_name.min(without_first_name);
-            if deviating_first_name > 0
-                && deviating_first_name * 100 / total_candidates <= MAX_DEVIATION
-            {
-                if with_first_name < without_first_name {
-                    items.push(PotentialProblems::FewCandidatesWithFirstName {
-                        count: with_first_name,
-                        total: total_candidates,
-                    });
-                } else {
-                    items.push(PotentialProblems::FewCandidatesWithoutFirstName {
-                        count: without_first_name,
-                        total: total_candidates,
-                    });
+        [
+            compute_deviation(with_first_name, total).map(|d| match d {
+                Deviant::FewWith(count) => {
+                    PotentialProblems::FewCandidatesWithFirstName { count, total }
                 }
-            }
-
-            let without_gender = total_candidates - with_gender;
-            let deviating_gender = with_gender.min(without_gender);
-            if deviating_gender > 0 && deviating_gender * 100 / total_candidates <= MAX_DEVIATION {
-                if with_gender < without_gender {
-                    items.push(PotentialProblems::FewCandidatesWithGender {
-                        count: with_gender,
-                        total: total_candidates,
-                    });
-                } else {
-                    items.push(PotentialProblems::FewCandidatesWithoutGender {
-                        count: without_gender,
-                        total: total_candidates,
-                    });
+                Deviant::FewWithout(count) => {
+                    PotentialProblems::FewCandidatesWithoutFirstName { count, total }
                 }
-            }
-        }
-
-        items
+            }),
+            compute_deviation(with_gender, total).map(|d| match d {
+                Deviant::FewWith(count) => {
+                    PotentialProblems::FewCandidatesWithGender { count, total }
+                }
+                Deviant::FewWithout(count) => {
+                    PotentialProblems::FewCandidatesWithoutGender { count, total }
+                }
+            }),
+        ]
+        .into_iter()
+        .flatten()
+        .collect()
     }
 
     pub fn candidate_count(&self) -> usize {
@@ -172,6 +180,27 @@ mod tests {
             max_count: 200,
             duplicate_districts: vec![],
         }
+    }
+
+    #[test]
+    fn deviation_computation() {
+        assert_eq!(compute_deviation(0, 100), None);
+        assert_eq!(compute_deviation(1, 100), Some(Deviant::FewWith(1)));
+        assert_eq!(
+            compute_deviation(MAX_DEVIATION_PERCENTAGE, 100),
+            Some(Deviant::FewWith(MAX_DEVIATION_PERCENTAGE))
+        );
+        assert_eq!(compute_deviation(MAX_DEVIATION_PERCENTAGE + 1, 100), None);
+        assert_eq!(
+            compute_deviation(100 - MAX_DEVIATION_PERCENTAGE - 1, 100),
+            None
+        );
+        assert_eq!(
+            compute_deviation(100 - MAX_DEVIATION_PERCENTAGE, 100),
+            Some(Deviant::FewWithout(MAX_DEVIATION_PERCENTAGE))
+        );
+        assert_eq!(compute_deviation(99, 100), Some(Deviant::FewWithout(1)));
+        assert_eq!(compute_deviation(100, 100), None);
     }
 
     #[tokio::test]

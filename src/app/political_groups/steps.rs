@@ -2,6 +2,7 @@ use crate::{
     AppError, AppStore,
     authorised_agents::AuthorisedAgent,
     list_submitters::ListSubmitter,
+    political_groups::PoliticalGroup,
     submit::{Problematic, Severity},
 };
 
@@ -23,56 +24,69 @@ impl PoliticalGroupSteps {
         let list_submitter = store.get_list_submitter();
         let substitute_submitters = store.get_substitute_submitters();
 
-        Ok(Self {
-            basic_state: if political_group.is_basic_info_empty() {
-                "empty"
-            } else {
-                political_group.highest_severity_class()
-            },
-            authorised_agents_state: if authorised_agents.is_empty() {
-                if political_group.is_basic_info_empty() {
-                    "empty"
-                } else {
-                    "warning"
-                }
-            } else {
-                match authorised_agents
-                    .iter()
-                    .filter_map(Problematic::highest_severity)
-                    .max()
-                {
-                    None => "ok",
-                    Some(severity) => severity.class(),
-                }
-            },
-            submitters_state: if list_submitter.is_empty() {
-                if political_group.is_basic_info_empty() {
-                    "empty"
-                } else {
-                    "error"
-                }
-            } else {
-                let mut issues = Vec::new();
-                if let Some(issue) = list_submitter.highest_severity() {
-                    issues.push(issue);
-                }
-                if substitute_submitters.is_empty() {
-                    issues.push(Severity::Info);
-                }
+        let basic_info_empty = political_group.is_basic_info_empty();
 
-                match substitute_submitters
-                    .iter()
-                    .filter_map(Problematic::highest_severity)
-                    .chain(issues)
-                    .max()
-                {
-                    None => "ok",
-                    Some(severity) => severity.class(),
-                }
-            },
+        Ok(Self {
+            basic_state: Self::basic_state(basic_info_empty, &political_group),
+            authorised_agents_state: Self::authorised_agents_state(
+                basic_info_empty,
+                &authorised_agents,
+            ),
+            submitters_state: Self::submitters_state(
+                authorised_agents.is_empty(),
+                &list_submitter,
+                &substitute_submitters,
+            ),
             authorised_agents,
             list_submitter,
             substitute_submitters,
         })
+    }
+
+    fn basic_state(basic_info_empty: bool, political_group: &PoliticalGroup) -> &'static str {
+        if basic_info_empty {
+            "empty"
+        } else {
+            political_group.highest_severity_class()
+        }
+    }
+
+    fn authorised_agents_state(
+        fine_if_empty: bool,
+        authorised_agents: &[AuthorisedAgent],
+    ) -> &'static str {
+        if authorised_agents.is_empty() {
+            return if fine_if_empty { "empty" } else { "warning" };
+        }
+
+        match authorised_agents
+            .iter()
+            .filter_map(Problematic::highest_severity)
+            .max()
+        {
+            None => "ok",
+            Some(severity) => severity.class(),
+        }
+    }
+
+    fn submitters_state(
+        fine_if_empty: bool,
+        list_submitter: &ListSubmitter,
+        substitute_submitters: &[ListSubmitter],
+    ) -> &'static str {
+        if list_submitter.is_empty() {
+            return if fine_if_empty { "empty" } else { "error" };
+        }
+
+        match substitute_submitters
+            .iter()
+            .filter_map(Problematic::highest_severity)
+            .chain(list_submitter.highest_severity())
+            .chain(substitute_submitters.is_empty().then_some(Severity::Info))
+            .max()
+        {
+            None => "ok",
+            Some(severity) => severity.class(),
+        }
     }
 }
