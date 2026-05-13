@@ -5,6 +5,7 @@ use crate::{
     AppError, Context, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
     filters,
+    submit::Problematic,
 };
 
 #[derive(Template)]

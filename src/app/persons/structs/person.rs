@@ -47,12 +47,6 @@ pub struct Representative {
     pub address: DutchAddress,
 }
 
-impl Representative {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete() && self.address.is_complete()
-    }
-}
-
 impl Problematic for Representative {
     fn get_problems(&self) -> Vec<PotentialProblems> {
         [
@@ -150,20 +144,7 @@ impl Person {
 
         self.representative
             .as_ref()
-            .map(|r| r.is_complete())
-            .unwrap_or(false)
-    }
-
-    pub fn is_complete(&self) -> bool {
-        self.is_personal_info_complete()
-            && (!self.lives_in_nl() || self.address.is_complete())
-            && (self.lives_in_nl() || self.is_representative_complete())
-    }
-
-    pub fn representative_is_complete(&self) -> bool {
-        self.representative
-            .as_ref()
-            .map(|r| r.is_complete())
+            .map(|r| r.is_all_good())
             .unwrap_or(false)
     }
 
@@ -499,10 +480,10 @@ mod tests {
     #[test]
     fn representative_is_complete_requires_name_and_address() {
         let mut representative = complete_representative();
-        assert!(representative.is_complete());
+        assert!(representative.is_all_good());
 
         representative.address = DutchAddress::default();
-        assert!(!representative.is_complete());
+        assert!(!representative.is_all_good());
     }
 
     #[test]
@@ -535,16 +516,16 @@ mod tests {
         let mut dutch_person = sample_person(PersonId::new());
         dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert!(dutch_person.is_complete());
+        assert!(dutch_person.is_all_good());
 
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
-        assert!(!non_dutch_person.is_complete());
+        assert!(!non_dutch_person.is_all_good());
 
         non_dutch_person.representative = Some(complete_representative());
-        assert!(non_dutch_person.is_complete());
+        assert!(non_dutch_person.is_all_good());
     }
 }

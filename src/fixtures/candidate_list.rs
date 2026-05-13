@@ -5,6 +5,7 @@ use crate::{
     candidate_lists::CandidateList,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
+    submit::Problematic,
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
@@ -31,7 +32,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         &SortDirection::Asc,
     )?
     .into_iter()
-    .filter(|p| p.is_complete())
+    .filter(|p| p.is_all_good())
     .take(FIXTURE_CANDIDATE_LIST_SIZE)
     .collect::<Vec<_>>();
     let person_ids = collect_person_ids(persons);
