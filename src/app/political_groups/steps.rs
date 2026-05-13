@@ -38,12 +38,13 @@ impl PoliticalGroupSteps {
             } else {
                 "warning"
             },
-            submitters_state: if list_submitter.is_all_good()
+            submitters_state: if list_submitter.is_empty() && political_group.is_basic_info_empty()
+            {
+                "empty"
+            } else if list_submitter.is_all_good()
                 && substitute_submitters.iter().all(ListSubmitter::is_all_good)
             {
                 "ok"
-            } else if list_submitter.is_empty() && political_group.is_basic_info_empty() {
-                "empty"
             } else {
                 "warning"
             },
