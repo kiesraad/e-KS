@@ -42,7 +42,7 @@ not_found_in_candidate_list: Person not found in candidate list.
 personal_details: Personal details
 representative: Authorised person
 representative_info: "Due to this candidate living abroad, an authorised agent is required. The authorised agent will receive the letter of appointment for you."
-title: Persons
+title: All candidates
 total: "<strong>{}</strong> persons in total"
 view:
   empty: No candidates available.

@@ -396,19 +396,44 @@ impl PotentialProblems {
     }
 }
 
-#[derive(PartialEq, Clone, Debug, Copy)]
+/// Problem severities, in increasing order of severity
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
 pub enum Severity {
     Info,
     Warn,
     Error,
 }
 
+impl Severity {
+    pub fn class(&self) -> &'static str {
+        match self {
+            Severity::Info => "info",
+            Severity::Warn => "warning",
+            Severity::Error => "error",
+        }
+    }
+}
+
 pub trait Problematic {
-    /// returns all potential problems of its own and of all children
+    /// Returns all potential problems of its own and of all children
     fn get_problems(&self) -> Vec<PotentialProblems>;
 
+    /// Returns true if there are no problems
     fn is_all_good(&self) -> bool {
         self.get_problems().is_empty()
+    }
+
+    /// Returns the highest severity of the problems, or None if there are no problems
+    fn highest_severity(&self) -> Option<Severity> {
+        self.get_problems().into_iter().map(|p| p.severity()).max()
+    }
+
+    /// Returns the CSS class associated with the highest severity
+    fn highest_severity_class(&self) -> &'static str {
+        match self.highest_severity() {
+            None => "ok",
+            Some(severity) => severity.class(),
+        }
     }
 }
 
@@ -429,6 +454,58 @@ mod tests {
             list_submitter: Vec::new(),
             substitute_submitters: Vec::new(),
         }
+    }
+
+    struct WithProblems(Vec<PotentialProblems>);
+
+    impl Problematic for WithProblems {
+        fn get_problems(&self) -> Vec<PotentialProblems> {
+            self.0.clone()
+        }
+    }
+
+    #[test]
+    fn severity_order() {
+        assert!(Severity::Info < Severity::Warn);
+        assert!(Severity::Warn < Severity::Error);
+    }
+
+    #[test]
+    fn highest_severity_none_when_no_problems() {
+        assert_eq!(WithProblems(vec![]).highest_severity(), None);
+    }
+
+    #[test]
+    fn highest_severity_info_when_only_info() {
+        assert_eq!(
+            WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]).highest_severity(),
+            Some(Severity::Info)
+        );
+    }
+
+    #[test]
+    fn highest_severity_warn_when_only_warnings() {
+        assert_eq!(
+            WithProblems(vec![
+                PotentialProblems::NoLastName(Severity::Info),
+                PotentialProblems::NoLastName(Severity::Warn),
+            ])
+            .highest_severity(),
+            Some(Severity::Warn)
+        );
+    }
+
+    #[test]
+    fn highest_severity_error_when_mix_of_severities() {
+        assert_eq!(
+            WithProblems(vec![
+                PotentialProblems::NoLastName(Severity::Info),
+                PotentialProblems::NoLastName(Severity::Warn),
+                PotentialProblems::NoLastName(Severity::Error),
+            ])
+            .highest_severity(),
+            Some(Severity::Error)
+        );
     }
 
     #[test]

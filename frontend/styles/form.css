@@ -69,7 +69,7 @@
     }
 
     &.warning {
-      input:placeholder-shown:not(.date-separate input),
+      input:not(.date-separate input),
       .date-separate {
         border-color: var(--color-warning-darker);
         background-image: url("../icons/warning.svg");
@@ -80,6 +80,7 @@
       }
     }
 
+    &.error,
     &:has(.error) {
       input:not(.date-separate input),
       .date-separate {

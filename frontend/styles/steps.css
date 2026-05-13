@@ -30,8 +30,17 @@
         background-color: var(--gray-100);
       }
 
+      &.info {
+        background-image: url("../icons/info.svg");
+        margin-bottom: 0;
+      }
+
       &.warning {
         background-image: url("../icons/warning.svg");
+      }
+
+      &.error {
+        background-image: url("../icons/error.svg");
       }
 
       &.ok {

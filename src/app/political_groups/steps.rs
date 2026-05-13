@@ -1,6 +1,8 @@
 use crate::{
-    AppError, AppStore, authorised_agents::AuthorisedAgent, list_submitters::ListSubmitter,
-    submit::Problematic,
+    AppError, AppStore,
+    authorised_agents::AuthorisedAgent,
+    list_submitters::ListSubmitter,
+    submit::{Problematic, Severity},
 };
 
 #[derive(Clone, Debug)]
@@ -22,30 +24,51 @@ impl PoliticalGroupSteps {
         let substitute_submitters = store.get_substitute_submitters();
 
         Ok(Self {
-            basic_state: if political_group.is_all_good() {
-                "ok"
-            } else if political_group.is_basic_info_empty() {
+            basic_state: if political_group.is_basic_info_empty() {
                 "empty"
             } else {
-                "warning"
+                political_group.highest_severity_class()
             },
-            authorised_agents_state: if !authorised_agents.is_empty()
-                && authorised_agents.iter().all(AuthorisedAgent::is_complete)
-            {
-                "ok"
-            } else if authorised_agents.is_empty() && political_group.is_basic_info_empty() {
-                "empty"
+            authorised_agents_state: if authorised_agents.is_empty() {
+                if political_group.is_basic_info_empty() {
+                    "empty"
+                } else {
+                    "warning"
+                }
             } else {
-                "warning"
+                match authorised_agents
+                    .iter()
+                    .filter_map(Problematic::highest_severity)
+                    .max()
+                {
+                    None => "ok",
+                    Some(severity) => severity.class(),
+                }
             },
-            submitters_state: if list_submitter.is_all_good()
-                && substitute_submitters.iter().all(ListSubmitter::is_all_good)
-            {
-                "ok"
-            } else if list_submitter.is_empty() && political_group.is_basic_info_empty() {
-                "empty"
+            submitters_state: if list_submitter.is_empty() {
+                if political_group.is_basic_info_empty() {
+                    "empty"
+                } else {
+                    "error"
+                }
             } else {
-                "warning"
+                let mut issues = Vec::new();
+                if let Some(issue) = list_submitter.highest_severity() {
+                    issues.push(issue);
+                }
+                if substitute_submitters.is_empty() {
+                    issues.push(Severity::Info);
+                }
+
+                match substitute_submitters
+                    .iter()
+                    .filter_map(Problematic::highest_severity)
+                    .chain(issues)
+                    .max()
+                {
+                    None => "ok",
+                    Some(severity) => severity.class(),
+                }
             },
             authorised_agents,
             list_submitter,

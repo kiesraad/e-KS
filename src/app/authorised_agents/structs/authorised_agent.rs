@@ -21,10 +21,6 @@ impl Problematic for AuthorisedAgent {
 }
 
 impl AuthorisedAgent {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete()
-    }
-
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateAuthorisedAgent(self.clone()))
