@@ -28,14 +28,20 @@ pub async fn gen_documents(
         return Err(AppError::IncompleteData("No candidate lists"));
     }
 
+    let event_id = store.current_event_id();
+    let event_hash = store.current_event_hash();
+
     let bundles = if list_ids.len() == 1 {
-        let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
+        let mut bundle =
+            DocumentData::new(&store, &context, list_ids[0], locale, event_id, event_hash)?;
         bundle.folder_name = None;
         vec![bundle]
     } else {
         list_ids
             .iter()
-            .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
+            .map(|&list_id| {
+                DocumentData::new(&store, &context, list_id, locale, event_id, event_hash)
+            })
             .collect::<Result<Vec<_>, _>>()?
     };
 
@@ -44,9 +50,8 @@ pub async fn gen_documents(
         .display_name
         .ok_or(AppError::IncompleteData("Missing political group name"))?;
 
-    let version = store.get_events().last().map(|e| e.event_id).unwrap_or(0);
-
-    let filename = DocumentData::archive_filename(&context.election, locale, &designation, version);
+    let filename =
+        DocumentData::archive_filename(&context.election, locale, &designation, event_id);
 
     tracing::info!(
         filename,
@@ -324,8 +329,15 @@ mod tests {
         let expected_folders = list_ids
             .iter()
             .map(|&list_id| {
-                DocumentData::new(&store, &context, list_id, ModelLocale::Nl)
-                    .map(|bundle| bundle.folder_name.expect("folder name"))
+                DocumentData::new(
+                    &store,
+                    &context,
+                    list_id,
+                    ModelLocale::Nl,
+                    store.current_event_id(),
+                    store.current_event_hash(),
+                )
+                .map(|bundle| bundle.folder_name.expect("folder name"))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let response = gen_documents(

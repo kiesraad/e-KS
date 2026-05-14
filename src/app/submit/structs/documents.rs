@@ -19,7 +19,7 @@ use crate::{
             typst_person::TypstPerson,
         },
     },
-    utils::slugify_teletex,
+    utils::{format_hash, slugify_teletex},
 };
 
 pub struct DocumentData {
@@ -37,6 +37,8 @@ pub struct DocumentData {
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
     pub authorised_agent: TypstAuthorisedAgent,
+    pub event_id: usize,
+    pub event_hash: String,
     nomination: Eml210,
 }
 
@@ -69,6 +71,8 @@ impl DocumentData {
         context: &Context,
         list_id: CandidateListId,
         locale: ModelLocale,
+        event_id: usize,
+        event_hash: [u8; 32],
     ) -> Result<Self, AppError> {
         let election = context.election;
         if !election.frisian_export_allowed() && locale == ModelLocale::Fry {
@@ -150,6 +154,8 @@ impl DocumentData {
             list_submitter,
             substitute_submitters,
             authorised_agent,
+            event_id,
+            event_hash: format_hash(&event_hash, true),
             nomination,
         })
     }

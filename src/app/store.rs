@@ -193,6 +193,16 @@ impl StoreData for AppStoreData {
     }
 }
 
+impl crate::store::Store<AppStoreData> {
+    pub fn current_event_id(&self) -> usize {
+        self.data.read().last_event_id()
+    }
+
+    pub fn current_event_hash(&self) -> [u8; 32] {
+        self.data.read().last_event_hash()
+    }
+}
+
 #[cfg(test)]
 impl crate::store::Store<AppStoreData> {
     pub fn new_for_test() -> Self {
