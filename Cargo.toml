@@ -46,7 +46,7 @@ axum-extra = { version = "0.12.6", features = ["routing", "typed-routing", "form
 axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
-tokio = { version = "1.52.1", features = ["full", "test-util"] }
+tokio = { version = "1.52.3", features = ["full", "test-util"] }
 tower-http = { version = "0.6.8", features = ["set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
@@ -73,7 +73,7 @@ url = "2.5.8"
 reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
-askama = "0.15.6" # 33M downloads (Dirkjan Ochtman)
+askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 4M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 107M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 179M downloads (Andrew Gallant)
@@ -89,7 +89,7 @@ memory-serve = { version = "2.1.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.5.3", default-features = false, features = ["compressed_database"], optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.7.0", default-features = false, features = ["compressed_database"], optional = true }
 
 # kiesraad
 eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git" } # TODO: replace with crates.io version when the branch gets merged
