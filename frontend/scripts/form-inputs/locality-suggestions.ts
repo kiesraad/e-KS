@@ -47,16 +47,6 @@ export default function localitySuggestions() {
 
   const field = input.closest(".form-field");
 
-  // Accept the suggestion: copy the displayed name into the input, clear
-  // the warning, and dispatch a change event so downstream listeners
-  // (validators, address lookup) see the corrected value.
-  suggestionName.addEventListener("click", () => {
-    input.value = suggestionName.textContent ?? "";
-    suggestion.classList.add("hidden");
-    field?.classList.remove("warning");
-    input.dispatchEvent(new Event("change", { bubbles: true }));
-  });
-
   // The template opts in to municipality results by adding `with-municipalities`
   // to the suggestion element. Forms that only accept actual places leave it off.
   const withMunicipalities = suggestion.classList.contains(
@@ -67,27 +57,20 @@ export default function localitySuggestions() {
   // committed by blurring, or the form just loaded with a prefilled value"
   // (true). While typing we never add a warning — only remove one if it
   // turns out the value is now valid — to avoid flashing red on every keystroke.
-  const update = async (warn: boolean) => {
+  const runUpdate = async (warn: boolean) => {
     const q = input.value;
-
-    if (q.length === 0) {
-      suggestion.classList.add("hidden");
-      return;
-    }
 
     // Below 3 characters the backend won't return useful results; treat
     // a too-short value as a warning on blur but stay silent while typing.
     if (q.length < 3) {
       suggestion.classList.add("hidden");
-      if (warn) {
-        field?.classList.add("warning");
-      }
       return;
     }
 
     const url = withMunicipalities
       ? `/suggest?wp=${encodeURIComponent(q)}&municipalities=true&limit=1`
       : `/suggest?wp=${encodeURIComponent(q)}&municipalities=false&limit=1`;
+
     const res = await fetch(url);
     const suggestions: Array<SuggestItem> = await res.json();
 
@@ -97,6 +80,7 @@ export default function localitySuggestions() {
       (s) =>
         displayName(s).toLowerCase() === q.toLowerCase() || aliasMatches(s, q),
     );
+
     if (warn) {
       field?.classList.toggle("warning", !exactMatch);
     } else if (exactMatch) {
@@ -121,8 +105,27 @@ export default function localitySuggestions() {
     suggestion.classList.remove("hidden");
   };
 
+  let debounceTimer: ReturnType<typeof setTimeout> | undefined;
+  const update = (warn: boolean) => {
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      void runUpdate(warn);
+    }, 300);
+  };
+
+  // Accept the suggestion: copy the displayed name into the input, clear
+  // the warning, and dispatch a change event so downstream listeners
+  // (validators, address lookup) see the corrected value.
+  suggestionName.addEventListener("click", () => {
+    input.value = suggestionName.textContent ?? "";
+    suggestion.classList.add("hidden");
+    field?.classList.remove("warning");
+    runUpdate(true);
+  });
+
   input.addEventListener("input", () => update(false));
   input.addEventListener("blur", () => update(true));
+
   // Initial pass: validate any prefilled value (e.g. when the form is
   // re-rendered with server-side state) and surface a warning if invalid.
   update(true);
