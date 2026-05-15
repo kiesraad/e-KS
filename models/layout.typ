@@ -1,5 +1,7 @@
 #let mono(content) = text(font: "Geist Mono", content)
 
+#let muted(content) = text(fill: rgb("888888"), content)
+
 #let highlight_color = rgb("F6F6F6")
 
 #let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
@@ -19,10 +21,13 @@
     gutter: .75em,
     context grid(
       columns: (1fr, auto),
-      [#datetime(..input.timestamp).display("[day]-[month]-[year] [hour repr:24]:[minute]:[second]")],
+      [
+        #muted((translator(input.locale))[Versie:][Ferzje:]) #mono[#input.event_id]
+        #h(1em)
+        #muted[Hash:] #mono(input.sha_hash)
+      ],
       counter(page).display(page-label, both: true),
     ),
-    align(left, if "sha_hash" in input [ SHA-256:#h(.5em) #mono(input.sha_hash) ]),
   )
 
   #set page(

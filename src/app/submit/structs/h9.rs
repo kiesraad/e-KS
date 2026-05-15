@@ -22,6 +22,8 @@ pub struct H9<'a> {
     detailed_candidate: &'a TypstDetailedCandidate,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
+    event_id: usize,
+    sha_hash: &'a str,
     filename: String,
 }
 
@@ -55,6 +57,8 @@ impl<'a> From<(&'a DocumentData, &'a TypstDetailedCandidate)> for H9<'a> {
             detailed_candidate: candidate,
             timestamp: &data.timestamp,
             locale,
+            event_id: data.event_id,
+            sha_hash: &data.event_hash,
             filename,
         }
     }

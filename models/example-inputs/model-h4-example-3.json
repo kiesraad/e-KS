@@ -67,5 +67,7 @@
     "minute": 32,
     "second": 21
   },
+  "event_id": 42,
+  "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0",
   "locale": "fry"
 }

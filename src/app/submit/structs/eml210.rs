@@ -26,7 +26,6 @@ use crate::{
     list_submitters::ListSubmitter,
     persons::Representative,
     political_groups::PoliticalGroup,
-    store::StoreData,
     utils::slugify_teletex,
 };
 
@@ -293,7 +292,7 @@ impl Eml210 {
         let now = chrono::Utc::now();
         let nomination = Nomination::builder()
             .transaction_id(
-                u64::try_from(store.data.read().last_event_id())
+                u64::try_from(store.current_event_id())
                     .map_err(|_| AppError::InternalServerError)?,
             )
             .managing_authority(

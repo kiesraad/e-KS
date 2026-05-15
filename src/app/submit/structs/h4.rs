@@ -16,6 +16,8 @@ pub struct H4<'a> {
     candidates: &'a Vec<TypstCandidate>,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
+    event_id: usize,
+    sha_hash: &'a str,
     filename: &'static str,
 }
 
@@ -46,6 +48,8 @@ impl<'a> From<&'a DocumentData> for H4<'a> {
             candidates: &data.ordered_candidates,
             timestamp: &data.timestamp,
             locale,
+            event_id: data.event_id,
+            sha_hash: &data.event_hash,
             filename,
         }
     }
