@@ -25,10 +25,10 @@
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
           <a href="{{ candidate_list.list.view_path() }}"
-             {% if candidate_list.duplicate_districts.is_empty() %} class="card card-candidate-list" {% else %} class="card card-list-warning" {% endif %}>
+             class="card card-candidate-list {{ candidate_list.highest_severity_class() }}">
             <div class="badge"></div>
             <h3>{{ "candidate_list.title_single"|trans }}</h3>
-            <p class="statistic">
+            <p class="statistic {% if candidate_list.candidate_count() > candidate_list.max_count %}warning{% endif %}">
               {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
             </p>
             {% if !election.has_only_one_district() %}
@@ -38,7 +38,7 @@
               {% else %}
                 <ul class="districts">
                   {% for district in candidate_list.list.electoral_districts %}
-                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="warning"{% endif %}>
+                    <li {% if candidate_list.duplicate_districts.contains(district) %}class="error"{% endif %}>
                       <span>{{ district|district_name }}</span>
                     </li>
                   {% endfor %}

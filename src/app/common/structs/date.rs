@@ -57,6 +57,18 @@ impl From<DateOfBirth> for NaiveDate {
     }
 }
 
+impl DateOfBirth {
+    /// Age threshold (years) above which a date of birth triggers a data-quality warning
+    pub const WARN_AGE: u32 = 110;
+
+    pub fn is_very_old(&self) -> bool {
+        chrono::Utc::now()
+            .date_naive()
+            .years_since(self.0)
+            .is_some_and(|y| y >= Self::WARN_AGE)
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;

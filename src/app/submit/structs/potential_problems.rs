@@ -1,14 +1,56 @@
 use axum_extra::routing::TypedPath as _;
 
 use crate::{
-    AppStore, ElectoralDistrict, Locale, QueryParamState,
+    AppStore, QueryParamState,
     authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
+    common::{PotentialProblems, Problematic, Severity},
     list_submitters::ListSubmitter,
     persons::Person,
     political_groups::PoliticalGroup,
-    trans,
 };
+
+impl PotentialProblems {
+    pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
+        match self {
+            PotentialProblems::NoCandidates => list.view_path().to_string(),
+            PotentialProblems::TooManyCandidates { actual, max } => {
+                let overflow = actual.saturating_sub(*max);
+                list.view_path()
+                    .with_query_params(QueryParamState::highlight_last(overflow))
+                    .to_string()
+            }
+            PotentialProblems::FewCandidatesWithFirstName { .. }
+            | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+            | PotentialProblems::FewCandidatesWithGender { .. }
+            | PotentialProblems::FewCandidatesWithoutGender { .. } => list.view_path().to_string(),
+            _ => list.update_path().to_string(),
+        }
+    }
+
+    pub fn person_fix_path(&self, person: &Person) -> String {
+        match self {
+            PotentialProblems::NoStreetName(_)
+            | PotentialProblems::NoHouseNumber(_)
+            | PotentialProblems::NoPostalCode(_)
+            | PotentialProblems::NoLocality(_)
+            | PotentialProblems::NoCountry(_) => person.update_address_path().to_string(),
+            PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
+                person.update_representative_path().to_string()
+            }
+            _ => person.update_path().to_string(),
+        }
+    }
+
+    pub fn general_fix_path(&self) -> String {
+        match self {
+            PotentialProblems::NoAuthorisedAgent => AuthorisedAgent::list_path().to_string(),
+            PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
+            PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
+            _ => PoliticalGroup::update_path().to_string(),
+        }
+    }
+}
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
 #[derive(Debug)]
@@ -24,18 +66,28 @@ impl Problems {
 
         Self {
             general: Self::find_general_problems(store),
-            candidates: vec![], // TODO: complete in issue #605
+            candidates: {
+                let mut seen = std::collections::HashSet::new();
+                candidate_lists
+                    .iter()
+                    .flat_map(|list| list.list.candidates.iter())
+                    .filter(|id| seen.insert(*id))
+                    .filter_map(|id| store.get_person(*id).ok())
+                    .filter_map(|person| {
+                        let problems = person.get_problems();
+                        (!problems.is_empty()).then(|| PersonProblems { person, problems })
+                    })
+                    .collect()
+            },
             lists: candidate_lists
                 .iter()
                 .filter_map(|candidate_list| {
-                    if candidate_list.is_all_good() {
-                        None
-                    } else {
-                        Some(ListProblems {
-                            list: candidate_list.list.clone(),
-                            problems: candidate_list.get_problems(),
-                        })
-                    }
+                    let mut problems = candidate_list.get_problems();
+                    problems.extend(candidate_list.get_deviation_problems(store));
+                    (!problems.is_empty()).then(|| ListProblems {
+                        list: candidate_list.list.clone(),
+                        problems,
+                    })
                 })
                 .collect(),
         }
@@ -78,7 +130,12 @@ impl Problems {
 
     pub fn models_downloadable(&self) -> bool {
         let candidate_iter = self.candidates.iter().flat_map(|ci| &ci.problems);
-        let list_iter = self.lists.iter().flat_map(|ci| &ci.problems);
+        // Lists without candidates cannot produce exports, so their errors don't block downloads
+        let list_iter = self
+            .lists
+            .iter()
+            .filter(|li| !li.problems.contains(&PotentialProblems::NoCandidates))
+            .flat_map(|ci| &ci.problems);
         let general_iter = self.general.flatten();
 
         !candidate_iter
@@ -112,6 +169,7 @@ impl GeneralProblems {
         result
     }
 }
+
 #[derive(Debug)]
 pub struct PersonProblems<T> {
     pub person: T,
@@ -131,156 +189,11 @@ pub struct ListProblems {
     pub problems: Vec<PotentialProblems>,
 }
 
-#[derive(Clone, PartialEq, Debug)]
-pub enum PotentialProblems {
-    // candidate list
-    NoCandidates,
-    TooManyCandidates { actual: usize, max: usize },
-    DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
-    NoDistricts,
-
-    // political group
-    NoLegalName,
-    NoDisplayName,
-    NoPreviousElectionResults,
-    NoAuthorisedAgent,
-    NoListSubmitter,
-    NoSubstituteSubmitter,
-
-    // name related
-    NoInitials(Severity),
-    NoLastName(Severity),
-
-    // address related
-    NoStreetName(Severity),
-    NoHouseNumber(Severity),
-    NoPostalCode(Severity),
-    NoLocality(Severity),
-    NoCountry(Severity),
-}
-
-impl PotentialProblems {
-    pub fn translate(&self, locale: &Locale) -> String {
-        match self {
-            // candidate list
-            PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
-            PotentialProblems::TooManyCandidates { actual, max } => {
-                trans!("problems.too_many_candidates", *locale, actual, max)
-            }
-            PotentialProblems::DuplicateDistricts { duplicates } => {
-                let districts = duplicates
-                    .iter()
-                    .map(|d| d.title((*locale).into()))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                trans!("problems.duplicate_districts", *locale, districts)
-            }
-            PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
-
-            // political group
-            PotentialProblems::NoLegalName => trans!("problems.no_legal_name", *locale),
-            PotentialProblems::NoDisplayName => trans!("problems.no_display_name", *locale),
-            PotentialProblems::NoPreviousElectionResults => {
-                trans!("problems.no_previous_election_results", *locale)
-            }
-            PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
-            PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
-            PotentialProblems::NoSubstituteSubmitter => {
-                trans!("problems.no_substitute_submitter", *locale)
-            }
-
-            // name related
-            PotentialProblems::NoInitials(_) => trans!("problems.no_initials", *locale),
-            PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
-
-            // address related
-            PotentialProblems::NoStreetName(_) => trans!("problems.no_street_name", *locale),
-            PotentialProblems::NoHouseNumber(_) => trans!("problems.no_house_number", *locale),
-            PotentialProblems::NoPostalCode(_) => trans!("problems.no_postal_code", *locale),
-            PotentialProblems::NoLocality(_) => trans!("problems.no_locality", *locale),
-            PotentialProblems::NoCountry(_) => trans!("problems.no_country", *locale),
-        }
-    }
-
-    pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
-        match self {
-            PotentialProblems::NoCandidates => list.view_path().to_string(),
-            PotentialProblems::TooManyCandidates { actual, max } => {
-                let overflow = actual.saturating_sub(*max);
-                list.view_path()
-                    .with_query_params(QueryParamState::highlight_last(overflow))
-                    .to_string()
-            }
-            _ => list.update_path().to_string(),
-        }
-    }
-
-    pub fn general_fix_path(&self) -> String {
-        match self {
-            PotentialProblems::NoAuthorisedAgent => AuthorisedAgent::list_path().to_string(),
-            PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
-            _ => PoliticalGroup::update_path().to_string(),
-        }
-    }
-
-    pub fn severity_class(&self) -> &'static str {
-        match self.severity() {
-            Severity::Info => "info",
-            Severity::Warn => "warning",
-            Severity::Error => "error",
-        }
-    }
-
-    pub fn severity(&self) -> Severity {
-        match &self {
-            // candidate list
-            PotentialProblems::NoCandidates => Severity::Error,
-            PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
-            PotentialProblems::DuplicateDistricts { .. } => Severity::Error,
-            PotentialProblems::NoDistricts => Severity::Error,
-
-            // political group
-            PotentialProblems::NoLegalName => Severity::Warn,
-            PotentialProblems::NoDisplayName => Severity::Error,
-            PotentialProblems::NoPreviousElectionResults => Severity::Info,
-            PotentialProblems::NoListSubmitter => Severity::Error,
-            PotentialProblems::NoAuthorisedAgent => Severity::Warn,
-            PotentialProblems::NoSubstituteSubmitter => Severity::Info,
-
-            // name related
-            PotentialProblems::NoInitials(severity) => *severity,
-            PotentialProblems::NoLastName(severity) => *severity,
-
-            // address related
-            PotentialProblems::NoStreetName(severity) => *severity,
-            PotentialProblems::NoHouseNumber(severity) => *severity,
-            PotentialProblems::NoPostalCode(severity) => *severity,
-            PotentialProblems::NoLocality(severity) => *severity,
-            PotentialProblems::NoCountry(severity) => *severity,
-        }
-    }
-}
-
-#[derive(PartialEq, Clone, Debug, Copy)]
-pub enum Severity {
-    Info,
-    Warn,
-    Error,
-}
-
-pub trait Problematic {
-    /// returns all potential problems of its own and of all children
-    fn get_problems(&self) -> Vec<PotentialProblems>;
-
-    fn is_all_good(&self) -> bool {
-        self.get_problems().is_empty()
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use crate::{
         candidate_lists::CandidateListId,
+        common::Severity,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person},
     };
@@ -294,6 +207,63 @@ mod tests {
             list_submitter: Vec::new(),
             substitute_submitters: Vec::new(),
         }
+    }
+
+    struct WithProblems(Vec<PotentialProblems>);
+
+    impl Problematic for WithProblems {
+        fn get_problems(&self) -> Vec<PotentialProblems> {
+            self.0.clone()
+        }
+    }
+
+    #[test]
+    fn severity_order() {
+        assert!(Severity::Info < Severity::Warn);
+        assert!(Severity::Warn < Severity::Error);
+    }
+
+    #[test]
+    fn highest_severity_none_when_no_problems() {
+        let no_problems = WithProblems(vec![]);
+        assert_eq!(no_problems.highest_severity(), None);
+        assert!(!no_problems.has_severity_or_higher(Severity::Info));
+        assert!(!no_problems.has_severity_or_higher(Severity::Warn));
+        assert!(!no_problems.has_severity_or_higher(Severity::Error));
+    }
+
+    #[test]
+    fn highest_severity_info_when_only_info() {
+        let only_info = WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]);
+        assert_eq!(only_info.highest_severity(), Some(Severity::Info));
+        assert!(only_info.has_severity_or_higher(Severity::Info));
+        assert!(!only_info.has_severity_or_higher(Severity::Warn));
+        assert!(!only_info.has_severity_or_higher(Severity::Error));
+    }
+
+    #[test]
+    fn highest_severity_warn_when_only_warnings() {
+        let info_warn = WithProblems(vec![
+            PotentialProblems::NoLastName(Severity::Info),
+            PotentialProblems::NoLastName(Severity::Warn),
+        ]);
+        assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
+        assert!(info_warn.has_severity_or_higher(Severity::Info));
+        assert!(info_warn.has_severity_or_higher(Severity::Warn));
+        assert!(!info_warn.has_severity_or_higher(Severity::Error));
+    }
+
+    #[test]
+    fn highest_severity_error_when_mix_of_severities() {
+        let with_error = WithProblems(vec![
+            PotentialProblems::NoLastName(Severity::Info),
+            PotentialProblems::NoLastName(Severity::Warn),
+            PotentialProblems::NoLastName(Severity::Error),
+        ]);
+        assert_eq!(with_error.highest_severity(), Some(Severity::Error));
+        assert!(with_error.has_severity_or_higher(Severity::Info));
+        assert!(with_error.has_severity_or_higher(Severity::Warn));
+        assert!(with_error.has_severity_or_higher(Severity::Error));
     }
 
     #[test]
