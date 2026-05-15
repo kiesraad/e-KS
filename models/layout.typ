@@ -21,7 +21,11 @@
     gutter: .75em,
     context grid(
       columns: (1fr, auto),
-      [ #muted[Versie:] #mono[#input.event_id] #h(1em) #muted[Hash:] #mono(input.sha_hash) ],
+      [
+        #muted((translator(input.locale))[Versie:][Ferzje:]) #mono[#input.event_id]
+        #h(1em)
+        #muted[Hash:] #mono(input.sha_hash)
+      ],
       counter(page).display(page-label, both: true),
     ),
   )

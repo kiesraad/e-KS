@@ -28,30 +28,23 @@ pub async fn gen_documents(
         return Err(AppError::IncompleteData("No candidate lists"));
     }
 
-    let event_id = store.current_event_id();
-    let event_hash = store.current_event_hash();
-
     let bundles = if list_ids.len() == 1 {
-        let mut bundle =
-            DocumentData::new(&store, &context, list_ids[0], locale, event_id, event_hash)?;
+        let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
         bundle.folder_name = None;
+
         vec![bundle]
     } else {
         list_ids
             .iter()
-            .map(|&list_id| {
-                DocumentData::new(&store, &context, list_id, locale, event_id, event_hash)
-            })
+            .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
             .collect::<Result<Vec<_>, _>>()?
     };
 
-    let political_group = store.get_political_group();
-    let designation = political_group
-        .display_name
-        .ok_or(AppError::IncompleteData("Missing political group name"))?;
+    let Some(document_data) = bundles.first() else {
+        return Err(AppError::IncompleteData("No candidate lists"));
+    };
 
-    let filename =
-        DocumentData::archive_filename(&context.election, locale, &designation, event_id);
+    let filename = document_data.archive_filename();
 
     tracing::info!(
         filename,
@@ -329,15 +322,8 @@ mod tests {
         let expected_folders = list_ids
             .iter()
             .map(|&list_id| {
-                DocumentData::new(
-                    &store,
-                    &context,
-                    list_id,
-                    ModelLocale::Nl,
-                    store.current_event_id(),
-                    store.current_event_hash(),
-                )
-                .map(|bundle| bundle.folder_name.expect("folder name"))
+                DocumentData::new(&store, &context, list_id, ModelLocale::Nl)
+                    .map(|bundle| bundle.folder_name.expect("folder name"))
             })
             .collect::<Result<Vec<_>, _>>()?;
         let response = gen_documents(
