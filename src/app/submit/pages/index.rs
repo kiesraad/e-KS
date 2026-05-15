@@ -56,11 +56,9 @@ mod tests {
     use axum::response::IntoResponse;
 
     #[tokio::test]
-    #[ignore] // TODO should pass again once #605, #607, and #608 have been implemented
     async fn index_shows_document_downloads_for_complete_lists() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let complete_list_id = CandidateListId::new();
-        let incomplete_list_id = CandidateListId::new();
         let person_id = PersonId::new();
 
         sample_list_submitter(ListSubmitterId::new())
@@ -71,9 +69,6 @@ mod tests {
         let mut complete_list = sample_candidate_list(complete_list_id);
         complete_list.create(&store).await?;
         complete_list.append_candidate(&store, person_id).await?;
-
-        let incomplete_list = sample_candidate_list(incomplete_list_id);
-        incomplete_list.create(&store).await?;
 
         let response = index(SubmitPath, Context::new_test_without_db(), store)
             .await?
