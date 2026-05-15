@@ -209,14 +209,6 @@ impl PotentialProblems {
         }
     }
 
-    pub fn severity_class(&self) -> &'static str {
-        match self.severity() {
-            Severity::Info => "info",
-            Severity::Warn => "warning",
-            Severity::Error => "error",
-        }
-    }
-
     pub fn severity(&self) -> Severity {
         match &self {
             // candidate list

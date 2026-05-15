@@ -13,28 +13,28 @@
       <ul class="warnings">
         {% for problem in problems.general.general %}
           <li>
-            <a class="{{ problem.severity_class() }}"
+            <a class="{{ problem.severity().class() }}"
                href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
           </li>
         {% endfor %}
         {% for agent_pp in problems.general.authorised_agents %}
           {% for problem in &agent_pp.problems %}
             <li>
-              <a class="{{ problem.severity_class() }}"
+              <a class="{{ problem.severity().class() }}"
                  href="{{ agent_pp.person.update_path() }}">{{ "political_group.authorised_agent"|trans }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
         {% endfor %}
         {% for problem in problems.general.list_submitter %}
           <li>
-            <a class="{{ problem.severity_class() }}"
+            <a class="{{ problem.severity().class() }}"
                href="{{ ListSubmitter::update_path() }}">{{ "political_group.list_submitter"|trans }}: {{ problem.translate(locale) }}</a>
           </li>
         {% endfor %}
         {% for ss_pp in problems.general.substitute_submitters %}
           {% for problem in &ss_pp.problems %}
             <li>
-              <a class="{{ problem.severity_class() }}"
+              <a class="{{ problem.severity().class() }}"
                  href="{{ ss_pp.person.substitute_update_path() }}">{{ "political_group.substitute_submitter"|trans }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
@@ -49,7 +49,7 @@
         {% for candidate_pp in &problems.candidates %}
           {% for problem in &candidate_pp.problems %}
             <li>
-              <a class="{{ problem.severity_class() }}"
+              <a class="{{ problem.severity().class() }}"
                  href="{{ problem.person_fix_path(&candidate_pp.person) }}">{{ candidate_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
@@ -66,7 +66,7 @@
           <ul class="warnings">
             {% for problem in &list_problems.problems %}
               <li>
-                <a class="{{ problem.severity_class() }}"
+                <a class="{{ problem.severity().class() }}"
                    href="{{ problem.candidate_list_fix_path(&list_problems.list) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}

@@ -20,7 +20,7 @@ no_initials: initialen ontbreken
 no_last_name: achternaam ontbreekt
 no_legal_name: Statutaire naam ontbreekt
 no_list_submitter: Geen lijstinleveraar toegevoegd
-no_locality: woonplaats ontbreekt
+no_locality: woonplaats ontbreekt in correspondentieadres
 no_place_of_residence: woonplaats ontbreekt
 no_postal_code: postcode ontbreekt
 no_previous_election_results: Resultaten vorige verkiezing ontbreken
