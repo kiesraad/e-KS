@@ -1,4 +1,5 @@
 {% include "common/components/name_fields.html" %}
+{% let election = "election"|election_value %}
 <div class="form-row">
   <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}error{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
@@ -9,7 +10,7 @@
            autocomplete="off"
            value="{{ form.data.personal_data.place_of_residence }}" />
     <span id="locality-suggestion"
-          class="suggestion with-municipalities hidden">
+          class="suggestion with-municipalities{% if election.frisian_export_allowed() %} frisian-aliases-allowed{% endif %} hidden">
       {{ "person.fields.locality_suggestion"|trans }}
       <button type="button" id="locality-suggestion-name"></button>
     </span>

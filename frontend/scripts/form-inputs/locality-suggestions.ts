@@ -3,38 +3,11 @@
 // suggestion is rendered by clicking the element with id `locality-suggestion-name`,
 // which on click overwrites the input value and clears any warning state.
 //
-// The `/suggest` endpoint returns structured records. Field names mirror
-// the upstream Dutch postal API:
-//   wp  = "woonplaats" (place / city)
-//   gm  = "gemeente"   (municipality)
-//   pv  = "provincie"  (province)
-//   had_suffix = true when the source disambiguated a duplicate place name
-//                by appending a province suffix, so we must render "(pv)"
-//                alongside the name to keep the display unambiguous.
-//   alias      = alternate spelling/historical name that should also count
-//                as an exact match even though it's not what we display.
-type SuggestItem = {
-  wp?: string;
-  gm?: string;
-  pv: string;
-  had_suffix: boolean;
-  alias?: string;
-};
-
-// Prefer woonplaats over gemeente; append province only when the source
-// flagged this entry as a disambiguated duplicate.
-function displayName(item: SuggestItem): string {
-  const name = item.wp ?? item.gm ?? "";
-
-  return item.had_suffix && item.pv ? `${name} (${item.pv})` : name;
-}
-
-// Aliases are a separate match path: a user typing an alias should be treated
-// as having entered the canonical name, even though displayName() never returns
-// the alias itself.
-function aliasMatches(item: SuggestItem, query: string): boolean {
-  return item.alias?.toLowerCase() === query.toLowerCase();
-}
+// The `/suggest` endpoint returns a plain JSON array of suggestion names. A
+// name already carries a province suffix (e.g. "Bergen (LI)") when the source
+// disambiguated a duplicate place name. Frisian aliases, when requested, are
+// returned as names in their own right, so a user typing an alias gets an
+// exact match without any special handling here.
 
 export default function localitySuggestions() {
   const input = document.getElementById("locality") as HTMLInputElement | null;
@@ -53,6 +26,10 @@ export default function localitySuggestions() {
     "with-municipalities",
   );
 
+  // Frisian aliases are only offered as suggestions when the template adds
+  // `frisian-aliases-allowed` to the suggestion element (Frisian export forms).
+  const withAliases = suggestion.classList.contains("frisian-aliases-allowed");
+
   // `warn` distinguishes "user is actively typing" (false) from "user has
   // committed by blurring, or the form just loaded with a prefilled value"
   // (true). While typing we never add a warning — only remove one if it
@@ -67,18 +44,19 @@ export default function localitySuggestions() {
       return;
     }
 
-    const url = withMunicipalities
-      ? `/suggest?wp=${encodeURIComponent(q)}&municipalities=true&limit=1`
-      : `/suggest?wp=${encodeURIComponent(q)}&municipalities=false&limit=1`;
+    const url =
+      `/suggest?wp=${encodeURIComponent(q)}` +
+      `&municipalities=${withMunicipalities}` +
+      `&aliases=${withAliases}` +
+      `&limit=1`;
 
     const res = await fetch(url);
-    const suggestions: Array<SuggestItem> = await res.json();
+    const suggestions: Array<string> = await res.json();
 
-    // A value is considered valid when it matches either the canonical
-    // display form or a known alias of one of the returned suggestions.
+    // A value is valid when it matches one of the returned suggestion names
+    // (which already include any province suffix and requested aliases).
     const exactMatch = suggestions.some(
-      (s) =>
-        displayName(s).toLowerCase() === q.toLowerCase() || aliasMatches(s, q),
+      (s) => s.toLowerCase() === q.toLowerCase(),
     );
 
     if (warn) {
@@ -94,8 +72,7 @@ export default function localitySuggestions() {
       return;
     }
 
-    const first = suggestions[0];
-    const name = first ? displayName(first) : "";
+    const name = suggestions[0] ?? "";
     if (!name) {
       suggestion.classList.add("hidden");
       return;

@@ -404,8 +404,8 @@ checksum = "be5eb007b7cacc6c660343e96f650fedf4b5a77512399eb952ca6642cf8d13f7"
 
 [[package]]
 name = "bag_address_lookup"
-version = "0.7.0"
-source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.7.0#86fd5546e1bc88489c212e300965783290366eeb"
+version = "0.8.0"
+source = "git+https://github.com/tweedegolf/bag-address-lookup.git?tag=lib-v0.8.0#f7d8f7bae410f8bfaca6c53eca279b351cc62c34"
 dependencies = [
  "zstd",
 ]
