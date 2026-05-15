@@ -4,8 +4,9 @@ use crate::{
     AppStore, ElectoralDistrict, Locale, QueryParamState,
     authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
+    common::DateOfBirth,
     list_submitters::ListSubmitter,
-    persons::{CANDIDATE_WARN_AGE, Person},
+    persons::Person,
     political_groups::PoliticalGroup,
     trans,
 };
@@ -278,7 +279,7 @@ impl PotentialProblems {
                 trans!(
                     "problems.very_old_date_of_birth",
                     *locale,
-                    CANDIDATE_WARN_AGE
+                    DateOfBirth::WARN_AGE
                 )
             }
             PotentialProblems::NoPlaceOfResidence => {

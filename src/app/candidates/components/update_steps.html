@@ -11,9 +11,7 @@
     {% endif %}
     <li>
       <a href="{{ candidate.update_path() }}"
-         class="{% if candidate.person.is_personal_info_complete() %}ok{% else %}warning{% endif %}">
-        {{ "person.personal_details"|trans }}
-      </a>
+         class="{{ candidate.person.personal_info_class() }}">{{ "person.personal_details"|trans }}</a>
     </li>
     {% if candidate.person.lives_in_nl() || conditional_next_step|default(false) %}
       <li class="show-nl">

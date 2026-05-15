@@ -42,3 +42,4 @@ switch_election:
   water_council: Waterschap
 title: Kiesraad - Kandidaatstelling
 version: Versie
+warning_prefix: Let op

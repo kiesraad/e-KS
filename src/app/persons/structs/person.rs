@@ -129,12 +129,12 @@ impl Person {
             .unwrap_or("")
     }
 
-    pub fn is_personal_info_complete(&self) -> bool {
-        self.name.is_complete()
-            && self.personal_data.date_of_birth.is_some()
-            && self.personal_data.bsn.is_some()
-            && self.personal_data.place_of_residence.is_some()
-            && self.personal_data.country.is_some()
+    pub fn personal_info_class(&self) -> &'static str {
+        if !self.name.is_complete() {
+            return "error";
+        }
+
+        self.personal_data.highest_severity_class()
     }
 
     pub fn is_representative_complete(&self) -> bool {
@@ -490,13 +490,13 @@ mod tests {
     fn personal_info_complete_requires_core_fields() {
         let mut person = sample_person(PersonId::new());
         person.personal_data.bsn = None;
-        assert!(!person.is_personal_info_complete());
+        assert_eq!(person.personal_info_class(), "warning");
 
         person.personal_data.bsn = Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert!(person.is_personal_info_complete());
+        assert_eq!(person.personal_info_class(), "ok");
 
         person.personal_data.date_of_birth = None;
-        assert!(!person.is_personal_info_complete());
+        assert_eq!(person.personal_info_class(), "error");
     }
 
     #[test]
