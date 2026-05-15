@@ -22,6 +22,8 @@ pub struct H31<'a> {
     authorised_agent: &'a TypstAuthorisedAgent,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
+    event_id: usize,
+    sha_hash: &'a str,
     filename: &'static str,
 }
 
@@ -56,6 +58,8 @@ impl<'a> From<&'a DocumentData> for H31<'a> {
             authorised_agent: &data.authorised_agent,
             timestamp: &data.timestamp,
             locale,
+            event_id: data.event_id,
+            sha_hash: &data.event_hash,
             filename,
         }
     }

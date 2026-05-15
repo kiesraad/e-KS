@@ -350,17 +350,20 @@ mod database_tests {
 
         person.create(&store).await?;
 
-        // Insert invalid encrypted payload (random bytes that won't decrypt correctly)
+        // Insert a bogus event: random payload bytes and a hash that does not
+        // match the chain. Either the chain check or the AES-GCM tag will reject it.
         let invalid_payload: Vec<u8> = vec![0u8; 64];
+        let invalid_hash: Vec<u8> = vec![0u8; 32];
         let election_id = ElectionConfig::EK27.stable_id();
         sqlx::query(
-            r#"INSERT INTO events (stream_id, election, event_id, created_at, payload)
-            VALUES ($1, $2, $3, $4, $5)"#,
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
+            VALUES ($1, $2, $3, $4, $5, $6)"#,
         )
         .bind(store.stream_id)
         .bind(&election_id)
         .bind(2_i64)
         .bind(Utc::now())
+        .bind(invalid_hash)
         .bind(invalid_payload)
         .execute(&pool)
         .await?;

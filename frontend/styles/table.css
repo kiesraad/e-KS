@@ -33,10 +33,22 @@ table {
     font-size: var(--font-size-lg);
   }
 
-  tr.warning:not(.exceeded) {
-    background-image: url("../icons/warning.svg");
+  tr {
+    background-image: var(--row-icon, none);
     background-repeat: no-repeat;
     background-position: right 3.5rem center;
+  }
+
+  tr.info {
+    --row-icon: url("../icons/info.svg");
+  }
+
+  tr.warning {
+    --row-icon: url("../icons/warning.svg");
+  }
+
+  tr.error {
+    --row-icon: url("../icons/error.svg");
   }
 
   tr.highlighted {

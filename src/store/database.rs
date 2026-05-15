@@ -1,26 +1,36 @@
 //! Database-backed persistence for the event store.
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StoreEvent};
+use super::{Store, StoreData, StoreEvent, chain_hash, event_aad};
 use crate::{AppError, ElectionConfig};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
-    /// Map a database row into a store event with an encrypted payload.
+    /// Map a database row into a store event whose `payload` is the encrypted blob.
     fn from_row(row: &'r sqlx::postgres::PgRow) -> Result<Self, sqlx::Error> {
-        use chrono::{DateTime, Utc};
         use sqlx::Row;
 
         let event_id: i64 = row.try_get("event_id")?;
         let payload: Vec<u8> = row.try_get("payload")?;
         let created_at: DateTime<Utc> = row.try_get("created_at")?;
+        let hash_bytes: Vec<u8> = row.try_get("hash")?;
+        let hash: [u8; 32] = hash_bytes.as_slice().try_into().map_err(|_| {
+            sqlx::Error::Decode(
+                format!(
+                    "event {event_id} hash is {} bytes, expected 32",
+                    hash_bytes.len()
+                )
+                .into(),
+            )
+        })?;
 
         Ok(Self {
             event_id: event_id as usize,
             payload,
             created_at,
+            hash,
         })
     }
 }
@@ -70,6 +80,7 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
           election TEXT NOT NULL,
           event_id BIGINT NOT NULL,
           created_at timestamp with time zone NOT NULL,
+          hash bytea NOT NULL,
           payload bytea NOT NULL,
           PRIMARY KEY (stream_id, election, event_id)
         )
@@ -77,6 +88,12 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
     )
     .execute(&mut *conn)
     .await?;
+
+    // Supports looking up an event (and its stream) by its chain hash.
+    sqlx::query(r#"CREATE INDEX IF NOT EXISTS events_hash_idx ON events(hash)"#)
+        .execute(&mut *conn)
+        .await?;
+
     Ok(())
 }
 
@@ -207,21 +224,28 @@ where
     };
 
     let next_id = last_id + 1;
+    let created_at = Utc::now();
+    let prev_hash = store.data.read().last_event_hash();
 
-    let store_event = StoreEvent {
-        event_id: next_id,
-        payload: event,
-        created_at: Utc::now(),
+    let hash = match insert_event(store, next_id, created_at, &event, &prev_hash, &mut tx).await {
+        Ok(hash) => hash,
+        Err(err) => {
+            tx.rollback().await?;
+            return Err(err);
+        }
     };
-
-    if let Err(err) = append_once(store, next_id, &store_event, &mut tx).await {
-        tx.rollback().await?;
-        return Err(err);
-    }
 
     tx.commit().await?;
 
-    store.apply_event(next_id, store_event);
+    store.apply_event(
+        next_id,
+        StoreEvent {
+            event_id: next_id,
+            payload: event,
+            created_at,
+            hash,
+        },
+    );
 
     Ok(())
 }
@@ -251,7 +275,7 @@ where
 
     let missing: Vec<StoreEvent<Vec<u8>>> = sqlx::query_as::<_, StoreEvent<Vec<u8>>>(
         r#"
-        SELECT event_id, payload, created_at
+        SELECT event_id, payload, created_at, hash
         FROM events
         WHERE stream_id = $1 AND election = $2 AND event_id > $3
         ORDER BY event_id ASC
@@ -264,44 +288,70 @@ where
     .await?;
 
     let mut data = store.data.write();
+    let mut prev_hash = data.last_event_hash();
 
     for event in missing {
         if data.last_event_id() >= event.event_id {
             continue;
         }
 
-        let payload = store.cipher.decrypt_owned::<D::Event>(event.payload)?;
+        // `event.payload` is the encrypted blob; verify the chain over it
+        // before decrypting. Gated behind a feature flag: it costs a SHA-256
+        // over every loaded event. (Reordering, removal, and in-place edits are
+        // still caught by the AES-GCM tag, since `prev_hash` is part of the
+        // associated data.)
+        #[cfg(feature = "verify-event-hash-chain")]
+        if chain_hash(&prev_hash, event.event_id, event.created_at, &event.payload) != event.hash {
+            return Err(AppError::EventDecodeError(format!(
+                "hash chain broken at event {}",
+                event.event_id
+            )));
+        }
+
+        let aad = event_aad(event.event_id, event.created_at, &prev_hash);
+        let payload = store
+            .cipher
+            .decrypt_owned::<D::Event>(event.payload, &aad)?;
+        prev_hash = event.hash;
         data.apply(StoreEvent {
             event_id: event.event_id,
             payload,
             created_at: event.created_at,
+            hash: event.hash,
         });
     }
 
     Ok(stream_last_id as usize)
 }
 
-/// Append a single event to the database within an open transaction.
-async fn append_once<D, E: Serialize>(
+/// Encrypt `payload`, insert the event row within an open transaction, bump
+/// `streams.last_event_id`, and return the event's chain hash (computed over the
+/// encrypted blob).
+async fn insert_event<D, E: Serialize>(
     store: &Store<D>,
-    next_id: usize,
-    event: &StoreEvent<E>,
+    event_id: usize,
+    created_at: DateTime<Utc>,
+    payload: &E,
+    prev_hash: &[u8; 32],
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
-) -> Result<(), AppError>
+) -> Result<[u8; 32], AppError>
 where
     D: StoreData,
 {
-    let encrypted_payload = store.cipher.encrypt(&event.payload)?;
+    let aad = event_aad(event_id, created_at, prev_hash);
+    let encrypted_payload = store.cipher.encrypt(payload, &aad)?;
+    let hash = chain_hash(prev_hash, event_id, created_at, &encrypted_payload);
     let election_id = store.election.stable_id();
 
     sqlx::query(
-        r#"INSERT INTO events (stream_id, election, event_id, created_at, payload)
-        VALUES ($1, $2, $3, $4, $5)"#,
+        r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
+        VALUES ($1, $2, $3, $4, $5, $6)"#,
     )
     .bind(store.stream_id)
     .bind(&election_id)
-    .bind(next_id as i64)
-    .bind(event.created_at)
+    .bind(event_id as i64)
+    .bind(created_at)
+    .bind(hash.as_slice())
     .bind(encrypted_payload)
     .execute(&mut **tx)
     .await?;
@@ -312,9 +362,9 @@ where
     )
     .bind(store.stream_id)
     .bind(&election_id)
-    .bind(next_id as i64)
+    .bind(event_id as i64)
     .execute(&mut **tx)
     .await?;
 
-    Ok(())
+    Ok(hash)
 }

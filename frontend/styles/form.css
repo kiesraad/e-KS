@@ -80,6 +80,7 @@
       }
     }
 
+    &.error,
     &:has(.error) {
       input:not(.date-separate input),
       .date-separate {
@@ -157,7 +158,8 @@
   span.substext,
   span.hint,
   details.hint,
-  span.error {
+  span.error,
+  span.warning {
     display: inline-block;
     font-size: var(--font-size-md);
     font-style: normal;
@@ -242,6 +244,12 @@
 
   span.error {
     color: var(--color-error-darker);
+    font-weight: normal;
+    margin-top: 0.5rem;
+  }
+
+  span.warning {
+    color: var(--color-warning-darker);
     font-weight: normal;
     margin-top: 0.5rem;
   }

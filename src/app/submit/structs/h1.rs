@@ -19,6 +19,8 @@ pub struct H1<'a> {
     substitute_submitters: &'a Vec<TypstPerson>,
     timestamp: &'a TypstDatetime,
     locale: ModelLocale,
+    event_id: usize,
+    sha_hash: &'a str,
     filename: &'static str,
 }
 
@@ -53,6 +55,8 @@ impl<'a> From<&'a DocumentData> for H1<'a> {
             substitute_submitters: &data.substitute_submitters,
             timestamp: &data.timestamp,
             locale,
+            event_id: data.event_id,
+            sha_hash: &data.event_hash,
             filename,
         }
     }

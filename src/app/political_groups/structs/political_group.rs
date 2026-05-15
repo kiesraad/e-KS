@@ -1,7 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
-    common::{DisplayName, LegalName, PreviousElectionResults},
-    submit::{PotentialProblems, Problematic},
+    common::{DisplayName, LegalName, PotentialProblems, PreviousElectionResults, Problematic},
 };
 use serde::{Deserialize, Serialize};
 

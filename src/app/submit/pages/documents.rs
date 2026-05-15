@@ -31,6 +31,7 @@ pub async fn gen_documents(
     let bundles = if list_ids.len() == 1 {
         let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
         bundle.folder_name = None;
+
         vec![bundle]
     } else {
         list_ids
@@ -39,14 +40,11 @@ pub async fn gen_documents(
             .collect::<Result<Vec<_>, _>>()?
     };
 
-    let political_group = store.get_political_group();
-    let designation = political_group
-        .display_name
-        .ok_or(AppError::IncompleteData("Missing political group name"))?;
+    let Some(document_data) = bundles.first() else {
+        return Err(AppError::IncompleteData("No candidate lists"));
+    };
 
-    let version = store.get_events().last().map(|e| e.event_id).unwrap_or(0);
-
-    let filename = DocumentData::archive_filename(&context.election, locale, &designation, version);
+    let filename = document_data.archive_filename();
 
     tracing::info!(
         filename,

@@ -1,8 +1,7 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::FullName,
+    common::{FullName, PotentialProblems, Problematic, Severity},
     id_newtype,
-    submit::{PotentialProblems, Problematic, Severity},
 };
 use serde::{Deserialize, Serialize};
 
@@ -21,10 +20,6 @@ impl Problematic for AuthorisedAgent {
 }
 
 impl AuthorisedAgent {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete()
-    }
-
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateAuthorisedAgent(self.clone()))

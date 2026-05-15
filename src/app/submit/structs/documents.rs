@@ -1,25 +1,22 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::PreviousElectionResults,
+    common::{PreviousElectionResults, Problematic},
     core::{ModelLocale, Pdf, ZipResponseWriter},
-    submit::{
-        Problematic,
-        structs::{
-            eml210::Eml210,
-            h1::H1,
-            h3_1::H31,
-            h4::H4,
-            h9::H9,
-            typst_authorised_agent::TypstAuthorisedAgent,
-            typst_candidate::{TypstCandidate, ordered_candidates},
-            typst_datetime::TypstDatetime,
-            typst_detailed_candidate::TypstDetailedCandidate,
-            typst_electoral_districts::TypstElectoralDistricts,
-            typst_person::TypstPerson,
-        },
+    submit::structs::{
+        eml210::Eml210,
+        h1::H1,
+        h3_1::H31,
+        h4::H4,
+        h9::H9,
+        typst_authorised_agent::TypstAuthorisedAgent,
+        typst_candidate::{TypstCandidate, ordered_candidates},
+        typst_datetime::TypstDatetime,
+        typst_detailed_candidate::TypstDetailedCandidate,
+        typst_electoral_districts::TypstElectoralDistricts,
+        typst_person::TypstPerson,
     },
-    utils::slugify_teletex,
+    utils::{format_hash, slugify_teletex},
 };
 
 pub struct DocumentData {
@@ -37,23 +34,21 @@ pub struct DocumentData {
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
     pub authorised_agent: TypstAuthorisedAgent,
+    pub event_id: usize,
+    pub event_hash: String,
     nomination: Eml210,
 }
 
 impl DocumentData {
-    pub fn archive_filename(
-        election: &ElectionConfig,
-        locale: ModelLocale,
-        designation: &str,
-        version: usize,
-    ) -> String {
-        let name_slug = slugify_teletex(designation, true);
-        let mut election_slug = election.code().to_lowercase();
-        if let Some(region) = election.region_code() {
+    pub fn archive_filename(&self) -> String {
+        let name_slug = slugify_teletex(&self.designation, true);
+        let mut election_slug = self.election.code().to_lowercase();
+        if let Some(region) = self.election.region_code() {
             election_slug.push_str(&region.to_lowercase());
         }
+        let version = self.event_id;
 
-        if locale == ModelLocale::Fry {
+        if self.locale == ModelLocale::Fry {
             format!("{name_slug}-{election_slug}-v{version}-fry.zip")
         } else {
             format!("{name_slug}-{election_slug}-v{version}.zip")
@@ -76,6 +71,9 @@ impl DocumentData {
                 "Frisian export not allowed for this election".to_string(),
             ));
         }
+
+        let event_id = store.current_event_id();
+        let event_hash = store.current_event_hash();
 
         let FullCandidateList {
             list,
@@ -150,6 +148,8 @@ impl DocumentData {
             list_submitter,
             substitute_submitters,
             authorised_agent,
+            event_id,
+            event_hash: format_hash(&event_hash, true),
             nomination,
         })
     }
