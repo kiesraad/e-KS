@@ -4,10 +4,10 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     authorised_agents::AuthorisedAgent,
+    common::Problematic,
     filters,
     list_submitters::ListSubmitter,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
-    submit::Problematic,
 };
 
 use super::ListSubmitterViewPath;

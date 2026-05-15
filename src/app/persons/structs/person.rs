@@ -2,12 +2,13 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{DutchAddress, FullName, Gender, UtcDateTime},
+    common::{
+        DutchAddress, FullName, Gender, PotentialProblems, Problematic, Severity, UtcDateTime,
+    },
     core::AnyLocale,
     id_newtype,
     pagination::SortDirection,
     persons::{PersonSort, PersonalData, structs::person_sort::compare_persons},
-    submit::{PotentialProblems, Problematic, Severity},
 };
 
 id_newtype!(pub struct PersonId);

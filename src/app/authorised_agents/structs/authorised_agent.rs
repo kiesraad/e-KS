@@ -1,8 +1,7 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::FullName,
+    common::{FullName, PotentialProblems, Problematic, Severity},
     id_newtype,
-    submit::{PotentialProblems, Problematic, Severity},
 };
 use serde::{Deserialize, Serialize};
 

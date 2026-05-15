@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    submit::{PotentialProblems, Severity},
+    common::{PotentialProblems, Severity},
 };
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};

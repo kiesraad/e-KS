@@ -4,9 +4,9 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
+    common::Problematic,
     filters,
     persons::Person,
-    submit::Problematic,
 };
 
 #[derive(Template)]

@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppStore, ElectoralDistrict, OptionAsStrExt,
     candidate_lists::CandidateList,
-    submit::{PotentialProblems, Problematic},
+    common::{PotentialProblems, Problematic},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]

@@ -1,9 +1,9 @@
 use crate::{
     AppError, AppStore,
     authorised_agents::AuthorisedAgent,
+    common::{Problematic, Severity},
     list_submitters::ListSubmitter,
     political_groups::PoliticalGroup,
-    submit::{Problematic, Severity},
 };
 
 #[derive(Clone, Debug)]

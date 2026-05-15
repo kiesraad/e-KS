@@ -2,8 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence},
-    submit::{PotentialProblems, Problematic},
+    common::{
+        BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence, PotentialProblems,
+        Problematic,
+    },
 };
 
 #[derive(Default, Debug, Serialize, Deserialize, Eq, PartialEq, Clone)]

@@ -2,9 +2,10 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, HtmlTemplate, filters,
+    AppError, Context, HtmlTemplate,
+    common::Problematic,
+    filters,
     persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
-    submit::Problematic,
 };
 
 #[derive(Template)]

@@ -2,8 +2,8 @@ use std::str::FromStr;
 
 use crate::{
     OptionAsStrExt,
+    common::{PotentialProblems, Problematic},
     form::{ValidationError, validate_teletex_chars},
-    submit::{PotentialProblems, Problematic},
     transparent_string,
 };
 

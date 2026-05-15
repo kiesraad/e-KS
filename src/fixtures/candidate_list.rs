@@ -3,9 +3,9 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     candidate_lists::CandidateList,
+    common::Problematic,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
-    submit::Problematic,
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
