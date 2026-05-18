@@ -65,6 +65,7 @@ export default function localitySuggestions() {
       // Typing path: never add a warning here, but do clear one the moment
       // the value becomes valid so the user gets immediate positive feedback.
       field?.classList.remove("warning");
+      field?.classList.remove("error");
     }
 
     if (exactMatch) {
@@ -97,6 +98,7 @@ export default function localitySuggestions() {
     input.value = suggestionName.textContent ?? "";
     suggestion.classList.add("hidden");
     field?.classList.remove("warning");
+    field?.classList.remove("error");
     runUpdate(true);
   });
 
