@@ -1,0 +1,167 @@
+//! Known non-official locality names and their official counterparts.
+
+/// The Dutch aliases of officially Frisian place names are based on https://cuatro.sim-cdn.nl/fryslan/uploads/list_plaknammen_yn_fryslan.pdf?cb=RAqKiBSg
+const LOCALITY_ALIASES: &[(&str, &str)] = &[
+    ("Den Haag", "'s-Gravenhage"),
+    ("Den Bosch", "'s-Hertogenbosch"),
+    ("Gorkum", "Gorinchem"),
+    ("Gorcum", "Gorinchem"),
+    ("Gravendeel", "'s-Gravendeel"),
+    ("Graveland", "'s-Graveland"),
+    ("Gravenzande", "'s-Gravenzande"),
+    ("Heer Abtskerke", "'s-Heer Abtskerke"),
+    ("Heer Arendskerke", "'s-Heer Arendskerke"),
+    ("Heer Hendrikskinderen", "'s-Heer Hendrikskinderen"),
+    ("Heerenberg", "'s-Heerenberg"),
+    ("Heerenbroek", "'s-Heerenbroek"),
+    ("Heerenhoek", "'s-Heerenhoek"),
+    ("St. Agatha", "Sint Agatha"),
+    ("St. Annaland", "Sint-Annaland"),
+    ("St. Anthonis", "Sint Anthonis"),
+    ("St. Geertruid", "Sint Geertruid"),
+    ("St. Hubert", "Sint Hubert"),
+    ("St. Jansklooster", "Sint Jansklooster"),
+    ("St. Joost", "Sint Joost"),
+    ("St. Kruis", "Sint Kruis"),
+    ("St. Maarten", "Sint Maarten"),
+    ("St. Maartensdijk", "Sint-Maartensdijk"),
+    ("St. Michielsgestel", "Sint-Michielsgestel"),
+    ("St. Nicolaasga", "Sint Nicolaasga"),
+    ("St. Odiliënberg", "Sint Odiliënberg"),
+    ("St. Oedenrode", "Sint-Oedenrode"),
+    ("St. Pancras", "Sint Pancras"),
+    ("St. Philipsland", "Sint Philipsland"),
+    ("Sint Willebrord", "St. Willebrord"),
+    ("Cuyk", "Cuijk"),
+    ("Oude Leije", "Alde Leie"),
+    ("Oldeboorn", "Aldeboarn"),
+    ("Oudkerk", "Aldtsjerk"),
+    ("Oudwoude", "Aldwâld"),
+    ("Augsbuurt", "Augsbuert-Lytsewâld"),
+    ("Baijum", "Baaium"),
+    ("Beers", "Bears"),
+    ("Berlikum", "Berltsum"),
+    ("Beetgum", "Bitgum"),
+    ("Beetgumermolen", "Bitgummole"),
+    ("Blija", "Blije"),
+    ("Bornwird", "Boarnwert"),
+    ("Bozum", "Boazum"),
+    ("Britswerd", "Britswert"),
+    ("Broeksterwoude", "Broeksterwâld"),
+    ("Birdaard", "Burdaard"),
+    ("Bergum", "Burgum"),
+    ("Damwoude", "Damwâld"),
+    ("De Valom", "De Falom"),
+    ("Triemen", "De Trieme"),
+    ("Zwaagwesteinde", "De Westereen"),
+    ("Deersum", "Dearsum"),
+    ("Driesum", "Driezum"),
+    ("Dronrijp", "Dronryp"),
+    ("Aegum", "Eagum"),
+    ("Anjum", "Eanjum"),
+    ("Eernewoude", "Earnewâld"),
+    ("Oosterend", "Easterein"),
+    ("Oosterlittens", "Easterlittens"),
+    ("Oostermeer", "Eastermar"),
+    ("Oosternijkerk", "Easternijtsjerk"),
+    ("Oosterwierum", "Easterwierrum"),
+    ("Oostrum", "Eastrum"),
+    ("Veenklooster", "Feankleaster"),
+    ("Veenwouden", "Feanwâlden"),
+    ("Veenwoudsterwal", "Feanwâldsterwâl"),
+    ("Finkum", "Feinsum"),
+    ("Ferwerd", "Ferwert"),
+    ("Garijp", "Garyp"),
+    ("Genum", "Ginnum"),
+    ("Grouw", "Grou"),
+    ("Giekerk", "Gytsjerk"),
+    ("Hantumeruitburen", "Hantumerútbuorren"),
+    ("Hantumhuizen", "Hantumhuzen"),
+    ("Hogebeintum", "Hegebeintum"),
+    ("Hijlaard", "Hilaard"),
+    ("Hennaard", "Hinnaard"),
+    ("Holwerd", "Holwert"),
+    ("Huins", "Húns"),
+    ("Hardegarijp", "Hurdegaryp"),
+    ("Idaard", "Idaerd"),
+    ("Ee", "Ie"),
+    ("Edens", "Iens"),
+    ("Engelum", "Ingelum"),
+    ("Engwierum", "Ingwierrum"),
+    ("Het Heidenschap", "It Heidenskip"),
+    ("Janum", "Jannum"),
+    ("Irnsum", "Jirnsum"),
+    ("Eestrum", "Jistrum"),
+    ("Jonkersland", "Jonkerslân"),
+    ("Jorwerd", "Jorwert"),
+    ("Cornjum", "Koarnjum"),
+    ("Kollumerzwaag", "Kollumersweach"),
+    ("Kubaard", "Kûbaard"),
+    ("Lions", "Leons"),
+    ("Lioessens", "Ljussens"),
+    ("Lutkewierum", "Lytsewierrum"),
+    ("Marssum", "Marsum"),
+    ("Menaldum", "Menaam"),
+    ("Metslawier", "Mitselwier"),
+    ("Morra", "Moarre"),
+    ("Molenend", "Mûnein"),
+    ("Niawier", "Nijewier"),
+    ("Noordbergum", "Noardburgum"),
+    ("Oenkerk", "Oentsjerk"),
+    ("Paesens", "Peazens"),
+    ("Poppingawier", "Poppenwier"),
+    ("Rauwerd", "Raerd"),
+    ("Roodkerk", "Readtsjerk"),
+    ("Roodhuis", "Reahûs"),
+    ("Roordahuizum", "Reduzum"),
+    ("Rinsumageest", "Rinsumageast"),
+    ("Rijperkerk", "Ryptsjerk"),
+    ("Sijbrandaburen", "Sibrandabuorren"),
+    ("Sijbrandahuis", "Sibrandahûs"),
+    ("Schingen", "Skingen"),
+    ("Suameer", "Sumar"),
+    ("Suawoude", "Suwâld"),
+    ("Zwagerbosch", "Sweagerbosk"),
+    ("Terhorne", "Terherne"),
+    ("Terzool", "Tersoal"),
+    ("Tietjerk", "Tytsjerk"),
+    ("Waaxens", "Waaksens"),
+    ("Wouterswoude", "Wâlterswâld"),
+    ("Wanswerd", "Wânswert"),
+    ("Wartena", "Warten"),
+    ("Warga", "Wergea"),
+    ("Westergeest", "Westergeast"),
+    ("Wieuwerd", "Wiuwert"),
+    ("Welsrijp", "Wjelsryp"),
+    ("Wijns", "Wyns"),
+    ("Wijtgaard", "Wytgaard"),
+    ("IJsbrechtum", "Ysbrechtum"),
+];
+
+/// Returns the official locality name when `input` is a known alias, or `None`
+/// when `input` is not a known alias.
+pub fn replace_locality_alias(input: &str) -> Option<String> {
+    LOCALITY_ALIASES
+        .iter()
+        .find(|(alias, _)| *alias == input)
+        .map(|(_, official)| (*official).to_string())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn returns_official_name_for_known_alias() {
+        assert_eq!(
+            replace_locality_alias("Den Haag").as_deref(),
+            Some("'s-Gravenhage")
+        );
+    }
+
+    #[test]
+    fn returns_none_for_unknown_name() {
+        assert_eq!(replace_locality_alias("'s-Gravenhage"), None);
+        assert_eq!(replace_locality_alias("Amsterdam"), None);
+    }
+}

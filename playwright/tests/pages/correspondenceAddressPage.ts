@@ -24,7 +24,7 @@ export class CorrespondenceAddressPage {
     this.textfieldStreetName = this.page.getByRole("textbox", {
       name: "Straatnaam",
     });
-    this.selectLocality = this.page.getByRole("combobox", {
+    this.selectLocality = this.page.getByRole("textbox", {
       name: "Woonplaats",
     });
     this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });

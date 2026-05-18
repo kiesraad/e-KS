@@ -1,10 +1,10 @@
 // setup abort controller to clean up fetches when navigating to another page
 const controller = new AbortController();
-const esbuildEventSource = new EventSource('/static/esbuild');
+let esbuildEventSource;
 
 window.addEventListener("beforeunload", () => {
   controller.abort();
-  esbuildEventSource.close();
+  esbuildEventSource?.close();
 });
 
 // long polling, when the server is up we get a 200 response every 30s
@@ -50,15 +50,19 @@ const shortPoll = () => {
     });
 };
 
-// start with long polling when document is loaded
-document.addEventListener("DOMContentLoaded", () => {
-  // start long polling
-  longPoll();
+// Safari keeps the tab in a "loading" state while any fetch/EventSource that
+// was started before window 'load' is still pending. Defer both the long poll
+// and the esbuild EventSource until after 'load' (plus a setTimeout to push
+// them out of the load task entirely) so Safari stops the loading indicator.
+window.addEventListener("load", () => {
+  setTimeout(() => {
+    longPoll();
 
-  // also setup esbuild event source for instant reloads on frontend changes
-  esbuildEventSource.addEventListener('change', () => {
-    location.reload();
-  });
+    esbuildEventSource = new EventSource("/static/esbuild");
+    esbuildEventSource.addEventListener("change", () => {
+      location.reload();
+    });
 
-  console.log("[livereload] running");
+    console.log("[livereload] running");
+  }, 0);
 });
