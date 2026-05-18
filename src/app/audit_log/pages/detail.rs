@@ -110,9 +110,9 @@ pub async fn audit_log_gen_documents(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context, ElectionConfig,
+        AppError, AppStore, Context,
         persons::PersonId,
-        test_utils::{response_body_string, sample_person, setup_documents_test_state},
+        test_utils::{response_body_string, sample_person},
     };
     use axum::{http::StatusCode, response::IntoResponse};
 
@@ -215,10 +215,10 @@ mod tests {
         };
         use regex::Regex;
 
-        use crate::test_utils::{self, zip_entry_names};
+        use crate::test_utils::{self, setup_documents_test_state, zip_entry_names};
 
         let (store, _, context) =
-            setup_documents_test_state(1, 5, true, true, ElectionConfig::EK27).await?;
+            setup_documents_test_state(1, 5, true, true, crate::ElectionConfig::EK27).await?;
         // the setup does not include political group as an event but directly injects it in the data
         // hence we insert it as an event here
         test_utils::sample_political_group().create(&store).await?;

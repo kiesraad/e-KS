@@ -43,7 +43,7 @@ mod tests {
         ElectionConfig,
         authorised_agents::AuthorisedAgentId,
         core::ModelLocale,
-        test_utils::{sample_authorised_agent, setup_documents_test_state, zip_entry_names},
+        test_utils::{sample_authorised_agent, setup_documents_test_state},
     };
     #[cfg(feature = "embed-typst")]
     use crate::{
@@ -225,7 +225,7 @@ mod tests {
         );
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         for folder in expected_folders {
             assert!(entry_names.contains(&format!("{folder}/eml210.eml.xml")));
             assert!(
@@ -277,7 +277,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
@@ -334,7 +334,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
@@ -380,7 +380,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
