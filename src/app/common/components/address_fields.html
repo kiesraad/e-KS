@@ -42,9 +42,12 @@
            placeholder=" "
            name="locality"
            id="locality"
-           value="{{ form.data.address.locality }}"
-           list="locality-suggestions" />
-    <datalist id="locality-suggestions"></datalist>
+           autocomplete="off"
+           value="{{ form.data.address.locality }}" />
+    <span id="locality-suggestion" class="suggestion hidden">
+      {{ "person.fields.locality_suggestion"|trans }}
+      <button type="button" id="locality-suggestion-name"></button>
+    </span>
     {% for error in form|error("address.locality") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
 </div>

@@ -82,6 +82,7 @@ export class ManageCandidateListPage {
       await this.buttonNext.click();
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.buttonAdd.click();
+      await this.headingCandidateList.waitFor();
     }
   }
 

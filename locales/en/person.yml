@@ -17,6 +17,7 @@ fields:
   last_name_info: "Candidates can choose whether they want to be listed with: <ol> <li>Their own last name;</li> <li>The last name of their (ex) spouse, or (ex) registered partner;</li> <li>Both last names, first their own last name followed by (connected with a hyphen) the last name of their (ex) spouse, or (ex) registered partner;</li> <li>Both last names, first the last name of their (ex) spouse, or (ex) registered partner followed by (connected with a hyphen) their own last name.</li> </ol> The candidate must be authorised to use the name of their (ex) spouse, or (ex) registered partner (article 1:9 BW)."
   last_name_prefix: Last name prefix
   locality: Locality
+  locality_suggestion: "Did you mean:"
   name: Name
   place_of_residence: Place of residence
   postal_code: Postal code

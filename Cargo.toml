@@ -89,7 +89,7 @@ memory-serve = { version = "2.1.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.5.3", default-features = false, features = ["compressed_database"], optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.0", default-features = false, features = ["compressed_database"], optional = true }
 
 # kiesraad
 eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git" } # TODO: replace with crates.io version when the branch gets merged
