@@ -2,7 +2,7 @@
 
 use std::sync::Arc;
 
-use secrecy::{SecretBox, SecretString};
+use secrecy::SecretString;
 use uuid::Uuid;
 
 use crate::{AppError, ElectionConfig};
@@ -51,7 +51,8 @@ where
             stream_id,
             election,
             persistence: StorePersistence::None,
-            cipher: EventEncryption::new(&SecretString::from("temp")).derive_cipher(stream_id, election),
+            cipher: EventEncryption::new(&SecretString::from("temp"))
+                .derive_cipher(stream_id, election),
             data: Arc::new(parking_lot::RwLock::new(D::default())),
         }
     }

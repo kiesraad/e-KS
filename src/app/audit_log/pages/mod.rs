@@ -23,7 +23,7 @@ pub struct AuditLogDetailPath {
 #[typed_path("/audit-log/{event_id}/{locale}/documents.zip", rejection(AppError))]
 pub struct AuditLogDownloadDocumentsPath {
     pub event_id: usize,
-    pub locale: ModelLocale
+    pub locale: ModelLocale,
 }
 
 pub fn router() -> Router<AppState> {

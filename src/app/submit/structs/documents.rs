@@ -176,20 +176,24 @@ impl DocumentData {
         }
 
         let bundles = if list_ids.len() == 1 {
-            let mut bundle = Self::new(&store, &context, list_ids[0], locale)?;
+            let mut bundle = Self::new(store, context, list_ids[0], locale)?;
             bundle.folder_name = None;
 
             vec![bundle]
         } else {
             list_ids
                 .iter()
-                .map(|&list_id| Self::new(&store, &context, list_id, locale))
+                .map(|&list_id| Self::new(store, context, list_id, locale))
                 .collect::<Result<Vec<_>, _>>()?
         };
         Ok(bundles)
     }
 
-    pub async fn to_zip_response(bundles: Vec<Self>, filename: String, renderer: TypstRenderer) -> Result<impl IntoResponse, AppError> {
+    pub async fn to_zip_response(
+        bundles: Vec<Self>,
+        filename: String,
+        renderer: TypstRenderer,
+    ) -> Result<impl IntoResponse, AppError> {
         let headers = no_cache_headers::generate_attachment_headers(
             &filename,
             HeaderValue::from_static(ZIP_CONTENT_TYPE),

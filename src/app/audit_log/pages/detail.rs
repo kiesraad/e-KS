@@ -1,8 +1,7 @@
 use crate::{
     AppEvent,
     core::ModelLocale,
-    store::StoreEvent,
-    submit::{DocumentData, Problems, ZIP_CONTENT_TYPE, documents},
+    submit::{DocumentData, Problems, ZIP_CONTENT_TYPE},
 };
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};
@@ -15,7 +14,6 @@ use crate::{
         structs::FieldChange,
     },
     filters,
-    submit::DownloadDocumentsPath,
 };
 
 #[derive(Template)]

@@ -9,7 +9,7 @@ use std::collections::BTreeMap;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppEvent, AppStore, AppStoreData, Locale,
+    AppEvent, AppStoreData, Locale,
     store::{StoreData, StoreEvent},
     trans,
 };

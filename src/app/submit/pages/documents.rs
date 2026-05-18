@@ -1,13 +1,8 @@
-use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
-use tokio::io::duplex;
-use tokio_util::io::ReaderStream;
-use tracing::error;
+use axum::{extract::State, response::IntoResponse};
 
 use crate::{
     AppError, AppEvent, AppStore, Context, TypstRenderer,
-    core::ZipResponseWriter,
     submit::{DocumentData, pages::DownloadDocumentsPath, structs::documents::ZIP_CONTENT_TYPE},
-    utils::no_cache_headers,
 };
 
 pub async fn gen_documents(
