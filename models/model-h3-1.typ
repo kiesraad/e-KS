@@ -47,7 +47,7 @@
   }
 ]
 
-= #trans("Aanduiding van de politieke groepering", "Oantsjutting fan de politike groepearring")
+= #trans("Aanduiding van de politieke groepering", "Oantsjutting fan de politike groepearring") <aanduiding>
 #trans(
   "De geregistreerde aanduiding van de politieke groepering:",
   "De registrearre oantsjutting fan de politike groepearring:",
@@ -62,10 +62,11 @@
   "Ik jou tastimming oan",
 )
 *#submitter.last_name, #submitter.initials*
-#trans(
-  "om de onder punt 3 vermelde aanduiding boven de kandidatenlijst te plaatsen.",
-  "om de ûnder punt 3 neamde oantsjutting boppe de kandidatelist te pleatsen.",
-)
+#trans[
+  om de onder punt @aanduiding vermelde aanduiding boven de kandidatenlijst te plaatsen.
+][
+  om de ûnder punt @aanduiding neamde oantsjutting boppe de kandidatelist te pleatsen.
+]
 
 
 = #trans("Kandidaten op de lijst", "Kandidaten op de list")
