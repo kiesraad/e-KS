@@ -16,23 +16,10 @@
       <h3>{{ "person.personal_details"|trans }}</h3>
     </legend>
     {% include "persons/components/form.html" %}
-    <button class="button tertiary-destructive icon-trash open-modal mb-lg"
-            type="button">{{ "person.actions.delete"|trans }}</button>
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
   {% include "common/components/submit.html" %}
 {% endblock %}
-{% decl delete_warning -%}
-{% if on_candidate_lists > 0 -%}
-  {% let delete_warning = "candidate_list.candidate.delete_warning_text"|trans(&on_candidate_lists.to_string()) -%}
-{% else -%}
-  {% let delete_warning = "person.form.delete_warning_text"|trans -%}
-{% endif -%}
-{% block overlay_end %}
-  {{ macros::delete_modal(person.delete_path() ,
-  "person.actions.delete"|trans,
-  delete_warning
-  ) }}
-{% endblock %}
+{% block overlay_end %}{% endblock %}

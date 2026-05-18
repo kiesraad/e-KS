@@ -142,6 +142,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(update_representative::update_representative_submit)
         .typed_get(update::update_person)
         .typed_post(update::update_person_submit)
+        .typed_get(delete::delete_person_confirm)
         .typed_post(delete::delete_person)
 }
 

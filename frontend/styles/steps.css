@@ -1,4 +1,7 @@
 .steps-nav {
+  display: flex;
+  flex-direction: column;
+  justify-content: space-between;
   border-right: 1px solid var(--border-color-default);
   min-width: 24rem;
   width: fit-content;
@@ -12,6 +15,11 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+
+    &:last-child {
+      top: auto;
+      bottom: var(--space-lg);
+    }
 
     li a {
       display: block;
@@ -31,6 +39,10 @@
         background-color: var(--gray-100);
       }
 
+      &:active {
+        background-color: var(--gray-200);
+      }
+
       &.info {
         background-image: url("../icons/info.svg");
       }
@@ -45,6 +57,16 @@
 
       &.ok {
         background-image: url("../icons/checkmarkSmall.svg");
+      }
+
+      &.trash {
+        background-image: url("../icons/trash.svg");
+        color: var(--color-error-darkest);
+
+        &.active {
+          background-image: url("../icons/arrowNarrowRight-red.svg");
+          background-color: var(--color-error-bg);
+        }
       }
 
       &.disabled {
