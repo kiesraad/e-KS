@@ -2,6 +2,7 @@
 
 use std::sync::Arc;
 
+use secrecy::{SecretBox, SecretString};
 use uuid::Uuid;
 
 use crate::{AppError, ElectionConfig};
@@ -43,6 +44,18 @@ impl<D> Store<D>
 where
     D: StoreData,
 {
+    /// Create a temporary store in memory
+    pub async fn new_for_temp_stream(election: ElectionConfig) -> Self {
+        let stream_id = Uuid::new_v4();
+        Store {
+            stream_id,
+            election,
+            persistence: StorePersistence::None,
+            cipher: EventEncryption::new(&SecretString::from("temp")).derive_cipher(stream_id, election),
+            data: Arc::new(parking_lot::RwLock::new(D::default())),
+        }
+    }
+
     /// Create a new store scoped to a specific (stream_id, election) pair.
     pub async fn new_for_stream(
         storage_url: &str,

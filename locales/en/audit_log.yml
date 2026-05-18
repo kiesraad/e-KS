@@ -79,3 +79,6 @@ filter:
   search: Search
   search_placeholder: "Search by name, ID..."
 title: Audit log
+documents:
+  download: Download documents
+  no_download: This version was not in a state where downloading documents was possible.

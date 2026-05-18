@@ -33,7 +33,7 @@
     {% if detail.changes.is_empty() %}
       <p>{{ "audit_log.detail.no_changes"|trans }}</p>
     {% else %}
-      <table class="diff-table">
+      <table class="diff-table mb-md">
         <thead>
           <tr>
             <th scope="col">{{ "audit_log.detail.field"|trans }}</th>
@@ -76,6 +76,26 @@
         {% endfor %}
       </tbody>
     </table>
+  {% endif %}
+  {% if !is_downloadable_state %}<p class="font-italic mb-md">{{ "audit_log.documents.no_download"|trans }}</p>{% endif %}
+  {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+  {% if is_downloadable_state %}
+    <a href="{{ download_path_nl }}" class="button secondary icon-download">{{ "audit_log.documents.download"|trans }} (v{{ detail.event_id }})</a>
+  {% else %}
+    <a class="button secondary icon-download disabled"
+       disabled
+       aria-disabled="true">{{ "audit_log.documents.download"|trans }} (v{{ detail.event_id }})</a>
+  {% endif %}
+  {% if frisian_export_allowed %}
+    <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
+    {% if is_downloadable_state %}
+      <a href="{{ download_path_fry }}" class="button secondary icon-download">
+      Dokuminten downloade fan dizze ferzje (v{{ detail.event_id }})</a>
+    {% else %}
+      <a class="button secondary icon-download disabled"
+         disabled
+         aria-disabled="true">Dokuminten downloade fan dizze ferzje (v{{ detail.event_id }})</a>
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

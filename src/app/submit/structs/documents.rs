@@ -16,8 +16,14 @@ use crate::{
         typst_electoral_districts::TypstElectoralDistricts,
         typst_person::TypstPerson,
     },
-    utils::{format_hash, slugify_teletex},
+    utils::{format_hash, no_cache_headers, slugify_teletex},
 };
+use axum::{body::Body, http::HeaderValue, response::IntoResponse};
+use tokio::io::duplex;
+use tokio_util::io::ReaderStream;
+use tracing::error;
+
+pub const ZIP_CONTENT_TYPE: &str = "application/zip";
 
 pub struct DocumentData {
     pub list_id: CandidateListId,
@@ -154,7 +160,68 @@ impl DocumentData {
         })
     }
 
-    pub async fn write_zip(
+    pub async fn from_store_and_context(
+        store: &AppStore,
+        context: &Context,
+        locale: ModelLocale,
+    ) -> Result<Vec<Self>, AppError> {
+        let list_ids = store
+            .get_candidate_lists()
+            .into_iter()
+            .map(|list| list.id)
+            .collect::<Vec<_>>();
+
+        if list_ids.is_empty() {
+            return Err(AppError::IncompleteData("No candidate lists"));
+        }
+
+        let bundles = if list_ids.len() == 1 {
+            let mut bundle = Self::new(&store, &context, list_ids[0], locale)?;
+            bundle.folder_name = None;
+
+            vec![bundle]
+        } else {
+            list_ids
+                .iter()
+                .map(|&list_id| Self::new(&store, &context, list_id, locale))
+                .collect::<Result<Vec<_>, _>>()?
+        };
+        Ok(bundles)
+    }
+
+    pub async fn to_zip_response(bundles: Vec<Self>, filename: String, renderer: TypstRenderer) -> Result<impl IntoResponse, AppError> {
+        let headers = no_cache_headers::generate_attachment_headers(
+            &filename,
+            HeaderValue::from_static(ZIP_CONTENT_TYPE),
+        )?;
+
+        let (reader, writer) = duplex(64 * 1024);
+        let body = Body::from_stream(ReaderStream::new(reader));
+
+        tokio::spawn(async move {
+            let mut zipper = ZipResponseWriter::new(writer);
+
+            for bundle in bundles {
+                let list_id = bundle.list_id;
+                if let Err(err) = bundle.write_zip(&renderer, &mut zipper).await {
+                    error!(
+                        error = ?err,
+                        list_id = %list_id,
+                        "failed to stream submit documents zip"
+                    );
+                    return;
+                }
+            }
+
+            if let Err(err) = zipper.finish().await {
+                error!(error = ?err, "failed to finalize submit documents zip");
+            }
+        });
+
+        Ok((headers, body).into_response())
+    }
+
+    async fn write_zip(
         self,
         renderer: &TypstRenderer,
         writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,

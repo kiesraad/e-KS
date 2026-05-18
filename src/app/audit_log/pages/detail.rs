@@ -1,32 +1,113 @@
+use crate::{
+    AppEvent,
+    core::ModelLocale,
+    store::StoreEvent,
+    submit::{DocumentData, Problems, ZIP_CONTENT_TYPE, documents},
+};
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
-    audit_log::{AuditLogDetail, AuditLogPath, pages::AuditLogDetailPath, structs::FieldChange},
+    AppError, AppStore, Context, HtmlTemplate, TypstRenderer,
+    audit_log::{
+        AuditLogDetail, AuditLogPath,
+        pages::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
+        structs::FieldChange,
+    },
     filters,
+    submit::DownloadDocumentsPath,
 };
 
 #[derive(Template)]
 #[template(path = "audit_log/pages/detail.html")]
 struct AuditLogDetailTemplate {
     detail: AuditLogDetail,
+    download_path_nl: String,
+    download_path_fry: String,
+    is_downloadable_state: bool,
+    frisian_export_allowed: bool,
 }
 
 pub async fn audit_log_detail(
-    path: AuditLogDetailPath,
+    AuditLogDetailPath { event_id }: AuditLogDetailPath,
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let events = store.get_events();
     let locale = context.session.locale;
+    let temp_store = AppStore::new_for_temp_stream(store.election).await;
+
+    store
+        .get_events()
+        .iter()
+        .take_while(|e| e.event_id <= event_id)
+        .zip(1..)
+        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
+
+    let is_downloadable_state = Problems::find_all(&temp_store).models_downloadable();
 
     let detail =
-        AuditLogDetail::compute(&events, path.event_id, locale).ok_or(AppError::GenericNotFound)?;
+        AuditLogDetail::compute(&events, event_id, locale).ok_or(AppError::GenericNotFound)?;
 
-    Ok(HtmlTemplate(AuditLogDetailTemplate { detail }, context))
+    Ok(HtmlTemplate(
+        AuditLogDetailTemplate {
+            detail,
+            download_path_nl: AuditLogDownloadDocumentsPath {
+                event_id,
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            download_path_fry: AuditLogDownloadDocumentsPath {
+                event_id,
+                locale: ModelLocale::Fry,
+            }
+            .to_string(),
+            is_downloadable_state,
+            frisian_export_allowed: context.election.frisian_export_allowed(),
+        },
+        context,
+    ))
 }
 
+pub async fn audit_log_gen_documents(
+    path @ AuditLogDownloadDocumentsPath { event_id, locale }: AuditLogDownloadDocumentsPath,
+    context: Context,
+    State(renderer): State<TypstRenderer>,
+    store: AppStore,
+) -> Result<impl IntoResponse, AppError> {
+    let temp_store = AppStore::new_for_temp_stream(store.election).await;
+
+    store
+        .get_events()
+        .iter()
+        .take_while(|e| e.event_id <= event_id)
+        .zip(1..)
+        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
+
+    let bundles = DocumentData::from_store_and_context(&temp_store, &context, locale).await?;
+
+    let Some(document_data) = bundles.first() else {
+        return Err(AppError::IncompleteData("No candidate lists"));
+    };
+
+    let filename = document_data.archive_filename();
+
+    tracing::info!(
+        filename,
+        content_type = ZIP_CONTENT_TYPE,
+        lists = temp_store.get_candidate_list_count(),
+        "file download served",
+    );
+
+    store
+        .update(AppEvent::DownloadFile {
+            file_name: filename.clone(),
+            download_path: path.to_string(),
+        })
+        .await?;
+
+    DocumentData::to_zip_response(bundles, filename, renderer).await
+}
 #[cfg(test)]
 mod tests {
     use super::*;

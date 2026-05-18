@@ -79,3 +79,6 @@ filter:
   search: Zoeken
   search_placeholder: "Zoek op naam, ID..."
 title: Logboek
+documents:
+  download: Documenten downloaden
+  no_download: In deze versie was het downloaden van documenten niet mogelijk.

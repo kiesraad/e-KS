@@ -1,7 +1,7 @@
 use axum_extra::routing::TypedPath;
 use chrono::{DateTime, Utc};
 
-use crate::{AppEvent, Locale, audit_log::AuditLogDetailPath, store::StoreEvent};
+use crate::{AppEvent, Locale, audit_log::{AuditLogDetailPath, pages::AuditLogDownloadDocumentsPath}, core::ModelLocale, store::StoreEvent};
 
 use super::event_info::{event_description, event_details, subject_id_full, subject_path};
 

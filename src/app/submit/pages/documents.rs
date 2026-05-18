@@ -6,11 +6,9 @@ use tracing::error;
 use crate::{
     AppError, AppEvent, AppStore, Context, TypstRenderer,
     core::ZipResponseWriter,
-    submit::{DocumentData, pages::DownloadDocumentsPath},
+    submit::{DocumentData, pages::DownloadDocumentsPath, structs::documents::ZIP_CONTENT_TYPE},
     utils::no_cache_headers,
 };
-
-const ZIP_CONTENT_TYPE: &str = "application/zip";
 
 pub async fn gen_documents(
     path @ DownloadDocumentsPath { locale }: DownloadDocumentsPath,
@@ -18,27 +16,7 @@ pub async fn gen_documents(
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let list_ids = store
-        .get_candidate_lists()
-        .into_iter()
-        .map(|list| list.id)
-        .collect::<Vec<_>>();
-
-    if list_ids.is_empty() {
-        return Err(AppError::IncompleteData("No candidate lists"));
-    }
-
-    let bundles = if list_ids.len() == 1 {
-        let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
-        bundle.folder_name = None;
-
-        vec![bundle]
-    } else {
-        list_ids
-            .iter()
-            .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
-            .collect::<Result<Vec<_>, _>>()?
-    };
+    let bundles = DocumentData::from_store_and_context(&store, &context, locale).await?;
 
     let Some(document_data) = bundles.first() else {
         return Err(AppError::IncompleteData("No candidate lists"));
@@ -49,7 +27,7 @@ pub async fn gen_documents(
     tracing::info!(
         filename,
         content_type = ZIP_CONTENT_TYPE,
-        lists = list_ids.len(),
+        lists = store.get_candidate_list_count(),
         "file download served",
     );
 
@@ -60,35 +38,7 @@ pub async fn gen_documents(
         })
         .await?;
 
-    let headers = no_cache_headers::generate_attachment_headers(
-        &filename,
-        HeaderValue::from_static(ZIP_CONTENT_TYPE),
-    )?;
-
-    let (reader, writer) = duplex(64 * 1024);
-    let body = Body::from_stream(ReaderStream::new(reader));
-
-    tokio::spawn(async move {
-        let mut zipper = ZipResponseWriter::new(writer);
-
-        for bundle in bundles {
-            let list_id = bundle.list_id;
-            if let Err(err) = bundle.write_zip(&renderer, &mut zipper).await {
-                error!(
-                    error = ?err,
-                    list_id = %list_id,
-                    "failed to stream submit documents zip"
-                );
-                return;
-            }
-        }
-
-        if let Err(err) = zipper.finish().await {
-            error!(error = ?err, "failed to finalize submit documents zip");
-        }
-    });
-
-    Ok((headers, body).into_response())
+    DocumentData::to_zip_response(bundles, filename, renderer).await
 }
 
 #[cfg(test)]

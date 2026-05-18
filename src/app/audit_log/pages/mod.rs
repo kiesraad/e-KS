@@ -1,4 +1,4 @@
-use crate::{AppError, AppState};
+use crate::{AppError, AppState, core::ModelLocale};
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
@@ -19,8 +19,16 @@ pub struct AuditLogDetailPath {
     pub event_id: usize,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/audit-log/{event_id}/{locale}/documents.zip", rejection(AppError))]
+pub struct AuditLogDownloadDocumentsPath {
+    pub event_id: usize,
+    pub locale: ModelLocale
+}
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(list::audit_log)
         .typed_get(detail::audit_log_detail)
+        .typed_get(detail::audit_log_gen_documents)
 }
