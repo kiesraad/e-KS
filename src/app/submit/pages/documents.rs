@@ -42,13 +42,8 @@ mod tests {
     use crate::{
         ElectionConfig,
         authorised_agents::AuthorisedAgentId,
-        candidate_lists::{CandidateList, CandidateListId},
         core::ModelLocale,
-        list_submitters::ListSubmitterId,
-        persons::PersonId,
-        test_utils::{
-            sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
-        },
+        test_utils::{sample_authorised_agent, setup_documents_test_state, zip_entry_names},
     };
     #[cfg(feature = "embed-typst")]
     use crate::{
@@ -56,91 +51,6 @@ mod tests {
         persons::Representative,
     };
     use axum::extract::State;
-
-    #[cfg(feature = "embed-typst")]
-    async fn response_body(response: axum::response::Response) -> bytes::Bytes {
-        use http_body_util::BodyExt;
-
-        response
-            .into_body()
-            .collect()
-            .await
-            .expect("collect body")
-            .to_bytes()
-    }
-
-    #[cfg(feature = "embed-typst")]
-    async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
-        use async_zip::base::read::mem::ZipFileReader;
-
-        let zip = ZipFileReader::new(response_body(response).await.to_vec())
-            .await
-            .expect("zip body");
-
-        zip.file()
-            .entries()
-            .iter()
-            .map(|entry| {
-                entry
-                    .filename()
-                    .as_str()
-                    .expect("utf-8 zip entry name")
-                    .to_string()
-            })
-            .collect()
-    }
-
-    async fn setup_documents_test_state(
-        list_count: usize,
-        candidate_count: usize,
-        include_list_submitter: bool,
-        include_authorised_agent: bool,
-        election: ElectionConfig,
-    ) -> Result<(AppStore, Vec<CandidateListId>, Context), AppError> {
-        let store = AppStore::new_for_test_with_election(election);
-        let mut list_ids = Vec::new();
-
-        if include_list_submitter {
-            sample_list_submitter(ListSubmitterId::new())
-                .update(&store)
-                .await?;
-        }
-
-        if include_authorised_agent {
-            sample_authorised_agent(AuthorisedAgentId::new())
-                .create(&store)
-                .await?;
-        }
-
-        for _ in 0..list_count {
-            let list_id = CandidateListId::new();
-            let mut list = sample_candidate_list(list_id);
-            if let Some(district) = CandidateList::available_districts(&store, &election)
-                .into_iter()
-                .next()
-            {
-                list.electoral_districts = vec![district];
-            }
-
-            for _ in 0..candidate_count {
-                let person_id = PersonId::new();
-                sample_person(person_id).create(&store).await?;
-                list.candidates.push(person_id);
-            }
-
-            list.create(&store).await?;
-            list_ids.push(list_id);
-        }
-
-        Ok((
-            store.clone(),
-            list_ids,
-            Context::new(
-                &store,
-                crate::Session::new_test_with_locale(crate::Locale::En),
-            ),
-        ))
-    }
 
     #[tokio::test]
     async fn gen_documents_missing_list_submitter_returns_error() -> Result<(), AppError> {

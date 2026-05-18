@@ -110,9 +110,9 @@ pub async fn audit_log_gen_documents(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, ElectionConfig,
         persons::PersonId,
-        test_utils::{response_body_string, sample_person},
+        test_utils::{response_body_string, sample_person, setup_documents_test_state},
     };
     use axum::{http::StatusCode, response::IntoResponse};
 
@@ -202,6 +202,115 @@ mod tests {
         .await;
 
         assert!(result.is_err());
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn audit_log_gen_documents_returns_zip_response() -> Result<(), AppError> {
+        use axum::{
+            http::{StatusCode, header},
+            response::IntoResponse,
+        };
+        use regex::Regex;
+
+        use crate::test_utils::{self, zip_entry_names};
+
+        let (store, _, context) =
+            setup_documents_test_state(1, 5, true, true, ElectionConfig::EK27).await?;
+        // the setup does not include political group as an event but directly injects it in the data
+        // hence we insert it as an event here
+        test_utils::sample_political_group().create(&store).await?;
+
+        // create two remove candidate events
+        let mut lists = store.get_candidate_lists();
+        let (c1, c2) = (lists[0].candidates[0], lists[0].candidates[1]);
+        lists[0].remove_candidate(&store, c1).await?;
+        lists[0].remove_candidate(&store, c2).await?;
+
+        let current_event_id = store.current_event_id();
+
+        let response_4_candidates = audit_log_gen_documents(
+            AuditLogDownloadDocumentsPath {
+                locale: ModelLocale::Nl,
+                event_id: current_event_id - 1,
+            },
+            context.clone(),
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            store.clone(),
+        )
+        .await?
+        .into_response();
+
+        let response_5_candidates = audit_log_gen_documents(
+            AuditLogDownloadDocumentsPath {
+                locale: ModelLocale::Nl,
+                event_id: current_event_id - 2,
+            },
+            context,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            store.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response_4_candidates.status(), StatusCode::OK);
+        let headers = response_4_candidates.headers().clone();
+        assert_eq!(
+            headers
+                .get(header::CONTENT_TYPE)
+                .expect("content type header"),
+            "application/zip"
+        );
+        assert!(
+            Regex::new("attachment; filename=\"kiesraad-demo-ek27-v\\d+\\.zip\"")
+                .unwrap()
+                .is_match(
+                    headers
+                        .get(header::CONTENT_DISPOSITION)
+                        .expect("content disposition header")
+                        .to_str()
+                        .unwrap()
+                )
+        );
+        assert_eq!(
+            headers
+                .get(header::CACHE_CONTROL)
+                .expect("cache control header"),
+            "no-store, no-cache, must-revalidate, max-age=0"
+        );
+        assert_eq!(
+            headers.get(header::PRAGMA).expect("pragma header"),
+            "no-cache"
+        );
+        assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
+
+        // check if two download events are present
+        let download_event_count = store
+            .get_events()
+            .iter()
+            .filter(|e| matches!(e.payload, AppEvent::DownloadFile { .. }))
+            .count();
+        assert_eq!(2, download_event_count);
+
+        let h9_count_4_candidates = zip_entry_names(response_4_candidates)
+            .await
+            .iter()
+            .filter(|filename| filename.starts_with("h9-instemmingsverklaringen/"))
+            .count();
+        assert_eq!(4, h9_count_4_candidates);
+
+        let h9_count_5_candidates = zip_entry_names(response_5_candidates)
+            .await
+            .iter()
+            .filter(|filename| filename.starts_with("h9-instemmingsverklaringen/"))
+            .count();
+        assert_eq!(5, h9_count_5_candidates);
 
         Ok(())
     }
