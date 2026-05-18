@@ -293,18 +293,22 @@ mod tests {
     fn highest_severity_none_when_no_problems() {
         let no_problems = WithProblems(vec![]);
         assert_eq!(no_problems.highest_severity(), None);
+        assert_eq!(no_problems.highest_severity_class(), "ok");
         assert!(!no_problems.has_severity_or_higher(Severity::Info));
         assert!(!no_problems.has_severity_or_higher(Severity::Warn));
         assert!(!no_problems.has_severity_or_higher(Severity::Error));
+        assert!(no_problems.is_all_good());
     }
 
     #[test]
     fn highest_severity_info_when_only_info() {
         let only_info = WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]);
         assert_eq!(only_info.highest_severity(), Some(Severity::Info));
+        assert_eq!(only_info.highest_severity_class(), "info");
         assert!(only_info.has_severity_or_higher(Severity::Info));
         assert!(!only_info.has_severity_or_higher(Severity::Warn));
         assert!(!only_info.has_severity_or_higher(Severity::Error));
+        assert!(!only_info.is_all_good());
     }
 
     #[test]
@@ -314,9 +318,11 @@ mod tests {
             PotentialProblems::NoLastName(Severity::Warn),
         ]);
         assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
+        assert_eq!(info_warn.highest_severity_class(), "warning");
         assert!(info_warn.has_severity_or_higher(Severity::Info));
         assert!(info_warn.has_severity_or_higher(Severity::Warn));
         assert!(!info_warn.has_severity_or_higher(Severity::Error));
+        assert!(!info_warn.is_all_good());
     }
 
     #[test]
@@ -327,8 +333,84 @@ mod tests {
             PotentialProblems::NoLastName(Severity::Error),
         ]);
         assert_eq!(with_error.highest_severity(), Some(Severity::Error));
+        assert_eq!(with_error.highest_severity_class(), "error");
         assert!(with_error.has_severity_or_higher(Severity::Info));
         assert!(with_error.has_severity_or_higher(Severity::Warn));
         assert!(with_error.has_severity_or_higher(Severity::Error));
+        assert!(!with_error.is_all_good());
+    }
+
+    #[test]
+    fn no_problem_summary() {
+        let no_problems = WithProblems(vec![]);
+        assert_eq!(no_problems.problem_summary(&Locale::Nl), None);
+    }
+
+    #[test]
+    fn single_problem_summary() {
+        let problem = PotentialProblems::VeryOldDateOfBirth;
+        let single_problems = WithProblems(vec![problem.clone()]);
+        assert_eq!(
+            single_problems.problem_summary(&Locale::Nl).unwrap(),
+            problem.translate(&Locale::Nl)
+        );
+    }
+
+    #[test]
+    fn multiple_problem_summary() {
+        let problems = [
+            PotentialProblems::NoBsn,
+            PotentialProblems::NoPlaceOfResidence,
+            PotentialProblems::NoDateOfBirth,
+            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoPostalCode(
+                Severity::Warn,
+            ))),
+            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoLocality(
+                Severity::Warn,
+            ))),
+            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoCountry(
+                Severity::Warn,
+            ))),
+            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoHouseNumber(
+                Severity::Warn,
+            ))),
+            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoStreetName(
+                Severity::Warn,
+            ))),
+        ];
+        let multiple_problems = WithProblems(problems.to_vec());
+        let summary = multiple_problems.problem_summary(&Locale::Nl).unwrap();
+        for problem in problems {
+            assert!(summary.contains(&problem.translate(&Locale::Nl)));
+        }
+    }
+
+    #[test]
+    fn deviation_shows_numbers() {
+        let problems = vec![
+            PotentialProblems::FewCandidatesWithFirstName {
+                count: 2,
+                total: 37,
+            },
+            PotentialProblems::FewCandidatesWithGender {
+                count: 2,
+                total: 37,
+            },
+            PotentialProblems::FewCandidatesWithoutFirstName {
+                count: 2,
+                total: 37,
+            },
+            PotentialProblems::FewCandidatesWithoutGender {
+                count: 2,
+                total: 37,
+            },
+        ];
+        for problem in problems {
+            let summary = WithProblems(vec![problem])
+                .problem_summary(&Locale::Nl)
+                .unwrap();
+            assert!(summary.contains("2"));
+            assert!(summary.contains("37"));
+        }
     }
 }
