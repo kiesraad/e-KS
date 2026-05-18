@@ -11,7 +11,7 @@
 {% block overlay_form %}
   <fieldset>
     <legend>
-      <h3>{{ "person.actions.delete"|trans }}</h3>
+      <h3>{{ "person.actions.delete_everywhere"|trans }}</h3>
     </legend>
     {% decl delete_warning -%}
     {% if on_candidate_lists > 0 -%}
@@ -33,7 +33,9 @@
               value="remove">{{ "candidate_list.remove_candidate"|trans }}</button>
     </div>
     <div class="form-actions">
-      <button type="submit" class="button tertiary-destructive icon-trash">{{ "person.actions.delete"|trans }}</button>
+      <button type="submit" class="button tertiary-destructive icon-trash">
+        {{ "person.actions.delete_everywhere"|trans }}
+      </button>
     </div>
   </div>
 {% endblock %}

@@ -1,11 +1,37 @@
-use axum::response::Response;
+use askama::Template;
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    common::Problematic,
+    filters,
+    form::{EmptyForm, FormData},
+    list_submitters::ListSubmitter,
     redirect_success,
 };
 
 use super::SubstituteSubmitterDeletePath;
+
+#[derive(Template)]
+#[template(path = "substitute_list_submitters/pages/delete.html")]
+struct DeleteSubstituteSubmitterTemplate {
+    substitute_submitter: ListSubmitter,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_substitute_submitter_confirm(
+    _: SubstituteSubmitterDeletePath,
+    context: Context,
+    substitute_submitter: ListSubmitter,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeleteSubstituteSubmitterTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            substitute_submitter,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,

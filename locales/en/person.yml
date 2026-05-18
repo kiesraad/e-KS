@@ -1,6 +1,7 @@
 actions:
   add: Add candidate
   delete: Delete candidate
+  delete_everywhere: Delete from application
 autoformat_initials: Auto-format initials
 correspondence_address: Correspondence address
 correspondence_address_info: This is the address to which the letter of appointment will be sent.

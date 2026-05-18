@@ -2,13 +2,7 @@
 {% set close_action = CandidateList::list_path() %}
 {% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
 {% block overlay_steps %}
-  <div class="steps-nav">
-    <ul>
-      <li>
-        <a href="{{ CandidateList::create_path() }}">{{ "candidate_list.fields.electoral_districts"|trans }}</a>
-      </li>
-    </ul>
-  </div>
+  {% include "candidate_lists/components/create_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   {% if has_previous_list %}

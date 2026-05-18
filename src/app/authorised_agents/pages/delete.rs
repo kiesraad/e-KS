@@ -1,10 +1,37 @@
+use askama::Template;
+use axum::response::{IntoResponse, Response};
+
 use crate::{
-    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    authorised_agents::AuthorisedAgent,
+    common::Problematic,
+    filters,
+    form::{EmptyForm, FormData},
     redirect_success,
 };
-use axum::response::Response;
 
 use super::AuthorisedAgentDeletePath;
+
+#[derive(Template)]
+#[template(path = "authorised_agents/pages/delete.html")]
+struct DeleteAuthorisedAgentTemplate {
+    authorised_agent: AuthorisedAgent,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_authorised_agent_confirm(
+    _: AuthorisedAgentDeletePath,
+    context: Context,
+    authorised_agent: AuthorisedAgent,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeleteAuthorisedAgentTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            authorised_agent,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,

@@ -1,11 +1,34 @@
-use axum::response::Response;
+use askama::Template;
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
-    form::EmptyForm,
+    filters,
+    form::{EmptyForm, FormData},
     redirect_success,
 };
+
+#[derive(Template)]
+#[template(path = "candidate_lists/pages/delete.html")]
+struct DeleteCandidateListTemplate {
+    candidate_list: CandidateList,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_candidate_list_confirm(
+    _: CandidateListsDeletePath,
+    context: Context,
+    candidate_list: CandidateList,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeleteCandidateListTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            candidate_list,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
