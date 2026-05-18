@@ -11,13 +11,8 @@ pub async fn gen_documents(
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let bundles = DocumentData::from_store_and_context(&store, &context, locale).await?;
-
-    let Some(document_data) = bundles.first() else {
-        return Err(AppError::IncompleteData("No candidate lists"));
-    };
-
-    let filename = document_data.archive_filename();
+    let (bundles, filename) =
+        DocumentData::from_store_and_context(&store, &context, locale).await?;
 
     tracing::info!(
         filename,

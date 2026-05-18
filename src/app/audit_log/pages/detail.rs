@@ -33,14 +33,7 @@ pub async fn audit_log_detail(
 ) -> Result<impl IntoResponse, AppError> {
     let events = store.get_events();
     let locale = context.session.locale;
-    let temp_store = AppStore::new_for_temp_stream(store.election).await;
-
-    store
-        .get_events()
-        .iter()
-        .take_while(|e| e.event_id <= event_id)
-        .zip(1..)
-        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
+    let temp_store = create_temp_store(&store, event_id).await;
 
     let is_downloadable_state = Problems::find_all(&temp_store).models_downloadable();
 
@@ -73,22 +66,9 @@ pub async fn audit_log_gen_documents(
     State(renderer): State<TypstRenderer>,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let temp_store = AppStore::new_for_temp_stream(store.election).await;
-
-    store
-        .get_events()
-        .iter()
-        .take_while(|e| e.event_id <= event_id)
-        .zip(1..)
-        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
-
-    let bundles = DocumentData::from_store_and_context(&temp_store, &context, locale).await?;
-
-    let Some(document_data) = bundles.first() else {
-        return Err(AppError::IncompleteData("No candidate lists"));
-    };
-
-    let filename = document_data.archive_filename();
+    let temp_store = create_temp_store(&store, event_id).await;
+    let (bundles, filename) =
+        DocumentData::from_store_and_context(&temp_store, &context, locale).await?;
 
     tracing::info!(
         filename,
@@ -105,6 +85,19 @@ pub async fn audit_log_gen_documents(
         .await?;
 
     DocumentData::to_zip_response(bundles, filename, renderer).await
+}
+
+async fn create_temp_store(store: &AppStore, event_id: usize) -> AppStore {
+    let temp_store = AppStore::new_for_temp_stream(store.election).await;
+
+    store
+        .get_events()
+        .iter()
+        .take_while(|e| e.event_id <= event_id)
+        .zip(1..)
+        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
+
+    temp_store
 }
 #[cfg(test)]
 mod tests {

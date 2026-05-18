@@ -164,7 +164,7 @@ impl DocumentData {
         store: &AppStore,
         context: &Context,
         locale: ModelLocale,
-    ) -> Result<Vec<Self>, AppError> {
+    ) -> Result<(Vec<Self>, String), AppError> {
         let list_ids = store
             .get_candidate_lists()
             .into_iter()
@@ -186,7 +186,12 @@ impl DocumentData {
                 .map(|&list_id| Self::new(store, context, list_id, locale))
                 .collect::<Result<Vec<_>, _>>()?
         };
-        Ok(bundles)
+        let Some(document_data) = bundles.first() else {
+            return Err(AppError::IncompleteData("No candidate lists"));
+        };
+
+        let filename = document_data.archive_filename();
+        Ok((bundles, filename))
     }
 
     pub async fn to_zip_response(
