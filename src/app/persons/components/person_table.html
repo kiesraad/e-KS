@@ -54,7 +54,7 @@
         <td>
           <a href="{{ person.update_path() }}"
              aria-label="{{ "action.edit"|trans }}"
-             title="{% if !person.is_all_good() %}{{ "person.missing_information"|trans }}{% endif %}">
+             {% if let Some(summary) = person.problem_summary(locale) %}title="{{ summary }}"{% endif %}>
             <span>{{ "action.edit"|trans }}</span>
           </a>
         </td>

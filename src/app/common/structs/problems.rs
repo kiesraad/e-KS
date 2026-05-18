@@ -45,6 +45,23 @@ pub trait Problematic {
     fn has_severity_or_higher(&self, severity: Severity) -> bool {
         self.get_problems().iter().any(|p| p.severity() >= severity)
     }
+
+    /// Get a summary of the potential problems, if any
+    fn problem_summary(&self, locale: &Locale) -> Option<String> {
+        let problems = self.get_problems();
+
+        if problems.is_empty() {
+            return None;
+        }
+
+        Some(
+            problems
+                .iter()
+                .map(|p| p.translate(locale))
+                .collect::<Vec<_>>()
+                .join(", "),
+        )
+    }
 }
 
 #[derive(Clone, PartialEq, Debug)]
