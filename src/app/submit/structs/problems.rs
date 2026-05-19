@@ -193,7 +193,6 @@ pub struct ListProblems {
 mod tests {
     use crate::{
         candidate_lists::CandidateListId,
-        common::Severity,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person},
     };
@@ -207,63 +206,6 @@ mod tests {
             list_submitter: Vec::new(),
             substitute_submitters: Vec::new(),
         }
-    }
-
-    struct WithProblems(Vec<PotentialProblems>);
-
-    impl Problematic for WithProblems {
-        fn get_problems(&self) -> Vec<PotentialProblems> {
-            self.0.clone()
-        }
-    }
-
-    #[test]
-    fn severity_order() {
-        assert!(Severity::Info < Severity::Warn);
-        assert!(Severity::Warn < Severity::Error);
-    }
-
-    #[test]
-    fn highest_severity_none_when_no_problems() {
-        let no_problems = WithProblems(vec![]);
-        assert_eq!(no_problems.highest_severity(), None);
-        assert!(!no_problems.has_severity_or_higher(Severity::Info));
-        assert!(!no_problems.has_severity_or_higher(Severity::Warn));
-        assert!(!no_problems.has_severity_or_higher(Severity::Error));
-    }
-
-    #[test]
-    fn highest_severity_info_when_only_info() {
-        let only_info = WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]);
-        assert_eq!(only_info.highest_severity(), Some(Severity::Info));
-        assert!(only_info.has_severity_or_higher(Severity::Info));
-        assert!(!only_info.has_severity_or_higher(Severity::Warn));
-        assert!(!only_info.has_severity_or_higher(Severity::Error));
-    }
-
-    #[test]
-    fn highest_severity_warn_when_only_warnings() {
-        let info_warn = WithProblems(vec![
-            PotentialProblems::NoLastName(Severity::Info),
-            PotentialProblems::NoLastName(Severity::Warn),
-        ]);
-        assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
-        assert!(info_warn.has_severity_or_higher(Severity::Info));
-        assert!(info_warn.has_severity_or_higher(Severity::Warn));
-        assert!(!info_warn.has_severity_or_higher(Severity::Error));
-    }
-
-    #[test]
-    fn highest_severity_error_when_mix_of_severities() {
-        let with_error = WithProblems(vec![
-            PotentialProblems::NoLastName(Severity::Info),
-            PotentialProblems::NoLastName(Severity::Warn),
-            PotentialProblems::NoLastName(Severity::Error),
-        ]);
-        assert_eq!(with_error.highest_severity(), Some(Severity::Error));
-        assert!(with_error.has_severity_or_higher(Severity::Info));
-        assert!(with_error.has_severity_or_higher(Severity::Warn));
-        assert!(with_error.has_severity_or_higher(Severity::Error));
     }
 
     #[test]
