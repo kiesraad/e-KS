@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Severity, structs::problematic::AddressProblems},
+    common::{PotentialProblems, Severity, structs::problematic::EmptyAddressProblems},
 };
 
 use super::{
@@ -33,18 +33,18 @@ impl DutchAddress {
         let mut items = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(AddressProblems::NoStreetName);
+            items.push(EmptyAddressProblems::StreetName);
         }
         if self.house_number.is_empty_or_none() {
-            items.push(AddressProblems::NoHouseNumber);
+            items.push(EmptyAddressProblems::HouseNumber);
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(AddressProblems::NoPostalCode);
+            items.push(EmptyAddressProblems::PostalCode);
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(AddressProblems::NoLocality);
+            items.push(EmptyAddressProblems::Locality);
         }
 
         if items.is_empty() {
@@ -102,19 +102,19 @@ impl InternationalAddress {
         let mut items = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(AddressProblems::NoStreetName);
+            items.push(EmptyAddressProblems::StreetName);
         }
         if self.house_number.is_empty_or_none() {
-            items.push(AddressProblems::NoHouseNumber);
+            items.push(EmptyAddressProblems::HouseNumber);
         }
         if self.postal_code.is_empty_or_none() {
-            items.push(AddressProblems::NoPostalCode);
+            items.push(EmptyAddressProblems::PostalCode);
         }
         if self.locality.is_empty_or_none() {
-            items.push(AddressProblems::NoLocality);
+            items.push(EmptyAddressProblems::Locality);
         }
         if self.country.is_empty_or_none() {
-            items.push(AddressProblems::NoCountry);
+            items.push(EmptyAddressProblems::Country);
         }
 
         if items.is_empty() {
@@ -395,7 +395,10 @@ mod tests {
         address.country = None;
 
         assert_eq!(
-            vec![PotentialProblems::NoCountry(Severity::Error)],
+            vec![PotentialProblems::IncompleteAddress {
+                severity: Severity::Error,
+                problems: vec![EmptyAddressProblems::Country]
+            }],
             address.potential_problems(Severity::Error)
         );
     }

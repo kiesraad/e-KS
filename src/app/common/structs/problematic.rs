@@ -119,17 +119,17 @@ pub enum PotentialProblems {
     // address related
     IncompleteAddress {
         severity: Severity,
-        problems: Vec<AddressProblems>,
+        problems: Vec<EmptyAddressProblems>,
     },
 }
 
 #[derive(Clone, PartialEq, Debug)]
-pub enum AddressProblems {
-    NoStreetName,
-    NoHouseNumber,
-    NoPostalCode,
-    NoLocality,
-    NoCountry,
+pub enum EmptyAddressProblems {
+    StreetName,
+    HouseNumber,
+    PostalCode,
+    Locality,
+    Country,
 }
 
 impl PotentialProblems {
@@ -385,11 +385,11 @@ mod tests {
                 PotentialProblems::IncompleteAddress {
                     severity: Severity::Warn,
                     problems: vec![
-                        AddressProblems::NoStreetName,
-                        AddressProblems::NoPostalCode,
-                        AddressProblems::NoLocality,
-                        AddressProblems::NoHouseNumber,
-                        AddressProblems::NoCountry,
+                        EmptyAddressProblems::StreetName,
+                        EmptyAddressProblems::PostalCode,
+                        EmptyAddressProblems::Locality,
+                        EmptyAddressProblems::HouseNumber,
+                        EmptyAddressProblems::Country,
                     ],
                 },
             )),

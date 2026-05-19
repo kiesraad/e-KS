@@ -212,7 +212,7 @@ mod tests {
     use super::*;
     use crate::{
         AppStore,
-        common::BsnOrNoneConfirmed,
+        common::{BsnOrNoneConfirmed, EmptyAddressProblems},
         pagination::SortDirection,
         persons::PersonSort,
         test_utils::{
@@ -463,8 +463,25 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         person.address = DutchAddress::default();
         let problems = person.get_problems();
-        assert!(problems.contains(&PotentialProblems::NoStreetName(Severity::Warn)));
-        assert!(problems.contains(&PotentialProblems::NoLocality(Severity::Warn)));
+        assert!(problems.iter().any(|pp| match pp {
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Warn,
+                problems,
+            } => {
+                problems.contains(&EmptyAddressProblems::StreetName)
+            }
+            _ => false,
+        }));
+
+        assert!(problems.iter().any(|pp| match pp {
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Warn,
+                problems,
+            } => {
+                problems.contains(&EmptyAddressProblems::Locality)
+            }
+            _ => false,
+        }));
     }
 
     #[test]
@@ -474,7 +491,10 @@ mod tests {
         person.address = DutchAddress::default();
         person.representative = Some(complete_representative());
         let problems = person.get_problems();
-        assert!(!problems.contains(&PotentialProblems::NoStreetName(Severity::Warn)));
+        assert!(!problems.contains(&PotentialProblems::IncompleteAddress {
+            severity: Severity::Warn,
+            problems: vec![EmptyAddressProblems::StreetName]
+        }));
         assert!(!problems.contains(&PotentialProblems::NoRepresentative));
     }
 

@@ -5,7 +5,7 @@ use crate::{
     authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
     common::{PotentialProblems, Problematic, Severity},
-    list_submitters::{self, ListSubmitter},
+    list_submitters::ListSubmitter,
     persons::Person,
     political_groups::PoliticalGroup,
 };
@@ -171,8 +171,8 @@ impl GeneralProblems {
                 .iter()
                 .flat_map(|ss| &ss.problems),
         );
-        if self.list_submitter.is_some() {
-            result.extend(&self.list_submitter.as_ref().unwrap().problems);
+        if let Some(submitter_problems) = &self.list_submitter {
+            result.extend(&submitter_problems.problems);
         }
 
         result

@@ -13,10 +13,11 @@ pub use forms::{
 };
 pub use structs::{
     Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
-    DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HouseNumber,
-    HouseNumberAddition, Initials, InternationalAddress, InternationalPostalCode, LastName,
-    LastNamePrefix, LegalName, Locality, PlaceOfResidence, PostalCode, PotentialProblems,
-    PreviousElectionResults, Problematic, Severity, StateOrProvince, StreetName, UtcDateTime,
+    DateOfBirth, DisplayName, DutchAddress, EmptyAddressProblems, FirstName, FormAction, FullName,
+    Gender, HouseNumber, HouseNumberAddition, Initials, InternationalAddress,
+    InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence,
+    PostalCode, PotentialProblems, PreviousElectionResults, Problematic, Severity, StateOrProvince,
+    StreetName, UtcDateTime,
 };
 
 pub use pages::{
