@@ -27,7 +27,9 @@ no_previous_election_results: Previous election results are missing
 no_problems: No problems
 no_representative: authorised person is missing
 no_street_name: street name is missing
+incomplete_address: address is incomplete
 no_substitute_submitter: No substitute submitter added
 representative: authorised person
 too_many_candidates: "Too many candidates ({} added, maximum is {})"
 very_old_date_of_birth: "date of birth appears incorrect (more than {} years ago)"
+list_submitter: List submitter

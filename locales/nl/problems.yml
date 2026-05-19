@@ -31,3 +31,5 @@ no_substitute_submitter: Geen vervanger voor het herstel van verzuimen toegevoeg
 representative: gemachtigde
 too_many_candidates: "Te veel kandidaten ({} toegevoegd, maximum is {})"
 very_old_date_of_birth: "geboortedatum lijkt onjuist (meer dan {} jaar geleden)"
+incomplete_address: adres is niet volledig ingevuld
+list_submitter: Lijstinleveraar
