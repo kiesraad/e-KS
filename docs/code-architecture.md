@@ -24,21 +24,21 @@ noted otherwise.
 
 | Term (code) | Dutch | Kieswet | Role in the process |
 |-------------|-------|---------|---------------------|
-| Political group | Politieke groepering | Art. G 1 | The party taking part in the election. It has a registered name (the *aanduiding*), registered with the central electoral committee under Hoofdstuk G, that may be printed above its list. Modelled by `political_groups`. |
+| Political group | Politieke groepering | Art. G 1 | The political group taking part in the election. It has a registered name (the *aanduiding*), registered with the central electoral committee under Hoofdstuk G, that may be printed above its list. Modelled by `political_groups`. |
 | Candidate list | Kandidatenlijst | Art. H 1 | The ordered list of candidates a political group submits for one or more electoral districts. This is the central artifact of the procedure and is filed as model **H1** (the form's model is fixed under Art. H 1, derde lid). Modelled by `candidate_lists`. |
 | Candidate | Kandidaat | Art. H 6, H 9 | An electable person on a candidate list, at a specific position (ordering: Art. H 6). Each candidate provides a consent declaration, model **H9** (*instemmingsverklaring*, Art. H 9). Modelled by `candidates`. |
 | Person | Persoon | n/a | A natural person record (personal data, address). A code-level abstraction, not a Kieswet term. A single person can be a candidate on multiple lists. Modelled by `persons`. |
 | Electoral district | Kieskring | Art. H 2 | The geographic district a candidate list is submitted for; the list states which kieskring(en) it is filed for. A list is scoped to one or more districts. |
 | List submitter | Lijstinleveraar | Art. H 3, eerste lid | The voter who hands in the candidate list to the central electoral committee in person. The notice of defects (*verzuimbrief*) is sent to this person's address. Modelled by `list_submitters`. |
 | Substitute list submitter | Vervanger (voor het herstel van verzuimen) | Art. H 5 (Art. I 2) | One or more persons named on the list who, if the submitter is unavailable, may correct mistakes (*verzuimen*) on the list on the submitter's behalf (the *verzuimherstel* itself: Art. I 2). Modelled by `substitute_list_submitters`. |
-| Authorised agent | Gemachtigde | Art. H 3, tweede/derde lid (Art. G 1, derde lid) | The party's agent, registered with the central electoral committee under Hoofdstuk G, who authorises placing the party name above the list. This authorisation is filed as model **H3-1** (or **H3-2** for a combined name). Modelled by `authorised_agents`. |
+| Authorised agent | Gemachtigde | Art. H 3, tweede/derde lid (Art. G 1, derde lid) | The political group's agent, registered with the central electoral committee under Hoofdstuk G, who authorises placing the political group's name above the list. This authorisation is filed as model **H3-1** (or **H3-2** for a combined name). Modelled by `authorised_agents`. |
 | Representative | Gemachtigde van kandidaat | Art. H 10, H 10a | For a candidate residing outside the European part of the Netherlands: a representative, named in the candidate's consent declaration, who receives official correspondence (such as the appointment letter) on the candidate's behalf. Stored in the `persons`/`candidates` data. |
 | Support declaration | Ondersteuningsverklaring | Art. H 4 | A declaration of support for a list, model **H4**, required in certain cases. |
 
 Both an "authorised agent" and a candidate's "representative" are a *gemachtigde*
-in Dutch, but they are distinct roles: the authorised agent acts for the party
-name (H3-1, Art. H 3), the representative acts for an individual candidate
-living outside the Netherlands (Art. H 10).
+in Dutch, but they are distinct roles: the authorised agent acts for the
+political group's name (H3-1, Art. H 3), the representative acts for an individual
+candidate living outside the Netherlands (Art. H 10).
 
 The **H-models** are the official forms; each is named after the Kieswet article
 that requires it and whose model is fixed by ministerial regulation: H1 (Art.
@@ -98,6 +98,11 @@ path dependencies of the root crate, each keeping its own `Cargo.lock`.
   `/login` and `/logout` routes and an `AuthState` trait. The `eks` crate
   implements `AuthState` for its `AppState` and mounts this router; the crate
   itself knows nothing about e-KS domain types.
+- **`development/`** (`eks-development`): a sibling crate that is *not* a
+  dependency of `eks`. It ships local-only tooling: the `dev` orchestrator
+  that brings up Docker dependencies and runs the app, the `setup` binary,
+  `update_locales`, and `pdf_diff` (used by CI to to visualize PDF document
+  differences).
 
 Document generation is done using Typst via the `typst-webservice` crate,
 which is a separate binary dependency (not a library crate) that runs as
@@ -206,7 +211,9 @@ The handler itself follows one of two shapes:
 - **Write (POST).** It validates the submitted `Form<T>`. On a validation error
   it re-renders the same page with the field errors. On success it constructs
   an `AppEvent` and calls `store.update(event)`, which persists and applies the
-  event, then returns a redirect (the Post/Redirect/Get pattern).
+  event, then returns a redirect (the Post/Redirect/Get pattern). This covers
+  deletions too: removals are submitted as HTML form POSTs rather than DELETE
+  requests, since browsers can only emit GET and POST from a `<form>`.
 
 An `AppError` returned from anywhere in this chain is caught by the
 `render_error_pages` layer, which turns it into the appropriate HTML error page
@@ -219,7 +226,7 @@ e-KS deliberately keeps a small dependency tree (every crate is reviewed, and
 `cargo deny` enforces the license/advisory policy in `deny.toml`). Five
 dependencies shape the architecture enough to be worth describing on their own.
 
-### `axum`: HTTP framework
+### [`axum`](https://crates.io/crates/axum): HTTP framework
 
 The application *is* an Axum `Router`. The wiring follows a consistent pattern:
 
@@ -228,7 +235,7 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   the cross-cutting layers. Feature-gated routers (development login, the embedded
   BAG endpoints, live-reload, `memory-serve` static assets) are merged in the
   same place.
-- **Typed routing** (via `axum-extra`). Routes are declared as
+- **Typed routing** (via [`axum-extra`](https://crates.io/crates/axum-extra)). Routes are declared as
   `#[derive(TypedPath, Deserialize)]` structs with a `#[typed_path("...")]`
   attribute and `rejection(AppError)`. Handlers take the typed-path struct as
   their first argument, so URLs are checked at compile time and can be built in
@@ -241,13 +248,13 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   to load a domain entity from the URL + store).
 - **Middleware and layers.** Session handling, store resolution, error-page
   rendering, and the `eks-key` check are installed with
-  `middleware::from_fn_with_state`. `tower-http` adds the security response
+  `middleware::from_fn_with_state`. [`tower-http`](https://crates.io/crates/tower-http) adds the security response
   headers (CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`)
   and HTTP tracing.
 - **Shared state.** `AppState` derives `FromRef`, so sub-states such as
   `TypstRenderer` can be extracted directly into handlers without having to thread through the whole `AppState`.
 
-### `askama`: compile-time HTML templates
+### [`askama`](https://crates.io/crates/askama): compile-time HTML templates
 
 All HTML is rendered with Askama, type-checked against its template structs at
 compile time. `askama.toml` roots template resolution at `src/app`, and
@@ -258,7 +265,11 @@ with the global layout and macros in `src/app/common/components/`.
 - A handler builds a `#[derive(Template)]` struct (`#[template(path = "...")]`)
   and returns it wrapped in `HtmlTemplate(template, context)`
   (`src/core/templates.rs`). `HtmlTemplate` implements `IntoResponse`: it
-  renders the template and sets `Cache-Control: no-store`.
+  renders the template and sets `Cache-Control: no-store`. Every HTML page is
+  session-bound and carries personal candidate data, so it must not be cached
+  anywhere on the path back to the user — most importantly not by any upstream
+  CDN or proxy that may sit in front of the application, where any retention
+  of HTML would be a privacy issue.
 - The second field is the request-scoped `Context`, which implements
   `askama::Values`. This is how templates reach request state (locale, session,
   query-string flags) that is not part of the template struct itself.
@@ -267,7 +278,7 @@ with the global layout and macros in `src/app/common/components/`.
   `datetime`, `flag`), validation-error display (`error`), and `*_value`
   accessors that read request-scoped data out of `askama::Values`.
 
-### `memory-serve`: embedded static assets
+### [`memory-serve`](https://crates.io/crates/memory-serve): embedded static assets
 
 The frontend (TypeScript + CSS) is bundled by esbuild into `frontend/static`.
 In production those assets are compiled *into* the binary so there is no
@@ -282,7 +293,7 @@ separate asset directory to deploy:
   and JS. The URL paths are identical in both modes, so templates never need to
   know which mode is active.
 
-### `typst-webservice`: PDF generation
+### [`typst-webservice`](https://github.com/tweedegolf/typst-webservice): PDF generation
 
 The official candidate-nomination forms (models H1, H3-1, H4, H9, etc.) are produced
 as PDF files from Typst templates. The `submit` domain assembles serializable
@@ -302,21 +313,24 @@ stored in `AppState`, and reached by handlers via `State<TypstRenderer>`.
 `submit/pages/documents.rs` renders multiple documents and streams them to the
 client as a single ZIP download.
 
-### `bag_address_lookup`: Dutch address lookup
+### [`bag_address_lookup`](https://github.com/tweedegolf/bag-address-lookup): Dutch address lookup
 
 Address fields are validated and autocompleted against the BAG
 (*Basisregistratie Adressen en Gebouwen*): postal code + house number resolve
 to a street and locality, and locality names autocomplete. This backs the
 frontend's `/lookup` and `/suggest` endpoints.
 
-- Gated behind the `embed-bag` feature. `src/utils/embed_bag.rs` exposes a
-  small router for `/lookup` and `/suggest` backed by a compressed BAG database
-  embedded in the crate; the `DatabaseHandle` is decoded lazily on first use
-  (`LazyLock`), so the first request is slower than the rest.
-- The embedded endpoints are drop-in compatible with the external `bag-service`
-  that `/lookup` and `/suggest` otherwise proxy to (`BAG_SERVICE_URL`, in
-  `dev-features` mode). As with `memory-serve`, the frontend sees the same URLs
-  either way.
+Like the Typst renderer, BAG lookup runs either against an external
+`bag-service` (the default) or in-process when the `embed-bag` cargo feature
+is enabled. The embedded mode:
+
+- exposes `/lookup` and `/suggest` via `src/utils/embed_bag.rs`, backed by a
+  compressed BAG database embedded in the crate; the `DatabaseHandle` is
+  decoded lazily on first use (`LazyLock`), so the first request is slower
+  than the rest.
+- is drop-in compatible with the external `bag-service` that `/lookup` and
+  `/suggest` otherwise proxy to (`BAG_SERVICE_URL`, in `dev-features` mode).
+  As with `memory-serve`, the frontend sees the same URLs either way.
 
 ## Configuration and feature flags
 
@@ -337,6 +351,12 @@ Runtime configuration is read from environment variables once at startup into a
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
+
+The binary itself only reads `env::var`, but the deployment can supply these
+variables from a file (e.g. systemd `EnvironmentFile=`, Docker `--env-file`,
+Kubernetes secret mounts). This is the preferred way to provide the master
+secrets (`ID_DERIVATION_KEY`, `ENCRYPTION_DERIVATION_KEY`, `EKS_KEY`) so they
+never end up in shell history or process listings.
 
 In `dev-features` builds a missing variable falls back to a built-in development
 default; in a production build a missing required variable is a startup error
@@ -383,7 +403,8 @@ This fits the application well for a few reasons:
   election: it covers one nomination procedure and is cleared once that
   election is over. There is no long-lived, ever-growing dataset to replay, so
   the usual cost of event sourcing, replaying a long history to rebuild state,
-  stays negligible here.
+  stays negligible here. The standard mitigation, periodic snapshots of the
+  projection, is therefore not needed and is left out of the design.
 - **Time travel.** Because state is a pure function of the event prefix,
   the exact state at any earlier point can be reproduced by replaying the log
   up to a chosen event. This makes it possible to reconstruct precisely what
