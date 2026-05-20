@@ -11,6 +11,7 @@ header {
     color: var(--header-color);
     min-height: var(--header-height);
     padding: 0 var(--header-padding-inline);
+    
 
     ul {
       display: flex;
@@ -106,8 +107,9 @@ header {
     justify-content: space-between;
     margin: 0;
     min-height: 9rem;
-    padding-inline: var(--main-padding-inline) ;
     padding-block: var(--space-11) var(--space-8);
+    margin-inline: auto;
+    width: min(calc(100% - 10rem), 82.5rem);
 
     .tags {
       margin-top: var(--space-6);
