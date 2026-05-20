@@ -26,13 +26,13 @@ noted otherwise.
 |-------------|-------|---------|---------------------|
 | Political group | Politieke groepering | Art. G 1 | The party taking part in the election. It has a registered name (the *aanduiding*), registered with the central electoral committee under Hoofdstuk G, that may be printed above its list. Modelled by `political_groups`. |
 | Candidate list | Kandidatenlijst | Art. H 1 | The ordered list of candidates a political group submits for one or more electoral districts. This is the central artifact of the procedure and is filed as model **H1** (the form's model is fixed under Art. H 1, derde lid). Modelled by `candidate_lists`. |
-| Candidate | Kandidaat | Art. H 6, H 9 | A person standing for election on a candidate list, at a specific position (ordering: Art. H 6). Each candidate provides a consent declaration, model **H9** (*instemmingsverklaring*, Art. H 9). Modelled by `candidates`. |
-| Person | Persoon | n/a | A natural person record (personal data, address). A code-level abstraction, not a Kieswet term: the same person can be a candidate on multiple lists. Modelled by `persons`. |
+| Candidate | Kandidaat | Art. H 6, H 9 | An electable person on a candidate list, at a specific position (ordering: Art. H 6). Each candidate provides a consent declaration, model **H9** (*instemmingsverklaring*, Art. H 9). Modelled by `candidates`. |
+| Person | Persoon | n/a | A natural person record (personal data, address). A code-level abstraction, not a Kieswet term. A single person can be a candidate on multiple lists. Modelled by `persons`. |
 | Electoral district | Kieskring | Art. H 2 | The geographic district a candidate list is submitted for; the list states which kieskring(en) it is filed for. A list is scoped to one or more districts. |
-| List submitter | Lijstinleveraar | Art. H 3, eerste lid | The voter who hands the candidate list in, in person, to the central electoral committee. The notice of defects (*verzuimbrief*) is sent to this person's address. Modelled by `list_submitters`. |
-| Substitute list submitter | Vervanger (voor het herstel van verzuimen) | Art. H 5 (Art. I 2) | One or more persons named on the list who, if the submitter is unavailable, may repair defects (*verzuimen*) in the list on the submitter's behalf (the *verzuimherstel* itself: Art. I 2). Modelled by `substitute_list_submitters`. |
+| List submitter | Lijstinleveraar | Art. H 3, eerste lid | The voter who hands in the candidate list to the central electoral committee in person. The notice of defects (*verzuimbrief*) is sent to this person's address. Modelled by `list_submitters`. |
+| Substitute list submitter | Vervanger (voor het herstel van verzuimen) | Art. H 5 (Art. I 2) | One or more persons named on the list who, if the submitter is unavailable, may correct mistakes (*verzuimen*) on the list on the submitter's behalf (the *verzuimherstel* itself: Art. I 2). Modelled by `substitute_list_submitters`. |
 | Authorised agent | Gemachtigde | Art. H 3, tweede/derde lid (Art. G 1, derde lid) | The party's agent, registered with the central electoral committee under Hoofdstuk G, who authorises placing the party name above the list. This authorisation is filed as model **H3-1** (or **H3-2** for a combined name). Modelled by `authorised_agents`. |
-| Representative | Gemachtigde van kandidaat | Art. H 10, H 10a | For a candidate residing outside the European part of the Netherlands: a representative, named in the candidate's consent declaration, who receives official correspondence (such as the appointment letter) on the candidate's behalf. Stored on the `persons`/`candidates` data. |
+| Representative | Gemachtigde van kandidaat | Art. H 10, H 10a | For a candidate residing outside the European part of the Netherlands: a representative, named in the candidate's consent declaration, who receives official correspondence (such as the appointment letter) on the candidate's behalf. Stored in the `persons`/`candidates` data. |
 | Support declaration | Ondersteuningsverklaring | Art. H 4 | A declaration of support for a list, model **H4**, required in certain cases. |
 
 Both an "authorised agent" and a candidate's "representative" are a *gemachtigde*
@@ -46,14 +46,14 @@ H 1), H3-1 / H3-2 (Art. H 3, vijfde lid), H4 (Art. H 4, zevende lid), H9 (Art.
 H 9, vierde lid).
 
 The `submit` domain validates the assembled data and renders the official forms
-(the **H-models** H1, H3-1, H4, H9) as PDFs; `audit_log` is a read view over the
+(the **H-models** H1, H3-1, H4, H9) as PDF files; `audit_log` is a read view over all
 recorded changes.
 
 ### Election types
 
-Every piece of data belongs to one election, represented by the `ElectionConfig`
-enum (`src/core/election/`). The user picks an election, and where relevant a
-region, at the start of a session; that choice, together with the user's stream,
+Every record of data belongs to one election, represented by the `ElectionConfig`
+enum (`src/core/election/`). The user selects an election, and a
+region (if applicable) at the start of a session; this choice, together with the user's stream,
 forms the `(stream_id, election)` partition key. The current configurations are:
 
 - **EK27**: the 2027 Eerste Kamer (Senate) election. National, no region.
@@ -68,9 +68,9 @@ Each configuration carries:
 
 - its **electoral districts**: EK27 spans a fixed national set, a PS27 province
   has one or more districts, a WS27 water authority has exactly one;
-- the **key dates**: nomination day, election day, and the date-of-birth cutoff
+- the **significant dates**: nomination day, election day, and the date-of-birth cutoff
   for candidate eligibility;
-- whether the elected body has **nineteen or more seats**, a seat-count threshold
+- whether the elected body has **nineteen or more seats**: a seat-count threshold
   that, among other things, selects the EML election subcategory;
 - whether **Frisian-language document export** is allowed (Friesland and
   Wetterskip Fryslân only);
@@ -101,7 +101,7 @@ path dependencies of the root crate, each keeping its own `Cargo.lock`.
 
 Document generation is done using Typst via the `typst-webservice` crate,
 which is a separate binary dependency (not a library crate) that runs as
-an external process in production but is embedded in-process in dev with
+an external process in production but is embedded in-process in development with
 the `embed-typst` feature.
 
 Address validation and lookup against the BAG is handled similarly:
@@ -128,7 +128,7 @@ modules:
 | `src/error/` | `AppError` and the rendering of error responses/pages. |
 | `src/form/` | Generic form extraction and validation: the `Form<T>` extractor, CSRF tokens, file uploads, string validators. |
 | `src/pagination/` | Reusable list-pagination helpers (params, page links, page info). |
-| `src/fixtures/` | Seed data loaded into the store on startup in dev/test (`fixtures` feature). |
+| `src/fixtures/` | Sample data loaded into the store on startup in development/test (`fixtures` feature). |
 | `src/utils/` | Small standalone helpers (id newtypes, redirects, health check, embedding helpers, etc.). |
 
 ### `src/app/` domain modules
@@ -166,8 +166,7 @@ same thing:
 Page templates are co-located with their handlers: a handler in
 `pages/update.rs` renders `pages/update.html`. Askama is configured
 (`askama.toml`) to resolve templates relative to `src/app`, so templates can
-reference fragments from any domain, most commonly the shared layout and macro
-fragments in `src/app/common/components/`.
+reference fragments from any domain. This is most used for the application-wide shared layout and macro fragments in `src/app/common/components/`.
 
 A few domains also carry domain-specific helper files next to these folders,
 for example `candidate_lists/importer.rs` (CSV/EML import) and
@@ -185,7 +184,7 @@ order on an incoming request is:
    key is unset this layer is a no-op. Intended for gating the app behind a
    known upstream.
 2. **Tracing and security headers.** HTTP tracing is opened, and the security
-   response headers (CSP, `X-Frame-Options`, and so on) are scheduled.
+   response headers (CSP, `X-Frame-Options`, etc.) are scheduled.
 3. **`session_middleware`.** Reads the `EKS_SESSION_ID` cookie and looks the
    session up in the `SessionStore`. A missing or invalid session redirects to
    `/login`. Otherwise the session's `last_activity` is refreshed and the
@@ -226,14 +225,14 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
 
 - **Per-domain routers.** Each `src/app/<domain>/` exposes a `router()` that
   returns a `Router<AppState>`; `src/router.rs::create` merges them all and adds
-  the cross-cutting layers. Feature-gated routers (dev login, the embedded
+  the cross-cutting layers. Feature-gated routers (development login, the embedded
   BAG endpoints, live-reload, `memory-serve` static assets) are merged in the
   same place.
 - **Typed routing** (via `axum-extra`). Routes are declared as
   `#[derive(TypedPath, Deserialize)]` structs with a `#[typed_path("...")]`
   attribute and `rejection(AppError)`. Handlers take the typed-path struct as
   their first argument, so URLs are checked at compile time and can be built in
-  reverse, the `*_path()` helper methods on domain structs (e.g. on
+  reverse, the `<endpoint>_path()` helper methods on domain structs (e.g. on
   `Candidate`) produce links for templates without hand-written URL strings.
 - **Extractors.** Handlers declare what they need as arguments: the
   request-scoped `Context`, the `AppStore`, the `Session`, the `Form<T>`
@@ -246,14 +245,13 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   headers (CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`)
   and HTTP tracing.
 - **Shared state.** `AppState` derives `FromRef`, so sub-states such as
-  `TypstRenderer` can be extracted directly into handlers without threading the
-  whole `AppState` through.
+  `TypstRenderer` can be extracted directly into handlers without having to thread through the whole `AppState`.
 
 ### `askama`: compile-time HTML templates
 
 All HTML is rendered with Askama, type-checked against its template structs at
 compile time. `askama.toml` roots template resolution at `src/app`, and
-templates are co-located with their handlers (`pages/update.rs` ↔
+templates are co-located with their handlers (for example, `pages/update.rs` lives right next to
 `pages/update.html`); shared fragments live in each domain's `components/`,
 with the global layout and macros in `src/app/common/components/`.
 
@@ -287,7 +285,7 @@ separate asset directory to deploy:
 ### `typst-webservice`: PDF generation
 
 The official candidate-nomination forms (models H1, H3-1, H4, H9, etc.) are produced
-as PDFs from Typst templates. The `submit` domain assembles serializable
+as PDF files from Typst templates. The `submit` domain assembles serializable
 `typst_*` input structs (`src/app/submit/structs/`) and hands them to a
 `TypstRenderer` (`src/core/typst_renderer.rs`), which has two modes selected by
 the `embed-typst` feature:
@@ -301,7 +299,7 @@ the `embed-typst` feature:
 
 The renderer is built once at startup (`build_typst_renderer` in `state.rs`),
 stored in `AppState`, and reached by handlers via `State<TypstRenderer>`.
-`submit/pages/documents.rs` renders multiple forms and streams them to the
+`submit/pages/documents.rs` renders multiple documents and streams them to the
 client as a single ZIP download.
 
 ### `bag_address_lookup`: Dutch address lookup
@@ -330,7 +328,7 @@ Runtime configuration is read from environment variables once at startup into a
 
 | Variable | Purpose |
 |----------|---------|
-| `STORAGE_URL` | Persistence backend: `memory://`, `local://<dir>`, or `postgres://`. |
+| `STORAGE_URL` | Persistence backend: `memory://`, `local://<dir>`, or `postgres://<connection_string>`. |
 | `TYPST_URL` | External typst-webservice URL (only without the `embed-typst` feature). |
 | `BAG_SERVICE_URL` | External bag-service URL (`dev-features`, without `embed-bag`). |
 | `ID_DERIVATION_KEY` | Master secret for stream-id derivation. |
@@ -355,7 +353,7 @@ and enables the embedding and TLS features.
 | `dev-features` | Relaxes config (dev defaults), enables the dev login and the bag-service proxy. |
 | `database` | Postgres / SQLx storage backend. |
 | `migrations` | Run database migrations on startup. |
-| `fixtures` | Optionally load seed data into the store when an election is selected. |
+| `fixtures` | Optionally load sample data into the store when an election is selected. |
 | `verify-event-hash-chain` | Recompute and verify the event hash chain when replaying. |
 | `livereload` | Live-reload assets and templates during development. |
 | `memory-serve` | Serve the frontend assets embedded in the binary. |
@@ -409,7 +407,7 @@ parameterized over a projection type `D`:
   clone shares the same projection and persistence. `AppStore` is the alias
   `Store<AppStoreData>`.
 - **`StoreRegistry<D>`** lives in `AppState` and caches one `Store` per
-  `(stream_id, election)` in a map behind an `RwLock`. `get_or_create` returns
+  `(stream_id, election)` in a map behind a `RwLock`. `get_or_create` returns
   the cached store, or builds one: it constructs the `Store`, calls `load()` to
   replay the persisted events into a fresh projection, runs an optional
   one-time init hook (this is where `fixtures` are loaded on first use), and
@@ -467,8 +465,8 @@ key.
 
 ### Event payload encryption and key derivation
 
-On the file and PostgreSQL backends every event payload is encrypted at rest
-with AES-256-GCM, see `EventEncryption` / `EventCipher` in
+On the file and PostgreSQL backends, every event payload is encrypted at rest
+with AES-256-GCM. For implementation details, see `EventEncryption` / `EventCipher` in
 `src/store/encryption.rs`.
 
 The encryption key is **per `(stream_id, election)`**. It is derived with
@@ -512,8 +510,7 @@ hash_n = SHA256( hash_{n-1} ‖ event_id_n (u64 LE) ‖ created_at_n (i64 LE, mi
   *encrypted* blob (which is indistinguishable from random and carries a fresh
   nonce) is deliberate: it lets the hash be stored **unencrypted** without leaking
   anything about the plaintext, while still committing to the exact stored bytes.
-- `created_at` is hashed at microsecond precision because that is all that
-  survives a round-trip through the on-disk frame format and Postgres `timestamptz`.
+- `created_at` is hashed at microsecond precision because that is the precision that remains after a round-trip through the on-disk frame format and Postgres `timestamptz`.
 
 In addition, the AES-GCM *associated data* for each event is
 `event_id ‖ created_at ‖ hash_{n-1}`. This authenticates the cleartext metadata
