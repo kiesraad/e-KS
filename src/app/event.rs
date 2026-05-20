@@ -88,6 +88,15 @@ pub enum AppEvent {
         file_size: usize,
         list_id: CandidateListId,
     },
+
+    ImportCandidates {
+        list_id: CandidateListId,
+        file_name: String,
+        file_size: usize,
+        created_persons: Vec<Person>,
+        updated_persons: Vec<Person>,
+        candidates: Vec<PersonId>,
+    },
 }
 
 impl AppEvent {
@@ -118,7 +127,8 @@ impl AppEvent {
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
             | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => "system",
+            | AppEvent::ImportCsv { .. }
+            | AppEvent::ImportCandidates { .. } => "system",
         }
     }
 
@@ -153,7 +163,7 @@ impl AppEvent {
             AppEvent::DeveloperLogin { .. } => "developer_login",
             AppEvent::DownloadFile { .. } => "download_file",
             AppEvent::ExportCsv { .. } => "export_csv",
-            AppEvent::ImportCsv { .. } => "import_csv",
+            AppEvent::ImportCsv { .. } | AppEvent::ImportCandidates { .. } => "import_csv",
         }
     }
 }

@@ -235,6 +235,8 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         "political_group_id" => trans!("audit_log.detail.fields.political_group_id", locale),
         "file_name" => trans!("audit_log.detail.fields.file_name", locale),
         "file_size" => trans!("audit_log.detail.fields.file_size", locale),
+        "created_count" => trans!("audit_log.detail.fields.created_count", locale),
+        "updated_count" => trans!("audit_log.detail.fields.updated_count", locale),
         "download_path" => trans!("audit_log.detail.fields.download_path", locale),
         "list_id" => trans!("audit_log.detail.fields.list_id", locale),
         // Address type discriminator

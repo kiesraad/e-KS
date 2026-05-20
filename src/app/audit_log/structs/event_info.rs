@@ -75,7 +75,9 @@ pub(super) fn event_description(event: &AppEvent, locale: Locale) -> String {
         AppEvent::DeveloperLogin { .. } => trans!("audit_log.event.developer_login", locale),
         AppEvent::DownloadFile { .. } => trans!("audit_log.event.download_file", locale),
         AppEvent::ExportCsv { .. } => trans!("audit_log.event.export_csv", locale),
-        AppEvent::ImportCsv { .. } => trans!("audit_log.event.import_csv", locale),
+        AppEvent::ImportCsv { .. } | AppEvent::ImportCandidates { .. } => {
+            trans!("audit_log.event.import_csv", locale)
+        }
     }
 }
 
@@ -112,7 +114,8 @@ pub(super) fn event_details(event: &AppEvent) -> String {
         }
         AppEvent::DownloadFile { file_name, .. }
         | AppEvent::ExportCsv { file_name, .. }
-        | AppEvent::ImportCsv { file_name, .. } => file_name.clone(),
+        | AppEvent::ImportCsv { file_name, .. }
+        | AppEvent::ImportCandidates { file_name, .. } => file_name.clone(),
         AppEvent::UpdatePersonAddress { .. }
         | AppEvent::UpdatePersonRepresentative { .. }
         | AppEvent::DeletePerson { .. }
@@ -157,9 +160,9 @@ pub(super) fn subject_path(event: &AppEvent) -> String {
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
             ss.substitute_update_path().to_string()
         }
-        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
-            candidate_list_path(*list_id)
-        }
+        AppEvent::ExportCsv { list_id, .. }
+        | AppEvent::ImportCsv { list_id, .. }
+        | AppEvent::ImportCandidates { list_id, .. } => candidate_list_path(*list_id),
         _ => String::new(),
     }
 }
@@ -193,9 +196,9 @@ pub(super) fn subject_id_full(event: &AppEvent) -> String {
             ..
         } => substitute_submitter_id.to_string(),
         AppEvent::DeveloperLogin { stream_id, .. } => stream_id.to_string(),
-        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
-            list_id.to_string()
-        }
+        AppEvent::ExportCsv { list_id, .. }
+        | AppEvent::ImportCsv { list_id, .. }
+        | AppEvent::ImportCandidates { list_id, .. } => list_id.to_string(),
         AppEvent::DownloadFile { .. } => String::new(),
     }
 }

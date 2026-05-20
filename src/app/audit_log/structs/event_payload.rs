@@ -117,6 +117,20 @@ pub(super) fn extract_old_new(
             file_size: file_size,
             list_id: list_id.to_string(),
         }),
+        AppEvent::ImportCandidates {
+            file_name,
+            file_size,
+            list_id,
+            created_persons,
+            updated_persons,
+            ..
+        } => event!({
+            file_name: file_name,
+            file_size: file_size,
+            list_id: list_id.to_string(),
+            created_count: created_persons.len(),
+            updated_count: updated_persons.len(),
+        }),
     }
 }
 
@@ -417,6 +431,38 @@ mod tests {
             Some(serde_json::json!({
                 "file_name": "list.csv",
                 "download_path": "/tmp/list.csv",
+            }))
+        );
+    }
+
+    #[test]
+    fn import_candidates_payload_includes_counts() {
+        let list_id = CandidateListId::new();
+        let state = empty_state();
+        let person_a = sample_person(PersonId::new());
+        let person_b = sample_person(PersonId::new());
+        let person_c = sample_person(PersonId::new());
+
+        let event = AppEvent::ImportCandidates {
+            list_id,
+            file_name: "candidates.csv".to_string(),
+            file_size: 123,
+            created_persons: vec![person_a.clone(), person_b.clone()],
+            updated_persons: vec![person_c.clone()],
+            candidates: vec![person_a.id, person_b.id, person_c.id],
+        };
+
+        let (old, new) = extract_old_new(&event, &state, &state);
+
+        assert!(old.is_none());
+        assert_eq!(
+            new,
+            Some(serde_json::json!({
+                "file_name": "candidates.csv",
+                "file_size": 123,
+                "list_id": list_id.to_string(),
+                "created_count": 2,
+                "updated_count": 1,
             }))
         );
     }
