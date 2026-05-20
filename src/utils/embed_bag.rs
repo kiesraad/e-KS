@@ -10,9 +10,7 @@ use axum::{
     response::{IntoResponse, Json},
     routing::get,
 };
-use bag_address_lookup::{
-    DEFAULT_SUGGEST_LIMIT, DEFAULT_SUGGEST_THRESHOLD, DatabaseHandle, SuggestEntry,
-};
+use bag_address_lookup::{DEFAULT_SUGGEST_LIMIT, DEFAULT_SUGGEST_THRESHOLD, DatabaseHandle};
 use serde::Deserialize;
 use serde_json::json;
 
@@ -61,13 +59,29 @@ async fn lookup(Query(params): Query<LookupQuery>) -> impl IntoResponse {
 #[derive(Deserialize)]
 struct SuggestQuery {
     wp: Option<String>,
+    municipalities: Option<String>,
+    aliases: Option<String>,
+    limit: Option<usize>,
+}
+
+/// Parse a boolean-ish query value. `false`, `0`, `no` (case-insensitive) are
+/// false; any other value is true. Matches the upstream `bag-address-lookup`
+/// HTTP service.
+fn parse_bool(value: &str) -> bool {
+    !matches!(value.to_ascii_lowercase().as_str(), "false" | "0" | "no")
 }
 
 /// Fuzzy-match localities and municipalities against the `wp` query param.
 ///
-/// Returns a JSON array of display strings (see [`format_entry`]). An empty
-/// array is a successful response meaning no match. Missing `wp` yields
-/// `400 Bad Request` with an `{"error": "missing wp"}` body.
+/// Returns a JSON array of suggestion names, matching the wire format of the
+/// upstream `bag-address-lookup` service. A name already carries a province
+/// suffix (e.g. `Bergen (LI)`) when the source disambiguated a duplicate place
+/// name. An empty array is a successful response meaning no match; missing
+/// `wp` yields `400 Bad Request` with an `{"error": "missing wp"}` body.
+///
+/// `municipalities` (default true) toggles whether municipality names are
+/// offered; `aliases` (default false) toggles whether Frisian locality aliases
+/// are offered as suggestions in their own right.
 async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
     let Some(query) = params.wp else {
         return (
@@ -76,38 +90,19 @@ async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
         );
     };
 
-    let entries = DATABASE.suggest(&query, DEFAULT_SUGGEST_THRESHOLD, DEFAULT_SUGGEST_LIMIT);
-    let body: Vec<String> = entries.iter().map(format_entry).collect();
-    let Ok(body) = serde_json::to_value(body) else {
-        return (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(json!({"error": "failed to serialize response"})),
-        );
-    };
+    let include_municipalities = params.municipalities.as_deref().is_none_or(parse_bool);
+    let include_aliases = params.aliases.as_deref().is_some_and(parse_bool);
+    let limit = params.limit.unwrap_or(DEFAULT_SUGGEST_LIMIT);
 
-    (StatusCode::OK, Json(body))
-}
+    let names = DATABASE.suggest(
+        &query,
+        DEFAULT_SUGGEST_THRESHOLD,
+        limit,
+        include_municipalities,
+        include_aliases,
+    );
 
-/// Render a suggestion as the string shown to the user in the datalist.
-///
-/// Plain name by default; when the source BAG name carried a stripped province
-/// suffix (`had_suffix`), the province is appended as `"Name (PV)"` to
-/// disambiguate localities/municipalities that share a name across provinces.
-fn format_entry(entry: &SuggestEntry) -> String {
-    let (name, had_suffix, pv) = match entry {
-        SuggestEntry::Locality {
-            wp, pv, had_suffix, ..
-        } => (wp, had_suffix, pv),
-        SuggestEntry::Municipality {
-            gm, pv, had_suffix, ..
-        } => (gm, had_suffix, pv),
-    };
-
-    if *had_suffix {
-        format!("{} ({})", name, pv)
-    } else {
-        name.to_string()
-    }
+    (StatusCode::OK, Json(json!(names)))
 }
 
 #[cfg(test)]
@@ -117,57 +112,6 @@ mod tests {
     use tower::ServiceExt;
 
     use crate::test_utils::response_body_string;
-
-    fn locality(name: &str, pv: &str, had_suffix: bool) -> SuggestEntry {
-        SuggestEntry::Locality {
-            wp: name.to_string(),
-            wp_code: 0,
-            gm: name.to_string(),
-            gm_code: 0,
-            pv: pv.to_string(),
-            unique: true,
-            had_suffix,
-        }
-    }
-
-    fn municipality(name: &str, pv: &str, had_suffix: bool) -> SuggestEntry {
-        SuggestEntry::Municipality {
-            gm: name.to_string(),
-            gm_code: 0,
-            pv: pv.to_string(),
-            unique: true,
-            had_suffix,
-        }
-    }
-
-    #[test]
-    fn format_entry_locality_without_suffix_uses_bare_name() {
-        assert_eq!(
-            format_entry(&locality("Amsterdam", "NH", false)),
-            "Amsterdam"
-        );
-    }
-
-    #[test]
-    fn format_entry_locality_with_suffix_appends_province() {
-        assert_eq!(format_entry(&locality("Loo", "GE", true)), "Loo (GE)");
-    }
-
-    #[test]
-    fn format_entry_municipality_without_suffix_uses_bare_name() {
-        assert_eq!(
-            format_entry(&municipality("Utrecht", "UT", false)),
-            "Utrecht"
-        );
-    }
-
-    #[test]
-    fn format_entry_municipality_with_suffix_appends_province() {
-        assert_eq!(
-            format_entry(&municipality("Hengelo", "OV", true)),
-            "Hengelo (OV)"
-        );
-    }
 
     #[tokio::test]
     async fn suggest_missing_wp_returns_bad_request() {
@@ -241,5 +185,25 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert_eq!(body.trim(), "[]");
+    }
+
+    #[tokio::test]
+    async fn suggest_returns_flat_array_of_names() {
+        let app = router::<()>();
+
+        let response = app
+            .oneshot(
+                Request::builder()
+                    .uri("/suggest?wp=Amsterdam&limit=1")
+                    .body(Body::empty())
+                    .unwrap(),
+            )
+            .await
+            .expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The body is a flat JSON array of strings, not structured records.
+        assert_eq!(body.trim(), r#"["Amsterdam"]"#);
     }
 }

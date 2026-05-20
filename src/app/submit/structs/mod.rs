@@ -4,7 +4,7 @@ pub mod h1;
 pub mod h3_1;
 pub mod h4;
 pub mod h9;
-pub mod potential_problems;
+pub mod problems;
 mod typst_authorised_agent;
 pub mod typst_candidate;
 mod typst_datetime;

@@ -50,7 +50,10 @@ export const test = base.extend<Fixtures>({
     await selectElectionPage.dropdownElections.selectOption("PS27");
     await selectElectionPage.dropdownProvinces.selectOption("NH");
     await selectElectionPage.checkboxFixtures.check();
-    await selectElectionPage.buttonContinue.click();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
 
     await use(page);
   },
@@ -61,7 +64,10 @@ export const test = base.extend<Fixtures>({
     await selectElectionPage.dropdownElections.selectOption("PS27");
     await selectElectionPage.dropdownProvinces.selectOption("FR");
     await selectElectionPage.checkboxFixtures.check();
-    await selectElectionPage.buttonContinue.click();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
 
     await use(page);
   },
@@ -76,7 +82,10 @@ export const test = base.extend<Fixtures>({
       "Amstel, Gooi en Vecht",
     );
     await selectElectionPage.checkboxFixtures.uncheck();
-    await selectElectionPage.buttonContinue.click();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
 
     await use(page);
   },

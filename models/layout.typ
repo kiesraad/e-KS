@@ -37,7 +37,7 @@
     footer: footer,
   )
 
-  #set heading(numbering: "1.")
+  #set heading(numbering: "1.", supplement: none)
   #show heading.where(level: 1): set block(above: 2em, below: 0.75em)
 
   #set table(stroke: none, inset: 0.75em, align: horizon)
