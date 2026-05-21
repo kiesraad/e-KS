@@ -1,11 +1,33 @@
-use axum::response::Response;
+use askama::Template;
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form,
-    form::EmptyForm,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    form::{EmptyForm, FormData},
     persons::{Person, pages::DeletePersonPath},
     redirect_success,
 };
+
+#[derive(Template)]
+#[template(path = "persons/pages/delete.html")]
+struct DeletePersonTemplate {
+    person: Person,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_person_confirm(
+    _: DeletePersonPath,
+    context: Context,
+    person: Person,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeletePersonTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            person,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_person(
     _: DeletePersonPath,
@@ -30,9 +52,30 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState, persons::PersonId,
-        test_utils::sample_person,
+        AppError, AppStore, Context, Form, QueryParamState,
+        persons::PersonId,
+        test_utils::{response_body_string, sample_person},
     };
+
+    #[tokio::test]
+    async fn delete_person_confirm_contains_delete_button() -> Result<(), AppError> {
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        let response = delete_person_confirm(
+            DeletePersonPath { person_id },
+            Context::new_test_without_db(),
+            person.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&person.delete_path().to_string()));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_person_removes_and_redirects() -> Result<(), AppError> {
