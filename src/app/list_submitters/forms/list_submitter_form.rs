@@ -1,12 +1,15 @@
+use std::str::FromStr;
+
 use crate::{
     TokenValue,
-    common::InternationalAddressForm,
+    common::{CountryCode, InternationalAddressForm, PostalCode},
+    form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, SubmitterNameForm},
 };
 use serde::Deserialize;
 use validate::Validate;
 
-#[derive(Default, Deserialize, Debug, Validate)]
+#[derive(Default, Deserialize, Debug, Validate, Clone)]
 #[validate(target = "ListSubmitterData")]
 #[serde(default)]
 pub struct ListSubmitterForm {
@@ -30,6 +33,53 @@ impl From<ListSubmitter> for ListSubmitterForm {
             csrf_token: Default::default(),
         }
     }
+}
+
+impl ListSubmitterForm {
+    /// Also checks:
+    /// if country code is NL -> postal code is a valid NL postal code
+    pub fn validate_create_with_checks(
+        self,
+        csrf_token: &TokenValue,
+    ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
+        let submitter_result = self.clone().validate_create(csrf_token);
+        self.validate_postal_code(csrf_token, submitter_result)
+    }
+
+    pub fn validate_update_with_checks(
+        self,
+        current: &ListSubmitterData,
+        csrf_token: &TokenValue,
+    ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
+        let submitter_result = self.clone().validate_update(current, csrf_token);
+        self.validate_postal_code(csrf_token, submitter_result)
+    }
+
+    fn validate_postal_code(
+        self,
+        csrf_token: &TokenValue,
+        submitter_result: Result<ListSubmitterData, FormData<Self>>,
+    ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
+        match CountryCode::from_str(&self.address.country) {
+            Ok(country) if country.is_nl() => {
+                let dutch_postalcode_result = PostalCode::from_str(&self.address.postal_code);
+                if let Err(error) = dutch_postalcode_result {
+                    let mut errors = vec![("address.postal_code".to_string(), error)];
+                    if let Err(form_data) = submitter_result {
+                        errors.extend(form_data.errors());
+                    }
+                    return Err(Box::new(FormData::new_with_errors(
+                        self, csrf_token, errors,
+                    )));
+                }
+                Ok(submitter_result?)
+            }
+            _ => Ok(submitter_result?),
+        }
+    }
+    // TODO replace all International address form validates with the "with_check" variant
+    // TODO unit test
+    // TODO refactor personal_data_form in the same way
 }
 
 #[cfg(test)]
