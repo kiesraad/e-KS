@@ -12,12 +12,16 @@ pub mod substitute_list_submitters;
 pub mod eks_key;
 pub mod health;
 
-#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
+#[cfg(any(
+    all(feature = "dev-features", not(feature = "embed-bag")),
+    not(feature = "memory-serve")
+))]
 pub mod proxy;
 
 mod context;
 mod error_response;
 mod event;
+mod extractor;
 mod getters;
 mod store;
 mod store_extractor;

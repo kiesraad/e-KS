@@ -1,8 +1,8 @@
-use axum::extract::{FromRequestParts, Path};
+use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppStore,
+    app::extractor::request_extractor,
     list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
@@ -12,24 +12,12 @@ struct SubstituteSubmitterPathParams {
     submitter_id: ListSubmitterId,
 }
 
-impl<S> FromRequestParts<S> for ListSubmitter
-where
-    S: Clone + Send + Sync + 'static,
-    AppStore: FromRequestParts<S, Rejection = AppError>,
-{
-    type Rejection = AppError;
+request_extractor!(ListSubmitter, |store, parts, state| {
+    let Path(SubstituteSubmitterPathParams { submitter_id }) =
+        Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let Path(SubstituteSubmitterPathParams { submitter_id }) =
-            Path::<SubstituteSubmitterPathParams>::from_request_parts(parts, state).await?;
-
-        store.get_substitute_submitter(submitter_id)
-    }
-}
+    store.get_substitute_submitter(submitter_id)
+});
 
 #[cfg(test)]
 mod tests {

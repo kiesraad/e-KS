@@ -41,9 +41,81 @@ impl StoreData for AppStoreData {
         let event_time = UtcDateTime::from(created_at);
 
         match payload {
-            AppEvent::UpdatePoliticalGroup(pg) => {
-                self.political_group = pg;
+            AppEvent::UpdatePoliticalGroup(pg) => self.political_group = pg,
+
+            event @ (AppEvent::CreatePerson(_)
+            | AppEvent::CreatePersonPersonalData { .. }
+            | AppEvent::UpdatePerson(_)
+            | AppEvent::UpdatePersonPersonalData { .. }
+            | AppEvent::UpdatePersonAddress { .. }
+            | AppEvent::UpdatePersonRepresentative { .. }
+            | AppEvent::DeletePerson { .. }) => self.apply_person_event(event, event_time),
+
+            event @ (AppEvent::CreateCandidateList(_)
+            | AppEvent::UpdateCandidateListDistricts { .. }
+            | AppEvent::UpdateCandidateListOrder { .. }
+            | AppEvent::AddCandidateToCandidateList { .. }
+            | AppEvent::RemoveCandidateFromCandidateList { .. }
+            | AppEvent::DeleteCandidateList(_)) => {
+                self.apply_candidate_list_event(event, event_time)
             }
+
+            event @ (AppEvent::CreateAuthorisedAgent(_)
+            | AppEvent::UpdateAuthorisedAgent(_)
+            | AppEvent::DeleteAuthorisedAgent(_)) => self.apply_authorised_agent_event(event),
+
+            event @ (AppEvent::UpdateListSubmitter(_)
+            | AppEvent::CreateSubstituteSubmitter(_)
+            | AppEvent::UpdateSubstituteSubmitter(_)
+            | AppEvent::DeleteSubstituteSubmitter { .. }) => self.apply_submitter_event(event),
+
+            // Only the serialized event is relevant for logging.
+            AppEvent::DeveloperLogin { .. }
+            | AppEvent::DownloadFile { .. }
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::ImportCsv { .. } => {}
+        }
+    }
+
+    fn last_event_id(&self) -> usize {
+        self.events.last().map(|e| e.event_id).unwrap_or(0)
+    }
+
+    fn last_event_hash(&self) -> [u8; 32] {
+        self.events
+            .last()
+            .map(|e| e.hash)
+            .unwrap_or(crate::store::GENESIS_HASH)
+    }
+}
+
+impl AppStoreData {
+    /// Apply a person-related event. Routed here exclusively by [`Self::apply`].
+    fn apply_person_event(&mut self, event: AppEvent, event_time: UtcDateTime) {
+        match event {
+            AppEvent::CreatePerson(_) | AppEvent::CreatePersonPersonalData { .. } => {
+                self.apply_person_create_event(event, event_time)
+            }
+            AppEvent::UpdatePerson(_)
+            | AppEvent::UpdatePersonPersonalData { .. }
+            | AppEvent::UpdatePersonAddress { .. }
+            | AppEvent::UpdatePersonRepresentative { .. } => {
+                self.apply_person_update_event(event, event_time)
+            }
+            AppEvent::DeletePerson { person_id } => {
+                self.candidate_lists
+                    .values_mut()
+                    .for_each(|list| list.candidates.retain(|id| *id != person_id));
+
+                self.persons.remove(&person_id);
+            }
+            _ => unreachable!("apply_person_event received a non-person event"),
+        }
+    }
+
+    /// Apply a person-creation event. Routed here exclusively by [`Self::apply_person_event`].
+    fn apply_person_create_event(&mut self, event: AppEvent, event_time: UtcDateTime) {
+        match event {
             AppEvent::CreatePerson(mut person) => {
                 person.updated_at = event_time;
                 self.persons.insert(person.id, person);
@@ -62,6 +134,13 @@ impl StoreData for AppStoreData {
                 };
                 self.persons.insert(person_id, person);
             }
+            _ => unreachable!("apply_person_create_event received a non-create event"),
+        }
+    }
+
+    /// Apply a person-update event. Routed here exclusively by [`Self::apply_person_event`].
+    fn apply_person_update_event(&mut self, event: AppEvent, event_time: UtcDateTime) {
+        match event {
             AppEvent::UpdatePerson(mut person) => {
                 person.updated_at = event_time;
                 let person_id = person.id;
@@ -95,13 +174,13 @@ impl StoreData for AppStoreData {
                     existing.updated_at = event_time;
                 });
             }
-            AppEvent::DeletePerson { person_id } => {
-                self.candidate_lists
-                    .values_mut()
-                    .for_each(|list| list.candidates.retain(|id| *id != person_id));
+            _ => unreachable!("apply_person_update_event received a non-update event"),
+        }
+    }
 
-                self.persons.remove(&person_id);
-            }
+    /// Apply a candidate-list event. Routed here exclusively by [`Self::apply`].
+    fn apply_candidate_list_event(&mut self, event: AppEvent, event_time: UtcDateTime) {
+        match event {
             AppEvent::CreateCandidateList(mut cl) => {
                 cl.created_at = event_time;
                 self.candidate_lists.insert(cl.id, cl);
@@ -137,6 +216,13 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteCandidateList(cl_id) => {
                 self.candidate_lists.remove(&cl_id);
             }
+            _ => unreachable!("apply_candidate_list_event received a non-candidate-list event"),
+        }
+    }
+
+    /// Apply an authorised-agent event. Routed here exclusively by [`Self::apply`].
+    fn apply_authorised_agent_event(&mut self, event: AppEvent) {
+        match event {
             AppEvent::CreateAuthorisedAgent(aa) => {
                 self.authorised_agents.insert(aa.id, aa);
             }
@@ -149,6 +235,13 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteAuthorisedAgent(aa_id) => {
                 self.authorised_agents.remove(&aa_id);
             }
+            _ => unreachable!("apply_authorised_agent_event received a non-agent event"),
+        }
+    }
+
+    /// Apply a list-submitter event. Routed here exclusively by [`Self::apply`].
+    fn apply_submitter_event(&mut self, event: AppEvent) {
+        match event {
             AppEvent::UpdateListSubmitter(ls) => {
                 self.list_submitter = ls;
             }
@@ -171,25 +264,8 @@ impl StoreData for AppStoreData {
                 self.substitute_submitters
                     .retain(|submitter| submitter.id != ss_id);
             }
-
-            AppEvent::DeveloperLogin { .. }
-            | AppEvent::DownloadFile { .. }
-            | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => {
-                // Only the serialized event are relevant for logging
-            }
+            _ => unreachable!("apply_submitter_event received a non-submitter event"),
         }
-    }
-
-    fn last_event_id(&self) -> usize {
-        self.events.last().map(|e| e.event_id).unwrap_or(0)
-    }
-
-    fn last_event_hash(&self) -> [u8; 32] {
-        self.events
-            .last()
-            .map(|e| e.hash)
-            .unwrap_or(crate::store::GENESIS_HASH)
     }
 }
 
