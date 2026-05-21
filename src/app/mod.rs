@@ -9,6 +9,12 @@ pub mod political_groups;
 pub mod submit;
 pub mod substitute_list_submitters;
 
+pub mod eks_key;
+pub mod health;
+
+#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
+pub mod proxy;
+
 mod context;
 mod event;
 mod getters;
@@ -21,3 +27,6 @@ pub use store::AppStoreData;
 
 #[cfg(test)]
 mod store_tests;
+
+#[cfg(test)]
+mod health_tests;

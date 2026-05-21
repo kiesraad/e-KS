@@ -47,11 +47,11 @@ pub fn create(state: AppState) -> Router<AppState> {
         Router::new()
             .route(
                 "/lookup",
-                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
+                crate::app::proxy::proxy_handler(&bag_service_url, vec![]),
             )
             .route(
                 "/suggest",
-                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
+                crate::app::proxy::proxy_handler(&bag_service_url, vec![]),
             )
     };
 
@@ -87,7 +87,7 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     let router = router.merge(auth_service::router());
 
-    let router = router.merge(crate::utils::health::health_router());
+    let router = router.merge(crate::app::health::health_router());
 
     let router = router
         .layer(SetResponseHeaderLayer::if_not_present(
@@ -129,7 +129,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "memory-serve"))]
     let router = router.nest(
         "/static",
-        Router::new().fallback(crate::utils::proxy::proxy_handler(
+        Router::new().fallback(crate::app::proxy::proxy_handler(
             "http://localhost:8888",
             vec![
                 (index_js, "/index.js".to_string()),
@@ -140,7 +140,7 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     router.layer(middleware::from_fn_with_state(
         state.clone(),
-        crate::utils::eks_key::eks_key_middleware,
+        crate::app::eks_key::eks_key_middleware,
     ))
 }
 

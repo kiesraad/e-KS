@@ -6,21 +6,13 @@ mod query_param_state;
 mod redirect;
 mod slugify_teletex;
 
-pub mod eks_key;
-pub mod health;
 pub mod id_newtype;
 pub mod locality_aliases;
 pub mod no_cache_headers;
 pub mod transparent_string;
 
-#[cfg(test)]
-mod health_tests;
-
 #[cfg(feature = "livereload")]
 pub mod livereload;
-
-#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
-pub mod proxy;
 
 #[cfg(feature = "embed-typst")]
 pub mod embed_typst;
