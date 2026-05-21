@@ -109,57 +109,39 @@ impl ErrorResponse {
     }
 
     fn build(err: &AppError) -> Self {
-        match err {
-            AppError::NotFound(msg) => ErrorResponse {
-                error: ErrorResponseVariant::NotFound,
-                message: msg.to_string(),
-            },
-            AppError::GenericNotFound => ErrorResponse {
-                error: ErrorResponseVariant::NotFound,
-                message: "Page not found".to_string(),
-            },
-            AppError::CsrfTokenInvalid => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: "Invalid CSRF token".to_string(),
-            },
-            AppError::Unauthorised => ErrorResponse {
-                error: ErrorResponseVariant::Unauthorised,
-                message: "You are not authorised to perform this action.".to_string(),
-            },
-            AppError::MultipartFormError(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
-            AppError::MultipartError(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
-            AppError::FormRejection(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
-            AppError::PathRejection(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
-            AppError::JsonRejection(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
-            AppError::QueryRejection(e) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {e}"),
-            },
+        use ErrorResponseVariant::*;
+
+        let internal = || {
+            (
+                InternalServerError,
+                "An internal server error occurred.".to_string(),
+            )
+        };
+
+        let (error, message) = match err {
+            AppError::NotFound(msg) => (NotFound, msg.to_string()),
+            AppError::GenericNotFound => (NotFound, "Page not found".to_string()),
+            AppError::CsrfTokenInvalid => (BadRequest, "Invalid CSRF token".to_string()),
+            AppError::Unauthorised => (
+                Unauthorised,
+                "You are not authorised to perform this action.".to_string(),
+            ),
+            AppError::MultipartFormError(_)
+            | AppError::MultipartError(_)
+            | AppError::FormRejection(_)
+            | AppError::PathRejection(_)
+            | AppError::JsonRejection(_)
+            | AppError::QueryRejection(_)
+            | AppError::UserError(_) => (BadRequest, err.to_string()),
+            AppError::EmlError(err) => (BadRequest, format!("EML error: {err}")),
+            AppError::IncompleteData(err) => (
+                BadRequest,
+                format!("Missing data when generating PDF: {err}"),
+            ),
             #[cfg(feature = "database")]
-            AppError::DatabaseError(_) => ErrorResponse {
-                error: ErrorResponseVariant::InternalServerError,
-                message: "An internal server error occurred.".to_string(),
-            },
+            AppError::DatabaseError(_) => internal(),
             #[cfg(feature = "embed-typst")]
-            AppError::TypstError(_) => ErrorResponse {
-                error: ErrorResponseVariant::InternalServerError,
-                message: "An internal server error occurred.".to_string(),
-            },
+            AppError::TypstError(_) => internal(),
             AppError::InternalServerError
             | AppError::NoStorageConfigured
             | AppError::IntegrityViolation
@@ -168,23 +150,10 @@ impl ErrorResponse {
             | AppError::TemplateError(_)
             | AppError::UpstreamError(_)
             | AppError::ServerError(_)
-            | AppError::EventDecodeError(_) => ErrorResponse {
-                error: ErrorResponseVariant::InternalServerError,
-                message: "An internal server error occurred.".to_string(),
-            },
-            AppError::IncompleteData(err) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Missing data when generating PDF: {err}"),
-            },
-            AppError::UserError(msg) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Bad request: {msg}"),
-            },
-            AppError::EmlError(err) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("EML error: {err}"),
-            },
-        }
+            | AppError::EventDecodeError(_) => internal(),
+        };
+
+        ErrorResponse { error, message }
     }
 }
 
