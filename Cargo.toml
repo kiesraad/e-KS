@@ -73,7 +73,7 @@ url = "2.5.8"
 reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
-askama = "0.15.6" # 33M downloads (Dirkjan Ochtman)
+askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 4M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 107M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 179M downloads (Andrew Gallant)
