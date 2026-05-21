@@ -30,4 +30,9 @@
       </li>
     {% endif %}
   </ul>
+  <ul>
+    <li>
+      <a href="{{ candidate.delete_path() }}" class="trash">{{ "person.actions.delete"|trans }}</a>
+    </li>
+  </ul>
 </div>

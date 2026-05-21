@@ -155,7 +155,6 @@
     }
   }
 
-  span.substext,
   span.hint,
   details.hint,
   span.error,
@@ -164,10 +163,6 @@
     font-size: var(--font-size-md);
     font-style: normal;
     line-height: 1.5rem;
-  }
-
-  span.subtext {
-    font-weight: normal;
   }
 
   details.hint,
@@ -393,7 +388,7 @@
 
 .form-actions-stack {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
 }
 
 #gender option:first-child {
