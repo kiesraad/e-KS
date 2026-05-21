@@ -16,12 +16,14 @@ pub mod health;
 pub mod proxy;
 
 mod context;
+mod error_response;
 mod event;
 mod getters;
 mod store;
 mod store_extractor;
 
 pub use context::Context;
+pub use error_response::{ErrorResponse, render_error_pages};
 pub use event::AppEvent;
 pub use store::AppStoreData;
 
@@ -30,3 +32,6 @@ mod store_tests;
 
 #[cfg(test)]
 mod health_tests;
+
+#[cfg(test)]
+mod error_response_tests;

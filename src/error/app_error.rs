@@ -1,4 +1,3 @@
-use crate::form::FieldErrors;
 use axum::extract::{
     multipart::{MultipartError, MultipartRejection},
     rejection::{JsonRejection, PathRejection, QueryRejection},
@@ -33,7 +32,6 @@ pub enum AppError {
     // Axum error types
     MultipartFormError(MultipartError),
     MultipartError(MultipartRejection),
-    ValidationError(FieldErrors),
     JsonRejection(JsonRejection),
     PathRejection(PathRejection),
     QueryRejection(QueryRejection),
@@ -82,7 +80,6 @@ impl Display for AppError {
             AppError::ServerError(err) => write!(f, "Server error: {err}"),
             AppError::TemplateError(err) => write!(f, "Template error: {err}"),
             AppError::Unauthorised => write!(f, "Unauthorised"),
-            AppError::ValidationError(errors) => write!(f, "Validation error: {errors:?}"),
             AppError::UpstreamError(err) => write!(f, "Upstream error: {err}"),
             AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
             AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),

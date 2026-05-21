@@ -142,10 +142,6 @@ impl ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
             },
-            AppError::ValidationError(errors) => ErrorResponse {
-                error: ErrorResponseVariant::BadRequest,
-                message: format!("Validation error: {errors:?}"),
-            },
             AppError::JsonRejection(e) => ErrorResponse {
                 error: ErrorResponseVariant::BadRequest,
                 message: format!("Bad request: {e}"),
