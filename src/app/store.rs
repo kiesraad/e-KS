@@ -215,14 +215,10 @@ impl crate::store::Store<AppStoreData> {
             ..AppStoreData::default()
         };
 
-        let encryption =
-            crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"));
-        let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
-            stream_id,
+            stream_id: uuid::Uuid::new_v4(),
             election,
-            persistence: crate::store::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id, election),
+            backend: crate::store::persistence::StoreBackend::Memory,
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }

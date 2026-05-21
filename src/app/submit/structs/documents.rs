@@ -18,7 +18,11 @@ use crate::{
     },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
-use axum::{body::Body, http::HeaderValue, response::IntoResponse};
+use axum::{
+    body::Body,
+    http::HeaderValue,
+    response::{IntoResponse, Response},
+};
 use tokio::io::duplex;
 use tokio_util::io::ReaderStream;
 use tracing::error;
@@ -160,7 +164,7 @@ impl DocumentData {
         })
     }
 
-    pub async fn from_store_and_context(
+    pub fn from_store_and_context(
         store: &AppStore,
         context: &Context,
         locale: ModelLocale,
@@ -194,7 +198,39 @@ impl DocumentData {
         Ok((bundles, filename))
     }
 
-    pub async fn to_zip_response(
+    /// Record a document download as a `DownloadFile` audit event and stream
+    /// the bundles as a zip response.
+    ///
+    /// The audit event is written to `event_store`. `document_store` is the
+    /// (possibly historical) store the bundles were generated from; it is only
+    /// used for the candidate-list count in the log line, which differs from
+    /// `event_store` when serving documents for a past event.
+    pub async fn serve_download(
+        bundles: Vec<Self>,
+        filename: String,
+        download_path: String,
+        event_store: &AppStore,
+        document_store: &AppStore,
+        renderer: TypstRenderer,
+    ) -> Result<Response, AppError> {
+        tracing::info!(
+            filename,
+            content_type = ZIP_CONTENT_TYPE,
+            lists = document_store.get_candidate_list_count(),
+            "file download served",
+        );
+
+        event_store
+            .update(crate::AppEvent::DownloadFile {
+                file_name: filename.clone(),
+                download_path,
+            })
+            .await?;
+
+        Self::to_zip_response(bundles, filename, renderer).map(IntoResponse::into_response)
+    }
+
+    pub fn to_zip_response(
         bundles: Vec<Self>,
         filename: String,
         renderer: TypstRenderer,

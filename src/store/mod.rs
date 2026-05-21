@@ -2,9 +2,10 @@
 pub(crate) mod database;
 
 pub(crate) mod encryption;
+pub(crate) mod persistence;
+
 mod event;
 mod filesystem;
-mod persistence;
 mod registry;
 mod store_handle;
 

@@ -1,7 +1,6 @@
 use crate::{
-    AppEvent,
     core::ModelLocale,
-    submit::{DocumentData, Problems, ZIP_CONTENT_TYPE},
+    submit::{DocumentData, Problems},
 };
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};
@@ -33,12 +32,12 @@ pub async fn audit_log_detail(
 ) -> Result<impl IntoResponse, AppError> {
     let events = store.get_events();
     let locale = context.session.locale;
-    let temp_store = create_temp_store(&store, event_id).await;
-
-    let is_downloadable_state = Problems::find_all(&temp_store).models_downloadable();
 
     let detail =
         AuditLogDetail::compute(&events, event_id, locale).ok_or(AppError::GenericNotFound)?;
+
+    let temp_store = create_temp_store(&store, event_id);
+    let is_downloadable_state = Problems::find_all(&temp_store).models_downloadable();
 
     Ok(HtmlTemplate(
         AuditLogDetailTemplate {
@@ -66,39 +65,41 @@ pub async fn audit_log_gen_documents(
     State(renderer): State<TypstRenderer>,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let temp_store = create_temp_store(&store, event_id).await;
-    let (bundles, filename) =
-        DocumentData::from_store_and_context(&temp_store, &context, locale).await?;
+    let temp_store = create_temp_store(&store, event_id);
 
-    tracing::info!(
+    if !Problems::find_all(&temp_store).models_downloadable() {
+        return Err(AppError::IncompleteData(
+            "Documents cannot be downloaded for this version",
+        ));
+    }
+
+    let (bundles, filename) = DocumentData::from_store_and_context(&temp_store, &context, locale)?;
+
+    DocumentData::serve_download(
+        bundles,
         filename,
-        content_type = ZIP_CONTENT_TYPE,
-        lists = temp_store.get_candidate_list_count(),
-        "file download served",
-    );
-
-    store
-        .update(AppEvent::DownloadFile {
-            file_name: filename.clone(),
-            download_path: path.to_string(),
-        })
-        .await?;
-
-    DocumentData::to_zip_response(bundles, filename, renderer).await
+        path.to_string(),
+        &store,
+        &temp_store,
+        renderer,
+    )
+    .await
 }
 
-async fn create_temp_store(store: &AppStore, event_id: usize) -> AppStore {
-    let temp_store = AppStore::new_for_temp_stream(store.election).await;
+/// Replay the event stream up to and including `event_id` into a throwaway
+/// in-memory store, so document state can be inspected as it was back then.
+fn create_temp_store(store: &AppStore, event_id: usize) -> AppStore {
+    let temp_store = AppStore::new_for_temp_stream(store.election);
 
     store
         .get_events()
         .iter()
         .take_while(|e| e.event_id <= event_id)
-        .zip(1..)
-        .for_each(|(e, i)| temp_store.apply_event(i, e.clone()));
+        .for_each(|e| temp_store.apply_event(e.clone()));
 
     temp_store
 }
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -287,7 +288,7 @@ mod tests {
         let download_event_count = store
             .get_events()
             .iter()
-            .filter(|e| matches!(e.payload, AppEvent::DownloadFile { .. }))
+            .filter(|e| matches!(e.payload, crate::AppEvent::DownloadFile { .. }))
             .count();
         assert_eq!(2, download_event_count);
 
