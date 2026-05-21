@@ -2,14 +2,13 @@
 
 use std::sync::Arc;
 
-use secrecy::SecretString;
+use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
 use crate::{AppError, ElectionConfig};
 
 use super::{
-    StoreData, StoreEvent, StorePersistence,
-    encryption::{EventCipher, EventEncryption},
+    StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, persistence::StoreBackend,
 };
 
 /// Event-sourced store handle for a single (stream, election) pair.
@@ -19,10 +18,9 @@ pub struct Store<D> {
     pub stream_id: Uuid,
     /// Election this store instance is scoped to.
     pub election: ElectionConfig,
-    /// Persistence backend used for load/update operations.
-    pub persistence: StorePersistence,
-    /// Per-(stream, election) cipher for encrypting/decrypting event payloads.
-    pub(crate) cipher: EventCipher,
+    /// Persistence target paired with its cipher. Persisting backends are
+    /// always encrypted; see [`StoreBackend`].
+    pub(crate) backend: StoreBackend,
     /// In-memory projection for the stream.
     pub(crate) data: Arc<parking_lot::RwLock<D>>,
 }
@@ -33,8 +31,7 @@ impl<D> Clone for Store<D> {
         Self {
             stream_id: self.stream_id,
             election: self.election,
-            persistence: self.persistence.clone(),
-            cipher: self.cipher.clone(),
+            backend: self.backend.clone(),
             data: self.data.clone(),
         }
     }
@@ -44,15 +41,15 @@ impl<D> Store<D>
 where
     D: StoreData,
 {
-    /// Create a temporary store in memory
-    pub async fn new_for_temp_stream(election: ElectionConfig) -> Self {
-        let stream_id = Uuid::new_v4();
+    /// Create a temporary, in-memory store with no persistence.
+    ///
+    /// An in-memory store never writes events out, so it has no cipher
+    /// (see [`StoreBackend::Memory`]).
+    pub fn new_for_temp_stream(election: ElectionConfig) -> Self {
         Store {
-            stream_id,
+            stream_id: Uuid::new_v4(),
             election,
-            persistence: StorePersistence::None,
-            cipher: EventEncryption::new(&SecretString::from("temp"))
-                .derive_cipher(stream_id, election),
+            backend: StoreBackend::Memory,
             data: Arc::new(parking_lot::RwLock::new(D::default())),
         }
     }
@@ -76,18 +73,15 @@ where
         election: ElectionConfig,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
+        persistence.ensure_stream(stream_id, election).await?;
+
         let cipher = encryption.derive_cipher(stream_id, election);
-        let store = Store {
+        Ok(Store {
             stream_id,
             election,
-            persistence,
-            cipher,
+            backend: persistence.into_backend(cipher),
             data: Arc::new(parking_lot::RwLock::new(D::default())),
-        };
-
-        store.persistence.ensure_stream(stream_id, election).await?;
-
-        Ok(store)
+        })
     }
 
     #[cfg(feature = "database")]
@@ -103,25 +97,42 @@ where
         Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
-    /// Synchronize the in-memory store with the persistence by replaying any missing events.
-    pub fn apply_event(&self, next_id: usize, store_event: StoreEvent<D::Event>) {
+    /// Apply a single event to the in-memory projection.
+    ///
+    /// No-op if the projection is already at or past this event: another
+    /// instance of the application may have processed and applied it before
+    /// this caller acquired the write lock.
+    pub fn apply_event(&self, store_event: StoreEvent<D::Event>) {
         let mut data = self.data.write();
 
-        if data.last_event_id() >= next_id {
-            // This can happen if another instance of the application processed events concurrently
-            // and updated the store before this instance could acquire the write lock. In that case,
-            // the store is already up-to-date and we can skip applying the event again.
+        if data.last_event_id() >= store_event.event_id {
             return;
         }
 
         data.apply(store_event);
+    }
+
+    /// Build a [`StoreEvent`] for a freshly persisted event and apply it to the
+    /// in-memory projection via [`Store::apply_event`].
+    pub(crate) fn apply_persisted_event(
+        &self,
+        event_id: usize,
+        payload: D::Event,
+        created_at: DateTime<Utc>,
+        hash: [u8; 32],
+    ) {
+        self.apply_event(StoreEvent {
+            event_id,
+            payload,
+            created_at,
+            hash,
+        });
     }
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use secrecy::SecretString;
 
     const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
 
@@ -150,18 +161,11 @@ mod tests {
         }
     }
 
-    fn test_encryption() -> EventEncryption {
-        EventEncryption::new(&SecretString::from("test-secret"))
-    }
-
     fn test_store() -> Store<TestData> {
-        let encryption = test_encryption();
-        let stream_id = Uuid::new_v4();
         Store {
-            stream_id,
+            stream_id: Uuid::new_v4(),
             election: TEST_ELECTION,
-            persistence: StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
+            backend: StoreBackend::Memory,
             data: Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
@@ -170,7 +174,7 @@ mod tests {
     fn apply_event_updates_projection_and_last_event_id() {
         let store = test_store();
 
-        store.apply_event(1, StoreEvent::new(1, 42));
+        store.apply_event(StoreEvent::new(1, 42));
 
         let data = store.data.read();
         assert_eq!(data.last_event_id, 1);
@@ -186,7 +190,7 @@ mod tests {
             data.last_event_id = 2;
         }
 
-        store.apply_event(1, StoreEvent::new(1, 7));
+        store.apply_event(StoreEvent::new(1, 7));
 
         let data = store.data.read();
         assert_eq!(data.last_event_id, 2);

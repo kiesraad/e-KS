@@ -1,8 +1,8 @@
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, TypstRenderer,
-    submit::{DocumentData, pages::DownloadDocumentsPath, structs::documents::ZIP_CONTENT_TYPE},
+    AppError, AppStore, Context, TypstRenderer,
+    submit::{DocumentData, pages::DownloadDocumentsPath},
 };
 
 pub async fn gen_documents(
@@ -11,24 +11,17 @@ pub async fn gen_documents(
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let (bundles, filename) =
-        DocumentData::from_store_and_context(&store, &context, locale).await?;
+    let (bundles, filename) = DocumentData::from_store_and_context(&store, &context, locale)?;
 
-    tracing::info!(
+    DocumentData::serve_download(
+        bundles,
         filename,
-        content_type = ZIP_CONTENT_TYPE,
-        lists = store.get_candidate_list_count(),
-        "file download served",
-    );
-
-    store
-        .update(AppEvent::DownloadFile {
-            file_name: filename.clone(),
-            download_path: path.to_string(),
-        })
-        .await?;
-
-    DocumentData::to_zip_response(bundles, filename, renderer).await
+        path.to_string(),
+        &store,
+        &store,
+        renderer,
+    )
+    .await
 }
 
 #[cfg(test)]
