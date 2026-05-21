@@ -27,7 +27,3 @@
 @import "table.css" layer(components);
 @import "tags.css" layer(components);
 
-.container {
-  max-width: 1320px;
-  margin-inline: auto;
-}

@@ -169,6 +169,8 @@
   --text-color-header: var(--gray-900);
   --text-color-body: var(--gray-700);
 
+  --container-max-width: 82.5rem;
+  --container-size: min(calc(100% - var(--space-12) * 2), var(--container-max-width));
 
   --button-color-primary: var(--blue-900);
   --button-color-primary-hover: var(--blue-800);

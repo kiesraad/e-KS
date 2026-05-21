@@ -5,14 +5,28 @@ header {
   --header-padding-inline: var(--main-padding-inline);
 
   nav {
-    display: flex;
-    justify-content: space-between;
     background-color: var(--header-bg);
     color: var(--header-color);
+    display: flex;
+    justify-content: space-between;
+    margin-inline: auto;
+    max-width: var(--container-size);
     min-height: var(--header-height);
-    padding: 0 var(--header-padding-inline);
-    
+    position: relative;
+    z-index: 0;
 
+    &::after {
+      background-color: var(--header-bg);
+      content: "";
+      height: 100%;
+      left: 50%;
+      position: absolute;
+      top: 0;
+      translate: -50%;
+      width: 100vw;
+      z-index: -1;
+    }
+    
     ul {
       display: flex;
       padding: 0;
@@ -105,11 +119,10 @@ header {
     align-items: center;
     display: flex;
     justify-content: space-between;
-    margin: 0;
+    margin-inline: auto;
     min-height: 9rem;
     padding-block: var(--space-11) var(--space-8);
-    margin-inline: auto;
-    width: min(calc(100% - 10rem), 82.5rem);
+    width: var(--container-size);
 
     .tags {
       margin-top: var(--space-6);

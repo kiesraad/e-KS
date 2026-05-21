@@ -24,3 +24,8 @@ dl {
     font-weight: 400;
   }
 }
+
+.container {
+  max-width: var(--container-size);
+  margin-inline: auto;
+}
