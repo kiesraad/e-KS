@@ -1,17 +1,20 @@
 //! Utilities and small helpers shared across the application.
 mod bsn;
-pub mod eks_key;
 mod format_hash;
-pub mod health;
-pub mod locality_aliases;
-pub mod no_cache_headers;
 mod option_string_ext;
 mod query_param_state;
 mod redirect;
 mod slugify_teletex;
 
+pub mod eks_key;
+pub mod health;
 pub mod id_newtype;
+pub mod locality_aliases;
+pub mod no_cache_headers;
 pub mod transparent_string;
+
+#[cfg(test)]
+mod health_tests;
 
 #[cfg(feature = "livereload")]
 pub mod livereload;
