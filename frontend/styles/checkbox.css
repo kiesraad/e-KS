@@ -6,7 +6,7 @@
   max-width: 50rem;
   display: flex;
   flex-direction: column;
-  gap: var(--space-md);
+  gap: var(--space-4);
 
   &.grid {
     --checklist-column-min-width: 25rem;
@@ -46,6 +46,7 @@
 /* Checkbox and radio input styling */
 .checkbox {
   display: inline-flex;
+  gap: var(--space-2);
 
   &.radio-card {
     width: 32rem;
@@ -186,7 +187,6 @@
   /* Label and description styling */
   label {
     color: var(--gray-900);
-    padding-left: 0.5rem;
     cursor: pointer;
     user-select: none;
 
@@ -210,6 +210,8 @@
 
 label:has(input[type="checkbox"]) {
   cursor: pointer;
+  display: flex;
+  gap: var(--space-2);
 }
 
 input[type="checkbox"] {
@@ -218,6 +220,7 @@ input[type="checkbox"] {
   border: 1px solid var(--gray-400);
   min-height: 1.25rem;
   min-width: 1.25rem;
+  margin: 0;
 
   &:checked {
     background-color: var(--blue-900);

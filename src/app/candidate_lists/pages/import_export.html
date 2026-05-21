@@ -2,9 +2,9 @@
 {% set close_action = list.view_path() %}
 {% block overlay_title %}{{ "candidate_list.actions.import_export"|trans }}{% endblock %}
 {% block overlay_content %}
-  <div class="form overlay-content columns">
+  <div class="form overlay-content overlay-csv">
     <div class="column">
-      <h2>{{ "candidate_list.import_export.import_title"|trans }}</h2>
+      <h2 class="mb-xl">{{ "candidate_list.import_export.import_title"|trans }}</h2>
       <p class="mb-md" data-import-file-field>
         <input type="file"
                name="file_data"
@@ -61,7 +61,7 @@
       </p>
     </div>
     <div class="column">
-      <h2>{{ "candidate_list.import_export.export_title"|trans }}</h2>
+      <h2 class="mb-xl">{{ "candidate_list.import_export.export_title"|trans }}</h2>
       <p class="mb-xl">
         <a href="{{ list.export_path() }}"
            class="button icon-download"

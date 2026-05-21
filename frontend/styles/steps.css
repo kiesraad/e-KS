@@ -1,3 +1,9 @@
+.steps {
+  display: flex;
+  justify-content: stretch;
+  gap: var(--space-8);
+}
+
 .steps-nav {
   border-right: 1px solid var(--gray-200);
   min-width: 24rem;

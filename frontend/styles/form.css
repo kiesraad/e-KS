@@ -4,7 +4,7 @@
     line-height: var(--leading-2xl);
     font-weight: var(--font-weight-medium);
     color: var(--gray-800);
-    margin-bottom: var(--space-8);
+    margin-bottom: var(--space-6);
   }
 
   h3:has(+ .alert) {
@@ -16,12 +16,18 @@
     flex-direction: column;
     gap: var(--space-sm);
     max-width: 23.25rem;
+    
 
     & > label {
       color: var(--text-color-header);
       font-weight: bold;
-      gap: 0.5rem;
       white-space: nowrap;
+
+      &:has(.optional) {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1); 
+      }
 
       &.required::after {
         display: inline-block;
@@ -138,7 +144,7 @@
       font-size: var(--font-size-lg);
       font-weight: 600;
       color: var(--text-color-header);
-      margin-bottom: var(--space-md);
+      margin-bottom: var(--space-3);
 
       &.legend-sm {
         font-size: var(--font-size-md);
@@ -168,7 +174,7 @@
     font-size: var(--font-size-md);
     line-height: var(--leading-md);
     font-weight: var(--font-weight-300);
-    color: var(--gray-500);
+    color: var(--gray-600);
     text-wrap: balance;
   }
 
@@ -183,6 +189,7 @@
     font-weight: var(--font-weight-300);
     color: var(--gray-500);
     text-wrap: balance;
+    display: block;
   }
 
   details.hint {
