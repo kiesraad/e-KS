@@ -1,5 +1,5 @@
 //! Askama template wrapper for Axum responses.
-//! Used by handlers to render templates with Context.
+//! Used by handlers to render templates with a request-scoped values object.
 
 use askama::Template;
 use axum::{
@@ -7,14 +7,16 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 
-use crate::{AppError, Context};
+use crate::AppError;
 
-/// Askama template wrapper that renders with a request context.
-pub struct HtmlTemplate<T>(pub T, pub Context);
+/// Askama template wrapper that renders template `T` with a values object `V`
+/// (typically the request `Context`), which must implement [`askama::Values`].
+pub struct HtmlTemplate<T, V>(pub T, pub V);
 
-impl<T> IntoResponse for HtmlTemplate<T>
+impl<T, V> IntoResponse for HtmlTemplate<T, V>
 where
     T: Template,
+    V: askama::Values,
 {
     fn into_response(self) -> Response {
         match self.0.render_with_values(&self.1) {
@@ -48,10 +50,16 @@ mod tests {
     #[template(source = "{{ 123|foo }}", ext = "txt")]
     struct MyTemplate;
 
+    struct NoValues;
+    impl askama::Values for NoValues {
+        fn get_value<'a>(&'a self, _key: &str) -> Option<&'a dyn std::any::Any> {
+            None
+        }
+    }
+
     #[tokio::test]
     async fn html_template_returns_500_when_render_fails() {
-        let context = Context::new_test_without_db();
-        let response = HtmlTemplate(MyTemplate, context).into_response();
+        let response = HtmlTemplate(MyTemplate, NoValues).into_response();
 
         assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
     }
