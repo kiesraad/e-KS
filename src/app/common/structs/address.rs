@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Severity},
+    common::{PotentialProblems, Severity, structs::problematic::EmptyAddressProblems},
 };
 
 use super::{
@@ -30,25 +30,14 @@ pub struct DutchAddress {
 
 impl DutchAddress {
     pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut items = Vec::new();
-
-        if self.street_name.is_empty_or_none() {
-            items.push(PotentialProblems::NoStreetName(severity));
-        }
-
-        if self.house_number.is_empty_or_none() {
-            items.push(PotentialProblems::NoHouseNumber(severity));
-        }
-
-        if self.postal_code.is_empty_or_none() {
-            items.push(PotentialProblems::NoPostalCode(severity));
-        }
-
-        if self.locality.is_empty_or_none() {
-            items.push(PotentialProblems::NoLocality(severity));
-        }
-
-        items
+        potential_address_problems(
+            severity,
+            &self.street_name,
+            &self.house_number,
+            GenericPostalCode::DutchPostalCode(&self.postal_code),
+            &self.locality,
+            None,
+        )
     }
 
     /// Returns `true` when all required address parts are present.
@@ -93,29 +82,14 @@ pub struct InternationalAddress {
 
 impl InternationalAddress {
     pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut items = Vec::new();
-
-        if self.street_name.is_empty_or_none() {
-            items.push(PotentialProblems::NoStreetName(severity));
-        }
-
-        if self.house_number.is_empty_or_none() {
-            items.push(PotentialProblems::NoHouseNumber(severity));
-        }
-
-        if self.postal_code.is_empty_or_none() {
-            items.push(PotentialProblems::NoPostalCode(severity));
-        }
-
-        if self.locality.is_empty_or_none() {
-            items.push(PotentialProblems::NoLocality(severity));
-        }
-
-        if self.country.is_empty_or_none() {
-            items.push(PotentialProblems::NoCountry(severity));
-        }
-
-        items
+        potential_address_problems(
+            severity,
+            &self.street_name,
+            &self.house_number,
+            GenericPostalCode::InternationalPostalCode(&self.postal_code),
+            &self.locality,
+            Some(&self.country),
+        )
     }
 
     /// Returns `true` when all required address parts are present.
@@ -136,6 +110,59 @@ impl InternationalAddress {
             && self.locality.is_empty_or_none()
             && self.state_or_province.is_empty_or_none()
             && self.country.is_empty_or_none()
+    }
+}
+
+enum GenericPostalCode<'gpc> {
+    DutchPostalCode(&'gpc Option<PostalCode>),
+    InternationalPostalCode(&'gpc Option<InternationalPostalCode>),
+}
+
+fn potential_address_problems(
+    severity: Severity,
+    street_name: &Option<StreetName>,
+    house_number: &Option<HouseNumber>,
+    postal_code: GenericPostalCode,
+    locality: &Option<Locality>,
+    // double option for country, outer to determine if check should be performed, inner is part of type
+    country: Option<&Option<CountryCode>>,
+) -> Vec<PotentialProblems> {
+    let mut items = Vec::new();
+
+    if street_name.is_empty_or_none() {
+        items.push(EmptyAddressProblems::StreetName);
+    }
+    if house_number.is_empty_or_none() {
+        items.push(EmptyAddressProblems::HouseNumber);
+    }
+    match postal_code {
+        GenericPostalCode::DutchPostalCode(pc) => {
+            if pc.is_empty_or_none() {
+                items.push(EmptyAddressProblems::PostalCode);
+            }
+        }
+        GenericPostalCode::InternationalPostalCode(pc) => {
+            if pc.is_empty_or_none() {
+                items.push(EmptyAddressProblems::PostalCode);
+            }
+        }
+    }
+    if locality.is_empty_or_none() {
+        items.push(EmptyAddressProblems::Locality);
+    }
+    if let Some(country) = country
+        && country.is_empty_or_none()
+    {
+        items.push(EmptyAddressProblems::Country);
+    }
+
+    if items.is_empty() {
+        Vec::new()
+    } else {
+        vec![PotentialProblems::IncompleteAddress {
+            severity,
+            problems: items,
+        }]
     }
 }
 
@@ -386,7 +413,10 @@ mod tests {
         address.country = None;
 
         assert_eq!(
-            vec![PotentialProblems::NoCountry(Severity::Error)],
+            vec![PotentialProblems::IncompleteAddress {
+                severity: Severity::Error,
+                problems: vec![EmptyAddressProblems::Country]
+            }],
             address.potential_problems(Severity::Error)
         );
     }

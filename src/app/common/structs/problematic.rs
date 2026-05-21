@@ -68,13 +68,30 @@ pub trait Problematic {
 pub enum PotentialProblems {
     // candidate list
     NoCandidates,
-    TooManyCandidates { actual: usize, max: usize },
-    DuplicateDistricts { duplicates: Vec<ElectoralDistrict> },
+    TooManyCandidates {
+        actual: usize,
+        max: usize,
+    },
+    DuplicateDistricts {
+        duplicates: Vec<ElectoralDistrict>,
+    },
     NoDistricts,
-    FewCandidatesWithFirstName { count: usize, total: usize },
-    FewCandidatesWithoutFirstName { count: usize, total: usize },
-    FewCandidatesWithGender { count: usize, total: usize },
-    FewCandidatesWithoutGender { count: usize, total: usize },
+    FewCandidatesWithFirstName {
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithoutFirstName {
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithGender {
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithoutGender {
+        count: usize,
+        total: usize,
+    },
 
     // political group
     NoLegalName,
@@ -100,11 +117,19 @@ pub enum PotentialProblems {
     NoLastName(Severity),
 
     // address related
-    NoStreetName(Severity),
-    NoHouseNumber(Severity),
-    NoPostalCode(Severity),
-    NoLocality(Severity),
-    NoCountry(Severity),
+    IncompleteAddress {
+        severity: Severity,
+        problems: Vec<EmptyAddressProblems>,
+    },
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum EmptyAddressProblems {
+    StreetName,
+    HouseNumber,
+    PostalCode,
+    Locality,
+    Country,
 }
 
 impl PotentialProblems {
@@ -218,11 +243,9 @@ impl PotentialProblems {
             PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
 
             // address related
-            PotentialProblems::NoStreetName(_) => trans!("problems.no_street_name", *locale),
-            PotentialProblems::NoHouseNumber(_) => trans!("problems.no_house_number", *locale),
-            PotentialProblems::NoPostalCode(_) => trans!("problems.no_postal_code", *locale),
-            PotentialProblems::NoLocality(_) => trans!("problems.no_locality", *locale),
-            PotentialProblems::NoCountry(_) => trans!("problems.no_country", *locale),
+            PotentialProblems::IncompleteAddress { .. } => {
+                trans!("problems.incomplete_address", *locale)
+            }
         }
     }
 
@@ -262,11 +285,7 @@ impl PotentialProblems {
             PotentialProblems::NoLastName(severity) => *severity,
 
             // address related
-            PotentialProblems::NoStreetName(severity) => *severity,
-            PotentialProblems::NoHouseNumber(severity) => *severity,
-            PotentialProblems::NoPostalCode(severity) => *severity,
-            PotentialProblems::NoLocality(severity) => *severity,
-            PotentialProblems::NoCountry(severity) => *severity,
+            PotentialProblems::IncompleteAddress { severity, .. } => *severity,
         }
     }
 }
@@ -362,21 +381,18 @@ mod tests {
             PotentialProblems::NoBsn,
             PotentialProblems::NoPlaceOfResidence,
             PotentialProblems::NoDateOfBirth,
-            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoPostalCode(
-                Severity::Warn,
-            ))),
-            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoLocality(
-                Severity::Warn,
-            ))),
-            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoCountry(
-                Severity::Warn,
-            ))),
-            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoHouseNumber(
-                Severity::Warn,
-            ))),
-            PotentialProblems::RepresentativeProblem(Box::new(PotentialProblems::NoStreetName(
-                Severity::Warn,
-            ))),
+            PotentialProblems::RepresentativeProblem(Box::new(
+                PotentialProblems::IncompleteAddress {
+                    severity: Severity::Warn,
+                    problems: vec![
+                        EmptyAddressProblems::StreetName,
+                        EmptyAddressProblems::PostalCode,
+                        EmptyAddressProblems::Locality,
+                        EmptyAddressProblems::HouseNumber,
+                        EmptyAddressProblems::Country,
+                    ],
+                },
+            )),
         ];
         let multiple_problems = WithProblems(problems.to_vec());
         let summary = multiple_problems.problem_summary(&Locale::Nl).unwrap();

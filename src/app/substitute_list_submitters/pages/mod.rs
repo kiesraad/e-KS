@@ -57,6 +57,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(create::create_substitute_submitter_submit)
         .typed_get(update::update_substitute_submitter)
         .typed_post(update::update_substitute_submitter_submit)
+        .typed_get(delete::delete_substitute_submitter_confirm)
         .typed_post(delete::delete_substitute_submitter)
 }
 

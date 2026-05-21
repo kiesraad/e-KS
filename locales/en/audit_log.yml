@@ -34,6 +34,9 @@ detail:
   no_changes: No field changes recorded for this event.
   old_value: Old value
   subject_link: Subject page
+documents:
+  download: Download documents
+  no_download: This version was not in a state where downloading documents was possible.
 empty: No events have been recorded yet.
 event:
   add_candidate_to_list: Added candidate to list

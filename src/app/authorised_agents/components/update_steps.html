@@ -1,0 +1,13 @@
+<div class="steps-nav">
+  <ul>
+    <li>
+      <a href="{{ authorised_agent.update_path() }}"
+         class="{{ authorised_agent.highest_severity_class() }}">{{ "political_group.authorised_agent_data"|trans }}</a>
+    </li>
+  </ul>
+  <ul>
+    <li>
+      <a href="{{ authorised_agent.delete_path() }}" class="trash">{{ "political_group.actions.delete_authorised_agent"|trans }}</a>
+    </li>
+  </ul>
+</div>

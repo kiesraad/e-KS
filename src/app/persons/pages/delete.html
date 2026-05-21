@@ -10,16 +10,17 @@
   {% include "persons/components/update_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
-  {% let should_warn = true %}
   <fieldset>
     <legend>
-      <h3>{{ "person.personal_details"|trans }}</h3>
+      <h3>{{ "person.actions.delete_everywhere"|trans }}</h3>
     </legend>
-    {% include "persons/components/form.html" %}
+    <p>{{ "person.form.delete_warning_text"|trans }}</p>
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}
-  {% set submit_label = "action.next"|trans %}
-  {% include "common/components/submit.html" %}
+  <div class="form-actions">
+    <button type="submit" class="button tertiary-destructive icon-trash">
+      {{ "person.actions.delete_everywhere"|trans }}
+    </button>
+  </div>
 {% endblock %}
-{% block overlay_end %}{% endblock %}

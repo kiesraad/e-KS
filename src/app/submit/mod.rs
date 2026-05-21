@@ -4,8 +4,8 @@
 mod pages;
 mod structs;
 
-pub use pages::{SubmitPath, router};
+pub use pages::{DownloadDocumentsPath, SubmitPath, documents, router};
 pub use structs::{
-    documents::DocumentData,
+    documents::{DocumentData, ZIP_CONTENT_TYPE},
     problems::{GeneralProblems, ListProblems, PersonProblems, Problems},
 };

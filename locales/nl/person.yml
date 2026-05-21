@@ -1,6 +1,7 @@
 actions:
   add: Kandidaat toevoegen
   delete: Kandidaat verwijderen
+  delete_everywhere: Uit applicatie verwijderen
 autoformat_initials: Automatisch opmaken
 correspondence_address: Correspondentieadres
 correspondence_address_info: Dit adres wordt gebruikt om de benoemingsbrief naartoe te sturen.
