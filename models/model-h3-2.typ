@@ -18,7 +18,6 @@
 
     Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.
   ],
-  page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
 

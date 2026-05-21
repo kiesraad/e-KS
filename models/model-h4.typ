@@ -25,7 +25,6 @@
     *Tink der om!*\
     Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.
   ],
-  page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
 
