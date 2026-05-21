@@ -1,3 +1,4 @@
+candidates: Candidates
 continue_to_home: Continue to Home
 continue_to_submit: Continue to Submit
 description: Candidate nomination for elections in the Netherlands
@@ -41,3 +42,4 @@ switch_election:
   water_council: Water authority
 title: Kiesraad - Kandidaatstelling
 version: Version
+warning_prefix: Warning

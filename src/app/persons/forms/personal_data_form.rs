@@ -41,6 +41,14 @@ pub struct PersonalDataForm {
     pub csrf_token: TokenValue,
 }
 
+impl PersonalDataFieldsForm {
+    pub fn is_date_of_birth_very_old(&self) -> bool {
+        self.date_of_birth
+            .parse::<DateOfBirth>()
+            .is_ok_and(|d| d.is_very_old())
+    }
+}
+
 impl From<PersonalData> for PersonalDataFieldsForm {
     fn from(personal_data: PersonalData) -> Self {
         PersonalDataFieldsForm {

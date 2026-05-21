@@ -193,9 +193,10 @@ pub(super) fn subject_id_full(event: &AppEvent) -> String {
             ..
         } => substitute_submitter_id.to_string(),
         AppEvent::DeveloperLogin { stream_id, .. } => stream_id.to_string(),
-        AppEvent::DownloadFile { list_id, .. }
-        | AppEvent::ExportCsv { list_id, .. }
-        | AppEvent::ImportCsv { list_id, .. } => list_id.to_string(),
+        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCsv { list_id, .. } => {
+            list_id.to_string()
+        }
+        AppEvent::DownloadFile { .. } => String::new(),
     }
 }
 

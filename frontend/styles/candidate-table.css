@@ -54,14 +54,18 @@
     tr:nth-child(n + 51):not(.dragging, .highlighted, .flash-success),
   &[data-max="80"]
     tr:nth-child(n + 81):not(.dragging, .highlighted, .flash-success) {
-    background-image: repeating-linear-gradient(
-      -45deg,
-      var(--red-200),
-      var(--gray-50) 2px,
-      var(--gray-50) 17px
-    );
-    background-repeat: repeat;
-    background-position: 0 0;
+    background-image:
+      var(--row-icon, none),
+      repeating-linear-gradient(
+        -45deg,
+        var(--red-200),
+        var(--gray-50) 2px,
+        var(--gray-50) 17px
+      );
+    background-repeat: no-repeat, repeat;
+    background-position:
+      right 3.5rem center,
+      0 0;
 
     td {
       background-color: transparent;

@@ -67,6 +67,13 @@ impl QueryParamState {
         }
     }
 
+    pub fn highlight_last(last: usize) -> Self {
+        Self {
+            highlight_last: Some(last),
+            ..Default::default()
+        }
+    }
+
     pub fn highlight_last_success(last: usize) -> Self {
         Self {
             success: true,

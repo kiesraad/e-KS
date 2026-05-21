@@ -14,7 +14,9 @@ a.person-block {
   color: var(--text-color-body);
   text-decoration: none;
 
-  &.warning:after {
+  &.info:after,
+  &.warning:after,
+  &.error:after {
     content: " ";
     display: block;
     position: absolute;
@@ -22,9 +24,20 @@ a.person-block {
     right: 0;
     bottom: 0;
     width: 10rem;
-    background-image: url("../icons/warning.svg");
     background-repeat: no-repeat;
     background-position: right 3.5rem center;
+  }
+
+  &.info:after {
+    background-image: url("../icons/info.svg");
+  }
+
+  &.warning:after {
+    background-image: url("../icons/warning.svg");
+  }
+
+  &.error:after {
+    background-image: url("../icons/error.svg");
   }
 
   &:hover {

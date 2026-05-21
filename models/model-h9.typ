@@ -6,18 +6,18 @@
   doc,
   "Model H 9",
   trans("Instemmingsverklaring", "Ynstimmingsferklearring"),
-  trans(
-    [
-      Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.
-
-      *Let op!* Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.
-    ],
-    [
-      Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.
-
-      *Tink der om!* Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.
-    ],
-  ),
+  trans[
+    Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.
+  ][
+    Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.
+  ],
+  warning: trans[
+    *Let op!*\
+    Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.
+  ][
+    *Tink der om!*\
+    Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.
+  ],
   page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )

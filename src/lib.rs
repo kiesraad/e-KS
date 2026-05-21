@@ -3,6 +3,9 @@
 //! This application uses event sourcing (see `https://en.wikipedia.org/wiki/Event_sourcing`)
 //! with Axum for HTTP routing and Askama for HTML templates.
 //!
+//! For a more detailed technical overview, see `docs/code-architecture.md`
+//! (`https://github.com/kiesraad/e-KS/blob/main/docs/code-architecture.md`).
+//!
 //! **Persistence configuration**
 //! - `STORAGE_URL` selects the persistence backend used by [`AppStore`].
 //! - Supported scheme `memory:` disables persistence (in-memory only).
@@ -24,6 +27,15 @@
 //! - `StoreRegistry<D>`: cache/registry that creates and reuses `Store<D>` instances
 //!   per stream ID (scoped to BSN + election).
 //! - [`AppEvent`]: domain event enum driving updates to [`AppStoreData`].
+//!
+//! **Event integrity & confidentiality**
+//! - Event payloads are encrypted at rest (AES-256-GCM, per-stream keys) for the
+//!   file and database backends; see `store::EventEncryption`.
+//! - Persisted events form a hash chain: each event hashes the previous event's
+//!   hash plus its own metadata and stored body, making tampering detectable.
+//! - Generated PDFs/exports embed the current event ID and chain hash (shown in
+//!   the PDF footer), so a document can be tied back to the exact event it was
+//!   rendered from.
 //!
 //! **Directory layout (high level)**
 //! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc).
@@ -73,8 +85,8 @@ pub use auth::{
 };
 pub use core::{
     AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,
-    Province, TlsConfig, TypstRenderer, WaterCouncil, constants, get_env, logging, server,
-    translate,
+    Province, TlsConfig, TypstRenderer, WaterCouncil, constants, get_env, http_trace, logging,
+    server, translate,
 };
 pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
 pub use form::{Form, TokenValue};

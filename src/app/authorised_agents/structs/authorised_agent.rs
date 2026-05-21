@@ -1,4 +1,8 @@
-use crate::{AppError, AppEvent, AppStore, common::FullName, id_newtype};
+use crate::{
+    AppError, AppEvent, AppStore,
+    common::{FullName, PotentialProblems, Problematic, Severity},
+    id_newtype,
+};
 use serde::{Deserialize, Serialize};
 
 id_newtype!(pub struct AuthorisedAgentId);
@@ -9,11 +13,13 @@ pub struct AuthorisedAgent {
     pub name: FullName,
 }
 
-impl AuthorisedAgent {
-    pub fn is_complete(&self) -> bool {
-        self.name.is_complete()
+impl Problematic for AuthorisedAgent {
+    fn get_problems(&self) -> Vec<PotentialProblems> {
+        self.name.potential_problems(Severity::Warn)
     }
+}
 
+impl AuthorisedAgent {
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateAuthorisedAgent(self.clone()))

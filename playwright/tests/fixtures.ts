@@ -1,11 +1,15 @@
 import { test as base, type Page } from "@playwright/test";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
+import { SelectElectionPage } from "./pages/selectElectionPage";
 
 type Fixtures = {
   login: Page;
   noExistingData: Page;
   deleteExistingCandidateLists: Page;
+  provincialCouncilElection: Page;
+  provincialCouncilFrisianElection: Page;
+  waterAuthorityElection: Page;
 };
 
 export const test = base.extend<Fixtures>({
@@ -36,6 +40,52 @@ export const test = base.extend<Fixtures>({
         await new CandidateListsOverviewPage(page).buttonAddList.waitFor();
       }
     }
+
+    await use(page);
+  },
+
+  provincialCouncilElection: async ({ page }, use) => {
+    await page.goto("/dev/login?select_election=true");
+    const selectElectionPage = new SelectElectionPage(page);
+    await selectElectionPage.dropdownElections.selectOption("PS27");
+    await selectElectionPage.dropdownProvinces.selectOption("NH");
+    await selectElectionPage.checkboxFixtures.check();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
+
+    await use(page);
+  },
+
+  provincialCouncilFrisianElection: async ({ page }, use) => {
+    await page.goto("/dev/login?select_election=true");
+    const selectElectionPage = new SelectElectionPage(page);
+    await selectElectionPage.dropdownElections.selectOption("PS27");
+    await selectElectionPage.dropdownProvinces.selectOption("FR");
+    await selectElectionPage.checkboxFixtures.check();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
+
+    await use(page);
+  },
+
+  waterAuthorityElection: async ({ page }, use) => {
+    await page.goto("/dev/login?select_election=true");
+    const selectElectionPage = new SelectElectionPage(page);
+    await selectElectionPage.dropdownElections.selectOption(
+      "Waterschapsverkiezingen 2027",
+    );
+    await selectElectionPage.dropdownWaterAuthorities.selectOption(
+      "Amstel, Gooi en Vecht",
+    );
+    await selectElectionPage.checkboxFixtures.uncheck();
+    await Promise.all([
+      page.waitForURL("/"),
+      selectElectionPage.buttonContinue.click(),
+    ]);
 
     await use(page);
   },

@@ -20,20 +20,18 @@ impl TryFrom<ListSubmitter> for TypstPerson {
         Ok(TypstPerson {
             last_name: submitter.name.last_name_with_prefix(),
             initials: submitter.name.initials_with_first_name(),
-            postal_address: (&submitter.address).try_into()?,
+            postal_address: (&submitter.address).into(),
         })
     }
 }
 
-impl TryFrom<&Representative> for TypstPerson {
-    type Error = AppError;
-
-    fn try_from(representative: &Representative) -> Result<Self, Self::Error> {
-        Ok(TypstPerson {
+impl From<&Representative> for TypstPerson {
+    fn from(representative: &Representative) -> Self {
+        TypstPerson {
             last_name: representative.name.last_name_with_prefix(),
             initials: representative.name.initials_with_first_name(),
-            postal_address: (&Address::Dutch(representative.address.clone())).try_into()?,
-        })
+            postal_address: (&Address::Dutch(representative.address.clone())).into(),
+        }
     }
 }
 

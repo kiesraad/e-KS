@@ -17,6 +17,7 @@ fields:
   last_name_info: "Kandidaten kunnen zelf kiezen vermeld te worden met: <ol> <li>De eigen achternaam;</li> <li>De achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;</li> <li>Beide achternamen, eerst de eigen achternaam en dan (verbonden door een koppelteken) de achternaam van de (ex) echtgenoot, (ex) echtgenote, of (ex) geregistreerde partner;</li> <li> Beide achternamen, eerst de achternaam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde partner en dan (verbonden door een koppelteken) de eigen achternaam.</li> </ol> Wel moet de kandidaat bevoegd zijn om de naam van de (ex) echtgenoot, (ex) echtgenote of (ex) geregistreerde partner te voeren (artikel 1:9 BW)."
   last_name_prefix: Voorvoegsel
   locality: Woonplaats
+  locality_suggestion: "Bedoel je:"
   name: Naam
   place_of_residence: Woonplaats
   postal_code: Postcode
@@ -35,7 +36,6 @@ hints:
   optional: optioneel
 list:
   empty: Geen kandidaten gevonden.
-missing_information: Niet alle vereiste informatie is ingevuld voor deze kandidaat.
 no_bsn_confirm: Ik bevestig dat deze persoon geen BSN heeft.
 not_found: "Persoon {} niet gevonden."
 not_found_in_candidate_list: Kandidaat niet gevonden in kandidatenlijst.

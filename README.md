@@ -24,6 +24,8 @@ Belangrijke stukken of [formulieren voor de kandidaatstellingsprocedure](https:/
 
 Een overzicht van de voorgestelde technische afwegingen staat in [deze presentatie](https://github.com/user-attachments/files/24053801/e-KS-PSA.pdf).
 
+Een diepere duik in de technische architectuur is te vinden in [deze documentatie](docs/code-architecture.md).
+
 ## Development setup
 
 1) Install prerequisites:
@@ -49,9 +51,9 @@ bin/dev
 - `bin/biome`: format and lint Typescript
 - `bin/setup`: download tools, setup database, load fixtures, etc.
 - `bin/dev`: start development environment (postgres, esbuild, cargo watch, etc.)
-- `bin/test`: run backend and frontend tests
+- `bin/test`: run integration tests (playwright) in a docker conmtainer
 - `bin/init`: build and download development tools
-- `bin/check`: run linters and formatters
+- `bin/check`: run linter, formatters and Rust tests
 - `bin/build`: build backend and frontend for production
 - `bin/update_locales`: update locale files based on used keys in the codebase
 

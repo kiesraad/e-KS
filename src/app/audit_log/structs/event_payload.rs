@@ -99,11 +99,9 @@ pub(super) fn extract_old_new(
         AppEvent::DownloadFile {
             file_name,
             download_path,
-            list_id,
         } => event!({
             file_name: file_name,
             download_path: download_path,
-            list_id: list_id.to_string(),
         }),
         AppEvent::ExportCsv {
             file_name,
@@ -404,13 +402,11 @@ mod tests {
 
     #[test]
     fn download_file_builds_event_payload_with_all_fields() {
-        let list_id = CandidateListId::new();
         let state = empty_state();
         let (old, new) = extract_old_new(
             &AppEvent::DownloadFile {
                 file_name: "list.csv".to_string(),
                 download_path: "/tmp/list.csv".to_string(),
-                list_id,
             },
             &state,
             &state,
@@ -421,7 +417,6 @@ mod tests {
             Some(serde_json::json!({
                 "file_name": "list.csv",
                 "download_path": "/tmp/list.csv",
-                "list_id": list_id.to_string(),
             }))
         );
     }

@@ -1,7 +1,9 @@
 //! Utilities and small helpers shared across the application.
 mod bsn;
 pub mod eks_key;
+mod format_hash;
 pub mod health;
+pub mod locality_aliases;
 pub mod no_cache_headers;
 mod option_string_ext;
 mod query_param_state;
@@ -27,6 +29,7 @@ pub mod embed_bag;
 pub mod test_utils;
 
 pub use bsn::random_bsn;
+pub use format_hash::format_hash;
 pub use no_cache_headers::generate_attachment_headers;
 pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use query_param_state::QueryParamState;

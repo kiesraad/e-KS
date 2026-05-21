@@ -1,0 +1,33 @@
+duplicate_districts: "Dubbele kieskringen: {}"
+few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
+few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
+few_candidates_with_gender: "Maar {} van de {} kandidaten hebben een geslacht ingevuld"
+few_candidates_with_gender_one: "Maar 1 van de {} kandidaten heeft een geslacht ingevuld"
+few_candidates_without_first_name: "Maar {} van de {} kandidaten hebben geen voornaam"
+few_candidates_without_first_name_one: "Maar 1 van de {} kandidaten heeft geen voornaam"
+few_candidates_without_gender: "Maar {} van de {} kandidaten hebben geen geslacht ingevuld"
+few_candidates_without_gender_one: "Maar 1 van de {} kandidaten heeft geen geslacht ingevuld"
+no_authorised_agent: Geen gemachtigde toegevoegd
+no_bsn: BSN ontbreekt
+no_candidates: Geen kandidaten toegevoegd
+no_country: land ontbreekt
+no_country_of_residence: woonland ontbreekt
+no_date_of_birth: geboortedatum ontbreekt
+no_display_name: Geregistreerde aanduiding ontbreekt
+no_districts: Geen kieskringen geselecteerd
+no_house_number: huisnummer ontbreekt
+no_initials: initialen ontbreken
+no_last_name: achternaam ontbreekt
+no_legal_name: Statutaire naam ontbreekt
+no_list_submitter: Geen lijstinleveraar toegevoegd
+no_locality: woonplaats ontbreekt in correspondentieadres
+no_place_of_residence: woonplaats ontbreekt
+no_postal_code: postcode ontbreekt
+no_previous_election_results: Resultaten vorige verkiezing ontbreken
+no_problems: Geen problemen
+no_representative: gemachtigde ontbreekt
+no_street_name: straatnaam ontbreekt
+no_substitute_submitter: Geen vervanger voor het herstel van verzuimen toegevoegd
+representative: gemachtigde
+too_many_candidates: "Te veel kandidaten ({} toegevoegd, maximum is {})"
+very_old_date_of_birth: "geboortedatum lijkt onjuist (meer dan {} jaar geleden)"

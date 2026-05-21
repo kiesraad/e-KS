@@ -3,6 +3,7 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     candidate_lists::CandidateList,
+    common::Problematic,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
 };
@@ -31,7 +32,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         &SortDirection::Asc,
     )?
     .into_iter()
-    .filter(|p| p.is_complete())
+    .filter(|p| p.is_all_good())
     .take(FIXTURE_CANDIDATE_LIST_SIZE)
     .collect::<Vec<_>>();
     let person_ids = collect_person_ids(persons);

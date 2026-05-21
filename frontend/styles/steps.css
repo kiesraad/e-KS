@@ -31,13 +31,22 @@
       line-height: 2.75rem;
       border-radius: var(--rounded-sm);
       font-weight: normal;
+      margin-bottom: 0;
 
       &:hover {
         background-color: var(--gray-100);
       }
 
+      &.info {
+        background-image: url("../icons/info.svg");
+      }
+
       &.warning {
         background-image: url("../icons/warning.svg");
+      }
+
+      &.error {
+        background-image: url("../icons/error.svg");
       }
 
       &.ok {

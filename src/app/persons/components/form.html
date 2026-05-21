@@ -1,14 +1,19 @@
 {% include "common/components/name_fields.html" %}
+{% let election = "election"|election_value %}
 <div class="form-row">
-  <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}error{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
     <input type="text"
            placeholder=" "
            name="place_of_residence"
            id="locality"
-           value="{{ form.data.personal_data.place_of_residence }}"
-           list="locality-suggestions" />
-    <datalist id="locality-suggestions"></datalist>
+           autocomplete="off"
+           value="{{ form.data.personal_data.place_of_residence }}" />
+    <span id="locality-suggestion"
+          class="suggestion with-municipalities{% if election.frisian_export_allowed() %} frisian-aliases-allowed{% endif %} hidden">
+      {{ "person.fields.locality_suggestion"|trans }}
+      <button type="button" id="locality-suggestion-name"></button>
+    </span>
     {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
   <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">
@@ -42,7 +47,7 @@
     {% endif %}
     {% for error in form|error("personal_data.bsn") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
-  <p class="form-field form-field-md {% if form.data.personal_data.date_of_birth.is_empty() && should_warn %}warning{% endif %}">
+  <p class="form-field form-field-md {% if form.data.personal_data.date_of_birth.is_empty() && should_warn %}error{% else if form.data.personal_data.is_date_of_birth_very_old() && should_warn %}warning{% endif %}">
     <label for="day_of_birth">{{ "person.fields.date_of_birth"|trans }}</label>
     <span class="date-input-row">
       <span class="date-separate hidden">
@@ -76,6 +81,9 @@
              inputmode="numeric" />
     </span>
     {% for error in form|error("personal_data.date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
+    {% if form.data.personal_data.is_date_of_birth_very_old() && should_warn %}
+      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.very_old_date_of_birth"|trans(&crate::common::DateOfBirth::WARN_AGE.to_string() ) }}</span>
+    {% endif %}
   </p>
 </div>
 <div class="form-row">

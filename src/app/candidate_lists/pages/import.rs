@@ -167,12 +167,20 @@ fn upload_error_messages(err: &AppError, locale: Locale) -> Option<Vec<String>> 
 pub async fn download_import_template(
     _: CandidateListImportTemplatePath,
 ) -> Result<Response, AppError> {
-    let (response, _) = Csv::<CandidateRecordCsv> {
-        filename: "kandidatenlijst-export-sjabloon.csv".to_string(),
+    let file_name = "kandidatenlijst-export-sjabloon.csv";
+    let (response, file_size) = Csv::<CandidateRecordCsv> {
+        filename: file_name.to_string(),
         headers: Some(CSV_HEADERS.to_vec()),
         records: vec![],
     }
     .generate_csv_response()?;
+
+    tracing::info!(
+        file_name,
+        content_type = "text/csv",
+        size_bytes = file_size,
+        "file download served",
+    );
 
     Ok(response)
 }

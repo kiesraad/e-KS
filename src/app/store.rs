@@ -184,6 +184,23 @@ impl StoreData for AppStoreData {
     fn last_event_id(&self) -> usize {
         self.events.last().map(|e| e.event_id).unwrap_or(0)
     }
+
+    fn last_event_hash(&self) -> [u8; 32] {
+        self.events
+            .last()
+            .map(|e| e.hash)
+            .unwrap_or(crate::store::GENESIS_HASH)
+    }
+}
+
+impl crate::store::Store<AppStoreData> {
+    pub fn current_event_id(&self) -> usize {
+        self.data.read().last_event_id()
+    }
+
+    pub fn current_event_hash(&self) -> [u8; 32] {
+        self.data.read().last_event_hash()
+    }
 }
 
 #[cfg(test)]

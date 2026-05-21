@@ -2,35 +2,19 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListSummary},
-    core::ModelLocale,
-    filters,
-    submit::IncompleteItems,
+    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters,
+    list_submitters::ListSubmitter, submit::Problems,
 };
 
 use super::SubmitPath;
 
-struct SubmitCandidateList {
-    list: CandidateList,
-    download_h1_path_nl: String,
-    download_h1_path_fry: String,
-    download_h3_1_path_nl: String,
-    download_h3_1_path_fry: String,
-    download_h4_path_nl: String,
-    download_h4_path_fry: String,
-    download_h9_path_nl: String,
-    download_h9_path_fry: String,
-    download_eml_210_path: String,
-    person_count: usize,
-    duplicate_districts: Vec<ElectoralDistrict>,
-}
-
 #[derive(Template)]
 #[template(path = "submit/pages/index.html")]
 pub struct IndexTemplate {
-    candidate_lists: Vec<SubmitCandidateList>,
-    incomplete_items: IncompleteItems,
+    problems: Problems,
+    download_path_nl: String,
+    download_path_fry: String,
+    frisian_export_allowed: bool,
 }
 
 pub async fn index(
@@ -38,66 +22,20 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store)
-        .into_iter()
-        .map(|summary| {
-            let person_count = summary.candidate_count();
-            Ok(SubmitCandidateList {
-                download_h1_path_nl: super::DownloadH1Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h1_path_fry: super::DownloadH1Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h3_1_path_nl: super::DownloadH31Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h3_1_path_fry: super::DownloadH31Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h4_path_nl: super::DownloadH4Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h4_path_fry: super::DownloadH4Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_h9_path_nl: super::DownloadH9Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Nl,
-                }
-                .to_string(),
-                download_h9_path_fry: super::DownloadH9Path {
-                    list_id: summary.list.id,
-                    locale: ModelLocale::Fry,
-                }
-                .to_string(),
-                download_eml_210_path: super::DownloadEml210Path {
-                    list_id: summary.list.id,
-                }
-                .to_string(),
-                list: summary.list,
-                person_count,
-                duplicate_districts: summary.duplicate_districts,
-            })
-        })
-        .collect::<Result<Vec<_>, AppError>>()?;
+    let problems = Problems::find_all(&store);
 
     Ok(HtmlTemplate(
         IndexTemplate {
-            candidate_lists,
-            incomplete_items: IncompleteItems::find_all(&store),
+            problems,
+            download_path_nl: super::DownloadDocumentsPath {
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            download_path_fry: super::DownloadDocumentsPath {
+                locale: ModelLocale::Fry,
+            }
+            .to_string(),
+            frisian_export_allowed: context.election.frisian_export_allowed(),
         },
         context,
     ))
@@ -107,7 +45,7 @@ pub async fn index(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Session,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         persons::PersonId,
@@ -118,11 +56,9 @@ mod tests {
     use axum::response::IntoResponse;
 
     #[tokio::test]
-    #[ignore] // TODO should pass again once #605, #607, and #608 have been implemented
-    async fn index_shows_h1_downloads_for_complete_lists() -> Result<(), AppError> {
+    async fn index_shows_document_downloads_for_complete_lists() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let complete_list_id = CandidateListId::new();
-        let incomplete_list_id = CandidateListId::new();
         let person_id = PersonId::new();
 
         sample_list_submitter(ListSubmitterId::new())
@@ -134,9 +70,6 @@ mod tests {
         complete_list.create(&store).await?;
         complete_list.append_candidate(&store, person_id).await?;
 
-        let incomplete_list = sample_candidate_list(incomplete_list_id);
-        incomplete_list.create(&store).await?;
-
         let response = index(SubmitPath, Context::new_test_without_db(), store)
             .await?
             .into_response();
@@ -144,8 +77,7 @@ mod tests {
 
         assert!(
             body.contains(
-                &super::super::DownloadH1Path {
-                    list_id: complete_list_id,
+                &super::super::DownloadDocumentsPath {
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
@@ -153,14 +85,136 @@ mod tests {
         );
 
         assert!(
-            !body.contains(
-                &super::super::DownloadH1Path {
-                    list_id: incomplete_list_id,
+            body.matches(
+                &super::super::DownloadDocumentsPath {
                     locale: ModelLocale::Nl,
                 }
                 .to_string()
             )
+            .count()
+                == 1
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn index_shows_nl_and_fry_downloads_when_needed() -> Result<(), AppError> {
+        for (election, district) in [
+            (
+                ElectionConfig::PS27(crate::Province::FR),
+                ElectoralDistrict::FR,
+            ),
+            (
+                ElectionConfig::WS27(crate::WaterCouncil::Fryslan),
+                ElectoralDistrict::WsFryslan,
+            ),
+        ] {
+            let store = AppStore::new_for_test_with_election(election);
+            let complete_list_id = CandidateListId::new();
+            let person_id = PersonId::new();
+
+            sample_list_submitter(ListSubmitterId::new())
+                .update(&store)
+                .await?;
+            sample_person(person_id).create(&store).await?;
+
+            let mut complete_list = sample_candidate_list(complete_list_id);
+            complete_list.electoral_districts = vec![district];
+            complete_list.create(&store).await?;
+            complete_list.append_candidate(&store, person_id).await?;
+
+            let response = index(
+                SubmitPath,
+                Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
+                store,
+            )
+            .await?
+            .into_response();
+            let body = response_body_string(response).await;
+
+            assert!(
+                body.contains(
+                    &super::super::DownloadDocumentsPath {
+                        locale: ModelLocale::Nl,
+                    }
+                    .to_string()
+                )
+            );
+
+            assert!(
+                body.contains(
+                    &super::super::DownloadDocumentsPath {
+                        locale: ModelLocale::Fry,
+                    }
+                    .to_string()
+                ),
+                "Expected Frisian link for {:?}\n{}",
+                election,
+                body
+            );
+        }
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn index_shows_only_nl_when_needed() -> Result<(), AppError> {
+        for (election, district) in [
+            (ElectionConfig::EK27, ElectoralDistrict::FR),
+            (
+                ElectionConfig::PS27(crate::Province::GR),
+                ElectoralDistrict::GR,
+            ),
+            (
+                ElectionConfig::WS27(crate::WaterCouncil::Noorderzijlvest),
+                ElectoralDistrict::WsNoorderzijlvest,
+            ),
+        ] {
+            let store = AppStore::new_for_test_with_election(election);
+            let complete_list_id = CandidateListId::new();
+            let person_id = PersonId::new();
+
+            sample_list_submitter(ListSubmitterId::new())
+                .update(&store)
+                .await?;
+            sample_person(person_id).create(&store).await?;
+
+            let mut complete_list = sample_candidate_list(complete_list_id);
+            complete_list.electoral_districts = vec![district];
+            complete_list.create(&store).await?;
+            complete_list.append_candidate(&store, person_id).await?;
+
+            let response = index(
+                SubmitPath,
+                Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
+                store,
+            )
+            .await?
+            .into_response();
+            let body = response_body_string(response).await;
+
+            assert!(
+                body.contains(
+                    &super::super::DownloadDocumentsPath {
+                        locale: ModelLocale::Nl,
+                    }
+                    .to_string()
+                )
+            );
+
+            assert!(
+                !body.contains(
+                    &super::super::DownloadDocumentsPath {
+                        locale: ModelLocale::Fry,
+                    }
+                    .to_string()
+                ),
+                "Expected no Frisian link for {:?}\n{}",
+                election,
+                body
+            );
+        }
 
         Ok(())
     }

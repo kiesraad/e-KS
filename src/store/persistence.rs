@@ -1,5 +1,6 @@
 //! Persistence backends for the event store.
 
+use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
 use url::Url;
@@ -8,7 +9,7 @@ use uuid::Uuid;
 use crate::{AppError, ElectionConfig};
 
 use super::{
-    Store, StoreData, StoreEvent,
+    Store, StoreData, StoreEvent, chain_hash,
     filesystem::{self, replay_from_file, update_in_filesystem},
 };
 
@@ -193,8 +194,19 @@ where
             StorePersistence::None => {
                 let mut data = self.data.write();
                 let event_id = data.last_event_id() + 1;
-                let store_event = StoreEvent::new(event_id, event);
-                data.apply(store_event);
+                let created_at = Utc::now();
+                let prev_hash = data.last_event_hash();
+                // Nothing is persisted, so the chain hash is over the plain encoding.
+                let body = postcard::to_allocvec(&event).map_err(|e| {
+                    AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
+                })?;
+                let hash = chain_hash(&prev_hash, event_id, created_at, &body);
+                data.apply(StoreEvent {
+                    event_id,
+                    payload: event,
+                    created_at,
+                    hash,
+                });
 
                 Ok(())
             }
@@ -276,6 +288,7 @@ mod tests {
     #[derive(Default)]
     struct TestData {
         last_event_id: usize,
+        last_event_hash: [u8; 32],
         applied: Vec<usize>,
     }
 
@@ -284,11 +297,16 @@ mod tests {
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
             self.last_event_id = event.event_id;
+            self.last_event_hash = event.hash;
             self.applied.push(event.payload);
         }
 
         fn last_event_id(&self) -> usize {
             self.last_event_id
+        }
+
+        fn last_event_hash(&self) -> [u8; 32] {
+            self.last_event_hash
         }
     }
 

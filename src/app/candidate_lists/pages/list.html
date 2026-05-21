@@ -10,64 +10,64 @@
 {% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
   <section class="candidate-lists">
-      {% if !candidate_lists.is_empty() %}
-        <div class="candidates">
-          <a href="{{ Person::list_path() }}" class="card card-persons">
-            <div class="card-header">
-              <div class="badge"></div>
-              <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
+    {% if total_persons > 0 %}
+      <div class="candidates">
+        <a href="{{ Person::list_path() }}" class="card card-persons">
+          <div class="card-header">
+            <div class="badge"></div>
+            <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
+          </div>
+          <div class="card-content">
+            <p>{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
+            <p>{{ "candidate_list.all_candidates_note"|trans }}</p>
+          </div>
+          <div class="card-footer">{{ "action.manage_candidates"|trans }}</div>
+        </a>
+      </div>
+    {% endif %}
+    <div class="cards cards-candidate-lists">
+      {% let election = "election"|election_value %}
+      {% let max_candidates = "max_candidates"|integer_value %}
+      {% for candidate_list in candidate_lists %}
+        <a href="{{ candidate_list.list.view_path() }}"
+           class="card card-candidate-list {{ candidate_list.highest_severity_class() }}">
+          <div class="card-header">
+            <div class="badge"></div>
+            <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
+          </div>
+          <div class="card-content">
+            <p class="{% if candidate_list.candidate_count() > candidate_list.max_count %}warning{% endif %}">
+              {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
+            </p>
+            <div class="tags">
+              {% if !election.has_only_one_district() %}
+                <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
+                {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
+                  <p>{{ "candidate_list.districts.all"|trans }}</p>
+                {% else %}
+                  <ul class="tags-list">
+                    {% for district in candidate_list.list.electoral_districts %}
+                      <li class="tag {% if candidate_list.duplicate_districts.contains(district) %}error{% endif %}">
+                        <span>{{ district|district_name }}</span>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+              {% endif %}
             </div>
-            <div class="card-content">
-              <p>{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
-              <p>{{ "candidate_list.all_candidates_note"|trans }}</p>
-            </div>
-            <div class="card-footer">{{ "action.manage_candidates"|trans }}</div>
-          </a>
+          </div>
+          <p class="card-footer">{{ "action.manage_candidate_list"|trans }}</p>
+        </a>
+      {% endfor %}
+      {# add new candidate list card #}
+      {% if election.has_only_one_district() && candidate_lists.len() > 0 %}
+        {# do not show the add button #}
+      {% else %}
+        <div class="card card-add-list">
+          <a href="{{ CandidateList::create_path() }}"
+             class="button secondary icon-plus">{{ "candidate_list.actions.add"|trans }}</a>
         </div>
       {% endif %}
-      <div class="cards cards-candidate-lists">
-        {% let election = "election"|election_value %}
-        {% let max_candidates = "max_candidates"|integer_value %}
-        {% for candidate_list in candidate_lists %}
-          <a href="{{ candidate_list.list.view_path() }}"
-             {% if candidate_list.duplicate_districts.is_empty() %} class="card card-candidate-list" {% else %} class="card card-warning" {% endif %}>
-             <div class="card-header">
-               <div class="badge"></div>
-               <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
-             </div>
-             <div class="card-content">
-               <p>
-                 {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
-               </p>
-               <div class="tags">
-                {% if !election.has_only_one_district() %}
-                  <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
-                  {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
-                    <p>{{ "candidate_list.districts.all"|trans }}</p>
-                  {% else %}
-                    <ul class="tags-list">
-                      {% for district in candidate_list.list.electoral_districts %}
-                        <li class="tag {% if candidate_list.duplicate_districts.contains(district) %}warning{% endif %}">
-                          <span>{{ district|district_name }}</span>
-                        </li>
-                      {% endfor %}
-                    </ul>
-                  {% endif %}
-                {% endif %}
-               </div>
-             </div>
-            <p class="card-footer">{{ "action.manage_candidate_list"|trans }}</p>
-          </a>
-        {% endfor %}
-        {# add new candidate list card #}
-        {% if election.has_only_one_district() && candidate_lists.len() > 0 %}
-          {# do not show the add button #}
-        {% else %}
-          <div class="card card-add-list">
-            <a href="{{ CandidateList::create_path() }}"
-               class="button secondary icon-plus">{{ "candidate_list.actions.add"|trans }}</a>
-          </div>
-        {% endif %}
-      </div>
+    </div>
   </section>
 {% endblock %}

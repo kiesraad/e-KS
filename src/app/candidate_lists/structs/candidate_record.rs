@@ -384,7 +384,7 @@ mod tests {
                 .locality
                 .as_ref()
                 .map(|v| v.to_string()),
-            Some("Den Haag".to_string())
+            Some("'s-Gravenhage".to_string())
         );
     }
 }
