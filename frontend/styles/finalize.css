@@ -1,0 +1,40 @@
+.finalize {
+  .step {
+    display: grid;
+    gap: var(--space-8);
+    grid-template-columns: repeat(12, 1fr);
+  }
+
+  .step-illustration {
+    grid-column: span 3;
+  }
+
+  .step-content {
+    grid-column: span 9;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-8);
+  }
+
+  .step-title {
+    padding-inline-start: var(--space-8);
+    position: relative;
+
+    &::before {
+      aspect-ratio: 1;
+      background-color: var(--orange-100);
+      border: 2px solid var(--orange-600);
+      content: '';
+      left: 0;
+      position: absolute;
+      top: 0;
+      translate: -50%;
+      width: var(--space-8);
+    }
+  }
+
+  .step-card {
+    padding-inline-start: var(--space-8);
+    border-inline-start: 1px solid var(--gray-200);
+  }
+}

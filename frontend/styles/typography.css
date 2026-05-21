@@ -52,6 +52,20 @@ h4,
   font-weight: 700;
 }
 
+h5,
+.h5 {
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-lg);
+  font-weight: 700;
+}
+
+h6,
+.h6 {
+  font-size: var(--font-size-md);
+  line-height: var(--leading-md);
+  font-weight: 700;
+}
+
 
 a {
   color: var(--link-default);

@@ -10,10 +10,10 @@
     {% if problems.general.flatten().is_empty() %}
       <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
     {% else %}
-      <ul class="warnings">
+      <ul class="warnings tags-list">
         {% for problem in problems.general.general %}
           <li>
-            <a class="{{ problem.severity().class() }}"
+            <a class="tag {{ problem.severity().class() }}"
                href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
           </li>
         {% endfor %}
@@ -45,11 +45,11 @@
     {% if problems.candidates.is_empty() %}
       <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
     {% else %}
-      <ul class="warnings mb-xl">
+      <ul class="warnings tags-list">
         {% for candidate_pp in &problems.candidates %}
           {% for problem in &candidate_pp.problems %}
             <li>
-              <a class="{{ problem.severity().class() }}"
+              <a class="tag {{ problem.severity().class() }}"
                  href="{{ problem.person_fix_path(&candidate_pp.person) }}">{{ candidate_pp.person.name.display() }}: {{ problem.translate(locale) }}</a>
             </li>
           {% endfor %}
@@ -61,12 +61,12 @@
       <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
     {% else %}
       {% for list_problems in &problems.lists %}
-        <div class="mb-md">
-          <div class="mb-sm">{{ list_problems.list.districts_name(locale.into() ) }}:</div>
-          <ul class="warnings">
+        <div class="tags">
+          <div class="tags-label">{{ list_problems.list.districts_name(locale.into() ) }}:</div>
+          <ul class="tags-list">
             {% for problem in &list_problems.problems %}
               <li>
-                <a class="{{ problem.severity().class() }}"
+                <a class="tag {{ problem.severity().class() }}"
                    href="{{ problem.candidate_list_fix_path(&list_problems.list) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
