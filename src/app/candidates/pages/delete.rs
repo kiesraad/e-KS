@@ -64,10 +64,60 @@ mod tests {
         AppStore, Form, QueryParamState,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
-        test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
+        test_utils::{
+            response_body_string, sample_candidate_list, sample_person,
+            sample_person_with_last_name,
+        },
     };
     use axum::http::{StatusCode, header};
     use axum_extra::routing::TypedPath;
+
+    #[tokio::test]
+    async fn delete_person_confirm_contains_delete_button() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        let person = sample_person(PersonId::new());
+
+        list.create(&store).await?;
+        person.create(&store).await?;
+        list.clone().update_order(&store, &[person.id]).await?;
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+        let candidate = store
+            .get_candidate_list(list_id)?
+            .get_candidate(&store, person.id)
+            .await?;
+
+        let response = delete_person_confirm(
+            CandidateListDeletePersonPath {
+                list_id,
+                person_id: person.id,
+            },
+            Context::new_test_without_db(),
+            store,
+            full_list,
+            candidate.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+
+        // Delete from application button
+        assert!(body.contains(&candidate.delete_path().to_string()));
+
+        // Remove from list button
+        let formaction = format!("formaction=\"{}\"", candidate.update_position_path());
+        let after_formaction = body
+            .find(&formaction)
+            .and_then(|pos| body[pos..].find('>').map(|end| &body[pos..pos + end]))
+            .expect("formaction not found");
+        assert!(after_formaction.contains("value=\"remove\""));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_person_removes_from_list_and_redirects() -> Result<(), AppError> {

@@ -57,8 +57,29 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState, TokenValue,
-        authorised_agents::AuthorisedAgentId, test_utils::sample_authorised_agent,
+        authorised_agents::AuthorisedAgentId,
+        test_utils::{response_body_string, sample_authorised_agent},
     };
+
+    #[tokio::test]
+    async fn delete_authorised_agent_confirm_contains_delete_button() -> Result<(), AppError> {
+        let agent_id = AuthorisedAgentId::new();
+        let authorised_agent = sample_authorised_agent(agent_id);
+
+        let response = delete_authorised_agent_confirm(
+            AuthorisedAgentDeletePath { agent_id },
+            Context::new_test_without_db(),
+            authorised_agent.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&authorised_agent.delete_path().to_string()));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {

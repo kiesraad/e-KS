@@ -52,10 +52,34 @@ mod tests {
     use super::*;
     use crate::{
         AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
-        candidate_lists::CandidateListSummary,
+        candidate_lists::CandidateListSummary, test_utils::response_body_string,
     };
     use axum::http::{StatusCode, header};
     use axum_extra::routing::TypedPath;
+
+    #[tokio::test]
+    async fn delete_candidate_list_confirm_contains_delete_button() -> Result<(), AppError> {
+        let candidate_list = CandidateList {
+            electoral_districts: vec![ElectoralDistrict::UT],
+            ..Default::default()
+        };
+
+        let response = delete_candidate_list_confirm(
+            CandidateListsDeletePath {
+                list_id: candidate_list.id,
+            },
+            Context::new_test_without_db(),
+            candidate_list.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&candidate_list.delete_path().to_string()));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
