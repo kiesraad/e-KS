@@ -32,6 +32,9 @@ detail:
   no_changes: Geen veldwijzigingen vastgelegd voor deze gebeurtenis.
   old_value: Oude waarde
   subject_link: Subjectpagina
+documents:
+  download: Documenten downloaden
+  no_download: In deze versie was het downloaden van documenten niet mogelijk.
 empty: Er zijn nog geen gebeurtenissen vastgelegd.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd

@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StoreEvent, chain_hash, event_aad};
+use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
 use crate::{AppError, ElectionConfig};
 
 #[cfg(feature = "database")]
@@ -188,14 +188,18 @@ fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
 }
 
 /// Load and replay missing events from the database into the store.
-pub async fn load_from_database<D>(store: &Store<D>, pool: &sqlx::PgPool) -> Result<(), AppError>
+pub async fn load_from_database<D>(
+    store: &Store<D>,
+    pool: &sqlx::PgPool,
+    cipher: &EventCipher,
+) -> Result<(), AppError>
 where
     D: StoreData,
     D::Event: DeserializeOwned,
 {
     let mut tx = pool.begin().await?;
 
-    if let Err(err) = catch_up(store, &mut tx).await {
+    if let Err(err) = catch_up(store, &mut tx, cipher).await {
         tx.rollback().await?;
         return Err(err);
     }
@@ -207,6 +211,7 @@ where
 pub async fn update_in_database<D>(
     store: &Store<D>,
     pool: &sqlx::PgPool,
+    cipher: &EventCipher,
     event: D::Event,
 ) -> Result<(), AppError>
 where
@@ -215,7 +220,7 @@ where
 {
     let mut tx = pool.begin().await?;
 
-    let last_id = match catch_up(store, &mut tx).await {
+    let last_id = match catch_up(store, &mut tx, cipher).await {
         Ok(id) => id,
         Err(err) => {
             tx.rollback().await?;
@@ -227,7 +232,11 @@ where
     let created_at = Utc::now();
     let prev_hash = store.data.read().last_event_hash();
 
-    let hash = match insert_event(store, next_id, created_at, &event, &prev_hash, &mut tx).await {
+    let hash = match insert_event(
+        store, cipher, next_id, created_at, &event, &prev_hash, &mut tx,
+    )
+    .await
+    {
         Ok(hash) => hash,
         Err(err) => {
             tx.rollback().await?;
@@ -237,15 +246,7 @@ where
 
     tx.commit().await?;
 
-    store.apply_event(
-        next_id,
-        StoreEvent {
-            event_id: next_id,
-            payload: event,
-            created_at,
-            hash,
-        },
-    );
+    store.apply_persisted_event(next_id, event, created_at, hash);
 
     Ok(())
 }
@@ -254,6 +255,7 @@ where
 async fn catch_up<D>(
     store: &Store<D>,
     tx: &mut sqlx::Transaction<'_, sqlx::Postgres>,
+    cipher: &EventCipher,
 ) -> Result<usize, AppError>
 where
     D: StoreData,
@@ -309,9 +311,7 @@ where
         }
 
         let aad = event_aad(event.event_id, event.created_at, &prev_hash);
-        let payload = store
-            .cipher
-            .decrypt_owned::<D::Event>(event.payload, &aad)?;
+        let payload = cipher.decrypt_owned::<D::Event>(event.payload, &aad)?;
         prev_hash = event.hash;
         data.apply(StoreEvent {
             event_id: event.event_id,
@@ -329,6 +329,7 @@ where
 /// encrypted blob).
 async fn insert_event<D, E: Serialize>(
     store: &Store<D>,
+    cipher: &EventCipher,
     event_id: usize,
     created_at: DateTime<Utc>,
     payload: &E,
@@ -339,7 +340,7 @@ where
     D: StoreData,
 {
     let aad = event_aad(event_id, created_at, prev_hash);
-    let encrypted_payload = store.cipher.encrypt(payload, &aad)?;
+    let encrypted_payload = cipher.encrypt(payload, &aad)?;
     let hash = chain_hash(prev_hash, event_id, created_at, &encrypted_payload);
     let election_id = store.election.stable_id();
 
