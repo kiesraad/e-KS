@@ -34,11 +34,11 @@ export class ManageCandidateListPage {
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
     this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });
     this.buttonEditList = this.page.getByRole("link", { name: "Aanpassen" });
-    this.buttonRemoveList = this.page.getByRole("button", {
+    this.buttonRemoveList = this.page.getByRole("link", {
       name: "Kandidatenlijst verwijderen",
     });
     this.buttonConfirmRemoveList = this.page.getByRole("button", {
-      name: "Verwijderen",
+      name: "Kandidatenlijst verwijderen",
       exact: true,
     });
     this.buttonCSV = this.page.getByRole("link", { name: "CSV" });

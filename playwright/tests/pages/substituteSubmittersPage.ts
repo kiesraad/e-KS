@@ -11,12 +11,12 @@ export class SubstituteSubmittersPage {
   readonly textfieldLastName: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonDelete = this.page.getByRole("button", {
-      name: "Vervanger voor het herstel van verzuimen verwijderen",
+    this.buttonDelete = this.page.getByRole("link", {
+      name: "Vervanger verwijderen",
       exact: true,
     });
     this.buttonConfirmDelete = this.page.getByRole("button", {
-      name: "Verwijderen",
+      name: "Vervanger verwijderen",
       exact: true,
     });
     this.buttonAdd = this.page.getByRole("link", {
