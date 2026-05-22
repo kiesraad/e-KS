@@ -121,14 +121,14 @@ export class ManageCandidateListPage {
     await this.buttonRemoveList.click();
     await this.buttonConfirmRemoveList.click();
   }
-  
+
   async deleteCandidates(candidates: string[]) {
     for (const candidate of candidates) {
       await (await this.getCandidateLocator(candidate)).click();
       await this.buttonRemoveCandidate.click();
       await this.buttonRemovefromApplication.click();
     }
-}
+  }
 
   async deleteCandidatesFromList(candidates: string[]) {
     for (const candidate of candidates) {
