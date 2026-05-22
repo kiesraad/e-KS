@@ -5,6 +5,7 @@ detail:
     bsn: Social security number (BSN)
     candidates: Candidates
     country: Country code
+    created_persons: Created candidates
     date_of_birth: Date of birth
     display_name: Registered designation
     download_path: Download path
@@ -28,6 +29,7 @@ detail:
     postal_code: Postal code
     state_or_province: State / province
     street_name: Street name
+    updated_persons: Updated candidates
   new_value: New value
   no_changes: No field changes recorded for this event.
   old_value: Old value
