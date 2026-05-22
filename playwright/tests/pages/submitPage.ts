@@ -5,6 +5,7 @@ export class SubmitPage {
   readonly linkDownloadFry: Locator;
   readonly linkRegisteredDesignation: Locator;
   readonly linkBSN: Locator;
+  readonly linkTooManyCandidates: Locator;
 
   constructor(protected readonly page: Page) {
     this.linkDownloadNl = this.page.getByRole("link", {
@@ -18,6 +19,9 @@ export class SubmitPage {
     });
     this.linkBSN = this.page.getByRole("link", {
       name: "BSN ontbreekt",
+    });
+    this.linkTooManyCandidates = this.page.getByRole("link", {
+      name: "Te veel kandidaten",
     });
   }
 }

@@ -3,6 +3,7 @@ import { test } from "./fixtures.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { CreatePersonPage } from "./pages/createPersonPage.ts";
+import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData : page }) => {
@@ -28,5 +29,14 @@ test.describe("fix submit warnings", async () => {
     await page.goto("/submit");
     await expect(submitPage.linkBSN).not.toBeVisible();    
   });
-});
 
+  test("candidate lists", async ({ login : page }) => {
+    await page.goto("/submit");
+    const submitPage = new SubmitPage(page);
+    await submitPage.linkTooManyCandidates.first().click();
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await manageCandidateListPage.deleteCandidates(["Nagelhout", "Meerman", "Altena", "Smit", "Bruin"]);
+    await page.goto("/submit");
+    await expect(submitPage.linkTooManyCandidates).not.toBeVisible();
+  });
+});
