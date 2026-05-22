@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore,
+    AppError, AppEvent, AppStore, OptionAsStrExt,
     common::{FullName, LegalName, PotentialProblems, Problematic, Severity},
     id_newtype,
 };
@@ -16,7 +16,11 @@ pub struct AuthorisedAgent {
 
 impl Problematic for AuthorisedAgent {
     fn get_problems(&self) -> Vec<PotentialProblems> {
-        self.name.potential_problems(Severity::Warn)
+        let mut problems = self.name.potential_problems(Severity::Warn);
+        if self.legal_name.is_empty_or_none() {
+            problems.push(PotentialProblems::NoLegalName);
+        }
+        problems
     }
 }
 

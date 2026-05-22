@@ -218,6 +218,7 @@ pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
 pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
     AuthorisedAgentForm {
         name: sample_full_name_form("Henk", "Jansen", "de", "A.B."),
+        legal_name: "Jansen Demo Partij".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }

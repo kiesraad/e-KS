@@ -12,7 +12,10 @@
       {% else %}
         {% for agent in authorised_agents %}
           <a href="{{ agent.update_path() }}"
-             class="person-block {{ agent.highest_severity_class() }}">{{ agent.name.display() }}</a>
+             class="person-block {{ agent.highest_severity_class() }}">
+            {{ agent.name.display() }}
+            {% if let Some(legal_name) = agent.legal_name.as_ref() %}({{ legal_name }}){% endif %}
+          </a>
         {% endfor %}
       {% endif %}
       {% if authorised_agents.len() == 0 %}

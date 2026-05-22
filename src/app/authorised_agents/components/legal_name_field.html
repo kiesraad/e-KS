@@ -1,0 +1,11 @@
+<div class="form-row mt-md">
+  <div class="form-field {% if form.data.legal_name.is_empty() && should_warn %}warning{% endif %}">
+    <label for="legal_name">{{ "political_group.legal_name"|trans }}</label>
+    <input type="text"
+           name="legal_name"
+           value="{{ form.data.legal_name }}"
+           id="legal_name" />
+    {% for error in form|error("legal_name") %}<span class="error">{{ error }}</span>{% endfor %}
+    <span class="hint">{{ "political_group.type.legal_name_hint"|trans }}</span>
+  </div>
+</div>

@@ -106,13 +106,6 @@ impl DocumentData {
                 "Missing registered designation from political group",
             ))?
             .to_string();
-        // Missing statutory name does not prevent export
-        // TODO:
-        // let legal_name = group
-        //     .legal_name
-        //     .as_ref()
-        //     .map(|name| name.to_string())
-        //     .unwrap_or_default();
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() || !list_submitter.is_all_good() {
@@ -130,6 +123,12 @@ impl DocumentData {
         if authorised_agents.len() != 1 {
             return Err(AppError::IncompleteData("Expected 1 authorised agent"));
         }
+        // Missing statutory name does not prevent export
+        let legal_name = authorised_agents[0]
+            .legal_name
+            .as_ref()
+            .map(|n| n.to_string())
+            .unwrap_or_default();
         let authorised_agent = (&authorised_agents[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
@@ -152,7 +151,7 @@ impl DocumentData {
             detailed_candidates,
             ordered_candidates,
             designation,
-            legal_name: "TODO: fix me".to_string(),
+            legal_name,
             previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,

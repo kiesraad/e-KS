@@ -8,6 +8,7 @@
 {% block overlay_form %}
   {% set should_warn = true %}
   <fieldset>
+    {% include "authorised_agents/components/legal_name_field.html" %}
     {% include "common/components/name_fields.html" %}
   </fieldset>
 {% endblock %}
