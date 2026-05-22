@@ -172,10 +172,32 @@ impl StoreData for AppStoreData {
                     .retain(|submitter| submitter.id != ss_id);
             }
 
+            AppEvent::ImportCandidates {
+                list_id,
+                created_persons,
+                updated_persons,
+                candidates,
+                ..
+            } => {
+                for mut person in created_persons {
+                    person.updated_at = event_time;
+                    self.persons.insert(person.id, person);
+                }
+                for mut person in updated_persons {
+                    person.updated_at = event_time;
+                    let person_id = person.id;
+                    self.persons.entry(person_id).and_modify(|existing| {
+                        *existing = person;
+                    });
+                }
+                self.candidate_lists.entry(list_id).and_modify(|existing| {
+                    existing.candidates = candidates;
+                });
+            }
+
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
-            | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => {
+            | AppEvent::ExportCsv { .. } => {
                 // Only the serialized event are relevant for logging
             }
         }

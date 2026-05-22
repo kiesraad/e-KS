@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppStore, Locale, TokenValue,
+    AppError, AppEvent, AppStore, Locale, TokenValue,
     candidate_lists::{
         CandidateList,
         structs::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
@@ -35,12 +35,13 @@ pub(crate) async fn import_candidate_list_csv(
     csv_data: &[u8],
     csrf_token: &TokenValue,
     locale: Locale,
+    file_name: String,
+    file_size: usize,
 ) -> Result<(), ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
     let records = parse_records(csv_data, locale)?;
     let persons = collect_persons(records, store.get_persons(), csrf_token, locale)?;
-    persist_persons(store, &persons).await?;
-    replace_candidates(list, store, &persons).await?;
+    emit_import_event(list, store, persons, file_name, file_size).await?;
 
     Ok(())
 }
@@ -210,40 +211,36 @@ fn field_error_messages(
         .collect()
 }
 
-async fn persist_persons(
-    store: &AppStore,
-    persons: &[PreparedPerson],
-) -> Result<(), ImportCandidateListError> {
-    for prepared in persons {
-        persist_person(store, prepared).await?;
-    }
-
-    Ok(())
-}
-
-async fn persist_person(
-    store: &AppStore,
-    prepared: &PreparedPerson,
-) -> Result<(), ImportCandidateListError> {
-    if prepared.exists {
-        prepared.person.update(store).await?;
-    } else {
-        prepared.person.create(store).await?;
-    }
-
-    Ok(())
-}
-
-async fn replace_candidates(
+async fn emit_import_event(
     list: &mut CandidateList,
     store: &AppStore,
-    persons: &[PreparedPerson],
+    persons: Vec<PreparedPerson>,
+    file_name: String,
+    file_size: usize,
 ) -> Result<(), ImportCandidateListError> {
-    let person_ids = persons
-        .iter()
-        .map(|person| person.person.id)
-        .collect::<Vec<_>>();
-    list.update_order(store, &person_ids).await?;
+    let candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+    let mut created_persons = Vec::new();
+    let mut updated_persons = Vec::new();
+    for prepared in persons {
+        if prepared.exists {
+            updated_persons.push(prepared.person);
+        } else {
+            created_persons.push(prepared.person);
+        }
+    }
+
+    store
+        .update(AppEvent::ImportCandidates {
+            list_id: list.id,
+            file_name,
+            file_size,
+            created_persons,
+            updated_persons,
+            candidates,
+        })
+        .await?;
+
+    *list = store.get_candidate_list(list.id)?;
 
     Ok(())
 }
@@ -274,6 +271,8 @@ mod tests {
             valid_csv().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("import should succeed");
@@ -314,6 +313,8 @@ mod tests {
             no_bsn_csv_with_different_first_name().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("import should succeed");
@@ -346,6 +347,8 @@ mod tests {
             no_bsn_csv_with_different_first_name().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("import should succeed");
@@ -379,6 +382,8 @@ mod tests {
             mixed_bsn_duplicate_name_csv().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("import should succeed");
@@ -403,6 +408,8 @@ mod tests {
             duplicate_no_bsn_csv().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("duplicate rows should merge");
@@ -438,6 +445,8 @@ mod tests {
             duplicate_bsn_csv().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await
         .expect("duplicate rows should merge");
@@ -460,6 +469,34 @@ mod tests {
     }
 
     #[tokio::test]
+    async fn emits_a_single_event_for_the_whole_import() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        list.create(&store).await?;
+        let event_id_before_import = store.current_event_id();
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            mixed_bsn_duplicate_name_csv().as_bytes(),
+            &crate::form::generate_csrf_token(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        assert_eq!(store.current_event_id(), event_id_before_import + 1);
+        assert_eq!(store.get_person_count(), 2);
+        assert_eq!(store.get_candidate_list(list_id)?.candidates.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn returns_all_row_validation_errors() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let mut list = sample_candidate_list(CandidateListId::new());
@@ -472,6 +509,8 @@ mod tests {
             multiple_invalid_rows_csv().as_bytes(),
             &crate::form::generate_csrf_token(),
             Locale::En,
+            "test.csv".to_string(),
+            0,
         )
         .await;
 
