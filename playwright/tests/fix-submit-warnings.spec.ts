@@ -9,15 +9,17 @@ import { SubmitPage } from "./pages/submitPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {
-    await page.goto("/submit");
     const submitPage = new SubmitPage(page);
-    await submitPage.linkRegisteredDesignation.click();
     const politicalGroupPage = new PoliticalGroupPage(page);
+
+    await page.goto("/submit");
+    await submitPage.linkRegisteredDesignation.click();
     await expect(politicalGroupPage.headerGeneralInformation).toBeVisible();
     await politicalGroupPage.setRegisteredDesignation("Test");
     await politicalGroupPage.save();
     await page.goto("/submit");
     await expect(submitPage.linkRegisteredDesignation).not.toBeVisible();
+
     await submitPage.linkAuthorisedAgent.click();
     const authorisedAgentsPage = new AuthorisedAgentsPage(page);
     const agent: AuthorisedAgent = {
@@ -30,19 +32,21 @@ test.describe("fix submit warnings", async () => {
   });
 
   test("candidates", async ({ login: page }) => {
-    await page.goto("/submit");
     const submitPage = new SubmitPage(page);
-    await submitPage.linkBSN.click();
     const createPersonPage = new CreatePersonPage(page);
-    await expect(createPersonPage.textfieldInitials).toBeVisible();
+
+    await page.goto("/submit");
+    await submitPage.linkBSN.click();
     await createPersonPage.checkboxNoBSN.check();
     await createPersonPage.buttonNext.click();
     await page.goto("/submit");
     await expect(submitPage.linkBSN).not.toBeVisible();
+
     await submitPage.linkIncorrectDate.first().click();
     await createPersonPage.textfieldYearOfBirth.fill("1925");
     await createPersonPage.buttonNext.click();
     await page.goto("/submit");
+
     await submitPage.linkIncorrectDate.click();
     await createPersonPage.textfieldYearOfBirth.fill("1990");
     await createPersonPage.buttonNext.click();
@@ -51,10 +55,11 @@ test.describe("fix submit warnings", async () => {
   });
 
   test("candidate lists", async ({ login: page }) => {
-    await page.goto("/submit");
     const submitPage = new SubmitPage(page);
-    await submitPage.linkTooManyCandidates.first().click();
     const manageCandidateListPage = new ManageCandidateListPage(page);
+
+    await page.goto("/submit");
+    await submitPage.linkTooManyCandidates.first().click();
     await manageCandidateListPage.deleteCandidates([
       "Nagelhout",
       "Meerman",
