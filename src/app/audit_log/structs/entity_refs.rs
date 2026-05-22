@@ -30,7 +30,9 @@ fn entity_kind_for_key(key: &str) -> Option<EntityKind> {
         leaf
     };
     match semantic {
-        "person_id" | "candidates" => Some(EntityKind::Person),
+        "person_id" | "candidates" | "created_persons" | "updated_persons" => {
+            Some(EntityKind::Person)
+        }
         "list_id" => Some(EntityKind::CandidateList),
         _ => None,
     }

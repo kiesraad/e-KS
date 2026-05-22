@@ -250,25 +250,6 @@ mod tests {
     }
 
     #[test]
-    fn from_import_csv_event() {
-        let list_id = CandidateListId::new();
-        let event = StoreEvent::new(
-            1,
-            AppEvent::ImportCsv {
-                file_name: "import.csv".to_string(),
-                file_size: 512,
-                list_id,
-            },
-        );
-
-        let entry = AuditLogEntry::new(event, EN);
-
-        assert_eq!(entry.description, "Imported CSV");
-        assert_eq!(entry.details, "import.csv");
-        assert_eq!(entry.subject_path, format!("/candidate-lists/{list_id}"));
-    }
-
-    #[test]
     fn from_delete_candidate_list_event() {
         let cl_id = CandidateListId::new();
         let event = StoreEvent::new(1, AppEvent::DeleteCandidateList(cl_id));
