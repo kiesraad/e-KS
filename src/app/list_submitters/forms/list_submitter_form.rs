@@ -61,11 +61,10 @@ impl ListSubmitterForm {
 
     fn validate_postal_code(self) -> FieldErrors {
         let mut errors = Vec::new();
-        let country_code = CountryCode::from_str(&self.address.country);
-        let dutch_postal_code = PostalCode::from_str(&self.address.postal_code);
-        if let Ok(country) = country_code
+        if let Ok(country) = CountryCode::from_str(&self.address.country)
             && country.is_nl()
-            && let Err(error) = dutch_postal_code
+            && !self.address.postal_code.is_empty()
+            && let Err(error) = PostalCode::from_str(&self.address.postal_code)
         {
             errors.push(("address.postal_code".to_string(), error))
         }
