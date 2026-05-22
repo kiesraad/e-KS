@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{
     TokenValue,
     common::{CountryCode, InternationalAddressForm, PostalCode},
-    form::FormData,
+    form::{FieldErrors, FormData},
     list_submitters::{ListSubmitter, ListSubmitterData, SubmitterNameForm},
 };
 use serde::Deserialize;
@@ -43,49 +43,69 @@ impl ListSubmitterForm {
         csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         let submitter_result = self.clone().validate_create(csrf_token);
-        self.validate_postal_code(csrf_token, submitter_result)
+        let postal_code_errors = self.clone().validate_postal_code();
+        self.merge_validation_results(submitter_result, postal_code_errors, csrf_token)
     }
 
+    /// Also checks:
+    /// if country code is NL -> postal code is a valid NL postal code
     pub fn validate_update_with_checks(
         self,
         current: &ListSubmitterData,
         csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
-        let submitter_result = self.clone().validate_update(current, csrf_token);
-        self.validate_postal_code(csrf_token, submitter_result)
+        let submitter = self.clone().validate_update(current, csrf_token);
+        let postal_code_errors = self.clone().validate_postal_code();
+        self.merge_validation_results(submitter, postal_code_errors, csrf_token)
     }
 
-    fn validate_postal_code(
+    fn validate_postal_code(self) -> FieldErrors {
+        let mut errors = Vec::new();
+        let country_code = CountryCode::from_str(&self.address.country);
+        let dutch_postal_code = PostalCode::from_str(&self.address.postal_code);
+        if let Ok(country) = country_code
+            && country.is_nl()
+            && let Err(error) = dutch_postal_code
+        {
+            errors.push(("address.postal_code".to_string(), error))
+        }
+        errors
+    }
+
+    fn merge_validation_results(
         self,
-        csrf_token: &TokenValue,
         submitter_result: Result<ListSubmitterData, FormData<Self>>,
+        postal_code_errors: FieldErrors,
+        csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
-        match CountryCode::from_str(&self.address.country) {
-            Ok(country) if country.is_nl() => {
-                let dutch_postalcode_result = PostalCode::from_str(&self.address.postal_code);
-                if let Err(error) = dutch_postalcode_result {
-                    let mut errors = vec![("address.postal_code".to_string(), error)];
-                    if let Err(form_data) = submitter_result {
-                        errors.extend(form_data.errors());
-                    }
-                    return Err(Box::new(FormData::new_with_errors(
-                        self, csrf_token, errors,
-                    )));
-                }
-                Ok(submitter_result?)
+        if postal_code_errors.is_empty() {
+            return Ok(submitter_result?);
+        }
+
+        match submitter_result {
+            Ok(_) => Err(Box::new(FormData::new_with_errors(
+                self,
+                csrf_token,
+                postal_code_errors,
+            ))),
+            Err(form_data) => {
+                let mut errors = form_data.clone().errors();
+                errors.extend(postal_code_errors);
+                Err(Box::new(FormData::new_with_errors(
+                    self, csrf_token, errors,
+                )))
             }
-            _ => Ok(submitter_result?),
         }
     }
-    // TODO replace all International address form validates with the "with_check" variant
-    // TODO unit test
-    // TODO refactor personal_data_form in the same way
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::{Address, CountryCode};
+    use crate::{
+        common::{Address, CountryCode},
+        form::ValidationError,
+    };
 
     #[test]
     fn validate_create_uses_dutch_address_when_country_is_empty() {
@@ -108,7 +128,10 @@ mod tests {
             csrf_token: csrf_token.clone(),
         };
 
-        let submitter: ListSubmitter = form.validate_create(&csrf_token).expect("submitter").into();
+        let submitter: ListSubmitter = form
+            .validate_create_with_checks(&csrf_token)
+            .expect("submitter")
+            .into();
 
         assert!(matches!(submitter.address, Address::Dutch(_)));
     }
@@ -134,7 +157,10 @@ mod tests {
             csrf_token: csrf_token.clone(),
         };
 
-        let submitter: ListSubmitter = form.validate_create(&csrf_token).expect("submitter").into();
+        let submitter: ListSubmitter = form
+            .validate_create_with_checks(&csrf_token)
+            .expect("submitter")
+            .into();
 
         match submitter.address {
             Address::International(address) => {
@@ -152,5 +178,77 @@ mod tests {
             }
             Address::Dutch(_) => panic!("expected international address"),
         }
+    }
+
+    #[test]
+    fn validate_create_with_checks_validates_dutch_postal_code() {
+        let csrf_token = crate::form::generate_csrf_token();
+        let form = ListSubmitterForm {
+            name: SubmitterNameForm {
+                last_name: "Bos".to_string(),
+                last_name_prefix: String::new(),
+                initials: "E.F.".to_string(),
+            },
+            address: InternationalAddressForm {
+                country: "NL".to_string(),
+                locality: "Amsterdam".to_string(),
+                state_or_province: String::new(),
+                postal_code: "1000".to_string(),
+                house_number: "1".to_string(),
+                house_number_addition: String::new(),
+                street_name: "Sample Street".to_string(),
+            },
+            csrf_token: csrf_token.clone(),
+        };
+
+        let form_data = form
+            .validate_create_with_checks(&csrf_token)
+            .expect_err("Form shouldn't validate");
+
+        let errors = form_data.errors();
+
+        assert_eq!(errors.len(), 1);
+        assert!(errors.contains(&(
+            "address.postal_code".to_string(),
+            ValidationError::InvalidPostalCode
+        )));
+    }
+
+    #[test]
+    fn validate_create_with_checks_combines_errors() {
+        let csrf_token = crate::form::generate_csrf_token();
+        let form = ListSubmitterForm {
+            name: SubmitterNameForm {
+                last_name: "Bos".to_string(),
+                last_name_prefix: "invalid prefix".to_string(),
+                initials: "E.F.".to_string(),
+            },
+            address: InternationalAddressForm {
+                country: "NL".to_string(),
+                locality: "Amsterdam".to_string(),
+                state_or_province: String::new(),
+                postal_code: "1000".to_string(),
+                house_number: "1".to_string(),
+                house_number_addition: String::new(),
+                street_name: "Sample Street".to_string(),
+            },
+            csrf_token: csrf_token.clone(),
+        };
+
+        let form_data = form
+            .validate_create_with_checks(&csrf_token)
+            .expect_err("Form shouldn't validate");
+
+        let errors = form_data.errors();
+
+        assert_eq!(errors.len(), 2);
+        assert!(errors.contains(&(
+            "address.postal_code".to_string(),
+            ValidationError::InvalidPostalCode
+        )));
+        assert!(errors.contains(&(
+            "name.last_name_prefix".to_string(),
+            ValidationError::InvalidValue
+        )));
     }
 }

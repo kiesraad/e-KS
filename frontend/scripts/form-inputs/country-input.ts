@@ -172,6 +172,7 @@ function initCountryInput(elements: CountryInputElements) {
       setFlagIcon(textInput, items, flagIcon);
       updateVisibility(textInput);
       hideList(list);
+      textInput.dispatchEvent(new Event("change", { bubbles: true }));
     });
   });
 
@@ -197,6 +198,7 @@ function initCountryInput(elements: CountryInputElements) {
       setFlagIcon(textInput, items, flagIcon);
       updateVisibility(textInput);
       hideList(list);
+      textInput.dispatchEvent(new Event("change", { bubbles: true }));
     }
   });
 }
