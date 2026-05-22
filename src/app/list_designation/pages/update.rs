@@ -67,10 +67,10 @@ pub async fn update_list_designation_submit(
         )
         .into_response()),
         Ok(list_designation) => {
-            political_group.list_designation = list_designation.list_designation_type;
+            political_group.list_designation = Some(list_designation.list_designation_type);
             political_group.update(&store).await?;
 
-            Ok(query.redirect_or(AuthorisedAgent::list_path()))
+            Ok(query.redirect_or(PoliticalGroup::update_path()))
         }
     }
 }

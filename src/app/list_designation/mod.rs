@@ -4,4 +4,4 @@ pub mod pages;
 pub mod structs;
 
 pub use pages::router;
-pub use structs::{ListDesignation, PoliticalEntity};
+pub use structs::ListDesignation;

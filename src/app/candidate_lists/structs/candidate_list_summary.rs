@@ -83,10 +83,7 @@ impl CandidateListSummary {
         lists
             .into_iter()
             .map(|list| {
-                let max_count = store
-                    .get_political_group()
-                    .list_designation
-                    .get_max_candidates();
+                let max_count = store.get_political_group().get_max_candidates();
                 let duplicate_districts = list
                     .electoral_districts
                     .iter()

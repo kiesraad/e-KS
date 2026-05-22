@@ -100,7 +100,6 @@ mod tests {
 
         let mut political_group = store.get_political_group();
         political_group.display_name = None;
-        political_group.unwrap_standalone_mut().legal_name = None;
         political_group.update(&store).await?;
 
         let renderer = TypstRenderer::http("http://unused.test".to_string());

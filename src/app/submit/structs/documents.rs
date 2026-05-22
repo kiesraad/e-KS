@@ -153,7 +153,7 @@ impl DocumentData {
             ordered_candidates,
             designation,
             legal_name: "TODO: fix me".to_string(),
-            previously_seated: group.list_designation.was_previously_seated(),
+            previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,
             authorised_agent,

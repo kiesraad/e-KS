@@ -36,7 +36,7 @@ impl Context {
     pub fn new(store: &AppStore, session: Session) -> Self {
         let election = store.get_election();
         let political_group = store.get_political_group();
-        let max_candidates = political_group.list_designation.get_max_candidates();
+        let max_candidates = political_group.get_max_candidates();
         let multiple_candidate_lists = store.get_candidate_list_count() > 1;
 
         Self {

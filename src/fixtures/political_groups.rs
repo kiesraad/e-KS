@@ -2,7 +2,7 @@ use crate::{
     AppError, AppStore,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     common::{Address, DutchAddress, FullName},
-    list_designation::{ListDesignation, PoliticalEntity},
+    list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterId},
     political_groups::PoliticalGroup,
 };
@@ -22,10 +22,8 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 
     let political_group = PoliticalGroup {
         display_name: Some("Kiesraad Demo".parse().expect("display name")),
-        list_designation: ListDesignation::Standalone(PoliticalEntity {
-            previous_election_results: None,
-            legal_name: Some("Kiesraad Demo Partij".parse().expect("legal name")),
-        }),
+        list_designation: Some(ListDesignation::Standalone),
+        previous_election_results: None,
     };
 
     political_group.update(store).await?;
@@ -38,6 +36,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             last_name_prefix: Some("de".parse().expect("last name prefix")),
             initials: "A.B.".parse().expect("initials"),
         },
+        legal_name: None,
     }
     .create(store)
     .await?;

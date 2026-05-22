@@ -9,9 +9,9 @@ use crate::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
         DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
         HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
-        LegalName, Locality, PlaceOfResidence, PostalCode, PreviousElectionResults, StreetName,
+        Locality, PlaceOfResidence, PostalCode, PreviousElectionResults, StreetName,
     },
-    list_designation::PoliticalEntity,
+    list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
     persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
@@ -202,14 +202,8 @@ pub fn sample_political_group() -> PoliticalGroup {
                 .parse::<DisplayName>()
                 .expect("display name"),
         ),
-        list_designation: crate::list_designation::ListDesignation::Standalone(PoliticalEntity {
-            previous_election_results: Some(PreviousElectionResults::ZeroSeats),
-            legal_name: Some(
-                "Kiesraad Demo Partij"
-                    .parse::<LegalName>()
-                    .expect("legal name"),
-            ),
-        }),
+        list_designation: Some(ListDesignation::Standalone),
+        previous_election_results: Some(PreviousElectionResults::ZeroSeats),
     }
 }
 
@@ -217,6 +211,7 @@ pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
     AuthorisedAgent {
         id,
         name: sample_full_name(Some("Henk"), "Jansen", Some("de"), "A.B."),
+        legal_name: None,
     }
 }
 
@@ -264,8 +259,7 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
 
 pub fn sample_political_group_form(csrf_token: &TokenValue) -> PoliticalGroupForm {
     PoliticalGroupForm {
-        // previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
-        // legal_name: "Updated Legal Name".to_string(),
+        previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
         display_name: "Updated Display Name".to_string(),
         csrf_token: csrf_token.clone(),
     }

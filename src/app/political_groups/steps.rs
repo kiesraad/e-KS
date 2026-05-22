@@ -28,7 +28,7 @@ impl PoliticalGroupSteps {
         let basic_info_empty = political_group.is_basic_info_empty();
 
         Ok(Self {
-            list_designation_state: Self::list_designation_state(),
+            list_designation_state: Self::list_designation_state(&political_group),
             basic_state: Self::basic_state(basic_info_empty, &political_group),
             authorised_agents_state: Self::authorised_agents_state(
                 basic_info_empty,
@@ -45,8 +45,12 @@ impl PoliticalGroupSteps {
         })
     }
 
-    fn list_designation_state() -> &'static str {
-        "empty"
+    fn list_designation_state(political_group: &PoliticalGroup) -> &'static str {
+        if political_group.list_designation.is_none() {
+            "empty"
+        } else {
+            "ok"
+        }
     }
 
     fn basic_state(basic_info_empty: bool, political_group: &PoliticalGroup) -> &'static str {

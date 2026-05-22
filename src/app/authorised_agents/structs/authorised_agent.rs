@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{FullName, PotentialProblems, Problematic, Severity},
+    common::{FullName, LegalName, PotentialProblems, Problematic, Severity},
     id_newtype,
 };
 use serde::{Deserialize, Serialize};
@@ -11,6 +11,7 @@ id_newtype!(pub struct AuthorisedAgentId);
 pub struct AuthorisedAgent {
     pub id: AuthorisedAgentId,
     pub name: FullName,
+    pub legal_name: Option<LegalName>,
 }
 
 impl Problematic for AuthorisedAgent {

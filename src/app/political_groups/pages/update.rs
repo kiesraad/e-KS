@@ -149,16 +149,8 @@ mod tests {
 
         let updated = store.get_political_group();
         assert_eq!(
-            updated.unwrap_standalone().previous_election_results,
+            updated.previous_election_results,
             Some(PreviousElectionResults::OneToFifteenSeats)
-        );
-        assert_eq!(
-            updated
-                .unwrap_standalone()
-                .legal_name
-                .as_deref()
-                .map(|v| v.to_string()),
-            Some("Updated Legal Name".to_string())
         );
         assert_eq!(
             updated.display_name.as_deref().map(|v| v.to_string()),
