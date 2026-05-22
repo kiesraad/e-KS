@@ -5,7 +5,7 @@ detail:
     bsn: Burgerservicenummer (BSN)
     candidates: Kandidaten
     country: Landcode
-    created_count: Aangemaakte kandidaten
+    created_persons: Aangemaakte kandidaten
     date_of_birth: Geboortedatum
     display_name: Geregistreerde aanduiding
     download_path: Downloadpad
@@ -29,7 +29,7 @@ detail:
     postal_code: Postcode
     state_or_province: Staat / provincie
     street_name: Straatnaam
-    updated_count: Bijgewerkte kandidaten
+    updated_persons: Bijgewerkte kandidaten
   new_value: Nieuwe waarde
   no_changes: Geen veldwijzigingen vastgelegd voor deze gebeurtenis.
   old_value: Oude waarde

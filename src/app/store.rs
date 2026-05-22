@@ -197,8 +197,7 @@ impl StoreData for AppStoreData {
 
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
-            | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => {
+            | AppEvent::ExportCsv { .. } => {
                 // Only the serialized event are relevant for logging
             }
         }

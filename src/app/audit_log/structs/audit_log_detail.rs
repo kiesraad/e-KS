@@ -235,8 +235,8 @@ fn translate_field_name(field: &str, locale: Locale) -> String {
         "political_group_id" => trans!("audit_log.detail.fields.political_group_id", locale),
         "file_name" => trans!("audit_log.detail.fields.file_name", locale),
         "file_size" => trans!("audit_log.detail.fields.file_size", locale),
-        "created_count" => trans!("audit_log.detail.fields.created_count", locale),
-        "updated_count" => trans!("audit_log.detail.fields.updated_count", locale),
+        "created_persons" => trans!("audit_log.detail.fields.created_persons", locale),
+        "updated_persons" => trans!("audit_log.detail.fields.updated_persons", locale),
         "download_path" => trans!("audit_log.detail.fields.download_path", locale),
         "list_id" => trans!("audit_log.detail.fields.list_id", locale),
         // Address type discriminator
@@ -791,5 +791,54 @@ mod tests {
             candidate_fields,
             expected.iter().map(String::as_str).collect::<Vec<_>>()
         );
+    }
+
+    #[test]
+    fn compute_import_candidates_lists_imported_persons() {
+        let list_id = CandidateListId::new();
+
+        let existing = sample_person(PersonId::new());
+        let existing_name = existing.name.display();
+        let created = sample_person(PersonId::new());
+        let created_name = created.name.display();
+
+        let events = vec![
+            StoreEvent::new(1, AppEvent::CreatePerson(existing.clone())),
+            StoreEvent::new(
+                2,
+                AppEvent::CreateCandidateList(sample_candidate_list(list_id)),
+            ),
+            StoreEvent::new(
+                3,
+                AppEvent::ImportCandidates {
+                    list_id,
+                    file_name: "candidates.csv".to_string(),
+                    file_size: 200,
+                    created_persons: vec![created.clone()],
+                    updated_persons: vec![existing.clone()],
+                    candidates: vec![created.id, existing.id],
+                },
+            ),
+        ];
+
+        let detail = AuditLogDetail::compute(&events, 3, Locale::En).unwrap();
+
+        let created_change = detail
+            .changes
+            .iter()
+            .find(|c| c.field() == "Created candidates")
+            .expect("created candidates change");
+        created_change.assert_no_old();
+        assert_eq!(created_change.new_refs().len(), 1);
+        assert_eq!(created_change.new_refs()[0].description, created_name);
+
+        let updated_change = detail
+            .changes
+            .iter()
+            .find(|c| c.field() == "Updated candidates")
+            .expect("updated candidates change");
+        updated_change.assert_no_old();
+        assert_eq!(updated_change.new_refs().len(), 1);
+        assert_eq!(updated_change.new_refs()[0].description, existing_name);
     }
 }
