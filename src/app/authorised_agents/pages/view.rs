@@ -1,6 +1,7 @@
 use super::AuthorisedAgentsPath;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
+    app::list_designation::ListDesignation,
     authorised_agents::AuthorisedAgent,
     common::Problematic,
     filters,

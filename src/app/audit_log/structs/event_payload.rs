@@ -141,10 +141,10 @@ mod tests {
         ElectoralDistrict, StreamId,
         authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
-        common::PreviousElectionResults,
+        common::{LegalName, PreviousElectionResults},
+        list_designation::{ListDesignation, PoliticalEntity},
         list_submitters::ListSubmitterId,
         persons::PersonId,
-        political_groups::PoliticalGroup,
         test_utils::{
             sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
             sample_political_group,
@@ -272,10 +272,15 @@ mod tests {
         let mut before = empty_state();
         before.political_group = sample_political_group();
         let mut after = empty_state();
-        after.political_group = PoliticalGroup {
+        after.political_group = sample_political_group();
+        after.political_group.list_designation = ListDesignation::Standalone(PoliticalEntity {
             previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
-            ..sample_political_group()
-        };
+            legal_name: Some(
+                "Kiesraad Demo Partij"
+                    .parse::<LegalName>()
+                    .expect("legal name"),
+            ),
+        });
 
         let (old, new) = extract_old_new(
             &AppEvent::UpdatePoliticalGroup(after.political_group.clone()),

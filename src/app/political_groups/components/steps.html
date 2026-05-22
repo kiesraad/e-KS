@@ -1,6 +1,10 @@
 <div class="steps-nav">
   <ul>
     <li>
+      <a href="{{ ListDesignation::update_path() }}"
+         class="{{ steps.list_designation_state }}">{{ "political_group.list_type"|trans }}</a>
+    </li>
+    <li>
       <a href="{{ PoliticalGroup::update_path() }}"
          class="{{ steps.basic_state }}">{{ "political_group.basic_information_political_group"|trans }}</a>
     </li>

@@ -12,6 +12,7 @@ pub struct PoliticalGroupSteps {
     pub list_submitter: ListSubmitter,
     pub substitute_submitters: Vec<ListSubmitter>,
 
+    pub list_designation_state: &'static str,
     pub basic_state: &'static str,
     pub authorised_agents_state: &'static str,
     pub submitters_state: &'static str,
@@ -27,6 +28,7 @@ impl PoliticalGroupSteps {
         let basic_info_empty = political_group.is_basic_info_empty();
 
         Ok(Self {
+            list_designation_state: Self::list_designation_state(),
             basic_state: Self::basic_state(basic_info_empty, &political_group),
             authorised_agents_state: Self::authorised_agents_state(
                 basic_info_empty,
@@ -41,6 +43,10 @@ impl PoliticalGroupSteps {
             list_submitter,
             substitute_submitters,
         })
+    }
+
+    fn list_designation_state() -> &'static str {
+        "empty"
     }
 
     fn basic_state(basic_info_empty: bool, political_group: &PoliticalGroup) -> &'static str {

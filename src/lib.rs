@@ -75,7 +75,8 @@ pub mod fixtures;
 
 pub use app::{
     AppEvent, AppStoreData, Context, audit_log, authorised_agents, candidate_lists, candidates,
-    common, list_submitters, persons, political_groups, submit, substitute_list_submitters,
+    common, list_designation, list_submitters, persons, political_groups, submit,
+    substitute_list_submitters,
 };
 pub use auth::{
     derive_id::IdDeriver,

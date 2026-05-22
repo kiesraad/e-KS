@@ -1,7 +1,7 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::{PreviousElectionResults, Problematic},
+    common::Problematic,
     core::{ModelLocale, Pdf, ZipResponseWriter},
     submit::structs::{
         eml210::Eml210,
@@ -107,11 +107,12 @@ impl DocumentData {
             ))?
             .to_string();
         // Missing statutory name does not prevent export
-        let legal_name = group
-            .legal_name
-            .as_ref()
-            .map(|name| name.to_string())
-            .unwrap_or_default();
+        // TODO:
+        // let legal_name = group
+        //     .legal_name
+        //     .as_ref()
+        //     .map(|name| name.to_string())
+        //     .unwrap_or_default();
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() || !list_submitter.is_all_good() {
@@ -151,10 +152,8 @@ impl DocumentData {
             detailed_candidates,
             ordered_candidates,
             designation,
-            legal_name,
-            previously_seated: group
-                .previous_election_results
-                .is_some_and(|r| r != PreviousElectionResults::ZeroSeats),
+            legal_name: "TODO: fix me".to_string(),
+            previously_seated: group.list_designation.was_previously_seated(),
             list_submitter,
             substitute_submitters,
             authorised_agent,

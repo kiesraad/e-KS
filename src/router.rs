@@ -11,8 +11,8 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
     AppState, audit_log, authorised_agents, candidate_lists, candidates, common, http_trace,
-    list_submitters, persons, political_groups, render_error_pages, session_middleware,
-    store_middleware, submit, substitute_list_submitters,
+    list_designation, list_submitters, persons, political_groups, render_error_pages,
+    session_middleware, store_middleware, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -20,6 +20,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(audit_log::router())
         .merge(common::router())
         .merge(persons::router())
+        .merge(list_designation::router())
         .merge(political_groups::router())
         .merge(authorised_agents::router())
         .merge(list_submitters::router())

@@ -1,0 +1,32 @@
+<div>
+  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+  <h3>{{ "political_group.general_information"|trans }}</h3>
+  <div class="form-row">
+    <fieldset class="checklist">
+      <legend>{{ "political_group.list_type"|trans }}</legend>
+      <div class="checkbox">
+        <input type="radio" name="list_designation_type" value="standalone" id="standalone" {% if form.data.list_designation_type=="standalone" %}checked{% endif %} />
+        <label for="standalone">
+          {{ "political_group.type.registered_name"|trans }}
+          <span class="hint">{{ "political_group.type.registered_name_hint"|trans }}</span>
+        </label>
+      </div>
+      <div class="checkbox">
+        <input type="radio" name="list_designation_type" value="combined" id="combined" {% if form.data.list_designation_type=="combined" %}checked{% endif %} />
+        <label for="combined">
+          {{ "political_group.type.name_combination"|trans }}
+          <span class="hint">{{ "political_group.type.name_combination_hint"|trans }}</span>
+        </label>
+      </div>
+      <div class="checkbox">
+        <input type="radio" name="list_designation_type" value="blank" id="blank" {% if form.data.list_designation_type=="blank" %}checked{% endif %} />
+        <label for="blank">
+          {{ "political_group.type.blank_name"|trans }}
+          <span class="hint">{{ "political_group.type.blank_name_hint"|trans }}</span>
+        </label>
+      </div>
+    </fieldset>
+  </div>
+  {% set submit_label = "action.save_and_continue"|trans %}
+  {% include "common/components/submit.html" %}
+</div>
