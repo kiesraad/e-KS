@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 
 export class PoliticalGroupPage {
+  readonly headerGeneralInformation: Locator;
   readonly selectMoreThan16Seats: Locator;
   readonly selectLessThan16Seats: Locator;
   readonly textfieldRegisteredDesignation: Locator;
@@ -8,6 +9,9 @@ export class PoliticalGroupPage {
   readonly buttonSaveandNext: Locator;
 
   constructor(protected readonly page: Page) {
+    this.headerGeneralInformation = this.page.getByRole("heading", {
+      name: "Basisgegevens",
+    });
     this.buttonSaveandNext = this.page.getByRole("button", {
       name: "Opslaan en volgende",
     });
