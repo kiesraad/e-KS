@@ -9,33 +9,25 @@ pub mod political_groups;
 pub mod submit;
 pub mod substitute_list_submitters;
 
-pub mod eks_key;
-pub mod health;
+mod context;
+mod error_response;
+mod event;
+mod middleware;
+mod store;
+
+pub use context::Context;
+pub use error_response::{ErrorResponse, render_error_pages};
+pub use event::AppEvent;
+pub use middleware::{eks_key::eks_key_middleware, health::health_router};
+pub use store::AppStoreData;
+
+pub(crate) use store::request_extractor;
 
 #[cfg(any(
     all(feature = "dev-features", not(feature = "embed-bag")),
     not(feature = "memory-serve")
 ))]
-pub mod proxy;
-
-mod context;
-mod error_response;
-mod event;
-mod extractor;
-mod getters;
-mod store;
-mod store_extractor;
-
-pub use context::Context;
-pub use error_response::{ErrorResponse, render_error_pages};
-pub use event::AppEvent;
-pub use store::AppStoreData;
-
-#[cfg(test)]
-mod store_tests;
-
-#[cfg(test)]
-mod health_tests;
+pub use middleware::proxy::proxy_handler;
 
 #[cfg(test)]
 mod error_response_tests;

@@ -1,11 +1,32 @@
-//! Shared boilerplate for `FromRequestParts` extractors that load a domain
-//! object from the request-scoped [`AppStore`](crate::AppStore).
+//! Request extraction for the per-request [`AppStore`](crate::AppStore) and
+//! shared boilerplate for `FromRequestParts` extractors that load a domain
+//! object from it.
+
+use axum::{extract::FromRequestParts, http::request::Parts};
+
+use crate::{AppError, AppStore};
+
+impl<S> FromRequestParts<S> for AppStore
+where
+    S: Send + Sync,
+{
+    type Rejection = AppError;
+
+    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+        parts
+            .extensions
+            .get::<AppStore>()
+            .cloned()
+            .ok_or(AppError::Unauthorised)
+    }
+}
 
 /// Generate a [`FromRequestParts`](axum::extract::FromRequestParts) impl for
 /// `$target`.
 ///
 /// The body block is given the already-extracted request `store` plus the raw
-/// `parts`/`state`, and must evaluate to an [`AppResponse<Self>`](crate::AppResponse).
+/// `parts`/`state` (available inside `$body` for further `from_request_parts`
+/// calls), and must evaluate to an [`AppResponse<Self>`](crate::AppResponse).
 ///
 /// The four-binding form additionally extracts the request
 /// [`Context`](crate::Context).

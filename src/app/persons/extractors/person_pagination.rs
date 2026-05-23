@@ -1,5 +1,5 @@
 use crate::{
-    app::extractor::request_extractor,
+    app::request_extractor,
     pagination::Pagination,
     persons::{self, PersonPagination, PersonSort},
 };

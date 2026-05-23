@@ -3,7 +3,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, Locale,
-    app::extractor::request_extractor,
+    app::request_extractor,
     persons::{Person, PersonId},
     trans,
 };

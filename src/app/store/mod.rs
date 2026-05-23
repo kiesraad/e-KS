@@ -1,3 +1,11 @@
+mod extractor;
+mod getters;
+
+pub(crate) use extractor::request_extractor;
+
+#[cfg(test)]
+mod tests;
+
 use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 

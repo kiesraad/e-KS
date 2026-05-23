@@ -2,7 +2,7 @@ use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    app::extractor::request_extractor,
+    app::request_extractor,
     list_submitters::{ListSubmitter, ListSubmitterId},
 };
 

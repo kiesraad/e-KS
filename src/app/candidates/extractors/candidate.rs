@@ -1,6 +1,6 @@
 use axum::extract::Path;
 
-use crate::{AppError, app::extractor::request_extractor, candidates::Candidate, trans};
+use crate::{AppError, app::request_extractor, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
