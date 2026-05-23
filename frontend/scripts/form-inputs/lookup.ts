@@ -12,6 +12,10 @@ export default function addressLookup() {
   const streetNameInput = document.getElementById(
     "street_name",
   ) as HTMLInputElement | null;
+  // country code is only included in some forms
+  const countryCodeInput = document.getElementById(
+    "country",
+  ) as HTMLInputElement | null;
 
   // only run if all form fields are found
   if (
@@ -59,6 +63,10 @@ export default function addressLookup() {
     if (!postalCodeInput.value || !houseNumberInput.value) {
       return;
     }
+    // skip lookup if country code input is present and not NL
+    if (countryCodeInput != null && countryCodeInput.value !== "NL") {
+      return;
+    }
 
     // fetch address data from backend
     const url = `/lookup?pc=${encodeURIComponent(postalCodeInput.value)}&n=${encodeURIComponent(houseNumberInput.value)}`;
@@ -87,4 +95,7 @@ export default function addressLookup() {
   houseNumberInput.addEventListener("change", lookup);
   localityInput.addEventListener("change", resetHighlights);
   streetNameInput.addEventListener("change", resetHighlights);
+  if (countryCodeInput != null) {
+    countryCodeInput.addEventListener("change", lookup);
+  }
 }

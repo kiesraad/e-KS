@@ -69,11 +69,24 @@ impl StoreData for AppStoreData {
             | AppEvent::UpdateSubstituteSubmitter(_)
             | AppEvent::DeleteSubstituteSubmitter { .. }) => self.apply_submitter_event(event),
 
+            AppEvent::ImportCandidates {
+                list_id,
+                created_persons,
+                updated_persons,
+                candidates,
+                ..
+            } => self.apply_import_candidates_event(
+                list_id,
+                created_persons,
+                updated_persons,
+                candidates,
+                event_time,
+            ),
+
             // Only the serialized event is relevant for logging.
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
-            | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => {}
+            | AppEvent::ExportCsv { .. } => {}
         }
     }
 
@@ -266,6 +279,31 @@ impl AppStoreData {
             }
             _ => unreachable!("apply_submitter_event received a non-submitter event"),
         }
+    }
+
+    /// Apply an import-candidates event. Routed here exclusively by [`Self::apply`].
+    fn apply_import_candidates_event(
+        &mut self,
+        list_id: CandidateListId,
+        created_persons: Vec<Person>,
+        updated_persons: Vec<Person>,
+        candidates: Vec<PersonId>,
+        event_time: UtcDateTime,
+    ) {
+        for mut person in created_persons {
+            person.updated_at = event_time;
+            self.persons.insert(person.id, person);
+        }
+        for mut person in updated_persons {
+            person.updated_at = event_time;
+            let person_id = person.id;
+            self.persons.entry(person_id).and_modify(|existing| {
+                *existing = person;
+            });
+        }
+        self.candidate_lists.entry(list_id).and_modify(|existing| {
+            existing.candidates = candidates;
+        });
     }
 }
 

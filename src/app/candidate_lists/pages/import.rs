@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, HtmlTemplate, Locale,
+    AppError, AppStore, Context, HtmlTemplate, Locale,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -116,19 +116,12 @@ pub async fn import_candidate_list(
         &csv_data,
         &context.session.csrf_token,
         context.session.locale,
+        import_data.file_name.unwrap_or_default(),
+        file_size,
     )
     .await
     {
-        Ok(()) => {
-            store
-                .update(AppEvent::ImportCsv {
-                    file_name: import_data.file_name.unwrap_or_default(),
-                    file_size,
-                    list_id,
-                })
-                .await?;
-            Ok(redirect_success(list.view_path()))
-        }
+        Ok(()) => Ok(redirect_success(list.view_path())),
         Err(ImportCandidateListError::App(error)) => Err(error),
         Err(ImportCandidateListError::Messages(messages)) => {
             Ok(render_import_export(list.clone(), messages, context))
