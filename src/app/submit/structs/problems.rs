@@ -30,11 +30,7 @@ impl PotentialProblems {
 
     pub fn person_fix_path(&self, person: &Person) -> String {
         match self {
-            PotentialProblems::NoStreetName(_)
-            | PotentialProblems::NoHouseNumber(_)
-            | PotentialProblems::NoPostalCode(_)
-            | PotentialProblems::NoLocality(_)
-            | PotentialProblems::NoCountry(_) => person.update_address_path().to_string(),
+            PotentialProblems::IncompleteAddress { .. } => person.update_address_path().to_string(),
             PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
                 person.update_representative_path().to_string()
             }
@@ -103,13 +99,23 @@ impl Problems {
         let authorised_agents = authorised_agents
             .into_iter()
             .map(PersonProblems::new)
+            .filter(|pp| !pp.problems.is_empty())
             .collect();
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() {
             general.push(PotentialProblems::NoListSubmitter);
         }
-        let list_submitter = list_submitter.get_problems();
+
+        let list_submitter_problems = list_submitter.get_problems();
+        let list_submitter = if !list_submitter_problems.is_empty() {
+            Some(PersonProblems {
+                person: list_submitter,
+                problems: list_submitter_problems,
+            })
+        } else {
+            None
+        };
 
         let substitute_submitters = store.get_substitute_submitters();
         if substitute_submitters.is_empty() {
@@ -118,6 +124,7 @@ impl Problems {
         let substitute_submitters = substitute_submitters
             .into_iter()
             .map(PersonProblems::new)
+            .filter(|pp| !pp.problems.is_empty())
             .collect();
 
         GeneralProblems {
@@ -149,7 +156,7 @@ impl Problems {
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
     pub authorised_agents: Vec<PersonProblems<AuthorisedAgent>>,
-    pub list_submitter: Vec<PotentialProblems>,
+    pub list_submitter: Option<PersonProblems<ListSubmitter>>,
     pub substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
 }
 
@@ -164,7 +171,9 @@ impl GeneralProblems {
                 .iter()
                 .flat_map(|ss| &ss.problems),
         );
-        result.extend(&self.list_submitter);
+        if let Some(submitter_problems) = &self.list_submitter {
+            result.extend(&submitter_problems.problems);
+        }
 
         result
     }
@@ -203,7 +212,7 @@ mod tests {
         GeneralProblems {
             general: Vec::new(),
             authorised_agents: Vec::new(),
-            list_submitter: Vec::new(),
+            list_submitter: None,
             substitute_submitters: Vec::new(),
         }
     }

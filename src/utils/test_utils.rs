@@ -2,7 +2,7 @@
 use http_body_util::BodyExt;
 
 use crate::{
-    ElectoralDistrict, TokenValue,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, TokenValue,
     authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
@@ -266,4 +266,89 @@ pub fn sample_political_group_form(csrf_token: &TokenValue) -> PoliticalGroupFor
         display_name: "Updated Display Name".to_string(),
         csrf_token: csrf_token.clone(),
     }
+}
+
+pub async fn setup_documents_test_state(
+    list_count: usize,
+    candidate_count: usize,
+    include_list_submitter: bool,
+    include_authorised_agent: bool,
+    election: ElectionConfig,
+) -> Result<(AppStore, Vec<CandidateListId>, Context), AppError> {
+    let store = AppStore::new_for_test_with_election(election);
+    let mut list_ids = Vec::new();
+
+    if include_list_submitter {
+        sample_list_submitter(ListSubmitterId::new())
+            .update(&store)
+            .await?;
+    }
+
+    if include_authorised_agent {
+        sample_authorised_agent(AuthorisedAgentId::new())
+            .create(&store)
+            .await?;
+    }
+
+    for _ in 0..list_count {
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        if let Some(district) = CandidateList::available_districts(&store, &election)
+            .into_iter()
+            .next()
+        {
+            list.electoral_districts = vec![district];
+        }
+
+        for _ in 0..candidate_count {
+            let person_id = PersonId::new();
+            sample_person(person_id).create(&store).await?;
+            list.candidates.push(person_id);
+        }
+
+        list.create(&store).await?;
+        list_ids.push(list_id);
+    }
+
+    Ok((
+        store.clone(),
+        list_ids,
+        Context::new(
+            &store,
+            crate::Session::new_test_with_locale(crate::Locale::En),
+        ),
+    ))
+}
+
+#[cfg(feature = "embed-typst")]
+pub async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
+    use async_zip::base::read::mem::ZipFileReader;
+
+    let zip = ZipFileReader::new(response_body(response).await.to_vec())
+        .await
+        .expect("zip body");
+
+    zip.file()
+        .entries()
+        .iter()
+        .map(|entry| {
+            entry
+                .filename()
+                .as_str()
+                .expect("utf-8 zip entry name")
+                .to_string()
+        })
+        .collect()
+}
+
+#[cfg(feature = "embed-typst")]
+async fn response_body(response: axum::response::Response) -> bytes::Bytes {
+    use http_body_util::BodyExt;
+
+    response
+        .into_body()
+        .collect()
+        .await
+        .expect("collect body")
+        .to_bytes()
 }

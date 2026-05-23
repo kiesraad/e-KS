@@ -65,7 +65,7 @@ import_export:
 import_warning: This list already contains candidates. The import action will overwrite the current candidates. Are you sure you want to continue?
 not_found: "Candidate {} not found."
 remove_all_added_candidates: Remove all added candidates
-remove_candidate: Remove candidate
+remove_candidate: Remove from this list
 search_existing_person: Search existing person
 search_placeholder: "Search by name, initials or locality"
 title_plural: Candidate lists

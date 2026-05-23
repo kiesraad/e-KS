@@ -166,7 +166,6 @@
     }
   }
 
-  span.substext,
   span.hint,
   details.hint,
   span.error,
@@ -177,10 +176,6 @@
     font-weight: var(--font-weight-300);
     color: var(--gray-600);
     text-wrap: balance;
-  }
-
-  span.subtext {
-    font-weight: normal;
   }
 
   details.hint,
@@ -417,7 +412,7 @@
 
 .form-actions-stack {
   display: flex;
-  flex-direction: column-reverse;
+  flex-direction: column;
 }
 
 #gender option:first-child {

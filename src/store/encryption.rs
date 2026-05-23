@@ -82,6 +82,9 @@ impl std::fmt::Debug for EventEncryption {
 ///
 /// Encrypts and decrypts event payloads serialized with postcard.
 /// Each ciphertext is prefixed with a random 12-byte nonce.
+///
+/// Only persisting backends hold one (see `StoreBackend`); an in-memory store
+/// has no cipher because it never writes events out.
 #[derive(Clone)]
 pub struct EventCipher {
     cipher: Aes256Gcm,

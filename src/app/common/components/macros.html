@@ -12,3 +12,10 @@
     </form>
   </dialog>
 {% endmacro delete_modal %}
+{% macro download_button(label, href, downloadable, version) %}
+  {% if downloadable %}
+    <a href="{{ href }}" class="button secondary icon-download">{{ label }} (v{{ version }})</a>
+  {% else %}
+    <a class="button secondary icon-download disabled" aria-disabled="true">{{ label }} (v{{ version }})</a>
+  {% endif %}
+{% endmacro download_button %}

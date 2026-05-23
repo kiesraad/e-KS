@@ -14,12 +14,12 @@ export class AuthorisedAgentsPage {
     this.textfieldInitials = this.page.getByLabel("Voorletters");
     this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
     this.textfieldLastName = this.page.getByLabel("Achternaam");
-    this.buttonDelete = this.page.getByRole("button", {
+    this.buttonDelete = this.page.getByRole("link", {
       name: "Gemachtigde verwijderen",
       exact: true,
     });
     this.buttonConfirmDelete = this.page.getByRole("button", {
-      name: "Verwijderen",
+      name: "Gemachtigde verwijderen",
       exact: true,
     });
     this.buttonAdd = this.page.getByRole("link", {

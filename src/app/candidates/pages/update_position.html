@@ -11,14 +11,6 @@
   {% include "candidates/components/position_form.html" %}
 {% endblock %}
 {% block overlay_actions %}
-  <div class="form-actions-stack mt-xl">
-    {% set submit_label = "action.next"|trans %}
-    {% include "common/components/submit.html" %}
-    <p>
-      <button type="submit"
-              class="button tertiary-destructive icon-trash"
-              name="action"
-              value="remove">{{ "candidate_list.remove_candidate"|trans }}</button>
-    </p>
-  </div>
+  {% set submit_label = "action.next"|trans %}
+  {% include "common/components/submit.html" %}
 {% endblock %}

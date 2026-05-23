@@ -7,16 +7,6 @@
 {% endblock %}
 {% block overlay_form %}
   {% include "candidate_lists/components/districts_form.html" %}
-  <div class="mt-lg mb-lg">
-    <button class="button tertiary-destructive icon-trash open-modal"
-            type="button">{{ "candidate_list.actions.delete_list"|trans }}</button>
-  </div>
-{% endblock %}
-{% block overlay_end %}
-  {{ macros::delete_modal(candidate_list.delete_path() ,
-  "candidate_list.actions.delete_list"|trans,
-  "candidate_list.form.delete_warning_text"|trans
-  ) }}
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}

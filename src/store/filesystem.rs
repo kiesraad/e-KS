@@ -45,42 +45,31 @@ pub async fn init_local(dir: &Path) -> Result<(), AppError> {
 pub async fn update_in_filesystem<D>(
     store: &Store<D>,
     dir: &Path,
+    cipher: &EventCipher,
     event: D::Event,
 ) -> Result<(), AppError>
 where
     D: StoreData,
     D::Event: Serialize + DeserializeOwned,
 {
-    let last_id = replay_from_file(store, dir).await?;
+    let last_id = replay_from_file(store, dir, cipher).await?;
     let next_id = last_id + 1;
     let created_at = Utc::now();
     let prev_hash = store.data.read().last_event_hash();
 
     let path = stream_path(dir, store.stream_id, store.election);
-    let hash = append_event(
-        &path,
-        &store.cipher,
-        next_id,
-        created_at,
-        &event,
-        &prev_hash,
-    )
-    .await?;
+    let hash = append_event(&path, cipher, next_id, created_at, &event, &prev_hash).await?;
 
-    store.apply_event(
-        next_id,
-        StoreEvent {
-            event_id: next_id,
-            payload: event,
-            created_at,
-            hash,
-        },
-    );
+    store.apply_persisted_event(next_id, event, created_at, hash);
 
     Ok(())
 }
 
-pub async fn replay_from_file<D>(store: &Store<D>, dir: &Path) -> Result<usize, AppError>
+pub async fn replay_from_file<D>(
+    store: &Store<D>,
+    dir: &Path,
+    cipher: &EventCipher,
+) -> Result<usize, AppError>
 where
     D: StoreData,
     D::Event: DeserializeOwned,
@@ -144,9 +133,7 @@ where
         }
 
         let aad = event_aad(event_id, created_at, &prev_hash);
-        let payload = store
-            .cipher
-            .decrypt_owned::<D::Event>(encrypted_payload, &aad)?;
+        let payload = cipher.decrypt_owned::<D::Event>(encrypted_payload, &aad)?;
         prev_hash = hash;
         data.apply(StoreEvent {
             event_id,
@@ -367,14 +354,17 @@ mod tests {
     }
 
     fn test_store(stream_id: uuid::Uuid) -> Store<TestData> {
-        let encryption = test_encryption();
         Store {
             stream_id,
             election: TEST_ELECTION,
-            persistence: super::super::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
+            backend: super::super::persistence::StoreBackend::Memory,
             data: Arc::new(RwLock::new(TestData::default())),
         }
+    }
+
+    /// The cipher a real store would derive for this stream.
+    fn test_cipher(stream_id: uuid::Uuid) -> EventCipher {
+        test_encryption().derive_cipher(stream_id, TEST_ELECTION)
     }
 
     #[tokio::test]
@@ -391,9 +381,11 @@ mod tests {
 
         let stream_id = uuid::Uuid::new_v4();
         let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "first".to_string(),
             },
@@ -402,6 +394,7 @@ mod tests {
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "second".to_string(),
             },
@@ -414,7 +407,7 @@ mod tests {
         assert!(!file_contents.is_empty());
 
         let fresh = test_store(stream_id);
-        replay_from_file(&fresh, &dir).await?;
+        replay_from_file(&fresh, &dir, &cipher).await?;
 
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 2);
@@ -447,9 +440,11 @@ mod tests {
 
         let stream_id = uuid::Uuid::new_v4();
         let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "one".to_string(),
             },
@@ -458,6 +453,7 @@ mod tests {
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "two".to_string(),
             },
@@ -475,7 +471,7 @@ mod tests {
             .map_err(AppError::ServerError)?;
 
         let fresh = test_store(stream_id);
-        let err = replay_from_file(&fresh, &dir)
+        let err = replay_from_file(&fresh, &dir, &cipher)
             .await
             .expect_err("tampering must be detected");
         assert!(matches!(err, AppError::EventDecodeError(_)));
@@ -492,9 +488,11 @@ mod tests {
 
         let stream_id = uuid::Uuid::new_v4();
         let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "one".to_string(),
             },
@@ -530,7 +528,7 @@ mod tests {
             .map_err(AppError::ServerError)?;
 
         let fresh = test_store(stream_id);
-        let err = replay_from_file(&fresh, &dir)
+        let err = replay_from_file(&fresh, &dir, &cipher)
             .await
             .expect_err("rewritten hash must be detected");
         assert!(matches!(err, AppError::EventDecodeError(_)));
@@ -560,10 +558,11 @@ mod tests {
         init_local(&dir).await?;
 
         let store = test_store(uuid::Uuid::new_v4());
+        let cipher = test_cipher(store.stream_id);
         let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
         append_event(
             &path,
-            &store.cipher,
+            &cipher,
             5,
             Utc::now(),
             &TestEvent {
@@ -575,23 +574,16 @@ mod tests {
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "next".to_string(),
             },
         )
         .await?;
 
-        // Replay and check that the new event got ID 6
-        // Need to use the same encryption key, which test_store does by using same stream_id
-        // But test_store creates a new encryption instance - same secret though, so same key.
-        let fresh = Store {
-            stream_id: store.stream_id,
-            election: TEST_ELECTION,
-            persistence: super::super::StorePersistence::None,
-            cipher: store.cipher.clone(),
-            data: Arc::new(RwLock::new(TestData::default())),
-        };
-        replay_from_file(&fresh, &dir).await?;
+        // Replay and check that the new event got ID 6.
+        let fresh = test_store(store.stream_id);
+        replay_from_file(&fresh, &dir, &cipher).await?;
 
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 6);
@@ -608,26 +600,23 @@ mod tests {
 
         let stream_id = uuid::Uuid::new_v4();
         let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
         update_in_filesystem(
             &store,
             &dir,
+            &cipher,
             TestEvent {
                 label: "secret".to_string(),
             },
         )
         .await?;
 
-        // Create a store with a different encryption key
-        let other_enc = EventEncryption::new(&SecretString::from("wrong-secret"));
-        let wrong_store = Store {
-            stream_id,
-            election: TEST_ELECTION,
-            persistence: super::super::StorePersistence::None,
-            cipher: other_enc.derive_cipher(stream_id, TEST_ELECTION),
-            data: Arc::new(RwLock::new(TestData::default())),
-        };
+        // Replay with a cipher derived from a different master secret.
+        let wrong_cipher = EventEncryption::new(&SecretString::from("wrong-secret"))
+            .derive_cipher(stream_id, TEST_ELECTION);
+        let wrong_store = test_store(stream_id);
 
-        let err = replay_from_file(&wrong_store, &dir)
+        let err = replay_from_file(&wrong_store, &dir, &wrong_cipher)
             .await
             .expect_err("replay must fail with the wrong key");
         assert!(matches!(err, AppError::EventDecodeError(_)));

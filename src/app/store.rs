@@ -172,10 +172,32 @@ impl StoreData for AppStoreData {
                     .retain(|submitter| submitter.id != ss_id);
             }
 
+            AppEvent::ImportCandidates {
+                list_id,
+                created_persons,
+                updated_persons,
+                candidates,
+                ..
+            } => {
+                for mut person in created_persons {
+                    person.updated_at = event_time;
+                    self.persons.insert(person.id, person);
+                }
+                for mut person in updated_persons {
+                    person.updated_at = event_time;
+                    let person_id = person.id;
+                    self.persons.entry(person_id).and_modify(|existing| {
+                        *existing = person;
+                    });
+                }
+                self.candidate_lists.entry(list_id).and_modify(|existing| {
+                    existing.candidates = candidates;
+                });
+            }
+
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
-            | AppEvent::ExportCsv { .. }
-            | AppEvent::ImportCsv { .. } => {
+            | AppEvent::ExportCsv { .. } => {
                 // Only the serialized event are relevant for logging
             }
         }
@@ -215,14 +237,10 @@ impl crate::store::Store<AppStoreData> {
             ..AppStoreData::default()
         };
 
-        let encryption =
-            crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"));
-        let stream_id = uuid::Uuid::new_v4();
         crate::store::Store {
-            stream_id,
+            stream_id: uuid::Uuid::new_v4(),
             election,
-            persistence: crate::store::StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id, election),
+            backend: crate::store::persistence::StoreBackend::Memory,
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }

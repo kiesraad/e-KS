@@ -1,16 +1,9 @@
-use axum::{body::Body, extract::State, http::HeaderValue, response::IntoResponse};
-use tokio::io::duplex;
-use tokio_util::io::ReaderStream;
-use tracing::error;
+use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppEvent, AppStore, Context, TypstRenderer,
-    core::ZipResponseWriter,
+    AppError, AppStore, Context, TypstRenderer,
     submit::{DocumentData, pages::DownloadDocumentsPath},
-    utils::no_cache_headers,
 };
-
-const ZIP_CONTENT_TYPE: &str = "application/zip";
 
 pub async fn gen_documents(
     path @ DownloadDocumentsPath { locale }: DownloadDocumentsPath,
@@ -18,77 +11,17 @@ pub async fn gen_documents(
     State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
-    let list_ids = store
-        .get_candidate_lists()
-        .into_iter()
-        .map(|list| list.id)
-        .collect::<Vec<_>>();
+    let (bundles, filename) = DocumentData::from_store_and_context(&store, &context, locale)?;
 
-    if list_ids.is_empty() {
-        return Err(AppError::IncompleteData("No candidate lists"));
-    }
-
-    let bundles = if list_ids.len() == 1 {
-        let mut bundle = DocumentData::new(&store, &context, list_ids[0], locale)?;
-        bundle.folder_name = None;
-
-        vec![bundle]
-    } else {
-        list_ids
-            .iter()
-            .map(|&list_id| DocumentData::new(&store, &context, list_id, locale))
-            .collect::<Result<Vec<_>, _>>()?
-    };
-
-    let Some(document_data) = bundles.first() else {
-        return Err(AppError::IncompleteData("No candidate lists"));
-    };
-
-    let filename = document_data.archive_filename();
-
-    tracing::info!(
+    DocumentData::serve_download(
+        bundles,
         filename,
-        content_type = ZIP_CONTENT_TYPE,
-        lists = list_ids.len(),
-        "file download served",
-    );
-
-    store
-        .update(AppEvent::DownloadFile {
-            file_name: filename.clone(),
-            download_path: path.to_string(),
-        })
-        .await?;
-
-    let headers = no_cache_headers::generate_attachment_headers(
-        &filename,
-        HeaderValue::from_static(ZIP_CONTENT_TYPE),
-    )?;
-
-    let (reader, writer) = duplex(64 * 1024);
-    let body = Body::from_stream(ReaderStream::new(reader));
-
-    tokio::spawn(async move {
-        let mut zipper = ZipResponseWriter::new(writer);
-
-        for bundle in bundles {
-            let list_id = bundle.list_id;
-            if let Err(err) = bundle.write_zip(&renderer, &mut zipper).await {
-                error!(
-                    error = ?err,
-                    list_id = %list_id,
-                    "failed to stream submit documents zip"
-                );
-                return;
-            }
-        }
-
-        if let Err(err) = zipper.finish().await {
-            error!(error = ?err, "failed to finalize submit documents zip");
-        }
-    });
-
-    Ok((headers, body).into_response())
+        path.to_string(),
+        &store,
+        &store,
+        renderer,
+    )
+    .await
 }
 
 #[cfg(test)]
@@ -97,13 +30,8 @@ mod tests {
     use crate::{
         ElectionConfig,
         authorised_agents::AuthorisedAgentId,
-        candidate_lists::{CandidateList, CandidateListId},
         core::ModelLocale,
-        list_submitters::ListSubmitterId,
-        persons::PersonId,
-        test_utils::{
-            sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
-        },
+        test_utils::{sample_authorised_agent, setup_documents_test_state},
     };
     #[cfg(feature = "embed-typst")]
     use crate::{
@@ -111,91 +39,6 @@ mod tests {
         persons::Representative,
     };
     use axum::extract::State;
-
-    #[cfg(feature = "embed-typst")]
-    async fn response_body(response: axum::response::Response) -> bytes::Bytes {
-        use http_body_util::BodyExt;
-
-        response
-            .into_body()
-            .collect()
-            .await
-            .expect("collect body")
-            .to_bytes()
-    }
-
-    #[cfg(feature = "embed-typst")]
-    async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
-        use async_zip::base::read::mem::ZipFileReader;
-
-        let zip = ZipFileReader::new(response_body(response).await.to_vec())
-            .await
-            .expect("zip body");
-
-        zip.file()
-            .entries()
-            .iter()
-            .map(|entry| {
-                entry
-                    .filename()
-                    .as_str()
-                    .expect("utf-8 zip entry name")
-                    .to_string()
-            })
-            .collect()
-    }
-
-    async fn setup_documents_test_state(
-        list_count: usize,
-        candidate_count: usize,
-        include_list_submitter: bool,
-        include_authorised_agent: bool,
-        election: ElectionConfig,
-    ) -> Result<(AppStore, Vec<CandidateListId>, Context), AppError> {
-        let store = AppStore::new_for_test_with_election(election);
-        let mut list_ids = Vec::new();
-
-        if include_list_submitter {
-            sample_list_submitter(ListSubmitterId::new())
-                .update(&store)
-                .await?;
-        }
-
-        if include_authorised_agent {
-            sample_authorised_agent(AuthorisedAgentId::new())
-                .create(&store)
-                .await?;
-        }
-
-        for _ in 0..list_count {
-            let list_id = CandidateListId::new();
-            let mut list = sample_candidate_list(list_id);
-            if let Some(district) = CandidateList::available_districts(&store, &election)
-                .into_iter()
-                .next()
-            {
-                list.electoral_districts = vec![district];
-            }
-
-            for _ in 0..candidate_count {
-                let person_id = PersonId::new();
-                sample_person(person_id).create(&store).await?;
-                list.candidates.push(person_id);
-            }
-
-            list.create(&store).await?;
-            list_ids.push(list_id);
-        }
-
-        Ok((
-            store.clone(),
-            list_ids,
-            Context::new(
-                &store,
-                crate::Session::new_test_with_locale(crate::Locale::En),
-            ),
-        ))
-    }
 
     #[tokio::test]
     async fn gen_documents_missing_list_submitter_returns_error() -> Result<(), AppError> {
@@ -370,7 +213,7 @@ mod tests {
         );
         assert_eq!(headers.get(header::EXPIRES).expect("expires header"), "0");
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         for folder in expected_folders {
             assert!(entry_names.contains(&format!("{folder}/eml210.eml.xml")));
             assert!(
@@ -422,7 +265,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
@@ -479,7 +322,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));
@@ -525,7 +368,7 @@ mod tests {
         .await?
         .into_response();
 
-        let entry_names = zip_entry_names(response).await;
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
         assert!(entry_names.contains(&"eml210.eml.xml".to_string()));
         assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
         assert!(entry_names.contains(&"h3-1-aanduiding.pdf".to_string()));

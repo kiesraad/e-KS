@@ -1,10 +1,37 @@
+use askama::Template;
+use axum::response::{IntoResponse, Response};
+
 use crate::{
-    AppError, AppStore, Context, Form, authorised_agents::AuthorisedAgent, form::EmptyForm,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    authorised_agents::AuthorisedAgent,
+    common::Problematic,
+    filters,
+    form::{EmptyForm, FormData},
     redirect_success,
 };
-use axum::response::Response;
 
 use super::AuthorisedAgentDeletePath;
+
+#[derive(Template)]
+#[template(path = "authorised_agents/pages/delete.html")]
+struct DeleteAuthorisedAgentTemplate {
+    authorised_agent: AuthorisedAgent,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_authorised_agent_confirm(
+    _: AuthorisedAgentDeletePath,
+    context: Context,
+    authorised_agent: AuthorisedAgent,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeleteAuthorisedAgentTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            authorised_agent,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_authorised_agent(
     _: AuthorisedAgentDeletePath,
@@ -30,8 +57,29 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState, TokenValue,
-        authorised_agents::AuthorisedAgentId, test_utils::sample_authorised_agent,
+        authorised_agents::AuthorisedAgentId,
+        test_utils::{response_body_string, sample_authorised_agent},
     };
+
+    #[tokio::test]
+    async fn delete_authorised_agent_confirm_contains_delete_button() -> Result<(), AppError> {
+        let agent_id = AuthorisedAgentId::new();
+        let authorised_agent = sample_authorised_agent(agent_id);
+
+        let response = delete_authorised_agent_confirm(
+            AuthorisedAgentDeletePath { agent_id },
+            Context::new_test_without_db(),
+            authorised_agent.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&authorised_agent.delete_path().to_string()));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_authorised_agent_removes_and_redirects() -> Result<(), AppError> {

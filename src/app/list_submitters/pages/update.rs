@@ -41,13 +41,13 @@ pub async fn update_list_submitter_submit(
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
-    match form.validate_update(
+    match form.validate_update_with_checks(
         &ListSubmitterData::from(list_submitter.clone()),
         &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
-                form: form_data,
+                form: *form_data,
                 should_warn: true,
             },
             context,

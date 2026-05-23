@@ -1,10 +1,14 @@
+use std::str::FromStr;
+
+use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
     AppStore, ElectionConfig, OptionStringExt, TokenValue,
     common::{
-        BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, PlaceOfResidence,
+        BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, Initials, LastName,
+        LastNamePrefix, PlaceOfResidence,
     },
     constants::DEFAULT_DATE_FORMAT,
     form::{FieldErrors, FormData, ValidationError},
@@ -89,19 +93,12 @@ impl PersonalDataForm {
         election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
-        let person = self.clone().validate_create(csrf_token)?;
-        let mut errors = PersonalDataForm::uniqueness_errors(&person, &existing);
-        errors.append(&mut PersonalDataForm::date_of_birth_check(
-            &person, election,
-        ));
+        let existing_ref = existing.iter().collect();
+        let person_result = self.clone().validate_create(csrf_token);
+        let mut errors = self.uniqueness_errors(existing_ref);
+        errors.extend(self.date_of_birth_check(election));
 
-        if errors.is_empty() {
-            Ok(person)
-        } else {
-            Err(Box::new(FormData::new_with_errors(
-                self, csrf_token, errors,
-            )))
-        }
+        self.merge_validation_results(person_result, errors, csrf_token)
     }
 
     /// Also checks date of birth
@@ -109,26 +106,27 @@ impl PersonalDataForm {
         self,
         current: &Person,
         csrf_token: &TokenValue,
+        store: &AppStore,
         election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
-        let person = self.clone().validate_update(current, csrf_token)?;
-        let errors = PersonalDataForm::date_of_birth_check(&person, election);
+        let existing = store.get_persons();
+        let existing_without_current: Vec<&Person> =
+            existing.iter().filter(|p| *p != current).collect();
+        let person_result = self.clone().validate_update(current, csrf_token);
+        let mut errors = self.uniqueness_errors(existing_without_current);
+        errors.extend(self.date_of_birth_check(election));
 
-        if errors.is_empty() {
-            Ok(person)
-        } else {
-            Err(Box::new(FormData::new_with_errors(
-                self, csrf_token, errors,
-            )))
-        }
+        self.merge_validation_results(person_result, errors, csrf_token)
     }
 
     /// Validate that the BSN is unique OR the name (initials, prefix, lastname) is unique
-    pub(crate) fn uniqueness_errors(person: &Person, existing: &[Person]) -> FieldErrors {
+    fn uniqueness_errors(&self, existing: Vec<&Person>) -> FieldErrors {
         let mut errors = Vec::new();
 
         // If a BSN is set, validate BSN uniqueness and skip name uniqueness checks
-        if let Some(BsnOrNoneConfirmed::Bsn(bsn)) = &person.personal_data.bsn {
+        if let Ok(BsnOrNoneConfirmed::Bsn(bsn)) =
+            BsnOrNoneConfirmed::from_str(&self.personal_data.bsn)
+        {
             if existing.iter().any(|existing_person| {
                 existing_person.personal_data.bsn == Some(BsnOrNoneConfirmed::Bsn(bsn.clone()))
             }) {
@@ -141,30 +139,47 @@ impl PersonalDataForm {
             return errors;
         }
 
-        let has_duplicate_name = existing
-            .iter()
-            .any(|existing_person| existing_person.name == person.name);
+        if let Ok(last_name) = LastName::from_str(&self.name.last_name)
+            && let Ok(initials) = Initials::from_str(&self.name.initials)
+        {
+            let last_name_prefix = if self.name.last_name_prefix.is_empty() {
+                None
+            } else {
+                match LastNamePrefix::from_str(&self.name.last_name_prefix) {
+                    Ok(prefix) => Some(prefix),
+                    // Prefix validation will be handled by the outer validation
+                    // we can ignore parsing errors here for the purpose of uniqueness checks
+                    Err(_) => return Vec::new(),
+                }
+            };
 
-        if has_duplicate_name {
-            errors.push((
-                "name.initials".to_string(),
-                ValidationError::NameAlreadyExists,
-            ));
-            errors.push((
-                "name.last_name".to_string(),
-                ValidationError::NameAlreadyExists,
-            ));
+            let has_duplicate_name = existing.iter().any(|p| {
+                p.name.initials == initials
+                    && p.name.last_name_prefix == last_name_prefix
+                    && p.name.last_name == last_name
+            });
+
+            if has_duplicate_name {
+                errors.push((
+                    "name.initials".to_string(),
+                    ValidationError::NameAlreadyExists,
+                ));
+                errors.push((
+                    "name.last_name".to_string(),
+                    ValidationError::NameAlreadyExists,
+                ));
+            }
         }
 
         errors
     }
 
     /// Validate that the date of birth is valid for the current election
-    pub(crate) fn date_of_birth_check(person: &Person, election: &ElectionConfig) -> FieldErrors {
+    fn date_of_birth_check(&self, election: &ElectionConfig) -> FieldErrors {
         let mut errors = Vec::new();
 
-        if let Some(date) = &person.personal_data.date_of_birth
-            && **date > election.eligible_date_of_birth()
+        if let Ok(date) = DateOfBirth::from_str(&self.personal_data.date_of_birth)
+            && NaiveDate::from(date) > election.eligible_date_of_birth()
         {
             errors.push((
                 "personal_data.date_of_birth".to_string(),
@@ -174,21 +189,42 @@ impl PersonalDataForm {
 
         errors
     }
+
+    fn merge_validation_results(
+        self,
+        person_result: Result<Person, FormData<Self>>,
+        additional_errors: FieldErrors,
+        csrf_token: &TokenValue,
+    ) -> Result<Person, Box<FormData<Self>>> {
+        if additional_errors.is_empty() {
+            return Ok(person_result?);
+        }
+        match person_result {
+            Ok(_) => Err(Box::new(FormData::new_with_errors(
+                self,
+                csrf_token,
+                additional_errors,
+            ))),
+            Err(form_data) => {
+                let mut errors = form_data.errors();
+                errors.extend(additional_errors);
+                Err(Box::new(FormData::new_with_errors(
+                    self, csrf_token, errors,
+                )))
+            }
+        }
+    }
 }
 
 #[cfg(test)]
 mod tests {
-    use chrono::Duration;
-
     use super::*;
     use crate::{
         OptionAsStrExt,
         common::{DutchAddress, UtcDateTime},
         form::{ValidationError, generate_csrf_token},
         persons::PersonId,
-        test_utils::{
-            parse_country_code, parse_last_name, parse_place_of_residence, sample_person_with,
-        },
+        test_utils::{parse_country_code, parse_place_of_residence, sample_person_with},
     };
 
     #[test]
@@ -378,10 +414,24 @@ mod tests {
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
-        incoming.personal_data.bsn = None;
+        let form = PersonalDataForm {
+            name: FullNameForm {
+                first_name: "".to_string(),
+                last_name: "Klaas Smit".to_string(),
+                last_name_prefix: "".to_string(),
+                initials: "E.D.".to_string(),
+            },
+            personal_data: PersonalDataFieldsForm {
+                gender: "m".to_string(),
+                date_of_birth: "12-12-1970".to_string(),
+                bsn: "".to_string(),
+                place_of_residence: "Amsterdam".to_string(),
+                country: "NL".to_string(),
+            },
+            csrf_token: generate_csrf_token(),
+        };
 
-        let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
+        let errors = form.uniqueness_errors(vec![&existing]);
 
         assert!(errors.contains(&(
             "name.initials".to_string(),
@@ -399,12 +449,24 @@ mod tests {
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
-        incoming.name.last_name = parse_last_name("Other");
-        incoming.personal_data.bsn =
-            Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
+        let form = PersonalDataForm {
+            name: FullNameForm {
+                first_name: "".to_string(),
+                last_name: "Other".to_string(),
+                last_name_prefix: "".to_string(),
+                initials: "E.D.".to_string(),
+            },
+            personal_data: PersonalDataFieldsForm {
+                gender: "m".to_string(),
+                date_of_birth: "12-12-1970".to_string(),
+                bsn: "123456782".to_string(),
+                place_of_residence: "Amsterdam".to_string(),
+                country: "NL".to_string(),
+            },
+            csrf_token: generate_csrf_token(),
+        };
 
-        let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
+        let errors = form.uniqueness_errors(vec![&existing]);
 
         assert_eq!(
             errors,
@@ -421,11 +483,24 @@ mod tests {
         existing.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("123456782".parse().expect("bsn")));
 
-        let mut incoming = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
-        incoming.personal_data.bsn =
-            Some(BsnOrNoneConfirmed::Bsn("111222333".parse().expect("bsn")));
+        let form = PersonalDataForm {
+            name: FullNameForm {
+                first_name: "".to_string(),
+                last_name: "Klaas Smit".to_string(),
+                last_name_prefix: "".to_string(),
+                initials: "E.D.".to_string(),
+            },
+            personal_data: PersonalDataFieldsForm {
+                gender: "m".to_string(),
+                date_of_birth: "12-12-1970".to_string(),
+                bsn: "111222333".to_string(),
+                place_of_residence: "Amsterdam".to_string(),
+                country: "NL".to_string(),
+            },
+            csrf_token: generate_csrf_token(),
+        };
 
-        let errors = PersonalDataForm::uniqueness_errors(&incoming, &[existing]);
+        let errors = form.uniqueness_errors(vec![&existing]);
 
         assert!(errors.is_empty());
     }
@@ -434,21 +509,71 @@ mod tests {
     fn candidate_too_young_errors() {
         let election = &ElectionConfig::EK27;
 
-        let mut person = sample_person_with(PersonId::new(), None, "Klaas Smit", None, "E.D.");
+        let mut form = PersonalDataForm {
+            name: FullNameForm {
+                first_name: "".to_string(),
+                last_name: "Klaas Smit".to_string(),
+                last_name_prefix: "".to_string(),
+                initials: "E.D.".to_string(),
+            },
+            personal_data: PersonalDataFieldsForm {
+                gender: "m".to_string(),
+                date_of_birth: "12-12-1970".to_string(),
+                bsn: "111222333".to_string(),
+                place_of_residence: "Amsterdam".to_string(),
+                country: "NL".to_string(),
+            },
+            csrf_token: generate_csrf_token(),
+        };
 
-        let eligible_date = election.eligible_date_of_birth();
-        person.personal_data.date_of_birth = Some(DateOfBirth::from(eligible_date));
-        let errors = PersonalDataForm::date_of_birth_check(&person, election);
+        let errors = form.date_of_birth_check(election);
         assert!(errors.is_empty());
 
-        person.personal_data.date_of_birth =
-            Some(DateOfBirth::from(eligible_date + Duration::days(1)));
+        form.personal_data.date_of_birth = "12-12-2015".to_string();
         assert_eq!(
-            PersonalDataForm::date_of_birth_check(&person, election),
+            form.date_of_birth_check(election),
             vec![(
                 "personal_data.date_of_birth".to_string(),
                 ValidationError::CandidateTooYoung
             )]
         );
+    }
+
+    #[test]
+    fn validate_create_with_checks_combines_errors() {
+        let store = AppStore::new_for_test();
+        let csrf_token = generate_csrf_token();
+        let form = PersonalDataForm {
+            name: FullNameForm {
+                first_name: "".to_string(),
+                last_name: "Klaas Smit".to_string(),
+                last_name_prefix: "invalid".to_string(),
+                initials: "E.D.".to_string(),
+            },
+            personal_data: PersonalDataFieldsForm {
+                gender: "m".to_string(),
+                date_of_birth: "12-12-2015".to_string(),
+                bsn: "111222333".to_string(),
+                place_of_residence: "Amsterdam".to_string(),
+                country: "NL".to_string(),
+            },
+            csrf_token: csrf_token.clone(),
+        };
+
+        let form_data = form
+            .validate_create_with_checks(&csrf_token, &store, &ElectionConfig::EK27)
+            .expect_err("form shouldn't validate");
+
+        let errors = form_data.errors();
+
+        assert_eq!(errors.len(), 2);
+        assert!(errors.contains(&(
+            "personal_data.date_of_birth".to_string(),
+            ValidationError::CandidateTooYoung
+        )));
+        assert!(errors.contains(&(
+            "name.last_name_prefix".to_string(),
+            ValidationError::InvalidValue
+        )));
     }
 }

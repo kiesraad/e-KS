@@ -4,7 +4,7 @@ use serde::Deserialize;
 
 use crate::{AppError, AppState, core::ModelLocale};
 
-mod documents;
+pub mod documents;
 mod index;
 #[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
 mod integration_tests;
@@ -16,7 +16,7 @@ pub struct SubmitPath;
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{locale}/documents.zip", rejection(AppError))]
 pub struct DownloadDocumentsPath {
-    locale: ModelLocale,
+    pub locale: ModelLocale,
 }
 
 pub fn router() -> Router<AppState> {

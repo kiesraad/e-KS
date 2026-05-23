@@ -2,7 +2,9 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate,
+    common::Problematic,
+    filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
     redirect_success,
@@ -42,14 +44,14 @@ pub async fn update_substitute_submitter_submit(
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(
+    match form.validate_update_with_checks(
         &ListSubmitterData::from(substitute_submitter.clone()),
         &context.session.csrf_token,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
-                form: form_data,
+                form: *form_data,
             },
             context,
         )

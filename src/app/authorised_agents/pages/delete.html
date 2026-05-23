@@ -1,0 +1,21 @@
+{% extends "common/components/overlay.html" %}
+{% block overlay_title %}{{ "political_group.edit_authorised_agent"|trans }}{% endblock %}
+{% set close_action = AuthorisedAgent::list_path() %}
+{% block overlay_steps %}
+  {% include "authorised_agents/components/update_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  <fieldset>
+    <legend>
+      <h3>{{ "political_group.actions.delete_authorised_agent"|trans }}</h3>
+    </legend>
+    <p>{{ "political_group.delete_authorised_agent_warning_text"|trans }}</p>
+  </fieldset>
+{% endblock %}
+{% block overlay_actions %}
+  <div class="form-actions">
+    <button type="submit" class="button tertiary-destructive">
+      {{ "political_group.actions.delete_authorised_agent"|trans }}
+    </button>
+  </div>
+{% endblock %}

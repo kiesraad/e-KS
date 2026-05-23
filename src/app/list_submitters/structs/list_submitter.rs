@@ -155,6 +155,8 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
 
 #[cfg(test)]
 mod tests {
+    use crate::common::EmptyAddressProblems;
+
     use super::*;
 
     fn incomplete_submitter(is_substitute: bool) -> ListSubmitter {
@@ -178,11 +180,15 @@ mod tests {
                 .get_problems()
                 .contains(&PotentialProblems::NoLastName(Severity::Error))
         );
-        assert!(
-            submitter
-                .get_problems()
-                .contains(&PotentialProblems::NoStreetName(Severity::Error))
-        );
+        assert!(submitter.get_problems().iter().any(|pp| match pp {
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Error,
+                problems,
+            } => {
+                problems.contains(&EmptyAddressProblems::StreetName)
+            }
+            _ => false,
+        }));
     }
 
     #[test]
@@ -194,10 +200,14 @@ mod tests {
                 .get_problems()
                 .contains(&PotentialProblems::NoLastName(Severity::Info))
         );
-        assert!(
-            submitter
-                .get_problems()
-                .contains(&PotentialProblems::NoStreetName(Severity::Info))
-        );
+        assert!(submitter.get_problems().iter().any(|pp| match pp {
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Info,
+                problems,
+            } => {
+                problems.contains(&EmptyAddressProblems::StreetName)
+            }
+            _ => false,
+        }));
     }
 }

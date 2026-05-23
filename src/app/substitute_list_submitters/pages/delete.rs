@@ -1,11 +1,37 @@
-use axum::response::Response;
+use askama::Template;
+use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, form::EmptyForm, list_submitters::ListSubmitter,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    common::Problematic,
+    filters,
+    form::{EmptyForm, FormData},
+    list_submitters::ListSubmitter,
     redirect_success,
 };
 
 use super::SubstituteSubmitterDeletePath;
+
+#[derive(Template)]
+#[template(path = "substitute_list_submitters/pages/delete.html")]
+struct DeleteSubstituteSubmitterTemplate {
+    substitute_submitter: ListSubmitter,
+    form: FormData<EmptyForm>,
+}
+
+pub async fn delete_substitute_submitter_confirm(
+    _: SubstituteSubmitterDeletePath,
+    context: Context,
+    substitute_submitter: ListSubmitter,
+) -> AppResponse<impl IntoResponse> {
+    Ok(HtmlTemplate(
+        DeleteSubstituteSubmitterTemplate {
+            form: FormData::new(&context.session.csrf_token),
+            substitute_submitter,
+        },
+        context,
+    ))
+}
 
 pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
@@ -32,9 +58,30 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, TokenValue, list_submitters::ListSubmitterId,
-        test_utils::sample_list_submitter,
+        AppError, AppStore, Context, TokenValue,
+        list_submitters::ListSubmitterId,
+        test_utils::{response_body_string, sample_list_submitter},
     };
+
+    #[tokio::test]
+    async fn delete_substitute_submitter_confirm_contains_delete_button() -> Result<(), AppError> {
+        let sub_submitter_id = ListSubmitterId::new();
+        let substitute_submitter = sample_list_submitter(sub_submitter_id);
+
+        let response = delete_substitute_submitter_confirm(
+            SubstituteSubmitterDeletePath { sub_submitter_id },
+            Context::new_test_without_db(),
+            substitute_submitter.clone(),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), axum::http::StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(&substitute_submitter.substitute_delete_path().to_string()));
+
+        Ok(())
+    }
 
     #[tokio::test]
     async fn delete_substitute_submitter_removes_and_redirects() -> Result<(), AppError> {

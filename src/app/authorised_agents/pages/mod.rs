@@ -63,6 +63,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(create::create_authorised_agent_submit)
         .typed_get(update::update_authorised_agent)
         .typed_post(update::update_authorised_agent_submit)
+        .typed_get(delete::delete_authorised_agent_confirm)
         .typed_post(delete::delete_authorised_agent)
 }
 

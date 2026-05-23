@@ -7,7 +7,7 @@
 //! - Delete events: old is the entity from `state_before`; no new state.
 //! - System events: informational only; rendered as additions.
 
-use crate::{AppEvent, AppStoreData};
+use crate::{AppEvent, AppStoreData, persons::Person};
 
 pub(super) fn extract_old_new(
     event: &AppEvent,
@@ -107,16 +107,30 @@ pub(super) fn extract_old_new(
             file_name,
             file_size,
             list_id,
-        }
-        | AppEvent::ImportCsv {
-            file_name,
-            file_size,
-            list_id,
         } => event!({
             file_name: file_name,
             file_size: file_size,
             list_id: list_id.to_string(),
         }),
+        AppEvent::ImportCandidates {
+            file_name,
+            file_size,
+            list_id,
+            created_persons,
+            updated_persons,
+            ..
+        } => {
+            fn person_ids(persons: &[Person]) -> Vec<String> {
+                persons.iter().map(|p| p.id.to_string()).collect()
+            }
+            event!({
+                file_name: file_name,
+                file_size: file_size,
+                list_id: list_id.to_string(),
+                created_persons: person_ids(created_persons),
+                updated_persons: person_ids(updated_persons),
+            })
+        }
     }
 }
 
@@ -422,22 +436,37 @@ mod tests {
     }
 
     #[test]
-    fn export_and_import_csv_produce_identical_shape() {
+    fn import_candidates_payload_includes_imported_persons() {
         let list_id = CandidateListId::new();
         let state = empty_state();
-        let export = AppEvent::ExportCsv {
-            file_name: "x.csv".to_string(),
-            file_size: 42,
+        let person_a = sample_person(PersonId::new());
+        let person_b = sample_person(PersonId::new());
+        let person_c = sample_person(PersonId::new());
+
+        let event = AppEvent::ImportCandidates {
             list_id,
+            file_name: "candidates.csv".to_string(),
+            file_size: 123,
+            created_persons: vec![person_a.clone(), person_b.clone()],
+            updated_persons: vec![person_c.clone()],
+            candidates: vec![person_a.id, person_b.id, person_c.id],
         };
-        let import = AppEvent::ImportCsv {
-            file_name: "x.csv".to_string(),
-            file_size: 42,
-            list_id,
-        };
+
+        let (old, new) = extract_old_new(&event, &state, &state);
+
+        assert!(old.is_none());
         assert_eq!(
-            extract_old_new(&export, &state, &state),
-            extract_old_new(&import, &state, &state),
+            new,
+            Some(serde_json::json!({
+                "file_name": "candidates.csv",
+                "file_size": 123,
+                "list_id": list_id.to_string(),
+                "created_persons": [
+                    person_a.id.to_string(),
+                    person_b.id.to_string(),
+                ],
+                "updated_persons": [person_c.id.to_string()],
+            }))
         );
     }
 }

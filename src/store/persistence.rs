@@ -10,6 +10,7 @@ use crate::{AppError, ElectionConfig};
 
 use super::{
     Store, StoreData, StoreEvent, chain_hash,
+    encryption::EventCipher,
     filesystem::{self, replay_from_file, update_in_filesystem},
 };
 
@@ -164,6 +165,44 @@ impl StorePersistence {
     }
 }
 
+/// A store's resolved backend: a persistence target paired with the
+/// per-stream [`EventCipher`].
+///
+/// The persisting variants (`Database`, `Local`) cannot be constructed
+/// without a cipher, so events written to disk or database are *always*
+/// encrypted. `Memory` carries no cipher because it never writes events out.
+#[derive(Clone, Debug)]
+pub(crate) enum StoreBackend {
+    /// PostgreSQL-backed, encrypted persistence.
+    #[cfg(feature = "database")]
+    Database {
+        pool: sqlx::PgPool,
+        cipher: Box<EventCipher>,
+    },
+    /// Local filesystem-backed, encrypted persistence.
+    Local {
+        dir: PathBuf,
+        cipher: Box<EventCipher>,
+    },
+    /// In-memory only: no persistence, and therefore no encryption.
+    Memory,
+}
+
+impl StorePersistence {
+    /// Pair this persistence target with a stream's cipher to form a
+    /// [`StoreBackend`]. The cipher is dropped for [`StorePersistence::None`],
+    /// since an in-memory store neither persists nor encrypts events.
+    pub(crate) fn into_backend(self, cipher: EventCipher) -> StoreBackend {
+        let cipher = Box::new(cipher);
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => StoreBackend::Database { pool, cipher },
+            StorePersistence::Local(dir) => StoreBackend::Local { dir, cipher },
+            StorePersistence::None => StoreBackend::Memory,
+        }
+    }
+}
+
 impl<D> Store<D>
 where
     D: StoreData,
@@ -171,15 +210,15 @@ where
 {
     /// Load and replay persisted events into the in-memory store.
     pub async fn load(&self) -> Result<(), AppError> {
-        match &self.persistence {
+        match &self.backend {
             #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => {
-                load_from_database(self, pool).await?;
+            StoreBackend::Database { pool, cipher } => {
+                load_from_database(self, pool, cipher).await?;
             }
-            StorePersistence::Local(dir) => {
-                replay_from_file(self, dir).await?;
+            StoreBackend::Local { dir, cipher } => {
+                replay_from_file(self, dir, cipher).await?;
             }
-            StorePersistence::None => {}
+            StoreBackend::Memory => {}
         }
 
         Ok(())
@@ -187,11 +226,15 @@ where
 
     /// Persist an event and apply it to the in-memory store.
     pub async fn update(&self, event: D::Event) -> Result<(), AppError> {
-        match &self.persistence {
+        match &self.backend {
             #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => update_in_database(self, pool, event).await,
-            StorePersistence::Local(dir) => update_in_filesystem(self, dir, event).await,
-            StorePersistence::None => {
+            StoreBackend::Database { pool, cipher } => {
+                update_in_database(self, pool, cipher, event).await
+            }
+            StoreBackend::Local { dir, cipher } => {
+                update_in_filesystem(self, dir, cipher, event).await
+            }
+            StoreBackend::Memory => {
                 let mut data = self.data.write();
                 let event_id = data.last_event_id() + 1;
                 let created_at = Utc::now();
@@ -311,13 +354,10 @@ mod tests {
     }
 
     fn test_store() -> Store<TestData> {
-        let encryption = test_encryption();
-        let stream_id = Uuid::new_v4();
         Store {
-            stream_id,
+            stream_id: Uuid::new_v4(),
             election: TEST_ELECTION,
-            persistence: StorePersistence::None,
-            cipher: encryption.derive_cipher(stream_id, TEST_ELECTION),
+            backend: StoreBackend::Memory,
             data: std::sync::Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
