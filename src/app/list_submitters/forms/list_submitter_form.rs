@@ -43,7 +43,7 @@ impl ListSubmitterForm {
         csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         let submitter_result = self.clone().validate_create(csrf_token);
-        let postal_code_errors = self.clone().validate_postal_code();
+        let postal_code_errors = self.validate_postal_code();
         self.merge_validation_results(submitter_result, postal_code_errors, csrf_token)
     }
 
@@ -55,11 +55,11 @@ impl ListSubmitterForm {
         csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         let submitter = self.clone().validate_update(current, csrf_token);
-        let postal_code_errors = self.clone().validate_postal_code();
+        let postal_code_errors = self.validate_postal_code();
         self.merge_validation_results(submitter, postal_code_errors, csrf_token)
     }
 
-    fn validate_postal_code(self) -> FieldErrors {
+    fn validate_postal_code(&self) -> FieldErrors {
         let mut errors = Vec::new();
         if let Ok(country) = CountryCode::from_str(&self.address.country)
             && country.is_nl()
@@ -88,7 +88,7 @@ impl ListSubmitterForm {
                 postal_code_errors,
             ))),
             Err(form_data) => {
-                let mut errors = form_data.clone().errors();
+                let mut errors = form_data.errors();
                 errors.extend(postal_code_errors);
                 Err(Box::new(FormData::new_with_errors(
                     self, csrf_token, errors,

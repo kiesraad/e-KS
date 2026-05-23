@@ -138,17 +138,19 @@ impl PersonalDataForm {
 
             return errors;
         }
+
         if let Ok(last_name) = LastName::from_str(&self.name.last_name)
             && let Ok(initials) = Initials::from_str(&self.name.initials)
         {
             let last_name_prefix = if self.name.last_name_prefix.is_empty() {
                 None
             } else {
-                let result = LastNamePrefix::from_str(&self.name.last_name_prefix);
-                if result.is_err() {
-                    return errors;
+                match LastNamePrefix::from_str(&self.name.last_name_prefix) {
+                    Ok(prefix) => Some(prefix),
+                    // Prefix validation will be handled by the outer validation
+                    // we can ignore parsing errors here for the purpose of uniqueness checks
+                    Err(_) => return Vec::new(),
                 }
-                result.ok()
             };
 
             let has_duplicate_name = existing.iter().any(|p| {
@@ -168,6 +170,7 @@ impl PersonalDataForm {
                 ));
             }
         }
+
         errors
     }
 
@@ -203,7 +206,7 @@ impl PersonalDataForm {
                 additional_errors,
             ))),
             Err(form_data) => {
-                let mut errors = form_data.clone().errors();
+                let mut errors = form_data.errors();
                 errors.extend(additional_errors);
                 Err(Box::new(FormData::new_with_errors(
                     self, csrf_token, errors,
