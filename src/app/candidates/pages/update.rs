@@ -50,6 +50,7 @@ pub async fn update_person_submit(
     match form.validate_update_with_checks(
         &candidate.person,
         &context.session.csrf_token,
+        &store,
         &context.election,
     ) {
         Err(form_data) => Ok(HtmlTemplate(
