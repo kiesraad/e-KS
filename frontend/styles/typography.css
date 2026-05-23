@@ -9,7 +9,6 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-
 h1,
 h2,
 h3 {
@@ -66,7 +65,6 @@ h6,
   font-weight: 700;
 }
 
-
 a {
   color: var(--link-default);
 
@@ -120,13 +118,12 @@ a {
 
 .fs-lg {
   font-size: var(--font-size-lg);
-} xw
+}
 
 /* Text wrap, transformations etc. */
 .break-word {
   word-break: break-word;
 }
-
 .nowrap {
   text-wrap: nowrap;
 }

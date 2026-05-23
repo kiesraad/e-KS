@@ -24,7 +24,7 @@
       aspect-ratio: 1;
       background-color: var(--orange-100);
       border: 2px solid var(--orange-600);
-      content: '';
+      content: "";
       left: 0;
       position: absolute;
       top: 0;

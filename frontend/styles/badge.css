@@ -13,7 +13,7 @@
   text-align: center;
   transition: background-color 0.5s ease-in-out;
   width: var(--badge-size);
-  
+
   &:not(.badge-position)::after {
     content: "";
     position: absolute;
@@ -24,4 +24,3 @@
     background-color: var(--badge-color, var(--gray-800));
   }
 }
-

@@ -1,5 +1,3 @@
-
-
 .cards {
   display: grid;
   gap: var(--space-6);
@@ -16,7 +14,6 @@
   --card-min-width: 25.25rem;
 }
 
- 
 .cards-candidate-lists {
   --card-gap: var(--space-6);
   --card-min-width: 18.875rem;
@@ -98,7 +95,7 @@
   ul.card-instruction {
     list-style-position: inside;
     list-style-type: disc;
-    padding: 0; 
+    padding: 0;
   }
 
   .card-footer {
@@ -107,14 +104,13 @@
     font-weight: 500;
     justify-content: space-between;
     margin-top: auto;
-    
+
     &::after {
       background-color: var(--gray-600);
-      content: '';
-      mask-image: url('../icons/chevronRight.svg');
+      content: "";
+      mask-image: url("../icons/chevronRight.svg");
       mask-position: center;
       width: var(--space-5);
     }
   }
 }
-

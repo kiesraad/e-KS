@@ -108,61 +108,61 @@
 
   /* COLORS */
   --blue-1000: #002649;
-  --blue-900: #00305B;
-  --blue-800: #1C4280;
-  --blue-700: #2556A2;
-  --blue-600: #306BC8;
-  --blue-500: #5C8BD6;
-  --blue-400: #82A6E0;
-  --blue-300: #A4BEE8;
-  --blue-200: #C5D6F1;
-  --blue-100: #DFEAFA;
-  --blue-50: #EFF6FF;
+  --blue-900: #00305b;
+  --blue-800: #1c4280;
+  --blue-700: #2556a2;
+  --blue-600: #306bc8;
+  --blue-500: #5c8bd6;
+  --blue-400: #82a6e0;
+  --blue-300: #a4bee8;
+  --blue-200: #c5d6f1;
+  --blue-100: #dfeafa;
+  --blue-50: #eff6ff;
 
-  --green-900: #113B26;
+  --green-900: #113b26;
   --green-800: #195738;
-  --green-700: #206C46;
+  --green-700: #206c46;
   --green-600: #248052;
-  --green-500: #329D68;
-  --green-400: #64B58C;
-  --green-300: #8FC9AC;
-  --green-200: #B8DDCA;
-  --green-100: #E7F3EE;
-  --green-50: #F6FBF9;
+  --green-500: #329d68;
+  --green-400: #64b58c;
+  --green-300: #8fc9ac;
+  --green-200: #b8ddca;
+  --green-100: #e7f3ee;
+  --green-50: #f6fbf9;
 
-  --orange-900: #521F09;
-  --orange-800: #7A2E0E;
-  --orange-700: #B54708;
-  --orange-600: #D4690B;
-  --orange-500: #F79009;
-  --orange-400: #FDB022;
-  --orange-300: #FEC84B;
-  --orange-200: #FEDF89;
-  --orange-100: #FEF6DC;
-  --orange-50: #FDFAF2;
+  --orange-900: #521f09;
+  --orange-800: #7a2e0e;
+  --orange-700: #b54708;
+  --orange-600: #d4690b;
+  --orange-500: #f79009;
+  --orange-400: #fdb022;
+  --orange-300: #fec84b;
+  --orange-200: #fedf89;
+  --orange-100: #fef6dc;
+  --orange-50: #fdfaf2;
 
-  --red-900: #661A27;
-  --red-800: #8E2437;
-  --red-700: #B02D45;
-  --red-600: #D03651;
-  --red-500: #E35F77;
-  --red-400: #EA889A;
-  --red-300: #F0AAB7;
-  --red-200: #F6CAD2;
-  --red-100: #FBE9ED;
-  --red-50: #FEF9FA;
+  --red-900: #661a27;
+  --red-800: #8e2437;
+  --red-700: #b02d45;
+  --red-600: #d03651;
+  --red-500: #e35f77;
+  --red-400: #ea889a;
+  --red-300: #f0aab7;
+  --red-200: #f6cad2;
+  --red-100: #fbe9ed;
+  --red-50: #fef9fa;
 
   --gray-900: #101828;
-  --gray-800: #1D2939;
+  --gray-800: #1d2939;
   --gray-700: #344054;
   --gray-600: #475467;
   --gray-500: #667085;
-  --gray-400: #848FA2;
-  --gray-300: #98A2B3;
-  --gray-200: #D0D5DD;
-  --gray-100: #EAECF0;
-  --gray-50: #F2F4F7;
-  --gray-25: #F9FAFB;
+  --gray-400: #848fa2;
+  --gray-300: #98a2b3;
+  --gray-200: #d0d5dd;
+  --gray-100: #eaecf0;
+  --gray-50: #f2f4f7;
+  --gray-25: #f9fafb;
 
   --base-white: #ffffff;
 
@@ -170,7 +170,10 @@
   --text-color-body: var(--gray-700);
 
   --container-max-width: 82.5rem;
-  --container-size: min(calc(100% - var(--space-12) * 2), var(--container-max-width));
+  --container-size: min(
+    calc(100% - var(--space-12) * 2),
+    var(--container-max-width)
+  );
 
   --button-color-primary: var(--blue-900);
   --button-color-primary-hover: var(--blue-800);

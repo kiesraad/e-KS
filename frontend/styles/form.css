@@ -16,7 +16,6 @@
     flex-direction: column;
     gap: var(--space-sm);
     max-width: 23.25rem;
-    
 
     & > label {
       color: var(--text-color-header);
@@ -26,7 +25,7 @@
       &:has(.optional) {
         display: flex;
         align-items: center;
-        gap: var(--space-1); 
+        gap: var(--space-1);
       }
 
       &.required::after {
@@ -289,7 +288,7 @@
   background: var(--base-white);
   font-size: var(--font-size-md);
   line-height: var(--leading-md);
-  font-weight: var(--font-weight-regular );
+  font-weight: var(--font-weight-regular);
 }
 
 .form input[type="text"],
@@ -303,7 +302,7 @@
 .form select {
   appearance: none;
   background-color: var(--base-white);
-  background-image: url('../icons/select.svg');
+  background-image: url("../icons/select.svg");
   background-position: right 1rem center;
   background-repeat: no-repeat;
   background-size: 0.75rem;

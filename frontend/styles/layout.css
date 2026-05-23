@@ -10,7 +10,6 @@ body {
   min-width: 1200px;
 }
 
-
 main {
   background-color: var(--bg-gray);
   flex: 1;
