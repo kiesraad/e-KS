@@ -5,12 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
-    authorised_agents::AuthorisedAgent,
-    filters,
+    AppError, AppStore, Context, HtmlTemplate, QueryParamState, filters,
     form::{Form, FormData},
     list_designation::ListDesignation,
     list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
 };
 
@@ -66,7 +65,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(query.redirect_or(AuthorisedAgent::list_path()))
+            Ok(query.redirect_or(NameAuthorisation::list_path()))
         }
     }
 }
@@ -76,9 +75,11 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
-        authorised_agents::AuthorisedAgentId,
         common::PreviousElectionResults,
-        test_utils::{response_body_string, sample_authorised_agent, sample_political_group_form},
+        name_authorisations::NameAuthorisationId,
+        test_utils::{
+            response_body_string, sample_name_authorisation, sample_political_group_form,
+        },
     };
     use axum::{
         http::{StatusCode, header},
@@ -114,9 +115,9 @@ mod tests {
         let store = AppStore::new_for_test();
         let political_group = store.get_political_group();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_token.clone();
@@ -142,7 +143,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            AuthorisedAgent::list_path()
+            NameAuthorisation::list_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
@@ -164,9 +165,9 @@ mod tests {
     async fn update_political_group_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_token.clone();

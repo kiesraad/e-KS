@@ -22,7 +22,7 @@ pub struct EventTypeCategory {
 /// trans!("audit_log.filter.category.political_group", _)
 /// trans!("audit_log.filter.category.person", _)
 /// trans!("audit_log.filter.category.candidate_list", _)
-/// trans!("audit_log.filter.category.authorised_agent", _)
+/// trans!("audit_log.filter.category.name_authorisation", _)
 /// trans!("audit_log.filter.category.list_submitter", _)
 /// trans!("audit_log.filter.category.substitute_submitter", _)
 /// trans!("audit_log.filter.category.system", _)
@@ -53,11 +53,11 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
         ],
     },
     EventTypeCategory {
-        key: "authorised_agent",
+        key: "name_authorisation",
         event_types: &[
-            "create_authorised_agent",
-            "update_authorised_agent",
-            "delete_authorised_agent",
+            "create_name_authorisation",
+            "update_name_authorisation",
+            "delete_name_authorisation",
         ],
     },
     EventTypeCategory {

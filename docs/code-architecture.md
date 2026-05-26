@@ -147,11 +147,12 @@ per-domain folders are a few app-level files that tie the domains together:
 - `context.rs`: the request-scoped `Context` passed into templates.
 - `store_extractor.rs`: extracts the per-request `AppStore` from `AppState`.
 
-The current domains are: `audit_log`, `authorised_agents`, `candidate_lists`,
-`candidates`, `common`, `list_submitters`, `persons`, `political_groups`,
-`submit`, and `substitute_list_submitters`. (`common` is the shared domain:
-reusable field types (names, addresses, dates, country codes) and
-shared pages/components rather than a single entity.)
+The current domains are: `audit_log`, `candidate_lists`, `candidates`,
+`common`, `list_submitters`, `name_authorisations`, `persons`,
+`political_groups`, `submit`, and `substitute_list_submitters`.
+(`common` is the shared domain: reusable field types (names, addresses,
+dates, country codes) and shared pages/components rather than a single
+entity.)
 
 ### Common structure of a domain folder
 

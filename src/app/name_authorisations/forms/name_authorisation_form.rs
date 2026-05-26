@@ -1,29 +1,29 @@
 use crate::{
-    OptionStringExt, TokenValue,
-    authorised_agents::AuthorisedAgent,
+    TokenValue,
     common::{LegalName, MinimalNameForm},
+    name_authorisations::NameAuthorisation,
 };
 use serde::Deserialize;
 use validate::Validate;
 
 #[derive(Default, Deserialize, Debug, Validate)]
-#[validate(target = "AuthorisedAgent")]
+#[validate(target = "NameAuthorisation")]
 #[serde(default)]
-pub struct AuthorisedAgentForm {
+pub struct NameAuthorisationForm {
     #[validate(flatten)]
     #[serde(flatten)]
     pub name: MinimalNameForm,
-    #[validate(parse = "LegalName", optional)]
+    #[validate(parse = "LegalName")]
     pub legal_name: String,
     #[validate(csrf)]
     pub csrf_token: TokenValue,
 }
 
-impl From<AuthorisedAgent> for AuthorisedAgentForm {
-    fn from(value: AuthorisedAgent) -> Self {
-        AuthorisedAgentForm {
+impl From<NameAuthorisation> for NameAuthorisationForm {
+    fn from(value: NameAuthorisation) -> Self {
+        NameAuthorisationForm {
             name: MinimalNameForm::from(value.name),
-            legal_name: value.legal_name.to_string_or_default(),
+            legal_name: value.legal_name.to_string(),
             csrf_token: Default::default(),
         }
     }

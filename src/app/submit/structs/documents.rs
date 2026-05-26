@@ -119,17 +119,13 @@ impl DocumentData {
             .map(TypstPerson::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let authorised_agents = store.get_authorised_agents();
-        if authorised_agents.len() != 1 {
+        let name_authorisations = store.get_name_authorisations();
+        if name_authorisations.len() != 1 {
             return Err(AppError::IncompleteData("Expected 1 authorised agent"));
         }
         // Missing statutory name does not prevent export
-        let legal_name = authorised_agents[0]
-            .legal_name
-            .as_ref()
-            .map(|n| n.to_string())
-            .unwrap_or_default();
-        let authorised_agent = (&authorised_agents[0]).into();
+        let legal_name = name_authorisations[0].legal_name.to_string();
+        let authorised_agent = (&name_authorisations[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
         let folder_name = format!(

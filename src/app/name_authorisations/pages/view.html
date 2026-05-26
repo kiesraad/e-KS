@@ -5,24 +5,23 @@
   <div class="steps">
     {% include "political_groups/components/steps.html" %}
     <div>
-      <h2>{{ "political_group.authorised_agent_data"|trans }}</h2>
+      <h2>{{ "political_group.legal_name_data"|trans }}</h2>
       <p class="info">{{ "political_group.authorised_agent_info"|trans }}</p>
-      {% if authorised_agents.is_empty() %}
-        <p class="mt-md font-italic">{{ "political_group.no_authorised_agents"|trans }}</p>
+      {% if name_authorisations.is_empty() %}
+        <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>
       {% else %}
-        {% for agent in authorised_agents %}
+        {% for agent in name_authorisations %}
           <a href="{{ agent.update_path() }}"
              class="person-block {{ agent.highest_severity_class() }}">
-            {{ agent.name.display() }}
-            {% if let Some(legal_name) = agent.legal_name.as_ref() %}({{ legal_name }}){% endif %}
+            {{ agent.legal_name }} ({{ agent.name.display() }})
           </a>
         {% endfor %}
       {% endif %}
-      {% if authorised_agents.len() == 0 %}
+      {% if name_authorisations.len() == 0 %}
         <p class="mt-lg">
-          <a href="{{ AuthorisedAgent::create_path() }}"
+          <a href="{{ NameAuthorisation::create_path() }}"
              class="button secondary icon-plus"
-             type="button">{{ "political_group.add_authorised_agent"|trans }}</a>
+             type="button">{{ "political_group.add_legal_name"|trans }}</a>
         </p>
       {% endif %}
       <p class="mt-lg">

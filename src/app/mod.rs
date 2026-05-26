@@ -1,10 +1,10 @@
 pub mod audit_log;
-pub mod authorised_agents;
 pub mod candidate_lists;
 pub mod candidates;
 pub mod common;
 pub mod list_designation;
 pub mod list_submitters;
+pub mod name_authorisations;
 pub mod persons;
 pub mod political_groups;
 pub mod submit;

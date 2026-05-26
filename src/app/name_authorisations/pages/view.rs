@@ -1,32 +1,32 @@
-use super::AuthorisedAgentsPath;
+use super::NameAuthorisationsPath;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     app::list_designation::ListDesignation,
-    authorised_agents::AuthorisedAgent,
     common::Problematic,
     filters,
     list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
 };
 use askama::Template;
 use axum::response::IntoResponse;
 
 #[derive(Template)]
-#[template(path = "authorised_agents/pages/view.html")]
-struct AuthorisedAgentsTemplate {
-    authorised_agents: Vec<AuthorisedAgent>,
+#[template(path = "name_authorisations/pages/view.html")]
+struct NameAuthorisationTemplate {
+    name_authorisations: Vec<NameAuthorisation>,
     steps: PoliticalGroupSteps,
 }
 
-pub async fn list_authorised_agents(
-    _: AuthorisedAgentsPath,
+pub async fn list_name_authorisations(
+    _: NameAuthorisationsPath,
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
     Ok(HtmlTemplate(
-        AuthorisedAgentsTemplate {
-            authorised_agents: steps.authorised_agents.clone(),
+        NameAuthorisationTemplate {
+            name_authorisations: steps.name_authorisations.clone(),
             steps,
         },
         context,
@@ -38,21 +38,20 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context,
-        authorised_agents::AuthorisedAgentId,
-        test_utils::{response_body_string, sample_authorised_agent},
+        name_authorisations::NameAuthorisationId,
+        test_utils::{response_body_string, sample_name_authorisation},
     };
     use axum::{http::StatusCode, response::IntoResponse};
 
     #[tokio::test]
-    async fn list_authorised_agents_shows_created_agent() -> Result<(), AppError> {
+    async fn list_name_authorisations_shows_created_agent() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        let authorisation = sample_name_authorisation(NameAuthorisationId::new());
+        authorisation.create(&store).await?;
 
-        let response = list_authorised_agents(
-            AuthorisedAgentsPath {},
+        let response = list_name_authorisations(
+            NameAuthorisationsPath {},
             Context::new_test_without_db(),
             store.clone(),
         )
@@ -62,21 +61,21 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(authorised_agent.name.last_name.as_str()));
+        assert!(body.contains(&authorisation.legal_name.to_string()));
+        assert!(body.contains(authorisation.name.last_name.as_str()));
 
         Ok(())
     }
 
     #[tokio::test]
-    async fn list_authorised_agents_shows_edit_link() -> Result<(), AppError> {
+    async fn list_name_authorisations_shows_edit_link() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        let authorisation = sample_name_authorisation(NameAuthorisationId::new());
+        authorisation.create(&store).await?;
 
-        let response = list_authorised_agents(
-            AuthorisedAgentsPath {},
+        let response = list_name_authorisations(
+            NameAuthorisationsPath {},
             Context::new_test_without_db(),
             store.clone(),
         )
@@ -86,7 +85,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains(&authorised_agent.update_path().to_string()));
+        assert!(body.contains(&authorisation.update_path().to_string()));
 
         Ok(())
     }

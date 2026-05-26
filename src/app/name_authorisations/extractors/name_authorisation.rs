@@ -3,16 +3,15 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppStore,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
 };
 
 #[derive(Deserialize)]
-struct AuthorisedAgentPathParams {
-    #[serde(alias = "agent_id")]
-    agent_id: AuthorisedAgentId,
+struct NameAuthorisationPathParams {
+    authorisation_id: NameAuthorisationId,
 }
 
-impl<S> FromRequestParts<S> for AuthorisedAgent
+impl<S> FromRequestParts<S> for NameAuthorisation
 where
     S: Clone + Send + Sync + 'static,
     AppStore: FromRequestParts<S, Rejection = AppError>,
@@ -24,10 +23,10 @@ where
         state: &S,
     ) -> Result<Self, Self::Rejection> {
         let store = AppStore::from_request_parts(parts, state).await?;
-        let Path(AuthorisedAgentPathParams { agent_id }) =
-            Path::<AuthorisedAgentPathParams>::from_request_parts(parts, state).await?;
+        let Path(NameAuthorisationPathParams { authorisation_id }) =
+            Path::<NameAuthorisationPathParams>::from_request_parts(parts, state).await?;
 
-        store.get_authorised_agent(agent_id)
+        store.get_name_authorisation(authorisation_id)
     }
 }
 
@@ -44,33 +43,34 @@ mod tests {
 
     use crate::{
         AppState, AppStore,
-        test_utils::{response_body_string, sample_authorised_agent},
+        test_utils::{response_body_string, sample_name_authorisation},
     };
 
     #[tokio::test]
-    async fn authorised_agent_extractor_loads_agent() {
-        let authorised_agent = sample_authorised_agent(AuthorisedAgentId::new());
+    async fn name_authorisation_extractor_loads_name() {
+        let name_auth = sample_name_authorisation(NameAuthorisationId::new());
 
         let app_state = AppState::new_for_tests().await;
         let store = AppStore::new_for_test();
-        authorised_agent
+        name_auth
             .create(&store)
             .await
-            .expect("create authorised agent");
+            .expect("create name authorisation");
 
-        let app = Router::new()
-            .route(
-                "/political-group/authorised-agents/{agent_id}",
-                get(|authorised_agent: AuthorisedAgent| async move {
-                    authorised_agent.name.last_name.to_string()
-                }),
-            )
-            .with_state(app_state);
+        let app =
+            Router::new()
+                .route(
+                    "/political-group/authorised-agents/{authorisation_id}",
+                    get(|name_auth: NameAuthorisation| async move {
+                        name_auth.name.last_name.to_string()
+                    }),
+                )
+                .with_state(app_state);
 
         let mut request = Request::builder()
             .uri(format!(
                 "/political-group/authorised-agents/{}",
-                authorised_agent.id
+                name_auth.id
             ))
             .body(Body::empty())
             .unwrap();

@@ -7,6 +7,6 @@ mod forms;
 mod pages;
 mod structs;
 
-pub use forms::AuthorisedAgentForm;
-pub use pages::{AuthorisedAgentUpdatePath, router};
-pub use structs::{AuthorisedAgent, AuthorisedAgentId};
+pub use forms::NameAuthorisationForm;
+pub use pages::{NameAuthorisationUpdatePath, router};
+pub use structs::{NameAuthorisation, NameAuthorisationId};

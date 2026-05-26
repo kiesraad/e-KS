@@ -3,7 +3,6 @@ use http_body_util::BodyExt;
 
 use crate::{
     AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, TokenValue,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
@@ -14,6 +13,7 @@ use crate::{
     },
     list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationForm, NameAuthorisationId},
     persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
@@ -220,18 +220,18 @@ pub fn sample_political_group() -> PoliticalGroup {
     }
 }
 
-pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
-    AuthorisedAgent {
+pub fn sample_name_authorisation(id: NameAuthorisationId) -> NameAuthorisation {
+    NameAuthorisation {
         id,
         name: sample_full_name(Some("Henk"), "Jansen", Some("de"), "A.B."),
-        legal_name: None,
+        legal_name: "Kiesraad Demo Partij".parse().expect("legal name"),
     }
 }
 
-pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
-    AuthorisedAgentForm {
+pub fn sample_name_authorisation_form(csrf_token: &TokenValue) -> NameAuthorisationForm {
+    NameAuthorisationForm {
         name: sample_minimal_name_form("Jansen", "de", "A.B."),
-        legal_name: "Jansen Demo Partij".to_string(),
+        legal_name: "Kiesraad Demo Partij".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }
@@ -296,7 +296,7 @@ pub async fn setup_documents_test_state(
     }
 
     if include_authorised_agent {
-        sample_authorised_agent(AuthorisedAgentId::new())
+        sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
     }

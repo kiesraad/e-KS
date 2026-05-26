@@ -1,15 +1,15 @@
 use crate::{
     AppError, AppStore,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     common::{Address, DutchAddress, FullName},
     list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     political_groups::PoliticalGroup,
 };
 use uuid::Uuid;
 
 pub async fn load(store: &AppStore) -> Result<(), AppError> {
-    let agent_id: AuthorisedAgentId =
+    let agent_id: NameAuthorisationId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_authorised_agent").into();
 
     let submitter_id: ListSubmitterId =
@@ -28,7 +28,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 
     political_group.update(store).await?;
 
-    AuthorisedAgent {
+    NameAuthorisation {
         id: agent_id,
         name: FullName {
             first_name: None,
@@ -36,7 +36,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             last_name_prefix: Some("de".parse().expect("last name prefix")),
             initials: "A.B.".parse().expect("initials"),
         },
-        legal_name: None,
+        legal_name: "Kiesraad Demo Partij".parse().expect("legal name"),
     }
     .create(store)
     .await?;

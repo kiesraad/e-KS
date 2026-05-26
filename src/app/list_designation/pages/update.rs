@@ -5,15 +5,14 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
-    authorised_agents::AuthorisedAgent,
-    filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     list_designation::{
         ListDesignation, forms::list_designation_form::ListDesignationForm,
         pages::ListDesignationUpdatePath,
     },
     list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
 };
 

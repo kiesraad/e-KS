@@ -3,10 +3,10 @@ use std::collections::HashMap;
 
 use crate::{
     AppEvent,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
     list_submitters::ListSubmitter,
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
     store::{StoreData, StoreEvent},
@@ -18,7 +18,7 @@ pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,
     pub(crate) persons: HashMap<PersonId, Person>,
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
-    pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
+    pub(crate) name_authorisations: HashMap<NameAuthorisationId, NameAuthorisation>,
     pub(crate) list_submitter: ListSubmitter,
     pub(crate) substitute_submitters: Vec<ListSubmitter>,
 
@@ -137,17 +137,19 @@ impl StoreData for AppStoreData {
             AppEvent::DeleteCandidateList(cl_id) => {
                 self.candidate_lists.remove(&cl_id);
             }
-            AppEvent::CreateAuthorisedAgent(aa) => {
-                self.authorised_agents.insert(aa.id, aa);
+            AppEvent::CreateNameAuthorisation(aa) => {
+                self.name_authorisations.insert(aa.id, aa);
             }
-            AppEvent::UpdateAuthorisedAgent(aa) => {
+            AppEvent::UpdateNameAuthorisation(aa) => {
                 let aa_id = aa.id;
-                self.authorised_agents.entry(aa_id).and_modify(|existing| {
-                    *existing = aa;
-                });
+                self.name_authorisations
+                    .entry(aa_id)
+                    .and_modify(|existing| {
+                        *existing = aa;
+                    });
             }
-            AppEvent::DeleteAuthorisedAgent(aa_id) => {
-                self.authorised_agents.remove(&aa_id);
+            AppEvent::DeleteNameAuthorisation(aa_id) => {
+                self.name_authorisations.remove(&aa_id);
             }
             AppEvent::UpdateListSubmitter(ls) => {
                 self.list_submitter = ls;

@@ -10,14 +10,14 @@ use tracing_test::traced_test;
 
 use crate::{
     AppError, AppEvent, AppState, AppStore, Config, ElectionConfig, Locale, Session, StreamId,
-    authorised_agents::AuthorisedAgentId,
     candidate_lists::CandidateListId,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
+    name_authorisations::NameAuthorisationId,
     persons::PersonId,
     store::StoreEvent,
     test_utils::{
-        sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
+        sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         sample_political_group,
     },
 };
@@ -57,8 +57,8 @@ async fn setup_download_test_state(
             .update(&store)
             .await?;
     }
-    if store.get_authorised_agents().is_empty() {
-        sample_authorised_agent(AuthorisedAgentId::new())
+    if store.get_name_authorisations().is_empty() {
+        sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
     }

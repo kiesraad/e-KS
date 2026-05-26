@@ -4,6 +4,7 @@
     <input type="text"
            name="legal_name"
            value="{{ form.data.legal_name }}"
+           required
            id="legal_name" />
     {% for error in form|error("legal_name") %}<span class="error">{{ error }}</span>{% endfor %}
     <span class="hint">{{ "political_group.type.legal_name_hint"|trans }}</span>
