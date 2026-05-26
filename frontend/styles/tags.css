@@ -29,6 +29,7 @@
   display: flex;
   align-items: center;
   gap: var(--space-1);
+  user-select: none;
 
   &:is(.warning) {
     --tag-border-color: var(--orange-600);

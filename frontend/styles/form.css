@@ -22,7 +22,7 @@
       font-weight: bold;
       white-space: nowrap;
 
-      &:has(.optional) {
+      &:has(.optional, .hint) {
         display: flex;
         align-items: center;
         gap: var(--space-1);
