@@ -11,6 +11,7 @@ export class CreatePersonPage {
   readonly textfieldDayOfBirth: Locator;
   readonly textfieldMonthOfBirth: Locator;
   readonly textfieldYearOfBirth: Locator;
+  readonly checkboxNoBSN: Locator;
   readonly buttonNext: Locator;
 
   constructor(protected readonly page: Page) {
@@ -33,7 +34,9 @@ export class CreatePersonPage {
     this.textfieldYearOfBirth = this.page.getByRole("textbox", {
       name: "jjjj",
     });
-
+    this.checkboxNoBSN = this.page.getByRole("checkbox", {
+      name: "Ik bevestig dat deze persoon geen BSN heeft.",
+    });
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
   }
 
