@@ -47,5 +47,4 @@ export class PoliticalGroupPage {
       .getByRole("textbox", { name: "Geregistreerde aanduiding" })
       .fill(registeredDesignation);
   }
-
 }

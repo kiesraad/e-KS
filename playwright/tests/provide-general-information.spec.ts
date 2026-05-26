@@ -1,10 +1,10 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
+import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
 import { ListDesignationPage } from "./pages/listDesignationPage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
+import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 import { randomName } from "./utils/random.ts";
@@ -23,7 +23,7 @@ test.describe("provide general information for political group", async () => {
     await politicalGroupPage.selectMoreThan16Seats.check();
     await politicalGroupPage.textfieldRegisteredDesignation.fill("TP");
     await politicalGroupPage.buttonSaveAndNext.click();
-    await page.waitForURL("/political-group/authorised-agents");
+    await page.waitForURL("/political-group/name-authorisation");
 
     await page.goto("/political-group/information");
     await expect(politicalGroupPage.selectMoreThan16Seats).toBeChecked();
@@ -33,7 +33,7 @@ test.describe("provide general information for political group", async () => {
   });
 
   test("provide authorised agent", async ({ noExistingData: page }) => {
-    await page.goto("/political-group/authorised-agents");
+    await page.goto("/political-group/name-authorisation");
 
     const authorisation: NameAuthorisation = {
       initials: "K",

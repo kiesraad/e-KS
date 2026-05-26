@@ -102,7 +102,7 @@ impl AppStore {
         let data = self.data.read();
 
         match data.name_authorisations.get(&authorisation_id) {
-            Some(agent) => Ok(agent.clone()),
+            Some(name_authorisation) => Ok(name_authorisation.clone()),
             None => Err(AppError::GenericNotFound),
         }
     }

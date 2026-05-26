@@ -13,16 +13,16 @@ mod update;
 mod view;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/political-group/authorised-agents", rejection(AppError))]
+#[typed_path("/political-group/name-authorisation", rejection(AppError))]
 pub struct NameAuthorisationsPath;
 
 #[derive(TypedPath)]
-#[typed_path("/political-group/authorised-agents/create", rejection(AppError))]
+#[typed_path("/political-group/name-authorisation/create", rejection(AppError))]
 pub struct NameAuthorisationCreatePath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/political-group/authorised-agents/{authorisation_id}/update",
+    "/political-group/name-authorisation/{authorisation_id}/update",
     rejection(AppError)
 )]
 pub struct NameAuthorisationUpdatePath {
@@ -31,7 +31,7 @@ pub struct NameAuthorisationUpdatePath {
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
-    "/political-group/authorised-agents/{authorisation_id}/delete",
+    "/political-group/name-authorisation/{authorisation_id}/delete",
     rejection(AppError)
 )]
 pub struct NameAuthorisationDeletePath {
@@ -82,19 +82,19 @@ mod tests {
 
         assert_eq!(
             NameAuthorisation::list_path().to_string(),
-            "/political-group/authorised-agents"
+            "/political-group/name-authorisation"
         );
         assert_eq!(
             NameAuthorisation::create_path().to_string(),
-            "/political-group/authorised-agents/create"
+            "/political-group/name-authorisation/create"
         );
         assert_eq!(
             agent.update_path().to_string(),
-            format!("/political-group/authorised-agents/{}/update", agent.id)
+            format!("/political-group/name-authorisation/{}/update", agent.id)
         );
         assert_eq!(
             agent.delete_path().to_string(),
-            format!("/political-group/authorised-agents/{}/delete", agent.id)
+            format!("/political-group/name-authorisation/{}/delete", agent.id)
         );
     }
 

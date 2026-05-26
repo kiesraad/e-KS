@@ -1,9 +1,9 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
-import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { CreatePersonPage } from "./pages/createPersonPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
+import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
 

@@ -60,7 +60,7 @@ mod tests {
         let app =
             Router::new()
                 .route(
-                    "/political-group/authorised-agents/{authorisation_id}",
+                    "/political-group/name-authorisation/{authorisation_id}",
                     get(|name_auth: NameAuthorisation| async move {
                         name_auth.name.last_name.to_string()
                     }),
@@ -69,7 +69,7 @@ mod tests {
 
         let mut request = Request::builder()
             .uri(format!(
-                "/political-group/authorised-agents/{}",
+                "/political-group/name-authorisation/{}",
                 name_auth.id
             ))
             .body(Body::empty())
