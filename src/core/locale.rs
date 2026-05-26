@@ -65,3 +65,30 @@ impl std::fmt::Display for Locale {
         write!(f, "{}", self.as_str())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use crate::Locale;
+
+    #[test]
+    fn converts_to_language_codes() {
+        assert_eq!(Locale::En.as_str(), "en");
+        assert_eq!(Locale::Nl.as_str(), "nl");
+    }
+
+    #[test]
+    fn resolves_from_language_code_variants() {
+        assert_eq!(Locale::from_language_code("EN"), Some(Locale::En));
+        assert_eq!(Locale::from_language_code("nl-BE"), Some(Locale::Nl));
+        assert_eq!(Locale::from_language_code("fr"), None);
+    }
+
+    #[test]
+    fn resolves_from_accept_language_header() {
+        let header = "nl-NL,nl;q=0.8,en;q=0.5";
+        assert_eq!(Locale::from_accept_language(header), Some(Locale::Nl));
+
+        let header = "fr-CA,fr;q=0.8,en;q=0.5";
+        assert_eq!(Locale::from_accept_language(header), None);
+    }
+}
