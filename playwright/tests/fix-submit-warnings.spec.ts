@@ -1,7 +1,7 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import type { AuthorisedAgent } from "./models/authorisedAgent.ts";
-import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage.ts";
+import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
+import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { CreatePersonPage } from "./pages/createPersonPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
@@ -20,15 +20,16 @@ test.describe("fix submit warnings", async () => {
     await page.goto("/submit");
     await expect(submitPage.linkRegisteredDesignation).not.toBeVisible();
 
-    await submitPage.linkAuthorisedAgent.click();
-    const authorisedAgentsPage = new AuthorisedAgentsPage(page);
-    const agent: AuthorisedAgent = {
+    await submitPage.linkNoLegalName.click();
+    const nameAuthorisationPage = new NameAuthorisationPage(page);
+    const authorisation: NameAuthorisation = {
       initials: "K",
       lastName: "Jansen",
+      legalName: "Kiesraad Demo Partij",
     };
-    await authorisedAgentsPage.addAuthorisedAgent(agent);
+    await nameAuthorisationPage.addNameAuthorisation(authorisation);
     await page.goto("/submit");
-    await expect(submitPage.linkAuthorisedAgent).not.toBeVisible();
+    await expect(submitPage.linkNoLegalName).not.toBeVisible();
   });
 
   test("candidates", async ({ login: page }) => {

@@ -1,7 +1,8 @@
 import type { Locator, Page } from "@playwright/test";
-import type { AuthorisedAgent } from "../models/authorisedAgent";
+import type { NameAuthorisation } from "../models/nameAuthorisation";
 
-export class AuthorisedAgentsPage {
+export class NameAuthorisationPage {
+  readonly textfieldLegalName: Locator;
   readonly textfieldInitials: Locator;
   readonly textfieldLastNamePrefix: Locator;
   readonly textfieldLastName: Locator;
@@ -11,19 +12,20 @@ export class AuthorisedAgentsPage {
   readonly buttonSave: Locator;
 
   constructor(protected readonly page: Page) {
+    this.textfieldLegalName = this.page.getByLabel("Volledige statutaire naam");
     this.textfieldInitials = this.page.getByLabel("Voorletters");
     this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
     this.textfieldLastName = this.page.getByLabel("Achternaam");
     this.buttonDelete = this.page.getByRole("link", {
-      name: "Gemachtigde verwijderen",
+      name: "Machtiging verwijderen",
       exact: true,
     });
     this.buttonConfirmDelete = this.page.getByRole("button", {
-      name: "Gemachtigde verwijderen",
+      name: "Machtiging verwijderen",
       exact: true,
     });
     this.buttonAdd = this.page.getByRole("link", {
-      name: "Gemachtigde toevoegen",
+      name: "Statutaire naam toevoegen",
     });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
   }
@@ -48,23 +50,25 @@ export class AuthorisedAgentsPage {
     }
   }
 
-  async addAuthorisedAgent(authorisedAgent: AuthorisedAgent) {
+  async addNameAuthorisation(nameAuthorisation: NameAuthorisation) {
     await this.buttonAdd.click();
-    await this.textfieldInitials.fill(authorisedAgent.initials);
+    await this.textfieldLegalName.fill(nameAuthorisation.legalName);
+    await this.textfieldInitials.fill(nameAuthorisation.initials);
     await this.textfieldLastNamePrefix.fill(
-      authorisedAgent.lastNamePrefix ?? "",
+      nameAuthorisation.lastNamePrefix ?? "",
     );
-    await this.textfieldLastName.fill(authorisedAgent.lastName);
+    await this.textfieldLastName.fill(nameAuthorisation.lastName);
     await this.buttonSave.click();
   }
 
-  async editAuthorisedAgent(authorisedAgents: AuthorisedAgent[]) {
-    for (const authorisedAgent of authorisedAgents) {
-      await this.textfieldInitials.fill(authorisedAgent.initials);
+  async editNameAuthorisation(nameAuthorisations: NameAuthorisation[]) {
+    for (const nameAuthorisation of nameAuthorisations) {
+      await this.textfieldLegalName.fill(nameAuthorisation.legalName);
+      await this.textfieldInitials.fill(nameAuthorisation.initials);
       await this.textfieldLastNamePrefix.fill(
-        authorisedAgent.lastNamePrefix ?? "",
+        nameAuthorisation.lastNamePrefix ?? "",
       );
-      await this.textfieldLastName.fill(authorisedAgent.lastName);
+      await this.textfieldLastName.fill(nameAuthorisation.lastName);
       await this.buttonSave.click();
     }
   }

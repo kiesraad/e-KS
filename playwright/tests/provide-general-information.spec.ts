@@ -1,8 +1,9 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
-import type { AuthorisedAgent } from "./models/authorisedAgent.ts";
+import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
-import { AuthorisedAgentsPage } from "./pages/authorisedAgentsPage.ts";
+import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
+import { ListDesignationPage } from "./pages/listDesignationPage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
@@ -12,41 +13,43 @@ test.describe("provide general information for political group", async () => {
   test("provide general information for political group", async ({
     noExistingData: page,
   }) => {
-    const politicalGroupPage = new PoliticalGroupPage(page);
+    const listDesignationPage = new ListDesignationPage(page);
     await page.goto("/political-group");
+    await listDesignationPage.selectStandalone.check();
+    await listDesignationPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/information");
+
+    const politicalGroupPage = new PoliticalGroupPage(page);
     await politicalGroupPage.selectMoreThan16Seats.check();
     await politicalGroupPage.textfieldRegisteredDesignation.fill("TP");
-    await politicalGroupPage.textfieldStatutoryName.fill("De Testpartij");
-    await politicalGroupPage.buttonSaveandNext.click();
+    await politicalGroupPage.buttonSaveAndNext.click();
     await page.waitForURL("/political-group/authorised-agents");
-    await page.goto("/political-group");
 
+    await page.goto("/political-group/information");
     await expect(politicalGroupPage.selectMoreThan16Seats).toBeChecked();
     await expect(politicalGroupPage.textfieldRegisteredDesignation).toHaveValue(
       "TP",
-    );
-    await expect(politicalGroupPage.textfieldStatutoryName).toHaveValue(
-      "De Testpartij",
     );
   });
 
   test("provide authorised agent", async ({ noExistingData: page }) => {
     await page.goto("/political-group/authorised-agents");
 
-    const agent: AuthorisedAgent = {
+    const authorisation: NameAuthorisation = {
       initials: "K",
       lastNamePrefix: "van",
       lastName: `Jansen ${randomName()}`,
+      legalName: "Kiesraad Demo Partij",
     };
-    const authorisedAgentsPage = new AuthorisedAgentsPage(page);
-    await authorisedAgentsPage.addAuthorisedAgent(agent);
+    const nameAuthorisationPage = new NameAuthorisationPage(page);
+    await nameAuthorisationPage.addNameAuthorisation(authorisation);
 
-    const agentLastName = agent.lastNamePrefix
-      ? `${agent.lastNamePrefix} ${agent.lastName}`
-      : agent.lastName;
+    const agentLastName = authorisation.lastNamePrefix
+      ? `${authorisation.lastNamePrefix} ${authorisation.lastName}`
+      : authorisation.lastName;
 
     await expect(
-      authorisedAgentsPage.getAgentLocator(agentLastName),
+      nameAuthorisationPage.getAgentLocator(agentLastName),
     ).toBeVisible();
   });
 

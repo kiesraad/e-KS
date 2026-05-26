@@ -40,7 +40,9 @@ impl PotentialProblems {
 
     pub fn general_fix_path(&self) -> String {
         match self {
-            PotentialProblems::NoAuthorisedAgent => NameAuthorisation::list_path().to_string(),
+            PotentialProblems::NoAuthorisedAgent | PotentialProblems::NoLegalName => {
+                NameAuthorisation::list_path().to_string()
+            }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
             _ => PoliticalGroup::update_path().to_string(),
