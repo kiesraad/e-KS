@@ -13,21 +13,23 @@
     </label>
     {% for error in form|error("name.initials") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
-  <p class="form-field">
-    <label for="first_name">
-      {{ "person.fields.first_name"|trans }}
-      <span class="hint">({{ "person.hints.optional"|trans }})</span>
-    </label>
-    <input type="text"
-           name="first_name"
-           id="first_name"
-           value="{{ form.data.name.first_name }}" />
-    {% for error in form|error("name.first_name") %}
-      <span class="error">{{ error }}</span>
-    {% else %}
-      <span class="hint">{{ "person.hints.first_name"|trans }}</span>
-    {% endfor %}
-  </p>
+  {% if let Some(first_name_val) = form.data.name.first_name_opt() %}
+    <p class="form-field">
+      <label for="first_name">
+        {{ "person.fields.first_name"|trans }}
+        <span class="hint">({{ "person.hints.optional"|trans }})</span>
+      </label>
+      <input type="text"
+             name="first_name"
+             id="first_name"
+             value="{{ first_name_val }}" />
+      {% for error in form|error("name.first_name") %}
+        <span class="error">{{ error }}</span>
+      {% else %}
+        <span class="hint">{{ "person.hints.first_name"|trans }}</span>
+      {% endfor %}
+    </p>
+  {% endif %}
 </div>
 <div class="form-row">
   <p class="form-field form-field-sm">

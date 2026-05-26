@@ -9,7 +9,8 @@ use crate::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
         DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
         HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
-        Locality, PlaceOfResidence, PostalCode, PreviousElectionResults, StreetName,
+        Locality, MinimalNameForm, PlaceOfResidence, PostalCode, PreviousElectionResults,
+        StreetName,
     },
     list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
@@ -83,6 +84,18 @@ fn sample_full_name_form(
 ) -> FullNameForm {
     FullNameForm {
         first_name: first_name.to_string(),
+        last_name: last_name.to_string(),
+        last_name_prefix: last_name_prefix.to_string(),
+        initials: initials.to_string(),
+    }
+}
+
+fn sample_minimal_name_form(
+    last_name: &str,
+    last_name_prefix: &str,
+    initials: &str,
+) -> MinimalNameForm {
+    MinimalNameForm {
         last_name: last_name.to_string(),
         last_name_prefix: last_name_prefix.to_string(),
         initials: initials.to_string(),
@@ -217,7 +230,7 @@ pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
 
 pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
     AuthorisedAgentForm {
-        name: sample_full_name_form("Henk", "Jansen", "de", "A.B."),
+        name: sample_minimal_name_form("Jansen", "de", "A.B."),
         legal_name: "Jansen Demo Partij".to_string(),
         csrf_token: csrf_token.clone(),
     }
@@ -240,7 +253,7 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
-        name: crate::list_submitters::SubmitterNameForm {
+        name: crate::common::MinimalNameForm {
             last_name: "Bos".to_string(),
             last_name_prefix: String::new(),
             initials: "E.F.".to_string(),
