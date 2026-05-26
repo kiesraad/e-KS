@@ -33,9 +33,9 @@ pub async fn create_substitute_submitter_submit(
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
+    match form.validate_create_with_checks(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
-            SubstituteSubmitterCreateTemplate { form: form_data },
+            SubstituteSubmitterCreateTemplate { form: *form_data },
             context,
         )
         .into_response()),
