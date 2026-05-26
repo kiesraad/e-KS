@@ -1,8 +1,9 @@
-use axum::extract::{FromRequestParts, Path};
+use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppStore, Locale,
+    AppError, Locale,
+    app::request_extractor,
     persons::{Person, PersonId},
     trans,
 };
@@ -13,29 +14,15 @@ struct PersonPathParams {
     person_id: PersonId,
 }
 
-impl<S> FromRequestParts<S> for Person
-where
-    S: Clone + Send + Sync + 'static,
-    AppStore: FromRequestParts<S, Rejection = AppError>,
-{
-    type Rejection = AppError;
+request_extractor!(Person, |store, parts, state| {
+    let locale = Locale::from_request_parts(parts, state).await?;
+    let Path(PersonPathParams { person_id }) =
+        Path::<PersonPathParams>::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let locale = Locale::from_request_parts(parts, state).await?;
-        let Path(PersonPathParams { person_id }) =
-            Path::<PersonPathParams>::from_request_parts(parts, state).await?;
-
-        let person = store
-            .get_person(person_id)
-            .map_err(|_| AppError::NotFound(trans!("person.not_found", locale, person_id)))?;
-
-        Ok(person)
-    }
-}
+    store
+        .get_person(person_id)
+        .map_err(|_| AppError::NotFound(trans!("person.not_found", locale, person_id)))
+});
 
 #[cfg(test)]
 mod tests {

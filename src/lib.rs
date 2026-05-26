@@ -38,7 +38,10 @@
 //!   rendered from.
 //!
 //! **Directory layout (high level)**
-//! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc).
+//! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc),
+//!   plus the per-stream [`AppStoreData`] projection (`app/store/`), shared HTTP
+//!   infrastructure that needs [`AppState`] (`app/middleware/`: health, proxy,
+//!   eks_key), and the HTML error-page renderer.
 //! - `src/auth/`: authentication, sessions, and session extractors (see [`Session`], [`SessionStore`]).
 //! - `src/core/`: shared configuration, logging, server setup, and core helpers (see [`Config`], [`logging`], [`server`]).
 //! - `src/store/`: generic event store, persistence, and registry logic (see [`AppStore`]).
@@ -74,10 +77,16 @@ pub mod utils;
 pub mod fixtures;
 
 pub use app::{
-    AppEvent, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
-    list_designation, list_submitters, name_authorisations, persons, political_groups, submit,
-    substitute_list_submitters,
+    AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
+    eks_key_middleware, health_router, list_designation, list_submitters, name_authorisations,
+    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
 };
+
+#[cfg(any(
+    all(feature = "dev-features", not(feature = "embed-bag")),
+    not(feature = "memory-serve")
+))]
+pub use app::proxy_handler;
 pub use auth::{
     derive_id::IdDeriver,
     session::{Session, session_idle_timeout},
@@ -89,7 +98,7 @@ pub use core::{
     Province, TlsConfig, TypstRenderer, WaterCouncil, constants, get_env, http_trace, logging,
     server, translate,
 };
-pub use error::{AppError, AppResponse, ErrorResponse, render_error_pages};
+pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
 pub use utils::{

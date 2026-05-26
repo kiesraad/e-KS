@@ -1,8 +1,8 @@
-use axum::extract::{FromRequestParts, Path};
+use axum::extract::Path;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppStore,
+    app::request_extractor,
     name_authorisations::{NameAuthorisation, NameAuthorisationId},
 };
 
@@ -11,24 +11,12 @@ struct NameAuthorisationPathParams {
     authorisation_id: NameAuthorisationId,
 }
 
-impl<S> FromRequestParts<S> for NameAuthorisation
-where
-    S: Clone + Send + Sync + 'static,
-    AppStore: FromRequestParts<S, Rejection = AppError>,
-{
-    type Rejection = AppError;
+request_extractor!(NameAuthorisation, |store, parts, state| {
+    let Path(NameAuthorisationPathParams { authorisation_id }) =
+        Path::<NameAuthorisationPathParams>::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let Path(NameAuthorisationPathParams { authorisation_id }) =
-            Path::<NameAuthorisationPathParams>::from_request_parts(parts, state).await?;
-
-        store.get_name_authorisation(authorisation_id)
-    }
-}
+    store.get_name_authorisation(authorisation_id)
+});
 
 #[cfg(test)]
 mod tests {

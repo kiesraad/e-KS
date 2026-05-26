@@ -10,9 +10,9 @@ use axum::{
 use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
-    AppState, audit_log, candidate_lists, candidates, common, http_trace, list_designation,
-    list_submitters, name_authorisations, persons, political_groups, render_error_pages,
-    session_middleware, store_middleware, submit, substitute_list_submitters,
+    AppState, audit_log, candidate_lists, candidates, common, eks_key_middleware, health_router,
+    http_trace, list_designation, list_submitters, name_authorisations, persons, political_groups,
+    render_error_pages, session_middleware, store_middleware, submit, substitute_list_submitters,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -46,14 +46,8 @@ pub fn create(state: AppState) -> Router<AppState> {
         let bag_service_url = crate::get_env("BAG_SERVICE_URL")
             .expect("BAG_SERVICE_URL must be set in dev-features mode");
         Router::new()
-            .route(
-                "/lookup",
-                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
-            )
-            .route(
-                "/suggest",
-                crate::utils::proxy::proxy_handler(&bag_service_url, vec![]),
-            )
+            .route("/lookup", crate::proxy_handler(&bag_service_url, vec![]))
+            .route("/suggest", crate::proxy_handler(&bag_service_url, vec![]))
     };
 
     let app_router = app_router
@@ -88,7 +82,7 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     let router = router.merge(auth_service::router());
 
-    let router = router.merge(crate::utils::health::health_router());
+    let router = router.merge(health_router());
 
     let router = router
         .layer(SetResponseHeaderLayer::if_not_present(
@@ -130,7 +124,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(not(feature = "memory-serve"))]
     let router = router.nest(
         "/static",
-        Router::new().fallback(crate::utils::proxy::proxy_handler(
+        Router::new().fallback(crate::proxy_handler(
             "http://localhost:8888",
             vec![
                 (index_js, "/index.js".to_string()),
@@ -141,7 +135,7 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     router.layer(middleware::from_fn_with_state(
         state.clone(),
-        crate::utils::eks_key::eks_key_middleware,
+        eks_key_middleware,
     ))
 }
 

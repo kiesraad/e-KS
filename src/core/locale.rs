@@ -40,7 +40,7 @@ impl Locale {
         }
     }
 
-    fn from_language_code(code: &str) -> Option<Self> {
+    pub(crate) fn from_language_code(code: &str) -> Option<Self> {
         let code = code.to_ascii_lowercase();
 
         match code.as_str() {
@@ -68,13 +68,7 @@ impl std::fmt::Display for Locale {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-    use crate::Session;
-    use axum::{
-        body::Body,
-        extract::FromRequestParts,
-        http::{Request, header},
-    };
+    use crate::Locale;
 
     #[test]
     fn converts_to_language_codes() {
@@ -96,36 +90,5 @@ mod tests {
 
         let header = "fr-CA,fr;q=0.8,en;q=0.5";
         assert_eq!(Locale::from_accept_language(header), None);
-    }
-
-    #[tokio::test]
-    async fn request_locale_prefers_session() {
-        let mut request = Request::builder()
-            .uri("/")
-            .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
-            .body(Body::empty())
-            .unwrap();
-        request
-            .extensions_mut()
-            .insert(Session::new_test_with_locale(Locale::En));
-        let (mut parts, _body) = request.into_parts();
-
-        let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
-
-        assert_eq!(locale, Locale::En);
-    }
-
-    #[tokio::test]
-    async fn request_locale_falls_back_to_accept_language() {
-        let request = Request::builder()
-            .uri("/")
-            .header(header::ACCEPT_LANGUAGE, "nl-NL,nl;q=0.8")
-            .body(Body::empty())
-            .unwrap();
-        let (mut parts, _body) = request.into_parts();
-
-        let locale = Locale::from_request_parts(&mut parts, &()).await.unwrap();
-
-        assert_eq!(locale, Locale::Nl);
     }
 }
