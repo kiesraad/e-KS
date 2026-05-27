@@ -10,8 +10,8 @@ use axum::{
 use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
-    AppState, audit_log, authorised_agents, candidate_lists, candidates, common,
-    eks_key_middleware, health_router, http_trace, list_submitters, persons, political_groups,
+    AppState, audit_log, candidate_lists, candidates, common, eks_key_middleware, health_router,
+    http_trace, list_designation, list_submitters, name_authorisations, persons, political_groups,
     render_error_pages, session_middleware, store_middleware, submit, substitute_list_submitters,
 };
 
@@ -20,8 +20,9 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(audit_log::router())
         .merge(common::router())
         .merge(persons::router())
+        .merge(list_designation::router())
         .merge(political_groups::router())
-        .merge(authorised_agents::router())
+        .merge(name_authorisations::router())
         .merge(list_submitters::router())
         .merge(substitute_list_submitters::router())
         .merge(submit::router())

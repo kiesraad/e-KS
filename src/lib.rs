@@ -77,9 +77,9 @@ pub mod utils;
 pub mod fixtures;
 
 pub use app::{
-    AppEvent, AppStoreData, Context, ErrorResponse, audit_log, authorised_agents, candidate_lists,
-    candidates, common, eks_key_middleware, health_router, list_submitters, persons,
-    political_groups, render_error_pages, submit, substitute_list_submitters,
+    AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
+    eks_key_middleware, health_router, list_designation, list_submitters, name_authorisations,
+    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
 };
 
 #[cfg(any(

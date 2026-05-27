@@ -1,32 +1,5 @@
 <div>
   <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-  <h3>{{ "political_group.general_information"|trans }}</h3>
-  <div class="form-row">
-    <fieldset class="checklist">
-      <legend>{{ "political_group.list_type"|trans }}</legend>
-      <div class="checkbox">
-        <input type="radio" checked id="registered_name" disabled />
-        <label for="registered_name">
-          {{ "political_group.type.registered_name"|trans }}
-          <span class="hint">{{ "political_group.type.registered_name_hint"|trans }}</span>
-        </label>
-      </div>
-      <div class="checkbox">
-        <input type="radio" id="name_combination" disabled />
-        <label for="name_combination">
-          {{ "political_group.type.name_combination"|trans }}
-          <span class="hint">{{ "political_group.type.name_combination_hint"|trans }}</span>
-        </label>
-      </div>
-      <div class="checkbox">
-        <input type="radio" id="blank_name" disabled />
-        <label for="blank_name">
-          {{ "political_group.type.blank_name"|trans }}
-          <span class="hint">{{ "political_group.type.blank_name_hint"|trans }}</span>
-        </label>
-      </div>
-    </fieldset>
-  </div>
   <h3>{{ "political_group.title"|trans }}</h3>
   <fieldset>
     <div class="form-row">
@@ -62,32 +35,28 @@
           </div>
         </div>
         <span class="alert alert-info">{{ "political_group.type.previous_election_results_hint"|trans }}</span>
-      </div>
-    </fieldset>
-  </div>
-  <div class="form-row">
-    <div class="form-field {% if form.data.display_name.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
-      <label for="display_name">{{ "political_group.display_name"|trans }}</label>
-      <input type="text"
-             name="display_name"
-             value="{{ form.data.display_name }}"
-             id="display_name" />
-      {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
-      <span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>
+      </fieldset>
     </div>
-  </div>
-  <div class="form-row mt-md">
+    <div class="form-row">
+      <div class="form-field {% if form.data.display_name.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
+        <label for="display_name">{{ "political_group.display_name"|trans }}</label>
+        <input type="text"
+               name="display_name"
+               value="{{ form.data.display_name }}"
+               id="display_name" />
+        {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
+        <span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>
+      </div>
+    </div>
+    {# <div class="form-row mt-md">
     <div class="form-field {% if form.data.legal_name.is_empty() && steps.basic_state != "empty" %}warning{% endif %}">
       <label for="legal_name">{{ "political_group.legal_name"|trans }}</label>
-      <input type="text"
-             name="legal_name"
-             value="{{ form.data.legal_name }}"
-             id="legal_name" />
+      <input type="text" name="legal_name" value="{{ form.data.legal_name }}" id="legal_name" />
       {% for error in form|error("legal_name") %}<span class="error">{{ error }}</span>{% endfor %}
       <span class="hint">{{ "political_group.type.legal_name_hint"|trans }}</span>
     </div>
-  </div>
-</fieldset>
-{% set submit_label = "action.save_and_continue"|trans %}
-{% include "common/components/submit.html" %}
+  </div> #}
+  </fieldset>
+  {% set submit_label = "action.save_and_continue"|trans %}
+  {% include "common/components/submit.html" %}
 </div>

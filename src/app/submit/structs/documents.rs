@@ -1,7 +1,7 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::{PreviousElectionResults, Problematic},
+    common::Problematic,
     core::{ModelLocale, Pdf, ZipResponseWriter},
     submit::structs::{
         eml210::Eml210,
@@ -106,12 +106,6 @@ impl DocumentData {
                 "Missing registered designation from political group",
             ))?
             .to_string();
-        // Missing statutory name does not prevent export
-        let legal_name = group
-            .legal_name
-            .as_ref()
-            .map(|name| name.to_string())
-            .unwrap_or_default();
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() || !list_submitter.is_all_good() {
@@ -125,11 +119,13 @@ impl DocumentData {
             .map(TypstPerson::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let authorised_agents = store.get_authorised_agents();
-        if authorised_agents.len() != 1 {
+        let name_authorisations = store.get_name_authorisations();
+        if name_authorisations.len() != 1 {
             return Err(AppError::IncompleteData("Expected 1 authorised agent"));
         }
-        let authorised_agent = (&authorised_agents[0]).into();
+        // Missing statutory name does not prevent export
+        let legal_name = name_authorisations[0].legal_name.to_string();
+        let authorised_agent = (&name_authorisations[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
         let folder_name = format!(
@@ -152,9 +148,7 @@ impl DocumentData {
             ordered_candidates,
             designation,
             legal_name,
-            previously_seated: group
-                .previous_election_results
-                .is_some_and(|r| r != PreviousElectionResults::ZeroSeats),
+            previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,
             authorised_agent,

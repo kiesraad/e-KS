@@ -1,26 +1,27 @@
 actions:
-  delete_authorised_agent: Gemachtigde verwijderen
+  delete_name_authorisation: Machtiging verwijderen
   delete_substitute_submitter: Vervanger verwijderen
-add_authorised_agent: Gemachtigde toevoegen
+add_legal_name: Statutaire naam toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
 add_substitute_submitter: Vervanger voor het herstel van verzuimen
 authorised_agent: Gemachtigde
 authorised_agent_data: Gegevens (plv.) gemachtigde
 authorised_agent_info: Bij het centraal stembureau is een gemachtigde of plaatsvervangend gemachtigde voor de aanduiding geregistreerd. Deze persoon geeft de lijstinleveraar toestemming om de naam van de partij boven de kandidatenlijst te plaatsen. Dit gebeurt met formulier H 3-1 of H 3-2.
 basic_information_political_group: Gegevens politieke groepering
-delete_authorised_agent_warning_text: Weet u zeker dat u deze gemachtigde wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
+delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor deze statutaire naam wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor het herstel van verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
-edit_authorised_agent: Gegevens gemachtigde aanpassen
+edit_legal_name: Machtiging statutaire naam aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
 general_information: Algemeen
 legal_name: Volledige statutaire naam
+legal_name_data: Machtiging statutaire naam
 list_submitter: Lijstinleveraar
 list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
 list_submitter_data: Gegevens lijstinleveraar
-list_type: "Type lijstaanduiding:"
-no_authorised_agents: Geen gemachtigden
+list_type: Type lijstaanduiding
+no_legal_names: Geen statutaire naam
 no_list_submitter: Geen lijstinleveraar
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen
 previous_election_results: "Bij de vorige {} had uw partij:"

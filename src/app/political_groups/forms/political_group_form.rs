@@ -3,7 +3,7 @@ use validate::Validate;
 
 use crate::{
     OptionStringExt, TokenValue,
-    common::{DisplayName, LegalName, PreviousElectionResults},
+    common::{DisplayName, PreviousElectionResults},
     political_groups::PoliticalGroup,
 };
 
@@ -13,8 +13,6 @@ use crate::{
 pub struct PoliticalGroupForm {
     #[validate(parse = "PreviousElectionResults", optional)]
     pub previous_election_results: String,
-    #[validate(parse = "LegalName", optional)]
-    pub legal_name: String,
     #[validate(parse = "DisplayName", optional)]
     pub display_name: String,
     #[validate(csrf)]
@@ -26,9 +24,8 @@ impl From<PoliticalGroup> for PoliticalGroupForm {
         PoliticalGroupForm {
             previous_election_results: value
                 .previous_election_results
-                .map(|b| b.to_string())
+                .map(|r| r.to_string())
                 .unwrap_or_default(),
-            legal_name: value.legal_name.to_string_or_default(),
             display_name: value.display_name.to_string_or_default(),
             csrf_token: Default::default(),
         }

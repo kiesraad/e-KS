@@ -20,7 +20,7 @@
           {% endfor %}
         </ul>
       </div>
-      {% for agent_pp in problems.general.authorised_agents %}
+      {% for agent_pp in problems.general.name_authorisations %}
         <div class="mb-md">
           <div class="mb-sm">{{ agent_pp.person.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
           <ul class="warnings">

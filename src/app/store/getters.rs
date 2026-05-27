@@ -1,8 +1,8 @@
 use crate::{
     AppError, AppStore, ElectionConfig,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
 };
@@ -46,10 +46,10 @@ impl AppStore {
         persons
     }
 
-    pub fn get_authorised_agents(&self) -> Vec<AuthorisedAgent> {
+    pub fn get_name_authorisations(&self) -> Vec<NameAuthorisation> {
         let data = self.data.read();
 
-        data.authorised_agents.values().cloned().collect()
+        data.name_authorisations.values().cloned().collect()
     }
 
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
@@ -95,14 +95,14 @@ impl AppStore {
         }
     }
 
-    pub fn get_authorised_agent(
+    pub fn get_name_authorisation(
         &self,
-        authorised_agent_id: AuthorisedAgentId,
-    ) -> Result<AuthorisedAgent, AppError> {
+        authorisation_id: NameAuthorisationId,
+    ) -> Result<NameAuthorisation, AppError> {
         let data = self.data.read();
 
-        match data.authorised_agents.get(&authorised_agent_id) {
-            Some(agent) => Ok(agent.clone()),
+        match data.name_authorisations.get(&authorisation_id) {
+            Some(name_authorisation) => Ok(name_authorisation.clone()),
             None => Err(AppError::GenericNotFound),
         }
     }

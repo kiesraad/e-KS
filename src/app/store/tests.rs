@@ -7,7 +7,7 @@ use crate::{
     },
     persons::{PersonId, Representative},
     store::{StoreData, StoreEvent},
-    test_utils::{sample_authorised_agent, sample_candidate_list, sample_person},
+    test_utils::{sample_candidate_list, sample_name_authorisation, sample_person},
 };
 use chrono::{Duration, Utc};
 
@@ -267,13 +267,13 @@ fn apply_update_candidate_list_order_replaces_candidates() {
 #[tokio::test]
 async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
     let store = AppStore::new_for_test();
-    let agent_id = crate::authorised_agents::AuthorisedAgentId::new();
-    let agent = sample_authorised_agent(agent_id);
+    let id = crate::name_authorisations::NameAuthorisationId::new();
+    let name_authorisation = sample_name_authorisation(id);
 
-    agent.create(&store).await?;
+    name_authorisation.create(&store).await?;
 
-    let loaded = store.get_authorised_agent(agent_id)?;
-    assert_eq!(loaded.id, agent.id);
+    let loaded = store.get_name_authorisation(id)?;
+    assert_eq!(loaded.id, name_authorisation.id);
 
     Ok(())
 }

@@ -1,26 +1,27 @@
 actions:
-  delete_authorised_agent: Delete authorised agent
+  delete_name_authorisation: Delete name authorisation
   delete_substitute_submitter: Delete substitute submitter
-add_authorised_agent: Add authorised agent
+add_legal_name: Add statutory name
 add_list_submitter: Add list submitter
 add_substitute_submitter: Add substitute submitter
 authorised_agent: Authorised agent
 authorised_agent_data: (Deputy) authorised agent data
 authorised_agent_info: An authorised representative or deputy representative for the party designation is registered with the central electoral committee. This person grants the person submitting the list permission to place the party name above the candidate list. This is done using form H 3-1 or H 3-2.
 basic_information_political_group: Information political group
-delete_authorised_agent_warning_text: Are you sure you want to delete this authorised agent? This action cannot be undone.
+delete_name_authorisation_warning_text: Are you sure you want to delete this Statutory name authorisation? This action cannot be undone.
 delete_substitute_submitter_warning_text: Are you sure you want to delete this substitute submitter? This action cannot be undone.
 display_name: Registered designation
-edit_authorised_agent: Edit authorised agent
+edit_legal_name: Edit statutory name authorisation
 edit_list_submitter: Edit list submitter
 edit_substitute_submitter: Edit substitute submitter
 general_information: General
 legal_name: Full statutory name
+legal_name_data: Statutory name authorisation
 list_submitter: List submitter
 list_submitter_address_info: This address will be used to send the notice of omissions
 list_submitter_data: List submitter data
-list_type: "Type list designation:"
-no_authorised_agents: No authorised agents
+list_type: List designation type
+no_legal_names: No statutory name
 no_list_submitter: No list submitter
 no_substitute_submitters: No substitute submitters
 previous_election_results: "In the previous {}, your party obtained:"

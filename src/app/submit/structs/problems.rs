@@ -2,10 +2,10 @@ use axum_extra::routing::TypedPath as _;
 
 use crate::{
     AppStore, QueryParamState,
-    authorised_agents::AuthorisedAgent,
     candidate_lists::{CandidateList, CandidateListSummary},
     common::{PotentialProblems, Problematic, Severity},
     list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     persons::Person,
     political_groups::PoliticalGroup,
 };
@@ -40,7 +40,9 @@ impl PotentialProblems {
 
     pub fn general_fix_path(&self) -> String {
         match self {
-            PotentialProblems::NoAuthorisedAgent => AuthorisedAgent::list_path().to_string(),
+            PotentialProblems::NoAuthorisedAgent | PotentialProblems::NoLegalName => {
+                NameAuthorisation::list_path().to_string()
+            }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
             _ => PoliticalGroup::update_path().to_string(),
@@ -92,11 +94,12 @@ impl Problems {
     fn find_general_problems(store: &AppStore) -> GeneralProblems {
         let mut general = store.get_political_group().get_problems();
 
-        let authorised_agents = store.get_authorised_agents();
-        if authorised_agents.is_empty() {
-            general.push(PotentialProblems::NoAuthorisedAgent);
+        let name_authorisations = store.get_name_authorisations();
+        if name_authorisations.is_empty() {
+            // TODO: consider list designation type
+            general.push(PotentialProblems::NoLegalName);
         }
-        let authorised_agents = authorised_agents
+        let name_authorisations = name_authorisations
             .into_iter()
             .map(PersonProblems::new)
             .filter(|pp| !pp.problems.is_empty())
@@ -129,7 +132,7 @@ impl Problems {
 
         GeneralProblems {
             general,
-            authorised_agents,
+            name_authorisations,
             list_submitter,
             substitute_submitters,
         }
@@ -155,7 +158,7 @@ impl Problems {
 #[derive(Debug)]
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
-    pub authorised_agents: Vec<PersonProblems<AuthorisedAgent>>,
+    pub name_authorisations: Vec<PersonProblems<NameAuthorisation>>,
     pub list_submitter: Option<PersonProblems<ListSubmitter>>,
     pub substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
 }
@@ -165,7 +168,7 @@ impl GeneralProblems {
         let mut result = Vec::new();
 
         result.extend(&self.general);
-        result.extend(self.authorised_agents.iter().flat_map(|aa| &aa.problems));
+        result.extend(self.name_authorisations.iter().flat_map(|na| &na.problems));
         result.extend(
             self.substitute_submitters
                 .iter()
@@ -211,7 +214,7 @@ mod tests {
     fn empty_general() -> GeneralProblems {
         GeneralProblems {
             general: Vec::new(),
-            authorised_agents: Vec::new(),
+            name_authorisations: Vec::new(),
             list_submitter: None,
             substitute_submitters: Vec::new(),
         }

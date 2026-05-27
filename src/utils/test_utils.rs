@@ -3,15 +3,17 @@ use http_body_util::BodyExt;
 
 use crate::{
     AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, TokenValue,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentForm, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
         DutchAddressForm, FirstName, FullName, FullNameForm, Gender, HouseNumber,
         HouseNumberAddition, Initials, InternationalAddressForm, LastName, LastNamePrefix,
-        LegalName, Locality, PlaceOfResidence, PostalCode, PreviousElectionResults, StreetName,
+        Locality, MinimalNameForm, PlaceOfResidence, PostalCode, PreviousElectionResults,
+        StreetName,
     },
+    list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterForm, ListSubmitterId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationForm, NameAuthorisationId},
     persons::{AddressForm, Person, PersonId, PersonalData, PersonalDataForm, RepresentativeForm},
     political_groups::{PoliticalGroup, PoliticalGroupForm},
 };
@@ -82,6 +84,18 @@ fn sample_full_name_form(
 ) -> FullNameForm {
     FullNameForm {
         first_name: first_name.to_string(),
+        last_name: last_name.to_string(),
+        last_name_prefix: last_name_prefix.to_string(),
+        initials: initials.to_string(),
+    }
+}
+
+fn sample_minimal_name_form(
+    last_name: &str,
+    last_name_prefix: &str,
+    initials: &str,
+) -> MinimalNameForm {
+    MinimalNameForm {
         last_name: last_name.to_string(),
         last_name_prefix: last_name_prefix.to_string(),
         initials: initials.to_string(),
@@ -196,30 +210,28 @@ pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm
 
 pub fn sample_political_group() -> PoliticalGroup {
     PoliticalGroup {
-        previous_election_results: Some(PreviousElectionResults::ZeroSeats),
-        legal_name: Some(
-            "Kiesraad Demo Partij"
-                .parse::<LegalName>()
-                .expect("legal name"),
-        ),
         display_name: Some(
             "Kiesraad Demo"
                 .parse::<DisplayName>()
                 .expect("display name"),
         ),
+        list_designation: Some(ListDesignation::Standalone),
+        previous_election_results: Some(PreviousElectionResults::ZeroSeats),
     }
 }
 
-pub fn sample_authorised_agent(id: AuthorisedAgentId) -> AuthorisedAgent {
-    AuthorisedAgent {
+pub fn sample_name_authorisation(id: NameAuthorisationId) -> NameAuthorisation {
+    NameAuthorisation {
         id,
         name: sample_full_name(Some("Henk"), "Jansen", Some("de"), "A.B."),
+        legal_name: "Kiesraad Demo Partij".parse().expect("legal name"),
     }
 }
 
-pub fn sample_authorised_agent_form(csrf_token: &TokenValue) -> AuthorisedAgentForm {
-    AuthorisedAgentForm {
-        name: sample_full_name_form("Henk", "Jansen", "de", "A.B."),
+pub fn sample_name_authorisation_form(csrf_token: &TokenValue) -> NameAuthorisationForm {
+    NameAuthorisationForm {
+        name: sample_minimal_name_form("Jansen", "de", "A.B."),
+        legal_name: "Kiesraad Demo Partij".to_string(),
         csrf_token: csrf_token.clone(),
     }
 }
@@ -241,7 +253,7 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
 
 pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
     ListSubmitterForm {
-        name: crate::list_submitters::SubmitterNameForm {
+        name: crate::common::MinimalNameForm {
             last_name: "Bos".to_string(),
             last_name_prefix: String::new(),
             initials: "E.F.".to_string(),
@@ -262,7 +274,6 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
 pub fn sample_political_group_form(csrf_token: &TokenValue) -> PoliticalGroupForm {
     PoliticalGroupForm {
         previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
-        legal_name: "Updated Legal Name".to_string(),
         display_name: "Updated Display Name".to_string(),
         csrf_token: csrf_token.clone(),
     }
@@ -285,7 +296,7 @@ pub async fn setup_documents_test_state(
     }
 
     if include_authorised_agent {
-        sample_authorised_agent(AuthorisedAgentId::new())
+        sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
     }

@@ -11,10 +11,10 @@ use std::collections::HashMap;
 
 use crate::{
     AppEvent,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
     list_submitters::ListSubmitter,
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
     store::{StoreData, StoreEvent},
@@ -26,7 +26,7 @@ pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,
     pub(crate) persons: HashMap<PersonId, Person>,
     pub(crate) candidate_lists: HashMap<CandidateListId, CandidateList>,
-    pub(crate) authorised_agents: HashMap<AuthorisedAgentId, AuthorisedAgent>,
+    pub(crate) name_authorisations: HashMap<NameAuthorisationId, NameAuthorisation>,
     pub(crate) list_submitter: ListSubmitter,
     pub(crate) substitute_submitters: Vec<ListSubmitter>,
 
@@ -68,9 +68,9 @@ impl StoreData for AppStoreData {
                 self.apply_candidate_list_event(event, event_time)
             }
 
-            event @ (AppEvent::CreateAuthorisedAgent(_)
-            | AppEvent::UpdateAuthorisedAgent(_)
-            | AppEvent::DeleteAuthorisedAgent(_)) => self.apply_authorised_agent_event(event),
+            event @ (AppEvent::CreateNameAuthorisation(_)
+            | AppEvent::UpdateNameAuthorisation(_)
+            | AppEvent::DeleteNameAuthorisation(_)) => self.apply_name_authorisation_event(event),
 
             event @ (AppEvent::UpdateListSubmitter(_)
             | AppEvent::CreateSubstituteSubmitter(_)
@@ -241,22 +241,26 @@ impl AppStoreData {
         }
     }
 
-    /// Apply an authorised-agent event. Routed here exclusively by [`Self::apply`].
-    fn apply_authorised_agent_event(&mut self, event: AppEvent) {
+    /// Apply a name-authorisation event. Routed here exclusively by [`Self::apply`].
+    fn apply_name_authorisation_event(&mut self, event: AppEvent) {
         match event {
-            AppEvent::CreateAuthorisedAgent(aa) => {
-                self.authorised_agents.insert(aa.id, aa);
+            AppEvent::CreateNameAuthorisation(aa) => {
+                self.name_authorisations.insert(aa.id, aa);
             }
-            AppEvent::UpdateAuthorisedAgent(aa) => {
+            AppEvent::UpdateNameAuthorisation(aa) => {
                 let aa_id = aa.id;
-                self.authorised_agents.entry(aa_id).and_modify(|existing| {
-                    *existing = aa;
-                });
+                self.name_authorisations
+                    .entry(aa_id)
+                    .and_modify(|existing| {
+                        *existing = aa;
+                    });
             }
-            AppEvent::DeleteAuthorisedAgent(aa_id) => {
-                self.authorised_agents.remove(&aa_id);
+            AppEvent::DeleteNameAuthorisation(aa_id) => {
+                self.name_authorisations.remove(&aa_id);
             }
-            _ => unreachable!("apply_authorised_agent_event received a non-agent event"),
+            _ => unreachable!(
+                "apply_name_authorisation_event received a non-name-authorisation event"
+            ),
         }
     }
 

@@ -4,7 +4,7 @@ export class SubmitPage {
   readonly linkDownloadNl: Locator;
   readonly linkDownloadFry: Locator;
   readonly linkRegisteredDesignation: Locator;
-  readonly linkAuthorisedAgent: Locator;
+  readonly linkNoLegalName: Locator;
   readonly linkBSN: Locator;
   readonly linkTooManyCandidates: Locator;
   readonly linkIncorrectDate: Locator;
@@ -19,8 +19,8 @@ export class SubmitPage {
     this.linkRegisteredDesignation = this.page.getByRole("link", {
       name: "Geregistreerde aanduiding ontbreekt",
     });
-    this.linkAuthorisedAgent = this.page.getByRole("link", {
-      name: "Geen gemachtigde toegevoegd",
+    this.linkNoLegalName = this.page.getByRole("link", {
+      name: "Statutaire naam ontbreekt",
     });
     this.linkBSN = this.page.getByRole("link", {
       name: "BSN ontbreekt",
