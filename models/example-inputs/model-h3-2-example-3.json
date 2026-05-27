@@ -1,15 +1,10 @@
 {
-  "election_name": "Tweede Kamer der Staten-Generaal 2027",
-  "election_type": "TK",
+  "election_name": "het algemeen bestuur van het waterschap Rijn en IJssel",
+  "election_type": "WS",
   "electoral_districts": {
-    "tag": "Some",
-    "districts": [
-      "Provincie Utrecht",
-      "Gemeente Rotterdam",
-      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
-    ]
+    "tag": "OnlyOne"
   },
-  "designation": "Een Andere Partij (EAP)",
+  "designation": "EAP/Test Partij (EAP/TP)",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -51,9 +46,14 @@
   },
   "name_authorisations": [
     {
-      "legal_name": "EEN ANDERE PARTIJ",
-      "last_name": "Altena",
-      "initials": "J.K.S."
+      "legal_name": "",
+      "last_name": "",
+      "initials": ""
+    },
+    {
+      "legal_name": "",
+      "last_name": "",
+      "initials": ""
     }
   ],
   "timestamp": {

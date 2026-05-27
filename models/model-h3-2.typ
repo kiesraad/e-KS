@@ -58,7 +58,7 @@
 #let submitter = input.list_submitter
 #trans(
   "Wij geven toestemming aan",
-  "Ik jou tastimming oan",
+  "Wy jouwe tastimming oan",
 )
 *#submitter.last_name, #submitter.initials*
 #trans[
@@ -80,25 +80,25 @@
   "Ondertekening door de gemachtigden",
   "Undertekening troch de lêsthawwer",
 )
-
-== #trans("Gemachtigde van politieke groepering 1", "Lêsthawwer fan politike groepearring 1")
-// TODO: add multiple authorised agents and political groups
-#let agent = input.authorised_agent
-#label_table(values: (
-  (trans("Datum", "Datum"), fill_in()),
-  (
-    trans(
-      "Naam van de gemachtigde van de politieke groepering",
-      "Namme fan de lêsthawwer fan de politike groepearring",
+#set heading(numbering: none)
+#for (i, name_authorisation) in input.name_authorisations.enumerate() [
+  == #trans("Gemachtigde van politieke groepering", "Lêsthawwer fan politike groepearring") #(i + 1)
+  #label_table(values: (
+    (trans("Datum", "Datum"), fill_in()),
+    (
+      trans(
+        "Naam van de gemachtigde van de politieke groepering",
+        "Namme fan de lêsthawwer fan de politike groepearring",
+      ),
+      (name_authorisation.last_name, name_authorisation.initials).filter(x => x != "").join(", "),
     ),
-    [#agent.last_name, #agent.initials],
-  ),
-  (
-    trans(
-      "Volledige statutaire naam van de politieke groepering",
-      "Folsleine statutêre namme fan de politike groepearring",
+    (
+      trans(
+        "Volledige statutaire naam van de politieke groepering",
+        "Folsleine statutêre namme fan de politike groepearring",
+      ),
+      [#name_authorisation.legal_name],
     ),
-    [#input.legal_name],
-  ),
-  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-))
+    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+  ))
+]
