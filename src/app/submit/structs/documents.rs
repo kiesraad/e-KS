@@ -65,7 +65,16 @@ impl DocumentData {
         }
     }
 
-    fn name_authorisations_with_placeholders(
+    /// Get a list of `TypstNameAuthorisation` with the right number of authorisations based on
+    /// the type of list designation:
+    ///
+    /// - Blank lists always have 0 name authorisations -> No H3-1 or H3-2
+    /// - Combined lists have at least 2 name authorisations -> H3-2
+    /// - Standalone lists always have 1 name authorisation -> H3-1
+    ///
+    /// If there are fewer name authorisations than required, we add fill-ins that show up as
+    /// empty spaces on the models.
+    fn name_authorisations_with_fill_ins(
         store: &AppStore,
     ) -> Result<Vec<TypstNameAuthorisation>, AppError> {
         let name_authorisations = store.get_name_authorisations();
@@ -76,9 +85,7 @@ impl DocumentData {
                 let mut auths: Vec<TypstNameAuthorisation> =
                     name_authorisations.iter().map(Into::into).collect();
 
-                // For list combinations, there should be at least 2 name authorisations
                 while auths.len() < 2 {
-                    // Add placeholders if necessary
                     auths.push(TypstNameAuthorisation::default());
                 }
 
@@ -91,7 +98,6 @@ impl DocumentData {
                     ));
                 }
 
-                // For standalone lists, there should always be 1 name authorisation
                 let auth = name_authorisations
                     .first()
                     .map(Into::into)
@@ -179,7 +185,7 @@ impl DocumentData {
             previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,
-            name_authorisations: Self::name_authorisations_with_placeholders(store)?,
+            name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
             event_id,
             event_hash: format_hash(&event_hash, true),
             nomination,
@@ -300,7 +306,7 @@ impl DocumentData {
             .await?;
 
         // Name authorisations are only empty for blank lists. Standalone lists and list combinations
-        // will contain placeholders if necessary.
+        // will contain fill-ins if necessary.
         if !self.name_authorisations.is_empty() {
             let h3 = H3::from(&self);
             let h3_path = self.zip_path(h3.filename());
