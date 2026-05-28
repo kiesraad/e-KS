@@ -23,15 +23,15 @@ pub struct Person {
     pub updated_at: UtcDateTime,
 }
 
-impl Problematic for Person {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for Person {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         [
             self.name.potential_problems(Severity::Error),
-            self.personal_data.get_problems(),
+            self.personal_data.get_problems(()),
             if self.lives_in_nl() {
                 self.address.potential_problems(Severity::Warn)
             } else if let Some(representative) = &self.representative {
-                representative.get_problems()
+                representative.get_problems(())
             } else {
                 vec![PotentialProblems::NoRepresentative]
             },
@@ -48,8 +48,8 @@ pub struct Representative {
     pub address: DutchAddress,
 }
 
-impl Problematic for Representative {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for Representative {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         [
             self.name.potential_problems(Severity::Warn),
             self.address.potential_problems(Severity::Warn),
@@ -135,7 +135,7 @@ impl Person {
             return "error";
         }
 
-        self.personal_data.highest_severity_class()
+        self.personal_data.highest_severity_class(())
     }
 
     pub fn is_representative_complete(&self) -> bool {
@@ -145,7 +145,7 @@ impl Person {
 
         self.representative
             .as_ref()
-            .map(|r| r.is_all_good())
+            .map(|r| r.is_all_good(()))
             .unwrap_or(false)
     }
 
@@ -407,7 +407,7 @@ mod tests {
 
     #[test]
     fn complete_person_has_no_problems() {
-        assert!(sample_person(PersonId::new()).get_problems().is_empty());
+        assert!(sample_person(PersonId::new()).get_problems(()).is_empty());
     }
 
     #[test]
@@ -416,7 +416,7 @@ mod tests {
         person.name = FullName::default();
         assert!(
             person
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::NoLastName(Severity::Error))
         );
     }
@@ -428,7 +428,7 @@ mod tests {
         person.representative = None;
         assert!(
             person
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::NoRepresentative)
         );
     }
@@ -438,7 +438,7 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         person.personal_data.country = Some("BE".parse().expect("country code"));
         person.representative = Some(Representative::default());
-        let problems = person.get_problems();
+        let problems = person.get_problems(());
         assert!(
             problems
                 .iter()
@@ -453,7 +453,7 @@ mod tests {
         person.representative = None;
         assert!(
             !person
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::NoRepresentative)
         );
     }
@@ -462,7 +462,7 @@ mod tests {
     fn dutch_person_with_incomplete_address_produces_warnings() {
         let mut person = sample_person(PersonId::new());
         person.address = DutchAddress::default();
-        let problems = person.get_problems();
+        let problems = person.get_problems(());
         assert!(problems.iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Warn,
@@ -490,7 +490,7 @@ mod tests {
         person.personal_data.country = Some("BE".parse().expect("country code"));
         person.address = DutchAddress::default();
         person.representative = Some(complete_representative());
-        let problems = person.get_problems();
+        let problems = person.get_problems(());
         assert!(!problems.contains(&PotentialProblems::IncompleteAddress {
             severity: Severity::Warn,
             problems: vec![EmptyAddressProblems::StreetName]
@@ -501,10 +501,10 @@ mod tests {
     #[test]
     fn representative_is_complete_requires_name_and_address() {
         let mut representative = complete_representative();
-        assert!(representative.is_all_good());
+        assert!(representative.is_all_good(()));
 
         representative.address = DutchAddress::default();
-        assert!(!representative.is_all_good());
+        assert!(!representative.is_all_good(()));
     }
 
     #[test]
@@ -537,16 +537,16 @@ mod tests {
         let mut dutch_person = sample_person(PersonId::new());
         dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert!(dutch_person.is_all_good());
+        assert!(dutch_person.is_all_good(()));
 
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
-        assert!(!non_dutch_person.is_all_good());
+        assert!(!non_dutch_person.is_all_good(()));
 
         non_dutch_person.representative = Some(complete_representative());
-        assert!(non_dutch_person.is_all_good());
+        assert!(non_dutch_person.is_all_good(()));
     }
 }

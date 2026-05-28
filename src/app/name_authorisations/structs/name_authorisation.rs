@@ -14,8 +14,8 @@ pub struct NameAuthorisation {
     pub legal_name: LegalName,
 }
 
-impl Problematic for NameAuthorisation {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for NameAuthorisation {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut problems = self.name.potential_problems(Severity::Warn);
         if self.legal_name.to_string().is_empty() {
             problems.push(PotentialProblems::NoLegalName);

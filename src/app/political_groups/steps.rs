@@ -57,7 +57,7 @@ impl PoliticalGroupSteps {
         if basic_info_empty {
             "empty"
         } else {
-            political_group.highest_severity_class()
+            political_group.highest_severity_class(())
         }
     }
 
@@ -71,7 +71,7 @@ impl PoliticalGroupSteps {
 
         match name_authorisations
             .iter()
-            .filter_map(Problematic::highest_severity)
+            .filter_map(|na| na.highest_severity(()))
             .max()
         {
             None => "ok",
@@ -90,8 +90,8 @@ impl PoliticalGroupSteps {
 
         match substitute_submitters
             .iter()
-            .filter_map(Problematic::highest_severity)
-            .chain(list_submitter.highest_severity())
+            .filter_map(|ss| ss.highest_severity(()))
+            .chain(list_submitter.highest_severity(()))
             .chain(substitute_submitters.is_empty().then_some(Severity::Info))
             .max()
         {

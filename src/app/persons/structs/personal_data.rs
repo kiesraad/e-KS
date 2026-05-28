@@ -19,8 +19,8 @@ pub struct PersonalData {
     pub country: Option<CountryCode>,
 }
 
-impl Problematic for PersonalData {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for PersonalData {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.bsn.is_none() {
@@ -78,14 +78,14 @@ mod tests {
 
     #[test]
     fn complete_personal_data_has_no_problems() {
-        assert!(complete_personal_data().get_problems().is_empty());
+        assert!(complete_personal_data().get_problems(()).is_empty());
     }
 
     #[test]
     fn missing_bsn_produces_warning() {
         let mut data = complete_personal_data();
         data.bsn = None;
-        assert!(data.get_problems().contains(&PotentialProblems::NoBsn));
+        assert!(data.get_problems(()).contains(&PotentialProblems::NoBsn));
     }
 
     #[test]
@@ -93,7 +93,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.date_of_birth = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoDateOfBirth)
         );
     }
@@ -103,7 +103,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.date_of_birth = Some(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap().into());
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::VeryOldDateOfBirth)
         );
     }
@@ -114,7 +114,7 @@ mod tests {
         data.date_of_birth = Some("01-01-2000".parse().unwrap());
         assert!(
             !data
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::VeryOldDateOfBirth)
         );
     }
@@ -124,7 +124,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.place_of_residence = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoPlaceOfResidence)
         );
     }
@@ -134,7 +134,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.country = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoCountryOfResidence)
         );
     }

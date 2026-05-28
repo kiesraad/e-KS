@@ -72,7 +72,7 @@ impl Problems {
                     .filter(|id| seen.insert(*id))
                     .filter_map(|id| store.get_person(*id).ok())
                     .filter_map(|person| {
-                        let problems = person.get_problems();
+                        let problems = person.get_problems(());
                         (!problems.is_empty()).then(|| PersonProblems { person, problems })
                     })
                     .collect()
@@ -80,7 +80,7 @@ impl Problems {
             lists: candidate_lists
                 .iter()
                 .filter_map(|candidate_list| {
-                    let mut problems = candidate_list.get_problems();
+                    let mut problems = candidate_list.get_problems(());
                     problems.extend(candidate_list.get_deviation_problems(store));
                     (!problems.is_empty()).then(|| ListProblems {
                         list: candidate_list.list.clone(),
@@ -92,7 +92,7 @@ impl Problems {
     }
 
     fn find_general_problems(store: &AppStore) -> GeneralProblems {
-        let mut general = store.get_political_group().get_problems();
+        let mut general = store.get_political_group().get_problems(());
 
         let name_authorisations = store.get_name_authorisations();
         if name_authorisations.is_empty() {
@@ -110,7 +110,7 @@ impl Problems {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let list_submitter_problems = list_submitter.get_problems();
+        let list_submitter_problems = list_submitter.get_problems(());
         let list_submitter = if !list_submitter_problems.is_empty() {
             Some(PersonProblems {
                 person: list_submitter,
@@ -188,9 +188,9 @@ pub struct PersonProblems<T> {
     pub problems: Vec<PotentialProblems>,
 }
 
-impl<T: Problematic> PersonProblems<T> {
+impl<T: Problematic<()>> PersonProblems<T> {
     fn new(person: T) -> Self {
-        let problems = person.get_problems();
+        let problems = person.get_problems(());
         PersonProblems { person, problems }
     }
 }

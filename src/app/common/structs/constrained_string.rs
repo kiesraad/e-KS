@@ -27,8 +27,8 @@ impl FromStr for ConstrainedString {
     }
 }
 
-impl Problematic for Option<LegalName> {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for Option<LegalName> {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         if self.is_empty_or_none() {
             vec![PotentialProblems::NoLegalName]
         } else {

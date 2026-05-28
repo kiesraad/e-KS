@@ -76,8 +76,8 @@ pub struct ListSubmitter {
     pub is_substitute: bool,
 }
 
-impl Problematic for ListSubmitter {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for ListSubmitter {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let severity = if self.is_substitute {
             Severity::Info
         } else {
@@ -177,10 +177,10 @@ mod tests {
 
         assert!(
             submitter
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::NoLastName(Severity::Error))
         );
-        assert!(submitter.get_problems().iter().any(|pp| match pp {
+        assert!(submitter.get_problems(()).iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Error,
                 problems,
@@ -197,10 +197,10 @@ mod tests {
 
         assert!(
             submitter
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::NoLastName(Severity::Info))
         );
-        assert!(submitter.get_problems().iter().any(|pp| match pp {
+        assert!(submitter.get_problems(()).iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Info,
                 problems,

@@ -15,8 +15,8 @@ pub struct CandidateListSummary {
     pub duplicate_districts: Vec<ElectoralDistrict>,
 }
 
-impl Problematic for CandidateListSummary {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for CandidateListSummary {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = vec![];
 
         if self.candidate_count() == 0 {
@@ -318,7 +318,7 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        assert!(list_summary.get_problems().is_empty());
+        assert!(list_summary.get_problems(()).is_empty());
     }
 
     #[test]
@@ -331,7 +331,7 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        let items = list_summary.get_problems();
+        let items = list_summary.get_problems(());
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::NoCandidates));
@@ -348,7 +348,7 @@ mod tests {
             duplicate_districts: vec![ElectoralDistrict::PsAmsterdam],
         };
 
-        let items = list_summary.get_problems();
+        let items = list_summary.get_problems(());
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
