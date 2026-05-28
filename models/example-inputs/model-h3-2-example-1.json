@@ -9,7 +9,7 @@
       "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
     ]
   },
-  "designation": "Een Andere Partij (EAP)",
+  "designation": "EAP/Test Partij (EAP/TP)",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -54,6 +54,11 @@
       "legal_name": "EEN ANDERE PARTIJ",
       "last_name": "Altena",
       "initials": "J.K.S."
+    },
+    {
+      "legal_name": "TEST PARTIJ",
+      "last_name": "Akwasi",
+      "initials": "O."
     }
   ],
   "timestamp": {

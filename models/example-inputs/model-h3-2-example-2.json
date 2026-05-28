@@ -1,15 +1,10 @@
 {
-  "election_name": "Tweede Kamer der Staten-Generaal 2027",
-  "election_type": "TK",
+  "election_name": "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
+  "election_type": "EK",
   "electoral_districts": {
-    "tag": "Some",
-    "districts": [
-      "Provincie Utrecht",
-      "Gemeente Rotterdam",
-      "Gemeenten Berg en Dal, Beuningen, Buren, Culemborg, Druten, Heumen, Maasdriel, Neder-Betuwe, Nijmegen, Tiel, West Betuwe, West Maas en Waal, Wijchen, Zaltbommel"
-    ]
+    "tag": "All"
   },
-  "designation": "Een Andere Partij (EAP)",
+  "designation": "EAP/Test Partij (EAP/TP)",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -19,7 +14,7 @@
         "month": 12,
         "day": 25
       },
-      "locality": "Ede",
+      "locality": "Berlin",
       "position": 1
     },
     {
@@ -54,6 +49,11 @@
       "legal_name": "EEN ANDERE PARTIJ",
       "last_name": "Altena",
       "initials": "J.K.S."
+    },
+    {
+      "legal_name": "TEST PARTIJ",
+      "last_name": "Akwasi",
+      "initials": "O."
     }
   ],
   "timestamp": {
@@ -66,5 +66,5 @@
   },
   "event_id": 42,
   "sha_hash": "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0",
-  "locale": "nl"
+  "locale": "fry"
 }
