@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/pages/view.html", print = "code")]
+#[template(path = "candidate_lists/pages/view.html")]
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
 }

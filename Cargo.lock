@@ -1144,7 +1144,7 @@ checksum = "edd0f118536f44f5ccd48bcb8b111bdc3de888b58c74639dfb034a357d0f206d"
 [[package]]
 name = "eml-nl"
 version = "0.5.0"
-source = "git+https://github.com/kiesraad/rust-eml-nl.git#10f28ae66bfceb15e39924231327a9605421ee1f"
+source = "git+https://github.com/kiesraad/rust-eml-nl.git#861823b81d2fd4d395cadd1812fa113878cde3b7"
 dependencies = [
  "chrono",
  "quick-xml 0.38.4",
