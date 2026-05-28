@@ -141,14 +141,7 @@ impl DocumentData {
         let electoral_districts = TypstElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        // Missing designation prevents export
-        let designation = group
-            .display_name
-            .as_ref()
-            .ok_or(AppError::IncompleteData(
-                "Missing registered designation from political group",
-            ))?
-            .to_string();
+        let designation = group.effective_display_name()?;
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() || !list_submitter.is_all_good() {

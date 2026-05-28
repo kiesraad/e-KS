@@ -25,8 +25,8 @@ pub async fn list_name_authorisations(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let steps = PoliticalGroupSteps::new(&store)?;
-    let is_combined = store.get_political_group().list_designation
-        == Some(ListDesignation::Combined);
+    let is_combined =
+        store.get_political_group().list_designation == Some(ListDesignation::Combined);
     Ok(HtmlTemplate(
         NameAuthorisationTemplate {
             name_authorisations: steps.name_authorisations.clone(),

@@ -69,7 +69,11 @@ pub async fn update_list_designation_submit(
             political_group.list_designation = Some(list_designation.list_designation_type);
             political_group.update(&store).await?;
 
-            Ok(query.redirect_or(PoliticalGroup::update_path()))
+            if political_group.list_designation == Some(ListDesignation::Blank) {
+                Ok(query.redirect_or(ListSubmitter::view_path()))
+            } else {
+                Ok(query.redirect_or(PoliticalGroup::update_path()))
+            }
         }
     }
 }

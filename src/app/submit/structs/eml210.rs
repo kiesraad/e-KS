@@ -320,11 +320,7 @@ impl Eml210 {
                 )
             })
             .affiliation(NominationAffiliation {
-                registered_name: political_group
-                    .display_name
-                    .as_ref()
-                    .ok_or(AppError::IncompleteData("Missing registered display name"))?
-                    .to_string(),
+                registered_name: political_group.effective_display_name()?,
                 affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
                 list_data,
                 candidates: candidates
