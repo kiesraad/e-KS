@@ -47,7 +47,7 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.6.8", features = ["set-header", "trace"] }
+tower-http = { version = "0.6.11", features = ["set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
 bytes = "1.11.1"
@@ -59,7 +59,7 @@ regex = "1.12.3"
 
 # blessed.rs / dtolnay
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 serde_urlencoded = "0.7"
 
 # blessed.rs
@@ -73,7 +73,7 @@ url = "2.5.8"
 reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
-askama = "0.15.6" # 33M downloads (Dirkjan Ochtman)
+askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 4M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 107M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 179M downloads (Andrew Gallant)
