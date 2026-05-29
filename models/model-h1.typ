@@ -10,7 +10,6 @@
     "Met dit formulier stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.",
     "Mei dit formulier stelle jo, as dejinge dy’t de kandidatelist ynleveret, kandidaten ferkiesber foar in ferkiezing.",
   ),
-  page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
 

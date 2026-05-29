@@ -3,17 +3,18 @@ use crate::{
     candidate_lists::{CandidateListId, FullCandidateList},
     common::Problematic,
     core::{ModelLocale, Pdf, ZipResponseWriter},
+    list_designation::ListDesignation,
     submit::structs::{
         eml210::Eml210,
         h1::H1,
-        h3_1::H31,
+        h3::H3,
         h4::H4,
         h9::H9,
-        typst_authorised_agent::TypstAuthorisedAgent,
         typst_candidate::{TypstCandidate, ordered_candidates},
         typst_datetime::TypstDatetime,
         typst_detailed_candidate::TypstDetailedCandidate,
         typst_electoral_districts::TypstElectoralDistricts,
+        typst_name_authorisation::TypstNameAuthorisation,
         typst_person::TypstPerson,
     },
     utils::{format_hash, no_cache_headers, slugify_teletex},
@@ -39,11 +40,10 @@ pub struct DocumentData {
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
     pub ordered_candidates: Vec<TypstCandidate>,
     pub designation: String,
-    pub legal_name: String,
     pub previously_seated: bool,
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
-    pub authorised_agent: TypstAuthorisedAgent,
+    pub name_authorisations: Vec<TypstNameAuthorisation>,
     pub event_id: usize,
     pub event_hash: String,
     nomination: Eml210,
@@ -62,6 +62,49 @@ impl DocumentData {
             format!("{name_slug}-{election_slug}-v{version}-fry.zip")
         } else {
             format!("{name_slug}-{election_slug}-v{version}.zip")
+        }
+    }
+
+    /// Get a list of `TypstNameAuthorisation` with the right number of authorisations based on
+    /// the type of list designation:
+    ///
+    /// - Blank lists always have 0 name authorisations -> No H3-1 or H3-2
+    /// - Combined lists have at least 2 name authorisations -> H3-2
+    /// - Standalone lists always have 1 name authorisation -> H3-1
+    ///
+    /// If there are fewer name authorisations than required, we add fill-ins that show up as
+    /// empty spaces on the models.
+    fn name_authorisations_with_fill_ins(
+        store: &AppStore,
+    ) -> Result<Vec<TypstNameAuthorisation>, AppError> {
+        let name_authorisations = store.get_name_authorisations();
+
+        match store.get_political_group().list_designation {
+            Some(ListDesignation::Blank) => Ok(Vec::new()),
+            Some(ListDesignation::Combined) => {
+                let mut auths: Vec<TypstNameAuthorisation> =
+                    name_authorisations.iter().map(Into::into).collect();
+
+                while auths.len() < 2 {
+                    auths.push(TypstNameAuthorisation::default());
+                }
+
+                Ok(auths)
+            }
+            _ => {
+                if name_authorisations.len() > 1 {
+                    return Err(AppError::IncompleteData(
+                        "Expected no more than 1 name authorisation",
+                    ));
+                }
+
+                let auth = name_authorisations
+                    .first()
+                    .map(Into::into)
+                    .unwrap_or_default();
+
+                Ok(vec![auth])
+            }
         }
     }
 
@@ -119,14 +162,6 @@ impl DocumentData {
             .map(TypstPerson::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
-        let name_authorisations = store.get_name_authorisations();
-        if name_authorisations.len() != 1 {
-            return Err(AppError::IncompleteData("Expected 1 authorised agent"));
-        }
-        // Missing statutory name does not prevent export
-        let legal_name = name_authorisations[0].legal_name.to_string();
-        let authorised_agent = (&name_authorisations[0]).into();
-
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
         let folder_name = format!(
             "{}-{}",
@@ -147,11 +182,10 @@ impl DocumentData {
             detailed_candidates,
             ordered_candidates,
             designation,
-            legal_name,
             previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,
-            authorised_agent,
+            name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
             event_id,
             event_hash: format_hash(&event_hash, true),
             nomination,
@@ -271,11 +305,15 @@ impl DocumentData {
             .add_file(&h1_path, &h1.generate_bytes(renderer).await?)
             .await?;
 
-        let h3_1 = H31::from(&self);
-        let h3_1_path = self.zip_path(h3_1.filename());
-        writer
-            .add_file(&h3_1_path, &h3_1.generate_bytes(renderer).await?)
-            .await?;
+        // Name authorisations are only empty for blank lists. Standalone lists and list combinations
+        // will contain fill-ins if necessary.
+        if !self.name_authorisations.is_empty() {
+            let h3 = H3::from(&self);
+            let h3_path = self.zip_path(h3.filename());
+            writer
+                .add_file(&h3_path, &h3.generate_bytes(renderer).await?)
+                .await?;
+        }
 
         let h4 = H4::from(&self);
         let h4_path = self.zip_path(h4.filename());
