@@ -120,12 +120,12 @@ mod tests {
         };
         assert_eq!(group.effective_display_name().unwrap(), "test");
         assert_eq!(group.get_max_candidates(), 80);
-        assert_eq!(group.was_previously_seated(), true);
+        assert!(group.was_previously_seated());
 
         // the set values should be ignored when switching to a blank list
         group.list_designation = Some(ListDesignation::Blank);
         assert_eq!(group.effective_display_name().unwrap(), "");
         assert_eq!(group.get_max_candidates(), 50);
-        assert_eq!(group.was_previously_seated(), false);
+        assert!(!group.was_previously_seated());
     }
 }

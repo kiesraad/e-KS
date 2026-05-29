@@ -12,6 +12,16 @@ function updateSkippedSteps(isBlank: boolean) {
     });
 }
 
+function updateStepLabels(isCombined: boolean) {
+  document
+    .querySelectorAll<HTMLAnchorElement>("[data-label-combined]")
+    .forEach((link) => {
+      link.textContent = isCombined
+        ? (link.dataset.labelCombined ?? "")
+        : (link.dataset.label ?? "");
+    });
+}
+
 export default function listDesignation() {
   const inputs = document.querySelectorAll<HTMLInputElement>(
     'input[name="list_designation_type"]',
@@ -20,6 +30,7 @@ export default function listDesignation() {
   inputs.forEach((input) => {
     input.addEventListener("change", () => {
       updateSkippedSteps(input.value === "blank" && input.checked);
+      updateStepLabels(input.value === "combined" && input.checked);
     });
   });
 }

@@ -16,7 +16,15 @@
          class="{% if steps.is_blank %}disabled {% endif %}{{ steps.name_authorisations_state }}"
          data-href="{{ NameAuthorisation::list_path() }}"
          data-state-class="{{ steps.name_authorisations_state }}"
-         data-skip-if-blank>{{ "political_group.legal_name_data"|trans }}</a>
+         data-label="{{ "political_group.legal_name_data"|trans }}"
+         data-label-combined="{{ "political_group.legal_name_data_combined"|trans }}"
+         data-skip-if-blank>
+        {% if steps.is_combined %}
+          {{ "political_group.legal_name_data_combined"|trans }}
+        {% else %}
+          {{ "political_group.legal_name_data"|trans }}
+        {% endif %}
+      </a>
     </li>
     <li>
       <a href="{{ ListSubmitter::view_path() }}"

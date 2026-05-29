@@ -12,12 +12,13 @@ blank_list_warning: U gebruikt een blanco lijst. Wijzigingen die u hier maakt he
 delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor deze statutaire naam wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor het herstel van verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
+display_name_combined: Samengevoegde aanduiding
 edit_legal_name: Machtiging statutaire naam aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
-general_information: Algemeen
 legal_name: Volledige statutaire naam
 legal_name_data: Machtiging statutaire naam
+legal_name_data_combined: Machtigingen statutaire namen
 list_submitter: Lijstinleveraar
 list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
 list_submitter_data: Gegevens lijstinleveraar
@@ -35,11 +36,14 @@ title: Politieke groepering
 type:
   blank_name: Blanco lijst
   blank_name_hint: Er is geen geregistreerde aanduiding.
+  display_name_combined_hint: De naam die is gevormd door samenvoeging van de aanduidingen van politieke groeperingen of afkortingen daarvan. Deze komt op het stembiljet te staan.
   display_name_hint: De naam die is geregistreerd bij het centraal stembureau. Deze komt op het stembiljet te staan.
   legal_name_hint: De naam die is vastgelegd in de notariële akte en bij de Kamer van Koophandel.
   name_combination: Combinatie van meerdere geregistreerde namen
   name_combination_hint: De partij heeft een samenwerkingsverband met één of meer andere geregistreerde partijen. Samen leveren zij alle kandidaten voor de kandidatenlijst.
   one_to_fifteen_seats: 1 tot 15 zetels
+  previous_election_results_combined: "Bij de vorige {} had één van de partijen in de combinatie, of de combinatie als geheel:"
+  previous_election_results_combined_hint: "Indien de combinatie bij de vorige verkiezing los heeft meegedaan, kies het maximaal behaalde individuele resultaat."
   previous_election_results_hint: "Dit bepaalt of uw partij een waarborgsom moet betalen, en of u 50 of 80 kandidaten per lijst op mag voeren."
   registered_name: Op zichzelf staande geregistreerde naam
   registered_name_hint: De partij neemt als één eenduidige partij deel aan de verkiezing.
