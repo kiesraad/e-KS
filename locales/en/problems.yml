@@ -25,5 +25,7 @@ no_problems: No problems
 no_representative: Authorised person is missing
 no_substitute_submitter: No substitute submitter added
 representative: Authorised person
+too_few_authorized_names: "Too few authorised agents/statutory names ({} added, minimum is {})"
+too_many_authorized_names: "Too many authorised agents/statutory names ({} added, maximum is {})"
 too_many_candidates: "Too many candidates ({} added, maximum is {})"
 very_old_date_of_birth: "Date of birth appears incorrect (more than {} years ago)"

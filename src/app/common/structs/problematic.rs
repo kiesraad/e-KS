@@ -100,6 +100,15 @@ pub enum PotentialProblems {
     NoAuthorisedAgent,
     NoListSubmitter,
     NoSubstituteSubmitter,
+    NoDesignationType,
+    TooManyAuthorizedNames {
+        actual: usize,
+        max: usize,
+    },
+    TooFewAuthorizedNames {
+        actual: usize,
+        min: usize,
+    },
 
     // representative wrapper
     RepresentativeProblem(Box<PotentialProblems>),
@@ -212,6 +221,13 @@ impl PotentialProblems {
             PotentialProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
             }
+            PotentialProblems::NoDesignationType => trans!("problems.no_legal_name", *locale),
+            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
+                trans!("problems.too_many_authorized_names", *locale, actual, max)
+            }
+            PotentialProblems::TooFewAuthorizedNames { actual, min } => {
+                trans!("problems.too_few_authorized_names", *locale, actual, min)
+            }
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => {
@@ -268,6 +284,9 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
+            PotentialProblems::NoDesignationType => Severity::Info,
+            PotentialProblems::TooManyAuthorizedNames { .. } => Severity::Error,
+            PotentialProblems::TooFewAuthorizedNames { .. } => Severity::Warn,
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
@@ -420,6 +439,8 @@ mod tests {
                 count: 2,
                 total: 37,
             },
+            PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
+            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 }
         ];
         for problem in problems {
             let summary = WithProblems(vec![problem])
