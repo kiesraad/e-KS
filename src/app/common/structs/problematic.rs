@@ -1,3 +1,5 @@
+use axum_extra::routing::TypedPath;
+
 use crate::{ElectoralDistrict, Locale, trans};
 
 use super::DateOfBirth;
@@ -440,7 +442,7 @@ mod tests {
                 total: 37,
             },
             PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
-            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 }
+            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 },
         ];
         for problem in problems {
             let summary = WithProblems(vec![problem])
