@@ -112,6 +112,18 @@ mod tests {
     }
 
     #[test]
+    fn incomplete_items_blank_list() {
+        let empty_items = PoliticalGroup {
+            previous_election_results: None,
+            list_designation: Some(ListDesignation::Blank),
+            display_name: None,
+        }
+        .get_problems();
+
+        assert!(empty_items.is_empty());
+    }
+
+    #[test]
     fn blank_lists_force_defaults_even_if_set_differently() {
         let mut group = PoliticalGroup {
             previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
