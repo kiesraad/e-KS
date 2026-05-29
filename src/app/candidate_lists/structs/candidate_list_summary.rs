@@ -29,9 +29,7 @@ impl Problematic for CandidateListSummary {
         }
 
         if !self.duplicate_districts.is_empty() {
-            items.push(PotentialProblems::DuplicateDistricts {
-                duplicates: self.duplicate_districts.clone(),
-            });
+            items.push(PotentialProblems::DuplicateDistricts);
         }
 
         if self.list.electoral_districts.is_empty() {
@@ -352,8 +350,6 @@ mod tests {
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
-        assert!(items.contains(&PotentialProblems::DuplicateDistricts {
-            duplicates: vec![ElectoralDistrict::PsAmsterdam]
-        }));
+        assert!(items.contains(&PotentialProblems::DuplicateDistricts));
     }
 }

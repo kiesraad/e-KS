@@ -1,6 +1,4 @@
-use axum_extra::routing::TypedPath;
-
-use crate::{ElectoralDistrict, Locale, trans};
+use crate::{Locale, trans};
 
 use super::DateOfBirth;
 
@@ -74,9 +72,7 @@ pub enum PotentialProblems {
         actual: usize,
         max: usize,
     },
-    DuplicateDistricts {
-        duplicates: Vec<ElectoralDistrict>,
-    },
+    DuplicateDistricts,
     NoDistricts,
     FewCandidatesWithFirstName {
         count: usize,
@@ -151,13 +147,8 @@ impl PotentialProblems {
             PotentialProblems::TooManyCandidates { actual, max } => {
                 trans!("problems.too_many_candidates", *locale, actual, max)
             }
-            PotentialProblems::DuplicateDistricts { duplicates } => {
-                let districts = duplicates
-                    .iter()
-                    .map(|d| d.title((*locale).into()))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                trans!("problems.duplicate_districts", *locale, districts)
+            PotentialProblems::DuplicateDistricts => {
+                trans!("problems.duplicate_districts", *locale)
             }
             PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
             PotentialProblems::FewCandidatesWithFirstName { count, total } => {
@@ -272,7 +263,7 @@ impl PotentialProblems {
             // candidate list
             PotentialProblems::NoCandidates => Severity::Error,
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
-            PotentialProblems::DuplicateDistricts { .. } => Severity::Error,
+            PotentialProblems::DuplicateDistricts => Severity::Error,
             PotentialProblems::NoDistricts => Severity::Error,
             PotentialProblems::FewCandidatesWithFirstName { .. } => Severity::Info,
             PotentialProblems::FewCandidatesWithoutFirstName { .. } => Severity::Info,

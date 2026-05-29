@@ -1,4 +1,4 @@
-duplicate_districts: "Dubbele kieskringen: {}"
+duplicate_districts: Dubbele kieskringen
 few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
 few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
 few_candidates_with_gender: "Maar {} van de {} kandidaten hebben een geslacht ingevuld"

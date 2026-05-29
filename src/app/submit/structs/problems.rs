@@ -66,6 +66,7 @@ impl Problems {
     pub fn find_all(store: &AppStore) -> Self {
         let candidate_lists = CandidateListSummary::list(store);
 
+        let mut seen_duplicate_district = false;
         Self {
             general: Self::find_general_problems(store),
             candidates: {
@@ -90,6 +91,27 @@ impl Problems {
                         list: candidate_list.list.clone(),
                         problems,
                     })
+                })
+                // make sure only one DuplicateDistrict Problem remains
+                .map(|list_problem| {
+                    let problems = list_problem.problems.iter().cloned().fold(
+                        Vec::new(),
+                        |mut problems, problem| {
+                            if problem != PotentialProblems::DuplicateDistricts
+                                || !seen_duplicate_district
+                            {
+                                if problem == PotentialProblems::DuplicateDistricts {
+                                    seen_duplicate_district = true;
+                                }
+                                problems.push(problem);
+                            }
+                            problems
+                        },
+                    );
+                    ListProblems {
+                        list: list_problem.list,
+                        problems,
+                    }
                 })
                 .collect(),
         }
@@ -256,7 +278,7 @@ pub struct ListProblems {
 #[cfg(test)]
 mod tests {
     use crate::{
-        AppError,
+        AppError, ElectoralDistrict,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         name_authorisations::NameAuthorisationId,
@@ -318,10 +340,10 @@ mod tests {
 
     async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
         sample_list_submitter(ListSubmitterId::new())
-            .update(&store)
+            .update(store)
             .await?;
         sample_list_submitter(ListSubmitterId::new())
-            .create_substitute(&store)
+            .create_substitute(store)
             .await?;
         Ok(())
     }
@@ -421,6 +443,33 @@ mod tests {
         let problems = Problems::find_general_problems(&store);
 
         assert!(problems.general.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn max_one_duplicate_district_problem() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        for _ in 0..10 {
+            let mut list1 = sample_candidate_list(CandidateListId::new());
+            list1.electoral_districts = vec![ElectoralDistrict::UT, ElectoralDistrict::GR];
+            list1.create(&store).await?;
+        }
+
+        let problems = Problems::find_all(&store);
+        assert_eq!(
+            problems
+                .lists
+                .iter()
+                .fold(Vec::new(), |mut problems, list_problems| {
+                    problems.extend(list_problems.problems.clone());
+                    problems
+                })
+                .iter()
+                .filter(|problem| problem == &&PotentialProblems::DuplicateDistricts)
+                .count(),
+            1
+        );
 
         Ok(())
     }
