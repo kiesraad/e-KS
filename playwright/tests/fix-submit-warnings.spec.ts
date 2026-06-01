@@ -6,29 +6,39 @@ import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
+import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
+import { OverviewPage } from "./pages/overviewPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {
     const submitPage = new SubmitPage(page);
     const politicalGroupPage = new PoliticalGroupPage(page);
+    const listSubmittersPage = new ListSubmittersPage(page);
+    const nameAuthorisationPage = new NameAuthorisationPage(page);
+    const overviewpage = new OverviewPage(page);
+    const authorisation: NameAuthorisation = {
+      initials: "K",
+      lastName: "Jansen",
+      legalName: "Kiesraad Demo Partij",
+    };
 
     await page.goto("/submit");
     await submitPage.linkRegisteredDesignation.click();
     await expect(politicalGroupPage.headerGeneralInformation).toBeVisible();
     await politicalGroupPage.setRegisteredDesignation("Test");
     await politicalGroupPage.save();
-    await page.goto("/submit");
+    await nameAuthorisationPage.buttonNext.click();
+    await listSubmittersPage.buttonNext.click();
+    await overviewpage.linkFinalize.click();
+    await page.waitForURL("/submit");
     await expect(submitPage.linkRegisteredDesignation).not.toBeVisible();
 
     await submitPage.linkNoLegalName.click();
-    const nameAuthorisationPage = new NameAuthorisationPage(page);
-    const authorisation: NameAuthorisation = {
-      initials: "K",
-      lastName: "Jansen",
-      legalName: "Kiesraad Demo Partij",
-    };
     await nameAuthorisationPage.addNameAuthorisation(authorisation);
-    await page.goto("/submit");
+    await nameAuthorisationPage.buttonNext.click();
+    await listSubmittersPage.buttonNext.click();
+    await overviewpage.linkFinalize.click();
+    await page.waitForURL("/submit");
     await expect(submitPage.linkNoLegalName).not.toBeVisible();
   });
 
