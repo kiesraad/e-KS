@@ -84,19 +84,18 @@
     {% if problems.lists.is_empty() %}
       <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
     {% else %}
-      {% for list_problems in &problems.lists %}
-        <div class="mb-md">
-          <div class="mb-sm">{{ list_problems.entity.districts_name(locale.into() ) }}:</div>
-          <ul class="warnings">
+      <div class="mb-md">
+        <ul class="warnings">
+          {% for list_problems in &problems.lists %}
             {% for problem in &list_problems.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
                    href="{{ problem.candidate_list_fix_path(&list_problems.entity) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
-          </ul>
-        </div>
-      {% endfor %}
+          {% endfor %}
+        </ul>
+      </div>
     {% endif %}
   </section>
   <h1 class="mt-xl">Downloads</h1>
