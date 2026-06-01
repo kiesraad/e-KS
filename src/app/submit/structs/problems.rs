@@ -46,9 +46,11 @@ impl PotentialProblems {
             }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
+            PotentialProblems::NoDesignationType => ListDesignation::update_path().to_string(),
             PotentialProblems::TooFewAuthorizedNames { .. }
-            | PotentialProblems::TooManyAuthorizedNames { .. }
-            | PotentialProblems::NoDesignationType => NameAuthorisation::list_path().to_string(),
+            | PotentialProblems::TooManyAuthorizedNames { .. } => {
+                NameAuthorisation::list_path().to_string()
+            }
             _ => PoliticalGroup::update_path().to_string(),
         }
     }

@@ -13,6 +13,7 @@ no_bsn: BSN ontbreekt
 no_candidates: Geen kandidaten toegevoegd
 no_country_of_residence: Woonland ontbreekt
 no_date_of_birth: Geboortedatum ontbreekt
+no_designation_type: Lijstaanduiding ontbreekt
 no_display_name: Geregistreerde aanduiding ontbreekt
 no_districts: Geen kieskringen geselecteerd
 no_initials: Initialen ontbreken

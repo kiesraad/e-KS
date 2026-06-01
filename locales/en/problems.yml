@@ -13,6 +13,7 @@ no_bsn: BSN is missing
 no_candidates: No candidates added
 no_country_of_residence: Country of residence is missing
 no_date_of_birth: Date of birth is missing
+no_designation_type: Designation type is missing
 no_display_name: Registered designation is missing
 no_districts: No districts selected
 no_initials: Initials are missing

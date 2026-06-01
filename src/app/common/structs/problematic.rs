@@ -214,7 +214,7 @@ impl PotentialProblems {
             PotentialProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
             }
-            PotentialProblems::NoDesignationType => trans!("problems.no_legal_name", *locale),
+            PotentialProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
             PotentialProblems::TooManyAuthorizedNames { actual, max } => {
                 trans!("problems.too_many_authorized_names", *locale, actual, max)
             }
