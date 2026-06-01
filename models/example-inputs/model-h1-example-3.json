@@ -4,7 +4,7 @@
   "electoral_districts": {
     "tag": "OnlyOne"
   },
-  "designation": "Een Andere Partij (EAP)",
+  "designation": "",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -61,6 +61,7 @@
       }
     }
   ],
+  "nr_of_name_authorisations": 0,
   "timestamp": {
     "year": 2025,
     "month": 8,

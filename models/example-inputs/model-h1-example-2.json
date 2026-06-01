@@ -4,7 +4,7 @@
   "electoral_districts": {
     "tag": "All"
   },
-  "designation": "Een Andere Partij (EAP)",
+  "designation": "EAP/Test Partij (EAP/TP)",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -61,6 +61,7 @@
       }
     }
   ],
+  "nr_of_name_authorisations": 2,
   "timestamp": {
     "year": 2025,
     "month": 8,
