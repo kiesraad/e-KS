@@ -51,12 +51,17 @@ pub struct DocumentData {
 
 impl DocumentData {
     pub fn archive_filename(&self) -> String {
-        let name_slug = slugify_teletex(&self.designation, true);
         let mut election_slug = self.election.code().to_lowercase();
         if let Some(region) = self.election.region_code() {
             election_slug.push_str(&region.to_lowercase());
         }
         let version = self.event_id;
+
+        let name_slug = if self.name_authorisations.is_empty() {
+            "blanco".to_string()
+        } else {
+            slugify_teletex(&self.designation, true)
+        };
 
         if self.locale == ModelLocale::Fry {
             format!("{name_slug}-{election_slug}-v{version}-fry.zip")
