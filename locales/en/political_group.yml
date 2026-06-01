@@ -8,15 +8,17 @@ authorised_agent: Authorised agent
 authorised_agent_data: (Deputy) authorised agent data
 authorised_agent_info: An authorised representative or deputy representative for the party designation is registered with the central electoral committee. This person grants the person submitting the list permission to place the party name above the candidate list. This is done using form H 3-1 or H 3-2.
 basic_information_political_group: Information political group
-delete_name_authorisation_warning_text: Are you sure you want to delete this tatutory name and authorised agent? This action cannot be undone.
+delete_name_authorisation_warning_text: Are you sure you want to delete this statutory name and authorised agent? This action cannot be undone.
 delete_substitute_submitter_warning_text: Are you sure you want to delete this substitute submitter? This action cannot be undone.
 display_name: Registered designation
 edit_legal_name: Edit statutory name and authorised agent
+blank_list_warning: You are using a blank list. Any changes made here will have no effect.
+display_name_combined: Combined designation
 edit_list_submitter: Edit list submitter
 edit_substitute_submitter: Edit substitute submitter
-general_information: General
 legal_name: Full statutory name
 legal_name_data: Statutory name and authorised agent
+legal_name_data_combined: Statutory names and authorised agents
 list_submitter: List submitter
 list_submitter_address_info: This address will be used to send the notice of omissions
 list_submitter_data: List submitter data
@@ -34,11 +36,14 @@ title: Political group
 type:
   blank_name: Blank list
   blank_name_hint: There is no registered designation.
+  display_name_combined_hint: The name formed by combining the designations of political groups or abbreviations thereof. This name will be displayed on the ballot paper.
   display_name_hint: The name that is registered with the central electoral committee. This name will be displayed on the ballot paper.
   legal_name_hint: The name registered in the notarial deed and with the Chamber of Commerce.
   name_combination: Combination of multiple registered names
   name_combination_hint: "The party has formed an alliance with one or more other registered parties. Together, they nominate all candidates for the candidate list."
   one_to_fifteen_seats: 1 to 15 seats
+  previous_election_results_combined: "In the previous {}, one of the parties in the combination, or the combination as a whole, obtained:"
+  previous_election_results_combined_hint: "If the combination participated separately in the previous election, choose the highest individual obtained result."
   previous_election_results_hint: "This determines whether a deposit needs to be paid, and whether you may include 50 or 80 candidates on each list."
   registered_name: Standalone registered name
   registered_name_hint: "The party participates in the election as a single, unified party."

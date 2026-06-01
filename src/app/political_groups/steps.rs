@@ -1,5 +1,6 @@
 use crate::{
     AppError, AppStore,
+    app::list_designation::ListDesignation,
     common::{Problematic, Severity},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -11,6 +12,8 @@ pub struct PoliticalGroupSteps {
     pub name_authorisations: Vec<NameAuthorisation>,
     pub list_submitter: ListSubmitter,
     pub substitute_submitters: Vec<ListSubmitter>,
+    pub is_blank: bool,
+    pub is_combined: bool,
 
     pub list_designation_state: &'static str,
     pub basic_state: &'static str,
@@ -26,8 +29,12 @@ impl PoliticalGroupSteps {
         let substitute_submitters = store.get_substitute_submitters();
 
         let basic_info_empty = political_group.is_basic_info_empty();
+        let is_blank = political_group.list_designation == Some(ListDesignation::Blank);
+        let is_combined = political_group.list_designation == Some(ListDesignation::Combined);
 
         Ok(Self {
+            is_blank,
+            is_combined,
             list_designation_state: Self::list_designation_state(&political_group),
             basic_state: Self::basic_state(basic_info_empty, &political_group),
             name_authorisations_state: Self::name_authorisations_state(
