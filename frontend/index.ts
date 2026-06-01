@@ -2,6 +2,7 @@ import bsnInput from "./scripts/form-inputs/bsn-input";
 import countryCodeInput from "./scripts/form-inputs/country-input";
 import dateInput from "./scripts/form-inputs/date-input";
 import electionRegion from "./scripts/form-inputs/election-region";
+import listDesignation from "./scripts/form-inputs/list-designation";
 import setupFileImport from "./scripts/form-inputs/file-import";
 import initialsInput from "./scripts/form-inputs/initials-input";
 import localitySuggestions from "./scripts/form-inputs/locality-suggestions";
@@ -41,6 +42,7 @@ localitySuggestions();
 setupPositionPreview();
 setupSelectAllCheckbox();
 electionRegion();
+listDesignation();
 
 // generic UI
 setupStickyNav();
