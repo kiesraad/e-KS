@@ -94,24 +94,20 @@ impl Problems {
                 })
                 // make sure only one DuplicateDistrict Problem remains
                 .map(|list_problem| {
-                    let problems = list_problem.problems.iter().cloned().fold(
-                        Vec::new(),
-                        |mut problems, problem| {
-                            if problem != PotentialProblems::DuplicateDistricts
-                                || !seen_duplicate_district
-                            {
-                                if problem == PotentialProblems::DuplicateDistricts {
-                                    seen_duplicate_district = true;
+                    let ListProblems { list, problems } = list_problem;
+                    let problems = problems
+                        .into_iter()
+                        .filter(|problem| {
+                            if *problem == PotentialProblems::DuplicateDistricts {
+                                if seen_duplicate_district {
+                                    return false;
                                 }
-                                problems.push(problem);
+                                seen_duplicate_district = true;
                             }
-                            problems
-                        },
-                    );
-                    ListProblems {
-                        list: list_problem.list,
-                        problems,
-                    }
+                            true
+                        })
+                        .collect();
+                    ListProblems { list, problems }
                 })
                 .collect(),
         }
@@ -133,9 +129,9 @@ impl Problems {
                 Self::find_name_authorisation_problems(name_authorisations)
             }
             Some(ListDesignation::Blank) => Vec::new(),
-            Some(ListDesignation::Standalone) | Some(ListDesignation::Combined) => {
+            Some(list_designation) => {
                 general.extend(Self::find_name_authorisation_size_problems(
-                    political_group.list_designation.unwrap(),
+                    list_designation,
                     name_authorisations.len(),
                 ));
                 Self::find_name_authorisation_problems(name_authorisations)
@@ -461,12 +457,8 @@ mod tests {
             problems
                 .lists
                 .iter()
-                .fold(Vec::new(), |mut problems, list_problems| {
-                    problems.extend(list_problems.problems.clone());
-                    problems
-                })
-                .iter()
-                .filter(|problem| problem == &&PotentialProblems::DuplicateDistricts)
+                .flat_map(|list_problems| &list_problems.problems)
+                .filter(|problem| **problem == PotentialProblems::DuplicateDistricts)
                 .count(),
             1
         );
