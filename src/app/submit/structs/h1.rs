@@ -1,28 +1,20 @@
 use crate::{
-    core::{ElectionType, ModelLocale, Pdf},
+    core::{ModelLocale, Pdf},
     submit::{
         DocumentData,
-        structs::{TypstCandidate, TypstDatetime, TypstElectoralDistricts, TypstPerson},
+        structs::{TypstPerson, typst_model_data::TypstModelData},
     },
 };
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct H1<'a> {
-    election_name: String,
-    election_type: ElectionType,
-    electoral_districts: &'a TypstElectoralDistricts,
-    designation: &'a str,
-    candidates: &'a Vec<TypstCandidate>,
+    #[serde(flatten)]
+    common: &'a TypstModelData,
     previously_seated: bool,
     list_submitter: &'a TypstPerson,
     substitute_submitters: &'a Vec<TypstPerson>,
     nr_of_name_authorisations: usize,
-    timestamp: &'a TypstDatetime,
-    locale: ModelLocale,
-    event_id: usize,
-    sha_hash: &'a str,
-    filename: &'static str,
 }
 
 impl Pdf for H1<'_> {
@@ -30,36 +22,22 @@ impl Pdf for H1<'_> {
         "model-h1.typ"
     }
 
-    fn filename(&self) -> &str {
-        self.filename
+    fn filename(&self) -> String {
+        match self.common.locale {
+            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
+            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
+        }
     }
 }
 
 impl<'a> From<&'a DocumentData> for H1<'a> {
     fn from(data: &'a DocumentData) -> Self {
-        let locale = data.locale;
-        let election = data.election;
-
-        let filename = match locale {
-            ModelLocale::Nl => "h1-kandidatenlijst.pdf",
-            ModelLocale::Fry => "h1-kandidatelist.pdf",
-        };
-
         Self {
-            election_name: election.formal_title(locale),
-            election_type: election.election_type(),
-            electoral_districts: &data.electoral_districts,
-            designation: &data.designation,
-            candidates: &data.ordered_candidates,
+            common: &data.model_data,
             previously_seated: data.previously_seated,
             list_submitter: &data.list_submitter,
             substitute_submitters: &data.substitute_submitters,
             nr_of_name_authorisations: data.name_authorisations.len(),
-            timestamp: &data.timestamp,
-            locale,
-            event_id: data.event_id,
-            sha_hash: &data.event_hash,
-            filename,
         }
     }
 }

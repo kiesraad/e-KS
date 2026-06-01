@@ -5,17 +5,10 @@ use crate::{
     core::{ModelLocale, Pdf, ZipResponseWriter},
     list_designation::ListDesignation,
     submit::structs::{
-        eml210::Eml210,
-        h1::H1,
-        h3::H3,
-        h4::H4,
-        h9::H9,
-        typst_candidate::{TypstCandidate, ordered_candidates},
-        typst_datetime::TypstDatetime,
-        typst_detailed_candidate::TypstDetailedCandidate,
-        typst_electoral_districts::TypstElectoralDistricts,
-        typst_name_authorisation::TypstNameAuthorisation,
-        typst_person::TypstPerson,
+        eml210::Eml210, h1::H1, h3::H3, h4::H4, h9::H9, typst_candidate::ordered_candidates,
+        typst_datetime::TypstDatetime, typst_detailed_candidate::TypstDetailedCandidate,
+        typst_electoral_districts::TypstElectoralDistricts, typst_model_data::TypstModelData,
+        typst_name_authorisation::TypstNameAuthorisation, typst_person::TypstPerson,
     },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
@@ -33,19 +26,13 @@ pub const ZIP_CONTENT_TYPE: &str = "application/zip";
 pub struct DocumentData {
     pub list_id: CandidateListId,
     pub folder_name: Option<String>,
-    pub locale: ModelLocale,
-    pub timestamp: TypstDatetime,
     pub election: ElectionConfig,
-    pub electoral_districts: TypstElectoralDistricts,
+    pub model_data: TypstModelData,
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
-    pub ordered_candidates: Vec<TypstCandidate>,
-    pub designation: String,
     pub previously_seated: bool,
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
     pub name_authorisations: Vec<TypstNameAuthorisation>,
-    pub event_id: usize,
-    pub event_hash: String,
     nomination: Eml210,
 }
 
@@ -55,15 +42,15 @@ impl DocumentData {
         if let Some(region) = self.election.region_code() {
             election_slug.push_str(&region.to_lowercase());
         }
-        let version = self.event_id;
+        let version = self.model_data.event_id;
 
         let name_slug = if self.name_authorisations.is_empty() {
             "blanco".to_string()
         } else {
-            slugify_teletex(&self.designation, true)
+            slugify_teletex(&self.model_data.designation, true)
         };
 
-        if self.locale == ModelLocale::Fry {
+        if self.model_data.locale == ModelLocale::Fry {
             format!("{name_slug}-{election_slug}-v{version}-fry.zip")
         } else {
             format!("{name_slug}-{election_slug}-v{version}.zip")
@@ -173,19 +160,23 @@ impl DocumentData {
         Ok(Self {
             list_id,
             folder_name: Some(folder_name),
-            locale,
-            timestamp: TypstDatetime::now(),
             election,
-            electoral_districts,
+            model_data: TypstModelData {
+                election_name: election.formal_title(locale),
+                election_type: election.election_type(),
+                electoral_districts,
+                designation,
+                candidates: ordered_candidates,
+                timestamp: TypstDatetime::now(),
+                locale,
+                event_id,
+                sha_hash: format_hash(&event_hash, true),
+            },
             detailed_candidates,
-            ordered_candidates,
-            designation,
             previously_seated: group.was_previously_seated(),
             list_submitter,
             substitute_submitters,
             name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
-            event_id,
-            event_hash: format_hash(&event_hash, true),
             nomination,
         })
     }
@@ -321,9 +312,9 @@ impl DocumentData {
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
-            let filename = self.zip_path(&format!(
+            let filename = self.zip_path(format!(
                 "h9-{}/{}",
-                match self.locale {
+                match self.model_data.locale {
                     ModelLocale::Nl => "instemmingsverklaringen",
                     ModelLocale::Fry => "ynstimmingsferklearrings",
                 },
@@ -335,16 +326,19 @@ impl DocumentData {
         }
 
         writer
-            .add_file(&self.zip_path("eml210.eml.xml"), &self.nomination.build()?)
+            .add_file(
+                &self.zip_path("eml210.eml.xml".to_string()),
+                &self.nomination.build()?,
+            )
             .await?;
 
         Ok(())
     }
 
-    fn zip_path(&self, relative_path: &str) -> String {
+    fn zip_path(&self, relative_path: String) -> String {
         match &self.folder_name {
             Some(folder_name) => format!("{folder_name}/{relative_path}"),
-            None => relative_path.to_string(),
+            None => relative_path,
         }
     }
 }
