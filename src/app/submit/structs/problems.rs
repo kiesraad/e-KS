@@ -58,58 +58,17 @@ impl PotentialProblems {
 #[derive(Debug)]
 pub struct Problems {
     pub general: GeneralProblems,
-    pub candidates: Vec<PersonProblems<Person>>,
+    pub candidates: Vec<PersonProblems>,
     pub lists: Vec<ListProblems>,
 }
 
 impl Problems {
     pub fn find_all(store: &AppStore) -> Self {
         let candidate_lists = CandidateListSummary::list(store);
-
-        let mut seen_duplicate_district = false;
         Self {
             general: Self::find_general_problems(store),
-            candidates: {
-                let mut seen = std::collections::HashSet::new();
-                candidate_lists
-                    .iter()
-                    .flat_map(|list| list.list.candidates.iter())
-                    .filter(|id| seen.insert(*id))
-                    .filter_map(|id| store.get_person(*id).ok())
-                    .filter_map(|person| {
-                        let problems = person.get_problems();
-                        (!problems.is_empty()).then(|| PersonProblems { person, problems })
-                    })
-                    .collect()
-            },
-            lists: candidate_lists
-                .iter()
-                .filter_map(|candidate_list| {
-                    let mut problems = candidate_list.get_problems();
-                    problems.extend(candidate_list.get_deviation_problems(store));
-                    (!problems.is_empty()).then(|| ListProblems {
-                        list: candidate_list.list.clone(),
-                        problems,
-                    })
-                })
-                // make sure only one DuplicateDistrict Problem remains
-                .map(|list_problem| {
-                    let ListProblems { list, problems } = list_problem;
-                    let problems = problems
-                        .into_iter()
-                        .filter(|problem| {
-                            if *problem == PotentialProblems::DuplicateDistricts {
-                                if seen_duplicate_district {
-                                    return false;
-                                }
-                                seen_duplicate_district = true;
-                            }
-                            true
-                        })
-                        .collect();
-                    ListProblems { list, problems }
-                })
-                .collect(),
+            candidates: Self::find_candidate_problems(store, &candidate_lists),
+            lists: Self::find_list_problems(store, &candidate_lists),
         }
     }
 
@@ -145,8 +104,8 @@ impl Problems {
 
         let list_submitter_problems = list_submitter.get_problems();
         let list_submitter = if !list_submitter_problems.is_empty() {
-            Some(PersonProblems {
-                person: list_submitter,
+            Some(EntityProblems {
+                entity: list_submitter,
                 problems: list_submitter_problems,
             })
         } else {
@@ -159,7 +118,7 @@ impl Problems {
         }
         let substitute_submitters = substitute_submitters
             .into_iter()
-            .map(PersonProblems::new)
+            .map(EntityProblems::new)
             .filter(|pp| !pp.problems.is_empty())
             .collect();
 
@@ -173,28 +132,12 @@ impl Problems {
 
     fn find_name_authorisation_problems(
         name_authorisations: Vec<NameAuthorisation>,
-    ) -> Vec<PersonProblems<NameAuthorisation>> {
+    ) -> Vec<EntityProblems<NameAuthorisation>> {
         name_authorisations
             .into_iter()
-            .map(PersonProblems::new)
+            .map(EntityProblems::new)
             .filter(|pp| !pp.problems.is_empty())
             .collect()
-    }
-
-    pub fn models_downloadable(&self) -> bool {
-        let candidate_iter = self.candidates.iter().flat_map(|ci| &ci.problems);
-        // Lists without candidates cannot produce exports, so their errors don't block downloads
-        let list_iter = self
-            .lists
-            .iter()
-            .filter(|li| !li.problems.contains(&PotentialProblems::NoCandidates))
-            .flat_map(|ci| &ci.problems);
-        let general_iter = self.general.flatten();
-
-        !candidate_iter
-            .chain(list_iter)
-            .chain(general_iter)
-            .any(|ii| ii.severity() == Severity::Error)
     }
 
     fn find_name_authorisation_size_problems(
@@ -223,14 +166,91 @@ impl Problems {
             _ => Vec::new(),
         }
     }
+
+    fn find_candidate_problems(
+        store: &AppStore,
+        candidate_lists: &[CandidateListSummary],
+    ) -> Vec<PersonProblems> {
+        let mut seen = std::collections::HashSet::new();
+        candidate_lists
+            .iter()
+            .flat_map(|list| list.list.candidates.iter())
+            .filter(|id| seen.insert(*id))
+            .filter_map(|id| store.get_person(*id).ok())
+            .filter_map(|person| {
+                let problems = person.get_problems();
+                (!problems.is_empty()).then_some(PersonProblems {
+                    entity: person,
+                    problems,
+                })
+            })
+            .collect()
+    }
+
+    fn find_list_problems(
+        store: &AppStore,
+        candidate_lists: &[CandidateListSummary],
+    ) -> Vec<ListProblems> {
+        let mut seen_duplicate_district = false;
+        candidate_lists
+            .iter()
+            .filter_map(|candidate_list| {
+                let mut problems = candidate_list.get_problems();
+                problems.extend(candidate_list.get_deviation_problems(store));
+                (!problems.is_empty()).then(|| ListProblems {
+                    entity: candidate_list.list.clone(),
+                    problems,
+                })
+            })
+            // make sure only one DuplicateDistrict Problem remains
+            .map(|list_problem| {
+                let ListProblems {
+                    entity: list,
+                    problems,
+                } = list_problem;
+                let problems = problems
+                    .into_iter()
+                    .filter(|problem| {
+                        if *problem == PotentialProblems::DuplicateDistricts {
+                            if seen_duplicate_district {
+                                return false;
+                            }
+                            seen_duplicate_district = true;
+                        }
+                        true
+                    })
+                    .collect();
+                ListProblems {
+                    entity: list,
+                    problems,
+                }
+            })
+            .collect()
+    }
+
+    pub fn models_downloadable(&self) -> bool {
+        let candidate_iter = self.candidates.iter().flat_map(|ci| &ci.problems);
+        // Lists without candidates cannot produce exports, so their errors don't block downloads
+        let list_iter = self
+            .lists
+            .iter()
+            .filter(|li| !li.problems.contains(&PotentialProblems::NoCandidates))
+            .flat_map(|ci| &ci.problems);
+        let general_iter = self.general.flatten();
+
+        !candidate_iter
+            .chain(list_iter)
+            .chain(general_iter)
+            .any(|ii| ii.severity() == Severity::Error)
+    }
 }
 
 #[derive(Debug)]
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
-    pub name_authorisations: Vec<PersonProblems<NameAuthorisation>>,
-    pub list_submitter: Option<PersonProblems<ListSubmitter>>,
-    pub substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
+    pub name_authorisations: Vec<EntityProblems<NameAuthorisation>>,
+    pub list_submitter: Option<EntityProblems<ListSubmitter>>,
+    pub substitute_submitters: Vec<EntityProblems<ListSubmitter>>,
 }
 
 impl GeneralProblems {
@@ -253,23 +273,19 @@ impl GeneralProblems {
 }
 
 #[derive(Debug)]
-pub struct PersonProblems<T> {
-    pub person: T,
+pub struct EntityProblems<T> {
+    pub entity: T,
     pub problems: Vec<PotentialProblems>,
 }
 
-impl<T: Problematic> PersonProblems<T> {
-    fn new(person: T) -> Self {
-        let problems = person.get_problems();
-        PersonProblems { person, problems }
+impl<T: Problematic> EntityProblems<T> {
+    fn new(entity: T) -> Self {
+        let problems = entity.get_problems();
+        EntityProblems { entity, problems }
     }
 }
-
-#[derive(Debug)]
-pub struct ListProblems {
-    pub list: CandidateList,
-    pub problems: Vec<PotentialProblems>,
-}
+pub type ListProblems = EntityProblems<CandidateList>;
+pub type PersonProblems = EntityProblems<Person>;
 
 #[cfg(test)]
 mod tests {
@@ -311,7 +327,7 @@ mod tests {
                 general: empty_general(),
                 candidates: vec![],
                 lists: vec![ListProblems {
-                    list: sample_candidate_list(CandidateListId::new()),
+                    entity: sample_candidate_list(CandidateListId::new()),
                     problems: vec![PotentialProblems::TooManyCandidates {
                         actual: 12,
                         max: 12
@@ -325,7 +341,7 @@ mod tests {
             !Problems {
                 general: empty_general(),
                 candidates: vec![PersonProblems {
-                    person: sample_person(PersonId::new()),
+                    entity: sample_person(PersonId::new()),
                     problems: vec![PotentialProblems::NoCandidates]
                 }],
                 lists: Vec::new(),

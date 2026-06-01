@@ -22,12 +22,12 @@
       </div>
       {% for agent_pp in problems.general.name_authorisations %}
         <div class="mb-md">
-          <div class="mb-sm">{{ agent_pp.person.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
+          <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
           <ul class="warnings">
             {% for problem in &agent_pp.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ agent_pp.person.update_path() }}">{{ problem.translate(locale) }}</a>
+                   href="{{ agent_pp.entity.update_path() }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>
@@ -36,7 +36,7 @@
       {% if problems.general.list_submitter.is_some() %}
         <div class="mb-md">
           <div class="mb-sm">
-            {{ problems.general.list_submitter.as_ref().unwrap().person.name.display() }} ({{ "political_group.list_submitter"|trans }}):
+            {{ problems.general.list_submitter.as_ref().unwrap().entity.name.display() }} ({{ "political_group.list_submitter"|trans }}):
           </div>
           <ul class="warnings">
             {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
@@ -50,12 +50,12 @@
       {% endif %}
       {% for ss_pp in problems.general.substitute_submitters %}
         <div class="mb-md">
-          <div class="mb-sm">{{ ss_pp.person.name.display() }} ({{ "political_group.substitute_submitter"|trans }}):</div>
+          <div class="mb-sm">{{ ss_pp.entity.name.display() }} ({{ "political_group.substitute_submitter"|trans }}):</div>
           <ul class="warnings">
             {% for problem in &ss_pp.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ ss_pp.person.substitute_update_path() }}">{{ problem.translate(locale) }}</a>
+                   href="{{ ss_pp.entity.substitute_update_path() }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>
@@ -68,12 +68,12 @@
     {% else %}
       {% for candidate_pp in &problems.candidates %}
         <div class="mb-md">
-          <div class="mb-sm">{{ candidate_pp.person.name.display() }}:</div>
+          <div class="mb-sm">{{ candidate_pp.entity.name.display() }}:</div>
           <ul class="warnings">
             {% for problem in &candidate_pp.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ problem.person_fix_path(&candidate_pp.person) }}">{{ problem.translate(locale) }}</a>
+                   href="{{ problem.person_fix_path(&candidate_pp.entity) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>
@@ -86,12 +86,12 @@
     {% else %}
       {% for list_problems in &problems.lists %}
         <div class="mb-md">
-          <div class="mb-sm">{{ list_problems.list.districts_name(locale.into() ) }}:</div>
+          <div class="mb-sm">{{ list_problems.entity.districts_name(locale.into() ) }}:</div>
           <ul class="warnings">
             {% for problem in &list_problems.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ problem.candidate_list_fix_path(&list_problems.list) }}">{{ problem.translate(locale) }}</a>
+                   href="{{ problem.candidate_list_fix_path(&list_problems.entity) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>

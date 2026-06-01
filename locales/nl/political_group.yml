@@ -12,8 +12,8 @@ blank_list_warning: U gebruikt een blanco lijst. Wijzigingen die u hier maakt he
 delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor deze statutaire naam wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor het herstel van verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
-edit_legal_name: Statutaire naam en gemachtigde aanpassen
 display_name_combined: Samengevoegde aanduiding
+edit_legal_name: Statutaire naam en gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
 legal_name: Volledige statutaire naam
