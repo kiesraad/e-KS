@@ -80,7 +80,7 @@ body.overlay-open {
       justify-content: stretch;
 
       & > div:nth-child(2) {
-        padding-left: var(--space-lg);
+        /* padding-left: var(--space-lg); */
         padding-bottom: var(--space-lg);
         flex: 1;
       }
