@@ -66,6 +66,13 @@
     margin-bottom: var(--space-md);
   }
 
+  a.card-action {
+    display: block;
+    font-size: var(--font-size-md);
+    color: var(--gray-600);
+    text-decoration: none;
+  }
+
   .statistic {
     font-size: var(--font-size-sm);
 
@@ -169,7 +176,8 @@
   }
 }
 
-a.card {
+a.card,
+div.card[data-href] {
   cursor: pointer;
   color: var(--text-color-body);
   border-color: var(--bg-gray-darkest);
@@ -244,6 +252,15 @@ ul.districts {
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+
+    a {
+      color: inherit;
+      text-decoration: none;
+
+      &:hover {
+        text-decoration: underline;
+      }
+    }
 
     &.error {
       border-color: var(--red-300);

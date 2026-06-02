@@ -17,7 +17,7 @@
         <ul class="districts">
           {% for district in full_list.list.electoral_districts %}
             <li>
-              <span>{{ district|district_name }}</span>
+              <a href="{{ full_list.list.update_path() }}">{{ district|district_name }}</a>
             </li>
           {% endfor %}
         </ul>
