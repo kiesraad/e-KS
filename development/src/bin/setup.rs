@@ -20,7 +20,7 @@ async fn main() -> Result<()> {
         .await
         .context("create tools directory")?;
 
-    // if an srgument is passed, only install that tool
+    // if an argument is passed, only install that tool
     let args: Vec<String> = std::env::args().collect();
     if args.len() == 2 {
         let tool_name = &args[1];
