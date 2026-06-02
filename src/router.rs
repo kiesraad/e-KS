@@ -114,6 +114,8 @@ pub fn create(state: AppState) -> Router<AppState> {
         )),
     );
 
+    let router = router.nest("/.well-known", common::wellknown_router());
+
     router.layer(middleware::from_fn_with_state(
         state.clone(),
         eks_key_middleware,

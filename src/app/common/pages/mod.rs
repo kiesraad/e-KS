@@ -34,7 +34,6 @@ pub fn router() -> Router<AppState> {
         .typed_post(switch_locale::switch_language)
         .typed_get(switch_election::switch_election)
         .typed_post(switch_election::switch_election_submit)
-        .typed_get(well_known::index)
 }
 
 /// Routes that need a session but NOT the store middleware.
@@ -43,4 +42,9 @@ pub fn select_election_router() -> Router<AppState> {
     Router::new()
         .typed_get(select_election::select_election)
         .typed_post(select_election::select_election_submit)
+}
+
+/// Routes for paths under .well-known
+pub fn wellknown_router() -> Router<AppState> {
+    Router::new().typed_get(well_known::security_txt)
 }
