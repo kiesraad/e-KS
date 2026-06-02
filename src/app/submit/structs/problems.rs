@@ -27,6 +27,7 @@ impl PotentialProblems {
             | PotentialProblems::FewCandidatesWithoutFirstName { .. }
             | PotentialProblems::FewCandidatesWithGender { .. }
             | PotentialProblems::FewCandidatesWithoutGender { .. } => list.view_path().to_string(),
+            PotentialProblems::DuplicateDistricts => CandidateList::list_path().to_string(),
             _ => list.update_path_from(submit).to_string(),
         }
     }
