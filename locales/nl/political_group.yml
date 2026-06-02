@@ -13,12 +13,12 @@ delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor de
 delete_substitute_submitter_warning_text: Weet u zeker dat u deze vervanger voor het herstel van verzuimen wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
 display_name: Geregistreerde aanduiding
 display_name_combined: Samengevoegde aanduiding
-edit_legal_name: Machtiging statutaire naam aanpassen
+edit_legal_name: Statutaire naam en gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
 legal_name: Volledige statutaire naam
-legal_name_data: Machtiging statutaire naam
-legal_name_data_combined: Machtigingen statutaire namen
+legal_name_data: Statutaire naam en gemachtigde
+legal_name_data_combined: Statutaire namen en gemachtigden
 list_submitter: Lijstinleveraar
 list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
 list_submitter_data: Gegevens lijstinleveraar
