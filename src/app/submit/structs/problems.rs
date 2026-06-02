@@ -206,10 +206,7 @@ impl Problems {
             })
             // make sure only one DuplicateDistrict Problem remains
             .map(|list_problem| {
-                let ListProblems {
-                    entity: list,
-                    problems,
-                } = list_problem;
+                let ListProblems { entity, problems } = list_problem;
                 let problems = problems
                     .into_iter()
                     .filter(|problem| {
@@ -222,10 +219,7 @@ impl Problems {
                         true
                     })
                     .collect();
-                ListProblems {
-                    entity: list,
-                    problems,
-                }
+                ListProblems { entity, problems }
             })
             .collect()
     }
