@@ -19,6 +19,7 @@ struct CandidateListUpdateTemplate {
     candidate_list: CandidateList,
     available_districts: Vec<ElectoralDistrict>,
     duplicate_districts: Vec<ElectoralDistrict>,
+    close_url: String,
 }
 
 pub async fn update_candidate_list(
@@ -30,6 +31,10 @@ pub async fn update_candidate_list(
 ) -> Result<Response, AppError> {
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let duplicate_districts = candidate_list.duplicate_districts(&store);
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| candidate_list.view_path().to_string());
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -40,6 +45,7 @@ pub async fn update_candidate_list(
             candidate_list,
             available_districts,
             duplicate_districts,
+            close_url,
         },
         context,
     )
@@ -61,6 +67,10 @@ pub async fn update_candidate_list_submit(
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let duplicate_districts = candidate_list.duplicate_districts(&store);
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| candidate_list.view_path().to_string());
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_token) {
@@ -71,6 +81,7 @@ pub async fn update_candidate_list_submit(
                 candidate_list,
                 available_districts,
                 duplicate_districts,
+                close_url,
             },
             context,
         )
