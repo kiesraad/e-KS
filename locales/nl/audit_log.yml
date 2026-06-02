@@ -41,11 +41,11 @@ empty: Er zijn nog geen gebeurtenissen vastgelegd.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   create_candidate_list: Kandidatenlijst aangemaakt
-  create_name_authorisation: Machtiging statutaire naam aangemaakt
+  create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
   delete_candidate_list: Kandidatenlijst verwijderd
-  delete_name_authorisation: Machtiging statutaire naam verwijderd
+  delete_name_authorisation: Statutaire naam en gemachtigde verwijderd
   delete_person: Persoon verwijderd
   delete_substitute_submitter: Vervanger herstel verzuim verwijderd
   developer_login: Ontwikkelaar ingelogd
@@ -56,7 +56,7 @@ event:
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
   update_list_submitter: Lijstinleveraar bijgewerkt
-  update_name_authorisation: Machtiging statutaire naam bijgewerkt
+  update_name_authorisation: Statutaire naam en gemachtigde bijgewerkt
   update_person: Persoon bijgewerkt
   update_person_address: Adres van persoon bijgewerkt
   update_person_representative: Gemachtigde van persoon bijgewerkt
@@ -74,7 +74,7 @@ filter:
   category:
     candidate_list: Kandidatenlijst
     list_submitter: Lijstinleveraar
-    name_authorisation: Machtiging statutaire naam
+    name_authorisation: Statutaire naam en gemachtigde
     person: Persoon
     political_group: Politieke groepering
     substitute_submitter: Vervanger herstel verzuim

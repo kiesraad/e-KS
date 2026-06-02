@@ -1,4 +1,4 @@
-use crate::{ElectoralDistrict, Locale, trans};
+use crate::{Locale, trans};
 
 use super::DateOfBirth;
 
@@ -72,9 +72,7 @@ pub enum PotentialProblems {
         actual: usize,
         max: usize,
     },
-    DuplicateDistricts {
-        duplicates: Vec<ElectoralDistrict>,
-    },
+    DuplicateDistricts,
     NoDistricts,
     FewCandidatesWithFirstName {
         count: usize,
@@ -100,6 +98,15 @@ pub enum PotentialProblems {
     NoAuthorisedAgent,
     NoListSubmitter,
     NoSubstituteSubmitter,
+    NoDesignationType,
+    TooManyAuthorizedNames {
+        actual: usize,
+        max: usize,
+    },
+    TooFewAuthorizedNames {
+        actual: usize,
+        min: usize,
+    },
 
     // representative wrapper
     RepresentativeProblem(Box<PotentialProblems>),
@@ -140,13 +147,8 @@ impl PotentialProblems {
             PotentialProblems::TooManyCandidates { actual, max } => {
                 trans!("problems.too_many_candidates", *locale, actual, max)
             }
-            PotentialProblems::DuplicateDistricts { duplicates } => {
-                let districts = duplicates
-                    .iter()
-                    .map(|d| d.title((*locale).into()))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                trans!("problems.duplicate_districts", *locale, districts)
+            PotentialProblems::DuplicateDistricts => {
+                trans!("problems.duplicate_districts", *locale)
             }
             PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
             PotentialProblems::FewCandidatesWithFirstName { count, total } => {
@@ -212,6 +214,13 @@ impl PotentialProblems {
             PotentialProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
             }
+            PotentialProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
+            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
+                trans!("problems.too_many_authorized_names", *locale, actual, max)
+            }
+            PotentialProblems::TooFewAuthorizedNames { actual, min } => {
+                trans!("problems.too_few_authorized_names", *locale, actual, min)
+            }
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => {
@@ -254,7 +263,7 @@ impl PotentialProblems {
             // candidate list
             PotentialProblems::NoCandidates => Severity::Error,
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
-            PotentialProblems::DuplicateDistricts { .. } => Severity::Error,
+            PotentialProblems::DuplicateDistricts => Severity::Error,
             PotentialProblems::NoDistricts => Severity::Error,
             PotentialProblems::FewCandidatesWithFirstName { .. } => Severity::Info,
             PotentialProblems::FewCandidatesWithoutFirstName { .. } => Severity::Info,
@@ -268,6 +277,9 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
+            PotentialProblems::NoDesignationType => Severity::Info,
+            PotentialProblems::TooManyAuthorizedNames { .. } => Severity::Error,
+            PotentialProblems::TooFewAuthorizedNames { .. } => Severity::Warn,
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
@@ -420,6 +432,8 @@ mod tests {
                 count: 2,
                 total: 37,
             },
+            PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
+            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 },
         ];
         for problem in problems {
             let summary = WithProblems(vec![problem])

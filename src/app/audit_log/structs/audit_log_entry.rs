@@ -109,7 +109,10 @@ mod tests {
 
         let entry = AuditLogEntry::new(event, EN);
 
-        assert_eq!(entry.description, "Created statutory name authorisation");
+        assert_eq!(
+            entry.description,
+            "Created statutory name and authorised agent"
+        );
         assert_eq!(entry.details, expected_name);
     }
 

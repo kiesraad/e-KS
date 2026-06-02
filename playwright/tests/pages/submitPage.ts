@@ -20,7 +20,7 @@ export class SubmitPage {
       name: "Geregistreerde aanduiding ontbreekt",
     });
     this.linkNoLegalName = this.page.getByRole("link", {
-      name: "Statutaire naam ontbreekt",
+      name: "Te weinig gemachtigde/statutaire namen",
     });
     this.linkBSN = this.page.getByRole("link", {
       name: "BSN ontbreekt",
