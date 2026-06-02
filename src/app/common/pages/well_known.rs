@@ -16,11 +16,14 @@ pub(super) async fn security_txt(_: SecurityTxt) -> String {
     let date_str = SECURITY_EXPIRATION.to_rfc3339_opts(SecondsFormat::Secs, true);
 
     format!(
-        "Contact: mailto:security@kiesraad.nl
-Expires: {date_str}
-Preferred-Languages: en, nl
+        "Expires: {date_str}
 Canonical: https://kandidaatstellen.kiesraad.nl/.well-known/security.txt
+
 Policy: https://code.overheid.nl/Kiesraad/e-KS/src/branch/main/SECURITY.md
+
+Contact: mailto:security@kiesraad.nl
+Preferred-Languages: en, nl
+
 Hiring: https://www.werkenvoornederland.nl
 CSAF: https://advisories.ncsc.nl/.well-known/csaf/provider-metadata.json
 "
