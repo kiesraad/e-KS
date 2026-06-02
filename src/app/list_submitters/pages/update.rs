@@ -1,11 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
-    redirect_success,
 };
 
 use super::ListSubmitterUpdatePath;
@@ -15,19 +17,26 @@ use super::ListSubmitterUpdatePath;
 struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
     should_warn: bool,
+    close_url: String,
 }
 
 pub async fn update_list_submitter(
     _: ListSubmitterUpdatePath,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
     let should_warn = !list_submitter.is_empty();
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
             should_warn,
+            close_url,
         },
         context,
     )
@@ -38,9 +47,14 @@ pub async fn update_list_submitter_submit(
     _: ListSubmitterUpdatePath,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
     match form.validate_update_with_checks(
         &ListSubmitterData::from(list_submitter.clone()),
         &context.session.csrf_token,
@@ -49,6 +63,7 @@ pub async fn update_list_submitter_submit(
             ListSubmitterUpdateTemplate {
                 form: *form_data,
                 should_warn: true,
+                close_url,
             },
             context,
         )
@@ -60,7 +75,7 @@ pub async fn update_list_submitter_submit(
             };
             updated.update(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::view_path()))
+            Ok(query.redirect_or(ListSubmitter::view_path()))
         }
     }
 }
@@ -89,6 +104,7 @@ mod tests {
             ListSubmitterUpdatePath {},
             Context::new_test_without_db(),
             store,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -114,6 +130,7 @@ mod tests {
             ListSubmitterUpdatePath {},
             context,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -148,11 +165,16 @@ mod tests {
         let mut form = sample_list_submitter_form(&csrf_token);
         form.name.last_name = " ".to_string();
 
-        let response =
-            update_list_submitter_submit(ListSubmitterUpdatePath {}, context, store, Form(form))
-                .await
-                .unwrap()
-                .into_response();
+        let response = update_list_submitter_submit(
+            ListSubmitterUpdatePath {},
+            context,
+            store,
+            Query(QueryParamState::default()),
+            Form(form),
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

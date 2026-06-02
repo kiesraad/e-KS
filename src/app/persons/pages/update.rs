@@ -15,13 +15,19 @@ use crate::{
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonalDataForm>,
+    close_url: String,
 }
 
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
     person: Person,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
@@ -29,6 +35,7 @@ pub async fn update_person(
                 &context.session.csrf_token,
             ),
             person,
+            close_url,
         },
         context,
     ))
@@ -42,6 +49,10 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     match form.validate_update_with_checks(
         &person,
         &context.session.csrf_token,
@@ -52,6 +63,7 @@ pub async fn update_person_submit(
             PersonUpdateTemplate {
                 person,
                 form: *form_data,
+                close_url,
             },
             context,
         )
@@ -94,6 +106,7 @@ mod tests {
             UpdatePersonPath { person_id },
             Context::new_test_without_db(),
             person,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

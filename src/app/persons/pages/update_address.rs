@@ -16,6 +16,7 @@ struct PersonAddressUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<AddressForm>,
+    close_url: String,
 }
 
 pub async fn update_person_address(
@@ -24,6 +25,10 @@ pub async fn update_person_address(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
@@ -32,6 +37,7 @@ pub async fn update_person_address(
                 &context.session.csrf_token,
             ),
             person,
+            close_url,
         },
         context,
     ))
@@ -45,12 +51,17 @@ pub async fn update_person_address_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     match form.validate_update(&person, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
                 should_warn: query.should_warn(),
                 form: form_data,
+                close_url,
             },
             context,
         )

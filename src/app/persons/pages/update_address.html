@@ -3,7 +3,7 @@
   <span class="person-badge"></span>
   {{ person.name.display() }}
 {% endblock %}
-{% set close_action = person.highlight_path() %}
+{% set close_action = close_url %}
 {% block overlay_steps %}
   {% include "persons/components/update_steps.html" %}
 {% endblock %}

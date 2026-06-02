@@ -16,6 +16,7 @@ struct RepresentativeUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<RepresentativeForm>,
+    close_url: String,
 }
 
 pub async fn update_representative(
@@ -24,6 +25,10 @@ pub async fn update_representative(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
@@ -32,6 +37,7 @@ pub async fn update_representative(
                 &context.session.csrf_token,
             ),
             person,
+            close_url,
         },
         context,
     ))
@@ -45,6 +51,10 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
+    let close_url = query
+        .redirect_url()
+        .map(str::to_string)
+        .unwrap_or_else(|| person.highlight_path().to_string());
     let representative = person.clone().representative.unwrap_or_default();
     match form.validate_update(&representative, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -52,6 +62,7 @@ pub async fn update_representative_submit(
                 should_warn: query.should_warn(),
                 person,
                 form: form_data,
+                close_url,
             },
             context,
         )

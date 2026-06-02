@@ -267,7 +267,8 @@ ul.districts {
       border-color: var(--red-300);
       color: var(--red-800);
       background:
-        url("../icons/error.svg") no-repeat right var(--space-sm) center / 1.1rem;
+        url("../icons/error.svg") no-repeat right var(--space-sm) center /
+        1.1rem;
 
       a {
         padding-right: 2rem;
@@ -306,7 +307,8 @@ ul.warnings {
       color: var(--orange-800);
       padding-left: 2rem;
       background:
-        url("../icons/warning.svg") no-repeat left var(--space-sm) center / 1.2rem,
+        url("../icons/warning.svg") no-repeat left var(--space-sm) center /
+        1.2rem,
         var(--orange-100);
     }
 
