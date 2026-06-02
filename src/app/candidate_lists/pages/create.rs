@@ -15,6 +15,7 @@ use crate::{
 struct CandidateListCreateTemplate {
     form: FormData<CandidateListCreateForm>,
     available_districts: Vec<ElectoralDistrict>,
+    duplicate_districts: Vec<ElectoralDistrict>,
     has_previous_list: bool,
 }
 
@@ -45,6 +46,7 @@ pub async fn create_candidate_list(
         CandidateListCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
             available_districts,
+            duplicate_districts: vec![],
             has_previous_list,
         },
         context,
@@ -74,6 +76,7 @@ pub async fn create_candidate_list_submit(
                 form: form_data,
                 has_previous_list: !store.get_candidate_lists().is_empty(),
                 available_districts,
+                duplicate_districts: vec![],
             },
             context,
         )

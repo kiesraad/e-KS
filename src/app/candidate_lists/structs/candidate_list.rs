@@ -61,6 +61,21 @@ impl CandidateList {
         election.available_districts(used)
     }
 
+    pub fn duplicate_districts(&self, store: &AppStore) -> Vec<ElectoralDistrict> {
+        let other_districts: BTreeSet<ElectoralDistrict> = store
+            .get_candidate_lists()
+            .into_iter()
+            .filter(|list| list.id != self.id)
+            .flat_map(|list| list.electoral_districts)
+            .collect();
+
+        self.electoral_districts
+            .iter()
+            .filter(|d| other_districts.contains(d))
+            .copied()
+            .collect()
+    }
+
     pub async fn update_order(
         &mut self,
         store: &AppStore,
@@ -289,6 +304,52 @@ mod tests {
         list.create(store).await?;
 
         Ok(list)
+    }
+
+    #[tokio::test]
+    async fn duplicate_districts_returns_empty_for_single_list() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
+
+        assert_eq!(list.duplicate_districts(&store), vec![]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn duplicate_districts_returns_shared_districts() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = insert_list(
+            &store,
+            vec![
+                ElectoralDistrict::UT,
+                ElectoralDistrict::DR,
+                ElectoralDistrict::NH,
+            ],
+        )
+        .await?;
+        insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::GR]).await?;
+        insert_list(&store, vec![ElectoralDistrict::LI, ElectoralDistrict::GR]).await?;
+        insert_list(&store, vec![ElectoralDistrict::GE, ElectoralDistrict::DR]).await?;
+
+        assert_eq!(
+            list.duplicate_districts(&store),
+            vec![ElectoralDistrict::UT, ElectoralDistrict::DR] // but not GR!
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn duplicate_districts_excludes_non_overlapping_districts() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list = insert_list(&store, vec![ElectoralDistrict::UT, ElectoralDistrict::DR]).await?;
+        insert_list(&store, vec![ElectoralDistrict::GR, ElectoralDistrict::OV]).await?;
+        insert_list(&store, vec![ElectoralDistrict::LI, ElectoralDistrict::GE]).await?;
+
+        assert_eq!(list.duplicate_districts(&store), vec![]);
+
+        Ok(())
     }
 
     #[tokio::test]

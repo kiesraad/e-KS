@@ -18,6 +18,7 @@ struct CandidateListUpdateTemplate {
     form: FormData<CandidateListForm>,
     candidate_list: CandidateList,
     available_districts: Vec<ElectoralDistrict>,
+    duplicate_districts: Vec<ElectoralDistrict>,
 }
 
 pub async fn update_candidate_list(
@@ -28,6 +29,7 @@ pub async fn update_candidate_list(
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    let duplicate_districts = candidate_list.duplicate_districts(&store);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -37,6 +39,7 @@ pub async fn update_candidate_list(
             should_warn: query.should_warn(),
             candidate_list,
             available_districts,
+            duplicate_districts,
         },
         context,
     )
@@ -57,6 +60,7 @@ pub async fn update_candidate_list_submit(
         ));
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    let duplicate_districts = candidate_list.duplicate_districts(&store);
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_token) {
@@ -66,6 +70,7 @@ pub async fn update_candidate_list_submit(
                 form: form_data,
                 candidate_list,
                 available_districts,
+                duplicate_districts,
             },
             context,
         )

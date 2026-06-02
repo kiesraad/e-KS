@@ -3,7 +3,7 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList, pages::ViewCandidateListPath},
+    candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
     common::Problematic,
     filters,
 };
@@ -21,11 +21,7 @@ pub async fn view_candidate_list(
     full_list: FullCandidateList,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let duplicate_districts = CandidateListSummary::list(&store)
-        .into_iter()
-        .find(|s| s.list.id == full_list.list.id)
-        .map(|s| s.duplicate_districts)
-        .unwrap_or_default();
+    let duplicate_districts = full_list.list.duplicate_districts(&store);
 
     Ok(HtmlTemplate(
         CandidateListViewTemplate {

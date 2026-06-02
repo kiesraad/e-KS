@@ -206,4 +206,12 @@
       cursor: default;
     }
   }
+
+  &.error {
+    label {
+      color: var(--color-error-darker);
+      padding-right: var(--space-ml);
+      background: url("../icons/error.svg") no-repeat right center / 1.1rem;
+    }
+  }
 }
