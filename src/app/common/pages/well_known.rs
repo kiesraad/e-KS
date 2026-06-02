@@ -12,6 +12,7 @@ const SECURITY_EXPIRATION: DateTime<Utc> = DateTime::from_naive_utc_and_offset(
     Utc,
 );
 
+/// Emit a security.txt file, for background information see <https://github.com/securitytxt/security-txt>
 pub(super) async fn security_txt(_: SecurityTxt) -> impl IntoResponse {
     let date_str = SECURITY_EXPIRATION.to_rfc3339_opts(SecondsFormat::Secs, true);
 
