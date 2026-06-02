@@ -19,16 +19,16 @@ use crate::{
 pub fn create(state: AppState) -> Router<AppState> {
     let app_router = Router::new()
         .merge(audit_log::router())
-        .merge(common::router())
-        .merge(persons::router())
-        .merge(list_designation::router())
-        .merge(political_groups::router())
-        .merge(name_authorisations::router())
-        .merge(list_submitters::router())
-        .merge(substitute_list_submitters::router())
-        .merge(submit::router())
+        .merge(candidates::router())
         .merge(candidate_lists::router())
-        .merge(candidates::router());
+        .merge(common::router())
+        .merge(list_designation::router())
+        .merge(list_submitters::router())
+        .merge(name_authorisations::router())
+        .merge(persons::router())
+        .merge(political_groups::router())
+        .merge(submit::router())
+        .merge(substitute_list_submitters::router());
 
     #[cfg(feature = "dev-features")]
     let dev_router = Router::new().route(
