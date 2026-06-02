@@ -100,6 +100,8 @@ phf_codegen = "0.13.1"
 http-body-util = "0.1"
 tower = "0.5"
 tracing-test = "0.2.6"
+# Adds 'now' to chrono for testing against the current block
+chrono = { version = "0.4.44", features = ["now"] }
 # Adds rustls to reqwest for TLS server tests. Dev-only: the production
 # binary still builds reqwest without any TLS backend.
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }

@@ -6,6 +6,7 @@ mod not_found;
 mod select_election;
 mod switch_election;
 mod switch_locale;
+mod well_known;
 
 use crate::{AppError, AppState};
 
@@ -33,6 +34,7 @@ pub fn router() -> Router<AppState> {
         .typed_post(switch_locale::switch_language)
         .typed_get(switch_election::switch_election)
         .typed_post(switch_election::switch_election_submit)
+        .typed_get(well_known::index)
 }
 
 /// Routes that need a session but NOT the store middleware.
