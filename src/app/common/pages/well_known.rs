@@ -1,4 +1,3 @@
-use axum::response::IntoResponse;
 use axum_extra::routing::TypedPath;
 use chrono::{DateTime, NaiveDate, NaiveDateTime, NaiveTime, SecondsFormat, Utc};
 use serde::Deserialize;
@@ -13,7 +12,7 @@ const SECURITY_EXPIRATION: DateTime<Utc> = DateTime::from_naive_utc_and_offset(
 );
 
 /// Emit a security.txt file, for background information see <https://github.com/securitytxt/security-txt>
-pub(super) async fn security_txt(_: SecurityTxt) -> impl IntoResponse {
+pub(super) async fn security_txt(_: SecurityTxt) -> String {
     let date_str = SECURITY_EXPIRATION.to_rfc3339_opts(SecondsFormat::Secs, true);
 
     format!(
@@ -32,7 +31,18 @@ CSAF: https://advisories.ncsc.nl/.well-known/csaf/provider-metadata.json
 mod tests {
     use super::*;
 
+    use crate::test_utils::response_body_string;
+    use axum::response::IntoResponse;
     use chrono::{Months, Utc};
+
+    #[tokio::test]
+    async fn security_renders_text() {
+        // This text is almost useless, except that it forces (at compile time, most likely)
+        // that security.txt is a text/plain.
+        let text = security_txt(SecurityTxt {}).await;
+        let body = response_body_string(text.clone().into_response()).await;
+        assert_eq!(body, text);
+    }
 
     #[test]
     fn security_is_not_stale() {
