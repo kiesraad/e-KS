@@ -28,10 +28,7 @@ pub async fn update_list_submitter(
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
     let should_warn = !list_submitter.is_empty();
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
+    let close_url = query.close_url(ListSubmitter::view_path());
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
@@ -51,10 +48,7 @@ pub async fn update_list_submitter_submit(
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
+    let close_url = query.close_url(ListSubmitter::view_path());
     match form.validate_update_with_checks(
         &ListSubmitterData::from(list_submitter.clone()),
         &context.session.csrf_token,

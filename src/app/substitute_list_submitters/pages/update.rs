@@ -28,10 +28,7 @@ pub async fn update_substitute_submitter(
     substitute_submitter: ListSubmitter,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
+    let close_url = query.close_url(ListSubmitter::view_path());
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
@@ -54,10 +51,7 @@ pub async fn update_substitute_submitter_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| ListSubmitter::view_path().to_string());
+    let close_url = query.close_url(ListSubmitter::view_path());
     match form.validate_update_with_checks(
         &ListSubmitterData::from(substitute_submitter.clone()),
         &context.session.csrf_token,

@@ -31,10 +31,7 @@ pub async fn update_candidate_list(
 ) -> Result<Response, AppError> {
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let duplicate_districts = candidate_list.duplicate_districts(&store);
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| candidate_list.view_path().to_string());
+    let close_url = query.close_url(candidate_list.view_path());
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -67,10 +64,7 @@ pub async fn update_candidate_list_submit(
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
     let duplicate_districts = candidate_list.duplicate_districts(&store);
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| candidate_list.view_path().to_string());
+    let close_url = query.close_url(candidate_list.view_path());
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_token) {

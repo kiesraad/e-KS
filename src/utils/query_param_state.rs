@@ -95,6 +95,12 @@ impl QueryParamState {
             .filter(|url| url.starts_with('/'))
     }
 
+    pub fn close_url(&self, default: impl std::fmt::Display) -> String {
+        self.redirect_url()
+            .map(str::to_string)
+            .unwrap_or_else(|| default.to_string())
+    }
+
     /// Redirect to `redirect_to` query param if present (and a valid relative path),
     /// otherwise redirect to the default path with success query params.
     pub fn redirect_or(&self, default: impl std::fmt::Display) -> Response {

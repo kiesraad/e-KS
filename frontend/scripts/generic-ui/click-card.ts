@@ -7,7 +7,7 @@ export default function setupClickCard() {
       }
       const href = card.dataset.href;
       if (href) {
-        window.location.href = href;
+        globalThis.location.href = href;
       }
     });
   });

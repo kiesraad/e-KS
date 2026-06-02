@@ -25,10 +25,7 @@ pub async fn update_person_address(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| person.highlight_path().to_string());
+    let close_url = query.close_url(person.highlight_path());
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
@@ -51,10 +48,7 @@ pub async fn update_person_address_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query
-        .redirect_url()
-        .map(str::to_string)
-        .unwrap_or_else(|| person.highlight_path().to_string());
+    let close_url = query.close_url(person.highlight_path());
     match form.validate_update(&person, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
