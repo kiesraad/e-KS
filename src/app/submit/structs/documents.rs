@@ -304,11 +304,13 @@ impl DocumentData {
                 .await?;
         }
 
-        let h4 = H4::from(&self);
-        let h4_path = self.zip_path(h4.filename());
-        writer
-            .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
-            .await?;
+        if !self.previously_seated {
+            let h4 = H4::from(&self);
+            let h4_path = self.zip_path(h4.filename());
+            writer
+                .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
+                .await?;
+        }
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
