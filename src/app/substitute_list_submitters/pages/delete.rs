@@ -1,13 +1,15 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     common::Problematic,
     filters,
     form::{EmptyForm, FormData},
     list_submitters::ListSubmitter,
-    redirect_success,
 };
 
 use super::SubstituteSubmitterDeletePath;
@@ -17,17 +19,20 @@ use super::SubstituteSubmitterDeletePath;
 struct DeleteSubstituteSubmitterTemplate {
     substitute_submitter: ListSubmitter,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 pub async fn delete_substitute_submitter_confirm(
     _: SubstituteSubmitterDeletePath,
     context: Context,
     substitute_submitter: ListSubmitter,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteSubstituteSubmitterTemplate {
             form: FormData::new(&context.session.csrf_token),
             substitute_submitter,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -38,6 +43,7 @@ pub async fn delete_substitute_submitter(
     context: Context,
     substitute_submitter: ListSubmitter,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
@@ -45,13 +51,14 @@ pub async fn delete_substitute_submitter(
         Ok(_) => {
             substitute_submitter.delete_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::view_path()))
+            Ok(query.redirect_or(ListSubmitter::view_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum::extract::Query;
     use axum_extra::routing::TypedPath;
 
     use super::*;
@@ -72,6 +79,7 @@ mod tests {
             SubstituteSubmitterDeletePath { sub_submitter_id },
             Context::new_test_without_db(),
             substitute_submitter.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -99,6 +107,7 @@ mod tests {
             context,
             substitute_submitter.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -139,6 +148,7 @@ mod tests {
             context,
             substitute_submitter.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

@@ -42,7 +42,7 @@
             {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ ListSubmitter::update_path() }}">{{ problem.translate(locale) }}</a>
+                   href="{{ ListSubmitter::update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>
@@ -55,7 +55,7 @@
             {% for problem in &ss_pp.problems %}
               <li>
                 <a class="{{ problem.severity().class() }}"
-                   href="{{ ss_pp.entity.substitute_update_path() }}">{{ problem.translate(locale) }}</a>
+                   href="{{ ss_pp.entity.substitute_update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
               </li>
             {% endfor %}
           </ul>

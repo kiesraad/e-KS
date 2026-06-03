@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, HtmlTemplate,
+    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
     common::Problematic,
     filters,
@@ -12,15 +12,22 @@ use crate::{
 #[template(path = "candidate_lists/pages/view.html")]
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
+    duplicate_districts: Vec<ElectoralDistrict>,
 }
 
 pub async fn view_candidate_list(
     _: ViewCandidateListPath,
     context: Context,
     full_list: FullCandidateList,
+    store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
+    let duplicate_districts = full_list.list.duplicate_districts(&store);
+
     Ok(HtmlTemplate(
-        CandidateListViewTemplate { full_list },
+        CandidateListViewTemplate {
+            full_list,
+            duplicate_districts,
+        },
         context,
     ))
 }
@@ -53,6 +60,7 @@ mod tests {
             ViewCandidateListPath { list_id },
             Context::new_test_without_db(),
             full_list,
+            store,
         )
         .await?
         .into_response();

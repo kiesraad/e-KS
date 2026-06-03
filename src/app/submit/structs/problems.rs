@@ -9,10 +9,12 @@ use crate::{
     name_authorisations::NameAuthorisation,
     persons::Person,
     political_groups::PoliticalGroup,
+    submit::SubmitPath,
 };
 
 impl PotentialProblems {
     pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
+        let submit = SubmitPath {}.to_string();
         match self {
             PotentialProblems::NoCandidates => list.view_path().to_string(),
             PotentialProblems::TooManyCandidates { actual, max } => {
@@ -25,26 +27,40 @@ impl PotentialProblems {
             | PotentialProblems::FewCandidatesWithoutFirstName { .. }
             | PotentialProblems::FewCandidatesWithGender { .. }
             | PotentialProblems::FewCandidatesWithoutGender { .. } => list.view_path().to_string(),
-            _ => list.update_path().to_string(),
+            PotentialProblems::DuplicateDistricts => CandidateList::list_path().to_string(),
+            _ => list.update_path_from(submit).to_string(),
         }
     }
 
     pub fn person_fix_path(&self, person: &Person) -> String {
+        let submit = SubmitPath {}.to_string();
         match self {
-            PotentialProblems::IncompleteAddress { .. } => person.update_address_path().to_string(),
+            PotentialProblems::IncompleteAddress { .. } => person
+                .update_address_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
             PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
-                person.update_representative_path().to_string()
+                person
+                    .update_representative_path()
+                    .with_query_params(QueryParamState::redirect_to(submit))
+                    .to_string()
             }
-            _ => person.update_path().to_string(),
+            _ => person
+                .update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
         }
     }
 
     pub fn general_fix_path(&self) -> String {
+        let submit = SubmitPath {}.to_string();
         match self {
             PotentialProblems::NoAuthorisedAgent | PotentialProblems::NoLegalName => {
                 NameAuthorisation::list_path().to_string()
             }
-            PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
+            PotentialProblems::NoListSubmitter => ListSubmitter::update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
             PotentialProblems::NoDesignationType => ListDesignation::update_path().to_string(),
             PotentialProblems::TooFewAuthorizedNames { .. }

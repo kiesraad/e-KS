@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::RepresentativeForm,
 };
@@ -18,6 +18,7 @@ struct UpdateRepresentativeTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<RepresentativeForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_representative(
@@ -38,6 +39,7 @@ pub async fn update_representative(
             candidate: candidate.clone(),
             full_list,
             form,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -60,6 +62,7 @@ pub async fn update_representative_submit(
                 candidate,
                 full_list,
                 form: form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )

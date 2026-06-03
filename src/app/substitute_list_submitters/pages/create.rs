@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 
 use super::SubstituteSubmitterCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -13,6 +13,7 @@ use crate::{
 #[template(path = "substitute_list_submitters/pages/create.html")]
 struct SubstituteSubmitterCreateTemplate {
     form: FormData<ListSubmitterForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_substitute_submitter(
@@ -22,6 +23,7 @@ pub async fn create_substitute_submitter(
     Ok(HtmlTemplate(
         SubstituteSubmitterCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     ))
@@ -35,7 +37,10 @@ pub async fn create_substitute_submitter_submit(
 ) -> Result<Response, AppError> {
     match form.validate_create_with_checks(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
-            SubstituteSubmitterCreateTemplate { form: *form_data },
+            SubstituteSubmitterCreateTemplate {
+                form: *form_data,
+                overlay: Overlay::default(),
+            },
             context,
         )
         .into_response()),

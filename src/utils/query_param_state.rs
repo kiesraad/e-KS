@@ -82,6 +82,19 @@ impl QueryParamState {
         }
     }
 
+    pub fn redirect_to(url: String) -> Self {
+        Self {
+            redirect_to: Some(url),
+            ..Default::default()
+        }
+    }
+
+    pub fn redirect_url(&self) -> Option<&str> {
+        self.redirect_to
+            .as_deref()
+            .filter(|url| url.starts_with('/'))
+    }
+
     /// Redirect to `redirect_to` query param if present (and a valid relative path),
     /// otherwise redirect to the default path with success query params.
     pub fn redirect_or(&self, default: impl std::fmt::Display) -> Response {

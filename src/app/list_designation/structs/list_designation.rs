@@ -1,7 +1,7 @@
 use crate::form::ValidationError;
 use serde::{Deserialize, Serialize};
 
-#[derive(Default, Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Default, Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub enum ListDesignation {
     #[default]
     Standalone,

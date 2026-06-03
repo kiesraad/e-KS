@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::PersonsCreatePath},
 };
@@ -11,6 +11,7 @@ use crate::{
 #[template(path = "persons/pages/create.html")]
 struct PersonCreateTemplate {
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_person(
@@ -20,6 +21,7 @@ pub async fn create_person(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     ))
@@ -32,9 +34,14 @@ pub async fn create_person_submit(
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create_with_checks(&context.session.csrf_token, &store) {
-        Err(form_data) => {
-            Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
-        }
+        Err(form_data) => Ok(HtmlTemplate(
+            PersonCreateTemplate {
+                form: *form_data,
+                overlay: Overlay::default(),
+            },
+            context,
+        )
+        .into_response()),
         Ok(person) => {
             let person =
                 Person::create_from_personal_data(&store, person.name, person.personal_data)

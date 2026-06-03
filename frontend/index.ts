@@ -18,6 +18,7 @@ import setupStickyNav from "./scripts/generic-ui/sticky-nav";
 import highlightActiveLinks from "./scripts/highlights-alerts/active-link";
 import alertSuccess from "./scripts/highlights-alerts/alert-success";
 import highlightRow from "./scripts/highlights-alerts/highlight-row";
+import setupClickCard from "./scripts/generic-ui/click-card";
 import setupClickRow from "./scripts/table-interaction/click-row";
 import setupSortable from "./scripts/table-interaction/sortable";
 
@@ -25,6 +26,7 @@ import "./styles/index.css";
 
 // table interaction
 setupClickRow();
+setupClickCard();
 
 // highlights and alerts
 highlightActiveLinks();

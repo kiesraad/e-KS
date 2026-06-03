@@ -1,13 +1,15 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList},
     candidates::Candidate,
     filters,
     form::{EmptyForm, FormData},
-    redirect_success,
 };
 
 use super::CandidateListDeletePersonPath;
@@ -19,6 +21,7 @@ struct DeleteCandidateTemplate {
     full_list: FullCandidateList,
     on_candidate_lists: usize,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 pub async fn delete_person_confirm(
@@ -27,6 +30,7 @@ pub async fn delete_person_confirm(
     store: AppStore,
     full_list: FullCandidateList,
     candidate: Candidate,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteCandidateTemplate {
@@ -34,6 +38,7 @@ pub async fn delete_person_confirm(
             form: FormData::new(&context.session.csrf_token),
             candidate,
             full_list,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -45,6 +50,7 @@ pub async fn delete_person(
     candidate_list: CandidateList,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
@@ -52,13 +58,15 @@ pub async fn delete_person(
         Ok(_) => {
             candidate.person.delete(&store).await?;
 
-            Ok(redirect_success(candidate_list.view_path()))
+            Ok(query.redirect_or(candidate_list.view_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum::extract::Query;
+
     use super::*;
     use crate::{
         AppStore, Form, QueryParamState,
@@ -98,6 +106,7 @@ mod tests {
             store,
             full_list,
             candidate.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -149,6 +158,7 @@ mod tests {
             list.clone(),
             context,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(csrf_token)),
         )
         .await?;
