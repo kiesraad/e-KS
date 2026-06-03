@@ -7,24 +7,32 @@ use crate::{
     transparent_string,
 };
 
-pub type FirstName = ConstrainedString;
-pub type LegalName = ConstrainedString;
-pub type StreetName = ConstrainedString;
-pub type StateOrProvince = ConstrainedString;
+/// Define multiple separate types with the same basic constrains in the FromStr implementation
+macro_rules! constrained_strings {
+    ($(pub struct $name:ident;)*) => {
+        $(
+            transparent_string! {
+                pub struct $name(String);
+            }
 
-transparent_string! {
-    pub struct ConstrainedString(String);
+            impl FromStr for $name {
+                type Err = ValidationError;
+
+                fn from_str(value: &str) -> Result<Self, Self::Err> {
+                    let trimmed_value = validate_length(value, 1, 200)?;
+                    validate_teletex_chars(&trimmed_value)?;
+                    Ok($name(trimmed_value))
+                }
+            }
+        )*
+    };
 }
 
-impl FromStr for ConstrainedString {
-    type Err = ValidationError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = validate_length(value, 1, 200)?;
-        validate_teletex_chars(&trimmed_value)?;
-
-        Ok(ConstrainedString(trimmed_value))
-    }
+constrained_strings! {
+    pub struct FirstName;
+    pub struct LegalName;
+    pub struct StreetName;
+    pub struct StateOrProvince;
 }
 
 impl Problematic for Option<LegalName> {
