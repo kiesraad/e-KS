@@ -1,5 +1,6 @@
 use crate::{
     core::{ModelLocale, Pdf},
+    list_designation::ListDesignation,
     submit::{
         DocumentData,
         structs::{TypstPerson, typst_model_data::TypstModelData},
@@ -12,9 +13,9 @@ pub struct H1<'a> {
     #[serde(flatten)]
     common: &'a TypstModelData,
     previously_seated: bool,
+    list_designation: ListDesignation,
     list_submitter: &'a TypstPerson,
     substitute_submitters: &'a Vec<TypstPerson>,
-    nr_of_name_authorisations: usize,
 }
 
 impl Pdf for H1<'_> {
@@ -35,9 +36,9 @@ impl<'a> From<&'a DocumentData> for H1<'a> {
         Self {
             common: &data.model_data,
             previously_seated: data.previously_seated,
+            list_designation: data.list_designation,
             list_submitter: &data.list_submitter,
             substitute_submitters: &data.substitute_submitters,
-            nr_of_name_authorisations: data.name_authorisations.len(),
         }
     }
 }

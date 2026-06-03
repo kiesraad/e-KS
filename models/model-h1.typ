@@ -92,7 +92,7 @@
   "Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:",
 )
 
-#if input.nr_of_name_authorisations > 0 {
+#if input.list_designation != "blank" {
   checkbox(trans(
     "Een verklaring van de gemachtigde(n) van de politieke groepering(en) waarmee aan mij toestemming wordt gegeven om de aanduiding boven de kandidatenlijst te plaatsen, want ik heb een aanduiding boven de lijst geplaatst (model H 3-1 of H 3-2).",
     "In ferklearring fan de lêsthawwer(s) fan de politike groepearring(s) dêr’t my tastimming mei jûn wurdt om de oantsjutting boppe de kandidatelist te pleatsen, want ik haw in oantsjutting boppe de list pleatst (model H 3-1 of H 3-2).",

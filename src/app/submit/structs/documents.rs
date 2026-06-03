@@ -30,6 +30,7 @@ pub struct DocumentData {
     pub model_data: TypstModelData,
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
     pub previously_seated: bool,
+    pub list_designation: ListDesignation,
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
     pub name_authorisations: Vec<TypstNameAuthorisation>,
@@ -44,7 +45,7 @@ impl DocumentData {
         }
         let version = self.model_data.event_id;
 
-        let name_slug = if self.name_authorisations.is_empty() {
+        let name_slug = if self.list_designation == ListDesignation::Blank {
             "blanco".to_string()
         } else {
             slugify_teletex(&self.model_data.designation, true)
@@ -174,6 +175,7 @@ impl DocumentData {
             },
             detailed_candidates,
             previously_seated: group.was_previously_seated(),
+            list_designation: group.list_designation.unwrap_or_default(),
             list_submitter,
             substitute_submitters,
             name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
@@ -294,9 +296,7 @@ impl DocumentData {
             .add_file(&h1_path, &h1.generate_bytes(renderer).await?)
             .await?;
 
-        // Name authorisations are only empty for blank lists. Standalone lists and list combinations
-        // will contain fill-ins if necessary.
-        if !self.name_authorisations.is_empty() {
+        if self.list_designation != ListDesignation::Blank {
             let h3 = H3::from(&self);
             let h3_path = self.zip_path(h3.filename());
             writer
