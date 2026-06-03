@@ -1,24 +1,14 @@
 use serde::Serialize;
 
 use crate::{
-    core::{ElectionType, ModelLocale, Pdf},
-    submit::{
-        DocumentData,
-        structs::{typst_candidate::TypstCandidate, typst_datetime::TypstDatetime},
-    },
+    core::{ModelLocale, Pdf},
+    submit::{DocumentData, structs::typst_model_data::TypstModelData},
 };
 
 #[derive(Debug, Serialize)]
 pub struct H4<'a> {
-    election_name: String,
-    election_type: ElectionType,
-    designation: &'a str,
-    candidates: &'a Vec<TypstCandidate>,
-    timestamp: &'a TypstDatetime,
-    locale: ModelLocale,
-    event_id: usize,
-    sha_hash: &'a str,
-    filename: &'static str,
+    #[serde(flatten)]
+    common: &'a TypstModelData,
 }
 
 impl Pdf for H4<'_> {
@@ -26,31 +16,18 @@ impl Pdf for H4<'_> {
         "model-h4.typ"
     }
 
-    fn filename(&self) -> &str {
-        self.filename
+    fn filename(&self) -> String {
+        match self.common.locale {
+            ModelLocale::Nl => "h4-ondersteuningsverklaring.pdf".to_string(),
+            ModelLocale::Fry => "h4-stipeferklearring.pdf".to_string(),
+        }
     }
 }
 
 impl<'a> From<&'a DocumentData> for H4<'a> {
     fn from(data: &'a DocumentData) -> Self {
-        let locale = data.locale;
-        let election = data.election;
-
-        let filename = match locale {
-            ModelLocale::Nl => "h4-ondersteuningsverklaring.pdf",
-            ModelLocale::Fry => "h4-stipeferklearring.pdf",
-        };
-
         Self {
-            election_name: election.formal_title(locale),
-            election_type: election.election_type(),
-            designation: &data.designation,
-            candidates: &data.ordered_candidates,
-            timestamp: &data.timestamp,
-            locale,
-            event_id: data.event_id,
-            sha_hash: &data.event_hash,
-            filename,
+            common: &data.model_data,
         }
     }
 }
