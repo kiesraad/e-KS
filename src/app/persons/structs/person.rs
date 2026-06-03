@@ -1,4 +1,3 @@
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -28,7 +27,7 @@ impl Problematic<&AppStore> for Person {
     fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
         let election = store.election;
         if let Some(date_of_birth) = self.personal_data.date_of_birth.clone()
-            && NaiveDate::from(date_of_birth) > election.eligible_date_of_birth()
+            && date_of_birth.is_too_young(&election)
         {
             vec![PotentialProblems::TooYoungDateOfBirth]
         } else {

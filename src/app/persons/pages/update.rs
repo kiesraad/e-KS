@@ -66,6 +66,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
+        common::DateOfBirth,
         persons::PersonId,
         test_utils::{response_body_string, sample_person, sample_person_form},
     };
@@ -74,6 +75,7 @@ mod tests {
         http::{StatusCode, header},
         response::IntoResponse,
     };
+    use chrono::Duration;
 
     #[tokio::test]
     async fn update_person_renders_existing_person() -> Result<(), AppError> {
@@ -166,6 +168,40 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("This field must not be empty."));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_too_young_renders_error() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+
+        person.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token.clone();
+        let mut form = sample_person_form(&csrf_token);
+        form.personal_data.date_of_birth =
+            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
+                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
+                .to_string();
+
+        let response = update_person_submit(
+            UpdatePersonPath { person_id },
+            context,
+            store,
+            person,
+            Query(QueryParamState::default()),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Candidate is too young to participate in this election."));
 
         Ok(())
     }

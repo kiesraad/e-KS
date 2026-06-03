@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    AppStore, OptionStringExt, TokenValue,
+    AppStore, ElectionConfig, OptionStringExt, TokenValue,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, Initials, LastName,
         LastNamePrefix, PlaceOfResidence,
@@ -49,6 +49,12 @@ impl PersonalDataFieldsForm {
         self.date_of_birth
             .parse::<DateOfBirth>()
             .is_ok_and(|d| d.is_very_old())
+    }
+
+    pub fn is_date_of_birth_too_young(&self, election: &ElectionConfig) -> bool {
+        self.date_of_birth
+            .parse::<DateOfBirth>()
+            .is_ok_and(|d| d.is_too_young(election))
     }
 }
 
