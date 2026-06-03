@@ -83,4 +83,9 @@ mod tests {
             DisplayName::from_str("        ")
         );
     }
+
+    #[test]
+    fn single_char_is_valid() {
+        assert_eq!(Ok(DisplayName("A".to_string())), DisplayName::from_str("A"));
+    }
 }

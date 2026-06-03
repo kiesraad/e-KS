@@ -44,3 +44,31 @@ impl Problematic for Option<LegalName> {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_char_is_valid() {
+        assert_eq!(Ok(FirstName("A".to_string())), FirstName::from_str("A"));
+        assert_eq!(Ok(LegalName("A".to_string())), LegalName::from_str("A"));
+    }
+
+    #[test]
+    fn empty_is_rejected() {
+        assert_eq!(
+            Err(ValidationError::ValueShouldNotBeEmpty),
+            LegalName::from_str("   ")
+        );
+    }
+
+    #[test]
+    fn too_long() {
+        let long = "a".repeat(201);
+        assert_eq!(
+            Err(ValidationError::ValueTooLong(201, 200)),
+            LegalName::from_str(&long)
+        );
+    }
+}
