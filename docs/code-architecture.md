@@ -19,7 +19,7 @@ is submitted.
 graph LR
     TVS["TVS\n(DigiD login)"]
     BRP["BRP\n(citizen data)"]
-    DB[("Database\n(PostgreSQL)")]
+    DB[("Event store\n(PostgreSQL)")]
     User["List submitters/CSB\n(web browser)"]
 
     subgraph eks["e-KS (web application)"]
