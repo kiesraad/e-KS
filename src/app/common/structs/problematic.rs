@@ -296,7 +296,7 @@ impl PotentialProblems {
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
             PotentialProblems::VeryOldDateOfBirth => Severity::Info,
-            PotentialProblems::TooYoungDateOfBirth => Severity::Info,
+            PotentialProblems::TooYoungDateOfBirth => Severity::Warn,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,
