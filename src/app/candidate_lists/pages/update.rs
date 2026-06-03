@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate, QueryParamState,
+    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, CandidateListForm, pages::CandidateListUpdatePath},
     filters,
     form::FormData,
@@ -18,6 +18,8 @@ struct CandidateListUpdateTemplate {
     form: FormData<CandidateListForm>,
     candidate_list: CandidateList,
     available_districts: Vec<ElectoralDistrict>,
+    duplicate_districts: Vec<ElectoralDistrict>,
+    overlay: Overlay,
 }
 
 pub async fn update_candidate_list(
@@ -28,6 +30,7 @@ pub async fn update_candidate_list(
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    let duplicate_districts = candidate_list.duplicate_districts(&store);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
             form: FormData::new_with_data(
@@ -35,8 +38,10 @@ pub async fn update_candidate_list(
                 &context.session.csrf_token,
             ),
             should_warn: query.should_warn(),
+            overlay: Overlay::new(&query),
             candidate_list,
             available_districts,
+            duplicate_districts,
         },
         context,
     )
@@ -57,6 +62,7 @@ pub async fn update_candidate_list_submit(
         ));
     }
     let available_districts = CandidateList::available_districts(&store, &context.election);
+    let duplicate_districts = candidate_list.duplicate_districts(&store);
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
     match form.validate_update(&candidate_list, &context.session.csrf_token) {
@@ -64,8 +70,10 @@ pub async fn update_candidate_list_submit(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
                 form: form_data,
+                overlay: Overlay::new(&query),
                 candidate_list,
                 available_districts,
+                duplicate_districts,
             },
             context,
         )

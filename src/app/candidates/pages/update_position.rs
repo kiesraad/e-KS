@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
     common::FormAction,
@@ -19,6 +19,7 @@ struct UpdateCandidatePositionTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<CandidatePositionForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_candidate_position(
@@ -26,6 +27,7 @@ pub async fn update_candidate_position(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_position = CandidatePosition {
         position: candidate.position,
@@ -37,12 +39,12 @@ pub async fn update_candidate_position(
         &context.session.csrf_token,
     );
 
-    // Implementation for editing candidate position goes here
     Ok(HtmlTemplate(
         UpdateCandidatePositionTemplate {
             candidate: candidate.clone(),
             full_list,
             form,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -68,6 +70,7 @@ pub async fn update_candidate_position_submit(
                 candidate,
                 full_list,
                 form: form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -138,6 +141,7 @@ mod tests {
             Context::new_test_without_db(),
             full_list,
             candidate.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();

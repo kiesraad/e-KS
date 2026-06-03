@@ -1,5 +1,3 @@
-use std::collections::BTreeMap;
-
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -66,29 +64,12 @@ fn compute_deviation(number_with: usize, total: usize) -> Option<Deviant> {
 
 impl CandidateListSummary {
     pub fn list(store: &AppStore) -> Vec<CandidateListSummary> {
-        let lists = store.get_candidate_lists();
-
-        let mut district_count = BTreeMap::<ElectoralDistrict, usize>::new();
-        for list in &lists {
-            for district in &list.electoral_districts {
-                district_count
-                    .entry(*district)
-                    .and_modify(|c| *c += 1)
-                    .or_insert(1);
-            }
-        }
-
-        lists
+        let max_count = store.get_political_group().get_max_candidates();
+        store
+            .get_candidate_lists()
             .into_iter()
             .map(|list| {
-                let max_count = store.get_political_group().get_max_candidates();
-                let duplicate_districts = list
-                    .electoral_districts
-                    .iter()
-                    .filter(|district| *district_count.entry(**district).or_default() > 1)
-                    .cloned()
-                    .collect();
-
+                let duplicate_districts = list.duplicate_districts(store);
                 CandidateListSummary {
                     list,
                     max_count,

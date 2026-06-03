@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, Locale,
+    AppError, AppStore, Context, HtmlTemplate, Locale, Overlay,
     candidate_lists::{
         CandidateList,
         importer::{ImportCandidateListError, import_candidate_list_csv},
@@ -27,6 +27,7 @@ struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 fn render_import_export(
@@ -39,6 +40,7 @@ fn render_import_export(
             list,
             import_errors,
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     )

@@ -3,7 +3,7 @@ use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState,
+    AppError, AppState, QueryParamState,
     list_submitters::{ListSubmitter, ListSubmitterId},
 };
 
@@ -42,6 +42,13 @@ impl ListSubmitter {
         SubstituteSubmitterUpdatePath {
             sub_submitter_id: self.id,
         }
+    }
+
+    pub fn substitute_update_path_from(&self, from: impl std::fmt::Display) -> impl TypedPath {
+        SubstituteSubmitterUpdatePath {
+            sub_submitter_id: self.id,
+        }
+        .with_query_params(QueryParamState::redirect_to(from.to_string()))
     }
 
     pub fn substitute_delete_path(&self) -> impl TypedPath {

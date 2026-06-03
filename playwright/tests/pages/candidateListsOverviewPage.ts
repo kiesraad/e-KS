@@ -10,7 +10,7 @@ export class CandidateListsOverviewPage {
       name: "Lijst aanmaken",
     });
     this.linkCandidateList = this.page.getByRole("link", {
-      name: /^Kandidatenlijst \d+ \/ \d+/,
+      name: "Kandidatenlijst beheren",
     });
     this.headingAllCandidates = this.page.getByRole("heading", {
       name: "Alle kandidaten",

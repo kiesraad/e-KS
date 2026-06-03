@@ -1,13 +1,15 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     common::Problematic,
     filters,
     form::FormData,
     name_authorisations::{NameAuthorisation, NameAuthorisationForm},
-    redirect_success,
 };
 
 use super::NameAuthorisationUpdatePath;
@@ -17,12 +19,14 @@ use super::NameAuthorisationUpdatePath;
 struct NameAuthorisationUpdateTemplate {
     name_authorisation: NameAuthorisation,
     form: FormData<NameAuthorisationForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_name_authorisation(
     _: NameAuthorisationUpdatePath,
     context: Context,
     name_authorisation: NameAuthorisation,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         NameAuthorisationUpdateTemplate {
@@ -31,6 +35,7 @@ pub async fn update_name_authorisation(
                 &context.session.csrf_token,
             ),
             name_authorisation,
+            overlay: Overlay::new(&query),
         },
         context,
     )
@@ -42,6 +47,7 @@ pub async fn update_name_authorisation_submit(
     context: Context,
     name_authorisation: NameAuthorisation,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<NameAuthorisationForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update(&name_authorisation, &context.session.csrf_token) {
@@ -49,6 +55,7 @@ pub async fn update_name_authorisation_submit(
             NameAuthorisationUpdateTemplate {
                 name_authorisation,
                 form: form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -56,7 +63,7 @@ pub async fn update_name_authorisation_submit(
         Ok(name_authorisation) => {
             name_authorisation.update(&store).await?;
 
-            Ok(redirect_success(NameAuthorisation::list_path()))
+            Ok(query.redirect_or(NameAuthorisation::list_path()))
         }
     }
 }
@@ -72,6 +79,7 @@ mod tests {
         },
     };
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -90,6 +98,7 @@ mod tests {
             NameAuthorisationUpdatePath { authorisation_id },
             Context::new_test_without_db(),
             name_authorisation.clone(),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -120,6 +129,7 @@ mod tests {
             context,
             name_authorisation.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -163,6 +173,7 @@ mod tests {
             context,
             name_authorisation.clone(),
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

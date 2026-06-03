@@ -102,7 +102,7 @@ pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
 pub use utils::{
-    OptionAsStrExt, OptionStringExt, QueryParamState, id_newtype, redirect_success,
+    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, id_newtype, redirect_success,
     transparent_string,
 };
 
