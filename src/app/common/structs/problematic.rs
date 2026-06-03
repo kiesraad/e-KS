@@ -112,6 +112,7 @@ pub enum PotentialProblems {
     // personal data
     NoBsn,
     VeryOldDateOfBirth,
+    TooYoungDateOfBirth,
     NoPlaceOfResidence,
     NoCountryOfResidence,
     NoDateOfBirth,
@@ -234,6 +235,9 @@ impl PotentialProblems {
                     DateOfBirth::WARN_AGE
                 )
             }
+            PotentialProblems::TooYoungDateOfBirth => {
+                trans!("problems.candidate_too_young", *locale,)
+            }
             PotentialProblems::NoPlaceOfResidence => {
                 trans!("problems.no_place_of_residence", *locale)
             }
@@ -280,6 +284,7 @@ impl PotentialProblems {
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
             PotentialProblems::VeryOldDateOfBirth => Severity::Info,
+            PotentialProblems::TooYoungDateOfBirth => Severity::Info,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,

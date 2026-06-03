@@ -72,7 +72,8 @@ impl Problems {
                     .filter(|id| seen.insert(*id))
                     .filter_map(|id| store.get_person(*id).ok())
                     .filter_map(|person| {
-                        let problems = person.get_problems(());
+                        let mut problems = person.get_problems(());
+                        problems.extend(person.get_problems(store));
                         (!problems.is_empty()).then(|| PersonProblems { person, problems })
                     })
                     .collect()

@@ -25,7 +25,7 @@
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
           <a href="{{ candidate_list.list.view_path() }}"
-             class="card card-candidate-list {{ candidate_list.highest_severity_class() }}">
+             class="card card-candidate-list {{ candidate_list.highest_severity_class(*()) }}">
             <div class="badge"></div>
             <h3>{{ "candidate_list.title_single"|trans }}</h3>
             <p class="statistic {% if candidate_list.candidate_count() > candidate_list.max_count %}warning{% endif %}">
