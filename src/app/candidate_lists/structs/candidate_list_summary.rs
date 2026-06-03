@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppStore, ElectoralDistrict, OptionAsStrExt,
     candidate_lists::CandidateList,
-    common::{PotentialProblems, Problematic},
+    common::{InfoProblems, PotentialProblems, Problematic},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -37,6 +37,10 @@ impl Problematic<()> for CandidateListSummary {
         }
 
         items
+    }
+    
+    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+        Vec::new()
     }
 }
 
@@ -98,7 +102,7 @@ impl CandidateListSummary {
             .collect()
     }
 
-    pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+    pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<InfoProblems> {
         let total = self.candidate_count();
         if total <= 1 {
             return Vec::new();
@@ -123,18 +127,18 @@ impl CandidateListSummary {
         [
             compute_deviation(with_first_name, total).map(|d| match d {
                 Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithFirstName { count, total }
+                    InfoProblems::FewCandidatesWithFirstName { count, total }
                 }
                 Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutFirstName { count, total }
+                    InfoProblems::FewCandidatesWithoutFirstName { count, total }
                 }
             }),
             compute_deviation(with_gender, total).map(|d| match d {
                 Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithGender { count, total }
+                    InfoProblems::FewCandidatesWithGender { count, total }
                 }
                 Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutGender { count, total }
+                    InfoProblems::FewCandidatesWithoutGender { count, total }
                 }
             }),
         ]
@@ -208,8 +212,8 @@ mod tests {
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(!problems.iter().any(|p| matches!(
             p,
-            PotentialProblems::FewCandidatesWithFirstName { .. }
-                | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+            InfoProblems::FewCandidatesWithFirstName { .. }
+                | InfoProblems::FewCandidatesWithoutFirstName { .. }
         )));
         Ok(())
     }
@@ -223,7 +227,7 @@ mod tests {
         let (store, ids) = make_store_with_candidates(persons).await?;
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(
-            problems.contains(&PotentialProblems::FewCandidatesWithFirstName {
+            problems.contains(&InfoProblems::FewCandidatesWithFirstName {
                 count: 1,
                 total: 10
             })
@@ -244,7 +248,7 @@ mod tests {
         let (store, ids) = make_store_with_candidates(persons).await?;
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(
-            problems.contains(&PotentialProblems::FewCandidatesWithoutFirstName {
+            problems.contains(&InfoProblems::FewCandidatesWithoutFirstName {
                 count: 1,
                 total: 10
             })
@@ -262,8 +266,8 @@ mod tests {
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(!problems.iter().any(|p| matches!(
             p,
-            PotentialProblems::FewCandidatesWithFirstName { .. }
-                | PotentialProblems::FewCandidatesWithoutFirstName { .. }
+            InfoProblems::FewCandidatesWithFirstName { .. }
+                | InfoProblems::FewCandidatesWithoutFirstName { .. }
         )));
         Ok(())
     }
@@ -281,7 +285,7 @@ mod tests {
         let (store, ids) = make_store_with_candidates(persons).await?;
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(
-            problems.contains(&PotentialProblems::FewCandidatesWithGender {
+            problems.contains(&InfoProblems::FewCandidatesWithGender {
                 count: 1,
                 total: 10
             })
@@ -298,7 +302,7 @@ mod tests {
         let (store, ids) = make_store_with_candidates(persons).await?;
         let problems = summary_with_candidates(ids).get_deviation_problems(&store);
         assert!(
-            problems.contains(&PotentialProblems::FewCandidatesWithoutGender {
+            problems.contains(&InfoProblems::FewCandidatesWithoutGender {
                 count: 1,
                 total: 10
             })

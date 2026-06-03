@@ -3,7 +3,7 @@ use axum_extra::routing::TypedPath as _;
 use crate::{
     AppStore, QueryParamState,
     candidate_lists::{CandidateList, CandidateListSummary},
-    common::{PotentialProblems, Problematic, Severity},
+    common::{InfoProblems, PotentialProblems, Problematic, Severity},
     list_designation::ListDesignation,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -21,10 +21,6 @@ impl PotentialProblems {
                     .with_query_params(QueryParamState::highlight_last(overflow))
                     .to_string()
             }
-            PotentialProblems::FewCandidatesWithFirstName { .. }
-            | PotentialProblems::FewCandidatesWithoutFirstName { .. }
-            | PotentialProblems::FewCandidatesWithGender { .. }
-            | PotentialProblems::FewCandidatesWithoutGender { .. } => list.view_path().to_string(),
             _ => list.update_path().to_string(),
         }
     }
@@ -45,8 +41,6 @@ impl PotentialProblems {
                 NameAuthorisation::list_path().to_string()
             }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
-            PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
-            PotentialProblems::NoDesignationType => ListDesignation::update_path().to_string(),
             PotentialProblems::TooFewAuthorizedNames { .. }
             | PotentialProblems::TooManyAuthorizedNames { .. } => {
                 NameAuthorisation::list_path().to_string()
@@ -62,6 +56,7 @@ pub struct Problems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
     pub lists: Vec<ListProblems>,
+    pub infos: Vec<InfoProblems>,
 }
 
 impl Problems {
@@ -70,7 +65,8 @@ impl Problems {
         Self {
             general: Self::find_general_problems(store),
             candidates: Self::find_candidate_problems(store, &candidate_lists),
-            lists: Self::find_list_problems(store, &candidate_lists),
+            lists: Self::find_list_problems(&candidate_lists),
+            infos: InfoProblems::find_all(store),
         }
     }
 
@@ -80,19 +76,10 @@ impl Problems {
 
         let name_authorisations = store.get_name_authorisations();
         let name_authorisations = match political_group.list_designation {
-            None => {
-                general.push(PotentialProblems::NoDesignationType);
-                // assume standalone list as default
-                general.extend(Self::find_name_authorisation_size_problems(
-                    ListDesignation::Standalone,
-                    name_authorisations.len(),
-                ));
-                Self::find_name_authorisation_problems(name_authorisations)
-            }
             Some(ListDesignation::Blank) => Vec::new(),
-            Some(list_designation) => {
+            list_designation => {
                 general.extend(Self::find_name_authorisation_size_problems(
-                    list_designation,
+                    list_designation.unwrap_or(ListDesignation::Standalone),
                     name_authorisations.len(),
                 ));
                 Self::find_name_authorisation_problems(name_authorisations)
@@ -113,12 +100,8 @@ impl Problems {
         } else {
             None
         };
-
-        let substitute_submitters = store.get_substitute_submitters();
-        if substitute_submitters.is_empty() {
-            general.push(PotentialProblems::NoSubstituteSubmitter);
-        }
-        let substitute_submitters = substitute_submitters
+        let substitute_submitters = store
+            .get_substitute_submitters()
             .into_iter()
             .map(EntityProblems::new)
             .filter(|pp| !pp.problems.is_empty())
@@ -190,15 +173,13 @@ impl Problems {
     }
 
     fn find_list_problems(
-        store: &AppStore,
         candidate_lists: &[CandidateListSummary],
     ) -> Vec<ListProblems> {
         let mut seen_duplicate_district = false;
         candidate_lists
             .iter()
             .filter_map(|candidate_list| {
-                let mut problems = candidate_list.get_problems(());
-                problems.extend(candidate_list.get_deviation_problems(store));
+                let problems = candidate_list.get_problems(());
                 (!problems.is_empty()).then(|| ListProblems {
                     entity: candidate_list.list.clone(),
                     problems,
@@ -314,6 +295,7 @@ mod tests {
                 general: empty_general(),
                 candidates: Vec::new(),
                 lists: Vec::new(),
+                infos: Vec::new()
             }
             .models_downloadable()
         );
@@ -329,6 +311,7 @@ mod tests {
                         max: 12
                     }],
                 }],
+                infos: Vec::new()
             }
             .models_downloadable()
         );
@@ -341,6 +324,7 @@ mod tests {
                     problems: vec![PotentialProblems::NoCandidates]
                 }],
                 lists: Vec::new(),
+                infos: Vec::new()
             }
             .models_downloadable()
         );

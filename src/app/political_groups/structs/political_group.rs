@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
-    common::{DisplayName, PotentialProblems, PreviousElectionResults, Problematic},
+    common::{DisplayName, InfoProblems, PotentialProblems, PreviousElectionResults, Problematic},
     list_designation::ListDesignation,
 };
 use serde::{Deserialize, Serialize};
@@ -14,20 +14,20 @@ pub struct PoliticalGroup {
 
 impl Problematic<()> for PoliticalGroup {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
+        let mut problems = Vec::new();
+        problems.extend(self.previous_election_results.get_problems(()));
         if self.list_designation == Some(ListDesignation::Blank) {
-            return Vec::new();
+            return problems;
         }
-
-        [
-            self.display_name.get_problems(()),
-            self.previous_election_results
-                .is_none()
-                .then_some(vec![PotentialProblems::NoPreviousElectionResults])
-                .unwrap_or_default(),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+        problems.extend(self.display_name.get_problems(()));
+        problems
+    }
+    
+    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+        let mut problems = Vec::new();
+        problems.extend(self.previous_election_results.get_info_problems(()));
+        problems.extend(self.display_name.get_info_problems(()));
+        problems
     }
 }
 

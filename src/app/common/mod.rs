@@ -17,7 +17,7 @@ pub use structs::{
     Gender, HouseNumber, HouseNumberAddition, Initials, InternationalAddress,
     InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence,
     PostalCode, PotentialProblems, PreviousElectionResults, Problematic, Severity, StateOrProvince,
-    StreetName, UtcDateTime,
+    StreetName, UtcDateTime, InfoProblems
 };
 
 pub use pages::{

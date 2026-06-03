@@ -24,6 +24,8 @@ pub trait Problematic<T> {
     /// Returns all potential problems of its own and of all children
     fn get_problems(&self, additional_data: T) -> Vec<PotentialProblems>;
 
+    fn get_info_problems(&self, additional_data: T) -> Vec<InfoProblems>;
+
     /// Returns true if there are no problems
     fn is_all_good(&self, additional_data: T) -> bool {
         self.get_problems(additional_data).is_empty()
@@ -79,31 +81,12 @@ pub enum PotentialProblems {
     },
     DuplicateDistricts,
     NoDistricts,
-    FewCandidatesWithFirstName {
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithoutFirstName {
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithGender {
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithoutGender {
-        count: usize,
-        total: usize,
-    },
 
     // political group
     NoLegalName,
     NoDisplayName,
-    NoPreviousElectionResults,
     NoAuthorisedAgent,
     NoListSubmitter,
-    NoSubstituteSubmitter,
-    NoDesignationType,
     TooManyAuthorizedNames {
         actual: usize,
         max: usize,
@@ -118,16 +101,14 @@ pub enum PotentialProblems {
 
     // personal data
     NoBsn,
-    VeryOldDateOfBirth,
-    TooYoungDateOfBirth,
     NoPlaceOfResidence,
     NoCountryOfResidence,
     NoDateOfBirth,
     NoRepresentative,
 
     // name related
-    NoInitials(Severity),
-    NoLastName(Severity),
+    NoInitials,
+    NoLastName,
 
     // address related
     IncompleteAddress {
@@ -157,75 +138,17 @@ impl PotentialProblems {
                 trans!("problems.duplicate_districts", *locale)
             }
             PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
-            PotentialProblems::FewCandidatesWithFirstName { count, total } => {
-                if *count == 1 {
-                    trans!(
-                        "problems.few_candidates_with_first_name_one",
-                        *locale,
-                        total
-                    )
-                } else {
-                    trans!(
-                        "problems.few_candidates_with_first_name",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
-            }
-            PotentialProblems::FewCandidatesWithoutFirstName { count, total } => {
-                if *count == 1 {
-                    trans!(
-                        "problems.few_candidates_without_first_name_one",
-                        *locale,
-                        total
-                    )
-                } else {
-                    trans!(
-                        "problems.few_candidates_without_first_name",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
-            }
-            PotentialProblems::FewCandidatesWithGender { count, total } => {
-                if *count == 1 {
-                    trans!("problems.few_candidates_with_gender_one", *locale, total)
-                } else {
-                    trans!("problems.few_candidates_with_gender", *locale, count, total)
-                }
-            }
-            PotentialProblems::FewCandidatesWithoutGender { count, total } => {
-                if *count == 1 {
-                    trans!("problems.few_candidates_without_gender_one", *locale, total)
-                } else {
-                    trans!(
-                        "problems.few_candidates_without_gender",
-                        *locale,
-                        count,
-                        total
-                    )
-                }
-            }
 
             // political group
             PotentialProblems::NoLegalName => trans!("problems.no_legal_name", *locale),
             PotentialProblems::NoDisplayName => trans!("problems.no_display_name", *locale),
-            PotentialProblems::NoPreviousElectionResults => {
-                trans!("problems.no_previous_election_results", *locale)
-            }
             PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
             PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
-            PotentialProblems::NoSubstituteSubmitter => {
-                trans!("problems.no_substitute_submitter", *locale)
-            }
-            PotentialProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
-            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
-                trans!("problems.too_many_authorized_names", *locale, actual, max)
-            }
             PotentialProblems::TooFewAuthorizedNames { actual, min } => {
                 trans!("problems.too_few_authorized_names", *locale, actual, min)
+            }
+            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
+                trans!("problems.too_many_authorized_names", *locale, actual, max)
             }
 
             // representative wrapper
@@ -237,16 +160,7 @@ impl PotentialProblems {
 
             // personal data
             PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
-            PotentialProblems::VeryOldDateOfBirth => {
-                trans!(
-                    "problems.very_old_date_of_birth",
-                    *locale,
-                    DateOfBirth::WARN_AGE
-                )
-            }
-            PotentialProblems::TooYoungDateOfBirth => {
-                trans!("problems.candidate_too_young", *locale,)
-            }
+
             PotentialProblems::NoPlaceOfResidence => {
                 trans!("problems.no_place_of_residence", *locale)
             }
@@ -257,8 +171,8 @@ impl PotentialProblems {
             PotentialProblems::NoRepresentative => trans!("problems.no_representative", *locale),
 
             // name related
-            PotentialProblems::NoInitials(_) => trans!("problems.no_initials", *locale),
-            PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
+            PotentialProblems::NoInitials => trans!("problems.no_initials", *locale),
+            PotentialProblems::NoLastName => trans!("problems.no_last_name", *locale),
 
             // address related
             PotentialProblems::IncompleteAddress { .. } => {
@@ -274,19 +188,12 @@ impl PotentialProblems {
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
             PotentialProblems::DuplicateDistricts => Severity::Error,
             PotentialProblems::NoDistricts => Severity::Error,
-            PotentialProblems::FewCandidatesWithFirstName { .. } => Severity::Info,
-            PotentialProblems::FewCandidatesWithoutFirstName { .. } => Severity::Info,
-            PotentialProblems::FewCandidatesWithGender { .. } => Severity::Info,
-            PotentialProblems::FewCandidatesWithoutGender { .. } => Severity::Info,
 
             // political group
             PotentialProblems::NoLegalName => Severity::Warn,
             PotentialProblems::NoDisplayName => Severity::Error,
-            PotentialProblems::NoPreviousElectionResults => Severity::Info,
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
-            PotentialProblems::NoSubstituteSubmitter => Severity::Info,
-            PotentialProblems::NoDesignationType => Severity::Info,
             PotentialProblems::TooManyAuthorizedNames { .. } => Severity::Error,
             PotentialProblems::TooFewAuthorizedNames { .. } => Severity::Warn,
 
@@ -295,20 +202,118 @@ impl PotentialProblems {
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
-            PotentialProblems::VeryOldDateOfBirth => Severity::Info,
-            PotentialProblems::TooYoungDateOfBirth => Severity::Info,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,
             PotentialProblems::NoRepresentative => Severity::Warn,
 
             // name related
-            PotentialProblems::NoInitials(severity) => *severity,
-            PotentialProblems::NoLastName(severity) => *severity,
+            PotentialProblems::NoInitials => Severity::Error,
+            PotentialProblems::NoLastName => Severity::Error,
 
             // address related
             PotentialProblems::IncompleteAddress { severity, .. } => *severity,
         }
+    }
+}
+
+#[derive(Clone, PartialEq, Debug)]
+pub enum InfoProblems {
+    FewCandidatesWithFirstName { count: usize, total: usize },
+    FewCandidatesWithoutFirstName { count: usize, total: usize },
+    FewCandidatesWithGender { count: usize, total: usize },
+    FewCandidatesWithoutGender { count: usize, total: usize },
+    NoPreviousElectionResults,
+    NoSubstituteSubmitter,
+    NoDesignationType,
+    VeryOldDateOfBirth,
+    TooYoungDateOfBirth,
+    NoInitials,
+    NoLastName,
+    IncompleteAddress { problems: Vec<EmptyAddressProblems> },
+}
+
+impl InfoProblems {
+    pub fn translate(&self, locale: &Locale) -> String {
+        match self {
+            InfoProblems::NoInitials => trans!("problems.no_initials", *locale),
+            InfoProblems::NoLastName => trans!("problems.no_last_name", *locale),
+            InfoProblems::TooYoungDateOfBirth => {
+                trans!("problems.candidate_too_young", *locale,)
+            }
+            InfoProblems::VeryOldDateOfBirth => {
+                trans!(
+                    "problems.very_old_date_of_birth",
+                    *locale,
+                    DateOfBirth::WARN_AGE
+                )
+            }
+            InfoProblems::NoSubstituteSubmitter => {
+                trans!("problems.no_substitute_submitter", *locale)
+            }
+            InfoProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
+            InfoProblems::NoPreviousElectionResults => {
+                trans!("problems.no_previous_election_results", *locale)
+            }
+            InfoProblems::FewCandidatesWithFirstName { count, total } => {
+                if *count == 1 {
+                    trans!(
+                        "problems.few_candidates_with_first_name_one",
+                        *locale,
+                        total
+                    )
+                } else {
+                    trans!(
+                        "problems.few_candidates_with_first_name",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
+            InfoProblems::FewCandidatesWithoutFirstName { count, total } => {
+                if *count == 1 {
+                    trans!(
+                        "problems.few_candidates_without_first_name_one",
+                        *locale,
+                        total
+                    )
+                } else {
+                    trans!(
+                        "problems.few_candidates_without_first_name",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
+            InfoProblems::FewCandidatesWithGender { count, total } => {
+                if *count == 1 {
+                    trans!("problems.few_candidates_with_gender_one", *locale, total)
+                } else {
+                    trans!("problems.few_candidates_with_gender", *locale, count, total)
+                }
+            }
+            InfoProblems::FewCandidatesWithoutGender { count, total } => {
+                if *count == 1 {
+                    trans!("problems.few_candidates_without_gender_one", *locale, total)
+                } else {
+                    trans!(
+                        "problems.few_candidates_without_gender",
+                        *locale,
+                        count,
+                        total
+                    )
+                }
+            }
+            InfoProblems::IncompleteAddress { .. } => {
+                trans!("problems.incomplete_address", *locale)
+            }
+        }
+    }
+
+    pub fn severity(&self) -> Severity {
+        Severity::Info
     }
 }
 
@@ -317,9 +322,22 @@ mod tests {
     use super::*;
 
     struct WithProblems(Vec<PotentialProblems>);
-
     impl Problematic<()> for WithProblems {
         fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
+            self.0.clone()
+        }
+
+        fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+            Vec::new()
+        }
+    }
+    struct WithInfoProblems(Vec<InfoProblems>);
+    impl Problematic<()> for WithInfoProblems {
+        fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
+            Vec::new()
+        }
+
+        fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
             self.0.clone()
         }
     }
@@ -343,7 +361,10 @@ mod tests {
 
     #[test]
     fn highest_severity_info_when_only_info() {
-        let only_info = WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]);
+        let only_info = WithProblems(vec![PotentialProblems::IncompleteAddress {
+            severity: Severity::Info,
+            problems: Vec::new(),
+        }]);
         assert_eq!(only_info.highest_severity(()), Some(Severity::Info));
         assert_eq!(only_info.highest_severity_class(()), "info");
         assert!(only_info.has_severity_or_higher(Severity::Info, ()));
@@ -355,8 +376,14 @@ mod tests {
     #[test]
     fn highest_severity_warn_when_only_warnings() {
         let info_warn = WithProblems(vec![
-            PotentialProblems::NoLastName(Severity::Info),
-            PotentialProblems::NoLastName(Severity::Warn),
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Info,
+                problems: Vec::new(),
+            },
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Warn,
+                problems: Vec::new(),
+            },
         ]);
         assert_eq!(info_warn.highest_severity(()), Some(Severity::Warn));
         assert_eq!(info_warn.highest_severity_class(()), "warning");
@@ -369,9 +396,18 @@ mod tests {
     #[test]
     fn highest_severity_error_when_mix_of_severities() {
         let with_error = WithProblems(vec![
-            PotentialProblems::NoLastName(Severity::Info),
-            PotentialProblems::NoLastName(Severity::Warn),
-            PotentialProblems::NoLastName(Severity::Error),
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Info,
+                problems: Vec::new(),
+            },
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Warn,
+                problems: Vec::new(),
+            },
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Error,
+                problems: Vec::new(),
+            },
         ]);
         assert_eq!(with_error.highest_severity(()), Some(Severity::Error));
         assert_eq!(with_error.highest_severity_class(()), "error");
@@ -389,7 +425,7 @@ mod tests {
 
     #[test]
     fn single_problem_summary() {
-        let problem = PotentialProblems::VeryOldDateOfBirth;
+        let problem = PotentialProblems::NoDistricts;
         let single_problems = WithProblems(vec![problem.clone()]);
         assert_eq!(
             single_problems.problem_summary(&Locale::Nl, ()).unwrap(),
@@ -426,27 +462,36 @@ mod tests {
     #[test]
     fn deviation_shows_numbers() {
         let problems = vec![
-            PotentialProblems::FewCandidatesWithFirstName {
-                count: 2,
-                total: 37,
-            },
-            PotentialProblems::FewCandidatesWithGender {
-                count: 2,
-                total: 37,
-            },
-            PotentialProblems::FewCandidatesWithoutFirstName {
-                count: 2,
-                total: 37,
-            },
-            PotentialProblems::FewCandidatesWithoutGender {
-                count: 2,
-                total: 37,
-            },
             PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
             PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 },
         ];
+        let info_problems = vec![
+            InfoProblems::FewCandidatesWithFirstName {
+                count: 2,
+                total: 37,
+            },
+            InfoProblems::FewCandidatesWithGender {
+                count: 2,
+                total: 37,
+            },
+            InfoProblems::FewCandidatesWithoutFirstName {
+                count: 2,
+                total: 37,
+            },
+            InfoProblems::FewCandidatesWithoutGender {
+                count: 2,
+                total: 37,
+            },
+        ];
         for problem in problems {
             let summary = WithProblems(vec![problem])
+                .problem_summary(&Locale::Nl, ())
+                .unwrap();
+            assert!(summary.contains("2"));
+            assert!(summary.contains("37"));
+        }
+        for problem in info_problems {
+            let summary = WithInfoProblems(vec![problem])
                 .problem_summary(&Locale::Nl, ())
                 .unwrap();
             assert!(summary.contains("2"));

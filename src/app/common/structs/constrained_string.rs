@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Problematic},
+    common::{InfoProblems, PotentialProblems, Problematic},
     form::{ValidationError, validate_length, validate_teletex_chars},
     transparent_string,
 };
@@ -27,12 +27,16 @@ impl FromStr for ConstrainedString {
     }
 }
 
-impl Problematic<()> for Option<LegalName> {
+impl Problematic<()> for LegalName {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        if self.is_empty_or_none() {
+        if self.to_string().is_empty() {
             vec![PotentialProblems::NoLegalName]
         } else {
             Vec::new()
         }
+    }
+    
+    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+        Vec::new()
     }
 }
