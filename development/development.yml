@@ -10,6 +10,7 @@ children:
       - --public-path=/static/
       - --loader:.woff2=file
       - --loader:.svg=file
+      - --sourcemap
       - --define:IS_PRODUCTION=false
       - --log-level=warning
       - frontend/index.ts
