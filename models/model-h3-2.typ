@@ -4,17 +4,17 @@
 #let trans = translator(input.locale)
 #show: doc => conf(
   doc,
-  "Model H 3-1",
+  "Model H 3-2",
   trans(
-    "Machtiging om aanduiding boven kandidatenlijst te plaatsen",
-    "Machtiging om oantsjutting boppe kandidatelist te pleatsen",
+    "Machtiging om samengevoegde aanduiding boven kandidatenlijst te plaatsen",
+    "Machtiging om gearfoege oantsjutting boppe kandidatelist te pleatsen",
   ),
   trans[
-    Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen.
+    Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om een aanduiding boven de kandidatenlijst te plaatsen, die is gevormd door samenvoeging van de aanduidingen van politieke groeperingen of afkortingen daarvan.
 
     U kunt alleen toestemming geven als u hiertoe gemachtigd bent door uw politieke groepering.
   ][
-    Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om de oantsjutting dy’t troch jo politike groepearring registrearre is boppe de kandidatelist te pleatsen.
+    Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om in oantsjutting boppe de kandidatelist te pleatsen, dy’t foarme is troch gearfoeging fan de oantsjuttings fan politike groepearrings of ôfkoartings dêrfan.
 
     Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.
   ],
@@ -46,10 +46,10 @@
   }
 ]
 
-= #trans("Aanduiding van de politieke groepering", "Oantsjutting fan de politike groepearring") <aanduiding>
+= #trans("Aanduiding van de politieke groeperingen", "Oantsjutting fan de politike groepearrings") <aanduiding>
 #trans(
-  "De geregistreerde aanduiding van de politieke groepering:",
-  "De registrearre oantsjutting fan de politike groepearring:",
+  "De samengevoegde aanduiding van de politieke groeperingen:",
+  "De gearfoege oantsjutting fan de politike groepearrings:",
 )
 *#input.designation*
 
@@ -57,8 +57,8 @@
 = #trans("Toestemming aan de inleveraar", "Tastimming oan dejinge dy’t ynleveret")
 #let submitter = input.list_submitter
 #trans(
-  "Ik geef toestemming aan",
-  "Ik jou tastimming oan",
+  "Wij geven toestemming aan",
+  "Wy jouwe tastimming oan",
 )
 *#submitter.last_name, #submitter.initials*
 #trans[
@@ -77,25 +77,28 @@
 
 
 = #trans(
-  "Ondertekening door de gemachtigde van de politieke groepering",
-  "Undertekening troch de lêsthawwer fan de politike groepearring",
+  "Ondertekening door de gemachtigden",
+  "Undertekening troch de lêsthawwer",
 )
-#let name_authorisation = input.name_authorisations.at(0)
-#label_table(values: (
-  (trans("Datum", "Datum"), fill_in()),
-  (
-    trans(
-      "Naam van de gemachtigde van de politieke groepering",
-      "Namme fan de lêsthawwer fan de politike groepearring",
+#set heading(numbering: none)
+#for (i, name_authorisation) in input.name_authorisations.enumerate() [
+  == #trans("Gemachtigde van politieke groepering", "Lêsthawwer fan politike groepearring") #(i + 1)
+  #label_table(values: (
+    (trans("Datum", "Datum"), fill_in()),
+    (
+      trans(
+        "Naam van de gemachtigde van de politieke groepering",
+        "Namme fan de lêsthawwer fan de politike groepearring",
+      ),
+      (name_authorisation.last_name, name_authorisation.initials).filter(x => x != "").join(", "),
     ),
-    (name_authorisation.last_name, name_authorisation.initials).filter(x => x != "").join(", "),
-  ),
-  (
-    trans(
-      "Volledige statutaire naam van de politieke groepering",
-      "Folsleine statutêre namme fan de politike groepearring",
+    (
+      trans(
+        "Volledige statutaire naam van de politieke groepering",
+        "Folsleine statutêre namme fan de politike groepearring",
+      ),
+      [#name_authorisation.legal_name],
     ),
-    [#name_authorisation.legal_name],
-  ),
-  (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
-))
+    (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
+  ))
+]

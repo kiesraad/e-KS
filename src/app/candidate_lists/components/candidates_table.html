@@ -14,7 +14,7 @@
   </thead>
   <tbody>
     {% for candidate in full_list.candidates %}
-      <tr class="clickable {{ candidate.person.highest_severity_class(*()) }}"
+      <tr class="clickable {{ candidate.person.highest_severity_class(*() ) }}"
           data-id="{{ candidate.person.id }}">
         <td class="drag-handle"></td>
         <td>

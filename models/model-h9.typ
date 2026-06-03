@@ -18,7 +18,6 @@
     *Tink der om!*\
     Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.
   ],
-  page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
 

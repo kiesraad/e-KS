@@ -240,6 +240,9 @@ mod tests {
 
         let errors = form_data.errors();
 
+        dbg!(&errors);
+        println!("{:?}", errors);
+
         assert_eq!(errors.len(), 2);
         assert!(errors.contains(&(
             "address.postal_code".to_string(),

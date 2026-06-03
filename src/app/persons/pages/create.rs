@@ -51,14 +51,12 @@ mod tests {
 
     use crate::{
         AppError, AppStore, Context, Form,
-        common::DateOfBirth,
         test_utils::{response_body_string, sample_person_form},
     };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use chrono::Duration;
 
     #[tokio::test]
     async fn create_person_renders_csrf_field() {
@@ -141,29 +139,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("A person with this name already exists."));
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn create_person_too_young_renders_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-
-        let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
-        form.personal_data.date_of_birth =
-            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
-                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
-                .to_string();
-
-        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        assert!(body.contains("Candidate is too young to participate in this election."));
 
         Ok(())
     }

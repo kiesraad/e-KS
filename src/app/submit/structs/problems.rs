@@ -4,6 +4,7 @@ use crate::{
     AppStore, QueryParamState,
     candidate_lists::{CandidateList, CandidateListSummary},
     common::{PotentialProblems, Problematic, Severity},
+    list_designation::ListDesignation,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     persons::Person,
@@ -45,6 +46,11 @@ impl PotentialProblems {
             }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path().to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
+            PotentialProblems::NoDesignationType => ListDesignation::update_path().to_string(),
+            PotentialProblems::TooFewAuthorizedNames { .. }
+            | PotentialProblems::TooManyAuthorizedNames { .. } => {
+                NameAuthorisation::list_path().to_string()
+            }
             _ => PoliticalGroup::update_path().to_string(),
         }
     }
@@ -54,57 +60,44 @@ impl PotentialProblems {
 #[derive(Debug)]
 pub struct Problems {
     pub general: GeneralProblems,
-    pub candidates: Vec<PersonProblems<Person>>,
+    pub candidates: Vec<PersonProblems>,
     pub lists: Vec<ListProblems>,
 }
 
 impl Problems {
     pub fn find_all(store: &AppStore) -> Self {
         let candidate_lists = CandidateListSummary::list(store);
-
         Self {
             general: Self::find_general_problems(store),
-            candidates: {
-                let mut seen = std::collections::HashSet::new();
-                candidate_lists
-                    .iter()
-                    .flat_map(|list| list.list.candidates.iter())
-                    .filter(|id| seen.insert(*id))
-                    .filter_map(|id| store.get_person(*id).ok())
-                    .filter_map(|person| {
-                        let mut problems = person.get_problems(());
-                        problems.extend(person.get_problems(store));
-                        (!problems.is_empty()).then(|| PersonProblems { person, problems })
-                    })
-                    .collect()
-            },
-            lists: candidate_lists
-                .iter()
-                .filter_map(|candidate_list| {
-                    let mut problems = candidate_list.get_problems(());
-                    problems.extend(candidate_list.get_deviation_problems(store));
-                    (!problems.is_empty()).then(|| ListProblems {
-                        list: candidate_list.list.clone(),
-                        problems,
-                    })
-                })
-                .collect(),
+            candidates: Self::find_candidate_problems(store, &candidate_lists),
+            lists: Self::find_list_problems(store, &candidate_lists),
         }
     }
 
     fn find_general_problems(store: &AppStore) -> GeneralProblems {
-        let mut general = store.get_political_group().get_problems(());
+        let political_group = store.get_political_group();
+        let mut general = political_group.get_problems(());
 
         let name_authorisations = store.get_name_authorisations();
-        if name_authorisations.is_empty() {
-            // TODO: consider list designation type
-            general.push(PotentialProblems::NoLegalName);
-        }
-        let name_authorisations = name_authorisations
-            .into_iter()
-            .map(PersonProblems::new)
-            .filter(|pp| !pp.problems.is_empty())
-            .collect();
+        let name_authorisations = match political_group.list_designation {
+            None => {
+                general.push(PotentialProblems::NoDesignationType);
+                // assume standalone list as default
+                general.extend(Self::find_name_authorisation_size_problems(
+                    ListDesignation::Standalone,
+                    name_authorisations.len(),
+                ));
+                Self::find_name_authorisation_problems(name_authorisations)
+            }
+            Some(ListDesignation::Blank) => Vec::new(),
+            Some(list_designation) => {
+                general.extend(Self::find_name_authorisation_size_problems(
+                    list_designation,
+                    name_authorisations.len(),
+                ));
+                Self::find_name_authorisation_problems(name_authorisations)
+            }
+        };
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty() {
@@ -113,8 +106,8 @@ impl Problems {
 
         let list_submitter_problems = list_submitter.get_problems(());
         let list_submitter = if !list_submitter_problems.is_empty() {
-            Some(PersonProblems {
-                person: list_submitter,
+            Some(EntityProblems {
+                entity: list_submitter,
                 problems: list_submitter_problems,
             })
         } else {
@@ -127,7 +120,7 @@ impl Problems {
         }
         let substitute_submitters = substitute_submitters
             .into_iter()
-            .map(PersonProblems::new)
+            .map(EntityProblems::new)
             .filter(|pp| !pp.problems.is_empty())
             .collect();
 
@@ -137,6 +130,98 @@ impl Problems {
             list_submitter,
             substitute_submitters,
         }
+    }
+
+    fn find_name_authorisation_problems(
+        name_authorisations: Vec<NameAuthorisation>,
+    ) -> Vec<EntityProblems<NameAuthorisation>> {
+        name_authorisations
+            .into_iter()
+            .map(EntityProblems::new)
+            .filter(|pp| !pp.problems.is_empty())
+            .collect()
+    }
+
+    fn find_name_authorisation_size_problems(
+        list_designation: ListDesignation,
+        authorised_names_count: usize,
+    ) -> Vec<PotentialProblems> {
+        match list_designation {
+            ListDesignation::Standalone if authorised_names_count > 1 => {
+                vec![PotentialProblems::TooManyAuthorizedNames {
+                    actual: authorised_names_count,
+                    max: 1,
+                }]
+            }
+            ListDesignation::Standalone if authorised_names_count < 1 => {
+                vec![PotentialProblems::TooFewAuthorizedNames {
+                    actual: authorised_names_count,
+                    min: 1,
+                }]
+            }
+            ListDesignation::Combined if authorised_names_count < 2 => {
+                vec![PotentialProblems::TooFewAuthorizedNames {
+                    actual: authorised_names_count,
+                    min: 2,
+                }]
+            }
+            _ => Vec::new(),
+        }
+    }
+
+    fn find_candidate_problems(
+        store: &AppStore,
+        candidate_lists: &[CandidateListSummary],
+    ) -> Vec<PersonProblems> {
+        let mut seen = std::collections::HashSet::new();
+        candidate_lists
+            .iter()
+            .flat_map(|list| list.list.candidates.iter())
+            .filter(|id| seen.insert(*id))
+            .filter_map(|id| store.get_person(*id).ok())
+            .filter_map(|person| {
+                let problems = person.get_problems(store);
+                (!problems.is_empty()).then_some(PersonProblems {
+                    entity: person,
+                    problems,
+                })
+            })
+            .collect()
+    }
+
+    fn find_list_problems(
+        store: &AppStore,
+        candidate_lists: &[CandidateListSummary],
+    ) -> Vec<ListProblems> {
+        let mut seen_duplicate_district = false;
+        candidate_lists
+            .iter()
+            .filter_map(|candidate_list| {
+                let mut problems = candidate_list.get_problems(());
+                problems.extend(candidate_list.get_deviation_problems(store));
+                (!problems.is_empty()).then(|| ListProblems {
+                    entity: candidate_list.list.clone(),
+                    problems,
+                })
+            })
+            // make sure only one DuplicateDistrict Problem remains
+            .map(|list_problem| {
+                let ListProblems { entity, problems } = list_problem;
+                let problems = problems
+                    .into_iter()
+                    .filter(|problem| {
+                        if *problem == PotentialProblems::DuplicateDistricts {
+                            if seen_duplicate_district {
+                                return false;
+                            }
+                            seen_duplicate_district = true;
+                        }
+                        true
+                    })
+                    .collect();
+                ListProblems { entity, problems }
+            })
+            .collect()
     }
 
     pub fn models_downloadable(&self) -> bool {
@@ -159,9 +244,9 @@ impl Problems {
 #[derive(Debug)]
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
-    pub name_authorisations: Vec<PersonProblems<NameAuthorisation>>,
-    pub list_submitter: Option<PersonProblems<ListSubmitter>>,
-    pub substitute_submitters: Vec<PersonProblems<ListSubmitter>>,
+    pub name_authorisations: Vec<EntityProblems<NameAuthorisation>>,
+    pub list_submitter: Option<EntityProblems<ListSubmitter>>,
+    pub substitute_submitters: Vec<EntityProblems<ListSubmitter>>,
 }
 
 impl GeneralProblems {
@@ -184,30 +269,31 @@ impl GeneralProblems {
 }
 
 #[derive(Debug)]
-pub struct PersonProblems<T> {
-    pub person: T,
+pub struct EntityProblems<T> {
+    pub entity: T,
     pub problems: Vec<PotentialProblems>,
 }
 
-impl<T: Problematic<()>> PersonProblems<T> {
-    fn new(person: T) -> Self {
-        let problems = person.get_problems(());
-        PersonProblems { person, problems }
+impl<T: Problematic<()>> EntityProblems<T> {
+    fn new(entity: T) -> Self {
+        let problems = entity.get_problems(());
+        EntityProblems { entity, problems }
     }
 }
-
-#[derive(Debug)]
-pub struct ListProblems {
-    pub list: CandidateList,
-    pub problems: Vec<PotentialProblems>,
-}
+pub type ListProblems = EntityProblems<CandidateList>;
+pub type PersonProblems = EntityProblems<Person>;
 
 #[cfg(test)]
 mod tests {
     use crate::{
+        AppError, ElectoralDistrict,
         candidate_lists::CandidateListId,
+        list_submitters::ListSubmitterId,
+        name_authorisations::NameAuthorisationId,
         persons::PersonId,
-        test_utils::{sample_candidate_list, sample_person},
+        test_utils::{
+            sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
+        },
     };
 
     use super::*;
@@ -237,7 +323,7 @@ mod tests {
                 general: empty_general(),
                 candidates: vec![],
                 lists: vec![ListProblems {
-                    list: sample_candidate_list(CandidateListId::new()),
+                    entity: sample_candidate_list(CandidateListId::new()),
                     problems: vec![PotentialProblems::TooManyCandidates {
                         actual: 12,
                         max: 12
@@ -251,12 +337,144 @@ mod tests {
             !Problems {
                 general: empty_general(),
                 candidates: vec![PersonProblems {
-                    person: sample_person(PersonId::new()),
+                    entity: sample_person(PersonId::new()),
                     problems: vec![PotentialProblems::NoCandidates]
                 }],
                 lists: Vec::new(),
             }
             .models_downloadable()
         );
+    }
+
+    async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
+        sample_list_submitter(ListSubmitterId::new())
+            .update(store)
+            .await?;
+        sample_list_submitter(ListSubmitterId::new())
+            .create_substitute(store)
+            .await?;
+        Ok(())
+    }
+
+    async fn add_name_authorisations(store: &AppStore, count: usize) -> Result<(), AppError> {
+        for _ in 0..count {
+            sample_name_authorisation(NameAuthorisationId::new())
+                .create(store)
+                .await?;
+        }
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn standalone_no_name_authorisations() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        // make sure no other general errors occur
+        add_submitters(&store).await?;
+
+        // make political group standalone
+        let mut group = store.get_political_group();
+        group.list_designation = Some(ListDesignation::Standalone);
+        group.update(&store).await?;
+
+        let problems = Problems::find_general_problems(&store);
+
+        assert_eq!(problems.general.len(), 1);
+        assert_eq!(
+            problems.general[0],
+            PotentialProblems::TooFewAuthorizedNames { actual: 0, min: 1 }
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn standalone_two_name_authorisations() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        // make sure no other general errors occur
+        add_submitters(&store).await?;
+
+        // make political group standalone
+        let mut group = store.get_political_group();
+        group.list_designation = Some(ListDesignation::Standalone);
+        group.update(&store).await?;
+
+        add_name_authorisations(&store, 2).await?;
+
+        let problems = Problems::find_general_problems(&store);
+
+        assert_eq!(problems.general.len(), 1);
+        assert_eq!(
+            problems.general[0],
+            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 1 }
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn combined_one_name_authorisations() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        // make sure no other general errors occur
+        add_submitters(&store).await?;
+
+        // make political group standalone
+        let mut group = store.get_political_group();
+        group.list_designation = Some(ListDesignation::Combined);
+        group.update(&store).await?;
+
+        add_name_authorisations(&store, 1).await?;
+
+        let problems = Problems::find_general_problems(&store);
+
+        assert_eq!(problems.general.len(), 1);
+        assert_eq!(
+            problems.general[0],
+            PotentialProblems::TooFewAuthorizedNames { actual: 1, min: 2 }
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn blank_ten_name_authorisations() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        // make sure no other general errors occur
+        add_submitters(&store).await?;
+
+        // make political group standalone
+        let mut group = store.get_political_group();
+        group.list_designation = Some(ListDesignation::Blank);
+        group.update(&store).await?;
+
+        add_name_authorisations(&store, 10).await?;
+
+        let problems = Problems::find_general_problems(&store);
+
+        assert!(problems.general.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn max_one_duplicate_district_problem() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        for _ in 0..10 {
+            let mut list1 = sample_candidate_list(CandidateListId::new());
+            list1.electoral_districts = vec![ElectoralDistrict::UT, ElectoralDistrict::GR];
+            list1.create(&store).await?;
+        }
+
+        let problems = Problems::find_all(&store);
+        assert_eq!(
+            problems
+                .lists
+                .iter()
+                .flat_map(|list_problems| &list_problems.problems)
+                .filter(|problem| **problem == PotentialProblems::DuplicateDistricts)
+                .count(),
+            1
+        );
+
+        Ok(())
     }
 }

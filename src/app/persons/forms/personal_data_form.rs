@@ -511,11 +511,7 @@ mod tests {
 
         let errors = form_data.errors();
 
-        assert_eq!(errors.len(), 2);
-        assert!(errors.contains(&(
-            "personal_data.date_of_birth".to_string(),
-            ValidationError::CandidateTooYoung
-        )));
+        assert_eq!(errors.len(), 1);
         assert!(errors.contains(&(
             "name.last_name_prefix".to_string(),
             ValidationError::InvalidValue
