@@ -53,7 +53,7 @@
 }
 
 .card {
-  background-color: var(--base-white);
+  background-color: var(--card-bg, var(--base-white));
   border-radius: var(--rounded-lg);
   border: 1px solid var(--card-border-color, var(--gray-200));
   color: inherit;
@@ -64,6 +64,11 @@
   padding: var(--card-padding, var(--space-8));
   text-decoration: none;
   text-wrap: balance;
+
+  &:is(a):hover {
+    --card-bg: var(--gray-50);
+    --card-chevron-translate: var(--space-1);  
+  }
 
   .card-header {
     align-items: center;
@@ -110,6 +115,9 @@
       content: "";
       mask-image: url("../icons/chevronRight.svg");
       mask-position: center;
+      transition-duration: 300ms;
+      transition-property: translate;
+      translate: var(--card-chevron-translate, 0);
       width: var(--space-5);
     }
   }
