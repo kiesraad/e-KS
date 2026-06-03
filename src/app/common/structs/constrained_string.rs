@@ -20,7 +20,7 @@ impl FromStr for ConstrainedString {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = validate_length(value, 2, 200)?;
+        let trimmed_value = validate_length(value, 1, 200)?;
         validate_teletex_chars(&trimmed_value)?;
 
         Ok(ConstrainedString(trimmed_value))

@@ -21,8 +21,8 @@ impl FromStr for DisplayName {
         let trimmed_value = words.join(" ");
         let char_count: usize = words.iter().map(|w| w.chars().count()).sum();
 
-        if char_count < 2 {
-            return Err(ValidationError::ValueTooShort(char_count, 2));
+        if char_count < 1 {
+            return Err(ValidationError::ValueTooShort(char_count, 1));
         }
 
         if char_count > MAX_LENGTH {
@@ -79,8 +79,8 @@ mod tests {
     #[test]
     fn too_short() {
         assert_eq!(
-            Err(ValidationError::ValueTooShort(1, 2)),
-            DisplayName::from_str("     f   \t      ")
+            Err(ValidationError::ValueTooShort(0, 1)),
+            DisplayName::from_str("        ")
         );
     }
 }

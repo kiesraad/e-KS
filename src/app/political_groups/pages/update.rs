@@ -173,7 +173,7 @@ mod tests {
         let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_political_group_form(&csrf_token);
 
-        form.display_name = "!".to_string(); // Invalid value
+        form.display_name = "a".repeat(37); // Invalid value (too long)
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -189,7 +189,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("The value is too short"));
+        assert!(body.contains("The value is too long"));
 
         Ok(())
     }
