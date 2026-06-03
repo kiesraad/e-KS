@@ -180,7 +180,7 @@ impl Problems {
             .filter(|id| seen.insert(*id))
             .filter_map(|id| store.get_person(*id).ok())
             .filter_map(|person| {
-                let mut problems = person.get_problems(store);
+                let mut problems = person.personal_data.get_problems(store);
                 problems.extend(person.get_problems(()));
                 (!problems.is_empty()).then_some(PersonProblems {
                     entity: person,

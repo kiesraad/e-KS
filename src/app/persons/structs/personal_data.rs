@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    OptionAsStrExt,
+    AppStore, OptionAsStrExt,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence, PotentialProblems,
         Problematic,
@@ -48,6 +48,19 @@ impl Problematic<()> for PersonalData {
     }
 }
 
+impl Problematic<&AppStore> for PersonalData {
+    fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let election = store.election;
+        if let Some(date_of_birth) = self.date_of_birth.clone()
+            && date_of_birth.is_too_young(&election)
+        {
+            vec![PotentialProblems::TooYoungDateOfBirth]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
 impl PersonalData {
     pub fn locality(&self) -> Option<String> {
         match (&self.place_of_residence, &self.country) {
@@ -62,9 +75,9 @@ impl PersonalData {
 
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDate;
-
     use super::*;
+    use crate::AppStore;
+    use chrono::NaiveDate;
 
     fn complete_personal_data() -> PersonalData {
         PersonalData {
@@ -105,6 +118,17 @@ mod tests {
         assert!(
             data.get_problems(())
                 .contains(&PotentialProblems::VeryOldDateOfBirth)
+        );
+    }
+
+    #[test]
+    fn too_young_date_of_birth_produces_warning() {
+        let store = AppStore::new_for_test();
+        let mut data = complete_personal_data();
+        data.date_of_birth = Some(NaiveDate::from_ymd_opt(2026, 1, 1).unwrap().into());
+        assert!(
+            data.get_problems(&store)
+                .contains(&PotentialProblems::TooYoungDateOfBirth)
         );
     }
 
