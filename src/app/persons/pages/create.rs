@@ -31,7 +31,7 @@ pub async fn create_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_token, &store, &context.election) {
+    match form.validate_create_with_checks(&context.session.csrf_token, &store) {
         Err(form_data) => {
             Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
         }

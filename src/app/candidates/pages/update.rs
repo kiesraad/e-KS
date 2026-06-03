@@ -47,12 +47,7 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(
-        &candidate.person,
-        &context.session.csrf_token,
-        &store,
-        &context.election,
-    ) {
+    match form.validate_update_with_checks(&candidate.person, &context.session.csrf_token, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,
