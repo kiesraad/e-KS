@@ -22,20 +22,10 @@ export default function setupStepNav() {
   }
 
   const initial = formSnapshot(formElement);
-  const currentUrl = new URL(globalThis.location.href);
-  const redirectTo = currentUrl.searchParams.get("redirect_to");
 
   formElement
     .querySelectorAll<HTMLAnchorElement>(".steps-nav a")
     .forEach((link) => {
-      // For clean navigation: preserve redirect_to in the link href so it
-      // survives the step transition.
-      if (redirectTo?.startsWith("/")) {
-        const linkUrl = new URL(link.href);
-        linkUrl.searchParams.set("redirect_to", redirectTo);
-        link.href = linkUrl.toString();
-      }
-
       link.addEventListener("click", (event) => {
         const submitBtn = formElement.querySelector<HTMLButtonElement>(
           "button[value='save']",
@@ -51,15 +41,14 @@ export default function setupStepNav() {
         }
 
         // The form has unsaved changes: submit it and redirect to the target
-        // step. Preserve the original redirect_to so the close button on the
-        // next step still returns to the right page.
+        // step. The link href already contains redirect_to set server-side.
         event.preventDefault();
         const action = new URL(globalThis.location.href);
-        let targetStep = link.pathname;
-        if (redirectTo?.startsWith("/")) {
-          targetStep += `?redirect_to=${encodeURIComponent(redirectTo)}`;
-        }
-        action.searchParams.set("redirect_to", targetStep);
+        const targetUrl = new URL(link.href);
+        action.searchParams.set(
+          "redirect_to",
+          targetUrl.pathname + targetUrl.search,
+        );
         formElement.action = action.toString();
         formElement.requestSubmit(submitBtn);
       });

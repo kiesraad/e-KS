@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    filters,
     form::FormData,
     persons::{AddressForm, Person, pages::UpdatePersonAddressPath},
 };
@@ -16,7 +17,7 @@ struct PersonAddressUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<AddressForm>,
-    close_url: String,
+    overlay: Overlay,
 }
 
 pub async fn update_person_address(
@@ -25,7 +26,6 @@ pub async fn update_person_address(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
-    let close_url = query.close_url(person.highlight_path());
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
@@ -33,8 +33,8 @@ pub async fn update_person_address(
                 AddressForm::from(person.clone()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             person,
-            close_url,
         },
         context,
     ))
@@ -48,14 +48,13 @@ pub async fn update_person_address_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query.close_url(person.highlight_path());
     match form.validate_update(&person, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
                 should_warn: query.should_warn(),
                 form: form_data,
-                close_url,
+                overlay: Overlay::new(&query),
             },
             context,
         )

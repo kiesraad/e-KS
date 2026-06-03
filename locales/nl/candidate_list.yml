@@ -24,7 +24,7 @@ candidate_list_description:
   add_candidate_list: Maak kandidatenlijst(en) aan
 districts:
   all: Alle
-  duplicate_hint: Een of meerdere kiesdistricten komen op meerdere kandidatenlijsten voor
+  duplicate_hint: Een of meerdere kieskringen komen op meerdere kandidatenlijsten voor
 edit_position: Volgorde op de lijst
 fields:
   electoral_districts: Kieskringen

@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
     persons::PersonalDataForm,
 };
@@ -17,6 +17,7 @@ struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_person(
@@ -24,6 +25,7 @@ pub async fn update_person(
     context: Context,
     full_list: FullCandidateList,
     candidate: Candidate,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
@@ -31,6 +33,7 @@ pub async fn update_person(
                 PersonalDataForm::from(candidate.person.clone()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             candidate,
             full_list,
         },
@@ -58,6 +61,7 @@ pub async fn update_person_submit(
                 full_list,
                 candidate,
                 form: *form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -117,6 +121,7 @@ mod tests {
             Context::new_test_without_db(),
             full_list,
             candidate,
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();

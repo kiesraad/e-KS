@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     common::Problematic,
     filters,
     form::FormData,
@@ -19,7 +19,7 @@ use super::SubstituteSubmitterUpdatePath;
 struct SubstituteSubmitterUpdateTemplate {
     substitute_submitter: ListSubmitter,
     form: FormData<ListSubmitterForm>,
-    close_url: String,
+    overlay: Overlay,
 }
 
 pub async fn update_substitute_submitter(
@@ -28,7 +28,6 @@ pub async fn update_substitute_submitter(
     substitute_submitter: ListSubmitter,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
-    let close_url = query.close_url(ListSubmitter::view_path());
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(
@@ -36,7 +35,7 @@ pub async fn update_substitute_submitter(
                 &context.session.csrf_token,
             ),
             substitute_submitter,
-            close_url,
+            overlay: Overlay::new(&query),
         },
         context,
     )
@@ -51,7 +50,6 @@ pub async fn update_substitute_submitter_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query.close_url(ListSubmitter::view_path());
     match form.validate_update_with_checks(
         &ListSubmitterData::from(substitute_submitter.clone()),
         &context.session.csrf_token,
@@ -60,7 +58,7 @@ pub async fn update_substitute_submitter_submit(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
                 form: *form_data,
-                close_url,
+                overlay: Overlay::new(&query),
             },
             context,
         )

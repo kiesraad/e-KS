@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate,
+    AppError, AppStore, Context, ElectoralDistrict, Form, HtmlTemplate, Overlay,
     candidate_lists::{
         CandidateList, CandidateListCreateForm, CandidateListId, pages::CandidateListCreatePath,
     },
@@ -17,6 +17,7 @@ struct CandidateListCreateTemplate {
     available_districts: Vec<ElectoralDistrict>,
     duplicate_districts: Vec<ElectoralDistrict>,
     has_previous_list: bool,
+    overlay: Overlay,
 }
 
 pub async fn create_candidate_list(
@@ -48,6 +49,7 @@ pub async fn create_candidate_list(
             available_districts,
             duplicate_districts: vec![],
             has_previous_list,
+            overlay: Overlay::default(),
         },
         context,
     )
@@ -77,6 +79,7 @@ pub async fn create_candidate_list_submit(
                 has_previous_list: !store.get_candidate_lists().is_empty(),
                 available_districts,
                 duplicate_districts: vec![],
+                overlay: Overlay::default(),
             },
             context,
         )

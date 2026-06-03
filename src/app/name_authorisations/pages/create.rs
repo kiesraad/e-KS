@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 
 use super::NameAuthorisationCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
     form::FormData,
     name_authorisations::{NameAuthorisation, NameAuthorisationForm},
     redirect_success,
@@ -13,6 +13,7 @@ use crate::{
 #[template(path = "name_authorisations/pages/create.html")]
 struct NameAuthorisationCreateTemplate {
     form: FormData<NameAuthorisationForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_name_authorisation(
@@ -22,6 +23,7 @@ pub async fn create_name_authorisation(
     Ok(HtmlTemplate(
         NameAuthorisationCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     ))
@@ -35,7 +37,10 @@ pub async fn create_name_authorisation_submit(
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
-            NameAuthorisationCreateTemplate { form: form_data },
+            NameAuthorisationCreateTemplate {
+                form: form_data,
+                overlay: Overlay::default(),
+            },
             context,
         )
         .into_response()),

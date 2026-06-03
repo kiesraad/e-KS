@@ -1,13 +1,15 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     common::Problematic,
     filters,
     form::{EmptyForm, FormData},
     name_authorisations::NameAuthorisation,
-    redirect_success,
 };
 
 use super::NameAuthorisationDeletePath;
@@ -17,17 +19,20 @@ use super::NameAuthorisationDeletePath;
 struct DeleteNameAuthorisationTemplate {
     name_authorisation: NameAuthorisation,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 pub async fn delete_name_authorisation_confirm(
     _: NameAuthorisationDeletePath,
     context: Context,
     name_authorisation: NameAuthorisation,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteNameAuthorisationTemplate {
             form: FormData::new(&context.session.csrf_token),
             name_authorisation,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -38,6 +43,7 @@ pub async fn delete_name_authorisation(
     name_authorisation: NameAuthorisation,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
@@ -45,13 +51,14 @@ pub async fn delete_name_authorisation(
         Ok(_) => {
             name_authorisation.delete(&store).await?;
 
-            Ok(redirect_success(NameAuthorisation::list_path()))
+            Ok(query.redirect_or(NameAuthorisation::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum::extract::Query;
     use axum_extra::routing::TypedPath;
 
     use super::*;
@@ -70,6 +77,7 @@ mod tests {
             NameAuthorisationDeletePath { authorisation_id },
             Context::new_test_without_db(),
             name_authorisation.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -97,6 +105,7 @@ mod tests {
             name_authorisation,
             context,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(csrf_token)),
         )
         .await
@@ -137,6 +146,7 @@ mod tests {
             name_authorisation.clone(),
             context,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(TokenValue("invalid".to_string()))),
         )
         .await

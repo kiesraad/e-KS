@@ -5,7 +5,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
 };
@@ -17,7 +17,7 @@ use super::ListSubmitterUpdatePath;
 struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
     should_warn: bool,
-    close_url: String,
+    overlay: Overlay,
 }
 
 pub async fn update_list_submitter(
@@ -28,12 +28,11 @@ pub async fn update_list_submitter(
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
     let should_warn = !list_submitter.is_empty();
-    let close_url = query.close_url(ListSubmitter::view_path());
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
             should_warn,
-            close_url,
+            overlay: Overlay::new(&query),
         },
         context,
     )
@@ -48,7 +47,6 @@ pub async fn update_list_submitter_submit(
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
-    let close_url = query.close_url(ListSubmitter::view_path());
     match form.validate_update_with_checks(
         &ListSubmitterData::from(list_submitter.clone()),
         &context.session.csrf_token,
@@ -57,7 +55,7 @@ pub async fn update_list_submitter_submit(
             ListSubmitterUpdateTemplate {
                 form: *form_data,
                 should_warn: true,
-                close_url,
+                overlay: Overlay::new(&query),
             },
             context,
         )

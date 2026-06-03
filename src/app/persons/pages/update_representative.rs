@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    filters,
     form::FormData,
     persons::{Person, RepresentativeForm, pages::UpdateRepresentativePath},
 };
@@ -16,7 +17,7 @@ struct RepresentativeUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<RepresentativeForm>,
-    close_url: String,
+    overlay: Overlay,
 }
 
 pub async fn update_representative(
@@ -25,7 +26,6 @@ pub async fn update_representative(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
-    let close_url = query.close_url(person.highlight_path());
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
@@ -33,8 +33,8 @@ pub async fn update_representative(
                 RepresentativeForm::from(person.clone().representative.unwrap_or_default()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             person,
-            close_url,
         },
         context,
     ))
@@ -48,7 +48,6 @@ pub async fn update_representative_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query.close_url(person.highlight_path());
     let representative = person.clone().representative.unwrap_or_default();
     match form.validate_update(&representative, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -56,7 +55,7 @@ pub async fn update_representative_submit(
                 should_warn: query.should_warn(),
                 person,
                 form: form_data,
-                close_url,
+                overlay: Overlay::new(&query),
             },
             context,
         )

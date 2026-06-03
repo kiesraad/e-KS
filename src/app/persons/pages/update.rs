@@ -5,7 +5,8 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::UpdatePersonPath},
 };
@@ -15,7 +16,7 @@ use crate::{
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonalDataForm>,
-    close_url: String,
+    overlay: Overlay,
 }
 
 pub async fn update_person(
@@ -24,15 +25,14 @@ pub async fn update_person(
     person: Person,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
-    let close_url = query.close_url(person.highlight_path());
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
             form: FormData::new_with_data(
                 PersonalDataForm::from(person.clone()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             person,
-            close_url,
         },
         context,
     ))
@@ -46,7 +46,6 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    let close_url = query.close_url(person.highlight_path());
     match form.validate_update_with_checks(
         &person,
         &context.session.csrf_token,
@@ -57,7 +56,7 @@ pub async fn update_person_submit(
             PersonUpdateTemplate {
                 person,
                 form: *form_data,
-                close_url,
+                overlay: Overlay::new(&query),
             },
             context,
         )

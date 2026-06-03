@@ -1,12 +1,12 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ person.update_path() }}"
+      <a href="{{ overlay.forward(person.update_path() ) }}"
          class="{{ person.personal_info_class() }}">{{ "person.personal_details"|trans }}</a>
     </li>
     {% if person.lives_in_nl() || conditional_next_step|default(false) %}
       <li class="show-nl">
-        <a href="{{ person.update_address_path() }}"
+        <a href="{{ overlay.forward(person.update_address_path() ) }}"
            class="{% if person.address.is_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
           {{ "person.correspondence_address"|trans }}
         </a>
@@ -14,7 +14,7 @@
     {% endif %}
     {% if !person.lives_in_nl() || conditional_next_step|default(false) %}
       <li class="hide-nl">
-        <a href="{{ person.update_representative_path() }}"
+        <a href="{{ overlay.forward(person.update_representative_path() ) }}"
            class="{% if person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
           {{ "person.representative"|trans }}
         </a>
@@ -23,7 +23,7 @@
   </ul>
   <ul>
     <li>
-      <a href="{{ person.delete_path() }}" class="trash">{{ "person.actions.delete"|trans }}</a>
+      <a href="{{ overlay.forward(person.delete_path() ) }}" class="trash">{{ "person.actions.delete"|trans }}</a>
     </li>
   </ul>
 </div>

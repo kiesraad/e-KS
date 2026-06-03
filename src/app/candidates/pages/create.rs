@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay,
     candidate_lists::FullCandidateList,
     filters,
     form::FormData,
@@ -15,6 +15,7 @@ use super::CreateCandidatePath;
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_person_candidate_list(
@@ -26,6 +27,7 @@ pub async fn create_person_candidate_list(
         PersonCreateTemplate {
             full_list,
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     )
@@ -44,6 +46,7 @@ pub async fn create_person_candidate_list_submit(
             PersonCreateTemplate {
                 full_list,
                 form: *form_data,
+                overlay: Overlay::default(),
             },
             context,
         )

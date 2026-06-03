@@ -1,11 +1,14 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    filters,
     form::{EmptyForm, FormData},
     persons::{Person, pages::DeletePersonPath},
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -13,17 +16,20 @@ use crate::{
 struct DeletePersonTemplate {
     person: Person,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 pub async fn delete_person_confirm(
     _: DeletePersonPath,
     context: Context,
     person: Person,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeletePersonTemplate {
             form: FormData::new(&context.session.csrf_token),
             person,
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -34,6 +40,7 @@ pub async fn delete_person(
     context: Context,
     person: Person,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
@@ -41,13 +48,14 @@ pub async fn delete_person(
         Ok(_) => {
             person.delete(&store).await?;
 
-            Ok(redirect_success(Person::list_path()))
+            Ok(query.redirect_or(Person::list_path()))
         }
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use axum::extract::Query;
     use axum_extra::routing::TypedPath;
 
     use super::*;
@@ -66,6 +74,7 @@ mod tests {
             DeletePersonPath { person_id },
             Context::new_test_without_db(),
             person.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -93,6 +102,7 @@ mod tests {
             context,
             person,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm::new(csrf_token)),
         )
         .await

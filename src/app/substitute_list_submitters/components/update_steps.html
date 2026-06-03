@@ -1,13 +1,13 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ substitute_submitter.substitute_update_path() }}"
+      <a href="{{ overlay.forward(substitute_submitter.substitute_update_path() ) }}"
          class="{{ substitute_submitter.highest_severity_class() }}">{{ "political_group.substitute_submitter_data"|trans }}</a>
     </li>
   </ul>
   <ul>
     <li>
-      <a href="{{ substitute_submitter.substitute_delete_path() }}"
+      <a href="{{ overlay.forward(substitute_submitter.substitute_delete_path() ) }}"
          class="trash">{{ "political_group.actions.delete_substitute_submitter"|trans }}</a>
     </li>
   </ul>
