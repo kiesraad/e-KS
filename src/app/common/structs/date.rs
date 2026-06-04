@@ -1,7 +1,7 @@
 use chrono::NaiveDate;
 use regex::Regex;
 use serde::{Deserialize, Serialize};
-use std::{ops::Deref, str::FromStr, sync::LazyLock};
+use std::{str::FromStr, sync::LazyLock};
 
 use crate::{ElectionConfig, constants::DEFAULT_DATE_FORMAT, form::ValidationError};
 
@@ -69,7 +69,7 @@ impl DateOfBirth {
     }
 
     pub fn is_too_young(&self, election: &ElectionConfig) -> bool {
-        self.deref() > &election.eligible_date_of_birth()
+        self.0 > election.eligible_date_of_birth()
     }
 }
 

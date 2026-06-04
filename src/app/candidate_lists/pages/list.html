@@ -1,19 +1,13 @@
 {% extends "common/components/layout.html" %}
 {% block page_title %}
-  {% if
-    "multiple_candidate_lists"|value_true %}
-    {{ "candidate_list.title_plural"|trans
-    }}
+  {% if "multiple_candidate_lists"|value_true %}
+    {{ "candidate_list.title_plural"|trans }}
   {% else %}
     {{ "candidate_list.title_single"|trans }}
   {% endif %}
-{% endblock
-%}
-{% block candidate_lists_nav_class %}active{% endblock %}
-{% block
-  header_action %}
-  <a href="/" class="button secondary">{{ "action.back"|trans }}</a>
 {% endblock %}
+{% block candidate_lists_nav_class %}active{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
 {% block content %}
   <section>
     <div class="cards cards-candidate-lists">
@@ -27,39 +21,26 @@
         </a>
       {% endif %}
       <div class="cards-right">
-        {% let election = "election"|election_value %} {% let max_candidates
-        = "max_candidates"|integer_value %}
-        {% for candidate_list in
-          candidate_lists %}
+        {% let election = "election"|election_value %}
+        {% let max_candidates = "max_candidates"|integer_value %}
+        {% for candidate_list in candidate_lists %}
           <div class="card card-candidate-list {{ candidate_list.highest_severity_class(*() ) }}"
                data-href="{{ candidate_list.list.view_path() }}">
             <div class="badge"></div>
             <h3>{{ "candidate_list.title_single"|trans }}</h3>
             <p class="statistic {% if candidate_list.candidate_count() > candidate_list.max_count %}warning{% endif %}">
-              {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() 
-              , &max_candidates.to_string())|safe }}
+              {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
             </p>
             {% if !election.has_only_one_district() %}
               <h5>{{ "common.electoral_districts"|trans }}:</h5>
-              {% if candidate_list.list.electoral_districts.len() ==
-                election.electoral_districts().len() &&
-                candidate_list.duplicate_districts.is_empty() %}
+              {% if candidate_list.list.electoral_districts.len() == election.electoral_districts().len() && candidate_list.duplicate_districts.is_empty() %}
                 <p>{{ "candidate_list.districts.all"|trans }}</p>
               {% else %}
                 <ul class="districts">
-                  {% for district in candidate_list.list.electoral_districts
-                    %}
+                  {% for district in candidate_list.list.electoral_districts %}
                     <li>
-                      <a
-                        href="{{ candidate_list.list.update_path_from(CandidateList::list_path() ) }}"
-                        {%
-                        if
-                        candidate_list.duplicate_districts.contains(district)
-                        %}class="error"
-                        {%
-                        endif
-                        %}
-                      >{{ district|district_name }}</a>
+                      <a href="{{ candidate_list.list.update_path_from(CandidateList::list_path() ) }}"
+                         {% if candidate_list.duplicate_districts.contains(district) %}class="error"{% endif %}>{{ district|district_name }}</a>
                     </li>
                   {% endfor %}
                 </ul>
@@ -69,10 +50,8 @@
           </div>
         {% endfor %}
         {# add new candidate list card #}
-        {% if
-          election.has_only_one_district() && candidate_lists.len() > 0 %}
-          {#
-do not show the add button #}
+        {% if election.has_only_one_district() && candidate_lists.len() > 0 %}
+          {# do not show the add button #}
         {% else %}
           <div class="card card-add-list">
             <a href="{{ CandidateList::create_path() }}"

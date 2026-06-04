@@ -77,7 +77,7 @@ impl PersonalData {
 mod tests {
     use super::*;
     use crate::AppStore;
-    use chrono::NaiveDate;
+    use chrono::{Duration, NaiveDate};
 
     fn complete_personal_data() -> PersonalData {
         PersonalData {
@@ -124,8 +124,10 @@ mod tests {
     #[test]
     fn too_young_date_of_birth_produces_warning() {
         let store = AppStore::new_for_test();
+        let eligible_dob = store.election.eligible_date_of_birth();
         let mut data = complete_personal_data();
-        data.date_of_birth = Some(NaiveDate::from_ymd_opt(2026, 1, 1).unwrap().into());
+        data.date_of_birth = Some((eligible_dob + Duration::days(1)).into());
+
         assert!(
             data.get_problems(&store)
                 .contains(&PotentialProblems::TooYoungDateOfBirth)

@@ -90,7 +90,7 @@ impl From<Person> for PersonalDataForm {
 }
 
 impl PersonalDataForm {
-    /// Also checks person uniqueness and date of birth
+    /// Also checks person uniqueness
     pub fn validate_create_with_checks(
         self,
         csrf_token: &TokenValue,
@@ -209,7 +209,7 @@ mod tests {
         common::{DutchAddress, UtcDateTime},
         form::{ValidationError, generate_csrf_token},
         persons::PersonId,
-        test_utils::{parse_country_code, parse_place_of_residence, sample_person_with},
+        test_utils::{self, parse_country_code, parse_place_of_residence, sample_person_with},
     };
 
     #[test]
@@ -490,26 +490,19 @@ mod tests {
         assert!(errors.is_empty());
     }
 
-    #[test]
-    fn validate_create_with_checks_combines_errors() {
+    #[tokio::test]
+    async fn validate_create_with_checks_combines_errors() {
         let store = AppStore::new_for_test();
+
+        let mut sample_person = test_utils::sample_person(PersonId::new());
+        sample_person.personal_data.bsn = Some("111222333".parse().unwrap());
+        sample_person.create(&store).await.unwrap();
+
         let csrf_token = generate_csrf_token();
-        let form = PersonalDataForm {
-            name: FullNameForm {
-                first_name: "".to_string(),
-                last_name: "Klaas Smit".to_string(),
-                last_name_prefix: "invalid".to_string(),
-                initials: "E.D.".to_string(),
-            },
-            personal_data: PersonalDataFieldsForm {
-                gender: "m".to_string(),
-                date_of_birth: "12-12-2015".to_string(),
-                bsn: "111222333".to_string(),
-                place_of_residence: "Amsterdam".to_string(),
-                country: "NL".to_string(),
-            },
-            csrf_token: csrf_token.clone(),
-        };
+
+        let mut form = test_utils::sample_person_form(&csrf_token);
+        form.personal_data.bsn = "111222333".parse().unwrap();
+        form.name.last_name_prefix = "invalid".to_string();
 
         let form_data = form
             .validate_create_with_checks(&csrf_token, &store)
@@ -517,7 +510,11 @@ mod tests {
 
         let errors = form_data.errors();
 
-        assert_eq!(errors.len(), 1);
+        assert_eq!(errors.len(), 2);
+        assert!(errors.contains(&(
+            "personal_data.bsn".to_string(),
+            ValidationError::BsnAlreadyExists
+        )));
         assert!(errors.contains(&(
             "name.last_name_prefix".to_string(),
             ValidationError::InvalidValue
