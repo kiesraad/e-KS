@@ -89,7 +89,7 @@ impl Problematic<()> for ListSubmitter {
         }
 
         [
-            self.name.potential_problems(severity),
+            self.name.get_problems(severity),
             self.address.get_problems(severity),
         ]
         .into_iter()

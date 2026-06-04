@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Severity},
+    common::{PotentialProblems, Problematic, Severity},
 };
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};
@@ -56,17 +56,21 @@ impl FullName {
         }
     }
 
-    pub fn is_complete(&self) -> bool {
-        self.potential_problems(Severity::Info).is_empty()
-    }
-
     pub fn is_empty(&self) -> bool {
         self.initials.is_empty()
             && self.last_name.is_empty()
             && self.last_name_prefix.is_empty_or_none()
     }
+}
 
-    pub fn potential_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+impl PartialOrd for FullName {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Problematic<Severity> for FullName {
+    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.initials.is_empty() {
@@ -78,12 +82,6 @@ impl FullName {
         }
 
         items
-    }
-}
-
-impl PartialOrd for FullName {
-    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
-        Some(self.cmp(other))
     }
 }
 

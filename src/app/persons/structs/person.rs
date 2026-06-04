@@ -26,7 +26,7 @@ pub struct Person {
 impl Problematic<()> for Person {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         [
-            self.name.potential_problems(Severity::Error),
+            self.name.get_problems(Severity::Error),
             self.personal_data.get_problems(()),
             if self.lives_in_nl() {
                 self.address.get_problems(Severity::Warn)
@@ -51,7 +51,7 @@ pub struct Representative {
 impl Problematic<()> for Representative {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         [
-            self.name.potential_problems(Severity::Warn),
+            self.name.get_problems(Severity::Warn),
             self.address.get_problems(Severity::Warn),
         ]
         .into_iter()
@@ -131,7 +131,7 @@ impl Person {
     }
 
     pub fn personal_info_class(&self) -> &'static str {
-        if !self.name.is_complete() {
+        if !self.name.is_all_good(Severity::Info) {
             return "error";
         }
 
