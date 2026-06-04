@@ -2,6 +2,9 @@
   <legend>
     {{ "candidate_list.fields.electoral_districts"|trans }}
   </legend>
+  {% if !duplicate_districts.is_empty() %}
+    <span class="error mb-md">{{ "candidate_list.districts.duplicate_hint"|trans }}</span>
+  {% endif %}
   <div class="checkbox select-all-checkbox mt-sm mb-lg">
     <input type="checkbox" for-checklist="district_list" id="select-all" />
     <label for="select-all">
@@ -11,7 +14,7 @@
   {% let election = "election"|election_value %}
   <div class="checklist grid" id="district_list">
     {% for d in election.electoral_districts() %}
-    <div class="checkbox {% if !available_districts.contains(&d) %}disabled{% endif %}">
+    <div class="checkbox {% if !available_districts.contains(&d) %}disabled{% endif %} {% if duplicate_districts.contains(&d) %}error{% endif %}">
       <input type="checkbox" name="electoral_districts" id="electoral_district_{{ d.code() }}" value="{{ d.serde_name() }}"
         {% if form.data.electoral_districts.contains(&d) %}checked{% endif %} />
       <label for="electoral_district_{{ d.code() }}">

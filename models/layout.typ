@@ -112,7 +112,7 @@
 }
 
 /// Display a checkbox, optionally already checked when the `checked` parameter is set to `true`
-#let checkbox(checked: none, content) = {
+#let checkbox(checked: true, content) = {
   let has_content = content != none and content != ""
   let size = 9pt
 

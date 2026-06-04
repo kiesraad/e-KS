@@ -93,6 +93,11 @@ impl CandidateList {
         CandidateListUpdatePath { list_id: self.id }
     }
 
+    pub fn update_path_from(&self, from: impl std::fmt::Display) -> impl TypedPath {
+        CandidateListUpdatePath { list_id: self.id }
+            .with_query_params(QueryParamState::redirect_to(from.to_string()))
+    }
+
     pub fn delete_path(&self) -> impl TypedPath {
         CandidateListsDeletePath { list_id: self.id }
     }

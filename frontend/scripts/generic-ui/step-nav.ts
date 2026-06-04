@@ -40,12 +40,15 @@ export default function setupStepNav() {
           return;
         }
 
-        // The form has unsaved changes we need to submit it instead of navigating.
-        // Append a redirect_to parameter so the server sends the user to
-        // the clicked step after saving.
+        // The form has unsaved changes: submit it and redirect to the target
+        // step. The link href already contains redirect_to set server-side.
         event.preventDefault();
         const action = new URL(globalThis.location.href);
-        action.searchParams.set("redirect_to", link.pathname);
+        const targetUrl = new URL(link.href);
+        action.searchParams.set(
+          "redirect_to",
+          targetUrl.pathname + targetUrl.search,
+        );
         formElement.action = action.toString();
         formElement.requestSubmit(submitBtn);
       });

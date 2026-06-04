@@ -1,13 +1,15 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     common::Problematic,
     filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterData, ListSubmitterForm},
-    redirect_success,
 };
 
 use super::SubstituteSubmitterUpdatePath;
@@ -17,12 +19,14 @@ use super::SubstituteSubmitterUpdatePath;
 struct SubstituteSubmitterUpdateTemplate {
     substitute_submitter: ListSubmitter,
     form: FormData<ListSubmitterForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_substitute_submitter(
     _: SubstituteSubmitterUpdatePath,
     context: Context,
     substitute_submitter: ListSubmitter,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
@@ -31,6 +35,7 @@ pub async fn update_substitute_submitter(
                 &context.session.csrf_token,
             ),
             substitute_submitter,
+            overlay: Overlay::new(&query),
         },
         context,
     )
@@ -42,6 +47,7 @@ pub async fn update_substitute_submitter_submit(
     context: Context,
     substitute_submitter: ListSubmitter,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     match form.validate_update_with_checks(
@@ -52,6 +58,7 @@ pub async fn update_substitute_submitter_submit(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
                 form: *form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -63,7 +70,7 @@ pub async fn update_substitute_submitter_submit(
             };
             updated.update_substitute(&store).await?;
 
-            Ok(redirect_success(ListSubmitter::view_path()))
+            Ok(query.redirect_or(ListSubmitter::view_path()))
         }
     }
 }
@@ -96,6 +103,7 @@ mod tests {
             SubstituteSubmitterUpdatePath { sub_submitter_id },
             Context::new_test_without_db(),
             substitute_submitter.clone(),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -126,6 +134,7 @@ mod tests {
             context,
             substitute_submitter.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -169,6 +178,7 @@ mod tests {
             context,
             substitute_submitter.clone(),
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await

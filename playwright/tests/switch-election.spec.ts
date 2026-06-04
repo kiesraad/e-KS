@@ -35,7 +35,7 @@ test.describe("switch election", () => {
 
     await new EditListDetailsPage(page).addDistricts(["Venlo"]);
 
-    await expect(page.locator("//li/span[text()='Venlo']")).toBeVisible();
+    await expect(page.locator("//li/a[text()='Venlo']")).toBeVisible();
   });
 
   test("water authority", async ({ login: page }) => {

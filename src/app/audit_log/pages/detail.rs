@@ -6,7 +6,7 @@ use askama::Template;
 use axum::{extract::State, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, TypstRenderer,
+    AppError, AppStore, Context, HtmlTemplate, Overlay, TypstRenderer,
     audit_log::{
         AuditLogDetail, AuditLogPath,
         pages::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
@@ -23,6 +23,7 @@ struct AuditLogDetailTemplate {
     download_path_fry: String,
     is_downloadable_state: bool,
     frisian_export_allowed: bool,
+    overlay: Overlay,
 }
 
 pub async fn audit_log_detail(
@@ -54,6 +55,7 @@ pub async fn audit_log_detail(
             .to_string(),
             is_downloadable_state,
             frisian_export_allowed: context.election.frisian_export_allowed(),
+            overlay: Overlay::default(),
         },
         context,
     ))
