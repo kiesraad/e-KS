@@ -75,7 +75,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
-        common::PreviousElectionResults,
+        common::{DisplayName, PreviousElectionResults},
         name_authorisations::NameAuthorisationId,
         test_utils::{
             response_body_string, sample_name_authorisation, sample_political_group_form,
@@ -121,7 +121,8 @@ mod tests {
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_token.clone();
-        let form = sample_political_group_form(&csrf_token);
+        let mut form = sample_political_group_form(&csrf_token);
+        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT); // max length
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -155,7 +156,7 @@ mod tests {
         );
         assert_eq!(
             updated.display_name.as_deref().map(|v| v.to_string()),
-            Some("Updated Display Name".to_string())
+            Some("a".repeat(DisplayName::MAX_CHAR_COUNT))
         );
 
         Ok(())
@@ -173,7 +174,7 @@ mod tests {
         let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_political_group_form(&csrf_token);
 
-        form.display_name = "!".to_string(); // Invalid value
+        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT + 1); // Invalid value (too long)
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -189,7 +190,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("The value is too short"));
+        assert!(body.contains("The value is too long"));
 
         Ok(())
     }
