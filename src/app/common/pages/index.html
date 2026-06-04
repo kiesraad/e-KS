@@ -13,8 +13,12 @@
   <div class="cards cards-home">
     <a href="{{ crate::list_designation::ListDesignation::update_path() }}"
        class="card card-data">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("1") }}</h3>
+      <header>
+        <div class="badge"></div>
+        <div>
+          <h3>{{ "common.step"|trans("1") }}</h3>
+        </div>
+      </header>
       <h4>{{ "common.general_information"|trans }}</h4>
       <ul class="instruction">
         <li>{{ "common.general_information_description.basic"|trans }}</li>
@@ -24,8 +28,12 @@
     </a>
     <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
        class="card card-candidate-list">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("2") }}</h3>
+      <header>
+        <div class="badge"></div>
+        <div>
+          <h3>{{ "common.step"|trans("2") }}</h3>
+        </div>
+      </header>
       <h4>
         {% if "multiple_candidate_lists"|value_true %}
           {{ "candidate_list.title_plural"|trans }}
@@ -41,8 +49,12 @@
     </a>
     <a href="{{ crate::submit::SubmitPath{}.to_string() }}"
        class="card card-locked">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("3") }}</h3>
+      <header>
+        <div class="badge"></div>
+        <div>
+          <h3>{{ "common.step"|trans("3") }}</h3>
+        </div>
+      </header>
       <h4>{{ "common.submit"|trans }}</h4>
       <ul class="instruction">
         <li>{{ "common.submit_description.download_documents"|trans }}</li>

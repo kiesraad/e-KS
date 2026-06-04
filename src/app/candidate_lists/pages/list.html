@@ -13,22 +13,38 @@
     <div class="cards cards-candidate-lists">
       {% if total_persons > 0 %}
         <a href="{{ Person::list_path() }}" class="card card-persons">
-          <div class="badge"></div>
-          <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
+          <header>
+            <div class="badge"></div>
+            <div>
+              <h3>{{ "candidate_list.all_candidates"|trans }}</h3>
+              <p class="warning">Heel veel problemen</p>
+            </div>
+          </header>
           <p class="statistic">{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
           <p class="instruction">{{ "candidate_list.all_candidates_note"|trans }}</p>
-          <p>{{ "action.manage_candidates"|trans }}</p>
+          <p class="card-action">{{ "action.manage_candidates"|trans }}</p>
         </a>
       {% endif %}
       <div class="cards-right">
         {% let election = "election"|election_value %}
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
-          <div class="card card-candidate-list {{ candidate_list.highest_severity_class() }}"
-               data-href="{{ candidate_list.list.view_path() }}">
-            <div class="badge"></div>
-            <h3>{{ "candidate_list.title_single"|trans }}</h3>
-            <p class="statistic {% if candidate_list.candidate_count() > candidate_list.max_count %}warning{% endif %}">
+          <section class="card card-candidate-list {{ candidate_list.highest_severity_class() }}"
+                   data-href="{{ candidate_list.list.view_path() }}">
+            <header>
+              <div class="badge"></div>
+              <div>
+                <h3>{{ "candidate_list.title_single"|trans }}</h3>
+                {% let problems = candidate_list.get_problems() %}
+                {% if !problems.is_empty() %}
+                  <p class="{{ candidate_list.highest_severity_class() }}">
+                    {{ problems[0].translate(locale) }}
+                    {% if problems.len() > 1 %}{{ "problems.and_more"|trans(&(problems.len() - 1).to_string()) }}{% endif %}
+                  </p>
+                {% endif %}
+              </div>
+            </header>
+            <p class="statistic {% if candidate_list.candidate_count() > max_candidates %}warning{% endif %}">
               {{ "candidate_list.candidate_count"|trans(&candidate_list.candidate_count().to_string() , &max_candidates.to_string())|safe }}
             </p>
             {% if !election.has_only_one_district() %}
@@ -47,7 +63,7 @@
               {% endif %}
             {% endif %}
             <a href="{{ candidate_list.list.view_path() }}" class="card-action">{{ "action.manage_candidate_list"|trans }}</a>
-          </div>
+          </section>
         {% endfor %}
         {# add new candidate list card #}
         {% if election.has_only_one_district() && candidate_lists.len() > 0 %}

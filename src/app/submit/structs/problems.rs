@@ -17,12 +17,10 @@ impl PotentialProblems {
         let submit = SubmitPath {}.to_string();
         match self {
             PotentialProblems::NoCandidates => list.view_path().to_string(),
-            PotentialProblems::TooManyCandidates { actual, max } => {
-                let overflow = actual.saturating_sub(*max);
-                list.view_path()
-                    .with_query_params(QueryParamState::highlight_last(overflow))
-                    .to_string()
-            }
+            PotentialProblems::TooManyCandidates { count } => list
+                .view_path()
+                .with_query_params(QueryParamState::highlight_last(*count))
+                .to_string(),
             PotentialProblems::FewCandidatesWithFirstName { .. }
             | PotentialProblems::FewCandidatesWithoutFirstName { .. }
             | PotentialProblems::FewCandidatesWithGender { .. }
@@ -165,20 +163,15 @@ impl Problems {
         match list_designation {
             ListDesignation::Standalone if authorised_names_count > 1 => {
                 vec![PotentialProblems::TooManyAuthorizedNames {
-                    actual: authorised_names_count,
-                    max: 1,
+                    count: authorised_names_count - 1,
                 }]
             }
             ListDesignation::Standalone if authorised_names_count < 1 => {
-                vec![PotentialProblems::TooFewAuthorizedNames {
-                    actual: authorised_names_count,
-                    min: 1,
-                }]
+                vec![PotentialProblems::TooFewAuthorizedNames { count: 1 }]
             }
             ListDesignation::Combined if authorised_names_count < 2 => {
                 vec![PotentialProblems::TooFewAuthorizedNames {
-                    actual: authorised_names_count,
-                    min: 2,
+                    count: 2 - authorised_names_count,
                 }]
             }
             _ => Vec::new(),
@@ -340,10 +333,7 @@ mod tests {
                 candidates: vec![],
                 lists: vec![ListProblems {
                     entity: sample_candidate_list(CandidateListId::new()),
-                    problems: vec![PotentialProblems::TooManyCandidates {
-                        actual: 12,
-                        max: 12
-                    }],
+                    problems: vec![PotentialProblems::TooManyCandidates { count: 1 }],
                 }],
             }
             .models_downloadable()
@@ -397,7 +387,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooFewAuthorizedNames { actual: 0, min: 1 }
+            PotentialProblems::TooFewAuthorizedNames { count: 1 }
         );
 
         Ok(())
@@ -421,7 +411,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 1 }
+            PotentialProblems::TooManyAuthorizedNames { count: 1 }
         );
 
         Ok(())
@@ -445,7 +435,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooFewAuthorizedNames { actual: 1, min: 2 }
+            PotentialProblems::TooFewAuthorizedNames { count: 1 }
         );
 
         Ok(())

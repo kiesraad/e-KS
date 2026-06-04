@@ -7,7 +7,8 @@
       <th scope="col" colspan="2">{{ "candidate_list.fields.position"|trans }}</th>
       <th scope="col">{{ "person.fields.name"|trans }}</th>
       <th scope="col">{{ "person.fields.place_of_residence"|trans }}</th>
-      <th scope="col">
+      <th scope="col"
+          class="statistic {% if full_list.candidates.len() > max_candidates %}warning{% endif %}">
         {{ "candidate_list.candidate_count"|trans(&full_list.candidates.len().to_string(), &max_candidates.to_string())|safe }}
       </th>
     </tr>

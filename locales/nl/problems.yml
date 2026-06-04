@@ -1,3 +1,4 @@
+and_more: "(en {} meer)"
 duplicate_districts: Dubbele kieskringen
 few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
 few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
@@ -26,7 +27,10 @@ no_problems: Compleet 🎉
 no_representative: Gemachtigde ontbreekt
 no_substitute_submitter: Geen vervanger voor het herstel van verzuimen toegevoegd
 representative: Gemachtigde
-too_few_authorized_names: "Te weinig gemachtigde/statutaire namen ({} toegevoegd, minimum is {})"
-too_many_authorized_names: "Te veel gemachtigde/statutaire namen ({} toegevoegd, maximum is {})"
-too_many_candidates: "Te veel kandidaten ({} toegevoegd, maximum is {})"
+too_few_authorized_names: "{} statutaire namen te weinig"
+too_few_authorized_names_one: 1 statutaire naam te weinig
+too_many_authorized_names: "{} statutaire namen te veel toegevoegd"
+too_many_authorized_names_one: 1 statutaire naam te veel toegevoegd
+too_many_candidates: "{} kandidaten te veel"
+too_many_candidates_one: 1 kandidaat te veel
 very_old_date_of_birth: "Geboortedatum lijkt onjuist (meer dan {} jaar geleden)"

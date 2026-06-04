@@ -21,8 +21,7 @@ impl Problematic for CandidateListSummary {
             items.push(PotentialProblems::NoCandidates);
         } else if self.candidate_count() > self.max_count {
             items.push(PotentialProblems::TooManyCandidates {
-                actual: self.candidate_count(),
-                max: self.max_count,
+                count: self.candidate_count() - self.max_count,
             });
         }
 
@@ -330,7 +329,7 @@ mod tests {
         let items = list_summary.get_problems();
 
         assert_eq!(items.len(), 2);
-        assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
+        assert!(items.contains(&PotentialProblems::TooManyCandidates { count: 1 }));
         assert!(items.contains(&PotentialProblems::DuplicateDistricts));
     }
 }

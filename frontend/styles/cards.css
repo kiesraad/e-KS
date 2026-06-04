@@ -29,7 +29,6 @@
   position: relative;
   background-color: var(--base-white);
   padding: var(--space-lg);
-  padding-top: 2.5rem;
   min-height: 10rem;
   border: 1px solid var(--gray-200);
   border-radius: var(--space-sm);
@@ -40,6 +39,40 @@
     color: var(--gray-800);
     margin-bottom: var(--space-lg);
     margin-left: 3.5rem;
+  }
+
+  header {
+    display: flex;
+    gap: var(--space-md);
+    margin-bottom: var(--space-md);
+
+    > div {
+      height: 2.5rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+    }
+
+    .badge {
+      position: static;
+    }
+
+    h3 {
+      margin: 0;
+    }
+
+    p {
+      font-size: var(--font-size-sm);
+      margin-bottom: 0;
+    }
+
+    .warning {
+      color: var(--color-warning-darker);
+    }
+
+    .error {
+      color: var(--color-error-darker);
+    }
   }
 
   h4 {
@@ -66,27 +99,31 @@
     margin-bottom: var(--space-md);
   }
 
-  a.card-action {
+  .card-action {
     display: block;
     font-size: var(--font-size-md);
     color: var(--gray-600);
     text-decoration: none;
+    margin-top: auto;
+    margin-bottom: 0;
+
+    &:hover {
+      text-decoration: underline;
+    }
   }
 
   .statistic {
     font-size: var(--font-size-sm);
 
-    &.warning {
-      background: url("../icons/warning.svg") no-repeat left center / 1.1rem;
-      padding-left: 1.5em;
+    &.warning strong {
+      color: var(--color-warning-darker);
     }
   }
 
   .instruction {
     font-style: italic;
-    font-size: var(--font-size-md);
+    font-size: var(--font-size-sm);
     line-height: 1.4;
-    margin-top: var(--space-md);
     color: var(--gray-600);
     width: 100%;
   }
@@ -98,17 +135,12 @@
     margin-top: auto;
   }
 
-  > :last-child {
-    margin-top: auto;
-    margin-bottom: 0;
-  }
-
   .badge {
     position: absolute;
     top: var(--space-lg);
     left: var(--space-lg);
-    width: 2.5rem;
-    height: 2.5rem;
+    min-width: 2.5rem;
+    min-height: 2.5rem;
     background-color: var(--blue-200);
     border-radius: var(--space-sm);
     background-repeat: no-repeat;
@@ -157,6 +189,8 @@
     position: sticky;
     top: var(--space-lg);
     height: fit-content;
+    min-width: 18rem;
+    min-height: 16rem;
 
     .badge {
       background-image: url("../icons/politician-badge.svg");
@@ -177,7 +211,7 @@
 }
 
 a.card,
-div.card[data-href] {
+section.card[data-href] {
   cursor: pointer;
   color: var(--text-color-body);
   border-color: var(--bg-gray-darkest);
