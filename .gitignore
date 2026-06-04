@@ -44,3 +44,4 @@ lcov.info
 
 /tmp
 bin/pdf_diff
+.zed/
