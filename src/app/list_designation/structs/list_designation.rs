@@ -2,6 +2,7 @@ use crate::form::ValidationError;
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
 pub enum ListDesignation {
     #[default]
     Standalone,
