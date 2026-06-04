@@ -127,7 +127,6 @@ mod tests {
         let eligible_dob = store.election.eligible_date_of_birth();
         let mut data = complete_personal_data();
         data.date_of_birth = Some((eligible_dob + Duration::days(1)).into());
-
         assert!(
             data.get_problems(&store)
                 .contains(&PotentialProblems::TooYoungDateOfBirth)

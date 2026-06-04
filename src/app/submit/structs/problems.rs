@@ -214,8 +214,7 @@ impl Problems {
         candidate_lists
             .iter()
             .filter_map(|candidate_list| {
-                let mut problems = candidate_list.get_problems(());
-                problems.extend(candidate_list.get_deviation_problems(store));
+                let problems = candidate_list.get_problems(store);
                 (!problems.is_empty()).then(|| ListProblems {
                     entity: candidate_list.list.clone(),
                     problems,

@@ -38,6 +38,57 @@ impl Problematic<()> for CandidateListSummary {
     }
 }
 
+impl Problematic<&AppStore> for CandidateListSummary {
+    fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let total = self.candidate_count();
+        if total <= 1 {
+            return Vec::new();
+        }
+
+        let mut with_first_name = 0;
+        let mut with_gender = 0;
+        for candidate in &self.list.candidates {
+            let Ok(person) = store.get_person(*candidate) else {
+                continue;
+            };
+
+            if !person.name.first_name.is_empty_or_none() {
+                with_first_name += 1;
+            }
+
+            if person.personal_data.gender.is_some() {
+                with_gender += 1;
+            }
+        }
+
+        let mut items: Vec<PotentialProblems> = [
+            compute_deviation(with_first_name, total).map(|d| match d {
+                Deviant::FewWith(count) => {
+                    PotentialProblems::FewCandidatesWithFirstName { count, total }
+                }
+                Deviant::FewWithout(count) => {
+                    PotentialProblems::FewCandidatesWithoutFirstName { count, total }
+                }
+            }),
+            compute_deviation(with_gender, total).map(|d| match d {
+                Deviant::FewWith(count) => {
+                    PotentialProblems::FewCandidatesWithGender { count, total }
+                }
+                Deviant::FewWithout(count) => {
+                    PotentialProblems::FewCandidatesWithoutGender { count, total }
+                }
+            }),
+        ]
+        .into_iter()
+        .flatten()
+        .collect();
+
+        items.extend(self.get_problems(()));
+
+        items
+    }
+}
+
 #[derive(PartialEq, Eq, Debug)]
 enum Deviant {
     FewWith(usize),
@@ -77,51 +128,6 @@ impl CandidateListSummary {
                 }
             })
             .collect()
-    }
-
-    pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
-        let total = self.candidate_count();
-        if total <= 1 {
-            return Vec::new();
-        }
-
-        let mut with_first_name = 0;
-        let mut with_gender = 0;
-        for candidate in &self.list.candidates {
-            let Ok(person) = store.get_person(*candidate) else {
-                continue;
-            };
-
-            if !person.name.first_name.is_empty_or_none() {
-                with_first_name += 1;
-            }
-
-            if person.personal_data.gender.is_some() {
-                with_gender += 1;
-            }
-        }
-
-        [
-            compute_deviation(with_first_name, total).map(|d| match d {
-                Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithFirstName { count, total }
-                }
-                Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutFirstName { count, total }
-                }
-            }),
-            compute_deviation(with_gender, total).map(|d| match d {
-                Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithGender { count, total }
-                }
-                Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutGender { count, total }
-                }
-            }),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
     }
 
     pub fn candidate_count(&self) -> usize {
@@ -186,7 +192,7 @@ mod tests {
     async fn no_deviation_in_first_name_usage_produces_no_warning() -> Result<(), AppError> {
         let persons = (0..5).map(|_| sample_person(PersonId::new())).collect();
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(!problems.iter().any(|p| matches!(
             p,
             PotentialProblems::FewCandidatesWithFirstName { .. }
@@ -202,7 +208,7 @@ mod tests {
             .collect();
         persons.push(sample_person(PersonId::new())); // 1 with first name
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(
             problems.contains(&PotentialProblems::FewCandidatesWithFirstName {
                 count: 1,
@@ -223,7 +229,7 @@ mod tests {
             "H.",
         )); // 1 without
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(
             problems.contains(&PotentialProblems::FewCandidatesWithoutFirstName {
                 count: 1,
@@ -240,7 +246,7 @@ mod tests {
             .collect();
         persons.extend((0..3).map(|_| sample_person(PersonId::new()))); // 3/10 = 30%
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(!problems.iter().any(|p| matches!(
             p,
             PotentialProblems::FewCandidatesWithFirstName { .. }
@@ -260,7 +266,7 @@ mod tests {
             .collect();
         persons.push(sample_person(PersonId::new())); // 1 with gender
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(
             problems.contains(&PotentialProblems::FewCandidatesWithGender {
                 count: 1,
@@ -277,7 +283,7 @@ mod tests {
         person_without_gender.personal_data.gender = None;
         persons.push(person_without_gender);
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = summary_with_candidates(ids).get_deviation_problems(&store);
+        let problems = summary_with_candidates(ids).get_problems(&store);
         assert!(
             problems.contains(&PotentialProblems::FewCandidatesWithoutGender {
                 count: 1,
@@ -289,6 +295,7 @@ mod tests {
 
     #[test]
     fn no_incomplete_items() {
+        let store = AppStore::new_for_test();
         let mut list = sample_candidate_list(CandidateListId::new());
         list.candidates.push(PersonId::new());
         let list_summary = CandidateListSummary {
@@ -297,11 +304,12 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        assert!(list_summary.get_problems(()).is_empty());
+        assert!(list_summary.get_problems(&store).is_empty());
     }
 
     #[test]
     fn empty_list_incomplete_items() {
+        let store = AppStore::new_for_test();
         let mut list = sample_candidate_list(CandidateListId::new());
         list.electoral_districts = Vec::new();
         let list_summary = CandidateListSummary {
@@ -310,7 +318,7 @@ mod tests {
             duplicate_districts: Vec::new(),
         };
 
-        let items = list_summary.get_problems(());
+        let items = list_summary.get_problems(&store);
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::NoCandidates));
@@ -319,6 +327,7 @@ mod tests {
 
     #[test]
     fn list_incomplete_items_too_many() {
+        let store = AppStore::new_for_test();
         let mut list = sample_candidate_list(CandidateListId::new());
         list.candidates.push(PersonId::new());
         let list_summary = CandidateListSummary {
@@ -327,7 +336,7 @@ mod tests {
             duplicate_districts: vec![ElectoralDistrict::PsAmsterdam],
         };
 
-        let items = list_summary.get_problems(());
+        let items = list_summary.get_problems(&store);
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
