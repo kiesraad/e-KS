@@ -2,12 +2,12 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
 import { CreatePersonPage } from "./pages/createPersonPage.ts";
+import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
+import { OverviewPage } from "./pages/overviewPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubmitPage } from "./pages/submitPage.ts";
-import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
-import { OverviewPage } from "./pages/overviewPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {
@@ -50,18 +50,18 @@ test.describe("fix submit warnings", async () => {
     await submitPage.linkBSN.click();
     await createPersonPage.checkboxNoBSN.check();
     await createPersonPage.buttonNext.click();
-    await page.goto("/submit");
+    await page.waitForURL("/submit");
     await expect(submitPage.linkBSN).not.toBeVisible();
 
     await submitPage.linkIncorrectDate.first().click();
     await createPersonPage.textfieldYearOfBirth.fill("1925");
     await createPersonPage.buttonNext.click();
-    await page.goto("/submit");
+    await page.waitForURL("/submit");
 
     await submitPage.linkIncorrectDate.click();
     await createPersonPage.textfieldYearOfBirth.fill("1990");
     await createPersonPage.buttonNext.click();
-    await page.goto("/submit");
+    await page.waitForURL("/submit");
     await expect(submitPage.linkIncorrectDate).not.toBeVisible();
   });
 
@@ -78,7 +78,8 @@ test.describe("fix submit warnings", async () => {
       "Smit",
       "Bruin",
     ]);
-    await page.goto("/submit");
+    await manageCandidateListPage.buttonFinalize.click();
+    await page.waitForURL("/submit");
     await expect(submitPage.linkTooManyCandidates).not.toBeVisible();
   });
 });

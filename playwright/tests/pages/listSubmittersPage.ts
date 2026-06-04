@@ -21,7 +21,9 @@ export class ListSubmittersPage {
     // On the view page the single list submitter is rendered as a
     // .person-block link that opens the edit overlay.
     this.linkEditSubmitter = this.page.locator("a.person-block").first();
-    this.buttonNext = this.page.getByRole("link", { name: "Verder naar het startscherm" });
+    this.buttonNext = this.page.getByRole("link", {
+      name: "Verder naar het startscherm",
+    });
   }
 
   getSubmitterLocator(lastName: string) {
