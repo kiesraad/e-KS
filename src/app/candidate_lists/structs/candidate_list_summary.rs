@@ -40,9 +40,10 @@ impl Problematic<()> for CandidateListSummary {
 
 impl Problematic<&AppStore> for CandidateListSummary {
     fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let mut items = self.get_problems(());
         let total = self.candidate_count();
         if total <= 1 {
-            return Vec::new();
+            return items;
         }
 
         let mut with_first_name = 0;
@@ -61,29 +62,28 @@ impl Problematic<&AppStore> for CandidateListSummary {
             }
         }
 
-        let mut items: Vec<PotentialProblems> = [
-            compute_deviation(with_first_name, total).map(|d| match d {
-                Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithFirstName { count, total }
-                }
-                Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutFirstName { count, total }
-                }
-            }),
-            compute_deviation(with_gender, total).map(|d| match d {
-                Deviant::FewWith(count) => {
-                    PotentialProblems::FewCandidatesWithGender { count, total }
-                }
-                Deviant::FewWithout(count) => {
-                    PotentialProblems::FewCandidatesWithoutGender { count, total }
-                }
-            }),
-        ]
-        .into_iter()
-        .flatten()
-        .collect();
-
-        items.extend(self.get_problems(()));
+        items.extend(
+            [
+                compute_deviation(with_first_name, total).map(|d| match d {
+                    Deviant::FewWith(count) => {
+                        PotentialProblems::FewCandidatesWithFirstName { count, total }
+                    }
+                    Deviant::FewWithout(count) => {
+                        PotentialProblems::FewCandidatesWithoutFirstName { count, total }
+                    }
+                }),
+                compute_deviation(with_gender, total).map(|d| match d {
+                    Deviant::FewWith(count) => {
+                        PotentialProblems::FewCandidatesWithGender { count, total }
+                    }
+                    Deviant::FewWithout(count) => {
+                        PotentialProblems::FewCandidatesWithoutGender { count, total }
+                    }
+                }),
+            ]
+            .into_iter()
+            .flatten(),
+        );
 
         items
     }
@@ -319,6 +319,7 @@ mod tests {
         };
 
         let items = list_summary.get_problems(&store);
+        dbg!(&items);
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::NoCandidates));
