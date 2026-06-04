@@ -7,10 +7,13 @@ use crate::{
     transparent_string,
 };
 
-const MAX_LENGTH: usize = 35;
-
 transparent_string! {
     pub struct DisplayName(String);
+}
+
+impl DisplayName {
+    /// The maximum number of character a display name can consist of (excluding spaces)
+    pub const MAX_CHAR_COUNT: usize = 35;
 }
 
 impl FromStr for DisplayName {
@@ -25,8 +28,11 @@ impl FromStr for DisplayName {
             return Err(ValidationError::ValueTooShort(char_count, 1));
         }
 
-        if char_count > MAX_LENGTH {
-            return Err(ValidationError::ValueTooLong(char_count, MAX_LENGTH));
+        if char_count > Self::MAX_CHAR_COUNT {
+            return Err(ValidationError::ValueTooLong(
+                char_count,
+                Self::MAX_CHAR_COUNT,
+            ));
         }
         validate_teletex_chars(&trimmed_value)?;
         Ok(DisplayName(trimmed_value))
