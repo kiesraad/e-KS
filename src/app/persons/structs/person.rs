@@ -29,7 +29,7 @@ impl Problematic<()> for Person {
             self.name.potential_problems(Severity::Error),
             self.personal_data.get_problems(()),
             if self.lives_in_nl() {
-                self.address.potential_problems(Severity::Warn)
+                self.address.get_problems(Severity::Warn)
             } else if let Some(representative) = &self.representative {
                 representative.get_problems(())
             } else {
@@ -52,7 +52,7 @@ impl Problematic<()> for Representative {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         [
             self.name.potential_problems(Severity::Warn),
-            self.address.potential_problems(Severity::Warn),
+            self.address.get_problems(Severity::Warn),
         ]
         .into_iter()
         .flatten()
