@@ -5,6 +5,7 @@
 
 .idea/
 .vscode/
+.zed/
 *swp
 lcov.info
 
@@ -44,4 +45,3 @@ lcov.info
 
 /tmp
 bin/pdf_diff
-.zed/
