@@ -24,7 +24,7 @@
         {% let election = "election"|election_value %}
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
-          <div class="card card-candidate-list {{ candidate_list.highest_severity_class() }}"
+          <div class="card card-candidate-list {{ candidate_list.highest_severity_class(*() ) }}"
                data-href="{{ candidate_list.list.view_path() }}">
             <div class="badge"></div>
             <h3>{{ "candidate_list.title_single"|trans }}</h3>

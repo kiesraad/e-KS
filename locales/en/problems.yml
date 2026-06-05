@@ -1,3 +1,4 @@
+candidate_too_young: Candidate is too young to participate in this election.
 duplicate_districts: Duplicate districts
 few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"
 few_candidates_with_first_name_one: "Just 1 out of {} candidates has a first name specified"

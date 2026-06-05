@@ -5,7 +5,7 @@ use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
-    common::FormAction,
+    common::{FormAction, Problematic},
     filters,
     form::FormData,
     redirect_success,

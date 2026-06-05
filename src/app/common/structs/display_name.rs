@@ -39,8 +39,8 @@ impl FromStr for DisplayName {
     }
 }
 
-impl Problematic for Option<DisplayName> {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for Option<DisplayName> {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         if self.is_empty_or_none() {
             vec![PotentialProblems::NoDisplayName]
         } else {
