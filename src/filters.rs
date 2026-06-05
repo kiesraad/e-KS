@@ -153,7 +153,6 @@ pub fn trans(
     values: &dyn askama::Values,
     #[optional("")] param0: &str,
     #[optional("")] param1: &str,
-    #[optional("")] param2: &str,
 ) -> askama::Result<String> {
     let locale: Locale = *askama::get_value(values, "locale")?;
 
@@ -177,10 +176,6 @@ pub fn trans(
 
         if !param1.is_empty() {
             result = result.replacen("{}", param1, 1);
-
-            if !param2.is_empty() {
-                result = result.replacen("{}", param2, 1);
-            }
         }
     }
 

@@ -1,0 +1,11 @@
+{% extends "common/components/layout.html" %}
+{% block page_title %}{{ "common.general_information"|trans }}{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
+{% block content %}
+  <form method="post" class="page-form form">
+    <div class="steps">
+      {% include "political_groups/components/steps.html" %}
+      <div>{% include "list_designation/components/form.html" %}</div>
+    </div>
+  </form>
+{% endblock %}

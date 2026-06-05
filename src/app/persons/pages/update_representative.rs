@@ -5,7 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    common::Problematic,
+    filters,
     form::FormData,
     persons::{Person, RepresentativeForm, pages::UpdateRepresentativePath},
 };
@@ -16,6 +18,7 @@ struct RepresentativeUpdateTemplate {
     should_warn: bool,
     person: Person,
     form: FormData<RepresentativeForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_representative(
@@ -31,6 +34,7 @@ pub async fn update_representative(
                 RepresentativeForm::from(person.clone().representative.unwrap_or_default()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             person,
         },
         context,
@@ -52,6 +56,7 @@ pub async fn update_representative_submit(
                 should_warn: query.should_warn(),
                 person,
                 form: form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )

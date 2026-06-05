@@ -52,12 +52,12 @@ mod tests {
     use crate::{
         Locale, StreamId,
         audit_log::abbreviate_str,
-        authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
+        name_authorisations::NameAuthorisationId,
         persons::PersonId,
         test_utils::{
-            sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
+            sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
             sample_political_group,
         },
     };
@@ -102,14 +102,17 @@ mod tests {
     }
 
     #[test]
-    fn from_create_authorised_agent_event() {
-        let agent = sample_authorised_agent(AuthorisedAgentId::new());
-        let expected_name = agent.name.display();
-        let event = StoreEvent::new(4, AppEvent::CreateAuthorisedAgent(agent));
+    fn from_create_name_authorisation_event() {
+        let name_auth = sample_name_authorisation(NameAuthorisationId::new());
+        let expected_name = format!("{} ({})", name_auth.legal_name, name_auth.name.display());
+        let event = StoreEvent::new(4, AppEvent::CreateNameAuthorisation(name_auth));
 
         let entry = AuditLogEntry::new(event, EN);
 
-        assert_eq!(entry.description, "Created authorised agent");
+        assert_eq!(
+            entry.description,
+            "Created statutory name and authorised agent"
+        );
         assert_eq!(entry.details, expected_name);
     }
 

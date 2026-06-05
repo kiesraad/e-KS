@@ -2,10 +2,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     ElectoralDistrict, StreamId,
-    authorised_agents::{AuthorisedAgent, AuthorisedAgentId},
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, FullName},
     list_submitters::{ListSubmitter, ListSubmitterId},
+    name_authorisations::{NameAuthorisation, NameAuthorisationId},
     persons::{Person, PersonId, PersonalData, Representative},
     political_groups::PoliticalGroup,
 };
@@ -56,9 +56,9 @@ pub enum AppEvent {
     },
     DeleteCandidateList(CandidateListId),
 
-    CreateAuthorisedAgent(AuthorisedAgent),
-    UpdateAuthorisedAgent(AuthorisedAgent),
-    DeleteAuthorisedAgent(AuthorisedAgentId),
+    CreateNameAuthorisation(NameAuthorisation),
+    UpdateNameAuthorisation(NameAuthorisation),
+    DeleteNameAuthorisation(NameAuthorisationId),
 
     UpdateListSubmitter(ListSubmitter),
 
@@ -111,9 +111,9 @@ impl AppEvent {
             | AppEvent::AddCandidateToCandidateList { .. }
             | AppEvent::RemoveCandidateFromCandidateList { .. }
             | AppEvent::DeleteCandidateList(_) => "candidate_list",
-            AppEvent::CreateAuthorisedAgent(_)
-            | AppEvent::UpdateAuthorisedAgent(_)
-            | AppEvent::DeleteAuthorisedAgent(_) => "authorised_agent",
+            AppEvent::CreateNameAuthorisation(_)
+            | AppEvent::UpdateNameAuthorisation(_)
+            | AppEvent::DeleteNameAuthorisation(_) => "name_authorisation",
             AppEvent::UpdateListSubmitter(_) => "list_submitter",
             AppEvent::CreateSubstituteSubmitter(_)
             | AppEvent::UpdateSubstituteSubmitter(_)
@@ -146,9 +146,9 @@ impl AppEvent {
             AppEvent::AddCandidateToCandidateList { .. } => "add_candidate_to_list",
             AppEvent::RemoveCandidateFromCandidateList { .. } => "remove_candidate_from_list",
             AppEvent::DeleteCandidateList(_) => "delete_candidate_list",
-            AppEvent::CreateAuthorisedAgent(_) => "create_authorised_agent",
-            AppEvent::UpdateAuthorisedAgent(_) => "update_authorised_agent",
-            AppEvent::DeleteAuthorisedAgent(_) => "delete_authorised_agent",
+            AppEvent::CreateNameAuthorisation(_) => "create_name_authorisation",
+            AppEvent::UpdateNameAuthorisation(_) => "update_name_authorisation",
+            AppEvent::DeleteNameAuthorisation(_) => "delete_name_authorisation",
             AppEvent::UpdateListSubmitter(_) => "update_list_submitter",
             AppEvent::CreateSubstituteSubmitter(_) => "create_substitute_submitter",
             AppEvent::UpdateSubstituteSubmitter(_) => "update_substitute_submitter",

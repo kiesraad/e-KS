@@ -40,7 +40,7 @@
     margin-top: calc(var(--font-size-4xl) + var(--space-8));
     position: sticky;
     top: var(--space-8);
-    background-image: url("../static/illustration-step-1.svg");
+    background-image: url("../icons/illustration-step-1.svg");
     background-size: contain;
   }
 }
@@ -88,7 +88,6 @@
   flex-direction: column;
   gap: 3rem;
   text-wrap: balance;
-  
 
   &::before {
     background-color: var(--gray-200);

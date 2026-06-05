@@ -53,14 +53,14 @@ pub(super) fn event_description(event: &AppEvent, locale: Locale) -> String {
             trans!("audit_log.event.remove_candidate_from_list", locale)
         }
         AppEvent::DeleteCandidateList(_) => trans!("audit_log.event.delete_candidate_list", locale),
-        AppEvent::CreateAuthorisedAgent(_) => {
-            trans!("audit_log.event.create_authorised_agent", locale)
+        AppEvent::CreateNameAuthorisation(_) => {
+            trans!("audit_log.event.create_name_authorisation", locale)
         }
-        AppEvent::UpdateAuthorisedAgent(_) => {
-            trans!("audit_log.event.update_authorised_agent", locale)
+        AppEvent::UpdateNameAuthorisation(_) => {
+            trans!("audit_log.event.update_name_authorisation", locale)
         }
-        AppEvent::DeleteAuthorisedAgent(_) => {
-            trans!("audit_log.event.delete_authorised_agent", locale)
+        AppEvent::DeleteNameAuthorisation(_) => {
+            trans!("audit_log.event.delete_name_authorisation", locale)
         }
         AppEvent::UpdateListSubmitter(_) => trans!("audit_log.event.update_list_submitter", locale),
         AppEvent::CreateSubstituteSubmitter(_) => {
@@ -105,8 +105,8 @@ pub(super) fn event_details(event: &AppEvent) -> String {
             electoral_districts,
             ..
         } => district_codes(electoral_districts),
-        AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
-            aa.name.display()
+        AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
+            format!("{} ({})", aa.legal_name, aa.name.display())
         }
         AppEvent::UpdateListSubmitter(ls) => ls.name.display(),
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
@@ -122,7 +122,7 @@ pub(super) fn event_details(event: &AppEvent) -> String {
         | AppEvent::AddCandidateToCandidateList { .. }
         | AppEvent::RemoveCandidateFromCandidateList { .. }
         | AppEvent::DeleteCandidateList(..)
-        | AppEvent::DeleteAuthorisedAgent(..)
+        | AppEvent::DeleteNameAuthorisation(..)
         | AppEvent::DeleteSubstituteSubmitter { .. }
         | AppEvent::DeveloperLogin { .. } => DEFAULT_DETAILS.to_string(),
     }
@@ -152,7 +152,7 @@ pub(super) fn subject_path(event: &AppEvent) -> String {
         | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
             candidate_list_path(*list_id)
         }
-        AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
+        AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
             aa.update_path().to_string()
         }
         AppEvent::UpdateListSubmitter(_) => ListSubmitter::update_path().to_string(),
@@ -182,10 +182,10 @@ pub(super) fn subject_id_full(event: &AppEvent) -> String {
         | AppEvent::AddCandidateToCandidateList { list_id, .. }
         | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => list_id.to_string(),
         AppEvent::DeleteCandidateList(cl_id) => cl_id.to_string(),
-        AppEvent::CreateAuthorisedAgent(aa) | AppEvent::UpdateAuthorisedAgent(aa) => {
+        AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
             aa.id.to_string()
         }
-        AppEvent::DeleteAuthorisedAgent(aa_id) => aa_id.to_string(),
+        AppEvent::DeleteNameAuthorisation(aa_id) => aa_id.to_string(),
         AppEvent::UpdateListSubmitter(_) => String::new(),
         AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
             ss.id.to_string()

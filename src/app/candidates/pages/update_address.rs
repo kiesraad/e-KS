@@ -5,9 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState,
-    candidate_lists::FullCandidateList, candidates::Candidate, filters, form::FormData,
-    persons::AddressForm,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    candidate_lists::FullCandidateList, candidates::Candidate, common::Problematic, filters,
+    form::FormData, persons::AddressForm,
 };
 
 use super::CandidateListUpdateAddressPath;
@@ -18,6 +18,7 @@ struct PersonAddressUpdateTemplate {
     candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
+    overlay: Overlay,
 }
 
 pub async fn update_person_address(
@@ -36,6 +37,7 @@ pub async fn update_person_address(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
             form,
+            overlay: Overlay::new(&query),
             candidate: candidate.clone(),
             full_list,
         },
@@ -59,6 +61,7 @@ pub async fn update_person_address_submit(
                 candidate,
                 form: form_data,
                 full_list,
+                overlay: Overlay::new(&query),
             },
             context,
         )

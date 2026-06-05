@@ -8,7 +8,7 @@ mod pages;
 mod structs;
 
 pub use forms::{
-    DutchAddressForm, FullNameForm, InternationalAddressForm, SelectElectionForm,
+    DutchAddressForm, FullNameForm, InternationalAddressForm, MinimalNameForm, SelectElectionForm,
     SwitchElectionForm,
 };
 pub use structs::{

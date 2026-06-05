@@ -18,7 +18,6 @@
 
     Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.
   ],
-  page-label: (n, m) => trans([Pagina #n van #m], [Side #n fan #m]),
   input,
 )
 
@@ -81,7 +80,7 @@
   "Ondertekening door de gemachtigde van de politieke groepering",
   "Undertekening troch de lêsthawwer fan de politike groepearring",
 )
-#let agent = input.authorised_agent
+#let name_authorisation = input.name_authorisations.at(0)
 #label_table(values: (
   (trans("Datum", "Datum"), fill_in()),
   (
@@ -89,14 +88,14 @@
       "Naam van de gemachtigde van de politieke groepering",
       "Namme fan de lêsthawwer fan de politike groepearring",
     ),
-    [#agent.last_name, #agent.initials],
+    (name_authorisation.last_name, name_authorisation.initials).filter(x => x != "").join(", "),
   ),
   (
     trans(
       "Volledige statutaire naam van de politieke groepering",
       "Folsleine statutêre namme fan de politike groepearring",
     ),
-    [#input.legal_name],
+    [#name_authorisation.legal_name],
   ),
   (trans("Handtekening", "Hantekening"), fill_in(height: 4em)),
 ))

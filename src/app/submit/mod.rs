@@ -7,5 +7,5 @@ mod structs;
 pub use pages::{DownloadDocumentsPath, SubmitPath, documents, router};
 pub use structs::{
     documents::{DocumentData, ZIP_CONTENT_TYPE},
-    problems::{GeneralProblems, ListProblems, PersonProblems, Problems},
+    problems::{EntityProblems, GeneralProblems, ListProblems, PersonProblems, Problems},
 };

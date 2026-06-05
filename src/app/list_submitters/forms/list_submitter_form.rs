@@ -2,9 +2,9 @@ use std::str::FromStr;
 
 use crate::{
     TokenValue,
-    common::{CountryCode, InternationalAddressForm, PostalCode},
+    common::{CountryCode, InternationalAddressForm, MinimalNameForm, PostalCode},
     form::{FieldErrors, FormData},
-    list_submitters::{ListSubmitter, ListSubmitterData, SubmitterNameForm},
+    list_submitters::{ListSubmitter, ListSubmitterData},
 };
 use serde::Deserialize;
 use validate::Validate;
@@ -15,7 +15,7 @@ use validate::Validate;
 pub struct ListSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]
-    pub name: SubmitterNameForm,
+    pub name: MinimalNameForm,
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: InternationalAddressForm,
@@ -28,7 +28,7 @@ impl From<ListSubmitter> for ListSubmitterForm {
         let value = ListSubmitterData::from(value);
 
         ListSubmitterForm {
-            name: SubmitterNameForm::from(value.name),
+            name: MinimalNameForm::from(value.name),
             address: InternationalAddressForm::from(value.address),
             csrf_token: Default::default(),
         }
@@ -110,7 +110,7 @@ mod tests {
     fn validate_create_uses_dutch_address_when_country_is_empty() {
         let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: SubmitterNameForm {
+            name: MinimalNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -139,7 +139,7 @@ mod tests {
     fn validate_create_uses_international_address_when_country_is_foreign() {
         let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: SubmitterNameForm {
+            name: MinimalNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -183,7 +183,7 @@ mod tests {
     fn validate_create_with_checks_validates_dutch_postal_code() {
         let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: SubmitterNameForm {
+            name: MinimalNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: String::new(),
                 initials: "E.F.".to_string(),
@@ -217,7 +217,7 @@ mod tests {
     fn validate_create_with_checks_combines_errors() {
         let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
-            name: SubmitterNameForm {
+            name: MinimalNameForm {
                 last_name: "Bos".to_string(),
                 last_name_prefix: "invalid prefix".to_string(),
                 initials: "E.F.".to_string(),

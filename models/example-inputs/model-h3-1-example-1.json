@@ -10,7 +10,6 @@
     ]
   },
   "designation": "Een Andere Partij (EAP)",
-  "legal_name": "EEN ANDERE PARTIJ",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -46,14 +45,18 @@
       "position": 3
     }
   ],
+  "list_designation": "standalone",
   "list_submitter": {
     "last_name": "van Smit",
-    "initials": "G.H. (Gerard)"
+    "initials": "G.H."
   },
-  "authorised_agent": {
-    "last_name": "Altena",
-    "initials": "J.K.S. (Jeroen)"
-  },
+  "name_authorisations": [
+    {
+      "legal_name": "EEN ANDERE PARTIJ",
+      "last_name": "Altena",
+      "initials": "J.K.S."
+    }
+  ],
   "timestamp": {
     "year": 2025,
     "month": 8,

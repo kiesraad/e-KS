@@ -5,11 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
-    authorised_agents::AuthorisedAgent,
-    filters,
+    AppError, AppStore, Context, HtmlTemplate, QueryParamState, filters,
     form::{Form, FormData},
+    list_designation::ListDesignation,
     list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
 };
 
@@ -65,7 +65,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(query.redirect_or(AuthorisedAgent::list_path()))
+            Ok(query.redirect_or(NameAuthorisation::list_path()))
         }
     }
 }
@@ -75,9 +75,11 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
-        authorised_agents::AuthorisedAgentId,
-        common::PreviousElectionResults,
-        test_utils::{response_body_string, sample_authorised_agent, sample_political_group_form},
+        common::{DisplayName, PreviousElectionResults},
+        name_authorisations::NameAuthorisationId,
+        test_utils::{
+            response_body_string, sample_name_authorisation, sample_political_group_form,
+        },
     };
     use axum::{
         http::{StatusCode, header},
@@ -113,13 +115,14 @@ mod tests {
         let store = AppStore::new_for_test();
         let political_group = store.get_political_group();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_token.clone();
-        let form = sample_political_group_form(&csrf_token);
+        let mut form = sample_political_group_form(&csrf_token);
+        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT); // max length
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -141,7 +144,7 @@ mod tests {
             .expect("location header value");
         assert_eq!(
             location,
-            AuthorisedAgent::list_path()
+            NameAuthorisation::list_path()
                 .with_query_params(QueryParamState::success())
                 .to_string()
         );
@@ -152,12 +155,8 @@ mod tests {
             Some(PreviousElectionResults::OneToFifteenSeats)
         );
         assert_eq!(
-            updated.legal_name.as_deref().map(|v| v.to_string()),
-            Some("Updated Legal Name".to_string())
-        );
-        assert_eq!(
             updated.display_name.as_deref().map(|v| v.to_string()),
-            Some("Updated Display Name".to_string())
+            Some("a".repeat(DisplayName::MAX_CHAR_COUNT))
         );
 
         Ok(())
@@ -167,15 +166,15 @@ mod tests {
     async fn update_political_group_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
 
-        let agent_id = AuthorisedAgentId::new();
-        let authorised_agent = sample_authorised_agent(agent_id);
-        authorised_agent.create(&store).await?;
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
 
         let context = Context::new_test_without_db();
         let csrf_token = context.session.csrf_token.clone();
         let mut form = sample_political_group_form(&csrf_token);
 
-        form.display_name = "!".to_string(); // Invalid value
+        form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT + 1); // Invalid value (too long)
 
         let response = update_political_group_submit(
             PoliticalGroupUpdatePath {},
@@ -191,7 +190,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("The value is too short"));
+        assert!(body.contains("The value is too long"));
 
         Ok(())
     }

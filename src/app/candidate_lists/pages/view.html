@@ -16,7 +16,8 @@
         <ul class="tags-list">
           {% for district in full_list.list.electoral_districts %}
             <li class="tag">
-              <span>{{ district|district_name }}</span>
+              <a href="{{ full_list.list.update_path() }}"
+                 {% if duplicate_districts.contains(district) %}class="error"{% endif %}>{{ district|district_name }}</a>
             </li>
           {% endfor %}
         </ul>

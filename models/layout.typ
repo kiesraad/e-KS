@@ -6,7 +6,9 @@
 
 #let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
 
-#let conf(doc, model, name, explanation, page-label: (n, m) => [Pagina #n van #m], warning: none, input) = [
+#let conf(doc, model, name, explanation, warning: none, input) = [
+  #let trans = translator(input.locale)
+
   #set text(
     lang: "nl",
     region: "nl",
@@ -22,11 +24,11 @@
     context grid(
       columns: (1fr, auto),
       [
-        #muted((translator(input.locale))[Versie:][Ferzje:]) #mono[#input.event_id]
+        #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
         #h(1em)
         #muted[Hash:] #mono(input.sha_hash)
       ],
-      counter(page).display(page-label, both: true),
+      counter(page).display((n, m) => trans([Pagina #n van #m], [Side #n fan #m]), both: true),
     ),
   )
 
@@ -110,7 +112,7 @@
 }
 
 /// Display a checkbox, optionally already checked when the `checked` parameter is set to `true`
-#let checkbox(checked: none, content) = {
+#let checkbox(checked: true, content) = {
   let has_content = content != none and content != ""
   let size = 9pt
 

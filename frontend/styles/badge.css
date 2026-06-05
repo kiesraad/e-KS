@@ -29,7 +29,7 @@
   }
 
   &:is(.badge-politician) {
-    --badge-icon: url("../icons/politician-badge.svg");
+    --badge-icon: url("../icons/badge-politician.svg");
   }
 
   &:is(.locked) {

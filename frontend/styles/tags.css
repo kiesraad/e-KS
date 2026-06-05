@@ -45,6 +45,14 @@
     }
   }
 
+  &:has(a):hover {
+    --tag-border-color: var(--gray-200);
+  }
+
+  a {
+    color: inherit;
+  }
+
   &:is(.info) {
     --tag-border-color: var(--blue-600);
     --tag-color: var(--gray-600);

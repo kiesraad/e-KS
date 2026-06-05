@@ -5,7 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, QueryParamState, filters,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    common::Problematic,
+    filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::UpdatePersonPath},
 };
@@ -15,12 +17,14 @@ use crate::{
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn update_person(
     _: UpdatePersonPath,
     context: Context,
     person: Person,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
@@ -28,6 +32,7 @@ pub async fn update_person(
                 PersonalDataForm::from(person.clone()),
                 &context.session.csrf_token,
             ),
+            overlay: Overlay::new(&query),
             person,
         },
         context,
@@ -42,16 +47,12 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(
-        &person,
-        &context.session.csrf_token,
-        &store,
-        &context.election,
-    ) {
+    match form.validate_update_with_checks(&person, &context.session.csrf_token, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
                 form: *form_data,
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -94,6 +95,7 @@ mod tests {
             UpdatePersonPath { person_id },
             Context::new_test_without_db(),
             person,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

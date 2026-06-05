@@ -6,7 +6,7 @@ use crate::{AppError, AppState, political_groups::PoliticalGroup};
 mod update;
 
 #[derive(TypedPath)]
-#[typed_path("/political-group", rejection(AppError))]
+#[typed_path("/political-group/information", rejection(AppError))]
 pub struct PoliticalGroupUpdatePath;
 
 impl PoliticalGroup {
@@ -29,7 +29,7 @@ mod tests {
     fn political_group_update_path_matches_expected_route() {
         assert_eq!(
             PoliticalGroup::update_path().to_string(),
-            "/political-group"
+            "/political-group/information"
         );
     }
 

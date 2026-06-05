@@ -1,7 +1,7 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 
-use crate::{AppError, AppState, list_submitters::ListSubmitter};
+use crate::{AppError, AppState, QueryParamState, list_submitters::ListSubmitter};
 
 mod update;
 mod view;
@@ -21,6 +21,10 @@ impl ListSubmitter {
 
     pub fn update_path() -> impl TypedPath {
         ListSubmitterUpdatePath {}
+    }
+
+    pub fn update_path_from(from: impl std::fmt::Display) -> impl TypedPath {
+        ListSubmitterUpdatePath {}.with_query_params(QueryParamState::redirect_to(from.to_string()))
     }
 }
 

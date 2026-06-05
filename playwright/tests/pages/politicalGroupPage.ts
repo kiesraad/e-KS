@@ -1,14 +1,17 @@
 import type { Locator, Page } from "@playwright/test";
 
 export class PoliticalGroupPage {
+  readonly headerGeneralInformation: Locator;
   readonly selectMoreThan16Seats: Locator;
   readonly selectLessThan16Seats: Locator;
   readonly textfieldRegisteredDesignation: Locator;
-  readonly textfieldStatutoryName: Locator;
-  readonly buttonSaveandNext: Locator;
+  readonly buttonSaveAndNext: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonSaveandNext = this.page.getByRole("button", {
+    this.headerGeneralInformation = this.page.getByRole("heading", {
+      name: "Basisgegevens",
+    });
+    this.buttonSaveAndNext = this.page.getByRole("button", {
       name: "Opslaan en volgende",
     });
     this.selectMoreThan16Seats = this.page.getByRole("radio", {
@@ -20,13 +23,10 @@ export class PoliticalGroupPage {
     this.textfieldRegisteredDesignation = this.page.getByRole("textbox", {
       name: "Geregistreerde aanduiding",
     });
-    this.textfieldStatutoryName = this.page.getByLabel(
-      "Volledige statutaire naam",
-    );
   }
 
   async open() {
-    await this.page.goto("/political-group");
+    await this.page.goto("/political-group/information");
   }
 
   async save() {
@@ -46,9 +46,5 @@ export class PoliticalGroupPage {
     await this.page
       .getByRole("textbox", { name: "Geregistreerde aanduiding" })
       .fill(registeredDesignation);
-  }
-
-  async setStatutoryName(statutoryName: string) {
-    await this.page.getByLabel("Volledige statutaire naam").fill(statutoryName);
   }
 }
