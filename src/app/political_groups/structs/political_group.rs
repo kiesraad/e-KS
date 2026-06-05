@@ -12,14 +12,14 @@ pub struct PoliticalGroup {
     pub previous_election_results: Option<PreviousElectionResults>,
 }
 
-impl Problematic for PoliticalGroup {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for PoliticalGroup {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         if self.list_designation == Some(ListDesignation::Blank) {
             return Vec::new();
         }
 
         [
-            self.display_name.get_problems(),
+            self.display_name.get_problems(()),
             self.previous_election_results
                 .is_none()
                 .then_some(vec![PotentialProblems::NoPreviousElectionResults])
@@ -92,7 +92,7 @@ mod tests {
             list_designation: None,
             display_name: None,
         }
-        .get_problems();
+        .get_problems(());
 
         assert_eq!(empty_items.len(), 2);
         assert!(empty_items.contains(&PotentialProblems::NoDisplayName));
@@ -106,7 +106,7 @@ mod tests {
             list_designation: Some(ListDesignation::Standalone),
             display_name: DisplayName::from_str("test").ok(),
         }
-        .get_problems();
+        .get_problems(());
 
         assert!(complete_items.is_empty());
     }
@@ -118,7 +118,7 @@ mod tests {
             list_designation: Some(ListDesignation::Blank),
             display_name: None,
         }
-        .get_problems();
+        .get_problems(());
 
         assert!(empty_items.is_empty());
     }

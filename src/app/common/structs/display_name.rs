@@ -7,10 +7,13 @@ use crate::{
     transparent_string,
 };
 
-const MAX_LENGTH: usize = 35;
-
 transparent_string! {
     pub struct DisplayName(String);
+}
+
+impl DisplayName {
+    /// The maximum number of character a display name can consist of (excluding spaces)
+    pub const MAX_CHAR_COUNT: usize = 35;
 }
 
 impl FromStr for DisplayName {
@@ -21,20 +24,23 @@ impl FromStr for DisplayName {
         let trimmed_value = words.join(" ");
         let char_count: usize = words.iter().map(|w| w.chars().count()).sum();
 
-        if char_count < 2 {
-            return Err(ValidationError::ValueTooShort(char_count, 2));
+        if char_count < 1 {
+            return Err(ValidationError::ValueTooShort(char_count, 1));
         }
 
-        if char_count > MAX_LENGTH {
-            return Err(ValidationError::ValueTooLong(char_count, MAX_LENGTH));
+        if char_count > Self::MAX_CHAR_COUNT {
+            return Err(ValidationError::ValueTooLong(
+                char_count,
+                Self::MAX_CHAR_COUNT,
+            ));
         }
         validate_teletex_chars(&trimmed_value)?;
         Ok(DisplayName(trimmed_value))
     }
 }
 
-impl Problematic for Option<DisplayName> {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for Option<DisplayName> {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         if self.is_empty_or_none() {
             vec![PotentialProblems::NoDisplayName]
         } else {
@@ -79,8 +85,13 @@ mod tests {
     #[test]
     fn too_short() {
         assert_eq!(
-            Err(ValidationError::ValueTooShort(1, 2)),
-            DisplayName::from_str("     f   \t      ")
+            Err(ValidationError::ValueTooShort(0, 1)),
+            DisplayName::from_str("        ")
         );
+    }
+
+    #[test]
+    fn single_char_is_valid() {
+        assert_eq!(Ok(DisplayName("A".to_string())), DisplayName::from_str("A"));
     }
 }

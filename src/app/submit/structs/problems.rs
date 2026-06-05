@@ -92,7 +92,7 @@ impl Problems {
 
     fn find_general_problems(store: &AppStore) -> GeneralProblems {
         let political_group = store.get_political_group();
-        let mut general = political_group.get_problems();
+        let mut general = political_group.get_problems(());
 
         let name_authorisations = store.get_name_authorisations();
         let name_authorisations = match political_group.list_designation {
@@ -120,7 +120,7 @@ impl Problems {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let list_submitter_problems = list_submitter.get_problems();
+        let list_submitter_problems = list_submitter.get_problems(());
         let list_submitter = if !list_submitter_problems.is_empty() {
             Some(EntityProblems {
                 entity: list_submitter,
@@ -196,7 +196,10 @@ impl Problems {
             .filter(|id| seen.insert(*id))
             .filter_map(|id| store.get_person(*id).ok())
             .filter_map(|person| {
-                let problems = person.get_problems();
+                // TODO: Remove the below line once `Problematic` gets an overhaul.
+                // get_problems is only for the 'candidate_too_young' check. Other checks are done in the get_problems of person.
+                let mut problems = person.personal_data.get_problems(store);
+                problems.extend(person.get_problems(()));
                 (!problems.is_empty()).then_some(PersonProblems {
                     entity: person,
                     problems,
@@ -213,8 +216,7 @@ impl Problems {
         candidate_lists
             .iter()
             .filter_map(|candidate_list| {
-                let mut problems = candidate_list.get_problems();
-                problems.extend(candidate_list.get_deviation_problems(store));
+                let problems = candidate_list.get_problems(store);
                 (!problems.is_empty()).then(|| ListProblems {
                     entity: candidate_list.list.clone(),
                     problems,
@@ -290,9 +292,9 @@ pub struct EntityProblems<T> {
     pub problems: Vec<PotentialProblems>,
 }
 
-impl<T: Problematic> EntityProblems<T> {
+impl<T: Problematic<()>> EntityProblems<T> {
     fn new(entity: T) -> Self {
-        let problems = entity.get_problems();
+        let problems = entity.get_problems(());
         EntityProblems { entity, problems }
     }
 }

@@ -21,7 +21,7 @@
       {% else %}
         {% for agent in name_authorisations %}
           <a href="{{ agent.update_path() }}"
-             class="person-block {{ agent.highest_severity_class() }}">
+             class="person-block {{ agent.highest_severity_class(*() ) }}">
             {{ agent.legal_name }} ({{ agent.name.display() }})
           </a>
         {% endfor %}

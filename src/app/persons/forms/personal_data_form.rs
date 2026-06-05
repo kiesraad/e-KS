@@ -1,6 +1,5 @@
 use std::str::FromStr;
 
-use chrono::NaiveDate;
 use serde::{Deserialize, Serialize};
 use validate::Validate;
 
@@ -51,6 +50,12 @@ impl PersonalDataFieldsForm {
             .parse::<DateOfBirth>()
             .is_ok_and(|d| d.is_very_old())
     }
+
+    pub fn is_date_of_birth_too_young(&self, election: &ElectionConfig) -> bool {
+        self.date_of_birth
+            .parse::<DateOfBirth>()
+            .is_ok_and(|d| d.is_too_young(election))
+    }
 }
 
 impl From<PersonalData> for PersonalDataFieldsForm {
@@ -85,18 +90,16 @@ impl From<Person> for PersonalDataForm {
 }
 
 impl PersonalDataForm {
-    /// Also checks person uniqueness and date of birth
+    /// Also checks person uniqueness
     pub fn validate_create_with_checks(
         self,
         csrf_token: &TokenValue,
         store: &AppStore,
-        election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
         let existing_ref = existing.iter().collect();
         let person_result = self.clone().validate_create(csrf_token);
-        let mut errors = self.uniqueness_errors(existing_ref);
-        errors.extend(self.date_of_birth_check(election));
+        let errors = self.uniqueness_errors(existing_ref);
 
         self.merge_validation_results(person_result, errors, csrf_token)
     }
@@ -107,14 +110,12 @@ impl PersonalDataForm {
         current: &Person,
         csrf_token: &TokenValue,
         store: &AppStore,
-        election: &ElectionConfig,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
         let existing_without_current: Vec<&Person> =
             existing.iter().filter(|p| *p != current).collect();
         let person_result = self.clone().validate_update(current, csrf_token);
-        let mut errors = self.uniqueness_errors(existing_without_current);
-        errors.extend(self.date_of_birth_check(election));
+        let errors = self.uniqueness_errors(existing_without_current);
 
         self.merge_validation_results(person_result, errors, csrf_token)
     }
@@ -174,22 +175,6 @@ impl PersonalDataForm {
         errors
     }
 
-    /// Validate that the date of birth is valid for the current election
-    fn date_of_birth_check(&self, election: &ElectionConfig) -> FieldErrors {
-        let mut errors = Vec::new();
-
-        if let Ok(date) = DateOfBirth::from_str(&self.personal_data.date_of_birth)
-            && NaiveDate::from(date) > election.eligible_date_of_birth()
-        {
-            errors.push((
-                "personal_data.date_of_birth".to_string(),
-                ValidationError::CandidateTooYoung,
-            ));
-        }
-
-        errors
-    }
-
     fn merge_validation_results(
         self,
         person_result: Result<Person, FormData<Self>>,
@@ -224,7 +209,7 @@ mod tests {
         common::{DutchAddress, UtcDateTime},
         form::{ValidationError, generate_csrf_token},
         persons::PersonId,
-        test_utils::{parse_country_code, parse_place_of_residence, sample_person_with},
+        test_utils::{self, parse_country_code, parse_place_of_residence, sample_person_with},
     };
 
     #[test]
@@ -342,7 +327,7 @@ mod tests {
         let csrf_token = generate_csrf_token();
         let form = PersonalDataForm {
             name: FullNameForm {
-                first_name: " B ".to_string(),
+                first_name: "🤔".to_string(),
                 last_name: "de Bakker".to_string(),
                 last_name_prefix: "Boris".to_string(),
                 initials: "jd".to_string(),
@@ -375,10 +360,7 @@ mod tests {
             "name.last_name_prefix".to_string(),
             ValidationError::InvalidValue
         )));
-        assert!(errors.contains(&(
-            "name.first_name".to_string(),
-            ValidationError::ValueTooShort(1, 2)
-        )));
+        assert!(errors.contains(&("name.first_name".to_string(), ValidationError::InvalidValue)));
         assert!(errors.contains(&("name.initials".to_string(), ValidationError::InvalidValue)));
         assert!(errors.contains(&(
             "personal_data.date_of_birth".to_string(),
@@ -505,71 +487,30 @@ mod tests {
         assert!(errors.is_empty());
     }
 
-    #[test]
-    fn candidate_too_young_errors() {
-        let election = &ElectionConfig::EK27;
-
-        let mut form = PersonalDataForm {
-            name: FullNameForm {
-                first_name: "".to_string(),
-                last_name: "Klaas Smit".to_string(),
-                last_name_prefix: "".to_string(),
-                initials: "E.D.".to_string(),
-            },
-            personal_data: PersonalDataFieldsForm {
-                gender: "m".to_string(),
-                date_of_birth: "12-12-1970".to_string(),
-                bsn: "111222333".to_string(),
-                place_of_residence: "Amsterdam".to_string(),
-                country: "NL".to_string(),
-            },
-            csrf_token: generate_csrf_token(),
-        };
-
-        let errors = form.date_of_birth_check(election);
-        assert!(errors.is_empty());
-
-        form.personal_data.date_of_birth = "12-12-2015".to_string();
-        assert_eq!(
-            form.date_of_birth_check(election),
-            vec![(
-                "personal_data.date_of_birth".to_string(),
-                ValidationError::CandidateTooYoung
-            )]
-        );
-    }
-
-    #[test]
-    fn validate_create_with_checks_combines_errors() {
+    #[tokio::test]
+    async fn validate_create_with_checks_combines_errors() {
         let store = AppStore::new_for_test();
+
+        let mut sample_person = test_utils::sample_person(PersonId::new());
+        sample_person.personal_data.bsn = Some("111222333".parse().unwrap());
+        sample_person.create(&store).await.unwrap();
+
         let csrf_token = generate_csrf_token();
-        let form = PersonalDataForm {
-            name: FullNameForm {
-                first_name: "".to_string(),
-                last_name: "Klaas Smit".to_string(),
-                last_name_prefix: "invalid".to_string(),
-                initials: "E.D.".to_string(),
-            },
-            personal_data: PersonalDataFieldsForm {
-                gender: "m".to_string(),
-                date_of_birth: "12-12-2015".to_string(),
-                bsn: "111222333".to_string(),
-                place_of_residence: "Amsterdam".to_string(),
-                country: "NL".to_string(),
-            },
-            csrf_token: csrf_token.clone(),
-        };
+
+        let mut form = test_utils::sample_person_form(&csrf_token);
+        form.personal_data.bsn = "111222333".parse().unwrap();
+        form.name.last_name_prefix = "invalid".to_string();
 
         let form_data = form
-            .validate_create_with_checks(&csrf_token, &store, &ElectionConfig::EK27)
+            .validate_create_with_checks(&csrf_token, &store)
             .expect_err("form shouldn't validate");
 
         let errors = form_data.errors();
 
         assert_eq!(errors.len(), 2);
         assert!(errors.contains(&(
-            "personal_data.date_of_birth".to_string(),
-            ValidationError::CandidateTooYoung
+            "personal_data.bsn".to_string(),
+            ValidationError::BsnAlreadyExists
         )));
         assert!(errors.contains(&(
             "name.last_name_prefix".to_string(),
