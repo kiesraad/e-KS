@@ -14,6 +14,9 @@ pub struct CandidateListSummary {
 }
 
 impl Problematic<()> for CandidateListSummary {
+    // This implementation will be merged with implementation below, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = vec![];
 
@@ -39,6 +42,9 @@ impl Problematic<()> for CandidateListSummary {
 }
 
 impl Problematic<&AppStore> for CandidateListSummary {
+    // This implementation will be merged with implementation above, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
     fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
         let mut items = self.get_problems(());
         let total = self.candidate_count();

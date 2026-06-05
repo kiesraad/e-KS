@@ -20,6 +20,9 @@ pub struct PersonalData {
 }
 
 impl Problematic<()> for PersonalData {
+    // This implementation will be merged with implementation below, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
@@ -49,6 +52,9 @@ impl Problematic<()> for PersonalData {
 }
 
 impl Problematic<&AppStore> for PersonalData {
+    // This implementation will be merged with implementation above, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
     fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
         let election = store.election;
         if let Some(date_of_birth) = self.date_of_birth.clone()
