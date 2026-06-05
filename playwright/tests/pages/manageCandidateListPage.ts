@@ -123,7 +123,10 @@ export class ManageCandidateListPage {
   async removeList() {
     await this.buttonEditList.click();
     await this.buttonRemoveList.click();
-    await this.buttonConfirmRemoveList.click();
+    await Promise.all([
+    this.page.waitForURL(/\/candidate-lists$/),
+    this.buttonConfirmRemoveList.click(),
+  ]);
   }
 
   async deleteCandidates(candidates: string[]) {
