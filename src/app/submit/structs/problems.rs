@@ -196,6 +196,8 @@ impl Problems {
             .filter(|id| seen.insert(*id))
             .filter_map(|id| store.get_person(*id).ok())
             .filter_map(|person| {
+                // TODO: Remove the below line once `Problematic` gets an overhaul.
+                // get_problems is only for the 'candidate_too_young' check. Other checks are done in the get_problems of person.
                 let mut problems = person.personal_data.get_problems(store);
                 problems.extend(person.get_problems(()));
                 (!problems.is_empty()).then_some(PersonProblems {
