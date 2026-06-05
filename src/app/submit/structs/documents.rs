@@ -1,20 +1,14 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::{PreviousElectionResults, Problematic},
+    common::Problematic,
     core::{ModelLocale, Pdf, ZipResponseWriter},
+    list_designation::ListDesignation,
     submit::structs::{
-        eml210::Eml210,
-        h1::H1,
-        h3_1::H31,
-        h4::H4,
-        h9::H9,
-        typst_authorised_agent::TypstAuthorisedAgent,
-        typst_candidate::{TypstCandidate, ordered_candidates},
-        typst_datetime::TypstDatetime,
-        typst_detailed_candidate::TypstDetailedCandidate,
-        typst_electoral_districts::TypstElectoralDistricts,
-        typst_person::TypstPerson,
+        eml210::Eml210, h1::H1, h3::H3, h4::H4, h9::H9, typst_candidate::ordered_candidates,
+        typst_datetime::TypstDatetime, typst_detailed_candidate::TypstDetailedCandidate,
+        typst_electoral_districts::TypstElectoralDistricts, typst_model_data::TypstModelData,
+        typst_name_authorisation::TypstNameAuthorisation, typst_person::TypstPerson,
     },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
@@ -32,36 +26,78 @@ pub const ZIP_CONTENT_TYPE: &str = "application/zip";
 pub struct DocumentData {
     pub list_id: CandidateListId,
     pub folder_name: Option<String>,
-    pub locale: ModelLocale,
-    pub timestamp: TypstDatetime,
     pub election: ElectionConfig,
-    pub electoral_districts: TypstElectoralDistricts,
+    pub model_data: TypstModelData,
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
-    pub ordered_candidates: Vec<TypstCandidate>,
-    pub designation: String,
-    pub legal_name: String,
     pub previously_seated: bool,
+    pub list_designation: ListDesignation,
     pub list_submitter: TypstPerson,
     pub substitute_submitters: Vec<TypstPerson>,
-    pub authorised_agent: TypstAuthorisedAgent,
-    pub event_id: usize,
-    pub event_hash: String,
+    pub name_authorisations: Vec<TypstNameAuthorisation>,
     nomination: Eml210,
 }
 
 impl DocumentData {
     pub fn archive_filename(&self) -> String {
-        let name_slug = slugify_teletex(&self.designation, true);
         let mut election_slug = self.election.code().to_lowercase();
         if let Some(region) = self.election.region_code() {
             election_slug.push_str(&region.to_lowercase());
         }
-        let version = self.event_id;
+        let version = self.model_data.event_id;
 
-        if self.locale == ModelLocale::Fry {
+        let name_slug = if self.list_designation == ListDesignation::Blank {
+            "blanco".to_string()
+        } else {
+            slugify_teletex(&self.model_data.designation, true)
+        };
+
+        if self.model_data.locale == ModelLocale::Fry {
             format!("{name_slug}-{election_slug}-v{version}-fry.zip")
         } else {
             format!("{name_slug}-{election_slug}-v{version}.zip")
+        }
+    }
+
+    /// Get a list of `TypstNameAuthorisation` with the right number of authorisations based on
+    /// the type of list designation:
+    ///
+    /// - Blank lists always have 0 name authorisations -> No H3-1 or H3-2
+    /// - Combined lists have at least 2 name authorisations -> H3-2
+    /// - Standalone lists always have 1 name authorisation -> H3-1
+    ///
+    /// If there are fewer name authorisations than required, we add fill-ins that show up as
+    /// empty spaces on the models.
+    fn name_authorisations_with_fill_ins(
+        store: &AppStore,
+    ) -> Result<Vec<TypstNameAuthorisation>, AppError> {
+        let name_authorisations = store.get_name_authorisations();
+
+        match store.get_political_group().list_designation {
+            Some(ListDesignation::Blank) => Ok(Vec::new()),
+            Some(ListDesignation::Combined) => {
+                let mut auths: Vec<TypstNameAuthorisation> =
+                    name_authorisations.iter().map(Into::into).collect();
+
+                while auths.len() < 2 {
+                    auths.push(TypstNameAuthorisation::default());
+                }
+
+                Ok(auths)
+            }
+            _ => {
+                if name_authorisations.len() > 1 {
+                    return Err(AppError::IncompleteData(
+                        "Expected no more than 1 name authorisation",
+                    ));
+                }
+
+                let auth = name_authorisations
+                    .first()
+                    .map(Into::into)
+                    .unwrap_or_default();
+
+                Ok(vec![auth])
+            }
         }
     }
 
@@ -98,23 +134,10 @@ impl DocumentData {
         let electoral_districts = TypstElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        // Missing designation prevents export
-        let designation = group
-            .display_name
-            .as_ref()
-            .ok_or(AppError::IncompleteData(
-                "Missing registered designation from political group",
-            ))?
-            .to_string();
-        // Missing statutory name does not prevent export
-        let legal_name = group
-            .legal_name
-            .as_ref()
-            .map(|name| name.to_string())
-            .unwrap_or_default();
+        let designation = group.effective_display_name()?;
 
         let list_submitter = store.get_list_submitter();
-        if list_submitter.is_empty() || !list_submitter.is_all_good() {
+        if list_submitter.is_empty() || !list_submitter.is_all_good(()) {
             return Err(AppError::IncompleteData("Incomplete list submitter"));
         }
         let list_submitter = list_submitter.try_into()?;
@@ -124,12 +147,6 @@ impl DocumentData {
             .into_iter()
             .map(TypstPerson::try_from)
             .collect::<Result<Vec<_>, _>>()?;
-
-        let authorised_agents = store.get_authorised_agents();
-        if authorised_agents.len() != 1 {
-            return Err(AppError::IncompleteData("Expected 1 authorised agent"));
-        }
-        let authorised_agent = (&authorised_agents[0]).into();
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
         let folder_name = format!(
@@ -144,22 +161,24 @@ impl DocumentData {
         Ok(Self {
             list_id,
             folder_name: Some(folder_name),
-            locale,
-            timestamp: TypstDatetime::now(),
             election,
-            electoral_districts,
+            model_data: TypstModelData {
+                election_name: election.formal_title(locale),
+                election_type: election.election_type(),
+                electoral_districts,
+                designation,
+                candidates: ordered_candidates,
+                timestamp: TypstDatetime::now(),
+                locale,
+                event_id,
+                sha_hash: format_hash(&event_hash, true),
+            },
             detailed_candidates,
-            ordered_candidates,
-            designation,
-            legal_name,
-            previously_seated: group
-                .previous_election_results
-                .is_some_and(|r| r != PreviousElectionResults::ZeroSeats),
+            previously_seated: group.was_previously_seated(),
+            list_designation: group.list_designation.unwrap_or_default(),
             list_submitter,
             substitute_submitters,
-            authorised_agent,
-            event_id,
-            event_hash: format_hash(&event_hash, true),
+            name_authorisations: Self::name_authorisations_with_fill_ins(store)?,
             nomination,
         })
     }
@@ -277,23 +296,27 @@ impl DocumentData {
             .add_file(&h1_path, &h1.generate_bytes(renderer).await?)
             .await?;
 
-        let h3_1 = H31::from(&self);
-        let h3_1_path = self.zip_path(h3_1.filename());
-        writer
-            .add_file(&h3_1_path, &h3_1.generate_bytes(renderer).await?)
-            .await?;
+        if self.list_designation != ListDesignation::Blank {
+            let h3 = H3::from(&self);
+            let h3_path = self.zip_path(h3.filename());
+            writer
+                .add_file(&h3_path, &h3.generate_bytes(renderer).await?)
+                .await?;
+        }
 
-        let h4 = H4::from(&self);
-        let h4_path = self.zip_path(h4.filename());
-        writer
-            .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
-            .await?;
+        if !self.previously_seated {
+            let h4 = H4::from(&self);
+            let h4_path = self.zip_path(h4.filename());
+            writer
+                .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
+                .await?;
+        }
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
-            let filename = self.zip_path(&format!(
+            let filename = self.zip_path(format!(
                 "h9-{}/{}",
-                match self.locale {
+                match self.model_data.locale {
                     ModelLocale::Nl => "instemmingsverklaringen",
                     ModelLocale::Fry => "ynstimmingsferklearrings",
                 },
@@ -305,16 +328,19 @@ impl DocumentData {
         }
 
         writer
-            .add_file(&self.zip_path("eml210.eml.xml"), &self.nomination.build()?)
+            .add_file(
+                &self.zip_path("eml210.eml.xml".to_string()),
+                &self.nomination.build()?,
+            )
             .await?;
 
         Ok(())
     }
 
-    fn zip_path(&self, relative_path: &str) -> String {
+    fn zip_path(&self, relative_path: String) -> String {
         match &self.folder_name {
             Some(folder_name) => format!("{folder_name}/{relative_path}"),
-            None => relative_path.to_string(),
+            None => relative_path,
         }
     }
 }

@@ -10,14 +10,15 @@ use tracing_test::traced_test;
 
 use crate::{
     AppError, AppEvent, AppState, AppStore, Config, ElectionConfig, Locale, Session, StreamId,
-    authorised_agents::AuthorisedAgentId,
     candidate_lists::CandidateListId,
+    common::PreviousElectionResults,
     core::ModelLocale,
     list_submitters::ListSubmitterId,
+    name_authorisations::NameAuthorisationId,
     persons::PersonId,
     store::StoreEvent,
     test_utils::{
-        sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
+        sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         sample_political_group,
     },
 };
@@ -57,8 +58,8 @@ async fn setup_download_test_state(
             .update(&store)
             .await?;
     }
-    if store.get_authorised_agents().is_empty() {
-        sample_authorised_agent(AuthorisedAgentId::new())
+    if store.get_name_authorisations().is_empty() {
+        sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
     }
@@ -204,6 +205,40 @@ async fn download_documents_endpoint_returns_zip() -> Result<(), AppError> {
             .all(|name| !name.starts_with("documents-")),
         "did not expect a folder prefix for a single list: {entry_names:?}"
     );
+
+    Ok(())
+}
+
+#[tokio::test]
+#[traced_test]
+async fn download_documents_excludes_h4_when_previously_seated() -> Result<(), AppError> {
+    let DownloadTestState {
+        app,
+        store,
+        session,
+    } = setup_download_test_state(1, 2, true).await?;
+
+    // Update political group to previously seated
+    let mut group = sample_political_group();
+    group.previous_election_results = Some(PreviousElectionResults::OneToFifteenSeats);
+    group.update(&store).await?;
+
+    let response = app
+        .oneshot(request(
+            DownloadDocumentsPath {
+                locale: ModelLocale::Nl,
+            }
+            .to_string(),
+            session,
+            store.clone(),
+        ))
+        .await
+        .expect("submit documents response");
+
+    let entry_names = zip_entry_names(response).await;
+
+    assert!(entry_names.contains(&"h1-kandidatenlijst.pdf".to_string()));
+    assert!(!entry_names.iter().any(|e| e.starts_with("h4")));
 
     Ok(())
 }

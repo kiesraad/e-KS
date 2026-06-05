@@ -5,6 +5,7 @@
 
 .idea/
 .vscode/
+.zed/
 *swp
 lcov.info
 

@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
     form::FormData,
     persons::{Person, PersonalDataForm, pages::PersonsCreatePath},
 };
@@ -11,6 +11,7 @@ use crate::{
 #[template(path = "persons/pages/create.html")]
 struct PersonCreateTemplate {
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_person(
@@ -20,6 +21,7 @@ pub async fn create_person(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     ))
@@ -31,10 +33,15 @@ pub async fn create_person_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_token, &store, &context.election) {
-        Err(form_data) => {
-            Ok(HtmlTemplate(PersonCreateTemplate { form: *form_data }, context).into_response())
-        }
+    match form.validate_create_with_checks(&context.session.csrf_token, &store) {
+        Err(form_data) => Ok(HtmlTemplate(
+            PersonCreateTemplate {
+                form: *form_data,
+                overlay: Overlay::default(),
+            },
+            context,
+        )
+        .into_response()),
         Ok(person) => {
             let person =
                 Person::create_from_personal_data(&store, person.name, person.personal_data)
@@ -51,14 +58,12 @@ mod tests {
 
     use crate::{
         AppError, AppStore, Context, Form,
-        common::DateOfBirth,
         test_utils::{response_body_string, sample_person_form},
     };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use chrono::Duration;
 
     #[tokio::test]
     async fn create_person_renders_csrf_field() {
@@ -141,29 +146,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("A person with this name already exists."));
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn create_person_too_young_renders_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-
-        let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
-        form.personal_data.date_of_birth =
-            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
-                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
-                .to_string();
-
-        let response = create_person_submit(PersonsCreatePath {}, context, store, Form(form))
-            .await
-            .unwrap();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        assert!(body.contains("Candidate is too young to participate in this election."));
 
         Ok(())
     }

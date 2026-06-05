@@ -1,12 +1,11 @@
 use serde::Serialize;
 
 use crate::{
-    core::{ElectionType, ModelLocale, Pdf},
+    core::Pdf,
     submit::{
         DocumentData,
         structs::{
-            TypstCandidate, TypstDatetime, TypstElectoralDistricts,
-            typst_detailed_candidate::TypstDetailedCandidate,
+            typst_detailed_candidate::TypstDetailedCandidate, typst_model_data::TypstModelData,
         },
     },
     utils::slugify_teletex,
@@ -14,17 +13,9 @@ use crate::{
 
 #[derive(Debug, Serialize)]
 pub struct H9<'a> {
-    election_name: String,
-    election_type: ElectionType,
-    electoral_districts: &'a TypstElectoralDistricts,
-    designation: &'a str,
-    candidates: &'a Vec<TypstCandidate>,
+    #[serde(flatten)]
+    common: &'a TypstModelData,
     detailed_candidate: &'a TypstDetailedCandidate,
-    timestamp: &'a TypstDatetime,
-    locale: ModelLocale,
-    event_id: usize,
-    sha_hash: &'a str,
-    filename: String,
 }
 
 impl Pdf for H9<'_> {
@@ -32,34 +23,20 @@ impl Pdf for H9<'_> {
         "model-h9.typ"
     }
 
-    fn filename(&self) -> &str {
-        &self.filename
+    fn filename(&self) -> String {
+        format!(
+            "h9-{}-{}.pdf",
+            slugify_teletex(&self.detailed_candidate.candidate.last_name, true),
+            self.detailed_candidate.candidate.position
+        )
     }
 }
 
 impl<'a> From<(&'a DocumentData, &'a TypstDetailedCandidate)> for H9<'a> {
     fn from((data, candidate): (&'a DocumentData, &'a TypstDetailedCandidate)) -> Self {
-        let locale = data.locale;
-        let election = data.election;
-
-        let filename = format!(
-            "h9-{}-{}.pdf",
-            slugify_teletex(&candidate.candidate.last_name, true),
-            candidate.candidate.position
-        );
-
         Self {
-            election_name: election.formal_title(locale),
-            election_type: election.election_type(),
-            electoral_districts: &data.electoral_districts,
-            designation: &data.designation,
-            candidates: &data.ordered_candidates,
+            common: &data.model_data,
             detailed_candidate: candidate,
-            timestamp: &data.timestamp,
-            locale,
-            event_id: data.event_id,
-            sha_hash: &data.event_hash,
-            filename,
         }
     }
 }

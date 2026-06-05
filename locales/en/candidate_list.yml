@@ -23,6 +23,7 @@ candidate_list_description:
   add_candidate_list: Create candidate list(s)
 districts:
   all: All
+  duplicate_hint: One or more electoral districts appear on multiple candidate lists
 edit_position: Position on the list
 fields:
   electoral_districts: Electoral districts

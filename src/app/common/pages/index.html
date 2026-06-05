@@ -11,7 +11,7 @@
 {% block content %}
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>
   <div class="cards cards-home">
-    <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}"
+    <a href="{{ crate::list_designation::ListDesignation::update_path() }}"
        class="card">
       <div class="card-header">
         <div class="badge badge-data"></div>
@@ -47,8 +47,7 @@
       </div>
       <p class="card-footer">{{ "action.manage_candidate_lists"|trans }}</p>
     </a>
-    <a href="{{ crate::submit::SubmitPath{}.to_string() }}"
-       class="card">
+    <a href="{{ crate::submit::SubmitPath{}.to_string() }}" class="card">
       <div class="card-header">
         <div class="badge locked"></div>
         {{ "common.step"|trans("3") }}

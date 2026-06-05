@@ -29,9 +29,9 @@ mod tests {
     use super::*;
     use crate::{
         ElectionConfig,
-        authorised_agents::AuthorisedAgentId,
         core::ModelLocale,
-        test_utils::{sample_authorised_agent, setup_documents_test_state},
+        name_authorisations::NameAuthorisationId,
+        test_utils::{sample_name_authorisation, setup_documents_test_state},
     };
     #[cfg(feature = "embed-typst")]
     use crate::{
@@ -65,10 +65,10 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn gen_documents_multiple_authorised_agents_return_error() -> Result<(), AppError> {
+    async fn gen_documents_multiple_name_authorisations_return_error() -> Result<(), AppError> {
         let (store, _, context) =
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
-        sample_authorised_agent(AuthorisedAgentId::new())
+        sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
         let renderer = TypstRenderer::http("http://unused.test".to_string());
@@ -85,10 +85,72 @@ mod tests {
 
         match result {
             Err(AppError::IncompleteData(message)) => {
-                assert_eq!(message, "Expected 1 authorised agent")
+                assert_eq!(message, "Expected no more than 1 name authorisation")
             }
-            _ => panic!("expected \"Expected 1 authorised agent\""),
+            _ => panic!("expected IncompleteData error"),
         }
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn multiple_name_authorisations_ok_for_list_combinations() -> Result<(), AppError> {
+        use axum::response::IntoResponse;
+
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
+
+        let mut political_group = store.get_political_group();
+        political_group.list_designation = Some(crate::list_designation::ListDesignation::Combined);
+        political_group.update(&store).await?;
+
+        let response = gen_documents(
+            DownloadDocumentsPath {
+                locale: crate::core::ModelLocale::Nl,
+            },
+            store,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            context,
+        )
+        .await?
+        .into_response();
+
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
+        assert!(entry_names.contains(&"h3-2-samengevoegde-aanduiding.pdf".to_string()));
+
+        Ok(())
+    }
+
+    #[cfg(feature = "embed-typst")]
+    #[tokio::test]
+    async fn blank_lists_produce_no_h3() -> Result<(), AppError> {
+        use axum::response::IntoResponse;
+
+        let (store, _, context) =
+            setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
+
+        let mut political_group = store.get_political_group();
+        political_group.list_designation = Some(crate::list_designation::ListDesignation::Blank);
+        political_group.update(&store).await?;
+
+        let response = gen_documents(
+            DownloadDocumentsPath {
+                locale: crate::core::ModelLocale::Nl,
+            },
+            store,
+            State(TypstRenderer::embedded(
+                crate::utils::embed_typst::pdf_context(),
+            )),
+            context,
+        )
+        .await?
+        .into_response();
+
+        let entry_names = crate::test_utils::zip_entry_names(response).await;
+        assert!(!entry_names.iter().any(|name| name.starts_with("h3")));
 
         Ok(())
     }
@@ -100,7 +162,6 @@ mod tests {
 
         let mut political_group = store.get_political_group();
         political_group.display_name = None;
-        political_group.legal_name = None;
         political_group.update(&store).await?;
 
         let renderer = TypstRenderer::http("http://unused.test".to_string());
@@ -347,13 +408,10 @@ mod tests {
         let (store, _, context) =
             setup_documents_test_state(1, 1, true, true, ElectionConfig::EK27).await?;
 
-        let mut political_group = store.get_political_group();
-        political_group.legal_name = None;
-        political_group.update(&store).await?;
-
-        let mut authorised_agent = store.get_authorised_agents().remove(0);
-        authorised_agent.name = FullName::default();
-        authorised_agent.update(&store).await?;
+        let mut name_auth = store.get_name_authorisations().remove(0);
+        name_auth.name = FullName::default();
+        name_auth.legal_name = Default::default();
+        name_auth.update(&store).await?;
 
         let response = gen_documents(
             DownloadDocumentsPath {

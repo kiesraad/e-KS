@@ -1,0 +1,42 @@
+{% extends "common/components/layout.html" %}
+{% block page_title %}{{ "common.general_information"|trans }}{% endblock %}
+{% block header_action %}<a href="/" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
+{% block content %}
+  <div class="steps">
+    {% include "political_groups/components/steps.html" %}
+    <div>
+      {% if steps.is_blank %}
+        <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
+      {% endif %}
+      <h3 class="mb-6">
+        {% if steps.is_combined %}
+          {{ "political_group.legal_name_data_combined"|trans }}
+        {% else %}
+          {{ "political_group.legal_name_data"|trans }}
+        {% endif %}
+      </h3>
+      <p class="info">{{ "political_group.authorised_agent_info"|trans }}</p>
+      {% if name_authorisations.is_empty() %}
+        <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>
+      {% else %}
+        {% for agent in name_authorisations %}
+          <a href="{{ agent.update_path() }}"
+             class="person-block {{ agent.highest_severity_class(*() ) }}">
+            {{ agent.legal_name }} ({{ agent.name.display() }})
+          </a>
+        {% endfor %}
+      {% endif %}
+      {% if name_authorisations.is_empty() || steps.is_combined %}
+        <p class="mt-lg">
+          <a href="{{ NameAuthorisation::create_path() }}"
+             class="button secondary icon-plus"
+             type="button">{{ "political_group.add_legal_name"|trans }}</a>
+        </p>
+      {% endif %}
+      <p class="mt-lg">
+        <a href="{{ crate::list_submitters::ListSubmitter::view_path() }}"
+           class="button">{{ "action.next"|trans }}</a>
+      </p>
+    </div>
+  </div>
+{% endblock %}

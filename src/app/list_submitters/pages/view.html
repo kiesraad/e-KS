@@ -16,7 +16,7 @@
         </p>
       {% else %}
         <a href="{{ ListSubmitter::update_path() }}"
-           class="person-block {{ list_submitter.highest_severity_class() }}">
+           class="person-block {{ list_submitter.highest_severity_class(*() ) }}">
           {{ list_submitter.name.display() }}
           <br />
           {{ list_submitter.address_line_1() }}
@@ -24,7 +24,7 @@
           {{ list_submitter.address_line_2() }}
         </a>
       {% endif %}
-      <h3 class="mb-6">{{ "political_group.substitute_submitter_data"|trans }}</h3>
+      <h3 class="mb-6">{{ "political_group.substitute_submitters_data"|trans }}</h3>
       <p class="info">{{ "political_group.substitute_submitters_info"|trans }}</p>
       {% if substitute_submitters.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
@@ -32,7 +32,7 @@
         <div class="substitute-list-submitters">
           {% for submitter in substitute_submitters %}
             <a href="{{ submitter.substitute_update_path() }}"
-               class="person-block {{ submitter.highest_severity_class() }}">
+               class="person-block {{ submitter.highest_severity_class(*() ) }}">
               {{ submitter.name.display() }}
               <br />
               {{ submitter.address_line_1() }}

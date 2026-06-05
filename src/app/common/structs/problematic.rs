@@ -1,4 +1,4 @@
-use crate::{ElectoralDistrict, Locale, trans};
+use crate::{Locale, trans};
 
 use super::DateOfBirth;
 
@@ -20,35 +20,40 @@ impl Severity {
     }
 }
 
-pub trait Problematic {
+pub trait Problematic<T> {
     /// Returns all potential problems of its own and of all children
-    fn get_problems(&self) -> Vec<PotentialProblems>;
+    fn get_problems(&self, additional_data: T) -> Vec<PotentialProblems>;
 
     /// Returns true if there are no problems
-    fn is_all_good(&self) -> bool {
-        self.get_problems().is_empty()
+    fn is_all_good(&self, additional_data: T) -> bool {
+        self.get_problems(additional_data).is_empty()
     }
 
     /// Returns the highest severity of the problems, or None if there are no problems
-    fn highest_severity(&self) -> Option<Severity> {
-        self.get_problems().into_iter().map(|p| p.severity()).max()
+    fn highest_severity(&self, additional_data: T) -> Option<Severity> {
+        self.get_problems(additional_data)
+            .into_iter()
+            .map(|p| p.severity())
+            .max()
     }
 
     /// Returns the CSS class associated with the highest severity
-    fn highest_severity_class(&self) -> &'static str {
-        match self.highest_severity() {
+    fn highest_severity_class(&self, additional_data: T) -> &'static str {
+        match self.highest_severity(additional_data) {
             None => "ok",
             Some(severity) => severity.class(),
         }
     }
 
-    fn has_severity_or_higher(&self, severity: Severity) -> bool {
-        self.get_problems().iter().any(|p| p.severity() >= severity)
+    fn has_severity_or_higher(&self, severity: Severity, additional_data: T) -> bool {
+        self.get_problems(additional_data)
+            .iter()
+            .any(|p| p.severity() >= severity)
     }
 
     /// Get a summary of the potential problems, if any
-    fn problem_summary(&self, locale: &Locale) -> Option<String> {
-        let problems = self.get_problems();
+    fn problem_summary(&self, locale: &Locale, additional_data: T) -> Option<String> {
+        let problems = self.get_problems(additional_data);
 
         if problems.is_empty() {
             return None;
@@ -72,9 +77,7 @@ pub enum PotentialProblems {
         actual: usize,
         max: usize,
     },
-    DuplicateDistricts {
-        duplicates: Vec<ElectoralDistrict>,
-    },
+    DuplicateDistricts,
     NoDistricts,
     FewCandidatesWithFirstName {
         count: usize,
@@ -100,6 +103,15 @@ pub enum PotentialProblems {
     NoAuthorisedAgent,
     NoListSubmitter,
     NoSubstituteSubmitter,
+    NoDesignationType,
+    TooManyAuthorizedNames {
+        actual: usize,
+        max: usize,
+    },
+    TooFewAuthorizedNames {
+        actual: usize,
+        min: usize,
+    },
 
     // representative wrapper
     RepresentativeProblem(Box<PotentialProblems>),
@@ -107,6 +119,7 @@ pub enum PotentialProblems {
     // personal data
     NoBsn,
     VeryOldDateOfBirth,
+    TooYoungDateOfBirth,
     NoPlaceOfResidence,
     NoCountryOfResidence,
     NoDateOfBirth,
@@ -140,13 +153,8 @@ impl PotentialProblems {
             PotentialProblems::TooManyCandidates { actual, max } => {
                 trans!("problems.too_many_candidates", *locale, actual, max)
             }
-            PotentialProblems::DuplicateDistricts { duplicates } => {
-                let districts = duplicates
-                    .iter()
-                    .map(|d| d.title((*locale).into()))
-                    .collect::<Vec<_>>()
-                    .join(", ");
-                trans!("problems.duplicate_districts", *locale, districts)
+            PotentialProblems::DuplicateDistricts => {
+                trans!("problems.duplicate_districts", *locale)
             }
             PotentialProblems::NoDistricts => trans!("problems.no_districts", *locale),
             PotentialProblems::FewCandidatesWithFirstName { count, total } => {
@@ -212,6 +220,13 @@ impl PotentialProblems {
             PotentialProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
             }
+            PotentialProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
+            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
+                trans!("problems.too_many_authorized_names", *locale, actual, max)
+            }
+            PotentialProblems::TooFewAuthorizedNames { actual, min } => {
+                trans!("problems.too_few_authorized_names", *locale, actual, min)
+            }
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => {
@@ -228,6 +243,9 @@ impl PotentialProblems {
                     *locale,
                     DateOfBirth::WARN_AGE
                 )
+            }
+            PotentialProblems::TooYoungDateOfBirth => {
+                trans!("problems.candidate_too_young", *locale,)
             }
             PotentialProblems::NoPlaceOfResidence => {
                 trans!("problems.no_place_of_residence", *locale)
@@ -254,7 +272,7 @@ impl PotentialProblems {
             // candidate list
             PotentialProblems::NoCandidates => Severity::Error,
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
-            PotentialProblems::DuplicateDistricts { .. } => Severity::Error,
+            PotentialProblems::DuplicateDistricts => Severity::Error,
             PotentialProblems::NoDistricts => Severity::Error,
             PotentialProblems::FewCandidatesWithFirstName { .. } => Severity::Info,
             PotentialProblems::FewCandidatesWithoutFirstName { .. } => Severity::Info,
@@ -268,13 +286,17 @@ impl PotentialProblems {
             PotentialProblems::NoListSubmitter => Severity::Error,
             PotentialProblems::NoAuthorisedAgent => Severity::Warn,
             PotentialProblems::NoSubstituteSubmitter => Severity::Info,
+            PotentialProblems::NoDesignationType => Severity::Info,
+            PotentialProblems::TooManyAuthorizedNames { .. } => Severity::Error,
+            PotentialProblems::TooFewAuthorizedNames { .. } => Severity::Warn,
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
-            PotentialProblems::VeryOldDateOfBirth => Severity::Warn,
+            PotentialProblems::VeryOldDateOfBirth => Severity::Info,
+            PotentialProblems::TooYoungDateOfBirth => Severity::Warn,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,
@@ -296,8 +318,8 @@ mod tests {
 
     struct WithProblems(Vec<PotentialProblems>);
 
-    impl Problematic for WithProblems {
-        fn get_problems(&self) -> Vec<PotentialProblems> {
+    impl Problematic<()> for WithProblems {
+        fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
             self.0.clone()
         }
     }
@@ -311,23 +333,23 @@ mod tests {
     #[test]
     fn highest_severity_none_when_no_problems() {
         let no_problems = WithProblems(vec![]);
-        assert_eq!(no_problems.highest_severity(), None);
-        assert_eq!(no_problems.highest_severity_class(), "ok");
-        assert!(!no_problems.has_severity_or_higher(Severity::Info));
-        assert!(!no_problems.has_severity_or_higher(Severity::Warn));
-        assert!(!no_problems.has_severity_or_higher(Severity::Error));
-        assert!(no_problems.is_all_good());
+        assert_eq!(no_problems.highest_severity(()), None);
+        assert_eq!(no_problems.highest_severity_class(()), "ok");
+        assert!(!no_problems.has_severity_or_higher(Severity::Info, ()));
+        assert!(!no_problems.has_severity_or_higher(Severity::Warn, ()));
+        assert!(!no_problems.has_severity_or_higher(Severity::Error, ()));
+        assert!(no_problems.is_all_good(()));
     }
 
     #[test]
     fn highest_severity_info_when_only_info() {
         let only_info = WithProblems(vec![PotentialProblems::NoLastName(Severity::Info)]);
-        assert_eq!(only_info.highest_severity(), Some(Severity::Info));
-        assert_eq!(only_info.highest_severity_class(), "info");
-        assert!(only_info.has_severity_or_higher(Severity::Info));
-        assert!(!only_info.has_severity_or_higher(Severity::Warn));
-        assert!(!only_info.has_severity_or_higher(Severity::Error));
-        assert!(!only_info.is_all_good());
+        assert_eq!(only_info.highest_severity(()), Some(Severity::Info));
+        assert_eq!(only_info.highest_severity_class(()), "info");
+        assert!(only_info.has_severity_or_higher(Severity::Info, ()));
+        assert!(!only_info.has_severity_or_higher(Severity::Warn, ()));
+        assert!(!only_info.has_severity_or_higher(Severity::Error, ()));
+        assert!(!only_info.is_all_good(()));
     }
 
     #[test]
@@ -336,12 +358,12 @@ mod tests {
             PotentialProblems::NoLastName(Severity::Info),
             PotentialProblems::NoLastName(Severity::Warn),
         ]);
-        assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
-        assert_eq!(info_warn.highest_severity_class(), "warning");
-        assert!(info_warn.has_severity_or_higher(Severity::Info));
-        assert!(info_warn.has_severity_or_higher(Severity::Warn));
-        assert!(!info_warn.has_severity_or_higher(Severity::Error));
-        assert!(!info_warn.is_all_good());
+        assert_eq!(info_warn.highest_severity(()), Some(Severity::Warn));
+        assert_eq!(info_warn.highest_severity_class(()), "warning");
+        assert!(info_warn.has_severity_or_higher(Severity::Info, ()));
+        assert!(info_warn.has_severity_or_higher(Severity::Warn, ()));
+        assert!(!info_warn.has_severity_or_higher(Severity::Error, ()));
+        assert!(!info_warn.is_all_good(()));
     }
 
     #[test]
@@ -351,18 +373,18 @@ mod tests {
             PotentialProblems::NoLastName(Severity::Warn),
             PotentialProblems::NoLastName(Severity::Error),
         ]);
-        assert_eq!(with_error.highest_severity(), Some(Severity::Error));
-        assert_eq!(with_error.highest_severity_class(), "error");
-        assert!(with_error.has_severity_or_higher(Severity::Info));
-        assert!(with_error.has_severity_or_higher(Severity::Warn));
-        assert!(with_error.has_severity_or_higher(Severity::Error));
-        assert!(!with_error.is_all_good());
+        assert_eq!(with_error.highest_severity(()), Some(Severity::Error));
+        assert_eq!(with_error.highest_severity_class(()), "error");
+        assert!(with_error.has_severity_or_higher(Severity::Info, ()));
+        assert!(with_error.has_severity_or_higher(Severity::Warn, ()));
+        assert!(with_error.has_severity_or_higher(Severity::Error, ()));
+        assert!(!with_error.is_all_good(()));
     }
 
     #[test]
     fn no_problem_summary() {
         let no_problems = WithProblems(vec![]);
-        assert_eq!(no_problems.problem_summary(&Locale::Nl), None);
+        assert_eq!(no_problems.problem_summary(&Locale::Nl, ()), None);
     }
 
     #[test]
@@ -370,7 +392,7 @@ mod tests {
         let problem = PotentialProblems::VeryOldDateOfBirth;
         let single_problems = WithProblems(vec![problem.clone()]);
         assert_eq!(
-            single_problems.problem_summary(&Locale::Nl).unwrap(),
+            single_problems.problem_summary(&Locale::Nl, ()).unwrap(),
             problem.translate(&Locale::Nl)
         );
     }
@@ -395,7 +417,7 @@ mod tests {
             )),
         ];
         let multiple_problems = WithProblems(problems.to_vec());
-        let summary = multiple_problems.problem_summary(&Locale::Nl).unwrap();
+        let summary = multiple_problems.problem_summary(&Locale::Nl, ()).unwrap();
         for problem in problems {
             assert!(summary.contains(&problem.translate(&Locale::Nl)));
         }
@@ -420,10 +442,12 @@ mod tests {
                 count: 2,
                 total: 37,
             },
+            PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
+            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 },
         ];
         for problem in problems {
             let summary = WithProblems(vec![problem])
-                .problem_summary(&Locale::Nl)
+                .problem_summary(&Locale::Nl, ())
                 .unwrap();
             assert!(summary.contains("2"));
             assert!(summary.contains("37"));

@@ -5,7 +5,6 @@
     "tag": "All"
   },
   "designation": "Test Partij (TP)",
-  "legal_name": "TEST PARTIJ",
   "candidates": [
     {
       "last_name": "Akwasi",
@@ -41,14 +40,18 @@
       "position": 3
     }
   ],
+  "list_designation": "standalone",
   "list_submitter": {
     "last_name": "van Smit",
-    "initials": "G.H. (Gerard)"
+    "initials": "G.H."
   },
-  "authorised_agent": {
-    "last_name": "Akwasi",
-    "initials": "O. (Omar)"
-  },
+  "name_authorisations": [
+    {
+      "legal_name": "TEST PARTIJ",
+      "last_name": "Akwasi",
+      "initials": "O."
+    }
+  ],
   "timestamp": {
     "year": 2025,
     "month": 8,

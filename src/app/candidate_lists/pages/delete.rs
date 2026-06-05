@@ -1,12 +1,14 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     filters,
     form::{EmptyForm, FormData},
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -14,16 +16,19 @@ use crate::{
 struct DeleteCandidateListTemplate {
     candidate_list: CandidateList,
     form: FormData<EmptyForm>,
+    overlay: Overlay,
 }
 
 pub async fn delete_candidate_list_confirm(
     _: CandidateListsDeletePath,
     context: Context,
     candidate_list: CandidateList,
+    Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteCandidateListTemplate {
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::new(&query),
             candidate_list,
         },
         context,
@@ -35,6 +40,7 @@ pub async fn delete_candidate_list(
     context: Context,
     candidate_list: CandidateList,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
@@ -42,7 +48,7 @@ pub async fn delete_candidate_list(
         Ok(_) => {
             candidate_list.delete(&store).await?;
 
-            Ok(redirect_success(CandidateList::list_path()))
+            Ok(query.redirect_or(CandidateList::list_path()))
         }
     }
 }
@@ -54,7 +60,10 @@ mod tests {
         AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
         candidate_lists::CandidateListSummary, test_utils::response_body_string,
     };
-    use axum::http::{StatusCode, header};
+    use axum::{
+        extract::Query,
+        http::{StatusCode, header},
+    };
     use axum_extra::routing::TypedPath;
 
     #[tokio::test]
@@ -70,6 +79,7 @@ mod tests {
             },
             Context::new_test_without_db(),
             candidate_list.clone(),
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();
@@ -99,6 +109,7 @@ mod tests {
             context,
             candidate_list.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm { csrf_token }),
         )
         .await?;
@@ -144,6 +155,7 @@ mod tests {
             context,
             candidate_list.clone(),
             store.clone(),
+            Query(QueryParamState::default()),
             Form(EmptyForm { csrf_token }),
         )
         .await

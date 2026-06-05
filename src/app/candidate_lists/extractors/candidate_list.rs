@@ -1,32 +1,21 @@
-use axum::extract::{FromRequestParts, Path};
+use axum::extract::Path;
 
-use crate::{AppError, AppRequestState, AppStore, Context, candidate_lists::CandidateList, trans};
+use crate::{AppError, app::request_extractor, candidate_lists::CandidateList, trans};
 
 use super::CandidateListPathParams;
 
-impl<S: AppRequestState> FromRequestParts<S> for CandidateList {
-    type Rejection = AppError;
+request_extractor!(CandidateList, |store, context, parts, state| {
+    let Path(CandidateListPathParams { list_id }) =
+        Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let context = Context::from_request_parts(parts, state).await?;
-        let Path(CandidateListPathParams { list_id }) =
-            Path::<CandidateListPathParams>::from_request_parts(parts, state).await?;
-
-        let candidate_list = store.get_candidate_list(list_id).map_err(|_| {
-            AppError::NotFound(trans!(
-                "candidate_list.not_found",
-                context.session.locale,
-                list_id
-            ))
-        })?;
-
-        Ok(candidate_list)
-    }
-}
+    store.get_candidate_list(list_id).map_err(|_| {
+        AppError::NotFound(trans!(
+            "candidate_list.not_found",
+            context.session.locale,
+            list_id
+        ))
+    })
+});
 
 #[cfg(test)]
 mod tests {

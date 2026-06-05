@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay,
     candidate_lists::FullCandidateList,
     filters,
     form::FormData,
@@ -15,6 +15,7 @@ use super::CreateCandidatePath;
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonalDataForm>,
+    overlay: Overlay,
 }
 
 pub async fn create_person_candidate_list(
@@ -26,6 +27,7 @@ pub async fn create_person_candidate_list(
         PersonCreateTemplate {
             full_list,
             form: FormData::new(&context.session.csrf_token),
+            overlay: Overlay::default(),
         },
         context,
     )
@@ -39,11 +41,12 @@ pub async fn create_person_candidate_list_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_token, &store, &context.election) {
+    match form.validate_create_with_checks(&context.session.csrf_token, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
                 form: *form_data,
+                overlay: Overlay::default(),
             },
             context,
         )
@@ -69,14 +72,12 @@ mod tests {
     use crate::{
         AppStore, Context, Form,
         candidate_lists::CandidateListId,
-        common::DateOfBirth,
         test_utils::{response_body_string, sample_candidate_list, sample_person_form},
     };
     use axum::{
         http::{StatusCode, header},
         response::IntoResponse,
     };
-    use chrono::Duration;
 
     #[tokio::test]
     async fn create_person_candidate_list_renders_form() -> Result<(), AppError> {
@@ -168,40 +169,6 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("This field must not be empty."));
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn create_person_too_young_renders_error() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-        let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
-        list.create(&store).await?;
-
-        let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
-        form.personal_data.date_of_birth =
-            DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
-                .format(crate::core::constants::DEFAULT_DATE_FORMAT)
-                .to_string();
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-
-        let response = create_person_candidate_list_submit(
-            CreateCandidatePath { list_id },
-            context,
-            full_list,
-            store,
-            Form(form),
-        )
-        .await?
-        .into_response();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        assert!(body.contains("Candidate is too young to participate in this election."));
 
         Ok(())
     }

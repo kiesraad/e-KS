@@ -1,41 +1,31 @@
-use axum::extract::{FromRequestParts, Path};
+use axum::extract::Path;
 
-use crate::{AppError, AppRequestState, AppStore, Context, candidates::Candidate, trans};
+use crate::{AppError, app::request_extractor, candidates::Candidate, trans};
 
 use super::CandidateListAndPersonPathParams;
 
-impl<S: AppRequestState> FromRequestParts<S> for Candidate {
-    type Rejection = AppError;
+request_extractor!(Candidate, |store, context, parts, state| {
+    let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
+        Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let context = Context::from_request_parts(parts, state).await?;
-        let Path(CandidateListAndPersonPathParams { list_id, person_id }) =
-            Path::<CandidateListAndPersonPathParams>::from_request_parts(parts, state).await?;
-
-        let candidate_list = store.get_candidate_list(list_id).map_err(|err| match err {
+    let candidate_list = store.get_candidate_list(list_id).map_err(|err| match err {
+        AppError::NotFound(_) => AppError::NotFound(
+            trans!("person.not_found_in_candidate_list", context.session.locale).to_string(),
+        ),
+        _ => err,
+    })?;
+    let candidate = candidate_list
+        .get_candidate(&store, person_id)
+        .await
+        .map_err(|err| match err {
             AppError::NotFound(_) => AppError::NotFound(
                 trans!("person.not_found_in_candidate_list", context.session.locale).to_string(),
             ),
             _ => err,
         })?;
-        let candidate = candidate_list
-            .get_candidate(&store, person_id)
-            .await
-            .map_err(|err| match err {
-                AppError::NotFound(_) => AppError::NotFound(
-                    trans!("person.not_found_in_candidate_list", context.session.locale)
-                        .to_string(),
-                ),
-                _ => err,
-            })?;
 
-        Ok(candidate)
-    }
-}
+    Ok(candidate)
+});
 
 #[cfg(test)]
 mod tests {

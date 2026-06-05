@@ -3,7 +3,7 @@ use regex::Regex;
 use serde::{Deserialize, Serialize};
 use std::{str::FromStr, sync::LazyLock};
 
-use crate::{constants::DEFAULT_DATE_FORMAT, form::ValidationError};
+use crate::{ElectionConfig, constants::DEFAULT_DATE_FORMAT, form::ValidationError};
 
 static DATE_FORMAT_REGEX: LazyLock<Regex> =
     LazyLock::new(|| Regex::new(r"^\d{2}-\d{2}-\d{4}$").unwrap());
@@ -66,6 +66,10 @@ impl DateOfBirth {
             .date_naive()
             .years_since(self.0)
             .is_some_and(|y| y >= Self::WARN_AGE)
+    }
+
+    pub fn is_too_young(&self, election: &ElectionConfig) -> bool {
+        self.0 > election.eligible_date_of_birth()
     }
 }
 

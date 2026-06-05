@@ -9,7 +9,7 @@
         <h2>
           {% block overlay_title %}{% endblock %}
         </h2>
-        <a href="{{ close_action|default("/") }}"
+        <a href="{{ overlay.close_url(close_action) }}"
            class="close-overlay"
            aria-label="{{ "action.close"|trans }}">
           <span>{{ "action.close"|trans }}</span>

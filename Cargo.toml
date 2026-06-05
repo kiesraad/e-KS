@@ -1,6 +1,6 @@
 [package]
 name = "eks"
-version = "0.10.0"
+version = "0.11.0"
 edition = "2024"
 license = "EUPL-1.2"
 rust-version = "1.95"
@@ -47,7 +47,7 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.6.8", features = ["set-header", "trace"] }
+tower-http = { version = "0.6.11", features = ["set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
 bytes = "1.11.1"
@@ -59,7 +59,7 @@ regex = "1.12.3"
 
 # blessed.rs / dtolnay
 serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.149"
+serde_json = "1.0.150"
 serde_urlencoded = "0.7"
 
 # blessed.rs
@@ -67,13 +67,13 @@ chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
 parking_lot = "0.12.5"
 rand = "0.10.1"
 sha2 = "0.11.0"
-sqlx = { version = "0.8.6", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
-uuid = { version = "1.23.1", features = ["serde", "v4", "v5", "v8"] }
+sqlx = { version = "0.9.0", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
+uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
 url = "2.5.8"
-reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
-askama = "0.15.6" # 33M downloads (Dirkjan Ochtman)
+askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 4M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 107M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 179M downloads (Andrew Gallant)
@@ -89,7 +89,7 @@ memory-serve = { version = "2.1.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.0", default-features = false, features = ["compressed_database"], optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"], optional = true }
 
 # kiesraad
 eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git" } # TODO: replace with crates.io version when the branch gets merged
@@ -104,7 +104,7 @@ tower = "0.5"
 tracing-test = "0.2.6"
 # Adds rustls to reqwest for TLS server tests. Dev-only: the production
 # binary still builds reqwest without any TLS backend.
-reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
 
 [lints.rust]
 unsafe_code = "forbid"

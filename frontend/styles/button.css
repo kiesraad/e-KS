@@ -79,7 +79,6 @@ label.button {
   &.tertiary {
     background: transparent;
     border-color: transparent;
-    color: var(--button-color-primary);
     box-shadow: none;
     font-weight: var(--font-weight-medium);
     color: var(--gray-500);
@@ -133,22 +132,19 @@ label.button {
   &.xs {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.5rem - var(--button-border-width))
-      calc(0.875rem - var(--button-border-width));
+    padding: calc(0.5rem - var(--button-border-width)) calc(0.875rem - var(--button-border-width));
   }
 
   &.sm {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.625rem - var(--button-border-width))
-      calc(1rem - var(--button-border-width));
+    padding: calc(0.625rem - var(--button-border-width)) calc(1rem - var(--button-border-width));
   }
 
   &.lg {
     font-size: var(--font-size-lg);
     line-height: 1.75rem;
-    padding: calc(1rem - var(--button-border-width))
-      calc(1.75rem - var(--button-border-width));
+    padding: calc(1rem - var(--button-border-width)) calc(1.75rem - var(--button-border-width));
   }
 
   &.xl {
@@ -244,6 +240,7 @@ label.button {
 
   &.icon-download {
     padding-inline-end: var(--space-4);
+
     &::before {
       content: "";
       mask-image: url("../icons/download.svg");
@@ -272,11 +269,11 @@ label.button {
 .read-more {
   width: fit-content;
 
-  .toggle:not(:checked) ~ .content {
+  .toggle:not(:checked)~.content {
     display: none;
   }
 
-  .toggle:checked ~ .open {
+  .toggle:checked~.open {
     display: none;
   }
 

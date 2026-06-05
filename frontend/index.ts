@@ -2,6 +2,7 @@ import bsnInput from "./scripts/form-inputs/bsn-input";
 import countryCodeInput from "./scripts/form-inputs/country-input";
 import dateInput from "./scripts/form-inputs/date-input";
 import electionRegion from "./scripts/form-inputs/election-region";
+import listDesignation from "./scripts/form-inputs/list-designation";
 import setupFileImport from "./scripts/form-inputs/file-import";
 import initialsInput from "./scripts/form-inputs/initials-input";
 import localitySuggestions from "./scripts/form-inputs/locality-suggestions";
@@ -17,6 +18,7 @@ import setupStickyNav from "./scripts/generic-ui/sticky-nav";
 import highlightActiveLinks from "./scripts/highlights-alerts/active-link";
 import alertSuccess from "./scripts/highlights-alerts/alert-success";
 import highlightRow from "./scripts/highlights-alerts/highlight-row";
+import setupClickCard from "./scripts/generic-ui/click-card";
 import setupClickRow from "./scripts/table-interaction/click-row";
 import setupSortable from "./scripts/table-interaction/sortable";
 
@@ -24,6 +26,7 @@ import "./styles/index.css";
 
 // table interaction
 setupClickRow();
+setupClickCard();
 
 // highlights and alerts
 highlightActiveLinks();
@@ -41,6 +44,7 @@ localitySuggestions();
 setupPositionPreview();
 setupSelectAllCheckbox();
 electionRegion();
+listDesignation();
 
 // generic UI
 setupStickyNav();

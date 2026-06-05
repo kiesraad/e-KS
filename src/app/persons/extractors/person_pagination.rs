@@ -1,43 +1,28 @@
-use axum::extract::FromRequestParts;
-
 use crate::{
-    AppError, AppStore,
+    app::request_extractor,
     pagination::Pagination,
     persons::{self, PersonPagination, PersonSort},
 };
 
-impl<S> FromRequestParts<S> for PersonPagination
-where
-    S: Send + Sync,
-    AppStore: FromRequestParts<S, Rejection = AppError>,
-{
-    type Rejection = AppError;
+request_extractor!(PersonPagination, |store, parts, state| {
+    let pagination: Pagination<PersonSort> = Pagination::from_request_parts(parts, state).await?;
 
-    async fn from_request_parts(
-        parts: &mut axum::http::request::Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        let store = AppStore::from_request_parts(parts, state).await?;
-        let pagination: Pagination<PersonSort> =
-            Pagination::from_request_parts(parts, state).await?;
+    let total_items = store.get_person_count();
+    let pagination = pagination.set_total(total_items);
 
-        let total_items = store.get_person_count();
-        let pagination = pagination.set_total(total_items);
+    let persons = persons::Person::list(
+        &store,
+        pagination.limit(),
+        pagination.offset(),
+        pagination.sort(),
+        pagination.direction(),
+    )?;
 
-        let persons = persons::Person::list(
-            &store,
-            pagination.limit(),
-            pagination.offset(),
-            pagination.sort(),
-            pagination.direction(),
-        )?;
-
-        Ok(PersonPagination {
-            persons,
-            pagination,
-        })
-    }
-}
+    Ok(PersonPagination {
+        persons,
+        pagination,
+    })
+});
 
 #[cfg(test)]
 mod tests {

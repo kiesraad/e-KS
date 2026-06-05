@@ -8,6 +8,9 @@ mod templates;
 mod typst_renderer;
 mod zip;
 
+#[cfg(test)]
+mod locale_tests;
+
 pub mod constants;
 pub mod http_trace;
 pub mod logging;

@@ -79,8 +79,7 @@ body.overlay-open {
       display: flex;
       justify-content: stretch;
 
-      & > div:nth-child(2) {
-        /* padding-left: var(--space-lg); */
+      &>div:nth-child(2) {
         padding-bottom: var(--space-lg);
         flex: 1;
       }
@@ -126,6 +125,7 @@ body.overlay-skip-anim .overlay {
   from {
     transform: translateY(2rem);
   }
+
   to {
     transform: translateY(0);
   }

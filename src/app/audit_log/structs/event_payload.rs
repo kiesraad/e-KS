@@ -62,11 +62,11 @@ pub(super) fn extract_old_new(
         // Technically a create, but update works too as it does a diff
         AppEvent::CreatePersonPersonalData { person_id, .. } => update!(persons, person_id),
         AppEvent::CreateCandidateList(cl) => update!(candidate_lists, cl.id),
-        AppEvent::CreateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
+        AppEvent::CreateNameAuthorisation(na) => update!(name_authorisations, na.id),
         AppEvent::CreateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
 
         AppEvent::UpdatePerson(person) => update!(persons, person.id),
-        AppEvent::UpdateAuthorisedAgent(aa) => update!(authorised_agents, aa.id),
+        AppEvent::UpdateNameAuthorisation(na) => update!(name_authorisations, na.id),
         AppEvent::UpdateListSubmitter(_) => update!(list_submitter),
         AppEvent::UpdateSubstituteSubmitter(ss) => update!(Vec, substitute_submitters, ss.id),
         AppEvent::UpdatePoliticalGroup(_) => update!(political_group),
@@ -90,7 +90,7 @@ pub(super) fn extract_old_new(
 
         AppEvent::DeletePerson { person_id } => update!(persons, person_id),
         AppEvent::DeleteCandidateList(cl_id) => update!(candidate_lists, cl_id),
-        AppEvent::DeleteAuthorisedAgent(aa_id) => update!(authorised_agents, aa_id),
+        AppEvent::DeleteNameAuthorisation(na_id) => update!(name_authorisations, na_id),
         AppEvent::DeleteSubstituteSubmitter {
             substitute_submitter_id: ss_id,
         } => update!(Vec, substitute_submitters, *ss_id),
@@ -139,14 +139,13 @@ mod tests {
     use super::*;
     use crate::{
         ElectoralDistrict, StreamId,
-        authorised_agents::AuthorisedAgentId,
         candidate_lists::CandidateListId,
         common::PreviousElectionResults,
         list_submitters::ListSubmitterId,
+        name_authorisations::NameAuthorisationId,
         persons::PersonId,
-        political_groups::PoliticalGroup,
         test_utils::{
-            sample_authorised_agent, sample_candidate_list, sample_list_submitter, sample_person,
+            sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
             sample_political_group,
         },
     };
@@ -202,19 +201,21 @@ mod tests {
     }
 
     #[test]
-    fn create_authorised_agent_pulls_new_from_state_after() {
-        let agent = sample_authorised_agent(AuthorisedAgentId::new());
+    fn create_name_authorisation_pulls_new_from_state_after() {
+        let name_auth = sample_name_authorisation(NameAuthorisationId::new());
         let before = empty_state();
         let mut after = empty_state();
-        after.authorised_agents.insert(agent.id, agent.clone());
+        after
+            .name_authorisations
+            .insert(name_auth.id, name_auth.clone());
 
         let (old, new) = extract_old_new(
-            &AppEvent::CreateAuthorisedAgent(agent.clone()),
+            &AppEvent::CreateNameAuthorisation(name_auth.clone()),
             &before,
             &after,
         );
         assert!(old.is_none());
-        assert_eq!(new, serde_json::to_value(&agent).ok());
+        assert_eq!(new, serde_json::to_value(&name_auth).ok());
     }
 
     // --- Update events: entity present in both snapshots, with different contents ---
@@ -272,10 +273,9 @@ mod tests {
         let mut before = empty_state();
         before.political_group = sample_political_group();
         let mut after = empty_state();
-        after.political_group = PoliticalGroup {
-            previous_election_results: Some(PreviousElectionResults::SixteenOrMoreSeats),
-            ..sample_political_group()
-        };
+        after.political_group = sample_political_group();
+        after.political_group.previous_election_results =
+            Some(PreviousElectionResults::SixteenOrMoreSeats);
 
         let (old, new) = extract_old_new(
             &AppEvent::UpdatePoliticalGroup(after.political_group.clone()),
