@@ -330,6 +330,32 @@ mod tests {
         }
     }
 
+    async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
+        sample_list_submitter(ListSubmitterId::new())
+            .update(store)
+            .await?;
+        sample_list_submitter(ListSubmitterId::new())
+            .create_substitute(store)
+            .await?;
+        Ok(())
+    }
+
+    async fn add_name_authorisations(store: &AppStore, count: usize) -> Result<(), AppError> {
+        for _ in 0..count {
+            sample_name_authorisation(NameAuthorisationId::new())
+                .create(store)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn add_candidate_list(store: &AppStore) -> Result<(), AppError> {
+        sample_candidate_list(CandidateListId::new())
+            .create(store)
+            .await?;
+        Ok(())
+    }
+
     #[test]
     fn is_printable() {
         assert!(
@@ -369,25 +395,6 @@ mod tests {
         );
     }
 
-    async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
-        sample_list_submitter(ListSubmitterId::new())
-            .update(store)
-            .await?;
-        sample_list_submitter(ListSubmitterId::new())
-            .create_substitute(store)
-            .await?;
-        Ok(())
-    }
-
-    async fn add_name_authorisations(store: &AppStore, count: usize) -> Result<(), AppError> {
-        for _ in 0..count {
-            sample_name_authorisation(NameAuthorisationId::new())
-                .create(store)
-                .await?;
-        }
-        Ok(())
-    }
-
     #[tokio::test]
     async fn no_candidate_list_added() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
@@ -408,6 +415,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -430,6 +438,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -454,6 +463,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -478,6 +488,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
