@@ -14,16 +14,6 @@ impl AppStore {
         self.election
     }
 
-    pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
-        let data = self.data.read();
-
-        let mut lists: Vec<CandidateList> = data.candidate_lists.values().cloned().collect();
-
-        lists.sort_unstable_by_key(|l| l.created_at);
-
-        lists
-    }
-
     pub fn get_political_group(&self) -> PoliticalGroup {
         let data = self.data.read();
 
@@ -84,6 +74,16 @@ impl AppStore {
             Some(list) => Ok(list.clone()),
             None => Err(AppError::GenericNotFound),
         }
+    }
+
+    pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
+        let data = self.data.read();
+
+        let mut lists: Vec<CandidateList> = data.candidate_lists.values().cloned().collect();
+
+        lists.sort_unstable_by_key(|l| l.created_at);
+
+        lists
     }
 
     pub fn get_person(&self, person_id: PersonId) -> Result<Person, AppError> {
