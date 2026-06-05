@@ -7,24 +7,32 @@ use crate::{
     transparent_string,
 };
 
-pub type FirstName = ConstrainedString;
-pub type LegalName = ConstrainedString;
-pub type StreetName = ConstrainedString;
-pub type StateOrProvince = ConstrainedString;
+/// Define multiple separate types with the same basic constrains in the FromStr implementation
+macro_rules! constrained_strings {
+    ($(pub struct $name:ident;)*) => {
+        $(
+            transparent_string! {
+                pub struct $name(String);
+            }
 
-transparent_string! {
-    pub struct ConstrainedString(String);
+            impl FromStr for $name {
+                type Err = ValidationError;
+
+                fn from_str(value: &str) -> Result<Self, Self::Err> {
+                    let trimmed_value = validate_length(value, 1, 200)?;
+                    validate_teletex_chars(&trimmed_value)?;
+                    Ok($name(trimmed_value))
+                }
+            }
+        )*
+    };
 }
 
-impl FromStr for ConstrainedString {
-    type Err = ValidationError;
-
-    fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = validate_length(value, 2, 200)?;
-        validate_teletex_chars(&trimmed_value)?;
-
-        Ok(ConstrainedString(trimmed_value))
-    }
+constrained_strings! {
+    pub struct FirstName;
+    pub struct LegalName;
+    pub struct StreetName;
+    pub struct StateOrProvince;
 }
 
 impl Problematic<()> for Option<LegalName> {
@@ -34,5 +42,33 @@ impl Problematic<()> for Option<LegalName> {
         } else {
             Vec::new()
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn single_char_is_valid() {
+        assert_eq!(Ok(FirstName("A".to_string())), FirstName::from_str("A"));
+        assert_eq!(Ok(LegalName("A".to_string())), LegalName::from_str("A"));
+    }
+
+    #[test]
+    fn empty_is_rejected() {
+        assert_eq!(
+            Err(ValidationError::ValueShouldNotBeEmpty),
+            LegalName::from_str("   ")
+        );
+    }
+
+    #[test]
+    fn too_long() {
+        let long = "a".repeat(201);
+        assert_eq!(
+            Err(ValidationError::ValueTooLong(201, 200)),
+            LegalName::from_str(&long)
+        );
     }
 }

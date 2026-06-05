@@ -327,7 +327,7 @@ mod tests {
         let csrf_token = generate_csrf_token();
         let form = PersonalDataForm {
             name: FullNameForm {
-                first_name: " B ".to_string(),
+                first_name: "🤔".to_string(),
                 last_name: "de Bakker".to_string(),
                 last_name_prefix: "Boris".to_string(),
                 initials: "jd".to_string(),
@@ -360,10 +360,7 @@ mod tests {
             "name.last_name_prefix".to_string(),
             ValidationError::InvalidValue
         )));
-        assert!(errors.contains(&(
-            "name.first_name".to_string(),
-            ValidationError::ValueTooShort(1, 2)
-        )));
+        assert!(errors.contains(&("name.first_name".to_string(), ValidationError::InvalidValue)));
         assert!(errors.contains(&("name.initials".to_string(), ValidationError::InvalidValue)));
         assert!(errors.contains(&(
             "personal_data.date_of_birth".to_string(),
