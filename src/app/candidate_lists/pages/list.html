@@ -14,7 +14,7 @@
       <div class="candidates">
         <a href="{{ Person::list_path() }}" class="card card-persons">
           <div class="card-header">
-            <div class="badge"></div>
+            <div class="badge badge-candidates"></div>
             <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
           </div>
           <div class="card-content">
@@ -30,9 +30,9 @@
       {% let max_candidates = "max_candidates"|integer_value %}
       {% for candidate_list in candidate_lists %}
         <a href="{{ candidate_list.list.view_path() }}"
-           class="card card-candidate-list {{ candidate_list.highest_severity_class() }}">
+           class="card {{ candidate_list.highest_severity_class() }}">
           <div class="card-header">
-            <div class="badge"></div>
+            <div class="badge badge-candidates-list"></div>
             <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
           </div>
           <div class="card-content">

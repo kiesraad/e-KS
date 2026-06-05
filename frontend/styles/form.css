@@ -317,7 +317,6 @@
 .form select:focus,
 .form select:focus-visible,
 .date-separate:hover {
-  outline: none;
   border-color: var(--border-color-focus);
   outline: 1px solid var(--border-color-focus);
 }

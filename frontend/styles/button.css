@@ -252,19 +252,6 @@ label.button {
       height: var(--space-4);
       background-color: currentColor;
     }
-
-    /* background-repeat: no-repeat;
-    background-position: left var(--space-md) center;
-    padding-left: 2.6rem;
-    background-size: 18px;
-
-    &.secondary {
-      background-image: url("../icons/download-grey.svg");
-    }
-
-    &:not(.secondary) {
-      background-image: url("../icons/download.svg");
-    } */
   }
 
   &.icon-upload {

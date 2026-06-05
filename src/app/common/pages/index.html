@@ -12,9 +12,9 @@
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>
   <div class="cards cards-home">
     <a href="{{ crate::political_groups::PoliticalGroup::update_path() }}"
-       class="card card-data">
+       class="card">
       <div class="card-header">
-        <div class="badge"></div>
+        <div class="badge badge-data"></div>
         {{ "common.step"|trans("1") }}
       </div>
       <div class="card-content">
@@ -29,7 +29,7 @@
     <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
        class="card card-candidate-list">
       <div class="card-header">
-        <div class="badge"></div>
+        <div class="badge badge-candidates-list"></div>
         {{ "common.step"|trans("2") }}
       </div>
       <div class="card-content">
@@ -48,9 +48,9 @@
       <p class="card-footer">{{ "action.manage_candidate_lists"|trans }}</p>
     </a>
     <a href="{{ crate::submit::SubmitPath{}.to_string() }}"
-       class="card card-locked">
+       class="card">
       <div class="card-header">
-        <div class="badge"></div>
+        <div class="badge locked"></div>
         {{ "common.step"|trans("3") }}
       </div>
       <div class="card-content">
