@@ -182,7 +182,7 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
         Ok(eml_nl::documents::nomination::NominationCandidate {
             identifier: CandidateIdentifier::new(
                 CandidateId::from_u64(self.position as u64)
-                    .map_err(|_| AppError::InternalServerError)?,
+                    .map_err(|_| AppError::IncompleteData("candidate position is 0"))?,
             ),
             full_name: (&self.person.name).into(),
             date_of_birth: self
