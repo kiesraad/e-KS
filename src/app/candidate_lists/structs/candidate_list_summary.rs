@@ -319,7 +319,6 @@ mod tests {
         };
 
         let items = list_summary.get_problems(&store);
-        dbg!(&items);
 
         assert_eq!(items.len(), 2);
         assert!(items.contains(&PotentialProblems::NoCandidates));
