@@ -67,10 +67,10 @@ chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
 parking_lot = "0.12.5"
 rand = "0.10.1"
 sha2 = "0.11.0"
-sqlx = { version = "0.8.6", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
-uuid = { version = "1.23.1", features = ["serde", "v4", "v5", "v8"] }
+sqlx = { version = "0.9.0", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-none"] }
+uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
 url = "2.5.8"
-reqwest = { version = "0.13.3", default-features = false, features = ["json", "stream"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
 askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
@@ -89,7 +89,7 @@ memory-serve = { version = "2.1.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.0", default-features = false, features = ["compressed_database"], optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"], optional = true }
 
 # kiesraad
 eml-nl = "0.6.0"
@@ -104,7 +104,7 @@ tower = "0.5"
 tracing-test = "0.2.6"
 # Adds rustls to reqwest for TLS server tests. Dev-only: the production
 # binary still builds reqwest without any TLS backend.
-reqwest = { version = "0.13.2", default-features = false, features = ["rustls"] }
+reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
 
 [lints.rust]
 unsafe_code = "forbid"
