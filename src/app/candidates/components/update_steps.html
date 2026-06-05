@@ -1,8 +1,7 @@
 <div class="steps-nav">
   <ul>
     {% let max_candidates = "max_candidates"|integer_value %}
-    {% if
-      should_warn|default(true) %}
+    {% if should_warn|default(true) %}
       <li>
         <a href="{{ overlay.forward(candidate.update_position_path() ) }}"
            class="{% if candidate.position <= max_candidates %}ok{% else %}warning{% endif %}">
@@ -14,8 +13,7 @@
       <a href="{{ overlay.forward(candidate.update_path() ) }}"
          class="{{ candidate.person.personal_info_class() }}">{{ "person.personal_details"|trans }}</a>
     </li>
-    {% if candidate.person.lives_in_nl() ||
-      conditional_next_step|default(false) %}
+    {% if candidate.person.lives_in_nl() || conditional_next_step|default(false) %}
       <li class="show-nl">
         <a href="{{ overlay.forward(candidate.update_address_path() ) }}"
            class="{% if candidate.person.address.is_all_good(crate::common::Severity::Info) %}ok{% else if should_warn|default(true) %}warning{% endif %}">
@@ -23,8 +21,7 @@
         </a>
       </li>
     {% endif %}
-    {% if !candidate.person.lives_in_nl() ||
-      conditional_next_step|default(false) %}
+    {% if !candidate.person.lives_in_nl() || conditional_next_step|default(false) %}
       <li class="hide-nl">
         <a href="{{ overlay.forward(candidate.update_representative_path() ) }}"
            class="{% if candidate.person.is_representative_complete() %}ok{% else if should_warn|default(true) %}warning{% endif %}">
