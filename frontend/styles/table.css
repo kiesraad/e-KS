@@ -54,10 +54,10 @@ table {
   }
 
   tr.highlighted {
-    background-color: var(--yellow-100);
+    background-color: var(--orange-100);
 
     .position-badge {
-      background-color: var(--yellow-200);
+      background-color: var(--orange-200);
     }
   }
 

@@ -77,7 +77,7 @@
     }
 
     &.warning {
-      input:not(.date-separate input),
+      input:not(.date-separate input):not([type="checkbox"]),
       .date-separate {
         border-color: var(--color-warning-darker);
         background-image: url("../icons/warning.svg");
@@ -90,7 +90,7 @@
 
     &.error,
     &:has(.error) {
-      input:not(.date-separate input),
+      input:not(.date-separate input):not([type="checkbox"]),
       .date-separate {
         border-color: var(--color-error-darker);
         background-image: url("../icons/error.svg");
