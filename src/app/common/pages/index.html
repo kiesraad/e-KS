@@ -14,8 +14,13 @@
     <a href="{{ crate::list_designation::ListDesignation::update_path() }}"
        class="card">
       <div class="card-header">
-        <div class="badge badge-data"></div>
-        <div>{{ "common.step"|trans("1") }}</div>
+        <div class="badge badge-data {{ general_problems_severity }}"></div>
+        <div>
+          <h4>{{ "common.step"|trans("1") }}</h4>
+          {% if general_problems > 0 %}
+            <p class="{{ general_problems_severity }}">{{ general_problems }} problemen</p>
+          {% endif %}
+        </div>
       </div>
       <div class="card-content">
         <h2 class="card-title">{{ "common.general_information"|trans }}</h2>
