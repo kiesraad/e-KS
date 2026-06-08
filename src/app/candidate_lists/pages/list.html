@@ -29,15 +29,15 @@
         {% let election = "election"|election_value %}
         {% let max_candidates = "max_candidates"|integer_value %}
         {% for candidate_list in candidate_lists %}
-          <section class="card card-candidate-list {{ candidate_list.highest_severity_class() }}"
+          <section class="card card-candidate-list {{ candidate_list.highest_severity_class(*() ) }}"
                    data-href="{{ candidate_list.list.view_path() }}">
             <header>
               <div class="badge"></div>
               <div>
                 <h3>{{ "candidate_list.title_single"|trans }}</h3>
-                {% let problems = candidate_list.get_problems() %}
+                {% let problems = candidate_list.get_problems(*()) %}
                 {% if !problems.is_empty() %}
-                  <p class="{{ candidate_list.highest_severity_class() }}">
+                  <p class="{{ candidate_list.highest_severity_class(*() ) }}">
                     {{ problems[0].translate(locale) }}
                     {% if problems.len() > 1 %}{{ "problems.and_more"|trans(&(problems.len() - 1).to_string()) }}{% endif %}
                   </p>

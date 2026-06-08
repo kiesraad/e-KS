@@ -1,4 +1,5 @@
 and_more: "(en {} meer)"
+candidate_too_young: Kandidaat is te jong om met deze verkiezing mee te doen.
 duplicate_districts: Dubbele kieskringen
 few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
 few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
@@ -11,6 +12,7 @@ few_candidates_without_gender_one: "Maar 1 van de {} kandidaten heeft geen gesla
 incomplete_address: Adres is niet volledig ingevuld
 no_authorised_agent: Geen gemachtigde toegevoegd
 no_bsn: BSN ontbreekt
+no_candidate_list: Geen kandidatenlijst toegevoegd
 no_candidates: Geen kandidaten toegevoegd
 no_country_of_residence: Woonland ontbreekt
 no_date_of_birth: Geboortedatum ontbreekt

@@ -60,6 +60,7 @@ impl PotentialProblems {
                 .with_query_params(QueryParamState::redirect_to(submit))
                 .to_string(),
             PotentialProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
+            PotentialProblems::NoCandidateList => CandidateList::list_path().to_string(),
             PotentialProblems::NoDesignationType => ListDesignation::update_path().to_string(),
             PotentialProblems::TooFewAuthorizedNames { .. }
             | PotentialProblems::TooManyAuthorizedNames { .. } => {
@@ -90,7 +91,11 @@ impl Problems {
 
     fn find_general_problems(store: &AppStore) -> GeneralProblems {
         let political_group = store.get_political_group();
-        let mut general = political_group.get_problems();
+        let mut general = political_group.get_problems(());
+
+        if store.get_candidate_list_count() == 0 {
+            general.push(PotentialProblems::NoCandidateList);
+        }
 
         let name_authorisations = store.get_name_authorisations();
         let name_authorisations = match political_group.list_designation {
@@ -118,7 +123,7 @@ impl Problems {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let list_submitter_problems = list_submitter.get_problems();
+        let list_submitter_problems = list_submitter.get_problems(());
         let list_submitter = if !list_submitter_problems.is_empty() {
             Some(EntityProblems {
                 entity: list_submitter,
@@ -189,7 +194,10 @@ impl Problems {
             .filter(|id| seen.insert(*id))
             .filter_map(|id| store.get_person(*id).ok())
             .filter_map(|person| {
-                let problems = person.get_problems();
+                // TODO: Remove the below line once `Problematic` gets an overhaul.
+                // get_problems is only for the 'candidate_too_young' check. Other checks are done in the get_problems of person.
+                let mut problems = person.personal_data.get_problems(store);
+                problems.extend(person.get_problems(()));
                 (!problems.is_empty()).then_some(PersonProblems {
                     entity: person,
                     problems,
@@ -206,8 +214,7 @@ impl Problems {
         candidate_lists
             .iter()
             .filter_map(|candidate_list| {
-                let mut problems = candidate_list.get_problems();
-                problems.extend(candidate_list.get_deviation_problems(store));
+                let problems = candidate_list.get_problems(store);
                 (!problems.is_empty()).then(|| ListProblems {
                     entity: candidate_list.list.clone(),
                     problems,
@@ -283,9 +290,9 @@ pub struct EntityProblems<T> {
     pub problems: Vec<PotentialProblems>,
 }
 
-impl<T: Problematic> EntityProblems<T> {
+impl<T: Problematic<()>> EntityProblems<T> {
     fn new(entity: T) -> Self {
-        let problems = entity.get_problems();
+        let problems = entity.get_problems(());
         EntityProblems { entity, problems }
     }
 }
@@ -314,6 +321,32 @@ mod tests {
             list_submitter: None,
             substitute_submitters: Vec::new(),
         }
+    }
+
+    async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
+        sample_list_submitter(ListSubmitterId::new())
+            .update(store)
+            .await?;
+        sample_list_submitter(ListSubmitterId::new())
+            .create_substitute(store)
+            .await?;
+        Ok(())
+    }
+
+    async fn add_name_authorisations(store: &AppStore, count: usize) -> Result<(), AppError> {
+        for _ in 0..count {
+            sample_name_authorisation(NameAuthorisationId::new())
+                .create(store)
+                .await?;
+        }
+        Ok(())
+    }
+
+    async fn add_candidate_list(store: &AppStore) -> Result<(), AppError> {
+        sample_candidate_list(CandidateListId::new())
+            .create(store)
+            .await?;
+        Ok(())
     }
 
     #[test]
@@ -352,22 +385,18 @@ mod tests {
         );
     }
 
-    async fn add_submitters(store: &AppStore) -> Result<(), AppError> {
-        sample_list_submitter(ListSubmitterId::new())
-            .update(store)
-            .await?;
-        sample_list_submitter(ListSubmitterId::new())
-            .create_substitute(store)
-            .await?;
-        Ok(())
-    }
+    #[tokio::test]
+    async fn no_candidate_list_added() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        // make sure no other general errors occur
+        add_submitters(&store).await?;
+        add_name_authorisations(&store, 1).await?;
 
-    async fn add_name_authorisations(store: &AppStore, count: usize) -> Result<(), AppError> {
-        for _ in 0..count {
-            sample_name_authorisation(NameAuthorisationId::new())
-                .create(store)
-                .await?;
-        }
+        let problems = Problems::find_general_problems(&store);
+
+        assert_eq!(problems.general.len(), 1);
+        assert_eq!(problems.general[0], PotentialProblems::NoCandidateList);
+
         Ok(())
     }
 
@@ -376,6 +405,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -398,6 +428,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -422,6 +453,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();
@@ -446,6 +478,7 @@ mod tests {
         let store = AppStore::new_for_test();
         // make sure no other general errors occur
         add_submitters(&store).await?;
+        add_candidate_list(&store).await?;
 
         // make political group standalone
         let mut group = store.get_political_group();

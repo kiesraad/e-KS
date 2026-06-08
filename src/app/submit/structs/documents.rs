@@ -137,7 +137,7 @@ impl DocumentData {
         let designation = group.effective_display_name()?;
 
         let list_submitter = store.get_list_submitter();
-        if list_submitter.is_empty() || !list_submitter.is_all_good() {
+        if list_submitter.is_empty() || !list_submitter.is_all_good(()) {
             return Err(AppError::IncompleteData("Incomplete list submitter"));
         }
         let list_submitter = list_submitter.try_into()?;

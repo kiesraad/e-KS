@@ -10,6 +10,7 @@ export class NameAuthorisationPage {
   readonly buttonConfirmDelete: Locator;
   readonly buttonAdd: Locator;
   readonly buttonSave: Locator;
+  readonly buttonNext: Locator;
 
   constructor(protected readonly page: Page) {
     this.textfieldLegalName = this.page.getByLabel("Volledige statutaire naam");
@@ -28,6 +29,7 @@ export class NameAuthorisationPage {
       name: "Statutaire naam toevoegen",
     });
     this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
+    this.buttonNext = this.page.getByRole("link", { name: "Volgende" });
   }
 
   getAgentLocator(lastName: string) {

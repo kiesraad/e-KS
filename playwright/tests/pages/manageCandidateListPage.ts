@@ -19,6 +19,7 @@ export class ManageCandidateListPage {
   readonly buttonRemoveCandidate: Locator;
   readonly buttonRemovefromApplication: Locator;
   readonly buttonRemovefromList: Locator;
+  readonly buttonFinalize: Locator;
 
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
@@ -56,6 +57,9 @@ export class ManageCandidateListPage {
     });
     this.buttonRemovefromList = this.page.getByRole("button", {
       name: "Uit deze lijst verwijderen",
+    });
+    this.buttonFinalize = this.page.getByRole("link", {
+      name: "Verder naar afronden",
     });
   }
 
@@ -119,7 +123,10 @@ export class ManageCandidateListPage {
   async removeList() {
     await this.buttonEditList.click();
     await this.buttonRemoveList.click();
-    await this.buttonConfirmRemoveList.click();
+    await Promise.all([
+      this.page.waitForURL(/\/candidate-lists$/),
+      this.buttonConfirmRemoveList.click(),
+    ]);
   }
 
   async deleteCandidates(candidates: string[]) {
