@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Problematic, Severity},
+    common::{PotentialProblems, Problematic, Problems, Severity},
 };
 
 use super::{FirstName, Initials, LastName, LastNamePrefix};
@@ -69,19 +69,22 @@ impl PartialOrd for FullName {
     }
 }
 
-impl Problematic<Severity> for FullName {
-    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut items = Vec::new();
+impl Problematic<()> for FullName {
+    fn get_problems(&self, _: ()) -> Problems {
+        let mut potential_problems = Vec::new();
 
         if self.initials.is_empty() {
-            items.push(PotentialProblems::NoInitials(severity));
+            potential_problems.push(PotentialProblems::NoInitials);
         }
 
         if self.last_name.is_empty() {
-            items.push(PotentialProblems::NoLastName(severity));
+            potential_problems.push(PotentialProblems::NoLastName);
         }
 
-        items
+        Problems {
+            potential_problems,
+            info_problems: Vec::new(),
+        }
     }
 }
 

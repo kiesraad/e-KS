@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppError, AppEvent, AppStore,
     common::{
-        DutchAddress, FullName, Gender, PotentialProblems, Problematic, Severity, UtcDateTime,
+        DutchAddress, FullName, Gender, PotentialProblems, Problematic, Problems, Severity,
+        UtcDateTime,
     },
     core::AnyLocale,
     id_newtype,
@@ -24,21 +25,16 @@ pub struct Person {
 }
 
 impl Problematic<()> for Person {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        [
-            self.name.get_problems(Severity::Error),
+    fn get_problems(&self, _: ()) -> Problems {
+        Problems::merge(vec![
+            self.name.get_problems(()),
             self.personal_data.get_problems(()),
             if self.lives_in_nl() {
                 self.address.get_problems(Severity::Warn)
-            } else if let Some(representative) = &self.representative {
-                representative.get_problems(())
-            } else {
-                vec![PotentialProblems::NoRepresentative]
-            },
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+            } else  {
+                self.representative.get_problems(self)
+            }
+        ])
     }
 }
 
@@ -48,16 +44,35 @@ pub struct Representative {
     pub address: DutchAddress,
 }
 
-impl Problematic<()> for Representative {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        [
-            self.name.get_problems(Severity::Warn),
-            self.address.get_problems(Severity::Warn),
-        ]
-        .into_iter()
-        .flatten()
-        .map(|p| PotentialProblems::RepresentativeProblem(Box::new(p)))
-        .collect()
+impl Problematic<&Person> for Option<Representative> {
+    fn get_problems(&self, associated_person: &Person) -> Problems {
+        if associated_person.lives_in_nl() {
+            return Problems {
+                potential_problems: Vec::new(),
+                info_problems: Vec::new(),
+            }
+        }
+        let Some(representative) = self else {
+            return Problems {
+                    potential_problems: vec![PotentialProblems::NoRepresentative],
+                    info_problems: Vec::new(),
+                }
+        };
+
+        let problems = Problems::merge(vec![
+            representative.name.get_problems(()),
+            representative.address.get_problems(Severity::Warn),
+        ]);
+        let potential_problems = problems
+            .potential_problems
+            .into_iter()
+            .map(|p| PotentialProblems::RepresentativeProblem(Box::new(p)))
+            .collect();
+
+        Problems {
+            potential_problems,
+            info_problems: problems.info_problems,
+        }
     }
 }
 
@@ -129,24 +144,17 @@ impl Person {
             })
             .unwrap_or("")
     }
-
+    // TODO perhaps this can be more efficient (giving problems as argument instead of recompute?)
     pub fn personal_info_class(&self) -> &'static str {
-        if !self.name.is_all_good(Severity::Info) {
-            return "error";
-        }
-
-        self.personal_data.highest_severity_class(())
+        Problems::merge(vec![
+            self.name.get_problems(()),
+            self.personal_data.get_problems(()),
+        ])
+        .highest_severity_class()
     }
-
+    // TODO perhaps this can be more efficient (giving problems as argument instead of recompute?)
     pub fn is_representative_complete(&self) -> bool {
-        if self.lives_in_nl() {
-            return true;
-        }
-
-        self.representative
-            .as_ref()
-            .map(|r| r.is_all_good(()))
-            .unwrap_or(false)
+        self.representative.get_problems(self).is_all_good()
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {

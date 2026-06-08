@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     OptionAsStrExt,
     common::{
-        PotentialProblems, Problematic, Severity, structs::problematic::EmptyAddressProblems,
+        PotentialProblems, Problematic, Problems, Severity,
+        structs::problematic::EmptyAddressProblems,
     },
 };
 
@@ -42,31 +43,31 @@ impl DutchAddress {
 }
 
 impl Problematic<Severity> for DutchAddress {
-    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut items = Vec::new();
+    fn get_problems(&self, severity: Severity) -> Problems {
+        let mut problems = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(EmptyAddressProblems::StreetName);
+            problems.push(EmptyAddressProblems::StreetName);
         }
         if self.house_number.is_empty_or_none() {
-            items.push(EmptyAddressProblems::HouseNumber);
+            problems.push(EmptyAddressProblems::HouseNumber);
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(EmptyAddressProblems::PostalCode);
+            problems.push(EmptyAddressProblems::PostalCode);
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(EmptyAddressProblems::Locality);
+            problems.push(EmptyAddressProblems::Locality);
         }
 
-        if items.is_empty() {
-            Vec::new()
-        } else {
-            vec![PotentialProblems::IncompleteAddress {
-                severity,
-                problems: items,
-            }]
+        Problems {
+            potential_problems: if problems.is_empty() {
+                Vec::new()
+            } else {
+                vec![PotentialProblems::IncompleteAddress { severity, problems }]
+            },
+            info_problems: Vec::new(),
         }
     }
 }

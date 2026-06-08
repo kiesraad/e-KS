@@ -44,7 +44,7 @@ impl Problematic<()> for Option<DisplayName> {
         if self.is_empty_or_none() {
             vec![PotentialProblems::NoDisplayName]
         } else {
-            vec![]
+            Vec::new()
         }
     }
 }

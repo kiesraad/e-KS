@@ -1,6 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{FullName, LegalName, PotentialProblems, Problematic, Severity},
+    common::{FullName, InfoProblems, LegalName, PotentialProblems, Problematic, Severity},
     id_newtype,
 };
 use serde::{Deserialize, Serialize};
@@ -16,11 +16,13 @@ pub struct NameAuthorisation {
 
 impl Problematic<()> for NameAuthorisation {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        let mut problems = self.name.get_problems(Severity::Warn);
-        if self.legal_name.to_string().is_empty() {
-            problems.push(PotentialProblems::NoLegalName);
-        }
+        let mut problems = self.name.potential_problems(Severity::Warn);
+        problems.extend(self.legal_name.get_problems(()));
         problems
+    }
+    
+    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+        self.legal_name.get_info_problems(())
     }
 }
 

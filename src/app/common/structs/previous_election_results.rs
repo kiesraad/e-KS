@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::form::ValidationError;
+use crate::{common::{InfoProblems, PotentialProblems, Problematic}, form::ValidationError};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -30,5 +30,17 @@ impl std::fmt::Display for PreviousElectionResults {
             PreviousElectionResults::OneToFifteenSeats => write!(f, "one_to_fifteen_seats"),
             PreviousElectionResults::SixteenOrMoreSeats => write!(f, "sixteen_or_more_seats"),
         }
+    }
+}
+
+impl Problematic<()> for Option<PreviousElectionResults> {
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
+        Vec::new()
+    }
+
+    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
+        .is_none()
+                .then_some(vec![InfoProblems::NoPreviousElectionResults])
+                .unwrap_or_default()
     }
 }
