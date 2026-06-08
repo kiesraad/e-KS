@@ -1,6 +1,6 @@
 {% extends "common/components/overlay.html" %}
 {% block overlay_title %}
-  <span class="position-badge">{{ candidate.candidate.position }}</span>
+  <span class="badge badge-position">{{ candidate.candidate.position }}</span>
   {{ candidate.candidate.person.name.display() }}
 {% endblock %}
 {% set close_action = full_list.list.highlight_path(*candidate.candidate.person.id) %}

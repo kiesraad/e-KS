@@ -12,7 +12,7 @@
       <tr class="clickable {% if added_candidates.contains_key(&person.id) %}remove-candidate{% else %}add-candidate{% endif %}">
         <td>
           {% if let Some(position) = added_candidates.get(&person.id) %}
-            <span class="position-badge">{{ position }}</span>
+            <span class="badge badge-position">{{ position }}</span>
           {% else %}
             <span class="person-badge">&nbsp;</span>
           {% endif %}

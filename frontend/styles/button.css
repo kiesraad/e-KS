@@ -2,25 +2,25 @@ button.button,
 a.button,
 label.button {
   color: var(--base-white);
-  border-radius: var(--rounded-default);
+  border-radius: var(--rounded-md);
   border: var(--button-border-width) solid var(--button-color-primary);
   background: var(--button-color-primary);
   text-decoration: none;
 
   font-size: var(--font-size-md);
-  font-weight: 600;
+  font-weight: var(--font-weight-bold);
 
   /* Shadow/xs */
   box-shadow: 0 1px 2px 0 rgba(16, 24, 40, 0.05);
 
-  display: inline-flex;
-  padding: calc(0.75rem - var(--button-border-width))
-    calc(1.25rem - var(--button-border-width));
-  justify-content: center;
   align-items: center;
-  gap: 0.75rem;
   cursor: pointer;
-
+  display: inline-flex;
+  gap: 0.5rem;
+  justify-content: center;
+  min-height: 3rem;
+  padding-block: var(--space-3);
+  padding-inline: var(--space-4) var(--space-5);
   width: max-content;
 
   &:hover {
@@ -54,7 +54,7 @@ label.button {
 
   &.secondary {
     color: var(--text-color-body);
-    border-color: var(--bg-gray-darkest);
+    border-color: var(--gray-400);
     background: var(--button-color-secondary);
 
     &:hover {
@@ -79,7 +79,9 @@ label.button {
   &.tertiary {
     background: transparent;
     border-color: transparent;
-    color: var(--button-color-primary);
+    box-shadow: none;
+    font-weight: var(--font-weight-medium);
+    color: var(--gray-500);
 
     &:hover {
       background: rgba(16, 48, 81, 0.1);
@@ -179,20 +181,24 @@ label.button {
     background-size: 20px;
   }
 
-  &.icon-plus {
-    background-image: url("../icons/plus.svg");
-    background-repeat: no-repeat;
-    background-position: left var(--space-md) center;
-    padding-left: var(--space-xl);
-    background-size: 20px;
+  &.icon-plus::before {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-5);
+    mask-image: url("../icons/plus.svg");
+    mask-size: contain;
+    width: var(--space-5);
   }
 
-  &.icon-edit {
-    background-image: url("../icons/edit.svg");
-    background-repeat: no-repeat;
-    background-position: right var(--space-md) center;
-    padding-right: var(--space-xl);
-    background-size: 20px;
+  &.icon-edit::after {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-4);
+    mask-image: url("../icons/edit.svg");
+    mask-position: right var(--space-md) center;
+    mask-repeat: no-repeat;
+    mask-size: contain;
+    width: var(--space-4);
   }
 
   &.icon-trash {
@@ -236,17 +242,15 @@ label.button {
   }
 
   &.icon-download {
-    background-repeat: no-repeat;
-    background-position: left var(--space-md) center;
-    padding-left: 2.6rem;
-    background-size: 18px;
+    padding-inline-end: var(--space-4);
 
-    &.secondary {
-      background-image: url("../icons/download-grey.svg");
-    }
-
-    &:not(.secondary) {
-      background-image: url("../icons/download.svg");
+    &::before {
+      content: "";
+      mask-image: url("../icons/download.svg");
+      mask-size: contain;
+      width: var(--space-4);
+      height: var(--space-4);
+      background-color: currentColor;
     }
   }
 

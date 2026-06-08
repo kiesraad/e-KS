@@ -12,8 +12,6 @@
 .language-switch {
   display: inline-flex;
   align-items: center;
-  margin-left: var(--space-md);
-  margin-top: 0.6rem;
   border-radius: var(--rounded-sm);
   overflow: hidden;
 
@@ -25,7 +23,7 @@
     border-width: 0;
 
     &.active {
-      background-color: var(--blue-700);
+      background-color: var(--blue-800);
       color: var(--base-white);
     }
 

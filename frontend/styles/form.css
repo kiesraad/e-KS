@@ -1,7 +1,10 @@
 .form {
   h3 {
-    font-size: var(--font-size-xl);
-    margin: var(--space-xl) 0 var(--space-lg) 0;
+    font-size: var(--font-size-2xl);
+    line-height: var(--leading-2xl);
+    font-weight: var(--font-weight-medium);
+    color: var(--gray-800);
+    margin-bottom: var(--space-6);
   }
 
   h3:has(+ .alert) {
@@ -12,13 +15,18 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
-    max-width: 24rem;
+    max-width: 23.25rem;
 
     & > label {
       color: var(--text-color-header);
       font-weight: bold;
-      gap: 0.5rem;
       white-space: nowrap;
+
+      &:has(.optional, .hint) {
+        display: flex;
+        align-items: center;
+        gap: var(--space-1);
+      }
 
       &.required::after {
         display: inline-block;
@@ -53,7 +61,7 @@
     }
 
     &.form-field-sm {
-      max-width: 12rem;
+      max-width: 10.875rem;
     }
 
     &.form-field-lg {
@@ -69,7 +77,7 @@
     }
 
     &.warning {
-      input:not(.date-separate input),
+      input:not(.date-separate input):not([type="checkbox"]),
       .date-separate {
         border-color: var(--color-warning-darker);
         background-image: url("../icons/warning.svg");
@@ -82,7 +90,7 @@
 
     &.error,
     &:has(.error) {
-      input:not(.date-separate input),
+      input:not(.date-separate input):not([type="checkbox"]),
       .date-separate {
         border-color: var(--color-error-darker);
         background-image: url("../icons/error.svg");
@@ -102,20 +110,23 @@
 
     .autoformat,
     .no_bsn_confirmed {
-      font-size: var(--font-size-sm);
-      font-weight: normal;
-      color: var(--text-color-body);
+      font-size: var(--font-size-md);
+      line-height: var(--leading-md);
+      font-weight: var(--font-weight-light);
+      color: var(--gray-500);
       display: flex;
       gap: var(--space-xs);
-      align-items: center;
+      align-items: flex-start;
       margin-top: calc(-1 * var(--space-xs));
+      text-wrap: balance;
     }
   }
 
   .form-row {
     display: flex;
-    gap: var(--space-xl);
+    gap: var(--space-6);
     align-items: start;
+    margin-block-end: var(--space-8);
 
     .form-field {
       flex: 1;
@@ -133,7 +144,7 @@
       font-size: var(--font-size-lg);
       font-weight: 600;
       color: var(--text-color-header);
-      margin-bottom: var(--space-md);
+      margin-bottom: var(--space-3);
 
       &.legend-sm {
         font-size: var(--font-size-md);
@@ -151,7 +162,7 @@
     }
 
     .form-row {
-      margin-bottom: var(--space-lg);
+      margin-bottom: var(--space-8);
     }
   }
 
@@ -161,15 +172,20 @@
   span.warning {
     display: inline-block;
     font-size: var(--font-size-md);
-    font-style: normal;
-    line-height: 1.5rem;
+    line-height: var(--leading-md);
+    font-weight: var(--font-weight-300);
+    color: var(--gray-600);
+    text-wrap: balance;
   }
 
   details.hint,
   span.hint {
-    font-size: var(--font-size-sm);
-    color: var(--color-help-text);
-    font-weight: normal;
+    font-size: var(--font-size-md);
+    line-height: var(--leading-md);
+    font-weight: var(--font-weight-300);
+    color: var(--gray-500);
+    text-wrap: balance;
+    display: block;
   }
 
   span.suggestion {
@@ -262,22 +278,29 @@
   align-items: center;
   align-self: stretch;
   border-style: solid;
-  border-width: 2px;
-  border-color: var(--bg-gray-darkest);
+  border-width: 1px;
+  border-color: var(--gray-400);
   background: var(--base-white);
+  font-size: var(--font-size-md);
+  line-height: var(--leading-md);
+  font-weight: var(--font-weight-regular);
 }
 
 .form input[type="text"],
 .form input[type="number"],
 .form textarea,
 .form select {
-  padding: 1rem;
+  padding: var(--space-4);
+  min-height: var(--space-14);
 }
 
 .form select {
   appearance: none;
-  background: var(--base-white) url("../icons/select.svg") no-repeat right 1rem
-    center;
+  background-color: var(--base-white);
+  background-image: url("../icons/select.svg");
+  background-position: right 1rem center;
+  background-repeat: no-repeat;
+  background-size: 0.75rem;
   cursor: pointer;
 }
 
@@ -294,8 +317,8 @@
 .form select:focus,
 .form select:focus-visible,
 .date-separate:hover {
-  outline: none;
   border-color: var(--border-color-focus);
+  outline: 1px solid var(--border-color-focus);
 }
 
 .form input[type="text"]:focus,

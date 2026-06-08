@@ -5,7 +5,7 @@ use crate::{Locale, trans};
 use super::DateOfBirth;
 
 /// Problem severities, in increasing order of severity
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug)]
+#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize)]
 pub enum Severity {
     Info,
     Warn,
@@ -98,9 +98,10 @@ pub trait Problematic<T> {
     fn get_problems(&self, additional_data: T) -> Problems;
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum PotentialProblems {
     // candidate list
+    NoCandidateList,
     NoCandidates,
     TooManyCandidates {
         actual: usize,
@@ -145,7 +146,7 @@ pub enum PotentialProblems {
     },
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum EmptyAddressProblems {
     StreetName,
     HouseNumber,
@@ -158,6 +159,7 @@ impl PotentialProblems {
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
             // candidate list
+            PotentialProblems::NoCandidateList => trans!("problems.no_candidate_list", *locale),
             PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
             PotentialProblems::TooManyCandidates { actual, max } => {
                 trans!("problems.too_many_candidates", *locale, actual, max)
@@ -215,6 +217,7 @@ impl PotentialProblems {
     pub fn severity(&self) -> Severity {
         match &self {
             // candidate list
+            PotentialProblems::NoCandidateList => Severity::Error,
             PotentialProblems::NoCandidates => Severity::Error,
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
             PotentialProblems::DuplicateDistricts => Severity::Error,
@@ -249,7 +252,7 @@ impl PotentialProblems {
     }
 }
 
-#[derive(Clone, PartialEq, Debug)]
+#[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum InfoProblems {
     FewCandidatesWithFirstName { count: usize, total: usize },
     FewCandidatesWithoutFirstName { count: usize, total: usize },
