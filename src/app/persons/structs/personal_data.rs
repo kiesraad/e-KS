@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    OptionAsStrExt,
+    AppStore, OptionAsStrExt,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, PlaceOfResidence, PotentialProblems,
         Problematic,
@@ -19,8 +19,11 @@ pub struct PersonalData {
     pub country: Option<CountryCode>,
 }
 
-impl Problematic for PersonalData {
-    fn get_problems(&self) -> Vec<PotentialProblems> {
+impl Problematic<()> for PersonalData {
+    // This implementation will be merged with implementation below, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
+    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
         if self.bsn.is_none() {
@@ -48,6 +51,22 @@ impl Problematic for PersonalData {
     }
 }
 
+impl Problematic<&AppStore> for PersonalData {
+    // This implementation will be merged with implementation above, once
+    // `Problematic` gets the overhaul specified in
+    // https://github.com/kiesraad/e-ks/issues/785
+    fn get_problems(&self, store: &AppStore) -> Vec<PotentialProblems> {
+        let election = store.election;
+        if let Some(date_of_birth) = self.date_of_birth.clone()
+            && date_of_birth.is_too_young(&election)
+        {
+            vec![PotentialProblems::TooYoungDateOfBirth]
+        } else {
+            Vec::new()
+        }
+    }
+}
+
 impl PersonalData {
     pub fn locality(&self) -> Option<String> {
         match (&self.place_of_residence, &self.country) {
@@ -62,9 +81,9 @@ impl PersonalData {
 
 #[cfg(test)]
 mod tests {
-    use chrono::NaiveDate;
-
     use super::*;
+    use crate::AppStore;
+    use chrono::{Duration, NaiveDate};
 
     fn complete_personal_data() -> PersonalData {
         PersonalData {
@@ -78,14 +97,14 @@ mod tests {
 
     #[test]
     fn complete_personal_data_has_no_problems() {
-        assert!(complete_personal_data().get_problems().is_empty());
+        assert!(complete_personal_data().get_problems(()).is_empty());
     }
 
     #[test]
     fn missing_bsn_produces_warning() {
         let mut data = complete_personal_data();
         data.bsn = None;
-        assert!(data.get_problems().contains(&PotentialProblems::NoBsn));
+        assert!(data.get_problems(()).contains(&PotentialProblems::NoBsn));
     }
 
     #[test]
@@ -93,7 +112,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.date_of_birth = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoDateOfBirth)
         );
     }
@@ -103,8 +122,20 @@ mod tests {
         let mut data = complete_personal_data();
         data.date_of_birth = Some(NaiveDate::from_ymd_opt(1900, 1, 1).unwrap().into());
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::VeryOldDateOfBirth)
+        );
+    }
+
+    #[test]
+    fn too_young_date_of_birth_produces_warning() {
+        let store = AppStore::new_for_test();
+        let eligible_dob = store.election.eligible_date_of_birth();
+        let mut data = complete_personal_data();
+        data.date_of_birth = Some((eligible_dob + Duration::days(1)).into());
+        assert!(
+            data.get_problems(&store)
+                .contains(&PotentialProblems::TooYoungDateOfBirth)
         );
     }
 
@@ -114,7 +145,7 @@ mod tests {
         data.date_of_birth = Some("01-01-2000".parse().unwrap());
         assert!(
             !data
-                .get_problems()
+                .get_problems(())
                 .contains(&PotentialProblems::VeryOldDateOfBirth)
         );
     }
@@ -124,7 +155,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.place_of_residence = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoPlaceOfResidence)
         );
     }
@@ -134,7 +165,7 @@ mod tests {
         let mut data = complete_personal_data();
         data.country = None;
         assert!(
-            data.get_problems()
+            data.get_problems(())
                 .contains(&PotentialProblems::NoCountryOfResidence)
         );
     }

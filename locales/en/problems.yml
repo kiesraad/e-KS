@@ -1,3 +1,4 @@
+candidate_too_young: Candidate is too young to participate in this election.
 duplicate_districts: Duplicate districts
 few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"
 few_candidates_with_first_name_one: "Just 1 out of {} candidates has a first name specified"
@@ -10,6 +11,7 @@ few_candidates_without_gender_one: "Just 1 out of {} candidates doesn't have a g
 incomplete_address: Address is incomplete
 no_authorised_agent: No authorised agent added
 no_bsn: BSN is missing
+no_candidate_list: No candidate list added
 no_candidates: No candidates added
 no_country_of_residence: Country of residence is missing
 no_date_of_birth: Date of birth is missing

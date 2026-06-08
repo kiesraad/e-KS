@@ -44,7 +44,7 @@ type:
   one_to_fifteen_seats: 1 to 15 seats
   previous_election_results_combined: "In the previous {}, one of the parties in the combination, or the combination as a whole, obtained:"
   previous_election_results_combined_hint: "If the combination participated separately in the previous election, choose the highest individual obtained result."
-  previous_election_results_hint: "This determines whether a deposit needs to be paid, and whether you may include 50 or 80 candidates on each list."
+  previous_election_results_hint: "This determines whether declarations of support need to be submitted, and whether you may include 50 or 80 candidates on each list."
   registered_name: Standalone registered name
   registered_name_hint: "The party participates in the election as a single, unified party."
   sixteen_or_more_seats: 16 or more seats
