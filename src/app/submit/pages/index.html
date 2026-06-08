@@ -156,23 +156,29 @@
             </div>
           </div>
           <div class="card">
-            {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
-            {% if problems.models_downloadable() %}
-            <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
-              }}</a>
-            {% else %}
-            <a class="button primary icon-download disabled" disabled aria-disabled="true">{{
-              "action.all_in_one_zip"|trans
-              }}</a>
-            {% endif %}
-            {% if frisian_export_allowed %}
-            <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
-            {% if problems.models_downloadable() %}
-            <a href="{{ download_path_fry }}" class="button primary icon-download">Alles yn ien zip</a>
-            {% else %}
-            <a class="button primary icon-download disabled" disabled aria-disabled="true">Alles yn ien zip</a>
-            {% endif %}
-            {% endif %}
+            <div class="step-downloads">
+              <div class="step-download">
+                {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+                {% if problems.models_downloadable() %}
+                <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
+                  }}</a>
+                {% else %}
+                <a class="button primary icon-download disabled" disabled aria-disabled="true">{{
+                  "action.all_in_one_zip"|trans
+                  }}</a>
+                {% endif %}
+              </div>
+              <div class="step-download">
+                {% if frisian_export_allowed %}
+                  <div>{{ "common.languages.frisian"|trans }}:</div>
+                    {% if problems.models_downloadable() %}
+                      <a href="{{ download_path_fry }}" class="button primary icon-download">Alles yn ien zip</a>
+                    {% else %}
+                      <a class="button primary icon-download disabled" disabled aria-disabled="true">Alles yn ien zip</a>
+                  {% endif %}
+                {% endif %}
+              </div>
+            </div>
           </div>
         </section>
       </div>
@@ -186,7 +192,8 @@
       <div class="step-content">
         <p>
           <strong>
-            Door op de onderstaande knop de klikken worden alle gegevens naar het centraal stem bureau digitaal verstuurt.
+            Door op de onderstaande knop de klikken worden alle gegevens naar het centraal stem bureau digitaal
+            verstuurt.
             De geprinten document dient u ook
             in te leveren
           </strong>
