@@ -157,6 +157,7 @@
 
     button {
       background-image: url("../icons/trash.svg");
+      background-size: contain;
     }
 
     .position-badge {

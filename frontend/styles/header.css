@@ -74,7 +74,7 @@ header {
 
           &.active {
             --header-item-indicator-opacity: 1;
-            --header-item-indicator-bg: var(--accent-orange);
+            --header-item-indicator-bg: var(--blue-600);
             --header-item-color: var(--base-white);
             --header-item-font-weight: 700;
           }

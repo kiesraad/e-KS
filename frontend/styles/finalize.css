@@ -31,8 +31,26 @@
     --step-index-bg: url("../icons/step-index.svg");
   }
 
+  &:nth-of-type(2) {
+    --step-illustration: url("../icons/illustration-step-1.svg");
+  }
+
+  &:nth-of-type(3) {
+    --step-illustration: url("../icons/illustration-step-2.svg");
+  }
+
+  &:nth-of-type(4) {
+    --step-illustration: url("../icons/illustration-step-2.svg");
+  }
+
+  &:nth-of-type(4) {
+    --step-illustration: url("../icons/illustration-step-3.svg");
+  }
+
   &::before {
     aspect-ratio: 1;
+    background-image: var(--step-illustration);
+    background-size: contain;
     content: "";
     grid-column: span 3;
     left: 0;
@@ -40,8 +58,6 @@
     margin-top: calc(var(--font-size-4xl) + var(--space-8));
     position: sticky;
     top: var(--space-8);
-    background-image: url("../icons/illustration-step-1.svg");
-    background-size: contain;
   }
 }
 
@@ -97,10 +113,6 @@
     position: absolute;
     top: 0;
     width: 2px;
-  }
-
-  p {
-    max-width: 26.5rem;
   }
 }
 
