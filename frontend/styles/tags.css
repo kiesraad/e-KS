@@ -45,14 +45,14 @@
   &:has(.warning) {
     --tag-border-color: var(--orange-600);
     --tag-color: var(--orange-700);
-    --tag-icon: url('../icons/warning.svg');
+    --tag-icon: url("../icons/warning.svg");
   }
 
   &:is(.error),
   &:has(.error) {
     --tag-border-color: var(--red-600);
     --tag-color: var(--red-700);
-    --tag-icon: url('../icons/error.svg');
+    --tag-icon: url("../icons/error.svg");
   }
 
   &:has(a):hover,

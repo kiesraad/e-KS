@@ -18,7 +18,7 @@ label.button {
   display: inline-flex;
   gap: 0.5rem;
   justify-content: center;
-  min-height: 3.125rem;
+  min-height: 3rem;
   padding-block: var(--space-3);
   padding-inline: var(--space-4) var(--space-5);
   width: max-content;
