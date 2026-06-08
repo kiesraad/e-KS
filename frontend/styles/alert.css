@@ -2,7 +2,6 @@
   background-color: var(--alert-bg);
   border-left: 4px solid var(--alert-border-color);
   color: var(--alert-color);
-  display: inline-flex;
   font-size: var(--font-size-md);
   font-weight: var(--font-weight-bold);
   line-height: var(--leading-md);
@@ -10,6 +9,11 @@
   padding-block: var(--alert-py, var(--space-4));
   padding-inline: var(--alert-px, var(--space-6));
   text-wrap: wrap;
+  position: relative;
+
+  &:has(strong) {
+    font-weight: var(--font-weight-light);
+  }
 
   &:first-of-type {
     margin-block-start: 0;

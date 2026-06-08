@@ -18,7 +18,7 @@ label.button {
   display: inline-flex;
   gap: 0.5rem;
   justify-content: center;
-  min-height: 3.125rem;
+  min-height: 3rem;
   padding-block: var(--space-3);
   padding-inline: var(--space-4) var(--space-5);
   width: max-content;
@@ -132,19 +132,22 @@ label.button {
   &.xs {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.5rem - var(--button-border-width)) calc(0.875rem - var(--button-border-width));
+    padding: calc(0.5rem - var(--button-border-width))
+      calc(0.875rem - var(--button-border-width));
   }
 
   &.sm {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.625rem - var(--button-border-width)) calc(1rem - var(--button-border-width));
+    padding: calc(0.625rem - var(--button-border-width))
+      calc(1rem - var(--button-border-width));
   }
 
   &.lg {
     font-size: var(--font-size-lg);
     line-height: 1.75rem;
-    padding: calc(1rem - var(--button-border-width)) calc(1.75rem - var(--button-border-width));
+    padding: calc(1rem - var(--button-border-width))
+      calc(1.75rem - var(--button-border-width));
   }
 
   &.xl {
@@ -269,11 +272,11 @@ label.button {
 .read-more {
   width: fit-content;
 
-  .toggle:not(:checked)~.content {
+  .toggle:not(:checked) ~ .content {
     display: none;
   }
 
-  .toggle:checked~.open {
+  .toggle:checked ~ .open {
     display: none;
   }
 

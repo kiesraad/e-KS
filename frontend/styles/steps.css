@@ -22,11 +22,6 @@
     flex-direction: column;
     gap: var(--space-sm);
 
-    &:last-child {
-      top: auto;
-      bottom: var(--space-lg);
-    }
-
     li a {
       display: block;
       width: 100%;

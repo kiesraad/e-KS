@@ -61,11 +61,11 @@
         </ul>
       </div>
       <div class="alert alert-info">
-        <span class="instruction">{{ "common.submit_instruction"|trans }}:</span>
-        <p class="font-bold">
+        {{ "common.submit_instruction"|trans }}:
+        <strong>
           {% let election = "election"|election_value %}
           {{ election.nomination_day_date().format("%d-%m-%Y") }}
-        </p>
+        </strong>
       </div>
       <p class="card-footer">{{ "action.review_and_submit"|trans }}</p>
     </a>
