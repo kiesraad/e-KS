@@ -18,17 +18,19 @@ body.overlay-open {
 }
 
 .overlay {
-  display: flex;
-  flex-direction: column;
-  z-index: 1000;
-  overflow: visible;
-  width: 100%;
-  min-height: calc(100vh - var(--space-lg));
-  background-color: var(--gray-50);
-  height: auto;
+  background-color: var(--gray-25);
   border-radius: var(--space-sm) var(--space-sm) 0 0;
   box-shadow: 0 0.25rem 1rem rgba(0, 0, 0, 0.1);
   cursor: default;
+  display: flex;
+  flex-direction: column;
+  height: auto;
+  margin-inline: auto;
+  max-width: calc(var(--container-max-width) - var(--space-lg) * -2);
+  min-height: calc(100vh - var(--space-lg));
+  overflow: visible;
+  width: 100%;
+  z-index: 1000;
 
   &.animation {
     transform: translateY(0);
@@ -78,7 +80,6 @@ body.overlay-open {
       justify-content: stretch;
 
       & > div:nth-child(2) {
-        padding-left: var(--space-lg);
         padding-bottom: var(--space-lg);
         flex: 1;
       }
@@ -105,6 +106,17 @@ body.overlay-open {
   }
 }
 
+.overlay-csv {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: var(--space-8);
+
+  .column:first-child {
+    border-inline-end: 1px solid var(--border-color-default);
+    padding-inline-end: var(--space-8);
+  }
+}
+
 body.overlay-skip-anim .overlay {
   animation: none;
 }
@@ -113,6 +125,7 @@ body.overlay-skip-anim .overlay {
   from {
     transform: translateY(2rem);
   }
+
   to {
     transform: translateY(0);
   }

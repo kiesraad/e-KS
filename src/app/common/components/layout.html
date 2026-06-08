@@ -2,51 +2,53 @@
 {% block body %}
   <header>
     <nav>
-      <ul>
-        <li>
-          <a href="/" class="home" aria-label="{{ "common.home"|trans }}">
-            <span>{{ "common.home"|trans }}</span>
-          </a>
-        </li>
-        <li>
-          <a href="{{ crate::list_designation::ListDesignation::update_path() }}">{{ "common.general_information"|trans }}</a>
-        </li>
-        <li>
-          <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
-            {% if "multiple_candidate_lists"|value_true %}
-              {{ "candidate_list.title_plural"|trans }}
-            {% else %}
-              {{ "candidate_list.title_single"|trans }}
-            {% endif %}
-          </a>
-        </li>
-        <li>
-          <a href="{{ crate::submit::SubmitPath{}.to_string() }}">{{ "common.submit"|trans }}</a>
-        </li>
-      </ul>
-      <ul>
-        <li>
-          <a href="{{ crate::audit_log::AuditLogPath{}.to_string() }}">{{ "audit_log.title"|trans }}</a>
-        </li>
-        <li>
-          <a href="/logout" class="logout">{{ "action.signout"|trans }}</a>
-        </li>
-        {% let locale = "locale"|locale_value %}
-        <li>
-          <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
-                method="post"
-                class="language-switch">
-            <button class="button sm {% if locale == crate::Locale::Nl %}active{% endif %}"
-                    type="submit"
-                    name="lang"
-                    value="nl">NL</button>
-            <button class="button sm {% if locale == crate::Locale::En %}active{% endif %}"
-                    type="submit"
-                    name="lang"
-                    value="en">EN</button>
-          </form>
-        </li>
-      </ul>
+      <div>
+        <ul>
+          <li>
+            <a href="/" class="home" aria-label="{{ "common.home"|trans }}">
+              <span>{{ "common.home"|trans }}</span>
+            </a>
+          </li>
+          <li>
+            <a href="{{ crate::list_designation::ListDesignation::update_path() }}">{{ "common.general_information"|trans }}</a>
+          </li>
+          <li>
+            <a href="{{ crate::candidate_lists::CandidateList::list_path() }}">
+              {% if "multiple_candidate_lists"|value_true %}
+                {{ "candidate_list.title_plural"|trans }}
+              {% else %}
+                {{ "candidate_list.title_single"|trans }}
+              {% endif %}
+            </a>
+          </li>
+          <li>
+            <a href="{{ crate::submit::SubmitPath{}.to_string() }}">{{ "common.submit"|trans }}</a>
+          </li>
+        </ul>
+        <ul>
+          <li>
+            <a href="{{ crate::audit_log::AuditLogPath{}.to_string() }}">{{ "audit_log.title"|trans }}</a>
+          </li>
+          <li>
+            <a href="/logout" class="logout">{{ "action.signout"|trans }}</a>
+          </li>
+          {% let locale = "locale"|locale_value %}
+          <li>
+            <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
+                  method="post"
+                  class="language-switch">
+              <button class="button sm {% if locale == crate::Locale::Nl %}active{% endif %}"
+                      type="submit"
+                      name="lang"
+                      value="nl">NL</button>
+              <button class="button sm {% if locale == crate::Locale::En %}active{% endif %}"
+                      type="submit"
+                      name="lang"
+                      value="en">EN</button>
+            </form>
+          </li>
+        </ul>
+      </div>
     </nav>
     <div class="header-content">
       <div>
@@ -59,7 +61,9 @@
     </div>
   </header>
   <main class="{% block main_class %}{% endblock %}">
-    {% block content %}{% endblock %}
+    <div class="container">
+      {% block content %}{% endblock %}
+    </div>
   </main>
   <footer>
     <span>{{ "common.title"|trans }}</span>

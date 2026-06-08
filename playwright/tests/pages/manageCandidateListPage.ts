@@ -45,7 +45,9 @@ export class ManageCandidateListPage {
       name: "Kandidatenlijst verwijderen",
       exact: true,
     });
-    this.buttonCSV = this.page.getByRole("link", { name: "CSV" });
+    this.buttonCSV = this.page.getByRole("link", {
+      name: "Import en export kandidatenlijst",
+    });
     this.headingCandidateList = this.page.getByRole("heading", {
       name: "Kandidatenlijst",
     });

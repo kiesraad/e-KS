@@ -2,12 +2,13 @@ table {
   color: var(--color-help-text);
   width: 100%;
   border-collapse: collapse;
+  font-weight: var(--font-weight-light);
 
   th,
   td {
-    padding: 0 var(--space-ml);
-    line-height: var(--font-size-lg);
-    border-bottom: 1px solid var(--bg-gray-darkest);
+    padding: 0 var(--space-6);
+    border-bottom: 1px solid var(--gray-200);
+    vertical-align: middle;
   }
 
   th {
@@ -30,13 +31,15 @@ table {
 
   td {
     height: 3rem;
-    font-size: var(--font-size-lg);
+    font-size: var(--font-size-md);
+    line-height: var(--leading-md);
   }
 
   tr {
     background-image: var(--row-icon, none);
     background-repeat: no-repeat;
     background-position: right 3.5rem center;
+    background-size: 1.5rem;
   }
 
   tr.info {
@@ -52,10 +55,10 @@ table {
   }
 
   tr.highlighted {
-    background-color: var(--yellow-100);
+    background-color: var(--orange-100);
 
     .position-badge {
-      background-color: var(--yellow-200);
+      background-color: var(--orange-200);
     }
   }
 
