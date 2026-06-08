@@ -47,6 +47,10 @@
   margin-bottom: var(--space-xl);
 }
 
+.mb-6 {
+  margin-bottom: var(--space-6);
+}
+
 /* Padding */
 .pt-0 {
   padding-top: 0;
@@ -56,13 +60,17 @@
   padding-top: var(--space-sm);
 }
 
+.pt-6 {
+  padding-top: var(--space-6);
+}
+
 /* Color */
 .bg-gray {
   background-color: var(--bg-gray);
 }
 
 .bg-yellow {
-  background-color: var(--yellow-200);
+  background-color: var(--orange-200);
 }
 
 .note-warning {

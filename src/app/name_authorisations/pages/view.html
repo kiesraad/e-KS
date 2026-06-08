@@ -8,13 +8,13 @@
       {% if steps.is_blank %}
         <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
       {% endif %}
-      <h2>
+      <h3 class="mb-6">
         {% if steps.is_combined %}
           {{ "political_group.legal_name_data_combined"|trans }}
         {% else %}
           {{ "political_group.legal_name_data"|trans }}
         {% endif %}
-      </h2>
+      </h3>
       <p class="info">{{ "political_group.authorised_agent_info"|trans }}</p>
       {% if name_authorisations.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>

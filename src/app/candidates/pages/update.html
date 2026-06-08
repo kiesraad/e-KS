@@ -1,7 +1,7 @@
 {% extends "persons/pages/update.html" %}
 {% import "common/components/macros.html" as macros %}
 {% block overlay_title %}
-  <span class="position-badge">{{ candidate.position }}</span>
+  <span class="badge badge-position">{{ candidate.position }}</span>
   {{ candidate.person.name.display() }}
 {% endblock %}
 {% set close_action = full_list.list.highlight_path(*candidate.person.id) %}

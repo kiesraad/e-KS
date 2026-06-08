@@ -12,51 +12,62 @@
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>
   <div class="cards cards-home">
     <a href="{{ crate::list_designation::ListDesignation::update_path() }}"
-       class="card card-data">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("1") }}</h3>
-      <h4>{{ "common.general_information"|trans }}</h4>
-      <ul class="instruction">
-        <li>{{ "common.general_information_description.basic"|trans }}</li>
-        <li>{{ "common.general_information_description.submitter"|trans }}</li>
-      </ul>
-      <p>{{ "action.manage_data"|trans }}</p>
+       class="card">
+      <div class="card-header">
+        <div class="badge badge-data"></div>
+        {{ "common.step"|trans("1") }}
+      </div>
+      <div class="card-content">
+        <h2 class="card-title">{{ "common.general_information"|trans }}</h2>
+        <ul class="card-instruction">
+          <li>{{ "common.general_information_description.basic"|trans }}</li>
+          <li>{{ "common.general_information_description.submitter"|trans }}</li>
+        </ul>
+      </div>
+      <p class="card-footer">{{ "action.manage_data"|trans }}</p>
     </a>
     <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
        class="card card-candidate-list">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("2") }}</h3>
-      <h4>
-        {% if "multiple_candidate_lists"|value_true %}
-          {{ "candidate_list.title_plural"|trans }}
-        {% else %}
-          {{ "candidate_list.title_single"|trans }}
-        {% endif %}
-      </h4>
-      <ul class="instruction">
-        <li>{{ "candidate_list.candidate_list_description.add_candidate"|trans }}</li>
-        <li>{{ "candidate_list.candidate_list_description.add_candidate_list"|trans }}</li>
-      </ul>
-      <p>{{ "action.manage_candidate_lists"|trans }}</p>
+      <div class="card-header">
+        <div class="badge badge-candidates-list"></div>
+        {{ "common.step"|trans("2") }}
+      </div>
+      <div class="card-content">
+        <h2 class="card-title">
+          {% if "multiple_candidate_lists"|value_true %}
+            {{ "candidate_list.title_plural"|trans }}
+          {% else %}
+            {{ "candidate_list.title_single"|trans }}
+          {% endif %}
+        </h2>
+        <ul class="card-instruction">
+          <li>{{ "candidate_list.candidate_list_description.add_candidate"|trans }}</li>
+          <li>{{ "candidate_list.candidate_list_description.add_candidate_list"|trans }}</li>
+        </ul>
+      </div>
+      <p class="card-footer">{{ "action.manage_candidate_lists"|trans }}</p>
     </a>
-    <a href="{{ crate::submit::SubmitPath{}.to_string() }}"
-       class="card card-locked">
-      <div class="badge"></div>
-      <h3>{{ "common.step"|trans("3") }}</h3>
-      <h4>{{ "common.submit"|trans }}</h4>
-      <ul class="instruction">
-        <li>{{ "common.submit_description.download_documents"|trans }}</li>
-        <li>{{ "common.submit_description.view_follow_up_steps"|trans }}</li>
-        <li>{{ "common.submit_description.submit"|trans }}</li>
-      </ul>
+    <a href="{{ crate::submit::SubmitPath{}.to_string() }}" class="card">
+      <div class="card-header">
+        <div class="badge locked"></div>
+        {{ "common.step"|trans("3") }}
+      </div>
+      <div class="card-content">
+        <h2 class="card-title">{{ "common.submit"|trans }}</h2>
+        <ul class="card-instruction">
+          <li>{{ "common.submit_description.download_documents"|trans }}</li>
+          <li>{{ "common.submit_description.view_follow_up_steps"|trans }}</li>
+          <li>{{ "common.submit_description.submit"|trans }}</li>
+        </ul>
+      </div>
       <div class="alert alert-info">
-        <span class="instruction">{{ "common.submit_instruction"|trans }}:</span>
-        <p class="font-bold mt-md">
+        {{ "common.submit_instruction"|trans }}:
+        <strong>
           {% let election = "election"|election_value %}
           {{ election.nomination_day_date().format("%d-%m-%Y") }}
-        </p>
+        </strong>
       </div>
-      <p>{{ "action.review_and_submit"|trans }}</p>
+      <p class="card-footer">{{ "action.review_and_submit"|trans }}</p>
     </a>
   </div>
 {% endblock %}

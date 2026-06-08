@@ -4,19 +4,18 @@
   {% let election = "election"|election_value %}
   {% if !election.has_only_one_district() %}
     <a href="{{ full_list.list.update_path() }}"
-       class="button secondary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
+       class="button tertiary icon-edit">{{ "candidate_list.actions.edit"|trans }}</a>
   {% endif %}
 {% endblock %}
 {% block candidate_lists_nav_class %}active{% endblock %}
-{% block main_class %}pt-sm{% endblock %}
 {% block page_sub_title %}
   {% if !full_list.list.electoral_districts.is_empty() %}
     {% let election = "election"|election_value %}
-    <span class="subtitle">
+    <span class="tags">
       {% if !full_list.list.contains_all_districts(election) && !election.has_only_one_district() %}
-        <ul class="districts">
+        <ul class="tags-list">
           {% for district in full_list.list.electoral_districts %}
-            <li>
+            <li class="tag {% if duplicate_districts.contains(district) %}error{% endif %}">
               <a href="{{ full_list.list.update_path() }}"
                  {% if duplicate_districts.contains(district) %}class="error"{% endif %}>{{ district|district_name }}</a>
             </li>
@@ -39,7 +38,8 @@
       <div>
         <p>{{ "candidate_list.actions.import_export"|trans }}:</p>
         <a href="{{ full_list.list.import_path() }}"
-           class="button secondary icon-download">{{ "candidate_list.actions.import_export_csv"|trans }}</a>
+           class="button secondary icon-download"
+           title="{{ "candidate_list.actions.import_export"|trans }}"></a>
       </div>
       <div>
         <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>

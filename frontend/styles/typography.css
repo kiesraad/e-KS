@@ -2,7 +2,7 @@ body {
   font-family: var(--font-text), sans-serif;
   font-size: var(--font-size-md);
   line-height: 1.5em;
-  color: var(--text-color-body);
+  color: var(--gray-700);
 
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
@@ -11,61 +11,58 @@ body {
 
 h1,
 h2,
-h3,
+h3 {
+  font-family: var(--font-header), sans-serif;
+}
+
 h4,
 h5,
-h6,
-.heading-xl,
-.heading-lg {
-  margin-top: 0;
-  font-family: var(--font-header-body), sans-serif;
-  color: var(--text-color-header);
-  font-style: normal;
-  font-weight: normal;
+h6 {
+  font-family: var(--font-text), sans-serif;
 }
 
 h1,
-.heading-xl {
-  font-family: var(--font-header), sans-serif;
-  font-size: 2.25rem;
-  line-height: 2.75rem;
-  letter-spacing: -0.045rem;
+.h1 {
+  font-size: var(--font-size-4xl);
+  line-height: var(--leading-4xl);
+  font-weight: var(--font-weight-regular);
+  color: var(--gray-800);
 }
 
 h2,
-.heading-lg {
-  font-family: var(--font-header), sans-serif;
-  font-size: 1.5rem;
-  font-weight: 500;
-  line-height: 2rem;
-  margin-bottom: 1.5rem;
+.h2 {
+  font-size: var(--font-size-3xl);
+  line-height: var(--leading-3xl);
+  font-weight: var(--font-weight-regular);
+  color: var(--gray-800);
 }
 
 h3,
-.heading-md {
-  font-size: 1.25em;
-  font-weight: bold;
+.h3 {
+  font-size: var(--font-size-2xl);
+  line-height: var(--leading-2xl);
+  font-weight: var(--font-weight-medium);
 }
 
-h4 {
-  font-size: 1.25rem;
+h4,
+.h4 {
+  font-size: var(--font-size-xl);
+  line-height: var(--leading-xl);
+  font-weight: 700;
 }
 
-h5 {
-  font-size: 1.125rem;
+h5,
+.h5 {
+  font-size: var(--font-size-lg);
+  line-height: var(--leading-lg);
+  font-weight: 700;
 }
 
-h6 {
-  font-weight: bold;
-  font-size: 1rem;
-  margin-bottom: 0;
-}
-
-p {
-  margin-top: 0;
+h6,
+.h6 {
   font-size: var(--font-size-md);
-  margin-bottom: 0;
-  color: var(--text-color-body);
+  line-height: var(--leading-md);
+  font-weight: 700;
 }
 
 a {
@@ -94,6 +91,10 @@ a {
   font-weight: bold;
 }
 
+.font-light {
+  font-weight: 300;
+}
+
 .font-italic {
   font-style: italic;
 }
@@ -119,8 +120,7 @@ a {
   font-size: var(--font-size-lg);
 }
 
-/* Text wrap, transformations etc. */
-.break-word {
+/* Text wrap, transformations etc. */ .break-word {
   word-break: break-word;
 }
 
@@ -141,4 +141,8 @@ a {
 /* Slashed zero */
 .font-number-slashed-0 {
   font-family: var(--font-number);
+}
+
+strong {
+  font-weight: 700;
 }
