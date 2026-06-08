@@ -72,6 +72,7 @@ pub trait Problematic<T> {
 #[derive(Clone, PartialEq, Debug)]
 pub enum PotentialProblems {
     // candidate list
+    NoCandidateList,
     NoCandidates,
     TooManyCandidates {
         actual: usize,
@@ -149,6 +150,7 @@ impl PotentialProblems {
     pub fn translate(&self, locale: &Locale) -> String {
         match self {
             // candidate list
+            PotentialProblems::NoCandidateList => trans!("problems.no_candidate_list", *locale),
             PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
             PotentialProblems::TooManyCandidates { actual, max } => {
                 trans!("problems.too_many_candidates", *locale, actual, max)
@@ -270,6 +272,7 @@ impl PotentialProblems {
     pub fn severity(&self) -> Severity {
         match &self {
             // candidate list
+            PotentialProblems::NoCandidateList => Severity::Error,
             PotentialProblems::NoCandidates => Severity::Error,
             PotentialProblems::TooManyCandidates { .. } => Severity::Warn,
             PotentialProblems::DuplicateDistricts => Severity::Error,
