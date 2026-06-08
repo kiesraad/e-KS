@@ -36,7 +36,8 @@
     cursor: pointer;
   }
 
-  &:has(a):hover {
+  &:has(a):hover,
+  &:is(a):hover {
     --card-bg: var(--gray-25);
     --card-chevron-translate: var(--space-1);
     --badge-brightness: 92%;

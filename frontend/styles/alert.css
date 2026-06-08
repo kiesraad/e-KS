@@ -9,7 +9,9 @@
   padding-block: var(--alert-py, var(--space-4));
   padding-inline: var(--alert-px, var(--space-6));
   text-wrap: wrap;
+  position: relative;
 
+  
   &:has(strong) {
     font-weight: var(--font-weight-light);
   }
