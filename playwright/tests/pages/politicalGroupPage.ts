@@ -4,6 +4,7 @@ export class PoliticalGroupPage {
   readonly headerGeneralInformation: Locator;
   readonly selectMoreThan16Seats: Locator;
   readonly selectLessThan16Seats: Locator;
+  readonly selectNoSeats: Locator;
   readonly textfieldRegisteredDesignation: Locator;
   readonly buttonSaveAndNext: Locator;
 
@@ -19,6 +20,9 @@ export class PoliticalGroupPage {
     });
     this.selectLessThan16Seats = this.page.getByRole("radio", {
       name: "1 tot 15 zetels",
+    });
+    this.selectNoSeats = this.page.getByRole("radio", {
+      name: "0 zetels",
     });
     this.textfieldRegisteredDesignation = this.page.getByRole("textbox", {
       name: "Geregistreerde aanduiding",
