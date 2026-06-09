@@ -39,7 +39,7 @@ mod tests {
 
     #[tokio::test]
     async fn security_renders_text() {
-        // This text is almost useless, except that it forces (at compile time, most likely)
+        // This test is almost useless, except that it forces (at compile time, most likely)
         // that security.txt is a text/plain.
         let text = security_txt(SecurityTxt {}).await;
         let body = response_body_string(text.clone().into_response()).await;
