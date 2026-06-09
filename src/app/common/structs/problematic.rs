@@ -30,7 +30,10 @@ pub struct Problems {
 
 impl Problems {
     pub fn new_empty() -> Self {
-        Self { potential_problems: Vec::new(), info_problems: Vec::new() }
+        Self {
+            potential_problems: Vec::new(),
+            info_problems: Vec::new(),
+        }
     }
 
     /// Returns true if there are no [`Problems::potential_problems`]
@@ -84,7 +87,10 @@ impl Problems {
 
     /// merge multiple Problems struct by concatenating all potential and info problems
     pub fn merge(problems: Vec<Self>) -> Self {
-        let mut result = Self { potential_problems: Vec::new(), info_problems: Vec::new() };
+        let mut result = Self {
+            potential_problems: Vec::new(),
+            info_problems: Vec::new(),
+        };
         for problem in problems {
             result.potential_problems.extend(problem.potential_problems);
             result.info_problems.extend(problem.info_problems);
@@ -96,6 +102,12 @@ impl Problems {
 pub trait Problematic<T> {
     /// Returns all potential problems of its own and of all children
     fn get_problems(&self, additional_data: T) -> Problems;
+}
+
+#[derive(Debug, Clone, Serialize)]
+pub struct WithProblems<T> {
+    pub data: T,
+    pub problems: Problems
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
@@ -136,8 +148,8 @@ pub enum PotentialProblems {
     TooYoungDateOfBirth,
 
     // name related
-    NoInitials,
-    NoLastName,
+    NoInitials(Severity),
+    NoLastName(Severity),
 
     // address related
     IncompleteAddress {
@@ -204,8 +216,8 @@ impl PotentialProblems {
             }
 
             // name related
-            PotentialProblems::NoInitials => trans!("problems.no_initials", *locale),
-            PotentialProblems::NoLastName => trans!("problems.no_last_name", *locale),
+            PotentialProblems::NoInitials(..) => trans!("problems.no_initials", *locale),
+            PotentialProblems::NoLastName(..) => trans!("problems.no_last_name", *locale),
 
             // address related
             PotentialProblems::IncompleteAddress { .. } => {
@@ -243,8 +255,8 @@ impl PotentialProblems {
             PotentialProblems::NoRepresentative => Severity::Warn,
 
             // name related
-            PotentialProblems::NoInitials => Severity::Error,
-            PotentialProblems::NoLastName => Severity::Error,
+            PotentialProblems::NoInitials(severity) => *severity,
+            PotentialProblems::NoLastName(severity) => *severity,
 
             // address related
             PotentialProblems::IncompleteAddress { severity, .. } => *severity,
@@ -260,7 +272,7 @@ pub enum InfoProblems {
     FewCandidatesWithoutGender { count: usize, total: usize },
     NoPreviousElectionResults,
     NoSubstituteSubmitter,
-    NoDesignationType,
+    NoListDesignation,
     VeryOldDateOfBirth,
     NoInitials,
     NoLastName,
@@ -282,7 +294,7 @@ impl InfoProblems {
             InfoProblems::NoSubstituteSubmitter => {
                 trans!("problems.no_substitute_submitter", *locale)
             }
-            InfoProblems::NoDesignationType => trans!("problems.no_designation_type", *locale),
+            InfoProblems::NoListDesignation => trans!("problems.no_designation_type", *locale),
             InfoProblems::NoPreviousElectionResults => {
                 trans!("problems.no_previous_election_results", *locale)
             }
@@ -360,85 +372,91 @@ mod tests {
 
     #[test]
     fn highest_severity_none_when_no_problems() {
-        let no_problems = Problems{potential_problems: Vec::new(), info_problems: Vec::new()};
+        let no_problems = Problems {
+            potential_problems: Vec::new(),
+            info_problems: Vec::new(),
+        };
         assert_eq!(no_problems.highest_severity(), None);
         assert_eq!(no_problems.highest_severity_class(), "ok");
-        assert!(!no_problems.has_severity_or_higher(Severity::Info, ));
-        assert!(!no_problems.has_severity_or_higher(Severity::Warn, ));
-        assert!(!no_problems.has_severity_or_higher(Severity::Error, ));
+        assert!(!no_problems.has_severity_or_higher(Severity::Info,));
+        assert!(!no_problems.has_severity_or_higher(Severity::Warn,));
+        assert!(!no_problems.has_severity_or_higher(Severity::Error,));
         assert!(no_problems.is_all_good());
     }
 
     #[test]
     fn highest_severity_info_when_only_info() {
-        let only_info = WithProblems(vec![PotentialProblems::IncompleteAddress {
-            severity: Severity::Info,
-            problems: Vec::new(),
-        }]);
-        assert_eq!(only_info.highest_severity(()), Some(Severity::Info));
-        assert_eq!(only_info.highest_severity_class(()), "info");
-        assert!(only_info.has_severity_or_higher(Severity::Info, ()));
-        assert!(!only_info.has_severity_or_higher(Severity::Warn, ()));
-        assert!(!only_info.has_severity_or_higher(Severity::Error, ()));
-        assert!(!only_info.is_all_good(()));
+        let only_info = Problems {
+            info_problems: vec![InfoProblems::NoLastName],
+            potential_problems: Vec::new(),
+        };
+        assert_eq!(only_info.highest_severity(), Some(Severity::Info));
+        assert_eq!(only_info.highest_severity_class(), "info");
+        assert!(only_info.has_severity_or_higher(Severity::Info));
+        assert!(!only_info.has_severity_or_higher(Severity::Warn));
+        assert!(!only_info.has_severity_or_higher(Severity::Error));
+        assert!(!only_info.is_all_good());
     }
 
     #[test]
     fn highest_severity_warn_when_only_warnings() {
-        let info_warn = WithProblems(vec![
-            PotentialProblems::IncompleteAddress {
-                severity: Severity::Info,
+        let info_warn = Problems {
+            info_problems: vec![InfoProblems::IncompleteAddress {
                 problems: Vec::new(),
-            },
-            PotentialProblems::IncompleteAddress {
+            }],
+            potential_problems: vec![PotentialProblems::IncompleteAddress {
                 severity: Severity::Warn,
                 problems: Vec::new(),
-            },
-        ]);
-        assert_eq!(info_warn.highest_severity(()), Some(Severity::Warn));
-        assert_eq!(info_warn.highest_severity_class(()), "warning");
-        assert!(info_warn.has_severity_or_higher(Severity::Info, ()));
-        assert!(info_warn.has_severity_or_higher(Severity::Warn, ()));
-        assert!(!info_warn.has_severity_or_higher(Severity::Error, ()));
-        assert!(!info_warn.is_all_good(()));
+            }],
+        };
+        assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
+        assert_eq!(info_warn.highest_severity_class(), "warning");
+        assert!(info_warn.has_severity_or_higher(Severity::Info,));
+        assert!(info_warn.has_severity_or_higher(Severity::Warn,));
+        assert!(!info_warn.has_severity_or_higher(Severity::Error,));
+        assert!(!info_warn.is_all_good());
     }
 
     #[test]
     fn highest_severity_error_when_mix_of_severities() {
-        let with_error = WithProblems(vec![
-            PotentialProblems::IncompleteAddress {
-                severity: Severity::Info,
+        let with_error = Problems {
+            info_problems: vec![InfoProblems::IncompleteAddress {
                 problems: Vec::new(),
-            },
-            PotentialProblems::IncompleteAddress {
-                severity: Severity::Warn,
-                problems: Vec::new(),
-            },
-            PotentialProblems::IncompleteAddress {
-                severity: Severity::Error,
-                problems: Vec::new(),
-            },
-        ]);
-        assert_eq!(with_error.highest_severity(()), Some(Severity::Error));
-        assert_eq!(with_error.highest_severity_class(()), "error");
-        assert!(with_error.has_severity_or_higher(Severity::Info, ()));
-        assert!(with_error.has_severity_or_higher(Severity::Warn, ()));
-        assert!(with_error.has_severity_or_higher(Severity::Error, ()));
-        assert!(!with_error.is_all_good(()));
+            }],
+            potential_problems: vec![
+                PotentialProblems::IncompleteAddress {
+                    severity: Severity::Warn,
+                    problems: Vec::new(),
+                },
+                PotentialProblems::IncompleteAddress {
+                    severity: Severity::Error,
+                    problems: Vec::new(),
+                },
+            ],
+        };
+        assert_eq!(with_error.highest_severity(), Some(Severity::Error));
+        assert_eq!(with_error.highest_severity_class(), "error");
+        assert!(with_error.has_severity_or_higher(Severity::Info,));
+        assert!(with_error.has_severity_or_higher(Severity::Warn,));
+        assert!(with_error.has_severity_or_higher(Severity::Error,));
+        assert!(!with_error.is_all_good());
     }
 
     #[test]
     fn no_problem_summary() {
-        let no_problems = WithProblems(vec![]);
-        assert_eq!(no_problems.problem_summary(&Locale::Nl, ()), None);
+        let no_problems = Problems::new_empty();
+        assert_eq!(no_problems.problem_summary(&Locale::Nl), None);
     }
 
     #[test]
     fn single_problem_summary() {
         let problem = PotentialProblems::NoDistricts;
-        let single_problems = WithProblems(vec![problem.clone()]);
+        let single_problems = Problems {
+            potential_problems: vec![problem.clone()],
+            info_problems: Vec::new(),
+        };
         assert_eq!(
-            single_problems.problem_summary(&Locale::Nl, ()).unwrap(),
+            single_problems.problem_summary(&Locale::Nl).unwrap(),
             problem.translate(&Locale::Nl)
         );
     }
@@ -462,8 +480,12 @@ mod tests {
                 },
             )),
         ];
-        let multiple_problems = WithProblems(problems.to_vec());
-        let summary = multiple_problems.problem_summary(&Locale::Nl, ()).unwrap();
+        let info_problems = [InfoProblems::NoLastName, InfoProblems::NoListDesignation];
+        let multiple_problems = Problems {
+            potential_problems: problems.to_vec(),
+            info_problems: info_problems.to_vec(),
+        };
+        let summary = multiple_problems.problem_summary(&Locale::Nl).unwrap();
         for problem in problems {
             assert!(summary.contains(&problem.translate(&Locale::Nl)));
         }
@@ -494,16 +516,22 @@ mod tests {
             },
         ];
         for problem in problems {
-            let summary = WithProblems(vec![problem])
-                .problem_summary(&Locale::Nl, ())
-                .unwrap();
+            let summary = Problems {
+                potential_problems: vec![problem],
+                info_problems: Vec::new(),
+            }
+            .problem_summary(&Locale::Nl)
+            .unwrap();
             assert!(summary.contains("2"));
             assert!(summary.contains("37"));
         }
         for problem in info_problems {
-            let summary = WithInfoProblems(vec![problem])
-                .problem_summary(&Locale::Nl, ())
-                .unwrap();
+            let summary = Problems {
+                info_problems: vec![problem],
+                potential_problems: Vec::new(),
+            }
+            .problem_summary(&Locale::Nl)
+            .unwrap();
             assert!(summary.contains("2"));
             assert!(summary.contains("37"));
         }

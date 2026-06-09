@@ -2,8 +2,8 @@ use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
     AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict,
-    candidate_lists::{CandidateWithProblems, FullCandidateList},
-    candidates::Candidate,
+    candidate_lists::FullCandidateList,
+    candidates::{Candidate, CandidateWithProblems},
     common::{Problematic, UtcDateTime},
     core::AnyLocale,
     id_newtype,
@@ -237,8 +237,8 @@ impl CandidateList {
             .map(|(index, person_id)| {
                 let person = store.get_person(*person_id)?;
                 Ok(CandidateWithProblems {
-                    problems: person.get_problems(()),
-                    candidate: Candidate {
+                    problems: person.get_problems(store.election),
+                    data: Candidate {
                         list_id: list.id,
                         position: index + 1,
                         person,
@@ -584,7 +584,7 @@ mod tests {
         assert_eq!(1, lists.len());
         assert_eq!(list_b.id, lists[0].list.id);
         assert_eq!(1, lists[0].candidate_count());
-        assert_eq!(person_b.id, list_b_from_db.candidates[0].candidate.person.id);
+        assert_eq!(person_b.id, list_b_from_db.candidates[0].data.person.id);
         assert_eq!(0, lists[0].duplicate_districts.len());
 
         Ok(())
@@ -607,8 +607,8 @@ mod tests {
 
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(2, detail.candidates.len());
-        assert_eq!(person_a.id, detail.candidates[0].candidate.person.id);
-        assert_eq!(person_b.id, detail.candidates[1].candidate.person.id);
+        assert_eq!(person_a.id, detail.candidates[0].data.person.id);
+        assert_eq!(person_b.id, detail.candidates[1].data.person.id);
 
         Ok(())
     }
@@ -650,10 +650,10 @@ mod tests {
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
 
         assert_eq!(detail.candidates.len(), 2);
-        assert_eq!(detail.candidates[0].candidate.person.id, person_a.id);
-        assert_eq!(detail.candidates[0].candidate.position, 1);
-        assert_eq!(detail.candidates[1].candidate.person.id, person_b.id);
-        assert_eq!(detail.candidates[1].candidate.position, 2);
+        assert_eq!(detail.candidates[0].data.person.id, person_a.id);
+        assert_eq!(detail.candidates[0].data.position, 1);
+        assert_eq!(detail.candidates[1].data.person.id, person_b.id);
+        assert_eq!(detail.candidates[1].data.position, 2);
 
         Ok(())
     }
@@ -690,7 +690,7 @@ mod tests {
 
         let detail = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(detail.candidates.len(), 1);
-        assert_eq!(detail.candidates[0].candidate.person.id, person_b.id);
+        assert_eq!(detail.candidates[0].data.person.id, person_b.id);
 
         Ok(())
     }

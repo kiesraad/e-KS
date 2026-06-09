@@ -32,10 +32,11 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
         &SortDirection::Asc,
     )?
     .into_iter()
-    .filter(|p| p.is_all_good(()))
+    .filter(|p| p.problems.is_all_good())
+    .map(|p| p.data)
     .take(FIXTURE_CANDIDATE_LIST_SIZE)
     .collect::<Vec<_>>();
-    let person_ids = collect_person_ids(persons);
+    let person_ids = collect_person_ids(persons.into_iter().map(|p| p.data).collect());
     let valid_person_ids = collect_person_ids(valid_persons);
 
     let candidate_list = CandidateList {

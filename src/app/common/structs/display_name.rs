@@ -2,8 +2,9 @@ use std::str::FromStr;
 
 use crate::{
     OptionAsStrExt,
-    common::{PotentialProblems, Problematic},
+    common::{PotentialProblems, Problematic, Problems},
     form::{ValidationError, validate_teletex_chars},
+    list_designation::ListDesignation,
     transparent_string,
 };
 
@@ -39,12 +40,17 @@ impl FromStr for DisplayName {
     }
 }
 
-impl Problematic<()> for Option<DisplayName> {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        if self.is_empty_or_none() {
-            vec![PotentialProblems::NoDisplayName]
-        } else {
-            Vec::new()
+impl Problematic<Option<ListDesignation>> for Option<DisplayName> {
+    fn get_problems(&self, list_designation: Option<ListDesignation>) -> Problems {
+        let potential_problems =
+            if list_designation != Some(ListDesignation::Blank) && self.is_empty_or_none() {
+                vec![PotentialProblems::NoDisplayName]
+            } else {
+                Vec::new()
+            };
+        Problems {
+            potential_problems,
+            info_problems: Vec::new(),
         }
     }
 }

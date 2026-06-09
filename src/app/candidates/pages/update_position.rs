@@ -5,7 +5,7 @@ use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidatePosition, CandidatePositionForm},
-    common::FormAction,
+    common::{FormAction, Problematic},
     filters,
     form::FormData,
     redirect_success,
@@ -198,8 +198,8 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
-        assert_eq!(full_list.candidates[0].person.id, person_b.id);
-        assert_eq!(full_list.candidates[1].person.id, person_a.id);
+        assert_eq!(full_list.candidates[0].data.person.id, person_b.id);
+        assert_eq!(full_list.candidates[1].data.person.id, person_a.id);
 
         Ok(())
     }
@@ -248,7 +248,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
-        assert_eq!(full_list.candidates[0].person.id, person_b.id);
+        assert_eq!(full_list.candidates[0].data.person.id, person_b.id);
 
         Ok(())
     }
@@ -299,8 +299,8 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
-        assert_eq!(full_list.candidates[0].person.id, person_a.id);
-        assert_eq!(full_list.candidates[1].person.id, person_b.id);
+        assert_eq!(full_list.candidates[0].data.person.id, person_a.id);
+        assert_eq!(full_list.candidates[1].data.person.id, person_b.id);
 
         Ok(())
     }

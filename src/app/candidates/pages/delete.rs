@@ -7,8 +7,8 @@ use axum::{
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList},
-    candidates::Candidate,
-    common::Problematic,
+    candidates::{Candidate, CandidateWithProblems},
+    common::{Problematic, Severity},
     filters,
     form::{EmptyForm, FormData},
 };
@@ -180,7 +180,7 @@ mod tests {
 
         let updated_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(updated_list.candidates.len(), 1);
-        assert_eq!(updated_list.candidates[0].candidate.person.id, other_person.id);
+        assert_eq!(updated_list.candidates[0].data.person.id, other_person.id);
 
         let removed = store.get_person(person.id);
         assert!(removed.is_err());

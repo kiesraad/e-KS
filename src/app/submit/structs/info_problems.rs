@@ -8,6 +8,9 @@ use crate::{
     political_groups::PoliticalGroup,
 };
 
+// TODO salvage the paths, throw away the rest
+// TODO probably have both fix path impls be part of problematic.rs
+// TODO check which of these redirect to an overlay and need the back path to be set
 impl InfoProblems {
     pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
         match self {
@@ -29,48 +32,8 @@ impl InfoProblems {
     pub fn general_fix_path(&self) -> String {
         match self {
             InfoProblems::NoSubstituteSubmitter => ListSubmitter::view_path().to_string(),
-            InfoProblems::NoDesignationType => ListDesignation::update_path().to_string(),
+            InfoProblems::NoListDesignation => ListDesignation::update_path().to_string(),
             _ => PoliticalGroup::update_path().to_string(),
         }
-    }
-
-    pub fn find_all(store: &AppStore) -> Vec<InfoProblems> {
-        let mut problems = Vec::new();
-        problems.extend(Self::find_general_problems(store));
-        problems.extend(Self::find_list_problems(store));
-
-        problems
-    }
-
-    fn find_general_problems(store: &AppStore) -> Vec<InfoProblems> {
-        let mut problems = Vec::new();
-        if store.get_political_group().list_designation.is_none() {
-            problems.push(InfoProblems::NoDesignationType);
-        }
-        if store.get_substitute_submitters().is_empty() {
-            problems.push(InfoProblems::NoSubstituteSubmitter);
-        }
-        problems.extend(
-            store
-                .get_name_authorisations()
-                .iter()
-                .flat_map(|na| na.get_info_problems(())),
-        );
-
-        problems
-    }
-
-    fn find_list_problems(store: &AppStore) -> Vec<InfoProblems> {
-        let mut problems = Vec::new();
-        problems.extend(
-            CandidateListSummary::list(store)
-                .iter()
-                .flat_map(|candidate_list| {
-                    let mut problems = candidate_list.get_info_problems(());
-                    problems.extend(candidate_list.get_deviation_problems(store));
-                    problems
-                }),
-        );
-        problems
     }
 }

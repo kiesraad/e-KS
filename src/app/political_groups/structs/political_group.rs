@@ -1,6 +1,9 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
-    common::{DisplayName, InfoProblems, PotentialProblems, PreviousElectionResults, Problematic},
+    common::{
+        DisplayName, InfoProblems, PotentialProblems, PreviousElectionResults, Problematic,
+        Problems,
+    },
     list_designation::ListDesignation,
 };
 use serde::{Deserialize, Serialize};
@@ -13,21 +16,12 @@ pub struct PoliticalGroup {
 }
 
 impl Problematic<()> for PoliticalGroup {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        let mut problems = Vec::new();
-        problems.extend(self.previous_election_results.get_problems(()));
-        if self.list_designation == Some(ListDesignation::Blank) {
-            return problems;
-        }
-        problems.extend(self.display_name.get_problems(()));
-        problems
-    }
-    
-    fn get_info_problems(&self, _: ()) -> Vec<InfoProblems> {
-        let mut problems = Vec::new();
-        problems.extend(self.previous_election_results.get_info_problems(()));
-        problems.extend(self.display_name.get_info_problems(()));
-        problems
+    fn get_problems(&self, _: ()) -> Problems {
+        Problems::merge(vec![
+            self.display_name.get_problems(self.list_designation),
+            self.list_designation.get_problems(()),
+            self.previous_election_results.get_problems(()),
+        ])
     }
 }
 
@@ -94,33 +88,38 @@ mod tests {
         }
         .get_problems(());
 
-        assert_eq!(empty_items.len(), 2);
-        assert!(empty_items.contains(&PotentialProblems::NoDisplayName));
-        assert!(empty_items.contains(&PotentialProblems::NoPreviousElectionResults));
+        assert_eq!(empty_items.potential_problems.len(), 1);
+        assert!(empty_items.potential_problems.contains(&PotentialProblems::NoDisplayName));
+        
+        assert_eq!(empty_items.info_problems.len(), 2);
+        assert!(empty_items.info_problems.contains(&InfoProblems::NoPreviousElectionResults));
+        assert!(empty_items.info_problems.contains(&InfoProblems::NoListDesignation));
     }
 
     #[test]
-    fn incomplete_items_complete() {
-        let complete_items = PoliticalGroup {
+    fn complete_no_problems() {
+        let problems = PoliticalGroup {
             previous_election_results: Some(PreviousElectionResults::OneToFifteenSeats),
             list_designation: Some(ListDesignation::Standalone),
             display_name: DisplayName::from_str("test").ok(),
         }
         .get_problems(());
 
-        assert!(complete_items.is_empty());
+        assert!(problems.potential_problems.is_empty());
+        assert!(problems.info_problems.is_empty());
     }
 
     #[test]
-    fn incomplete_items_blank_list() {
-        let empty_items = PoliticalGroup {
+    fn complete_blank_list_no_problems() {
+        let problems = PoliticalGroup {
             previous_election_results: None,
             list_designation: Some(ListDesignation::Blank),
             display_name: None,
         }
         .get_problems(());
 
-        assert!(empty_items.is_empty());
+        assert!(problems.potential_problems.is_empty());
+        assert!(problems.info_problems.is_empty());
     }
 
     #[test]

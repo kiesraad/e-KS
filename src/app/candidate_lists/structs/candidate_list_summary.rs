@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppStore, ElectoralDistrict, OptionAsStrExt,
     candidate_lists::{CandidateList, FullCandidateList},
-    common::{InfoProblems, PotentialProblems, Problematic, Problems},
+    common::{InfoProblems, PotentialProblems, Problematic, Problems, WithProblems},
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize)]
@@ -12,6 +12,8 @@ pub struct CandidateListSummary {
     pub max_count: usize,
     pub duplicate_districts: Vec<ElectoralDistrict>,
 }
+
+pub type CandidateListWithProblems = WithProblems<CandidateListSummary>;
 
 impl Problematic<FullCandidateList> for CandidateListSummary {
     fn get_problems(&self, full_list: FullCandidateList) -> Problems {
@@ -33,11 +35,11 @@ impl CandidateListSummary {
         let mut with_first_name = 0;
         let mut with_gender = 0;
         for candidate in full_list.candidates {
-            if !candidate.candidate.person.name.first_name.is_empty_or_none() {
+            if !candidate.data.person.name.first_name.is_empty_or_none() {
                 with_first_name += 1;
             }
 
-            if candidate.candidate.person.personal_data.gender.is_some() {
+            if candidate.data.person.personal_data.gender.is_some() {
                 with_gender += 1;
             }
         }

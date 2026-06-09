@@ -22,7 +22,7 @@ pub async fn index(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let problems = AllProblems::find_all(&store);
+    let problems = AllProblems::find_all(&store)?;
 
     Ok(HtmlTemplate(
         IndexTemplate {

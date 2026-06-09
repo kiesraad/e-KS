@@ -38,7 +38,7 @@ pub async fn audit_log_detail(
         AuditLogDetail::compute(&events, event_id, locale).ok_or(AppError::GenericNotFound)?;
 
     let temp_store = create_temp_store(&store, event_id);
-    let is_downloadable_state = AllProblems::find_all(&temp_store).models_downloadable();
+    let is_downloadable_state = AllProblems::find_all(&temp_store)?.models_downloadable();
 
     Ok(HtmlTemplate(
         AuditLogDetailTemplate {
@@ -69,7 +69,7 @@ pub async fn audit_log_gen_documents(
 ) -> Result<impl IntoResponse, AppError> {
     let temp_store = create_temp_store(&store, event_id);
 
-    if !AllProblems::find_all(&temp_store).models_downloadable() {
+    if !AllProblems::find_all(&temp_store)?.models_downloadable() {
         return Err(AppError::IncompleteData(
             "Documents cannot be downloaded for this version",
         ));

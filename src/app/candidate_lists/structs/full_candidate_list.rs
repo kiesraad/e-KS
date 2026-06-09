@@ -1,19 +1,16 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, AppStore, candidate_lists::{CandidateList, CandidateListId}, candidates::Candidate, common::Problems, persons::PersonId
+    AppError, AppStore,
+    candidate_lists::{CandidateList, CandidateListId},
+    candidates::CandidateWithProblems,
+    persons::PersonId,
 };
 
 #[derive(Debug, Clone, Serialize)]
 pub struct FullCandidateList {
     pub list: CandidateList,
     pub candidates: Vec<CandidateWithProblems>,
-}
-
-#[derive(Debug, Clone, Serialize)]
-pub struct CandidateWithProblems {
-    pub candidate: Candidate,
-    pub problems: Problems
 }
 
 impl FullCandidateList {
@@ -28,15 +25,20 @@ impl FullCandidateList {
     pub fn get_index(&self, person_id: PersonId) -> Option<usize> {
         self.candidates
             .iter()
-            .position(|c| c.candidate.person.id == person_id)
+            .position(|c| c.data.person.id == person_id)
     }
 
     pub fn contains(&self, person_id: PersonId) -> bool {
-        self.candidates.iter().any(|c| c.candidate.person.id == person_id)
+        self.candidates
+            .iter()
+            .any(|c| c.data.person.id == person_id)
     }
 
     pub fn get_ids(&self) -> Vec<PersonId> {
-        self.candidates.iter().map(|c| c.candidate.person.id).collect()
+        self.candidates
+            .iter()
+            .map(|c| c.data.person.id)
+            .collect()
     }
 
     pub fn id(&self) -> CandidateListId {

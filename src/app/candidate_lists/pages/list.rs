@@ -4,9 +4,9 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
     candidate_lists::{
-        CandidateList, CandidateListSummary, FullCandidateList, pages::CandidateListsPath,
+        CandidateList, CandidateListSummary, FullCandidateList, pages::CandidateListsPath, structs::CandidateListWithProblems,
     },
-    common::{Problematic, Problems},
+    common::{Problematic, WithProblems},
     filters,
     persons::Person,
 };
@@ -14,13 +14,8 @@ use crate::{
 #[derive(Template)]
 #[template(path = "candidate_lists/pages/list.html")]
 struct CandidateListIndexTemplate {
-    candidate_lists: Vec<ListWithProblems>,
+    candidate_lists: Vec<CandidateListWithProblems>,
     total_persons: usize,
-}
-
-struct ListWithProblems {
-    summary: CandidateListSummary,
-    problems: Problems,
 }
 
 pub async fn list_candidate_lists(
@@ -31,7 +26,7 @@ pub async fn list_candidate_lists(
     let mut candidate_lists = Vec::new();
     for summary in CandidateListSummary::list(&store) {
         let problems = summary.get_problems(FullCandidateList::get(&store, summary.list.id)?);
-        candidate_lists.push(ListWithProblems { summary, problems });
+        candidate_lists.push(CandidateListWithProblems { data: summary, problems });
     }
 
     let total_persons = store.get_person_count();

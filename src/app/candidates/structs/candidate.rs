@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{candidate_lists::CandidateListId, persons::Person};
+use crate::{candidate_lists::CandidateListId, common::{Problems, WithProblems}, persons::Person};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Candidate {
@@ -8,3 +8,5 @@ pub struct Candidate {
     pub position: usize,
     pub person: Person,
 }
+
+pub type CandidateWithProblems = WithProblems<Candidate>;

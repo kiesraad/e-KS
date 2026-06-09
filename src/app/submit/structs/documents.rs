@@ -1,7 +1,7 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::Problematic,
+    common::{Problematic, Severity},
     core::{ModelLocale, Pdf, ZipResponseWriter},
     list_designation::ListDesignation,
     submit::structs::{
@@ -121,10 +121,9 @@ impl DocumentData {
         let event_id = store.current_event_id();
         let event_hash = store.current_event_hash();
 
-        let FullCandidateList {
-            list,
-            mut candidates,
-        } = FullCandidateList::get(store, list_id)?;
+        let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
+        let mut candidates = candidates.into_iter().map(|c| c.data).collect::<Vec<_>>();
+
         let ordered_candidates = ordered_candidates(&mut candidates, locale)?;
         let detailed_candidates = candidates
             .iter()
@@ -137,7 +136,11 @@ impl DocumentData {
         let designation = group.effective_display_name()?;
 
         let list_submitter = store.get_list_submitter();
-        if list_submitter.is_empty() || !list_submitter.is_all_good(()) {
+        if list_submitter.is_empty()
+            || !list_submitter
+                .get_problems(())
+                .has_severity_or_higher(Severity::Error)
+        {
             return Err(AppError::IncompleteData("Incomplete list submitter"));
         }
         let list_submitter = list_submitter.try_into()?;

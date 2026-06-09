@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppEvent, AppStore,
+    AppError, AppEvent, AppStore, ElectionConfig,
     common::{
         DutchAddress, FullName, Gender, PotentialProblems, Problematic, Problems, Severity,
-        UtcDateTime,
+        UtcDateTime, WithProblems,
     },
     core::AnyLocale,
     id_newtype,
@@ -24,16 +24,18 @@ pub struct Person {
     pub updated_at: UtcDateTime,
 }
 
-impl Problematic<()> for Person {
-    fn get_problems(&self, _: ()) -> Problems {
+pub type PersonWithProblems = WithProblems<Person>;
+
+impl Problematic<ElectionConfig> for Person {
+    fn get_problems(&self, election: ElectionConfig) -> Problems {
         Problems::merge(vec![
-            self.name.get_problems(()),
-            self.personal_data.get_problems(()),
+            self.name.get_problems(Severity::Error),
+            self.personal_data.get_problems(election),
             if self.lives_in_nl() {
                 self.address.get_problems(Severity::Warn)
-            } else  {
+            } else {
                 self.representative.get_problems(self)
-            }
+            },
         ])
     }
 }
@@ -50,17 +52,17 @@ impl Problematic<&Person> for Option<Representative> {
             return Problems {
                 potential_problems: Vec::new(),
                 info_problems: Vec::new(),
-            }
+            };
         }
         let Some(representative) = self else {
             return Problems {
-                    potential_problems: vec![PotentialProblems::NoRepresentative],
-                    info_problems: Vec::new(),
-                }
+                potential_problems: vec![PotentialProblems::NoRepresentative],
+                info_problems: Vec::new(),
+            };
         };
 
         let problems = Problems::merge(vec![
-            representative.name.get_problems(()),
+            representative.name.get_problems(Severity::Warn),
             representative.address.get_problems(Severity::Warn),
         ]);
         let potential_problems = problems
@@ -144,15 +146,15 @@ impl Person {
             })
             .unwrap_or("")
     }
-    // TODO perhaps this can be more efficient (giving problems as argument instead of recompute?)
-    pub fn personal_info_class(&self) -> &'static str {
+
+    pub fn personal_info_class(&self, election: &ElectionConfig) -> &'static str {
         Problems::merge(vec![
-            self.name.get_problems(()),
-            self.personal_data.get_problems(()),
+            self.name.get_problems(Severity::Error),
+            self.personal_data.get_problems(election.clone()),
         ])
         .highest_severity_class()
     }
-    // TODO perhaps this can be more efficient (giving problems as argument instead of recompute?)
+
     pub fn is_representative_complete(&self) -> bool {
         self.representative.get_problems(self).is_all_good()
     }
@@ -203,7 +205,7 @@ impl Person {
         offset: usize,
         sort_field: &PersonSort,
         sort_direction: &SortDirection,
-    ) -> Result<Vec<Person>, AppError> {
+    ) -> Result<Vec<PersonWithProblems>, AppError> {
         let mut persons = store.get_persons();
         persons.sort_by(|a, b| compare_persons(a, b, sort_field));
 
@@ -211,16 +213,26 @@ impl Person {
             persons.reverse();
         }
 
-        Ok(persons.into_iter().skip(offset).take(limit).collect())
+        Ok(persons
+            .into_iter()
+            .skip(offset)
+            .take(limit)
+            .map(|person| PersonWithProblems {
+                problems: person.get_problems(store.election),
+                data: person,
+            })
+            .collect())
     }
 }
 
 #[cfg(test)]
 mod tests {
+    use std::str::FromStr;
+
     use super::*;
     use crate::{
         AppStore,
-        common::{BsnOrNoneConfirmed, EmptyAddressProblems},
+        common::{BsnOrNoneConfirmed, CountryCode, EmptyAddressProblems},
         pagination::SortDirection,
         persons::PersonSort,
         test_utils::{
@@ -337,9 +349,15 @@ mod tests {
         let total = store.get_person_count();
         assert_eq!(total, 2);
 
-        let persons = Person::list(&store, 10, 0, &PersonSort::LastName, &SortDirection::Asc)?;
+        let persons = Person::list(
+            &store,
+            10,
+            0,
+            &PersonSort::LastName,
+            &SortDirection::Asc,
+        )?;
         assert_eq!(persons.len(), 2);
-        assert_eq!(persons[0].name.last_name.to_string(), "Bakker");
+        assert_eq!(persons[0].data.name.last_name.to_string(), "Bakker");
 
         Ok(())
     }
@@ -415,7 +433,9 @@ mod tests {
 
     #[test]
     fn complete_person_has_no_problems() {
-        assert!(sample_person(PersonId::new()).get_problems(()).is_empty());
+        let problems = sample_person(PersonId::new()).get_problems(ElectionConfig::EK27);
+        assert!(problems.potential_problems.is_empty());
+        assert!(problems.info_problems.is_empty());
     }
 
     #[test]
@@ -424,7 +444,8 @@ mod tests {
         person.name = FullName::default();
         assert!(
             person
-                .get_problems(())
+                .get_problems(ElectionConfig::EK27)
+                .potential_problems
                 .contains(&PotentialProblems::NoLastName(Severity::Error))
         );
     }
@@ -436,7 +457,8 @@ mod tests {
         person.representative = None;
         assert!(
             person
-                .get_problems(())
+                .get_problems(ElectionConfig::EK27)
+                .potential_problems
                 .contains(&PotentialProblems::NoRepresentative)
         );
     }
@@ -446,13 +468,18 @@ mod tests {
         let mut person = sample_person(PersonId::new());
         person.personal_data.country = Some("BE".parse().expect("country code"));
         person.representative = Some(Representative::default());
-        let problems = person.get_problems(());
+        let problems = person.get_problems(ElectionConfig::EK27);
         assert!(
             problems
+                .potential_problems
                 .iter()
                 .any(|p| matches!(p, PotentialProblems::RepresentativeProblem(_)))
         );
-        assert!(!problems.contains(&PotentialProblems::NoRepresentative));
+        assert!(
+            !problems
+                .potential_problems
+                .contains(&PotentialProblems::NoRepresentative)
+        );
     }
 
     #[test]
@@ -461,7 +488,8 @@ mod tests {
         person.representative = None;
         assert!(
             !person
-                .get_problems(())
+                .get_problems(ElectionConfig::EK27)
+                .potential_problems
                 .contains(&PotentialProblems::NoRepresentative)
         );
     }
@@ -470,8 +498,8 @@ mod tests {
     fn dutch_person_with_incomplete_address_produces_warnings() {
         let mut person = sample_person(PersonId::new());
         person.address = DutchAddress::default();
-        let problems = person.get_problems(());
-        assert!(problems.iter().any(|pp| match pp {
+        let problems = person.get_problems(ElectionConfig::EK27);
+        assert!(problems.potential_problems.iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Warn,
                 problems,
@@ -481,7 +509,7 @@ mod tests {
             _ => false,
         }));
 
-        assert!(problems.iter().any(|pp| match pp {
+        assert!(problems.potential_problems.iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Warn,
                 problems,
@@ -498,34 +526,49 @@ mod tests {
         person.personal_data.country = Some("BE".parse().expect("country code"));
         person.address = DutchAddress::default();
         person.representative = Some(complete_representative());
-        let problems = person.get_problems(());
-        assert!(!problems.contains(&PotentialProblems::IncompleteAddress {
-            severity: Severity::Warn,
-            problems: vec![EmptyAddressProblems::StreetName]
-        }));
-        assert!(!problems.contains(&PotentialProblems::NoRepresentative));
+        let problems = person.get_problems(ElectionConfig::EK27);
+        assert!(
+            !problems
+                .potential_problems
+                .contains(&PotentialProblems::IncompleteAddress {
+                    severity: Severity::Warn,
+                    problems: vec![EmptyAddressProblems::StreetName]
+                })
+        );
+        assert!(
+            !problems
+                .potential_problems
+                .contains(&PotentialProblems::NoRepresentative)
+        );
     }
 
     #[test]
     fn representative_is_complete_requires_name_and_address() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country = CountryCode::from_str("NL").ok();
         let mut representative = complete_representative();
-        assert!(representative.is_all_good(()));
+
+        assert!(
+            Some(representative.clone())
+                .get_problems(&person)
+                .is_all_good()
+        );
 
         representative.address = DutchAddress::default();
-        assert!(!representative.is_all_good(()));
+        assert!(!Some(representative).get_problems(&person).is_all_good());
     }
 
     #[test]
     fn personal_info_complete_requires_core_fields() {
         let mut person = sample_person(PersonId::new());
         person.personal_data.bsn = None;
-        assert_eq!(person.personal_info_class(), "warning");
+        assert_eq!(person.personal_info_class(&ElectionConfig::EK27), "warning");
 
         person.personal_data.bsn = Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert_eq!(person.personal_info_class(), "ok");
+        assert_eq!(person.personal_info_class(&ElectionConfig::EK27), "ok");
 
         person.personal_data.date_of_birth = None;
-        assert_eq!(person.personal_info_class(), "error");
+        assert_eq!(person.personal_info_class(&ElectionConfig::EK27), "error");
     }
 
     #[test]
@@ -545,16 +588,16 @@ mod tests {
         let mut dutch_person = sample_person(PersonId::new());
         dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert!(dutch_person.is_all_good(()));
+        assert!(dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
 
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
-        assert!(!non_dutch_person.is_all_good(()));
+        assert!(!non_dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
 
         non_dutch_person.representative = Some(complete_representative());
-        assert!(non_dutch_person.is_all_good(()));
+        assert!(non_dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
     }
 }

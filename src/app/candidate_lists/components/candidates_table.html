@@ -15,25 +15,25 @@
   <tbody>
     {% for candidate in full_list.candidates %}
       <tr class="clickable {{ candidate.problems.highest_severity_class() }}"
-          data-id="{{ candidate.candidate.person.id }}">
+          data-id="{{ candidate.data.person.id }}">
         <td class="drag-handle"></td>
         <td>
-          <span class="badge badge-position">{{ candidate.candidate.position }}</span>
+          <span class="badge badge-position">{{ candidate.data.position }}</span>
         </td>
         <td>
-          <strong>{{ candidate.candidate.person.name.last_name_with_prefix_appended() }},</strong>
-          {{ candidate.candidate.person|initials_as_printed_on_list }}
+          <strong>{{ candidate.data.person.name.last_name_with_prefix_appended() }},</strong>
+          {{ candidate.data.person|initials_as_printed_on_list }}
         </td>
         <td>
-          {% if let Some(place_of_residence) = candidate.candidate.person.personal_data.place_of_residence %}
+          {% if let Some(place_of_residence) = candidate.data.person.personal_data.place_of_residence %}
             {{ place_of_residence }}
           {% endif %}
-          {% if let Some(country) = candidate.candidate.person.personal_data.country && !candidate.candidate.person.lives_in_nl() %}
+          {% if let Some(country) = candidate.data.person.personal_data.country && !candidate.data.person.lives_in_nl() %}
             ({{ country }})
           {% endif %}
         </td>
         <td>
-          <a href="{{ candidate.candidate.update_position_path() }}"
+          <a href="{{ candidate.data.update_position_path() }}"
              aria-label="{{ "action.edit"|trans }}"
              {% if let Some(summary) = candidate.problems.problem_summary(locale) %}title="{{ summary }}"{% endif %}>
             <span>{{ "action.edit"|trans }}</span>
