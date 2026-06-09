@@ -19,7 +19,11 @@
           <h4>{{ "common.step"|trans("1") }}</h4>
           {% if general_problems > 0 %}
             <p class="{{ general_problems_severity }}">
-              {% if general_problems == 1 %}{{ "common.possible_problems_one"|trans }}{% else %}{{ "common.possible_problems"|trans(&general_problems.to_string()) }}{% endif %}
+              {% if general_problems == 1 %}
+                {{ "common.possible_problems_one"|trans }}
+              {% else %}
+                {{ "common.possible_problems"|trans(&general_problems.to_string() ) }}
+              {% endif %}
             </p>
           {% endif %}
         </div>
@@ -41,7 +45,11 @@
           <h4>{{ "common.step"|trans("2") }}</h4>
           {% if problematic_lists > 0 %}
             <p class="{{ problematic_lists_severity }}">
-              {% if problematic_lists == 1 %}{{ "common.lists_have_problems_one"|trans }}{% else %}{{ "common.lists_have_problems"|trans(&problematic_lists.to_string()) }}{% endif %}
+              {% if problematic_lists == 1 %}
+                {{ "common.lists_have_problems_one"|trans }}
+              {% else %}
+                {{ "common.lists_have_problems"|trans(&problematic_lists.to_string() ) }}
+              {% endif %}
             </p>
           {% endif %}
         </div>

@@ -62,8 +62,21 @@ impl PoliticalGroup {
             .is_some_and(|r| r != PreviousElectionResults::ZeroSeats)
     }
 
-    pub fn is_basic_info_empty(&self) -> bool {
+    pub fn is_list_designation_type_empty(&self) -> bool {
+        self.list_designation.is_none()
+    }
+
+    pub fn is_group_information_empty(&self) -> bool {
         self.display_name.is_empty_or_none() && self.previous_election_results.is_none()
+    }
+
+    /// Check if the full general information section is empty
+    pub fn is_general_information_empty(&self, store: &AppStore) -> bool {
+        self.is_list_designation_type_empty()
+            && self.is_group_information_empty()
+            && store.get_name_authorisations().is_empty()
+            && store.get_list_submitter().is_empty()
+            && store.get_substitute_submitters().is_empty()
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {

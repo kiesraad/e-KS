@@ -16,8 +16,16 @@ pub struct IndexTemplate {
 pub async fn index(_: IndexPath, context: Context, store: AppStore) -> impl IntoResponse {
     let problems = Problems::find_all(&store);
 
+    let political_group = store.get_political_group();
+    let general_information_empty = political_group.is_general_information_empty(&store);
+
     // TODO: refactor this after the problematic refactor
-    let general_problems = problems.general.flatten(); // includes infos
+    let general_problems = if general_information_empty {
+        Vec::new()
+    } else {
+        problems.general.flatten() // includes info warnings 
+    };
+
     let list_problems = problems
         .lists
         .iter()
@@ -34,12 +42,16 @@ pub async fn index(_: IndexPath, context: Context, store: AppStore) -> impl Into
     HtmlTemplate(
         IndexTemplate {
             general_problems: general_problems.len(),
-            general_problems_severity: general_problems
-                .iter()
-                .map(|p| p.severity())
-                .max()
-                .map(|severity| severity.class())
-                .unwrap_or("success"),
+            general_problems_severity: if general_information_empty {
+                ""
+            } else {
+                general_problems
+                    .iter()
+                    .map(|p| p.severity())
+                    .max()
+                    .map(|severity| severity.class())
+                    .unwrap_or("success")
+            },
             problematic_lists: list_problems.len(),
             problematic_lists_severity: list_problems
                 .iter()

@@ -17,9 +17,9 @@ languages:
   dutch: Dutch
   frisian: Frisian
 lists_have_problems: "{} lists have problems"
-lists_have_problems_one: "1 list has problems"
+lists_have_problems_one: 1 list has problems
 possible_problems: "{} possible problems"
-possible_problems_one: "1 possible problem"
+possible_problems_one: 1 possible problem
 save_success: saved
 select_election:
   description: Select the election you want to work on to continue.
