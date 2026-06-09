@@ -116,12 +116,14 @@ pub enum PotentialProblems {
 
     // representative wrapper
     RepresentativeProblem(Box<PotentialProblems>),
+    RepresentativeUnknownAddress,
 
     // personal data
     NoBsn,
     VeryOldDateOfBirth,
     TooYoungDateOfBirth,
     NoPlaceOfResidence,
+    UnknownPlaceOfResidence,
     NoCountryOfResidence,
     NoDateOfBirth,
     NoRepresentative,
@@ -131,6 +133,7 @@ pub enum PotentialProblems {
     NoLastName(Severity),
 
     // address related
+    UnknownAddress,
     IncompleteAddress {
         severity: Severity,
         problems: Vec<EmptyAddressProblems>,
@@ -236,6 +239,11 @@ impl PotentialProblems {
                 let problem = inner.translate(locale);
                 format!("{label}: {problem}")
             }
+            PotentialProblems::RepresentativeUnknownAddress => {
+                let label = trans!("problems.representative", *locale);
+                let problem = trans!("problems.unknown_address", *locale);
+                format!("{label}: {problem}")
+            }
 
             // personal data
             PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
@@ -252,6 +260,9 @@ impl PotentialProblems {
             PotentialProblems::NoPlaceOfResidence => {
                 trans!("problems.no_place_of_residence", *locale)
             }
+            PotentialProblems::UnknownPlaceOfResidence => {
+                trans!("problems.unknown_place_of_residence", *locale)
+            }
             PotentialProblems::NoCountryOfResidence => {
                 trans!("problems.no_country_of_residence", *locale)
             }
@@ -263,6 +274,7 @@ impl PotentialProblems {
             PotentialProblems::NoLastName(_) => trans!("problems.no_last_name", *locale),
 
             // address related
+            PotentialProblems::UnknownAddress => trans!("problems.unknown_address", *locale),
             PotentialProblems::IncompleteAddress { .. } => {
                 trans!("problems.incomplete_address", *locale)
             }
@@ -295,12 +307,14 @@ impl PotentialProblems {
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
+            PotentialProblems::RepresentativeUnknownAddress => Severity::Warn,
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,
             PotentialProblems::VeryOldDateOfBirth => Severity::Info,
             PotentialProblems::TooYoungDateOfBirth => Severity::Warn,
             PotentialProblems::NoPlaceOfResidence => Severity::Error,
+            PotentialProblems::UnknownPlaceOfResidence => Severity::Warn,
             PotentialProblems::NoCountryOfResidence => Severity::Error,
             PotentialProblems::NoDateOfBirth => Severity::Error,
             PotentialProblems::NoRepresentative => Severity::Warn,
@@ -310,6 +324,7 @@ impl PotentialProblems {
             PotentialProblems::NoLastName(severity) => *severity,
 
             // address related
+            PotentialProblems::UnknownAddress => Severity::Warn,
             PotentialProblems::IncompleteAddress { severity, .. } => *severity,
         }
     }

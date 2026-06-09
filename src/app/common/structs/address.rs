@@ -75,6 +75,7 @@ impl DutchAddress {
 
 impl Problematic<Severity> for DutchAddress {
     fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+        let mut problems = Vec::new();
         let mut items = Vec::new();
 
         if self.street_name.is_empty_or_none() {
@@ -93,14 +94,18 @@ impl Problematic<Severity> for DutchAddress {
             items.push(EmptyAddressProblems::Locality);
         }
 
-        if items.is_empty() {
-            Vec::new()
-        } else {
-            vec![PotentialProblems::IncompleteAddress {
+        if !items.is_empty() {
+            problems.push(PotentialProblems::IncompleteAddress {
                 severity,
                 problems: items,
-            }]
+            });
         }
+
+        if self.known_in_bag == Some(false) {
+            problems.push(PotentialProblems::UnknownAddress);
+        }
+
+        problems
     }
 }
 

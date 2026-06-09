@@ -118,7 +118,7 @@ async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
 
 /// Check whether `locality` is an exact, known place name in the BAG.
 ///
-/// This runs the same fuzzy [`suggest`] matching as the endpoint but only
+/// This runs the same fuzzy `suggest` matching as the endpoint but only
 /// reports `true` when a suggestion equals the input exactly, so a prefix of a
 /// real locality (e.g. `Amsterda`) is rejected. `with_municipalities` also
 /// considers municipality names; `with_aliases` also considers Frisian

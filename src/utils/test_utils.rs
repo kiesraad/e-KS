@@ -66,12 +66,6 @@ pub fn parse_first_name(value: &str) -> FirstName {
     value.parse::<FirstName>().expect("first name")
 }
 
-pub fn parse_place_of_residence(value: &str) -> PlaceOfResidence {
-    value
-        .parse::<PlaceOfResidence>()
-        .expect("place of residence")
-}
-
 pub fn parse_country_code(value: &str) -> CountryCode {
     value.parse::<CountryCode>().expect("country code")
 }
@@ -155,7 +149,7 @@ pub fn sample_person(id: PersonId) -> Person {
             gender: Some(Gender::Female),
             date_of_birth: Some("01-02-1990".parse::<DateOfBirth>().unwrap()),
             bsn: Some(BsnOrNoneConfirmed::NoneConfirmed),
-            place_of_residence: Some(parse_place_of_residence("Juinen")),
+            place_of_residence: Some(PlaceOfResidence::Known("Juinen".to_string())),
             country: Some(parse_country_code("NL")),
         },
         address: sample_dutch_address("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
