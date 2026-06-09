@@ -225,6 +225,7 @@ mod tests {
             house_number: Some("10".parse().expect("house number")),
             house_number_addition: Some("B".parse().expect("house number addition")),
             street_name: Some("Spoorstraat".parse().expect("street name")),
+            known_in_bag: Some(true),
         };
         current.updated_at = UtcDateTime::default();
         let csrf_token = generate_csrf_token();

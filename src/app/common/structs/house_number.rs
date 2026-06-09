@@ -9,6 +9,15 @@ transparent_string! {
     pub struct HouseNumber(String);
 }
 
+impl HouseNumber {
+    /// Return the house number as an integer, for BAG lookups that take a
+    /// numeric house number.
+    pub fn as_number(&self) -> u32 {
+        // Note that parse will always succeed because the FromStr implementation only allows valid numeric strings
+        self.0.parse().unwrap_or_default()
+    }
+}
+
 impl FromStr for HouseNumber {
     type Err = ValidationError;
 

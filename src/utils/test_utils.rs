@@ -119,6 +119,7 @@ pub fn sample_dutch_address(
                 .expect("house number addition"),
         ),
         street_name: Some(street_name.parse::<StreetName>().expect("street name")),
+        known_in_bag: Some(true),
     }
 }
 

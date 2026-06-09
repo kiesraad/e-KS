@@ -105,6 +105,7 @@ impl PersonRecord {
                     &self.straat,
                     "street name",
                 )?),
+                known_in_bag: None,
             },
             representative: Default::default(),
             ..Default::default()

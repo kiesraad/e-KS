@@ -66,7 +66,9 @@ pub async fn update_person_address_submit(
             context,
         )
         .into_response()),
-        Ok(person) => {
+        Ok(mut person) => {
+            person.address.update_is_known_in_bag();
+
             person
                 .update_address(&store, person.address.clone())
                 .await?;

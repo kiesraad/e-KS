@@ -7,10 +7,7 @@
 pub mod eks_key;
 pub mod health;
 
-#[cfg(any(
-    all(feature = "dev-features", not(feature = "embed-bag")),
-    not(feature = "memory-serve")
-))]
+#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub mod proxy;
 
 #[cfg(test)]

@@ -150,6 +150,7 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
             .map(|postal_code| postal_code.to_string().parse::<PostalCode>())
             .transpose()
             .ok()?,
+        known_in_bag: None,
     })
 }
 

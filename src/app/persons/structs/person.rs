@@ -390,6 +390,7 @@ mod tests {
             house_number: Some("10".parse().expect("house number")),
             house_number_addition: None,
             street_name: Some("Stationsstraat".parse().expect("street name")),
+            known_in_bag: Some(true),
         }
     }
 
