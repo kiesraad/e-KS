@@ -26,7 +26,7 @@
               <div class="mb-md">
                 <ul class="warnings tags-list">
                   {% for problem in problems.general.general %}
-                    <li class="tag">
+                    <li class="tag link">
                       <a class="{{ problem.severity().class() }}"
                          href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
                     </li>
@@ -38,7 +38,7 @@
                   <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
                   <ul class="warnings tags-list">
                     {% for problem in &agent_pp.problems %}
-                      <li class="tag">
+                      <li class="tag link">
                         <a class="{{ problem.severity().class() }}"
                            href="{{ agent_pp.entity.update_path() }}">{{ problem.translate(locale) }}</a>
                       </li>
@@ -53,7 +53,7 @@
                   </div>
                   <ul class="warnings tags-list">
                     {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
-                      <li class="tag">
+                      <li class="tag link">
                         <a class="{{ problem.severity().class() }}"
                            href="{{ ListSubmitter::update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
                       </li>
@@ -66,7 +66,7 @@
                   <div class="mb-sm">{{ ss_pp.entity.name.display() }} ({{ "political_group.substitute_submitter"|trans }}):</div>
                   <ul class="warnings tags-list">
                     {% for problem in &ss_pp.problems %}
-                      <li class="tag">
+                      <li class="tag link">
                         <a class="{{ problem.severity().class() }}"
                            href="{{ ss_pp.entity.substitute_update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
                       </li>
@@ -84,7 +84,7 @@
                   <div class="mb-sm">{{ candidate_pp.entity.name.display() }}:</div>
                   <ul class="warnings tags-list">
                     {% for problem in &candidate_pp.problems %}
-                      <li class="tag">
+                      <li class="tag link">
                         <a class="{{ problem.severity().class() }}"
                            href="{{ problem.person_fix_path(&candidate_pp.entity) }}">{{ problem.translate(locale) }}</a>
                       </li>
@@ -101,7 +101,7 @@
                 <ul class="warnings tags-list">
                   {% for list_problems in &problems.lists %}
                     {% for problem in &list_problems.problems %}
-                      <li class="tag">
+                      <li class="tag link">
                         <a class="{{ problem.severity().class() }}"
                            href="{{ problem.candidate_list_fix_path(&list_problems.entity) }}">{{ problem.translate(locale) }}</a>
                       </li>
