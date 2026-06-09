@@ -25,7 +25,6 @@ Contact: mailto:security@kiesraad.nl
 Preferred-Languages: en, nl
 
 Hiring: https://www.werkenvoornederland.nl
-CSAF: https://advisories.ncsc.nl/.well-known/csaf/provider-metadata.json
 "
     )
 }
