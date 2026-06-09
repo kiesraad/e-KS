@@ -45,6 +45,6 @@ representative: Authorised person
 representative_info: "Due to this candidate living abroad, an authorised agent is required. The authorised agent will receive the letter of appointment for you."
 title: All candidates
 total: "<strong>{}</strong> candidates in total"
-with_problems: "{} with problems"
 view:
   empty: No candidates available.
+with_problems: "{} with problems"
