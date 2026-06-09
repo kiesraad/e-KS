@@ -9,6 +9,11 @@ import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 import { randomName } from "./utils/random.ts";
 import { OverviewPage } from "./pages/overviewPage.ts";
+import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
+import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
+import { Candidate } from "./models/candidate.ts";
+
 //user logs in
 test("full happy flow", async ({
     noExistingData: page,
@@ -70,7 +75,38 @@ test("full happy flow", async ({
     await page.waitForURL("/");
 
 //create candidate list and add candidates
-
+    await overviewPage.linkCandidateList.click();
+    await page.waitForURL("/candidate-lists"); 
+    const candidateListsOverviewPage = new CandidateListsOverviewPage(page);
+    await candidateListsOverviewPage.buttonAddList.click();
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await manageCandidateListPage.selectDistricts(["Selecteer alle kieskringen"]);
+    await expect(manageCandidateListPage.buttonEditList).toBeVisible();
+    
+    await new ManageCandidateListPage(page).buttonCSV.click();
+    const csvImportExport = new CsvImportExportPage(page);
+    await csvImportExport.uploadCsvFile("candidate-list-export-nh-1.csv");
+    await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
+    await expect(
+        await manageCandidateListPage.getCandidateLocator("Groot, de"),
+        ).toBeVisible();
+    
+    const candidate: Candidate = {
+          initials: "B",
+          lastName: `Beer ${randomName()}`,
+          firstName: "Bert",
+          locality: "Amsterdam",
+        };
+    
+        await manageCandidateListPage.addNewCandidates([candidate]);
+        for (const newCandidate of [candidate]) {
+          await expect(
+            await manageCandidateListPage.getCandidateLocator(
+              newCandidate.lastName,
+            ),
+          ).toBeVisible();
+        }
+    
 //submit list
 //create list and add candidates
 

@@ -104,6 +104,14 @@ export class ManageCandidateListPage {
     }
   }
 
+  async selectDistricts(districts: string[]) {
+    for (const district of districts) {
+      await this.page.getByRole("checkbox", { name: district }).check();
+    }
+    await this.buttonNext.click();
+    await this.headingCandidateList.waitFor();
+  }
+
   async removeDistricts(districts: string[]) {
     await this.buttonEditList.click();
     for (const district of districts) {
