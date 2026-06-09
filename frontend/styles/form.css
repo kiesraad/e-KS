@@ -116,7 +116,7 @@
       color: var(--gray-500);
       display: flex;
       gap: var(--space-xs);
-      align-items: flex-start;
+      align-items: center;
       margin-top: calc(-1 * var(--space-xs));
       text-wrap: balance;
     }
