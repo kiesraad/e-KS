@@ -1,8 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{
-        FullName, InfoProblems, LegalName, PotentialProblems, Problematic, Problems, Severity,
-    },
+    common::{FullName, LegalName, Problematic, Problems, Severity},
     id_newtype,
 };
 use serde::{Deserialize, Serialize};

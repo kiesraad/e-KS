@@ -1,8 +1,8 @@
 use crate::{
     AppError, AppEvent, AppStore,
     common::{
-        Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode,
-        PotentialProblems, Problematic, Problems, Severity,
+        Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode, Problematic,
+        Problems, Severity,
     },
     id_newtype,
 };
@@ -152,7 +152,7 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{EmptyAddressProblems, InfoProblems};
+    use crate::common::{EmptyAddressProblems, InfoProblems, PotentialProblems};
 
     use super::*;
 
@@ -193,6 +193,7 @@ mod tests {
     fn substitute_submitter_problems_use_info_severity() {
         let problems = incomplete_submitter(true).get_problems(());
 
+        assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
         assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
         assert!(problems.info_problems.iter().any(|pp| match pp {
             InfoProblems::IncompleteAddress { problems } => {

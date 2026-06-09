@@ -35,10 +35,7 @@ impl FullCandidateList {
     }
 
     pub fn get_ids(&self) -> Vec<PersonId> {
-        self.candidates
-            .iter()
-            .map(|c| c.data.person.id)
-            .collect()
+        self.candidates.iter().map(|c| c.data.person.id).collect()
     }
 
     pub fn id(&self) -> CandidateListId {

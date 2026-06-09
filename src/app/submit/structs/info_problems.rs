@@ -1,11 +1,6 @@
 use crate::{
-    AppStore,
-    candidate_lists::{CandidateList, CandidateListSummary},
-    common::{InfoProblems, Problematic},
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    persons::Person,
-    political_groups::PoliticalGroup,
+    candidate_lists::CandidateList, common::InfoProblems, list_designation::ListDesignation,
+    list_submitters::ListSubmitter, persons::Person, political_groups::PoliticalGroup,
 };
 
 // TODO salvage the paths, throw away the rest

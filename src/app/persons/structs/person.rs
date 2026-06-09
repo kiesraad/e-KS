@@ -150,7 +150,7 @@ impl Person {
     pub fn personal_info_class(&self, election: &ElectionConfig) -> &'static str {
         Problems::merge(vec![
             self.name.get_problems(Severity::Error),
-            self.personal_data.get_problems(election.clone()),
+            self.personal_data.get_problems(*election),
         ])
         .highest_severity_class()
     }
@@ -349,13 +349,7 @@ mod tests {
         let total = store.get_person_count();
         assert_eq!(total, 2);
 
-        let persons = Person::list(
-            &store,
-            10,
-            0,
-            &PersonSort::LastName,
-            &SortDirection::Asc,
-        )?;
+        let persons = Person::list(&store, 10, 0, &PersonSort::LastName, &SortDirection::Asc)?;
         assert_eq!(persons.len(), 2);
         assert_eq!(persons[0].data.name.last_name.to_string(), "Bakker");
 
@@ -555,6 +549,7 @@ mod tests {
         );
 
         representative.address = DutchAddress::default();
+        person.personal_data.country = CountryCode::from_str("BE").ok();
         assert!(!Some(representative).get_problems(&person).is_all_good());
     }
 
@@ -588,16 +583,28 @@ mod tests {
         let mut dutch_person = sample_person(PersonId::new());
         dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
-        assert!(dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
+        assert!(
+            dutch_person
+                .get_problems(ElectionConfig::EK27)
+                .is_all_good()
+        );
 
         let mut non_dutch_person = sample_person(PersonId::new());
         non_dutch_person.personal_data.bsn =
             Some(BsnOrNoneConfirmed::Bsn("999995972".parse().expect("bsn")));
         non_dutch_person.personal_data.country = Some("BE".parse().expect("country code"));
         non_dutch_person.address = DutchAddress::default();
-        assert!(!non_dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
+        assert!(
+            !non_dutch_person
+                .get_problems(ElectionConfig::EK27)
+                .is_all_good()
+        );
 
         non_dutch_person.representative = Some(complete_representative());
-        assert!(non_dutch_person.get_problems(ElectionConfig::EK27).is_all_good());
+        assert!(
+            non_dutch_person
+                .get_problems(ElectionConfig::EK27)
+                .is_all_good()
+        );
     }
 }

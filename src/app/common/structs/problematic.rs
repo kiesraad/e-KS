@@ -36,9 +36,9 @@ impl Problems {
         }
     }
 
-    /// Returns true if there are no [`Problems::potential_problems`]
+    /// Returns true if there are no problems and/or info problems
     pub fn is_all_good(&self) -> bool {
-        self.potential_problems.is_empty()
+        self.potential_problems.is_empty() && self.info_problems.is_empty()
     }
 
     /// Returns the highest severity of the problems, or None if there are no problems
@@ -107,7 +107,7 @@ pub trait Problematic<T> {
 #[derive(Debug, Clone, Serialize)]
 pub struct WithProblems<T> {
     pub data: T,
-    pub problems: Problems
+    pub problems: Problems,
 }
 
 #[derive(Clone, PartialEq, Debug, Serialize)]

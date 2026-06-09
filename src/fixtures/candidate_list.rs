@@ -3,7 +3,6 @@ use uuid::Uuid;
 use crate::{
     AppError, AppStore,
     candidate_lists::CandidateList,
-    common::Problematic,
     pagination::SortDirection,
     persons::{self, Person, PersonId},
 };

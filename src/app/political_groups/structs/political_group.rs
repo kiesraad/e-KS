@@ -1,9 +1,6 @@
 use crate::{
     AppError, AppEvent, AppStore, OptionAsStrExt,
-    common::{
-        DisplayName, InfoProblems, PotentialProblems, PreviousElectionResults, Problematic,
-        Problems,
-    },
+    common::{DisplayName, PreviousElectionResults, Problematic, Problems},
     list_designation::ListDesignation,
 };
 use serde::{Deserialize, Serialize};
@@ -75,6 +72,8 @@ impl PoliticalGroup {
 
 #[cfg(test)]
 mod tests {
+    use crate::common::{InfoProblems, PotentialProblems};
+
     use super::*;
 
     use std::str::FromStr;
@@ -89,11 +88,23 @@ mod tests {
         .get_problems(());
 
         assert_eq!(empty_items.potential_problems.len(), 1);
-        assert!(empty_items.potential_problems.contains(&PotentialProblems::NoDisplayName));
-        
+        assert!(
+            empty_items
+                .potential_problems
+                .contains(&PotentialProblems::NoDisplayName)
+        );
+
         assert_eq!(empty_items.info_problems.len(), 2);
-        assert!(empty_items.info_problems.contains(&InfoProblems::NoPreviousElectionResults));
-        assert!(empty_items.info_problems.contains(&InfoProblems::NoListDesignation));
+        assert!(
+            empty_items
+                .info_problems
+                .contains(&InfoProblems::NoPreviousElectionResults)
+        );
+        assert!(
+            empty_items
+                .info_problems
+                .contains(&InfoProblems::NoListDesignation)
+        );
     }
 
     #[test]
@@ -112,12 +123,11 @@ mod tests {
     #[test]
     fn complete_blank_list_no_problems() {
         let problems = PoliticalGroup {
-            previous_election_results: None,
+            previous_election_results: Some(PreviousElectionResults::ZeroSeats),
             list_designation: Some(ListDesignation::Blank),
             display_name: None,
         }
         .get_problems(());
-
         assert!(problems.potential_problems.is_empty());
         assert!(problems.info_problems.is_empty());
     }

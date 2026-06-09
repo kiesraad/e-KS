@@ -187,6 +187,7 @@ impl CandidateListSummary {
 mod tests {
     use crate::{
         AppError, AppStore,
+        ElectoralDistrict::PsAmsterdam,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{sample_candidate_list, sample_person, sample_person_with},
@@ -205,16 +206,23 @@ mod tests {
         Ok((store, ids))
     }
 
-    fn create_summary_and_get_problems(ids: Vec<PersonId>, store: &AppStore) -> Problems {
+    async fn create_summary_and_get_problems(
+        ids: Vec<PersonId>,
+        store: &AppStore,
+        districts: Vec<ElectoralDistrict>,
+        duplicate_districts: Vec<ElectoralDistrict>,
+    ) -> Result<Problems, AppError> {
         let id = CandidateListId::new();
         let mut list = sample_candidate_list(id);
         list.candidates = ids;
-        CandidateListSummary {
+        list.electoral_districts = districts;
+        list.create(store).await?;
+        Ok(CandidateListSummary {
             list,
             max_count: 20,
-            duplicate_districts: vec![ElectoralDistrict::PsAmsterdam],
+            duplicate_districts,
         }
-        .get_problems(FullCandidateList::get(store, id).unwrap())
+        .get_problems(FullCandidateList::get(store, id).unwrap()))
     }
 
     #[test]
@@ -242,7 +250,7 @@ mod tests {
     async fn no_deviation_in_first_name_usage_produces_no_warning() -> Result<(), AppError> {
         let persons = (0..5).map(|_| sample_person(PersonId::new())).collect();
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
         assert!(!problems.info_problems.iter().any(|p| matches!(
             p,
             InfoProblems::FewCandidatesWithFirstName { .. }
@@ -258,7 +266,7 @@ mod tests {
             .collect();
         persons.push(sample_person(PersonId::new())); // 1 with first name
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
         assert!(
             problems
                 .info_problems
@@ -281,12 +289,14 @@ mod tests {
             "H.",
         )); // 1 without
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
         assert!(
-            problems.info_problems.contains(&InfoProblems::FewCandidatesWithoutFirstName {
-                count: 1,
-                total: 10
-            })
+            problems
+                .info_problems
+                .contains(&InfoProblems::FewCandidatesWithoutFirstName {
+                    count: 1,
+                    total: 10
+                })
         );
         Ok(())
     }
@@ -298,7 +308,7 @@ mod tests {
             .collect();
         persons.extend((0..3).map(|_| sample_person(PersonId::new()))); // 3/10 = 30%
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
         assert!(!problems.info_problems.iter().any(|p| matches!(
             p,
             InfoProblems::FewCandidatesWithFirstName { .. }
@@ -318,11 +328,15 @@ mod tests {
             .collect();
         persons.push(sample_person(PersonId::new())); // 1 with gender
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
-        assert!(problems.info_problems.contains(&InfoProblems::FewCandidatesWithGender {
-            count: 1,
-            total: 10
-        }));
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
+        assert!(
+            problems
+                .info_problems
+                .contains(&InfoProblems::FewCandidatesWithGender {
+                    count: 1,
+                    total: 10
+                })
+        );
         Ok(())
     }
 
@@ -333,55 +347,84 @@ mod tests {
         person_without_gender.personal_data.gender = None;
         persons.push(person_without_gender);
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
         assert!(
-            problems.info_problems.contains(&InfoProblems::FewCandidatesWithoutGender {
-                count: 1,
-                total: 10
-            })
+            problems
+                .info_problems
+                .contains(&InfoProblems::FewCandidatesWithoutGender {
+                    count: 1,
+                    total: 10
+                })
         );
         Ok(())
     }
 
-     #[tokio::test]
+    #[tokio::test]
     async fn no_problems() -> Result<(), AppError> {
         let (store, ids) = make_store_with_candidates(vec![sample_person(PersonId::new())]).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(
+            ids,
+            &store,
+            vec![ElectoralDistrict::PsAmsterdam],
+            Vec::new(),
+        )
+        .await?;
 
         assert!(problems.info_problems.is_empty());
         assert!(problems.potential_problems.is_empty());
         Ok(())
     }
 
-     #[tokio::test]
+    #[tokio::test]
 
     async fn empty_list_problems() -> Result<(), AppError> {
         let (store, ids) = make_store_with_candidates(Vec::new()).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems = create_summary_and_get_problems(ids, &store, Vec::new(), Vec::new()).await?;
 
         assert_eq!(problems.potential_problems.len(), 2);
-        assert!(problems.potential_problems.contains(&PotentialProblems::NoCandidates));
-        assert!(problems.potential_problems.contains(&PotentialProblems::NoDistricts));
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::NoCandidates)
+        );
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::NoDistricts)
+        );
 
         assert!(problems.info_problems.is_empty());
 
         Ok(())
     }
 
-     #[tokio::test]
+    #[tokio::test]
     async fn list_problems_too_many() -> Result<(), AppError> {
         let persons: Vec<_> = (0..25).map(|_| sample_person(PersonId::new())).collect();
         let (store, ids) = make_store_with_candidates(persons).await?;
-        let problems = create_summary_and_get_problems(ids, &store);
+        let problems =
+            create_summary_and_get_problems(ids, &store, vec![PsAmsterdam], vec![PsAmsterdam])
+                .await?;
 
         // list with duplicate district
         let mut list = sample_candidate_list(CandidateListId::new());
         list.electoral_districts = vec![ElectoralDistrict::PsAmsterdam];
-        list.create(&store);
+        list.create(&store).await?;
 
         assert_eq!(problems.potential_problems.len(), 2);
-        assert!(problems.potential_problems.contains(&PotentialProblems::TooManyCandidates { actual: 25, max: 20 }));
-        assert!(problems.potential_problems.contains(&PotentialProblems::DuplicateDistricts));
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::TooManyCandidates {
+                    actual: 25,
+                    max: 20
+                })
+        );
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::DuplicateDistricts)
+        );
 
         assert!(problems.info_problems.is_empty());
 

@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{candidate_lists::CandidateListId, common::{Problems, WithProblems}, persons::Person};
+use crate::{candidate_lists::CandidateListId, common::WithProblems, persons::Person};
 
 #[derive(Debug, Clone, Serialize)]
 pub struct Candidate {

@@ -1,6 +1,6 @@
 use crate::{
     core::ModelLocale,
-    submit::{DocumentData, AllProblems},
+    submit::{AllProblems, DocumentData},
 };
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};

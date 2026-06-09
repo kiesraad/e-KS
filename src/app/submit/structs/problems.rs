@@ -14,7 +14,7 @@ use crate::{
 
 impl PotentialProblems {
     pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
-        let submit = SubmitPath {}.to_string();
+        let _submit = SubmitPath {}.to_string();
         match self {
             PotentialProblems::NoCandidates => list.view_path().to_string(),
             PotentialProblems::TooManyCandidates { actual, max } => {

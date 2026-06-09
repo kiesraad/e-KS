@@ -7,8 +7,8 @@ use axum::{
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList},
-    candidates::{Candidate, CandidateWithProblems},
-    common::{Problematic, Severity},
+    candidates::Candidate,
+    common::Problematic,
     filters,
     form::{EmptyForm, FormData},
 };

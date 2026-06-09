@@ -137,7 +137,7 @@ impl DocumentData {
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty()
-            || !list_submitter
+            || list_submitter
                 .get_problems(())
                 .has_severity_or_higher(Severity::Error)
         {

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     OptionAsStrExt,
     common::{
-        PotentialProblems, Problematic, Problems, Severity,
+        InfoProblems, PotentialProblems, Problematic, Problems, Severity,
         structs::problematic::EmptyAddressProblems,
     },
 };
@@ -61,13 +61,21 @@ impl Problematic<Severity> for DutchAddress {
             problems.push(EmptyAddressProblems::Locality);
         }
 
-        Problems {
-            potential_problems: if problems.is_empty() {
-                Vec::new()
-            } else {
-                vec![PotentialProblems::IncompleteAddress { severity, problems }]
-            },
-            info_problems: Vec::new(),
+        if problems.is_empty() {
+            Problems::new_empty()
+        } else if severity == Severity::Info {
+            Problems {
+                potential_problems: Vec::new(),
+                info_problems: vec![InfoProblems::IncompleteAddress { problems }],
+            }
+        } else {
+            Problems {
+                potential_problems: vec![PotentialProblems::IncompleteAddress {
+                    severity,
+                    problems,
+                }],
+                info_problems: Vec::new(),
+            }
         }
     }
 }
@@ -366,7 +374,11 @@ mod tests {
 
     #[test]
     fn international_address_is_all_good_when_required_parts_present() {
-        assert!(sample_international_address().get_problems(Severity::Info).is_all_good());
+        assert!(
+            sample_international_address()
+                .get_problems(Severity::Info)
+                .is_all_good()
+        );
     }
 
     #[test]
@@ -392,7 +404,6 @@ mod tests {
             problems.potential_problems
         );
         assert!(problems.info_problems.is_empty());
-        
     }
 
     #[test]

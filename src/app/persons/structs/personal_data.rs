@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppStore, ElectionConfig, OptionAsStrExt,
+    ElectionConfig, OptionAsStrExt,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, InfoProblems, PlaceOfResidence,
         PotentialProblems, Problematic, Problems,

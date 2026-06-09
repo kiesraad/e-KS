@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{common::{InfoProblems, PotentialProblems, Problematic, Problems}, form::ValidationError};
+use crate::{
+    common::{InfoProblems, Problematic, Problems},
+    form::ValidationError,
+};
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
@@ -37,7 +40,8 @@ impl Problematic<()> for Option<PreviousElectionResults> {
     fn get_problems(&self, _: ()) -> Problems {
         Problems {
             potential_problems: Vec::new(),
-            info_problems: self.is_none()
+            info_problems: self
+                .is_none()
                 .then_some(vec![InfoProblems::NoPreviousElectionResults])
                 .unwrap_or_default(),
         }
