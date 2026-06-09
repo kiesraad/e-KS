@@ -1,28 +1,48 @@
 .alert {
-  padding: var(--space-md);
-  max-width: 40rem;
-  margin: var(--space-md) 0;
+  background-color: var(--alert-bg);
+  border-left: 4px solid var(--alert-border-color);
+  color: var(--alert-color);
+  font-size: var(--font-size-md);
+  font-weight: var(--font-weight-bold);
+  line-height: var(--leading-md);
+  margin-block: var(--alert-margin-block, var(--space-6));
+  padding-block: var(--alert-py, var(--space-4));
+  padding-inline: var(--alert-px, var(--space-6));
+  text-wrap: wrap;
+  position: relative;
+
+  &:has(strong) {
+    font-weight: var(--font-weight-light);
+  }
+
+  &:first-of-type {
+    margin-block-start: 0;
+  }
 
   &.alert-info {
-    background-color: var(--blue-100);
-    border-left: 4px solid var(--blue-600);
-    color: var(--gray-600);
+    --alert-bg: var(--blue-100);
+    --alert-border-color: var(--blue-600);
+    --alert-color: var(--gray-600);
   }
 
   &.alert-warning {
-    background-color: var(--yellow-100);
-    border-left: 4px solid var(--yellow-300);
-    color: var(--yellow-800);
+    --alert-bg: var(--orange-100);
+    --alert-border-color: var(--orange-600);
+    --alert-color: var(--gray-600);
   }
 
   &.alert-success {
+    --alert-bg: var(--green-100);
+    --alert-border-color: var(--green-600);
+    --alert-color: var(--gray-700);
     background-color: var(--green-100);
-    color: var(--green-600);
-    border: 1px solid var(--green-300);
+    color: var(--green-700);
+    border: 1px solid var(--green-700);
     background-image: url("../icons/checkmarkSmall.svg");
     background-repeat: no-repeat;
     background-position: left var(--space-md) center;
     background-size: 1rem;
+    text-transform: capitalize;
   }
 
   &.alert-floating {
@@ -37,6 +57,10 @@
     margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
     animation: alert-float 4.5s ease-in-out forwards;
+  }
+
+  .instruction {
+    font-weight: 300;
   }
 }
 
@@ -61,5 +85,5 @@
 
 .info {
   max-width: 50em;
-  margin-bottom: var(--space-md);
+  margin-bottom: var(--space-6);
 }

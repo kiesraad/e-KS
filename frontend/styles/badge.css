@@ -1,36 +1,60 @@
-.position-badge,
-.person-badge {
+.badge {
+  background-color: var(--badge-bg, var(--blue-200));
+  border-radius: var(--rounded-xs);
+  color: var(--badge-color, var(--blue-900));
   display: inline-block;
-  width: var(--badge-size);
+  filter: brightness(var(--badge-brightness, 100%));
+  font-family: var(--font-header);
+  font-size: var(--badge-font-size, var(--font-size-xl));
+  font-weight: 600;
   height: var(--badge-size);
   line-height: var(--badge-size);
+  position: relative;
   text-align: center;
-  border-radius: var(--rounded-sm);
-  transition: background-color 0.5s ease-in-out;
+  transition-duration: 300ms;
+  transition-property: filter, background-color;
+  transition-timing-function: ease-in-out;
+  width: var(--badge-size);
 
-  font-family: var(--font-header);
-  font-size: var(--font-size-lg);
-  font-weight: 600;
-  background-color: var(--blue-200);
-}
+  &:is(.badge-candidates-list) {
+    --badge-icon: url("../icons/badge-candidates-list.svg");
+  }
 
-.person-badge {
-  vertical-align: middle;
-  background-image: url("../icons/politician-badge.svg");
-  background-repeat: no-repeat;
-  background-position: center;
-  background-size: var(--badge-size) var(--badge-size);
-}
+  &:is(.badge-candidates) {
+    --badge-icon: url("../icons/badge-candidates.svg");
+  }
 
-h2 {
-  .position-badge,
-  .person-badge {
-    margin-right: var(--space-sm);
-    font-size: var(--font-size-xl);
-    color: var(--text-color-body);
-    width: var(--badge-size-lg);
-    height: var(--badge-size-lg);
-    line-height: var(--badge-size-lg);
-    font-weight: 500;
+  &:is(.badge-data) {
+    --badge-icon: url("../icons/badge-data.svg");
+  }
+
+  &:is(.badge-politician) {
+    --badge-icon: url("../icons/badge-politician.svg");
+  }
+
+  &:is(.locked) {
+    --badge-bg: var(--gray-200);
+    --badge-icon: url("../icons/badge-locked.svg");
+  }
+
+  &:is(.warning) {
+    --badge-bg: var(--orange-200);
+    --badge-icon: url("../icons/badge-warning.svg");
+  }
+
+  &:is(.error) {
+    --badge-bg: var(--red-200);
+    --badge-icon: url("../icons/badge-error.svg");
+  }
+
+  &:not(.badge-position)::after {
+    content: "";
+    position: absolute;
+    inset: 0;
+    mask-image: var(--badge-icon, none);
+    mask-repeat: no-repeat;
+    mask-position: center;
+    mask-size: contain;
+    background-color: var(--badge-color, var(--gray-800));
   }
 }

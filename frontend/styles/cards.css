@@ -1,304 +1,108 @@
-.cards.cards-candidate-lists {
+.cards {
   display: grid;
-  grid-template-columns: repeat(12, 1fr);
-  gap: var(--space-lg);
-
-  .cards-right {
-    grid-column: span 9;
-    display: grid;
-    grid-template-columns: repeat(9, 1fr);
-    gap: var(--space-lg);
-  }
+  gap: var(--space-6);
+  grid-template-columns: repeat(auto-fit, minmax(var(--card-min-width), 1fr));
 }
 
-.cards.cards-home {
-  display: grid;
-  grid-template-columns: repeat(9, 1fr);
-  gap: var(--space-lg);
+.cards-home {
+  --card-min-height: 26rem;
+  --card-min-width: 25.25rem;
+}
 
-  .card {
-    min-height: 20rem;
-  }
+.cards-candidate-lists {
+  --card-gap: var(--space-6);
+  --card-min-width: 18.875rem;
+  --card-padding: var(--space-6);
+  --card-min-height: 18.875rem;
 }
 
 .card {
+  --badge-size: 2.5rem;
+  --alert-margin-block: 0;
+  background-color: var(--card-bg, var(--base-white));
+  border-radius: var(--rounded-lg);
+  border: 1px solid var(--card-border-color, var(--gray-200));
+  color: inherit;
   display: flex;
-  grid-column: span 3;
   flex-direction: column;
-  max-width: 100%;
-  position: relative;
-  background-color: var(--base-white);
-  padding: var(--space-lg);
-  padding-top: 2.5rem;
-  min-height: 10rem;
-  border: 1px solid var(--gray-200);
-  border-radius: var(--space-sm);
+  gap: var(--card-gap, var(--space-8));
+  min-height: var(--card-min-height, auto);
+  padding: var(--card-padding, var(--space-8));
   text-decoration: none;
+  text-wrap: balance;
 
-  h3 {
-    font-size: var(--font-size-lg);
-    color: var(--gray-800);
-    margin-bottom: var(--space-lg);
-    margin-left: 3.5rem;
+  &:has(a),
+  &:is(a) {
+    cursor: pointer;
   }
 
-  h4 {
-    font-size: var(--font-size-xl);
-    color: var(--gray-800);
-    font-weight: 600;
-    margin-top: var(--space-md);
+  &:has(a):hover,
+  &:is(a):hover {
+    --card-bg: var(--gray-25);
+    --card-chevron-translate: var(--space-1);
+    --badge-brightness: 92%;
   }
 
-  h5 {
-    font-size: var(--font-size-sm);
-    font-weight: 600;
-    color: var(--gray-700);
-    margin-bottom: var(--space-xs);
+  &:is(.card-persons) {
+    --card-padding: var(--space-6);
+    --card-gap: var(--space-6);
   }
 
-  ul.districts {
-    margin-bottom: var(--space-lg);
-  }
-
-  p {
-    font-size: var(--font-size-md);
-    color: var(--gray-600);
-    margin-bottom: var(--space-md);
-  }
-
-  a.card-action {
-    display: block;
-    font-size: var(--font-size-md);
-    color: var(--gray-600);
-    text-decoration: none;
-  }
-
-  .statistic {
-    font-size: var(--font-size-sm);
-
-    &.warning {
-      background: url("../icons/warning.svg") no-repeat left center / 1.1rem;
-      padding-left: 1.5em;
-    }
-  }
-
-  .instruction {
-    font-style: italic;
-    font-size: var(--font-size-md);
-    line-height: 1.4;
-    margin-top: var(--space-md);
-    color: var(--gray-600);
-    width: 100%;
-  }
-
-  .card-actions {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-sm);
-    margin-top: auto;
-  }
-
-  > :last-child {
-    margin-top: auto;
-    margin-bottom: 0;
-  }
-
-  .badge {
-    position: absolute;
-    top: var(--space-lg);
-    left: var(--space-lg);
-    width: 2.5rem;
-    height: 2.5rem;
-    background-color: var(--blue-200);
-    border-radius: var(--space-sm);
-    background-repeat: no-repeat;
-  }
-
-  &:hover .badge {
-    background-color: var(--blue-300);
-  }
-
-  &.card-locked .badge {
-    background-color: var(--gray-200);
-    background-image: url("../icons/locked-badge.svg");
-  }
-
-  &.card-locked:hover .badge {
-    background-color: var(--gray-300);
-  }
-
-  &.card-data .badge {
-    background-image: url("../icons/data-badge.svg");
-  }
-
-  &.card-candidate-list .badge {
-    background-image: url("../icons/candidate-list-badge.svg");
-  }
-
-  &.warning .badge {
-    background-color: var(--orange-200);
-    background-image: url("../icons/list-warning-badge.svg");
-  }
-
-  &.warning:hover .badge {
-    background-color: var(--orange-300);
-  }
-
-  &.error .badge {
-    background-color: var(--red-200);
-    background-image: url("../icons/candidate-list-error-badge.svg");
-  }
-
-  &.error:hover .badge {
-    background-color: var(--red-300);
-  }
-
-  &.card-persons {
-    position: sticky;
-    top: var(--space-lg);
-    height: fit-content;
-
-    .badge {
-      background-image: url("../icons/politician-badge.svg");
-    }
-  }
-
-  &.card-add-list {
+  &:is(.card-add-list) {
+    --card-min-height: 18.875rem;
     align-items: center;
     justify-content: center;
-    background-color: transparent;
-    background-image: none;
+  }
+
+  .card-header {
+    align-items: center;
+    color: var(--gray-800);
+    display: flex;
+    font-size: var(--font-size-xl);
+    font-weight: 700;
+    gap: var(--space-3);
+    line-height: var(--leading-xl);
+  }
+
+  .card-title {
+    color: var(--gray-700);
+    font-size: var(--font-size-2xl);
+    font-weight: 500;
+    line-height: var(--leading-2xl);
+  }
+
+  .card-content {
+    color: var(--gray-600);
+    display: flex;
+    flex-direction: column;
+    font-size: var(--font-size-sm);
+    font-weight: 300;
+    gap: var(--space-3);
+    line-height: var(--leading-sm);
+  }
+
+  ul.card-instruction {
+    list-style-position: inside;
+    list-style-type: disc;
     padding: 0;
-
-    a {
-      margin: 0;
-    }
-  }
-}
-
-a.card,
-div.card[data-href] {
-  cursor: pointer;
-  color: var(--text-color-body);
-  border-color: var(--bg-gray-darkest);
-  background-color: var(--button-color-secondary);
-  position: relative;
-
-  &::after {
-    content: "";
-    position: absolute;
-    display: inline-block;
-    right: var(--space-lg);
-    bottom: var(--space-lg);
-    width: 1.25rem;
-    height: 1.25rem;
-    background: url("../icons/chevronRight.svg") no-repeat;
-    background-size: 1.25rem;
   }
 
-  &:hover {
-    background-color: var(--button-color-secondary-hover);
-    border: 1px solid var(--bg-gray-darkest);
-  }
+  .card-footer {
+    color: var(--gray-600);
+    display: flex;
+    font-weight: 500;
+    justify-content: space-between;
+    margin-top: auto;
 
-  &:focus,
-  &:focus-visible {
-    outline: none;
-    border-color: var(--border-color-focus);
-    background-color: var(--button-color-secondary-focus);
-    box-shadow: 0 0 0 4px var(--shadow-color-focus);
-  }
-
-  &:active {
-    border-color: var(--border-color-default);
-    background-color: var(--button-color-secondary-active);
-  }
-}
-
-/* page width breakpoint */
-@media (max-width: 1700px) {
-  .cards.cards-candidate-lists {
-    .cards-right {
-      grid-template-columns: repeat(6, 1fr);
-    }
-  }
-}
-
-/* page width breakpoint */
-@media (max-width: 1200px) {
-  .cards.cards-candidate-lists {
-    .cards-right {
-      grid-template-columns: repeat(3, 1fr);
-    }
-  }
-}
-
-ul.districts,
-ul.warnings {
-  margin: 0;
-  font-size: var(--font-size-sm);
-  padding: 0;
-  list-style: none;
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-sm);
-
-  li a {
-    display: inline-block;
-    border: 1px solid var(--gray-200);
-    border-radius: var(--space-xs);
-    padding: var(--space-xs) var(--space-sm);
-    color: inherit;
-    text-decoration: none;
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
-
-    &:hover {
-      text-decoration: underline;
-    }
-  }
-}
-
-ul.districts {
-  li a {
-    &.error {
-      border-color: var(--red-300);
-      color: var(--red-800);
-      padding-right: 2rem;
-      background:
-        url("../icons/error.svg") no-repeat right var(--space-sm) center /
-        1.1rem;
-    }
-  }
-}
-
-ul.warnings {
-  li a {
-    &.info {
-      border-color: var(--blue-200);
-      background-color: var(--blue-100);
-      color: var(--blue-800);
-      margin-bottom: 0;
-    }
-
-    &.warning {
-      border-color: var(--orange-200);
-      color: var(--orange-800);
-      padding-left: 2rem;
-      background:
-        url("../icons/warning.svg") no-repeat left var(--space-sm) center /
-        1.2rem,
-        var(--orange-100);
-    }
-
-    &.error {
-      border-color: var(--red-200);
-      color: var(--red-800);
-      padding-left: 2rem;
-      background:
-        url("../icons/error.svg") no-repeat left var(--space-sm) center / 1.2rem,
-        var(--red-100);
+    &::after {
+      background-color: var(--gray-600);
+      content: "";
+      mask-image: url("../icons/chevronRight.svg");
+      mask-position: center;
+      transition-duration: 300ms;
+      transition-property: translate;
+      translate: var(--card-chevron-translate, 0);
+      width: var(--space-5);
     }
   }
 }
