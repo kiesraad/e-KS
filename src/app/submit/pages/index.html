@@ -24,9 +24,9 @@
               <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
             {% else %}
               <div class="mb-md">
-                <ul class="warnings">
+                <ul class="warnings tags-list">
                   {% for problem in problems.general.general %}
-                    <li>
+                    <li class="tag">
                       <a class="{{ problem.severity().class() }}"
                          href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
                     </li>
@@ -36,7 +36,7 @@
               {% for agent_pp in problems.general.name_authorisations %}
                 <div class="mb-md">
                   <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
-                  <ul class="tags-list warnings">
+                  <ul class="warnings tags-list">
                     {% for problem in &agent_pp.problems %}
                       <li class="tag">
                         <a class="{{ problem.severity().class() }}"

@@ -41,6 +41,12 @@
     width: var(--space-4);
   }
 
+  &:is(a.info),
+  &:has(a.info) {
+    --tag-border-color: var(--blue-600);
+    --tag-color: var(--blue-700);
+  }
+
   &:is(.warning),
   &:has(.warning) {
     --tag-border-color: var(--orange-600);
@@ -58,18 +64,28 @@
   &:has(a):hover,
   &:is(a):hover {
     --tag-border-color: var(--gray-200);
+    background-color: var(--gray-50);
+
+    &:is(.info),
+    &:has(.info) {
+      --tag-border-color: var(--blue-700);
+      background-color: var(--blue-100);
+    }
+
+    &:is(.warning),
+    &:has(.warning) {
+      --tag-border-color: var(--orange-700);
+      background-color: var(--orange-100);
+    }
+
+    &:is(.error),
+    &:has(.error) {
+      --tag-border-color: var(--red-700);
+      background-color: var(--red-100);
+    }
   }
 
   a {
     color: inherit;
-  }
-
-  &:has(a):hover {
-    --tag-border-color: var(--gray-200);
-  }
-
-  &:is(.info) {
-    --tag-border-color: var(--blue-600);
-    --tag-color: var(--gray-600);
   }
 }
