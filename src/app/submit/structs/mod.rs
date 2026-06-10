@@ -4,7 +4,6 @@ mod h1;
 mod h3;
 mod h4;
 mod h9;
-pub mod info_problems;
 pub mod problems;
 pub mod typst_candidate;
 mod typst_datetime;

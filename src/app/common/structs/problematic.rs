@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{Locale, trans};
+use crate::{Locale, candidate_lists::CandidateList, list_submitters::ListSubmitter, persons::Person, trans};
 
 use super::DateOfBirth;
 
@@ -266,17 +266,42 @@ impl PotentialProblems {
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum InfoProblems {
-    FewCandidatesWithFirstName { count: usize, total: usize },
-    FewCandidatesWithoutFirstName { count: usize, total: usize },
-    FewCandidatesWithGender { count: usize, total: usize },
-    FewCandidatesWithoutGender { count: usize, total: usize },
+    FewCandidatesWithFirstName {
+        // list: CandidateList,
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithoutFirstName {
+        // list: CandidateList,
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithGender {
+        // list: CandidateList,
+        count: usize,
+        total: usize,
+    },
+    FewCandidatesWithoutGender {
+        // list: CandidateList,
+        count: usize,
+        total: usize,
+    },
     NoPreviousElectionResults,
     NoSubstituteSubmitter,
     NoListDesignation,
-    VeryOldDateOfBirth,
-    NoInitials,
-    NoLastName,
-    IncompleteAddress { problems: Vec<EmptyAddressProblems> },
+    VeryOldDateOfBirth, // {
+        // person: Person,
+    //},
+    NoInitials,// {
+        // submitter: ListSubmitter,
+    //},
+    NoLastName,// {
+        // submitter: ListSubmitter,
+    //},
+    IncompleteAddress {
+        // person: Person,{ .. }
+        problems: Vec<EmptyAddressProblems>,
+    },
 }
 
 impl InfoProblems {
@@ -298,7 +323,7 @@ impl InfoProblems {
             InfoProblems::NoPreviousElectionResults => {
                 trans!("problems.no_previous_election_results", *locale)
             }
-            InfoProblems::FewCandidatesWithFirstName { count, total } => {
+            InfoProblems::FewCandidatesWithFirstName { count, total, .. } => {
                 if *count == 1 {
                     trans!(
                         "problems.few_candidates_with_first_name_one",
@@ -314,7 +339,7 @@ impl InfoProblems {
                     )
                 }
             }
-            InfoProblems::FewCandidatesWithoutFirstName { count, total } => {
+            InfoProblems::FewCandidatesWithoutFirstName { count, total, .. } => {
                 if *count == 1 {
                     trans!(
                         "problems.few_candidates_without_first_name_one",
@@ -330,14 +355,14 @@ impl InfoProblems {
                     )
                 }
             }
-            InfoProblems::FewCandidatesWithGender { count, total } => {
+            InfoProblems::FewCandidatesWithGender { count, total, .. } => {
                 if *count == 1 {
                     trans!("problems.few_candidates_with_gender_one", *locale, total)
                 } else {
                     trans!("problems.few_candidates_with_gender", *locale, count, total)
                 }
             }
-            InfoProblems::FewCandidatesWithoutGender { count, total } => {
+            InfoProblems::FewCandidatesWithoutGender { count, total, .. } => {
                 if *count == 1 {
                     trans!("problems.few_candidates_without_gender_one", *locale, total)
                 } else {

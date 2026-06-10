@@ -3,7 +3,7 @@ use axum_extra::routing::TypedPath as _;
 use crate::{
     AppError, AppStore, QueryParamState,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    common::{InfoProblems, PotentialProblems, Problematic, Severity},
+    common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
     list_designation::ListDesignation,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -14,7 +14,6 @@ use crate::{
 
 impl PotentialProblems {
     pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
-        let _submit = SubmitPath {}.to_string();
         match self {
             PotentialProblems::NoCandidates => list.view_path().to_string(),
             PotentialProblems::TooManyCandidates { actual, max } => {
@@ -73,7 +72,7 @@ pub struct AllProblems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
     pub lists: Vec<ListProblems>,
-    pub infos: Vec<InfoProblems>,
+    pub infos: Vec<EntityInfoProblems>,
 }
 
 impl AllProblems {
@@ -86,18 +85,27 @@ impl AllProblems {
             general,
             candidates,
             lists,
-            infos: [general_info, candidates_info, lists_info].concat(),
+            infos: [general_info, candidates_info, lists_info]
+                .into_iter()
+                .flatten()
+                .collect(),
         })
     }
 
-    fn find_general_problems(store: &AppStore) -> (GeneralProblems, Vec<InfoProblems>) {
+    fn find_general_problems(store: &AppStore) -> (GeneralProblems, Vec<EntityInfoProblems>) {
         let mut info_problems = Vec::new();
         let mut general = Vec::new();
 
         let political_group = store.get_political_group();
 
         let pg_problems = political_group.get_problems(());
-        info_problems.extend(pg_problems.info_problems);
+        info_problems.extend(
+            pg_problems
+                .info_problems
+                .into_iter()
+                .map(|p| EntityInfoProblems::AnyProblem(p))
+                .collect::<Vec<_>>(),
+        );
         general.extend(pg_problems.potential_problems);
 
         if store.get_candidate_list_count() == 0 {
@@ -123,35 +131,55 @@ impl AllProblems {
             general.push(PotentialProblems::NoListSubmitter);
         }
 
-        let list_submitter_problems = list_submitter.get_problems(());
-        let list_submitter = if !list_submitter_problems.potential_problems.is_empty() {
+        let all_list_submitter_problems = list_submitter.get_problems(());
+        let list_submitter_problems = if !all_list_submitter_problems.potential_problems.is_empty()
+        {
             Some(EntityProblems {
-                entity: list_submitter,
-                problems: list_submitter_problems.potential_problems,
+                entity: list_submitter.clone(),
+                problems: all_list_submitter_problems.potential_problems,
             })
         } else {
             None
         };
-        info_problems.extend(list_submitter_problems.info_problems);
+        info_problems.extend(
+            all_list_submitter_problems
+                .info_problems
+                .into_iter()
+                .map(|problem| EntityInfoProblems::SubmitterProblem {
+                    submitter: list_submitter.clone(),
+                    problem,
+                })
+                .collect::<Vec<_>>(),
+        );
 
         let submitters = store.get_substitute_submitters();
         if submitters.is_empty() {
-            info_problems.push(InfoProblems::NoSubstituteSubmitter);
+            info_problems.push(EntityInfoProblems::AnyProblem(
+                InfoProblems::NoSubstituteSubmitter,
+            ));
         }
         let mut substitute_submitters = Vec::new();
         for ss in submitters {
-            let (ss_problems, infos) = EntityProblems::new(ss);
+            let (ss_problems, infos) = EntityProblems::new(ss.clone());
             if !ss_problems.problems.is_empty() {
                 substitute_submitters.push(ss_problems)
             }
-            info_problems.extend(infos);
+            info_problems.extend(
+                infos
+                    .into_iter()
+                    .map(|problem| EntityInfoProblems::SubstituteSubmitterProblem {
+                        submitter: ss.clone(),
+                        problem,
+                    })
+                    .collect::<Vec<_>>(),
+            );
         }
 
         (
             GeneralProblems {
                 general,
                 name_authorisations,
-                list_submitter,
+                list_submitter: list_submitter_problems,
                 substitute_submitters,
             },
             info_problems,
@@ -160,15 +188,26 @@ impl AllProblems {
 
     fn find_name_authorisation_problems(
         name_authorisations: Vec<NameAuthorisation>,
-    ) -> (Vec<EntityProblems<NameAuthorisation>>, Vec<InfoProblems>) {
+    ) -> (
+        Vec<EntityProblems<NameAuthorisation>>,
+        Vec<EntityInfoProblems>,
+    ) {
         let mut problems = Vec::new();
         let mut info_problems = Vec::new();
-        for na in name_authorisations {
-            let (na_problems, na_info_problems) = EntityProblems::new(na);
+        for name_authorisation in name_authorisations {
+            let (na_problems, na_info_problems) = EntityProblems::new(name_authorisation.clone());
             if !na_problems.problems.is_empty() {
                 problems.push(na_problems)
             }
-            info_problems.extend(na_info_problems);
+            info_problems.extend(
+                na_info_problems
+                    .into_iter()
+                    .map(|problem| EntityInfoProblems::NameAuthorisationProblem {
+                        name_authorisation: name_authorisation.clone(),
+                        problem,
+                    })
+                    .collect::<Vec<_>>(),
+            );
         }
         (problems, info_problems)
     }
@@ -203,7 +242,7 @@ impl AllProblems {
     fn find_candidate_problems(
         store: &AppStore,
         candidate_lists: &[CandidateListSummary],
-    ) -> (Vec<PersonProblems>, Vec<InfoProblems>) {
+    ) -> (Vec<PersonProblems>, Vec<EntityInfoProblems>) {
         let mut info_problems = Vec::new();
         let mut seen = std::collections::HashSet::new();
         let problems = candidate_lists
@@ -213,7 +252,16 @@ impl AllProblems {
             .filter_map(|id| store.get_person(*id).ok())
             .filter_map(|person| {
                 let problems = person.get_problems(store.election);
-                info_problems.extend(problems.info_problems);
+                info_problems.extend(
+                    problems
+                        .info_problems
+                        .into_iter()
+                        .map(|problem| EntityInfoProblems::PersonProblem {
+                            person: person.clone(),
+                            problem,
+                        })
+                        .collect::<Vec<_>>(),
+                );
                 (!problems.potential_problems.is_empty()).then_some(PersonProblems {
                     entity: person,
                     problems: problems.potential_problems,
@@ -226,7 +274,7 @@ impl AllProblems {
     fn find_list_problems(
         candidate_lists: &[CandidateListSummary],
         store: &AppStore,
-    ) -> Result<(Vec<ListProblems>, Vec<InfoProblems>), AppError> {
+    ) -> Result<(Vec<ListProblems>, Vec<EntityInfoProblems>), AppError> {
         let mut list_problems = Vec::new();
         let mut info_problems = Vec::new();
         let mut seen_duplicate_district = false;
@@ -250,7 +298,16 @@ impl AllProblems {
                     problems: problems.potential_problems,
                 })
             }
-            info_problems.extend(problems.info_problems);
+            info_problems.extend(
+                problems
+                    .info_problems
+                    .into_iter()
+                    .map(|problem| EntityInfoProblems::ListProblem {
+                        list: candidate_list.list.clone(),
+                        problem,
+                    })
+                    .collect::<Vec<_>>(),
+            );
         }
         Ok((list_problems, info_problems))
     }
@@ -319,6 +376,68 @@ impl<T: Problematic<()>> EntityProblems<T> {
 }
 pub type ListProblems = EntityProblems<CandidateList>;
 pub type PersonProblems = EntityProblems<Person>;
+
+#[derive(Debug)]
+pub enum EntityInfoProblems {
+    AnyProblem(InfoProblems),
+    ListProblem {
+        list: CandidateList,
+        problem: InfoProblems,
+    },
+    SubmitterProblem {
+        submitter: ListSubmitter,
+        problem: InfoProblems,
+    },
+    SubstituteSubmitterProblem {
+        submitter: ListSubmitter,
+        problem: InfoProblems,
+    },
+    PersonProblem {
+        person: Person,
+        problem: InfoProblems,
+    },
+    NameAuthorisationProblem {
+        name_authorisation: NameAuthorisation,
+        problem: InfoProblems,
+    },
+}
+
+impl EntityInfoProblems {
+    pub fn fix_path(&self) -> String {
+        let submit = SubmitPath {}.to_string();
+        match self {
+            EntityInfoProblems::AnyProblem(InfoProblems::NoSubstituteSubmitter) => {
+                ListSubmitter::view_path().to_string()
+            }
+            EntityInfoProblems::AnyProblem(InfoProblems::NoListDesignation) => {
+                ListDesignation::update_path().to_string()
+            }
+            EntityInfoProblems::AnyProblem(InfoProblems::NoPreviousElectionResults) => {
+                PoliticalGroup::update_path().to_string()
+            }
+            EntityInfoProblems::AnyProblem(..) => IndexPath.to_string(),
+
+            EntityInfoProblems::ListProblem { list, .. } => list.view_path().to_string(),
+            EntityInfoProblems::SubstituteSubmitterProblem { submitter, .. } => submitter
+                .substitute_update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
+            EntityInfoProblems::SubmitterProblem { .. } => ListSubmitter::update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
+            EntityInfoProblems::PersonProblem { person, .. } => person
+                .update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
+            EntityInfoProblems::NameAuthorisationProblem {
+                name_authorisation, ..
+            } => name_authorisation
+                .update_path()
+                .with_query_params(QueryParamState::redirect_to(submit))
+                .to_string(),
+        }
+    }
+}
 
 #[cfg(test)]
 mod tests {

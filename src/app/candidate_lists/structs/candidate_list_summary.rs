@@ -92,6 +92,26 @@ impl CandidateListSummary {
 
         items
     }
+
+    pub fn list(store: &AppStore) -> Vec<CandidateListSummary> {
+        let max_count = store.get_political_group().get_max_candidates();
+        store
+            .get_candidate_lists()
+            .into_iter()
+            .map(|list| {
+                let duplicate_districts = list.duplicate_districts(store);
+                CandidateListSummary {
+                    list,
+                    max_count,
+                    duplicate_districts,
+                }
+            })
+            .collect()
+    }
+
+    pub fn candidate_count(&self) -> usize {
+        self.list.candidates.len()
+    }
 }
 
 #[derive(PartialEq, Eq, Debug)]
@@ -115,71 +135,6 @@ fn compute_deviation(number_with: usize, total: usize) -> Option<Deviant> {
         Some(Deviant::FewWith(number_with))
     } else {
         Some(Deviant::FewWithout(number_without))
-    }
-}
-
-impl CandidateListSummary {
-    pub fn list(store: &AppStore) -> Vec<CandidateListSummary> {
-        let max_count = store.get_political_group().get_max_candidates();
-        store
-            .get_candidate_lists()
-            .into_iter()
-            .map(|list| {
-                let duplicate_districts = list.duplicate_districts(store);
-                CandidateListSummary {
-                    list,
-                    max_count,
-                    duplicate_districts,
-                }
-            })
-            .collect()
-    }
-
-    pub fn get_deviation_problems(&self, store: &AppStore) -> Vec<InfoProblems> {
-        let total = self.candidate_count();
-        if total <= 1 {
-            return Vec::new();
-        }
-
-        let mut with_first_name = 0;
-        let mut with_gender = 0;
-        for candidate in &self.list.candidates {
-            let Ok(person) = store.get_person(*candidate) else {
-                continue;
-            };
-
-            if !person.name.first_name.is_empty_or_none() {
-                with_first_name += 1;
-            }
-
-            if person.personal_data.gender.is_some() {
-                with_gender += 1;
-            }
-        }
-
-        [
-            compute_deviation(with_first_name, total).map(|d| match d {
-                Deviant::FewWith(count) => {
-                    InfoProblems::FewCandidatesWithFirstName { count, total }
-                }
-                Deviant::FewWithout(count) => {
-                    InfoProblems::FewCandidatesWithoutFirstName { count, total }
-                }
-            }),
-            compute_deviation(with_gender, total).map(|d| match d {
-                Deviant::FewWith(count) => InfoProblems::FewCandidatesWithGender { count, total },
-                Deviant::FewWithout(count) => {
-                    InfoProblems::FewCandidatesWithoutGender { count, total }
-                }
-            }),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
-    }
-
-    pub fn candidate_count(&self) -> usize {
-        self.list.candidates.len()
     }
 }
 
