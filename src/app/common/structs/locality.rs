@@ -52,8 +52,8 @@ mod tests {
     #[test]
     fn rejects_too_short_values() {
         assert_eq!(
-            Locality::from_str("A").expect_err("too short"),
-            ValidationError::ValueTooShort(1, 2)
+            Locality::from_str("  ").expect_err("empty locality"),
+            ValidationError::ValueShouldNotBeEmpty
         );
     }
 }

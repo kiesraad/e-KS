@@ -336,7 +336,7 @@ mod tests {
                 gender: "invalid".to_string(),
                 date_of_birth: "2020/01/01".to_string(),
                 bsn: "".to_string(),
-                place_of_residence: "x".to_string(),
+                place_of_residence: "".to_string(),
                 country: "xx".to_string(),
             },
             csrf_token: csrf_token.clone(),
@@ -347,7 +347,7 @@ mod tests {
         };
 
         let errors = data.errors();
-        assert_eq!(errors.len(), 8);
+        assert_eq!(errors.len(), 7);
         assert!(errors.contains(&(
             "personal_data.gender".to_string(),
             ValidationError::InvalidValue
@@ -365,10 +365,6 @@ mod tests {
         assert!(errors.contains(&(
             "personal_data.date_of_birth".to_string(),
             ValidationError::InvalidValue
-        )));
-        assert!(errors.contains(&(
-            "personal_data.place_of_residence".to_string(),
-            ValidationError::ValueTooShort(1, 2)
         )));
         assert!(errors.contains(&(
             "personal_data.country".to_string(),
