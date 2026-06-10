@@ -31,8 +31,8 @@ no_substitute_submitter: Geen vervanger voor het herstel van verzuimen toegevoeg
 representative: Gemachtigde
 too_few_authorized_names: "{} statutaire namen te weinig"
 too_few_authorized_names_one: 1 statutaire naam te weinig
-too_many_authorized_names: "{} statutaire namen te veel toegevoegd"
-too_many_authorized_names_one: 1 statutaire naam te veel toegevoegd
+too_many_authorized_names: "{} statutaire namen te veel"
+too_many_authorized_names_one: 1 statutaire naam te veel
 too_many_candidates: "{} kandidaten te veel"
 too_many_candidates_one: 1 kandidaat te veel
 unknown_address: Adres niet gevonden in de BAG
