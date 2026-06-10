@@ -116,7 +116,6 @@ pub enum PotentialProblems {
 
     // representative wrapper
     RepresentativeProblem(Box<PotentialProblems>),
-    RepresentativeUnknownAddress,
 
     // personal data
     NoBsn,
@@ -239,11 +238,6 @@ impl PotentialProblems {
                 let problem = inner.translate(locale);
                 format!("{label}: {problem}")
             }
-            PotentialProblems::RepresentativeUnknownAddress => {
-                let label = trans!("problems.representative", *locale);
-                let problem = trans!("problems.unknown_address", *locale);
-                format!("{label}: {problem}")
-            }
 
             // personal data
             PotentialProblems::NoBsn => trans!("problems.no_bsn", *locale),
@@ -307,7 +301,6 @@ impl PotentialProblems {
 
             // representative wrapper
             PotentialProblems::RepresentativeProblem(inner) => inner.severity(),
-            PotentialProblems::RepresentativeUnknownAddress => Severity::Warn,
 
             // personal data
             PotentialProblems::NoBsn => Severity::Warn,

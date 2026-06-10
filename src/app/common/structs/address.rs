@@ -191,6 +191,14 @@ impl Default for Address {
 }
 
 impl Address {
+    /// Recompute the BAG match for a Dutch address. International addresses
+    /// have no BAG equivalent, so this is a no-op for them.
+    pub fn update_is_known_in_bag(&mut self) {
+        if let Address::Dutch(address) = self {
+            address.update_is_known_in_bag();
+        }
+    }
+
     pub fn as_dutch(&self) -> Option<&DutchAddress> {
         match self {
             Address::Dutch(address) => Some(address),

@@ -56,10 +56,7 @@ impl Problematic<()> for Representative {
         ]
         .into_iter()
         .flatten()
-        .map(|p| match p {
-            PotentialProblems::UnknownAddress => PotentialProblems::RepresentativeUnknownAddress,
-            other => PotentialProblems::RepresentativeProblem(Box::new(other)),
-        })
+        .map(|p| PotentialProblems::RepresentativeProblem(Box::new(p)))
         .collect()
     }
 }
@@ -452,19 +449,18 @@ mod tests {
     }
 
     #[test]
-    fn non_dutch_person_with_representative_address_unknown_in_bag_produces_dedicated_problem() {
+    fn non_dutch_person_with_representative_address_unknown_in_bag_produces_wrapped_problem() {
         let mut person = sample_person(PersonId::new());
         person.personal_data.country = Some("BE".parse().expect("country code"));
         let mut representative = complete_representative();
         representative.address.known_in_bag = Some(false);
         person.representative = Some(representative);
         let problems = person.get_problems(());
-        assert!(problems.contains(&PotentialProblems::RepresentativeUnknownAddress));
-        // the unknown-address problem is surfaced as a dedicated variant, not wrapped
+        // the representative's unknown address is surfaced through the wrapper
         assert!(
-            !problems
-                .iter()
-                .any(|p| matches!(p, PotentialProblems::RepresentativeProblem(_)))
+            problems.contains(&PotentialProblems::RepresentativeProblem(Box::new(
+                PotentialProblems::UnknownAddress
+            )))
         );
     }
 

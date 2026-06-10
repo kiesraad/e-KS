@@ -39,12 +39,12 @@ impl PotentialProblems {
                 .update_address_path()
                 .with_query_params(QueryParamState::redirect_to(submit))
                 .to_string(),
-            PotentialProblems::NoRepresentative
-            | PotentialProblems::RepresentativeProblem(_)
-            | PotentialProblems::RepresentativeUnknownAddress => person
-                .update_representative_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
-                .to_string(),
+            PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
+                person
+                    .update_representative_path()
+                    .with_query_params(QueryParamState::redirect_to(submit))
+                    .to_string()
+            }
             _ => person
                 .update_path()
                 .with_query_params(QueryParamState::redirect_to(submit))

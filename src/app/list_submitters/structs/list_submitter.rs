@@ -193,6 +193,35 @@ mod tests {
     }
 
     #[test]
+    fn international_submitter_address_is_not_bag_checked() {
+        let data = ListSubmitterData {
+            name: FullName {
+                last_name: "Bos".parse().expect("last name"),
+                initials: "E.F.".parse().expect("initials"),
+                ..Default::default()
+            },
+            address: InternationalAddress {
+                street_name: Some("Downing Street".parse().expect("street name")),
+                house_number: Some("10".parse().expect("house number")),
+                house_number_addition: None,
+                locality: Some("London".parse().expect("locality")),
+                state_or_province: None,
+                postal_code: Some("SW1A 2AA".parse().expect("postal code")),
+                country: Some("GB".parse().expect("country code")),
+            },
+        };
+
+        let submitter = ListSubmitter::from(data);
+
+        assert!(matches!(submitter.address, Address::International(_)));
+        assert!(
+            !submitter
+                .get_problems(())
+                .contains(&PotentialProblems::UnknownAddress)
+        );
+    }
+
+    #[test]
     fn substitute_submitter_problems_use_info_severity() {
         let submitter = incomplete_submitter(true);
 
