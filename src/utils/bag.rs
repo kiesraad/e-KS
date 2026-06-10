@@ -56,19 +56,32 @@ async fn lookup(Query(params): Query<LookupQuery>) -> impl IntoResponse {
     }
 }
 
-#[derive(Deserialize)]
-struct SuggestQuery {
-    wp: Option<String>,
-    municipalities: Option<String>,
-    aliases: Option<String>,
-    limit: Option<usize>,
+/// Check whether a full address exists verbatim in the BAG.
+///
+/// The postal code and house number are looked up, and the result only counts
+/// as a match when the resolved street and locality also equal the supplied
+/// `street_name` and `locality`. Returns `false` when the postal code + house
+/// number combination is unknown.
+pub fn address_exists(
+    postal_code: &str,
+    house_number: u32,
+    street_name: &str,
+    locality: &str,
+) -> bool {
+    match DATABASE.lookup(postal_code, house_number) {
+        Some((pr, wp)) => pr == street_name && wp == locality,
+        None => false,
+    }
 }
 
-/// Parse a boolean-ish query value. `false`, `0`, `no` (case-insensitive) are
-/// false; any other value is true. Matches the upstream `bag-address-lookup`
-/// HTTP service.
-fn parse_bool(value: &str) -> bool {
-    !matches!(value.to_ascii_lowercase().as_str(), "false" | "0" | "no")
+#[derive(Default, Deserialize)]
+struct SuggestQuery {
+    wp: Option<String>,
+    #[serde(default)]
+    municipalities: bool,
+    #[serde(default)]
+    aliases: bool,
+    limit: Option<usize>,
 }
 
 /// Fuzzy-match localities and municipalities against the `wp` query param.
@@ -90,78 +103,52 @@ async fn suggest(Query(params): Query<SuggestQuery>) -> impl IntoResponse {
         );
     };
 
-    let include_municipalities = params.municipalities.as_deref().is_none_or(parse_bool);
-    let include_aliases = params.aliases.as_deref().is_some_and(parse_bool);
     let limit = params.limit.unwrap_or(DEFAULT_SUGGEST_LIMIT);
 
     let names = DATABASE.suggest(
         &query,
         DEFAULT_SUGGEST_THRESHOLD,
         limit,
-        include_municipalities,
-        include_aliases,
+        params.municipalities,
+        params.aliases,
     );
 
     (StatusCode::OK, Json(json!(names)))
 }
 
+/// Check whether `locality` is an exact, known place name in the BAG.
+///
+/// This runs the same fuzzy `suggest` matching as the endpoint but only
+/// reports `true` when a suggestion equals the input exactly, so a prefix of a
+/// real locality (e.g. `Amsterda`) is rejected. `with_municipalities` also
+/// considers municipality names; `with_aliases` also considers Frisian
+/// locality aliases.
+pub fn locality_exists(locality: &str, with_municipalities: bool, with_aliases: bool) -> bool {
+    DATABASE
+        .suggest(
+            locality,
+            DEFAULT_SUGGEST_THRESHOLD,
+            1,
+            with_municipalities,
+            with_aliases,
+        )
+        .iter()
+        .any(|name| name == locality)
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
-    use axum::{body::Body, http::Request};
-    use tower::ServiceExt;
-
     use crate::test_utils::response_body_string;
 
     #[tokio::test]
-    async fn suggest_missing_wp_returns_bad_request() {
-        let app = router::<()>();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/suggest")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-        let body = response_body_string(response).await;
-        assert!(body.contains("missing wp"));
-    }
-
-    #[tokio::test]
-    async fn lookup_missing_params_is_rejected_by_extractor() {
-        let app = router::<()>();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/lookup")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
-
-        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
-    }
-
-    #[tokio::test]
     async fn lookup_unknown_postal_code_returns_not_found() {
-        let app = router::<()>();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/lookup?pc=0000ZZ&n=1")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let response = lookup(Query(LookupQuery {
+            pc: "0000ZZ".to_string(),
+            n: 1,
+        }))
+        .await
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::NOT_FOUND);
         let body = response_body_string(response).await;
@@ -169,41 +156,67 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn suggest_non_matching_query_returns_empty_array() {
-        let app = router::<()>();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/suggest?wp=zzzqqqxxxnotacity")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
+    async fn suggest_missing_wp_returns_bad_request() {
+        let response = suggest(Query(SuggestQuery::default()))
             .await
-            .expect("response");
+            .into_response();
+
+        assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+        let body = response_body_string(response).await;
+        assert!(body.contains("missing wp"));
+    }
+
+    #[tokio::test]
+    async fn suggest_non_matching_query_returns_empty_array() {
+        let response = suggest(Query(SuggestQuery {
+            wp: Some("zzzqqqxxxnotacity".to_string()),
+            ..Default::default()
+        }))
+        .await
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
+        // An empty array is a successful "no match" response, not an error.
         assert_eq!(body.trim(), "[]");
     }
 
     #[tokio::test]
     async fn suggest_returns_flat_array_of_names() {
-        let app = router::<()>();
-
-        let response = app
-            .oneshot(
-                Request::builder()
-                    .uri("/suggest?wp=Amsterdam&limit=1")
-                    .body(Body::empty())
-                    .unwrap(),
-            )
-            .await
-            .expect("response");
+        let response = suggest(Query(SuggestQuery {
+            wp: Some("Amsterdam".to_string()),
+            limit: Some(1),
+            ..Default::default()
+        }))
+        .await
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         // The body is a flat JSON array of strings, not structured records.
         assert_eq!(body.trim(), r#"["Amsterdam"]"#);
+    }
+
+    #[test]
+    fn locality_exists_matches_exact_locality_only() {
+        assert!(locality_exists("Amsterdam", false, false));
+        // A prefix of a real locality is not itself a locality.
+        assert!(!locality_exists("Amsterda", false, false));
+    }
+
+    #[test]
+    fn locality_exists_honours_municipalities_flag() {
+        // "Land van Cuijk" is a municipality, only found when municipalities
+        // are included.
+        assert!(locality_exists("Land van Cuijk", true, false));
+        assert!(!locality_exists("Land van Cuijk", false, false));
+    }
+
+    #[test]
+    fn locality_exists_honours_aliases_flag() {
+        // "Boelensloane" is a Frisian alias, only found when aliases are
+        // included.
+        assert!(locality_exists("Boelensloane", false, true));
+        assert!(!locality_exists("Boelensloane", false, false));
     }
 }

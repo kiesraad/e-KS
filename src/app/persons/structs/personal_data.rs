@@ -30,8 +30,13 @@ impl Problematic<()> for PersonalData {
             items.push(PotentialProblems::NoBsn);
         }
 
-        if self.place_of_residence.is_empty_or_none() {
-            items.push(PotentialProblems::NoPlaceOfResidence);
+        match &self.place_of_residence {
+            None => items.push(PotentialProblems::NoPlaceOfResidence),
+            Some(p) if p.as_str().is_empty() => items.push(PotentialProblems::NoPlaceOfResidence),
+            Some(PlaceOfResidence::Unknown(_)) => {
+                items.push(PotentialProblems::UnknownPlaceOfResidence)
+            }
+            _ => {}
         }
 
         if self.country.is_empty_or_none() {

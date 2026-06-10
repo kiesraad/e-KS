@@ -67,7 +67,9 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(representative) => {
+        Ok(mut representative) => {
+            representative.address.update_is_known_in_bag();
+
             candidate
                 .person
                 .update_representative(&store, Some(representative))

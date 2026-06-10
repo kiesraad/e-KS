@@ -209,7 +209,7 @@ mod tests {
         common::{DutchAddress, UtcDateTime},
         form::{ValidationError, generate_csrf_token},
         persons::PersonId,
-        test_utils::{self, parse_country_code, parse_place_of_residence, sample_person_with},
+        test_utils::{self, parse_country_code, sample_person_with},
     };
 
     #[test]
@@ -217,7 +217,8 @@ mod tests {
         let mut current =
             sample_person_with(PersonId::new(), Some("Evert"), "Klaas Smit", None, "E.D.");
         current.personal_data.gender = Some(Gender::Female);
-        current.personal_data.place_of_residence = Some(parse_place_of_residence("Waterdam"));
+        current.personal_data.place_of_residence =
+            Some(PlaceOfResidence::Known("Waterdam".to_string()));
         current.personal_data.country = Some(parse_country_code("NL"));
         current.address = DutchAddress {
             locality: Some("Heemdamseburg".parse().expect("locality")),
@@ -225,6 +226,7 @@ mod tests {
             house_number: Some("10".parse().expect("house number")),
             house_number_addition: Some("B".parse().expect("house number addition")),
             street_name: Some("Spoorstraat".parse().expect("street name")),
+            known_in_bag: Some(true),
         };
         current.updated_at = UtcDateTime::default();
         let csrf_token = generate_csrf_token();

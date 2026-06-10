@@ -31,4 +31,6 @@ representative: Gemachtigde
 too_few_authorized_names: "Te weinig gemachtigde/statutaire namen ({} toegevoegd, minimum is {})"
 too_many_authorized_names: "Te veel gemachtigde/statutaire namen ({} toegevoegd, maximum is {})"
 too_many_candidates: "Te veel kandidaten ({} toegevoegd, maximum is {})"
+unknown_address: Adres niet gevonden in de BAG
+unknown_place_of_residence: Woonplaats niet gevonden in de BAG
 very_old_date_of_birth: "Geboortedatum lijkt onjuist (meer dan {} jaar geleden)"

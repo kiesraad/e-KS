@@ -14,6 +14,7 @@ pub enum ValidationError {
     ValueTooLong(ActualLength, MaxLength),
     ValueTooShort(ActualLength, MinLength),
     InvalidChecksum,
+    InvalidPlaceOfResidence,
     StartsWithLastNamePrefix,
     InvalidPostalCode,
     NameAlreadyExists,
@@ -46,6 +47,9 @@ impl ValidationError {
             }
             ValidationError::InvalidCsrfToken => trans!("validation.invalid_csrf_token", locale),
             ValidationError::InvalidChecksum => trans!("validation.invalid_bsn", locale),
+            ValidationError::InvalidPlaceOfResidence => {
+                trans!("validation.invalid_place_of_residence", locale)
+            }
             ValidationError::StartsWithLastNamePrefix => {
                 trans!("validation.starts_with_last_name_prefix", locale)
             }

@@ -129,11 +129,6 @@ which is a separate binary dependency (not a library crate) that runs as
 an external process in production but is embedded in-process in development with
 the `embed-typst` feature.
 
-Address validation and lookup against the BAG is handled similarly:
-the `bag_address_lookup` module is either an embedded router backed
-by an embedded BAG database (`embed-bag` feature) or a proxy to
-an external `bag-service`.
-
 ### `src/` layout
 
 The library is split into one *domain* tree and several *infrastructure*
@@ -341,18 +336,6 @@ Address fields are validated and autocompleted against the BAG
 to a street and locality, and locality names autocomplete. This backs the
 frontend's `/lookup` and `/suggest` endpoints.
 
-Like the Typst renderer, BAG lookup runs either against an external
-`bag-service` (the default) or in-process when the `embed-bag` cargo feature
-is enabled. The embedded mode:
-
-- exposes `/lookup` and `/suggest` via `src/utils/embed_bag.rs`, backed by a
-  compressed BAG database embedded in the crate; the `DatabaseHandle` is
-  decoded lazily on first use (`LazyLock`), so the first request is slower
-  than the rest.
-- is drop-in compatible with the external `bag-service` that `/lookup` and
-  `/suggest` otherwise proxy to (`BAG_SERVICE_URL`, in `dev-features` mode).
-  As with `memory-serve`, the frontend sees the same URLs either way.
-
 ## Configuration and feature flags
 
 ### Runtime configuration
@@ -365,7 +348,6 @@ Runtime configuration is read from environment variables once at startup into a
 |----------|---------|
 | `STORAGE_URL` | Persistence backend: `memory://`, `local://<dir>`, or `postgres://<connection_string>`. |
 | `TYPST_URL` | External typst-webservice URL (only without the `embed-typst` feature). |
-| `BAG_SERVICE_URL` | External bag-service URL (`dev-features`, without `embed-bag`). |
 | `ID_DERIVATION_KEY` | Master secret for stream-id derivation. |
 | `ENCRYPTION_DERIVATION_KEY` | Master secret for event-payload encryption. |
 | `TLS_CERT_PATH` / `TLS_KEY_PATH` | HTTPS certificate and key; both or neither. |
@@ -399,7 +381,6 @@ and enables the embedding and TLS features.
 | `livereload` | Live-reload assets and templates during development. |
 | `memory-serve` | Serve the frontend assets embedded in the binary. |
 | `embed-typst` | Run the Typst PDF service in-process instead of over HTTP. |
-| `embed-bag` | Embed the BAG address database instead of proxying to bag-service. |
 | `tls` | Serve over HTTPS via rustls. |
 | `db-tests` / `net-tests` | Enable database- and network-dependent tests. |
 
