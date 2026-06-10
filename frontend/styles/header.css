@@ -3,27 +3,25 @@ header {
   --header-bg: var(--base-brand-blue);
   --header-color: var(--gray-300);
   --header-padding-inline: var(--main-padding-inline);
+  position: relative;
 
   nav {
-    background-color: var(--header-bg);
     color: var(--header-color);
     display: flex;
     justify-content: space-between;
     margin-inline: auto;
     max-width: var(--container-size);
     min-height: var(--header-height);
-    position: relative;
     z-index: 0;
 
     &::after {
       background-color: var(--header-bg);
       content: "";
-      height: 100%;
-      left: 50%;
-      position: absolute;
+      height: var(--header-height);
       top: 0;
-      translate: -50%;
-      width: 100vw;
+      left: 0;
+      right: 0;
+      position: absolute;
       z-index: -1;
     }
 
