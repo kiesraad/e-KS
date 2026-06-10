@@ -19,7 +19,7 @@ impl std::str::FromStr for Locality {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = validate_length(value, 2, 200)?;
+        let trimmed_value = validate_length(value, 1, 200)?;
         validate_teletex_chars(&trimmed_value)?;
 
         let normalized = replace_locality_alias(&trimmed_value).unwrap_or(trimmed_value);
@@ -50,8 +50,8 @@ mod tests {
     #[test]
     fn rejects_too_short_values() {
         assert_eq!(
-            Locality::from_str("A").expect_err("too short"),
-            ValidationError::ValueTooShort(1, 2)
+            Locality::from_str("  ").expect_err("empty locality"),
+            ValidationError::ValueShouldNotBeEmpty
         );
     }
 }
