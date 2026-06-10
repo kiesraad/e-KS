@@ -1,5 +1,5 @@
 actions:
-  delete_name_authorisation: Delete name authorisation
+  delete_name_authorisation: Delete statutory name
   delete_substitute_submitter: Delete substitute submitter
 add_legal_name: Add statutory name
 add_list_submitter: Add list submitter
@@ -17,17 +17,17 @@ edit_legal_name: Edit statutory name and authorised agent
 edit_list_submitter: Edit list submitter
 edit_substitute_submitter: Edit substitute submitter
 legal_name: Full statutory name
-legal_name_data: Statutory name and authorised agent
-legal_name_data_combined: Statutory names and authorised agents
+legal_name_data: Statutory name
+legal_name_data_combined: Statutory names
 list_submitter: List submitter
 list_submitter_address_info: This address will be used to send the notice of omissions
 list_submitter_data: List submitter data
+list_submitter_info: The list submitter is the only person authorised to submit the candidate list and to remedy omissions.
 list_type: List designation type
 no_legal_names: No statutory name
 no_list_submitter: No list submitter
 no_substitute_submitters: No substitute submitters
 previous_election_results: "In the previous {}, your party obtained:"
-select_default_list_submitter_info: The list submitter is the only person authorised to submit the candidate list and to remedy omissions.
 substitute_submitter: Substitute submitter
 substitute_submitter_data: Substitute submitter data
 substitute_submitters_data: Substitute submitters data

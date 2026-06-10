@@ -6,7 +6,7 @@
     {% include "political_groups/components/steps.html" %}
     <div>
       <h3 class="mb-6">{{ "political_group.list_submitter_data"|trans }}</h3>
-      <p class="info">{{ "political_group.select_default_list_submitter_info"|trans }}</p>
+      <p class="mb-6">{{ "political_group.list_submitter_info"|trans }}</p>
       {% if list_submitter.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_list_submitter"|trans }}</p>
         <p class="mt-lg mb-lg">
@@ -25,7 +25,7 @@
         </a>
       {% endif %}
       <h3 class="mb-6">{{ "political_group.substitute_submitters_data"|trans }}</h3>
-      <p class="info">{{ "political_group.substitute_submitters_info"|trans }}</p>
+      <p class="mb-6">{{ "political_group.substitute_submitters_info"|trans }}</p>
       {% if substitute_submitters.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
       {% else %}
