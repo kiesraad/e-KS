@@ -472,8 +472,12 @@ mod tests {
                 .unwrap(),
             "text/csv"
         );
+        // The template is exported with a UTF-8 BOM and `;` delimiter for Excel.
         let body = response_body_string(response).await;
-        assert_eq!(body.trim_end_matches('\n'), csv_headers());
+        assert_eq!(
+            body.trim_end_matches('\n'),
+            format!("\u{feff}{}", csv_headers().replace(',', ";"))
+        );
 
         Ok(())
     }
