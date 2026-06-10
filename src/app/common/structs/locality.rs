@@ -21,7 +21,7 @@ impl std::str::FromStr for Locality {
     type Err = ValidationError;
 
     fn from_str(value: &str) -> Result<Self, Self::Err> {
-        let trimmed_value = validate_length(value, 2, 200)?;
+        let trimmed_value = validate_length(value, 1, 200)?;
         validate_teletex_chars(&trimmed_value)?;
 
         let normalized = replace_locality_alias(&trimmed_value).unwrap_or(trimmed_value);
