@@ -86,7 +86,6 @@
     position: relative;
     margin: 0.125rem 0 0 0;
     flex-shrink: 0;
-    /* do not remove, this keeps the input from misshaping */
     cursor: pointer;
 
     /* Radio styling */
@@ -117,8 +116,8 @@
         background-color: var(--checkbox-radio-color-bg-focus-checked);
 
         &::before {
-          background-color: var(--base-dark-blue);
           /* change icon color as well */
+          background-color: var(--base-dark-blue);
         }
       }
     }
