@@ -35,4 +35,6 @@ too_many_authorized_names: "{} statutory names too many"
 too_many_authorized_names_one: 1 statutory name too many
 too_many_candidates: "{} candidates too many"
 too_many_candidates_one: 1 candidate too many
+unknown_address: Address not found in the BAG
+unknown_place_of_residence: Place of residence not found in the BAG
 very_old_date_of_birth: "Date of birth appears incorrect (more than {} years ago)"

@@ -35,4 +35,6 @@ too_many_authorized_names: "{} statutaire namen te veel toegevoegd"
 too_many_authorized_names_one: 1 statutaire naam te veel toegevoegd
 too_many_candidates: "{} kandidaten te veel"
 too_many_candidates_one: 1 kandidaat te veel
+unknown_address: Adres niet gevonden in de BAG
+unknown_place_of_residence: Woonplaats niet gevonden in de BAG
 very_old_date_of_birth: "Geboortedatum lijkt onjuist (meer dan {} jaar geleden)"

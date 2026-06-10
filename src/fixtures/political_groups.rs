@@ -55,6 +55,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             house_number: Some("5".parse().expect("house number")),
             house_number_addition: Some("B".parse().expect("house number addition")),
             street_name: Some("Coolsingel".parse().expect("street name")),
+            known_in_bag: Some(true),
         }),
         is_substitute: false,
     }
@@ -75,6 +76,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             house_number: Some("18".parse().expect("house number")),
             house_number_addition: None,
             street_name: Some("Spui".parse().expect("street name")),
+            known_in_bag: Some(true),
         }),
         is_substitute: true,
     }
@@ -95,6 +97,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
             house_number: Some("21".parse().expect("house number")),
             house_number_addition: Some("C".parse().expect("house number addition")),
             street_name: Some("Oudegracht".parse().expect("street name")),
+            known_in_bag: Some(true),
         }),
         is_substitute: true,
     }

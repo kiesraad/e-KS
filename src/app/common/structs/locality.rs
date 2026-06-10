@@ -15,8 +15,6 @@ transparent_string! {
     pub struct Locality(String);
 }
 
-pub type PlaceOfResidence = Locality;
-
 impl std::str::FromStr for Locality {
     type Err = ValidationError;
 

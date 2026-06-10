@@ -60,11 +60,14 @@ pub async fn update_list_submitter_submit(
             context,
         )
         .into_response()),
+
         Ok(list_submitter_data) => {
-            let updated = ListSubmitter {
+            let mut updated = ListSubmitter {
                 id: list_submitter.id,
                 ..list_submitter_data.into()
             };
+            updated.address.update_is_known_in_bag();
+
             updated.update(&store).await?;
 
             Ok(query.redirect_or(ListSubmitter::view_path()))
@@ -77,6 +80,7 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context, Form, QueryParamState,
+        common::{Address, PotentialProblems, Problematic},
         test_utils::{response_body_string, sample_list_submitter, sample_list_submitter_form},
     };
     use axum::{
@@ -144,6 +148,46 @@ mod tests {
 
         let updated = store.get_list_submitter();
         assert_eq!(updated.name.last_name.to_string(), "Updated");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_list_submitter_flags_dutch_address_unknown_in_bag() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token.clone();
+        let mut form = sample_list_submitter_form(&csrf_token);
+        // a Dutch address (no country) that does not exist in the BAG
+        form.address.street_name = "Nepstraat".to_string();
+        form.address.house_number = "1".to_string();
+        form.address.house_number_addition = String::new();
+        form.address.postal_code = "1234 AB".to_string();
+        form.address.locality = "Juinen".to_string();
+
+        update_list_submitter_submit(
+            ListSubmitterUpdatePath {},
+            context,
+            store.clone(),
+            Query(QueryParamState::default()),
+            Form(form),
+        )
+        .await
+        .unwrap();
+
+        // the handler runs the BAG lookup and persists the outcome...
+        let stored = store.get_list_submitter();
+        assert!(matches!(
+            &stored.address,
+            Address::Dutch(address) if address.known_in_bag == Some(false)
+        ));
+        // ...which surfaces as an `UnknownAddress` warning.
+        assert!(
+            stored
+                .get_problems(())
+                .contains(&PotentialProblems::UnknownAddress)
+        );
 
         Ok(())
     }

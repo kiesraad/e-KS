@@ -28,6 +28,7 @@ fn apply_update_person_address_and_representative() {
                 .expect("house number addition"),
         ),
         street_name: Some("Oudegracht".parse::<StreetName>().expect("street name")),
+        known_in_bag: Some(true),
     };
 
     let original_representative = data
@@ -65,6 +66,7 @@ fn apply_update_person_address_and_representative() {
             house_number: Some("5".parse::<HouseNumber>().expect("house number")),
             house_number_addition: None,
             street_name: Some("Coolsingel".parse::<StreetName>().expect("street name")),
+            known_in_bag: Some(true),
         },
     };
 
