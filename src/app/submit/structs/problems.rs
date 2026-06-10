@@ -103,7 +103,7 @@ impl AllProblems {
             pg_problems
                 .info_problems
                 .into_iter()
-                .map(|p| EntityInfoProblems::AnyProblem(p))
+                .map(EntityInfoProblems::AnyProblem)
                 .collect::<Vec<_>>(),
         );
         general.extend(pg_problems.potential_problems);
@@ -145,7 +145,7 @@ impl AllProblems {
             all_list_submitter_problems
                 .info_problems
                 .into_iter()
-                .map(|problem| EntityInfoProblems::SubmitterProblem {
+                .map(|problem| EntityInfoProblems::Submitter {
                     submitter: list_submitter.clone(),
                     problem,
                 })
@@ -167,7 +167,7 @@ impl AllProblems {
             info_problems.extend(
                 infos
                     .into_iter()
-                    .map(|problem| EntityInfoProblems::SubstituteSubmitterProblem {
+                    .map(|problem| EntityInfoProblems::SubstituteSubmitter {
                         submitter: ss.clone(),
                         problem,
                     })
@@ -202,7 +202,7 @@ impl AllProblems {
             info_problems.extend(
                 na_info_problems
                     .into_iter()
-                    .map(|problem| EntityInfoProblems::NameAuthorisationProblem {
+                    .map(|problem| EntityInfoProblems::NameAuthorisation {
                         name_authorisation: name_authorisation.clone(),
                         problem,
                     })
@@ -256,8 +256,8 @@ impl AllProblems {
                     problems
                         .info_problems
                         .into_iter()
-                        .map(|problem| EntityInfoProblems::PersonProblem {
-                            person: person.clone(),
+                        .map(|problem| EntityInfoProblems::Person {
+                            person: Box::new(person.clone()),
                             problem,
                         })
                         .collect::<Vec<_>>(),
@@ -302,7 +302,7 @@ impl AllProblems {
                 problems
                     .info_problems
                     .into_iter()
-                    .map(|problem| EntityInfoProblems::ListProblem {
+                    .map(|problem| EntityInfoProblems::List {
                         list: candidate_list.list.clone(),
                         problem,
                     })
@@ -380,23 +380,23 @@ pub type PersonProblems = EntityProblems<Person>;
 #[derive(Debug)]
 pub enum EntityInfoProblems {
     AnyProblem(InfoProblems),
-    ListProblem {
+    List {
         list: CandidateList,
         problem: InfoProblems,
     },
-    SubmitterProblem {
+    Submitter {
         submitter: ListSubmitter,
         problem: InfoProblems,
     },
-    SubstituteSubmitterProblem {
+    SubstituteSubmitter {
         submitter: ListSubmitter,
         problem: InfoProblems,
     },
-    PersonProblem {
-        person: Person,
+    Person {
+        person: Box<Person>,
         problem: InfoProblems,
     },
-    NameAuthorisationProblem {
+    NameAuthorisation {
         name_authorisation: NameAuthorisation,
         problem: InfoProblems,
     },
@@ -417,19 +417,19 @@ impl EntityInfoProblems {
             }
             EntityInfoProblems::AnyProblem(..) => IndexPath.to_string(),
 
-            EntityInfoProblems::ListProblem { list, .. } => list.view_path().to_string(),
-            EntityInfoProblems::SubstituteSubmitterProblem { submitter, .. } => submitter
+            EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
+            EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
                 .substitute_update_path()
                 .with_query_params(QueryParamState::redirect_to(submit))
                 .to_string(),
-            EntityInfoProblems::SubmitterProblem { .. } => ListSubmitter::update_path()
+            EntityInfoProblems::Submitter { .. } => ListSubmitter::update_path()
                 .with_query_params(QueryParamState::redirect_to(submit))
                 .to_string(),
-            EntityInfoProblems::PersonProblem { person, .. } => person
+            EntityInfoProblems::Person { person, .. } => person
                 .update_path()
                 .with_query_params(QueryParamState::redirect_to(submit))
                 .to_string(),
-            EntityInfoProblems::NameAuthorisationProblem {
+            EntityInfoProblems::NameAuthorisation {
                 name_authorisation, ..
             } => name_authorisation
                 .update_path()

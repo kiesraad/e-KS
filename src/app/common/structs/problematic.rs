@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-use crate::{Locale, candidate_lists::CandidateList, list_submitters::ListSubmitter, persons::Person, trans};
+use crate::{Locale, trans};
 
 use super::DateOfBirth;
 
@@ -290,13 +290,13 @@ pub enum InfoProblems {
     NoSubstituteSubmitter,
     NoListDesignation,
     VeryOldDateOfBirth, // {
-        // person: Person,
+    // person: Person,
     //},
-    NoInitials,// {
-        // submitter: ListSubmitter,
+    NoInitials, // {
+    // submitter: ListSubmitter,
     //},
-    NoLastName,// {
-        // submitter: ListSubmitter,
+    NoLastName, // {
+    // submitter: ListSubmitter,
     //},
     IncompleteAddress {
         // person: Person,{ .. }
