@@ -1,0 +1,18 @@
+{% extends "components/layout.html" %}
+{% block page_title %}Centraal stembureau{% endblock %}
+{% block content %}
+  <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <fieldset>
+      <div class="form-field form-field-lg">
+        <label for="hash">{{ "csb.form.hash"|trans }}</label>
+        <input id="hash" type="text" name="hash" required />
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button lg" name="action" value="save">
+          {{ "csb.form.import"|trans }}
+        </button>
+      </div>
+    </fieldset>
+  </form>
+{% endblock %}

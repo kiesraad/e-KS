@@ -63,6 +63,7 @@
 mod app;
 mod auth;
 mod core;
+pub mod csb;
 mod error;
 mod form;
 mod pagination;
@@ -86,8 +87,11 @@ pub use app::{
 pub use app::proxy_handler;
 pub use auth::{
     derive_id::IdDeriver,
+    scope::Scope,
     session::{Session, session_idle_timeout},
-    session_extractor::{SESSION_COOKIE_NAME, session_middleware, store_middleware},
+    session_extractor::{
+        SESSION_COOKIE_NAME, csb_store_middleware, session_middleware, store_middleware,
+    },
     session_store::SessionStore,
 };
 pub use core::{
@@ -96,6 +100,7 @@ pub use core::{
     constants::{self, MAX_CANDIDATES},
     get_env, http_trace, logging, server, translate,
 };
+pub use csb::{CsbContext, CsbEvent, CsbStoreData};
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
@@ -110,3 +115,5 @@ pub use utils::test_utils;
 id_newtype!(pub struct StreamId);
 
 pub type AppStore = store::Store<AppStoreData>;
+
+pub type CsbStore = store::Store<CsbStoreData>;

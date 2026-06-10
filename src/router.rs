@@ -10,10 +10,10 @@ use axum::{
 use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
-    AppState, audit_log, candidate_lists, candidates, common, eks_key_middleware, health_router,
-    http_trace, list_designation, list_submitters, name_authorisations, persons, political_groups,
-    render_error_pages, session_middleware, store_middleware, submit, substitute_list_submitters,
-    utils::bag,
+    AppState, audit_log, candidate_lists, candidates, common, csb, csb_store_middleware,
+    eks_key_middleware, health_router, http_trace, list_designation, list_submitters,
+    name_authorisations, persons, political_groups, render_error_pages, session_middleware,
+    store_middleware, submit, substitute_list_submitters, utils::bag,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -47,15 +47,24 @@ pub fn create(state: AppState) -> Router<AppState> {
             store_middleware,
         ));
 
-    // select-election needs session but NOT store middleware
-    // (the store requires a stream_id which is chosen on this page)
-    let app_router =
-        app_router
-            .merge(common::select_election_router())
-            .layer(middleware::from_fn_with_state(
-                state.clone(),
-                session_middleware,
-            ));
+    // CSB routes need the session plus their own (CSB) store middleware, which
+    // also gates them to committee-scoped sessions. They must NOT get the app
+    // `store_middleware`, so they are merged here rather than above.
+    let csb_router = csb::import::router().layer(middleware::from_fn_with_state(
+        state.clone(),
+        csb_store_middleware,
+    ));
+
+    // These routes need a session but NOT store middleware: select-election runs
+    // before a stream_id is chosen, and /language must stay reachable for CSB
+    // (committee) sessions that store_middleware redirects off app routes.
+    let app_router = app_router
+        .merge(common::session_only_router())
+        .merge(csb_router)
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
+        ));
 
     #[cfg(feature = "dev-features")]
     let router = Router::new().merge(dev_router).merge(app_router);

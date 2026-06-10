@@ -14,7 +14,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use uuid::Uuid;
 
 use super::{Store, StoreData, StorePersistence, encryption::EventEncryption};
-use crate::{AppError, ElectionConfig};
+use crate::{AppError, ElectionConfig, Scope};
 
 type StoreKey = (Uuid, ElectionConfig);
 type StoreMap<D> = Arc<RwLock<HashMap<StoreKey, Store<D>>>>;
@@ -27,6 +27,9 @@ where
 {
     persistence: StorePersistence,
     encryption: EventEncryption,
+    /// Scope recorded on every stream row this registry creates. A registry
+    /// serves a single store type, which corresponds to a single scope.
+    scope: Scope,
     inner: StoreMap<D>,
 }
 
@@ -39,6 +42,7 @@ where
         Self {
             persistence: self.persistence.clone(),
             encryption: self.encryption.clone(),
+            scope: self.scope,
             inner: self.inner.clone(),
         }
     }
@@ -49,16 +53,39 @@ where
     D: StoreData,
     D::Event: Serialize + DeserializeOwned,
 {
-    /// Create a new registry for stores backed by the given storage URL.
-    pub async fn new(storage_url: String, encryption: EventEncryption) -> Result<Self, AppError> {
+    /// Create a new registry for stores backed by the given storage URL. Every
+    /// stream row it creates is recorded with `scope`.
+    pub async fn new(
+        storage_url: String,
+        encryption: EventEncryption,
+        scope: Scope,
+    ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(&storage_url)?;
         persistence.init().await?;
 
         Ok(Self {
             persistence,
             encryption,
+            scope,
             inner: Arc::new(RwLock::new(HashMap::new())),
         })
+    }
+
+    /// Create a registry that shares an already-initialized persistence backend
+    /// (e.g. the same Postgres pool) with another registry, but caches a
+    /// different `Store<D>` projection and records its own `scope`. Skips
+    /// re-initialization since the backend is assumed to be initialized already.
+    pub fn with_persistence(
+        persistence: StorePersistence,
+        encryption: EventEncryption,
+        scope: Scope,
+    ) -> Self {
+        Self {
+            persistence,
+            encryption,
+            scope,
+            inner: Arc::new(RwLock::new(HashMap::new())),
+        }
     }
 
     /// Expose the underlying persistence backend (used by the app to share a
@@ -97,6 +124,7 @@ where
             self.persistence.clone(),
             stream_id,
             election,
+            self.scope,
             &self.encryption,
         )
         .await?;
@@ -107,6 +135,14 @@ where
         let entry = stores.entry(key).or_insert(store);
 
         Ok(entry.clone())
+    }
+
+    /// List every `(stream_id, election)` stream with the given scope.
+    pub async fn streams_by_scope(
+        &self,
+        scope: Scope,
+    ) -> Result<Vec<(Uuid, ElectionConfig)>, AppError> {
+        self.persistence.streams_by_scope(scope).await
     }
 
     /// Check which of the given stream IDs have data (in any election), using

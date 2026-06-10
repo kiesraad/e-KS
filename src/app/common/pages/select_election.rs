@@ -6,8 +6,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Session, WaterCouncil,
-    common::SelectElectionForm, filters,
+    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, WaterCouncil,
+    common::SelectElectionForm, csb::import::CsbImportPath, filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -78,6 +78,12 @@ pub async fn select_election_submit(
     axum::Form(form): axum::Form<SelectElectionForm>,
 ) -> Result<Response, AppError> {
     session.consume_csrf(&form.csrf_token)?;
+
+    // Committee sessions use CSB stores, not app stores; never create an
+    // `AppStore` in their `(stream_id, election)` partition.
+    if session.scope == Scope::CentralElectoralCommittee {
+        return Ok(Redirect::to(&CsbImportPath {}.to_string()).into_response());
+    }
 
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());

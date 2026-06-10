@@ -280,10 +280,55 @@ async fn store_update_applies_event_in_memory() -> Result<(), AppError> {
     Ok(())
 }
 
+#[test]
+fn snapshot_until_replays_up_to_the_target_event_and_drops_the_log() {
+    let person_a = PersonId::new();
+    let person_b = PersonId::new();
+    let events = vec![
+        StoreEvent::new(1, AppEvent::CreatePerson(sample_person(person_a))),
+        StoreEvent::new(2, AppEvent::CreatePerson(sample_person(person_b))),
+        StoreEvent::new(
+            3,
+            AppEvent::DeletePerson {
+                person_id: person_a,
+            },
+        ),
+    ];
+
+    // Up to event 2: both persons present, and the snapshot carries no event log.
+    let at_two = AppStoreData::snapshot_until(&events, 2);
+    assert!(at_two.persons.contains_key(&person_a));
+    assert!(at_two.persons.contains_key(&person_b));
+    assert!(at_two.events.is_empty());
+
+    // Up to event 3: the deletion has been applied.
+    let at_three = AppStoreData::snapshot_until(&events, 3);
+    assert!(!at_three.persons.contains_key(&person_a));
+    assert!(at_three.persons.contains_key(&person_b));
+    assert!(at_three.events.is_empty());
+}
+
+#[test]
+fn snapshot_until_ignores_events_past_the_target() {
+    let person_a = PersonId::new();
+    let person_b = PersonId::new();
+    let events = vec![
+        StoreEvent::new(1, AppEvent::CreatePerson(sample_person(person_a))),
+        StoreEvent::new(2, AppEvent::CreatePerson(sample_person(person_b))),
+    ];
+
+    // Stopping at event 1 leaves the later creation out of the snapshot.
+    let snapshot = AppStoreData::snapshot_until(&events, 1);
+    assert!(snapshot.persons.contains_key(&person_a));
+    assert!(!snapshot.persons.contains_key(&person_b));
+}
+
 #[cfg(feature = "database")]
 mod database_tests {
     use super::*;
-    use crate::{ElectionConfig, StreamId, persons::PersonId, test_utils::sample_person};
+    use crate::{
+        ElectionConfig, Province, Scope, StreamId, persons::PersonId, test_utils::sample_person,
+    };
     use chrono::Utc;
     use sqlx::PgPool;
 
@@ -303,6 +348,7 @@ mod database_tests {
             pool.clone(),
             group_id.uuid(),
             ElectionConfig::EK27,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -319,6 +365,7 @@ mod database_tests {
             pool,
             group_id.uuid(),
             ElectionConfig::EK27,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -343,6 +390,7 @@ mod database_tests {
             pool.clone(),
             group_id.uuid(),
             ElectionConfig::EK27,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -384,6 +432,7 @@ mod database_tests {
             pool,
             group_id.uuid(),
             ElectionConfig::EK27,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -394,6 +443,160 @@ mod database_tests {
             .await
             .expect_err("load must fail when an event's payload cannot be decrypted");
         assert!(matches!(err, AppError::EventDecodeError(_)));
+
+        Ok(())
+    }
+
+    /// Each stream row carries its scope (set at creation). `streams_by_scope`
+    /// lists every data-bearing `(stream_id, election)` of the requested scope,
+    /// and a committee stream never leaks into the political-group listing —
+    /// even across several elections under one stream_id.
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn streams_by_scope_lists_stream_election_pairs_per_scope(
+        pool: PgPool,
+    ) -> Result<(), AppError> {
+        use crate::store::database::{ensure_stream, streams_by_scope};
+
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let committee = StreamId::new();
+        let group = StreamId::new();
+        let ek27 = ElectionConfig::EK27;
+        let ps27 = ElectionConfig::PS27(Province::GE);
+
+        // The committee stream joins two elections; each row is created with the
+        // committee scope. The political group joins one.
+        ensure_stream(
+            &pool,
+            committee.uuid(),
+            ek27,
+            Scope::CentralElectoralCommittee,
+        )
+        .await?;
+        ensure_stream(
+            &pool,
+            committee.uuid(),
+            ps27,
+            Scope::CentralElectoralCommittee,
+        )
+        .await?;
+        ensure_stream(&pool, group.uuid(), ek27, Scope::PoliticalGroup).await?;
+
+        // Empty placeholder rows (last_event_id = 0) are not yet accessible.
+        assert!(
+            streams_by_scope(&pool, Scope::CentralElectoralCommittee)
+                .await?
+                .is_empty(),
+            "data-less streams are excluded"
+        );
+
+        // Give every stream some persisted data so it counts as accessible.
+        sqlx::query("UPDATE streams SET last_event_id = 1")
+            .execute(&pool)
+            .await?;
+
+        // Both committee elections are listed under the committee scope.
+        let mut committee_streams =
+            streams_by_scope(&pool, Scope::CentralElectoralCommittee).await?;
+        committee_streams.sort_by_key(|(_, election)| election.stable_id());
+        assert_eq!(
+            committee_streams,
+            vec![(committee.uuid(), ek27), (committee.uuid(), ps27)]
+        );
+
+        // The committee stream never leaks into the (default) political-group
+        // listing; only the political group's own stream appears there.
+        let political = streams_by_scope(&pool, Scope::PoliticalGroup).await?;
+        assert_eq!(political, vec![(group.uuid(), ek27)]);
+
+        Ok(())
+    }
+
+    /// A package hash resolves to the political-group event that produced it,
+    /// both for a full chain hash and for the 16-byte prefix rendered on
+    /// documents; an unrelated prefix resolves to nothing.
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn find_event_by_hash_prefix_locates_political_group_events(
+        pool: PgPool,
+    ) -> Result<(), AppError> {
+        use crate::store::database::find_event_by_hash_prefix;
+
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let encryption = test_encryption();
+        let group = StreamId::new();
+        let store = AppStore::new_with_pool_for_stream(
+            pool.clone(),
+            group.uuid(),
+            ElectionConfig::EK27,
+            Scope::PoliticalGroup,
+            &encryption,
+        )
+        .await
+        .unwrap();
+        sample_person(PersonId::new()).create(&store).await?;
+
+        let target = store
+            .get_events()
+            .last()
+            .cloned()
+            .expect("at least one event");
+        let expected = Some((group.uuid(), ElectionConfig::EK27, target.event_id));
+
+        assert_eq!(
+            find_event_by_hash_prefix(&pool, &target.hash).await?,
+            expected
+        );
+        assert_eq!(
+            find_event_by_hash_prefix(&pool, &target.hash[..16]).await?,
+            expected
+        );
+        assert_eq!(find_event_by_hash_prefix(&pool, &[0xFFu8; 32]).await?, None);
+
+        Ok(())
+    }
+
+    /// The lookup is restricted to political-group streams, so a committee
+    /// (CSB) event is never returned even when its hash matches exactly.
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn find_event_by_hash_prefix_ignores_committee_events(
+        pool: PgPool,
+    ) -> Result<(), AppError> {
+        use crate::store::database::{ensure_stream, find_event_by_hash_prefix};
+
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let committee = StreamId::new();
+        let election_id = ElectionConfig::EK27.stable_id();
+        ensure_stream(
+            &pool,
+            committee.uuid(),
+            ElectionConfig::EK27,
+            Scope::CentralElectoralCommittee,
+        )
+        .await?;
+
+        let hash = vec![0x42u8; 32];
+        sqlx::query(
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
+            VALUES ($1, $2, $3, $4, $5, $6)"#,
+        )
+        .bind(committee.uuid())
+        .bind(&election_id)
+        .bind(1_i64)
+        .bind(Utc::now())
+        .bind(&hash)
+        .bind(vec![0u8; 8])
+        .execute(&pool)
+        .await?;
+
+        assert_eq!(find_event_by_hash_prefix(&pool, &hash).await?, None);
 
         Ok(())
     }

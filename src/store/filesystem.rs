@@ -317,26 +317,18 @@ mod tests {
 
     #[derive(Default)]
     struct TestData {
-        events: Vec<(usize, TestEvent)>,
-        last_event_id: usize,
-        last_event_hash: [u8; 32],
+        events: Vec<StoreEvent<TestEvent>>,
     }
 
     impl StoreData for TestData {
         type Event = TestEvent;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
-            self.last_event_id = event.event_id;
-            self.last_event_hash = event.hash;
-            self.events.push((event.event_id, event.payload));
+            self.events.push(event);
         }
 
-        fn last_event_id(&self) -> usize {
-            self.last_event_id
-        }
-
-        fn last_event_hash(&self) -> [u8; 32] {
-            self.last_event_hash
+        fn events(&self) -> &[StoreEvent<Self::Event>] {
+            &self.events
         }
     }
 
@@ -412,8 +404,13 @@ mod tests {
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 2);
         assert_ne!(data.last_event_hash(), GENESIS_HASH);
+        let applied: Vec<(usize, TestEvent)> = data
+            .events
+            .iter()
+            .map(|e| (e.event_id, e.payload.clone()))
+            .collect();
         assert_eq!(
-            data.events,
+            applied,
             vec![
                 (
                     1,
@@ -588,7 +585,7 @@ mod tests {
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 6);
         assert_eq!(data.events.len(), 2);
-        assert_eq!(data.events[1].0, 6);
+        assert_eq!(data.events[1].event_id, 6);
 
         Ok(())
     }

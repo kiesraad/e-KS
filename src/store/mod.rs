@@ -22,9 +22,18 @@ pub trait StoreData: Default + Send + Sync + 'static {
 
     /// Apply a fully wrapped store event to the data projection.
     fn apply(&mut self, event: StoreEvent<Self::Event>);
+
+    /// All events applied to this projection, in order.
+    fn events(&self) -> &[StoreEvent<Self::Event>];
+
     /// Return the last applied event ID for this data instance.
-    fn last_event_id(&self) -> usize;
+    fn last_event_id(&self) -> usize {
+        self.events().last().map(|e| e.event_id).unwrap_or(0)
+    }
+
     /// Return the chain hash of the last applied event, or [`GENESIS_HASH`] if
     /// no events have been applied yet.
-    fn last_event_hash(&self) -> [u8; 32];
+    fn last_event_hash(&self) -> [u8; 32] {
+        self.events().last().map(|e| e.hash).unwrap_or(GENESIS_HASH)
+    }
 }

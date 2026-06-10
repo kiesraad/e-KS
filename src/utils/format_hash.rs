@@ -11,6 +11,32 @@ pub fn format_hash(hash: &[u8], half: bool) -> String {
     out
 }
 
+/// Parse a hash entered as hex back into its raw bytes.
+///
+/// The inverse of [`format_hash`]: whitespace is ignored and hex digits are
+/// case-insensitive, so a value copied straight from a rendered hash (e.g.
+/// `"F381 3DE7 96D3 8033 …"`) parses cleanly. The result can be shorter than a
+/// full 32-byte chain hash — [`format_hash`] renders only the first half by
+/// default — and is matched as a prefix when looking the event up.
+///
+/// Returns `None` for empty input, an odd number of hex digits, a non-hex
+/// character, or more than 32 bytes (longer than a chain hash).
+pub fn parse_hash(input: &str) -> Option<Vec<u8>> {
+    let digits: Vec<char> = input.chars().filter(|c| !c.is_whitespace()).collect();
+    if digits.is_empty() || !digits.len().is_multiple_of(2) || digits.len() > 64 {
+        return None;
+    }
+
+    digits
+        .chunks(2)
+        .map(|pair| {
+            let hi = pair[0].to_digit(16)?;
+            let lo = pair[1].to_digit(16)?;
+            Some((hi * 16 + lo) as u8)
+        })
+        .collect()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -44,6 +70,36 @@ mod tests {
     #[test]
     fn empty_hash_produces_empty_string() {
         assert_eq!(format_hash(&[], false), "");
+    }
+
+    #[test]
+    fn parse_hash_round_trips_a_formatted_hash() {
+        let hash: [u8; 32] = [
+            0xF3, 0x81, 0x3D, 0xE7, 0x96, 0xD3, 0x80, 0x33, 0xFA, 0xF5, 0x8D, 0x2C, 0xE6, 0x94,
+            0x61, 0xF0, 0x91, 0x84, 0x44, 0x6B, 0x54, 0x15, 0x8D, 0x5D, 0x67, 0x4A, 0xB7, 0xBC,
+            0xE9, 0x2C, 0xE9, 0x8A,
+        ];
+
+        assert_eq!(parse_hash(&format_hash(&hash, false)).unwrap(), hash);
+        // The half-hash that documents render parses to the first 16 bytes.
+        assert_eq!(parse_hash(&format_hash(&hash, true)).unwrap(), hash[..16]);
+    }
+
+    #[test]
+    fn parse_hash_is_case_insensitive_and_ignores_whitespace() {
+        assert_eq!(
+            parse_hash("de ad\tBE\nef").unwrap(),
+            [0xDE, 0xAD, 0xBE, 0xEF]
+        );
+    }
+
+    #[test]
+    fn parse_hash_rejects_malformed_input() {
+        assert_eq!(parse_hash(""), None);
+        assert_eq!(parse_hash("   "), None);
+        assert_eq!(parse_hash("abc"), None); // odd digit count
+        assert_eq!(parse_hash("zz"), None); // non-hex
+        assert_eq!(parse_hash(&"a".repeat(66)), None); // longer than 32 bytes
     }
 
     #[test]
