@@ -1,15 +1,7 @@
 use axum_extra::routing::TypedPath as _;
 
 use crate::{
-    AppError, AppStore, QueryParamState,
-    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
-    list_designation::ListDesignation,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
-    persons::Person,
-    political_groups::PoliticalGroup,
-    submit::SubmitPath,
+    AppError, AppStore, Locale, QueryParamState, candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList}, common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity}, list_designation::ListDesignation, list_submitters::ListSubmitter, name_authorisations::NameAuthorisation, persons::Person, political_groups::PoliticalGroup, submit::SubmitPath
 };
 
 impl PotentialProblems {
@@ -72,7 +64,7 @@ pub struct AllProblems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
     pub lists: Vec<ListProblems>,
-    pub infos: Vec<EntityInfoProblems>,
+    pub info_problems: Vec<EntityInfoProblems>,
 }
 
 impl AllProblems {
@@ -85,7 +77,7 @@ impl AllProblems {
             general,
             candidates,
             lists,
-            infos: [general_info, candidates_info, lists_info]
+            info_problems: [general_info, candidates_info, lists_info]
                 .into_iter()
                 .flatten()
                 .collect(),
@@ -437,6 +429,27 @@ impl EntityInfoProblems {
                 .to_string(),
         }
     }
+    pub fn translate(&self, locale: &Locale) -> String {
+        match self {
+            EntityInfoProblems::AnyProblem(problem) => problem.translate(locale),
+            EntityInfoProblems::List { problem, .. } => problem.translate(locale),
+            EntityInfoProblems::Submitter { problem, .. } => problem.translate(locale),
+            EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.translate(locale),
+            EntityInfoProblems::Person { problem, .. } => problem.translate(locale),
+            EntityInfoProblems::NameAuthorisation {  problem, .. } => problem.translate(locale),
+        }
+    }
+
+    pub fn severity(&self) -> Severity {
+        match self {
+            EntityInfoProblems::AnyProblem(problem) => problem.severity(),
+            EntityInfoProblems::List { problem, .. } => problem.severity(),
+            EntityInfoProblems::Submitter { problem, .. } => problem.severity(),
+            EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.severity(),
+            EntityInfoProblems::Person { problem, .. } => problem.severity(),
+            EntityInfoProblems::NameAuthorisation {  problem, .. } => problem.severity(),
+        }
+    }
 }
 
 #[cfg(test)]
@@ -496,7 +509,7 @@ mod tests {
                 general: empty_general(),
                 candidates: Vec::new(),
                 lists: Vec::new(),
-                infos: Vec::new()
+                info_problems: Vec::new()
             }
             .models_downloadable()
         );
@@ -512,7 +525,7 @@ mod tests {
                         max: 12
                     }],
                 }],
-                infos: Vec::new()
+                info_problems: Vec::new()
             }
             .models_downloadable()
         );
@@ -525,7 +538,7 @@ mod tests {
                     problems: vec![PotentialProblems::NoCandidates]
                 }],
                 lists: Vec::new(),
-                infos: Vec::new()
+                info_problems: Vec::new()
             }
             .models_downloadable()
         );

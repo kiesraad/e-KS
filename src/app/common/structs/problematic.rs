@@ -266,42 +266,17 @@ impl PotentialProblems {
 
 #[derive(Clone, PartialEq, Debug, Serialize)]
 pub enum InfoProblems {
-    FewCandidatesWithFirstName {
-        // list: CandidateList,
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithoutFirstName {
-        // list: CandidateList,
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithGender {
-        // list: CandidateList,
-        count: usize,
-        total: usize,
-    },
-    FewCandidatesWithoutGender {
-        // list: CandidateList,
-        count: usize,
-        total: usize,
-    },
+    FewCandidatesWithFirstName { count: usize, total: usize },
+    FewCandidatesWithoutFirstName { count: usize, total: usize },
+    FewCandidatesWithGender { count: usize, total: usize },
+    FewCandidatesWithoutGender { count: usize, total: usize },
     NoPreviousElectionResults,
     NoSubstituteSubmitter,
     NoListDesignation,
-    VeryOldDateOfBirth, // {
-    // person: Person,
-    //},
-    NoInitials, // {
-    // submitter: ListSubmitter,
-    //},
-    NoLastName, // {
-    // submitter: ListSubmitter,
-    //},
-    IncompleteAddress {
-        // person: Person,{ .. }
-        problems: Vec<EmptyAddressProblems>,
-    },
+    VeryOldDateOfBirth,
+    NoInitials,
+    NoLastName,
+    IncompleteAddress { problems: Vec<EmptyAddressProblems> },
 }
 
 impl InfoProblems {

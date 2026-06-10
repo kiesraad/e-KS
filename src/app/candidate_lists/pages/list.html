@@ -45,7 +45,7 @@
                 <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
                 {% if candidate_list.data.list.electoral_districts.len() == election.electoral_districts().len() &&
                   candidate_list.data.duplicate_districts.is_empty() %}
-                  <p>{{ "candidate_list.summary.districts.all"|trans }}</p>
+                  <p>{{ "candidate_list.districts.all"|trans }}</p>
                 {% else %}
                   <ul class="tags-list">
                     {% for district in candidate_list.data.list.electoral_districts %}
