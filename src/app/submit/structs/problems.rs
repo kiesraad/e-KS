@@ -1,7 +1,15 @@
 use axum_extra::routing::TypedPath as _;
 
 use crate::{
-    AppError, AppStore, Locale, QueryParamState, candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList}, common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity}, list_designation::ListDesignation, list_submitters::ListSubmitter, name_authorisations::NameAuthorisation, persons::Person, political_groups::PoliticalGroup, submit::SubmitPath
+    AppError, AppStore, Locale, QueryParamState,
+    candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
+    common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    list_designation::ListDesignation,
+    list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
+    persons::Person,
+    political_groups::PoliticalGroup,
+    submit::SubmitPath,
 };
 
 impl PotentialProblems {
@@ -436,7 +444,7 @@ impl EntityInfoProblems {
             EntityInfoProblems::Submitter { problem, .. } => problem.translate(locale),
             EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.translate(locale),
             EntityInfoProblems::Person { problem, .. } => problem.translate(locale),
-            EntityInfoProblems::NameAuthorisation {  problem, .. } => problem.translate(locale),
+            EntityInfoProblems::NameAuthorisation { problem, .. } => problem.translate(locale),
         }
     }
 
@@ -447,7 +455,7 @@ impl EntityInfoProblems {
             EntityInfoProblems::Submitter { problem, .. } => problem.severity(),
             EntityInfoProblems::SubstituteSubmitter { problem, .. } => problem.severity(),
             EntityInfoProblems::Person { problem, .. } => problem.severity(),
-            EntityInfoProblems::NameAuthorisation {  problem, .. } => problem.severity(),
+            EntityInfoProblems::NameAuthorisation { problem, .. } => problem.severity(),
         }
     }
 }

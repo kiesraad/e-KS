@@ -410,6 +410,7 @@ mod tests {
             house_number: Some("10".parse().expect("house number")),
             house_number_addition: None,
             street_name: Some("Stationsstraat".parse().expect("street name")),
+            known_in_bag: Some(true),
         }
     }
 
@@ -473,6 +474,24 @@ mod tests {
             !problems
                 .potential_problems
                 .contains(&PotentialProblems::NoRepresentative)
+        );
+    }
+
+    #[test]
+    fn non_dutch_person_with_representative_address_unknown_in_bag_produces_wrapped_problem() {
+        let mut person = sample_person(PersonId::new());
+        person.personal_data.country = Some("BE".parse().expect("country code"));
+        let mut representative = complete_representative();
+        representative.address.known_in_bag = Some(false);
+        person.representative = Some(representative);
+        let problems = person.get_problems(ElectionConfig::EK27);
+        // the representative's unknown address is surfaced through the wrapper
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::RepresentativeProblem(Box::new(
+                    PotentialProblems::UnknownAddress
+                )))
         );
     }
 

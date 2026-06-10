@@ -84,11 +84,11 @@ impl Ord for Person {
 mod tests {
     use super::*;
     use crate::{
-        common::Gender,
+        common::{Gender, PlaceOfResidence},
         persons::PersonId,
         test_utils::{
             parse_first_name, parse_initials, parse_last_name, parse_last_name_prefix,
-            parse_place_of_residence, sample_person_with,
+            sample_person_with,
         },
     };
     use chrono::{TimeZone, Utc};
@@ -237,7 +237,7 @@ mod tests {
         let mut b = person_with_id(2);
 
         a.personal_data.place_of_residence = None;
-        b.personal_data.place_of_residence = Some(parse_place_of_residence("Utrecht"));
+        b.personal_data.place_of_residence = Some(PlaceOfResidence::Known("Utrecht".to_string()));
         a.name.last_name = parse_last_name("Zulu");
         b.name.last_name = parse_last_name("Alpha");
         assert_eq!(
@@ -245,8 +245,8 @@ mod tests {
             Ordering::Less
         );
 
-        a.personal_data.place_of_residence = Some(parse_place_of_residence("Amsterdam"));
-        b.personal_data.place_of_residence = Some(parse_place_of_residence("Amsterdam"));
+        a.personal_data.place_of_residence = Some(PlaceOfResidence::Known("Amsterdam".to_string()));
+        b.personal_data.place_of_residence = Some(PlaceOfResidence::Known("Amsterdam".to_string()));
         a.name.last_name = parse_last_name("Alpha");
         b.name.last_name = parse_last_name("Zulu");
         assert_eq!(

@@ -6,6 +6,7 @@ use crate::{
         InfoProblems, PotentialProblems, Problematic, Problems, Severity,
         structs::problematic::EmptyAddressProblems,
     },
+    utils::bag,
 };
 
 use super::{
@@ -29,6 +30,8 @@ pub struct DutchAddress {
     pub locality: Option<Locality>,
     /// Dutch postal code.
     pub postal_code: Option<PostalCode>,
+    /// Address found in the BAG.
+    pub known_in_bag: Option<bool>,
 }
 
 impl DutchAddress {
@@ -40,42 +43,78 @@ impl DutchAddress {
             && self.postal_code.is_empty_or_none()
             && self.locality.is_empty_or_none()
     }
+
+    /// Recompute [`known_in_bag`](Self::known_in_bag) from the current fields.
+    ///
+    /// When all of postal code, house number, street name and locality are
+    /// present, the address is looked up in the BAG and the field is set to
+    /// whether it matches. If any of those fields is missing the address
+    /// cannot be checked, so the field is reset to `None`.
+    pub fn update_is_known_in_bag(&mut self) {
+        match (
+            &self.postal_code,
+            &self.house_number,
+            &self.street_name,
+            &self.locality,
+        ) {
+            (Some(postal_code), Some(house_number), Some(street_name), Some(locality)) => {
+                let is_known_in_bag = bag::address_exists(
+                    &postal_code.to_string(),
+                    house_number.as_number(),
+                    &street_name.to_string(),
+                    &locality.to_string(),
+                );
+
+                self.known_in_bag = Some(is_known_in_bag);
+            }
+            _ => {
+                self.known_in_bag = None;
+            }
+        }
+    }
 }
 
 impl Problematic<Severity> for DutchAddress {
     fn get_problems(&self, severity: Severity) -> Problems {
-        let mut problems = Vec::new();
+        let mut potential_problems = Vec::new();
+        let mut info_problems = Vec::new();
+        let mut address_problems = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            problems.push(EmptyAddressProblems::StreetName);
+            address_problems.push(EmptyAddressProblems::StreetName);
         }
+
         if self.house_number.is_empty_or_none() {
-            problems.push(EmptyAddressProblems::HouseNumber);
+            address_problems.push(EmptyAddressProblems::HouseNumber);
         }
 
         if self.postal_code.is_empty_or_none() {
-            problems.push(EmptyAddressProblems::PostalCode);
+            address_problems.push(EmptyAddressProblems::PostalCode);
         }
 
         if self.locality.is_empty_or_none() {
-            problems.push(EmptyAddressProblems::Locality);
+            address_problems.push(EmptyAddressProblems::Locality);
         }
 
-        if problems.is_empty() {
-            Problems::new_empty()
-        } else if severity == Severity::Info {
-            Problems {
-                potential_problems: Vec::new(),
-                info_problems: vec![InfoProblems::IncompleteAddress { problems }],
-            }
-        } else {
-            Problems {
-                potential_problems: vec![PotentialProblems::IncompleteAddress {
+        if !address_problems.is_empty() {
+            if severity == Severity::Info {
+                info_problems.push(InfoProblems::IncompleteAddress {
+                    problems: address_problems,
+                });
+            } else {
+                potential_problems.push(PotentialProblems::IncompleteAddress {
                     severity,
-                    problems,
-                }],
-                info_problems: Vec::new(),
+                    problems: address_problems,
+                });
             }
+        }
+        if self.known_in_bag == Some(false) {
+            potential_problems.push(PotentialProblems::UnknownAddress);
+        }
+
+        Problems {
+            potential_problems,
+            info_problems,
         }
     }
 }
@@ -162,6 +201,14 @@ impl Default for Address {
 }
 
 impl Address {
+    /// Recompute the BAG match for a Dutch address. International addresses
+    /// have no BAG equivalent, so this is a no-op for them.
+    pub fn update_is_known_in_bag(&mut self) {
+        if let Address::Dutch(address) = self {
+            address.update_is_known_in_bag();
+        }
+    }
+
     pub fn as_dutch(&self) -> Option<&DutchAddress> {
         match self {
             Address::Dutch(address) => Some(address),
@@ -284,6 +331,7 @@ mod tests {
             house_number_addition: Some(HouseNumberAddition::from_str("a").unwrap()),
             locality: Some(Locality::from_str("Amsterdam").unwrap()),
             postal_code: Some(PostalCode::from_str("1234 AB").unwrap()),
+            known_in_bag: Some(true),
         }
     }
 
@@ -311,6 +359,7 @@ mod tests {
             house_number_addition: Some(HouseNumberAddition::default()),
             locality: Some(Locality::default()),
             postal_code: Some(PostalCode::default()),
+            known_in_bag: None,
         };
 
         assert!(address.is_empty());

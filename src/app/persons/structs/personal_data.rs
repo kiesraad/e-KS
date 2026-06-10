@@ -20,9 +20,6 @@ pub struct PersonalData {
 }
 
 impl Problematic<ElectionConfig> for PersonalData {
-    // This implementation will be merged with implementation below, once
-    // `Problematic` gets the overhaul specified in
-    // https://github.com/kiesraad/e-ks/issues/785
     fn get_problems(&self, election: ElectionConfig) -> Problems {
         let mut potential_problems = Vec::new();
         let mut info_problems = Vec::new();
@@ -31,8 +28,15 @@ impl Problematic<ElectionConfig> for PersonalData {
             potential_problems.push(PotentialProblems::NoBsn);
         }
 
-        if self.place_of_residence.is_empty_or_none() {
-            potential_problems.push(PotentialProblems::NoPlaceOfResidence);
+        match &self.place_of_residence {
+            None => potential_problems.push(PotentialProblems::NoPlaceOfResidence),
+            Some(p) if p.as_str().is_empty() => {
+                potential_problems.push(PotentialProblems::NoPlaceOfResidence)
+            }
+            Some(PlaceOfResidence::Unknown(_)) => {
+                potential_problems.push(PotentialProblems::UnknownPlaceOfResidence)
+            }
+            _ => {}
         }
 
         if self.country.is_empty_or_none() {

@@ -115,9 +115,9 @@
                 <ul class="warnings tags-list">
                   {% for problem in problems.info_problems %}
                     <li class="tag">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ problem.fix_path() }}">{{ problem.translate(locale) }}</a>
-                      </li>
+                      <a class="{{ problem.severity().class() }}"
+                         href="{{ problem.fix_path() }}">{{ problem.translate(locale) }}</a>
+                    </li>
                   {% endfor %}
                 </ul>
               </section>

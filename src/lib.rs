@@ -82,10 +82,7 @@ pub use app::{
     persons, political_groups, render_error_pages, submit, substitute_list_submitters,
 };
 
-#[cfg(any(
-    all(feature = "dev-features", not(feature = "embed-bag")),
-    not(feature = "memory-serve")
-))]
+#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub use app::proxy_handler;
 pub use auth::{
     derive_id::IdDeriver,
