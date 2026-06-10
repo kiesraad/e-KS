@@ -90,7 +90,7 @@ typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git",
 bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
 
 # kiesraad
-eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git" } # TODO: replace with crates.io version when the branch gets merged
+eml-nl = "0.6.0"
 
 [build-dependencies]
 memory-serve = { version = "2.1.0", optional = true }
