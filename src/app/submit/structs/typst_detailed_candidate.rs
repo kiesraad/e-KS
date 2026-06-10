@@ -112,6 +112,7 @@ mod tests {
                 house_number_addition: None,
                 postal_code: Some(PostalCode::from_str("1234AB").unwrap()),
                 locality: Some(Locality::from_str("Amsterdam").unwrap()),
+                known_in_bag: Some(true),
             },
         });
         let typst_candidate =

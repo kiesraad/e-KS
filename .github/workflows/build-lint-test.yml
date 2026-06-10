@@ -135,7 +135,7 @@ jobs:
         run: cargo --locked clippy --all-targets --no-default-features -- -D warnings
 
       - name: Run tests
-        run: cargo --locked test --features embed-typst,embed-bag -- --nocapture
+        run: cargo --locked test --features embed-typst -- --nocapture
 
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
@@ -211,7 +211,7 @@ jobs:
 
       - name: Build
         env:
-          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,embed-typst,embed-bag"
+          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,embed-typst"
         run: bin/build
 
       - name: Strip debug symbols

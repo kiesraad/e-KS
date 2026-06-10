@@ -24,10 +24,7 @@ pub use store::AppStoreData;
 
 pub(crate) use store::request_extractor;
 
-#[cfg(any(
-    all(feature = "dev-features", not(feature = "embed-bag")),
-    not(feature = "memory-serve")
-))]
+#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub use middleware::proxy::proxy_handler;
 
 #[cfg(test)]
