@@ -10,6 +10,7 @@ import addressLookup from "./scripts/form-inputs/lookup";
 import setupPositionPreview from "./scripts/form-inputs/position-preview";
 import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
 import setupModal from "./scripts/generic-ui/modal";
+import setupHintPopover from "./scripts/generic-ui/hint-popover";
 import setupOverlay from "./scripts/generic-ui/overlay";
 import setupRememberScroll from "./scripts/generic-ui/remember-scroll";
 import setupTextSearch from "./scripts/generic-ui/search";
@@ -49,6 +50,7 @@ listDesignation();
 // generic UI
 setupStickyNav();
 setupModal();
+setupHintPopover();
 setupOverlay();
 setupStepNav();
 setupTextSearch();
