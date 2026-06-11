@@ -19,26 +19,22 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - (sprint 10) Definitieve inlevering (inclusief vervolgstappenplan voor partij: Infographic)
 - (sprint 11) Samengestelde lijst (aanduiding samenvoegen) + blanco lijst
 
-### Mei t/m oktober (5 maanden: 11 sprints)
-- (!) Herstel verzuimen
-- (!) Betalingsbewijs waarborgsom
-- (!) EML (kandidatenlijsten, totaallijst en verkiezingsdefinitie)
-- (!) Verklaring voorgenomen vestiging (relevant bij Provenciale Staten, Waterschappen (algemeen bestuur) en Gemeenteraad). Zie art. H7.
-- (!) Monitoring
-- Defintieve kandidatenlijsten opstellen en uitprinten (model I4)
-- Voorlopige kandidatenlijsten opstellen en uitprinten (model I1)
+### Juni t/m oktober (5 maanden: 11 sprints)
+- Importeren gegevens van Politieke groepering
 - Overzichtspagina voor CSB's
-- Registratie partijen fase 1
-- Verzuimen invoeren door CSB
-- Verzuimbrieven genereren
-- Design systeem
-- Instemmingsverklaring afgeven (nice to have: inlog DigiD)
-- Gebruikersbeheer
-- Goedkeuring door CSB
-- Afkeuren/schrappen door CSB
+- Verzuimen (invoeren door CSB)
 - Ambtelijke correctie door het CSB
-- Gegevens versleutelen
-- Kiesraad dashboard
+- BRP check
+- Voorlopige kandidatenlijsten opstellen en uitprinten (model I1)
+- Verzuimbrieven genereren
+- Herstel verzuimen
+- Monitoring
+- CSB inlog methodes
+- Afkeuren/schrappen door CSB
+- Productiehosting omgeving
+- Resultaten zitting verwerken
+- Defintieve kandidatenlijsten opstellen en uitprinten (model I4)
+- EML (kandidatenlijsten, totaallijst en verkiezingsdefinitie)
 
 ### Later (niet voor Eerste kamer relevant)
 - Ondersteuningsverklaringen fase 2
@@ -49,6 +45,10 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - Verkiezingsbeheer voor politieke partij
 - Meldingen inrichten
 - To do lijst voor politieke partijen
+- Betalingsbewijs waarborgsom
+- Verklaring voorgenomen vestiging (relevant bij Provenciale Staten, Waterschappen (algemeen bestuur) en Gemeenteraad). Zie art. H7.
+- Registratie partijen fase 1
+- Instemmingsverklaring afgeven (nice to have: inlog DigiD)
   
 # Change log
 
