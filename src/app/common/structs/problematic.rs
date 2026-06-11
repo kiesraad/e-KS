@@ -22,7 +22,7 @@ impl Severity {
     }
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct Problems {
     pub potential_problems: Vec<PotentialProblems>,
     pub info_problems: Vec<InfoProblems>,
@@ -101,7 +101,7 @@ pub trait Problematic<T> {
     fn get_problems(&self, additional_data: T) -> Problems;
 }
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct WithProblems<T> {
     pub data: T,
     pub problems: Problems,

@@ -1,5 +1,3 @@
-use serde::Serialize;
-
 use crate::{
     AppError, AppStore,
     candidate_lists::{CandidateList, CandidateListId},
@@ -7,7 +5,7 @@ use crate::{
     persons::PersonId,
 };
 
-#[derive(Debug, Clone, Serialize)]
+#[derive(Debug, Clone)]
 pub struct FullCandidateList {
     pub list: CandidateList,
     pub candidates: Vec<CandidateWithProblems>,
