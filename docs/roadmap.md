@@ -30,7 +30,7 @@ sizing in repo van de epics: S, M, L, XL (M = twee weken met het hele team)
 - Herstel verzuimen
 - Monitoring
 - CSB inlog methodes
-- Afkeuren/schrappen door CSB
+- Goedkeuring/afkeuren/schrappen door CSB
 - Productiehosting omgeving
 - Resultaten zitting verwerken
 - Defintieve kandidatenlijsten opstellen en uitprinten (model I4)
