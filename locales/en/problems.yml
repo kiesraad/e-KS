@@ -1,6 +1,6 @@
 and_other_problems: "(and {} other problems)"
 and_other_problems_one: (and 1 other problem)
-candidate_too_young: Candidate too young to participate in election
+candidate_too_young: Too young
 duplicate_districts: Duplicate districts
 few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"
 few_candidates_with_first_name_one: "Just 1 out of {} candidates has a first name specified"
@@ -10,25 +10,25 @@ few_candidates_without_first_name: "Just {} out of {} candidates don't have a fi
 few_candidates_without_first_name_one: "Just 1 out of {} candidates doesn't have a first name specified"
 few_candidates_without_gender: "Just {} out of {} candidates don't have a gender specified"
 few_candidates_without_gender_one: "Just 1 out of {} candidates doesn't have a gender specified"
-incomplete_address: Address is incomplete
+incomplete_address: Address
 no_authorised_agent: No authorised agent added
-no_bsn: BSN is missing
-no_candidate_list: No candidate list added
-no_candidates: No candidates added
-no_country_of_residence: Country of residence is missing
-no_date_of_birth: Date of birth is missing
-no_designation_type: Designation type is missing
-no_display_name: Registered designation is missing
-no_districts: No districts selected
-no_initials: Initials are missing
-no_last_name: Last name is missing
-no_legal_name: Statutory name is missing
-no_list_submitter: No list submitter added
-no_place_of_residence: Place of residence is missing
-no_previous_election_results: Previous election results are missing
+no_bsn: BSN
+no_candidate_list: No candidate list
+no_candidates: No candidates
+no_country_of_residence: Country of residence
+no_date_of_birth: Date of birth
+no_designation_type: Designation type
+no_display_name: Registered designation
+no_districts: List without districts
+no_initials: Initials
+no_last_name: Last name
+no_legal_name: Statutory name
+no_list_submitter: No list submitter
+no_place_of_residence: Place of residence
+no_previous_election_results: Mp Previous election results
 no_problems: Complete 🎉
-no_representative: Authorised person is missing
-no_substitute_submitter: No substitute submitter added
+no_representative: No authorised person
+no_substitute_submitter: No substitute submitter
 representative: Authorised person
 too_few_authorized_names: "{} statutory names too few"
 too_few_authorized_names_one: 1 statutory name too few
