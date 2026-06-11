@@ -54,18 +54,15 @@ impl Problems {
 
     /// Returns the CSS class associated with the highest severity
     pub fn highest_severity_class(&self) -> &'static str {
-        match self.highest_severity() {
-            None => "ok",
-            Some(severity) => severity.class(),
-        }
+        self.highest_severity()
+            .map(|severity| severity.class())
+            .unwrap_or("ok")
     }
 
     pub fn has_severity_or_higher(&self, severity: Severity) -> bool {
-        if let Some(highest_severity) = self.highest_severity() {
-            highest_severity >= severity
-        } else {
-            false
-        }
+        self.highest_severity()
+            .map(|highest| highest >= severity)
+            .unwrap_or(false)
     }
 
     /// Get a summary of the potential problems, if any
@@ -81,7 +78,7 @@ impl Problems {
             potential_problems
                 .chain(info_problems)
                 .collect::<Vec<_>>()
-                .join(", "),
+                .join("\n"),
         )
     }
 
