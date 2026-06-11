@@ -35,7 +35,7 @@ pub async fn index(
             problems.iter().map(|p| p.severity()).max()
         }
         .map(|severity| severity.class())
-        .unwrap_or_default();
+        .unwrap_or("success");
 
         (problems.len() + general_infos.len(), severity_class)
     };

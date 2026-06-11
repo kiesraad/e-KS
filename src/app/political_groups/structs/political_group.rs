@@ -17,7 +17,8 @@ impl Problematic<()> for PoliticalGroup {
         Problems::merge(vec![
             self.display_name.get_problems(self.list_designation),
             self.list_designation.get_problems(()),
-            self.previous_election_results.get_problems(()),
+            self.previous_election_results
+                .get_problems(self.list_designation),
         ])
     }
 }

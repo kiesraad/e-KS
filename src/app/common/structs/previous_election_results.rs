@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     common::{InfoProblems, Problematic, Problems},
     form::ValidationError,
+    list_designation::ListDesignation,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
@@ -36,14 +37,15 @@ impl std::fmt::Display for PreviousElectionResults {
     }
 }
 
-impl Problematic<()> for Option<PreviousElectionResults> {
-    fn get_problems(&self, _: ()) -> Problems {
+impl Problematic<Option<ListDesignation>> for Option<PreviousElectionResults> {
+    fn get_problems(&self, list_designation: Option<ListDesignation>) -> Problems {
         Problems {
             potential_problems: Vec::new(),
-            info_problems: self
-                .is_none()
-                .then_some(vec![InfoProblems::NoPreviousElectionResults])
-                .unwrap_or_default(),
+            info_problems: if list_designation != Some(ListDesignation::Blank) && self.is_none() {
+                vec![InfoProblems::NoPreviousElectionResults]
+            } else {
+                Vec::new()
+            },
         }
     }
 }

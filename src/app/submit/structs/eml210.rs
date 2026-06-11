@@ -328,8 +328,6 @@ impl Eml210 {
                 list_data,
                 candidates: candidates
                     .iter()
-                    // TODO HELP!!
-                    // .map(|c| c.data) // <-- why doesn't this just work?
                     .map(|c| (&c.data).try_into())
                     .collect::<Result<Vec<_>, AppError>>()?,
             })
