@@ -120,7 +120,8 @@ a {
   font-size: var(--font-size-lg);
 }
 
-/* Text wrap, transformations etc. */ .break-word {
+/* Text wrap, transformations etc. */
+.break-word {
   word-break: break-word;
 }
 

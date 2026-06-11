@@ -9,12 +9,13 @@
   font-weight: 600;
   height: var(--badge-size);
   line-height: var(--badge-size);
+  width: var(--badge-size);
+  flex-shrink: 0;
   position: relative;
   text-align: center;
   transition-duration: 300ms;
   transition-property: filter, background-color;
   transition-timing-function: ease-in-out;
-  width: var(--badge-size);
 
   &:is(.badge-candidates-list) {
     --badge-icon: url("../icons/badge-candidates-list.svg");
@@ -32,9 +33,18 @@
     --badge-icon: url("../icons/badge-politician.svg");
   }
 
+  &:is(.badge-submit) {
+    --badge-icon: url("../icons/badge-submit.svg");
+  }
+
   &:is(.locked) {
     --badge-bg: var(--gray-200);
     --badge-icon: url("../icons/badge-locked.svg");
+  }
+
+  &:is(.success) {
+    --badge-bg: var(--green-200);
+    --badge-icon: url("../icons/badge-success.svg");
   }
 
   &:is(.warning) {

@@ -18,7 +18,7 @@ pub mod server;
 pub mod translate;
 
 pub use config::{Config, TlsConfig, get_env};
-pub use csv::{Csv, CsvError};
+pub use csv::{Csv, CsvError, reader_from_bytes};
 pub use election::{ElectionConfig, ElectionType, ElectoralDistrict, Province, WaterCouncil};
 pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};

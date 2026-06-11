@@ -28,7 +28,7 @@ impl PoliticalGroupSteps {
         let list_submitter = store.get_list_submitter();
         let substitute_submitters = store.get_substitute_submitters();
 
-        let basic_info_empty = political_group.is_basic_info_empty();
+        let group_info_empty = political_group.is_group_information_empty();
         let is_blank = political_group.list_designation == Some(ListDesignation::Blank);
         let is_combined = political_group.list_designation == Some(ListDesignation::Combined);
 
@@ -36,9 +36,9 @@ impl PoliticalGroupSteps {
             is_blank,
             is_combined,
             list_designation_state: Self::list_designation_state(&political_group),
-            basic_state: Self::basic_state(basic_info_empty, &political_group),
+            basic_state: Self::basic_state(group_info_empty, &political_group),
             name_authorisations_state: Self::name_authorisations_state(
-                basic_info_empty,
+                group_info_empty,
                 &name_authorisations,
             ),
             submitters_state: Self::submitters_state(
@@ -53,7 +53,7 @@ impl PoliticalGroupSteps {
     }
 
     fn list_designation_state(political_group: &PoliticalGroup) -> &'static str {
-        if political_group.list_designation.is_none() {
+        if political_group.is_list_designation_type_empty() {
             "empty"
         } else {
             "ok"

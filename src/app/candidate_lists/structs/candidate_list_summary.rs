@@ -20,21 +20,20 @@ impl Problematic<()> for CandidateListSummary {
     fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
         let mut items = vec![];
 
-        if self.candidate_count() == 0 {
-            items.push(PotentialProblems::NoCandidates);
-        } else if self.candidate_count() > self.max_count {
-            items.push(PotentialProblems::TooManyCandidates {
-                actual: self.candidate_count(),
-                max: self.max_count,
-            });
-        }
-
         if !self.duplicate_districts.is_empty() {
             items.push(PotentialProblems::DuplicateDistricts);
         }
 
         if self.list.electoral_districts.is_empty() {
             items.push(PotentialProblems::NoDistricts)
+        }
+
+        if self.candidate_count() == 0 {
+            items.push(PotentialProblems::NoCandidates);
+        } else if self.candidate_count() > self.max_count {
+            items.push(PotentialProblems::TooManyCandidates {
+                count: self.candidate_count() - self.max_count,
+            });
         }
 
         items
@@ -345,7 +344,7 @@ mod tests {
         let items = list_summary.get_problems(&store);
 
         assert_eq!(items.len(), 2);
-        assert!(items.contains(&PotentialProblems::TooManyCandidates { actual: 1, max: 0 }));
+        assert!(items.contains(&PotentialProblems::TooManyCandidates { count: 1 }));
         assert!(items.contains(&PotentialProblems::DuplicateDistricts));
     }
 }

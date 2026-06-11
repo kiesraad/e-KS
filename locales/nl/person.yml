@@ -47,3 +47,4 @@ title: Alle kandidaten
 total: "<strong>{}</strong> kandidaten toegevoegd"
 view:
   empty: Geen kandidaten beschikbaar.
+with_problems: "{} met problemen"

@@ -14,6 +14,8 @@ use crate::{
 struct CandidateListIndexTemplate {
     candidate_lists: Vec<CandidateListSummary>,
     total_persons: usize,
+    persons_with_problems: usize,
+    person_problem_severity: &'static str,
 }
 
 pub async fn list_candidate_lists(
@@ -22,12 +24,23 @@ pub async fn list_candidate_lists(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let candidate_lists = CandidateListSummary::list(&store);
-    let total_persons = store.get_person_count();
+
+    let persons = store.get_persons();
+    let persons_with_problems = persons.iter().filter(|p| !p.is_all_good(())).count();
+    let person_problem_severity = persons
+        .iter()
+        .map(|p| p.highest_severity(()))
+        .max()
+        .flatten()
+        .map(|severity| severity.class())
+        .unwrap_or_default();
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
             candidate_lists,
-            total_persons,
+            total_persons: persons.len(),
+            persons_with_problems,
+            person_problem_severity,
         },
         context,
     ))

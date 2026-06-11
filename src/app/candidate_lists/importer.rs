@@ -58,7 +58,7 @@ fn ensure_expected_headers(data: &[u8], locale: Locale) -> Result<(), ImportCand
 }
 
 fn has_expected_headers(data: &[u8]) -> bool {
-    let mut reader = csv::Reader::from_reader(data);
+    let mut reader = crate::core::reader_from_bytes(data);
     match reader.headers() {
         Ok(headers) => headers.iter().eq(CSV_HEADERS),
         Err(_) => false,
