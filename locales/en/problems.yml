@@ -1,4 +1,5 @@
-and_more: "(and {} more)"
+and_other_problems: "(and {} other problems)"
+and_other_problems_one: (and 1 other problem)
 candidate_too_young: Candidate too young to participate in election
 duplicate_districts: Duplicate districts
 few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"

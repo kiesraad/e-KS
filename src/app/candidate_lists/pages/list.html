@@ -43,9 +43,13 @@
               {% let problems = candidate_list.get_problems(*()) %}
               {% if !problems.is_empty() %}
                 <p class="{{ candidate_list.highest_severity_class(*() ) }}">
-                  {# TODO: make sure the problems are sorted such that we pick one of the more severe ones here #}
                   {{ problems[0].translate(locale) }}
-                  {% if problems.len() > 1 %}{{ "problems.and_more"|trans(&(problems.len() - 1).to_string()) }}{% endif %}
+                  {% let other_problems = problems.len() - 1 %}
+                  {% if other_problems == 1 %}
+                    {{ "problems.and_other_problems_one"|trans(&(other_problems).to_string()) }}
+                  {% else if other_problems > 1 %}
+                    {{ "problems.and_other_problems"|trans(&(other_problems).to_string()) }}
+                  {% endif %}
                 </p>
               {% endif %}
             </div>
