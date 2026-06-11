@@ -1,6 +1,6 @@
 and_other_problems: "(en {} andere problemen)"
 and_other_problems_one: (en 1 ander probleem)
-candidate_too_young: Te jong
+candidate_too_young: Kandidaat te jong om deel te nemen aan de verkiezing
 duplicate_districts: Dubbele kieskringen
 few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
 few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
@@ -26,8 +26,8 @@ no_legal_name: Statutaire naam
 no_list_submitter: Geen lijstinleveraar
 no_place_of_residence: Woonplaats
 no_previous_election_results: Geen resultaten vorige verkiezing
-no_problems: Compleet 🎉
-no_representative: Geen Gemachtigde
+no_problems: Compleet
+no_representative: Geen gemachtigde
 no_substitute_submitter: Geen vervanger voor het herstel van verzuimen
 representative: Gemachtigde
 too_few_authorized_names: "{} statutaire namen te weinig"

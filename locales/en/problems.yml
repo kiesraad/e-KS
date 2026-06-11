@@ -1,6 +1,6 @@
 and_other_problems: "(and {} other problems)"
 and_other_problems_one: (and 1 other problem)
-candidate_too_young: Too young
+candidate_too_young: Candidate too young to participate in election
 duplicate_districts: Duplicate districts
 few_candidates_with_first_name: "Just {} out of {} candidates have a first name specified"
 few_candidates_with_first_name_one: "Just 1 out of {} candidates has a first name specified"
@@ -25,8 +25,8 @@ no_last_name: Last name
 no_legal_name: Statutory name
 no_list_submitter: No list submitter
 no_place_of_residence: Place of residence
-no_previous_election_results: Mp Previous election results
-no_problems: Complete 🎉
+no_previous_election_results: No previous election results
+no_problems: Complete
 no_representative: No authorised person
 no_substitute_submitter: No substitute submitter
 representative: Authorised person

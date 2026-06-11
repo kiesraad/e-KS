@@ -31,12 +31,12 @@
   text-decoration: none;
   text-wrap: balance;
 
-  &:has(a),
+  &:has(> a),
   &:is(a) {
     cursor: pointer;
   }
 
-  &:has(a):hover,
+  &:has(> a):hover,
   &:is(a):hover {
     --card-bg: var(--gray-25);
     --card-chevron-translate: var(--space-1);

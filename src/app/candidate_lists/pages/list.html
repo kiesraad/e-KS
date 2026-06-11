@@ -88,9 +88,11 @@
         {# do not show the add button #}
       {% else %}
         <div class="card card-add-list">
-          <a href="{{ CandidateList::create_path() }}"
-             class="button secondary icon-plus">{{
-          "candidate_list.actions.add"|trans }}</a>
+          <div>
+            <a href="{{ CandidateList::create_path() }}"
+               class="button secondary icon-plus">{{
+            "candidate_list.actions.add"|trans }}</a>
+          </div>
         </div>
       {% endif %}
     </div>
