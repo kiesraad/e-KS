@@ -1,7 +1,7 @@
 //! Locality (place / city name).
 //!
 //! Validation rules (via `FromStr`):
-//! - Whitespace is trimmed; the value must be 2..=200 characters.
+//! - Whitespace is trimmed; the value must be 1..=200 characters.
 //! - Only Teletex characters are allowed.
 //! - Known non-official names are replaced by their official counterpart
 //!   (see [`replace_locality_alias`]).

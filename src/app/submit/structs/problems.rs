@@ -16,13 +16,12 @@ impl PotentialProblems {
     pub fn candidate_list_fix_path(&self, list: &CandidateList) -> String {
         match self {
             PotentialProblems::NoCandidates => list.view_path().to_string(),
-            PotentialProblems::TooManyCandidates { actual, max } => {
-                let overflow = actual.saturating_sub(*max);
-                list.view_path()
-                    .with_query_params(QueryParamState::highlight_last(overflow))
-                    .to_string()
-            }
-            _ => list.update_path().to_string(),
+            PotentialProblems::TooManyCandidates { count } => list
+                .view_path()
+                .with_query_params(QueryParamState::highlight_last(*count))
+                .to_string(),
+            PotentialProblems::DuplicateDistricts => CandidateList::list_path().to_string(),
+            _ => list.view_path().to_string(),
         }
     }
 
@@ -92,7 +91,7 @@ impl AllProblems {
         })
     }
 
-    fn find_general_problems(store: &AppStore) -> (GeneralProblems, Vec<EntityInfoProblems>) {
+    pub fn find_general_problems(store: &AppStore) -> (GeneralProblems, Vec<EntityInfoProblems>) {
         let mut info_problems = Vec::new();
         let mut general = Vec::new();
 
@@ -219,27 +218,22 @@ impl AllProblems {
         match list_designation {
             ListDesignation::Standalone if authorised_names_count > 1 => {
                 vec![PotentialProblems::TooManyAuthorizedNames {
-                    actual: authorised_names_count,
-                    max: 1,
+                    count: authorised_names_count - 1,
                 }]
             }
             ListDesignation::Standalone if authorised_names_count < 1 => {
-                vec![PotentialProblems::TooFewAuthorizedNames {
-                    actual: authorised_names_count,
-                    min: 1,
-                }]
+                vec![PotentialProblems::TooFewAuthorizedNames { count: 1 }]
             }
             ListDesignation::Combined if authorised_names_count < 2 => {
                 vec![PotentialProblems::TooFewAuthorizedNames {
-                    actual: authorised_names_count,
-                    min: 2,
+                    count: 2 - authorised_names_count,
                 }]
             }
             _ => Vec::new(),
         }
     }
 
-    fn find_candidate_problems(
+    pub fn find_candidate_problems(
         store: &AppStore,
         candidate_lists: &[CandidateListSummary],
     ) -> (Vec<PersonProblems>, Vec<EntityInfoProblems>) {
@@ -271,7 +265,7 @@ impl AllProblems {
         (problems, info_problems)
     }
 
-    fn find_list_problems(
+    pub fn find_list_problems(
         candidate_lists: &[CandidateListSummary],
         store: &AppStore,
     ) -> Result<(Vec<ListProblems>, Vec<EntityInfoProblems>), AppError> {
@@ -528,10 +522,7 @@ mod tests {
                 candidates: vec![],
                 lists: vec![ListProblems {
                     entity: sample_candidate_list(CandidateListId::new()),
-                    problems: vec![PotentialProblems::TooManyCandidates {
-                        actual: 12,
-                        max: 12
-                    }],
+                    problems: vec![PotentialProblems::TooManyCandidates { count: 1 }],
                 }],
                 info_problems: Vec::new()
             }
@@ -584,7 +575,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooFewAuthorizedNames { actual: 0, min: 1 }
+            PotentialProblems::TooFewAuthorizedNames { count: 1 }
         );
 
         Ok(())
@@ -609,7 +600,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 1 }
+            PotentialProblems::TooManyAuthorizedNames { count: 1 }
         );
 
         Ok(())
@@ -634,7 +625,7 @@ mod tests {
         assert_eq!(problems.general.len(), 1);
         assert_eq!(
             problems.general[0],
-            PotentialProblems::TooFewAuthorizedNames { actual: 1, min: 2 }
+            PotentialProblems::TooFewAuthorizedNames { count: 1 }
         );
 
         Ok(())

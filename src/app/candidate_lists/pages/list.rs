@@ -17,6 +17,8 @@ use crate::{
 struct CandidateListIndexTemplate {
     candidate_lists: Vec<CandidateListWithProblems>,
     total_persons: usize,
+    persons_with_problems: usize,
+    person_problem_severity: &'static str,
 }
 
 pub async fn list_candidate_lists(
@@ -32,13 +34,24 @@ pub async fn list_candidate_lists(
             problems,
         });
     }
-
-    let total_persons = store.get_person_count();
+    let persons = store.get_persons();
+    let problem_severities = persons
+        .iter()
+        .filter_map(|p| p.get_problems(context.election).highest_severity())
+        .collect::<Vec<_>>();
+    let persons_with_problems = problem_severities.len();
+    let person_problem_severity = problem_severities
+        .iter()
+        .max()
+        .map(|severity| severity.class())
+        .unwrap_or_default();
 
     Ok(HtmlTemplate(
         CandidateListIndexTemplate {
             candidate_lists,
-            total_persons,
+            total_persons: persons.len(),
+            persons_with_problems,
+            person_problem_severity,
         },
         context,
     ))

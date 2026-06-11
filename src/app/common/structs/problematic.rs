@@ -113,8 +113,7 @@ pub enum PotentialProblems {
     NoCandidateList,
     NoCandidates,
     TooManyCandidates {
-        actual: usize,
-        max: usize,
+        count: usize,
     },
     DuplicateDistricts,
     NoDistricts,
@@ -125,12 +124,10 @@ pub enum PotentialProblems {
     NoAuthorisedAgent,
     NoListSubmitter,
     TooManyAuthorizedNames {
-        actual: usize,
-        max: usize,
+        count: usize,
     },
     TooFewAuthorizedNames {
-        actual: usize,
-        min: usize,
+        count: usize,
     },
 
     // representative wrapper
@@ -172,8 +169,12 @@ impl PotentialProblems {
             // candidate list
             PotentialProblems::NoCandidateList => trans!("problems.no_candidate_list", *locale),
             PotentialProblems::NoCandidates => trans!("problems.no_candidates", *locale),
-            PotentialProblems::TooManyCandidates { actual, max } => {
-                trans!("problems.too_many_candidates", *locale, actual, max)
+            PotentialProblems::TooManyCandidates { count } => {
+                if *count == 1 {
+                    trans!("problems.too_many_candidates_one", *locale)
+                } else {
+                    trans!("problems.too_many_candidates", *locale, count)
+                }
             }
             PotentialProblems::DuplicateDistricts => {
                 trans!("problems.duplicate_districts", *locale)
@@ -185,11 +186,19 @@ impl PotentialProblems {
             PotentialProblems::NoDisplayName => trans!("problems.no_display_name", *locale),
             PotentialProblems::NoListSubmitter => trans!("problems.no_list_submitter", *locale),
             PotentialProblems::NoAuthorisedAgent => trans!("problems.no_authorised_agent", *locale),
-            PotentialProblems::TooFewAuthorizedNames { actual, min } => {
-                trans!("problems.too_few_authorized_names", *locale, actual, min)
+            PotentialProblems::TooManyAuthorizedNames { count } => {
+                if *count == 1 {
+                    trans!("problems.too_many_authorized_names_one", *locale)
+                } else {
+                    trans!("problems.too_many_authorized_names", *locale, count)
+                }
             }
-            PotentialProblems::TooManyAuthorizedNames { actual, max } => {
-                trans!("problems.too_many_authorized_names", *locale, actual, max)
+            PotentialProblems::TooFewAuthorizedNames { count } => {
+                if *count == 1 {
+                    trans!("problems.too_few_authorized_names_one", *locale)
+                } else {
+                    trans!("problems.too_few_authorized_names", *locale, count)
+                }
             }
 
             // representative wrapper
@@ -498,10 +507,6 @@ mod tests {
 
     #[test]
     fn deviation_shows_numbers() {
-        let problems = vec![
-            PotentialProblems::TooFewAuthorizedNames { actual: 2, min: 37 },
-            PotentialProblems::TooManyAuthorizedNames { actual: 2, max: 37 },
-        ];
         let info_problems = vec![
             InfoProblems::FewCandidatesWithFirstName {
                 count: 2,
@@ -520,16 +525,7 @@ mod tests {
                 total: 37,
             },
         ];
-        for problem in problems {
-            let summary = Problems {
-                potential_problems: vec![problem],
-                info_problems: Vec::new(),
-            }
-            .problem_summary(&Locale::Nl)
-            .unwrap();
-            assert!(summary.contains("2"));
-            assert!(summary.contains("37"));
-        }
+
         for problem in info_problems {
             let summary = Problems {
                 info_problems: vec![problem],

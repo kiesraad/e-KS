@@ -14,8 +14,13 @@
       <div class="candidates">
         <a href="{{ Person::list_path() }}" class="card card-persons">
           <div class="card-header">
-            <div class="badge badge-candidates"></div>
-            <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
+            <div class="badge badge-candidates {{ person_problem_severity }}"></div>
+            <div>
+              <h3 class="h4">{{ "candidate_list.all_candidates"|trans }}</h3>
+              {% if persons_with_problems > 0 %}
+                <p class="{{ person_problem_severity }}">{{ "person.with_problems"|trans(&persons_with_problems.to_string() ) }}</p>
+              {% endif %}
+            </div>
           </div>
           <div class="card-content">
             <p>{{ "person.total"|trans(&total_persons.to_string() )|safe }}</p>
@@ -33,7 +38,21 @@
              data-href="{{ candidate_list.data.list.view_path() }}">
           <div class="card-header">
             <div class="badge badge-candidates-list {{ candidate_list.problems.highest_severity_class() }}"></div>
-            <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
+            <div>
+              <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
+              {% let problems = candidate_list.problems.potential_problems %}
+              {% if !problems.is_empty() %}
+                <p class="{{ candidate_list.problems.highest_severity_class() }}">
+                  {{ problems[0].translate(locale) }}
+                  {% let other_problems = problems.len() - 1 %}
+                  {% if other_problems == 1 %}
+                    {{ "problems.and_other_problems_one"|trans(&(other_problems).to_string()) }}
+                  {% else if other_problems > 1 %}
+                    {{ "problems.and_other_problems"|trans(&(other_problems).to_string()) }}
+                  {% endif %}
+                </p>
+              {% endif %}
+            </div>
           </div>
           <div class="card-content">
             <p class="{% if candidate_list.data.candidate_count() > candidate_list.data.max_count %}warning{% endif %}">

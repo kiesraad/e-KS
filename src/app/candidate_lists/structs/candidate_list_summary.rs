@@ -73,21 +73,20 @@ impl CandidateListSummary {
     fn get_potential_problems(&self) -> Vec<PotentialProblems> {
         let mut items = Vec::new();
 
-        if self.candidate_count() == 0 {
-            items.push(PotentialProblems::NoCandidates);
-        } else if self.candidate_count() > self.max_count {
-            items.push(PotentialProblems::TooManyCandidates {
-                actual: self.candidate_count(),
-                max: self.max_count,
-            });
-        }
-
         if !self.duplicate_districts.is_empty() {
             items.push(PotentialProblems::DuplicateDistricts);
         }
 
         if self.list.electoral_districts.is_empty() {
             items.push(PotentialProblems::NoDistricts)
+        }
+
+        if self.candidate_count() == 0 {
+            items.push(PotentialProblems::NoCandidates);
+        } else if self.candidate_count() > self.max_count {
+            items.push(PotentialProblems::TooManyCandidates {
+                count: self.candidate_count() - self.max_count,
+            });
         }
 
         items
@@ -370,10 +369,7 @@ mod tests {
         assert!(
             problems
                 .potential_problems
-                .contains(&PotentialProblems::TooManyCandidates {
-                    actual: 25,
-                    max: 20
-                })
+                .contains(&PotentialProblems::TooManyCandidates { count: 5 })
         );
         assert!(
             problems

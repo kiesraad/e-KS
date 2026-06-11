@@ -80,7 +80,7 @@ table.diff-table {
   }
 }
 
-.audit-log-filters {
+.form.audit-log-filters {
   fieldset {
     display: flex;
     gap: 1rem;
@@ -93,6 +93,7 @@ table.diff-table {
     select {
       width: 18rem;
       padding: 0 1rem;
+      min-height: 0;
     }
   }
 

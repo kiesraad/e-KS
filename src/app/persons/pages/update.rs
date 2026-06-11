@@ -208,7 +208,7 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("Candidate is too young to participate in this election."));
+        assert!(body.contains("Candidate too young to participate in election"));
 
         Ok(())
     }
