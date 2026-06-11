@@ -151,8 +151,18 @@ pub struct Csv<T> {
 
 impl<T: Serialize> Csv<T> {
     /// Generate a CSV response and return the response along with the CSV data size in bytes.
+    ///
+    /// Why the `;` delimiter and BOM: when a recipient double-clicks the file in
+    /// a Dutch/European install of Excel, the comma is the decimal separator and
+    /// the semicolon is the field separator. Emitting `;` matches that locale, and the
+    /// leading UTF-8 BOM tells Excel to read the file as UTF-8 so accented names
+    /// render correctly. The importer accepts both delimiters (see
+    /// [`reader_from_bytes`]), so exported files round-trip.
     pub fn generate_csv_response(&self) -> Result<(Response<Body>, usize), AppError> {
-        let mut csv_writer = WriterBuilder::new().has_headers(false).from_writer(vec![]);
+        let mut csv_writer = WriterBuilder::new()
+            .delimiter(b';')
+            .has_headers(false)
+            .from_writer(UTF8_BOM.to_vec());
 
         if let Some(headers) = &self.headers {
             csv_writer.write_record(headers)?;
@@ -224,12 +234,40 @@ fn escape_csv_formula(cell: &str) -> Cow<'_, str> {
     }
 }
 
+/// UTF-8 byte-order mark. Prepended to exported CSVs so Excel reads them as
+/// UTF-8, and stripped on import so our own exports round-trip.
+const UTF8_BOM: &[u8] = &[0xEF, 0xBB, 0xBF];
+
+/// Build a CSV reader that tolerates the variations spreadsheets emit across
+/// locales: a leading UTF-8 BOM (Excel writes one) and either `,` or `;` as the
+/// field separator (Dutch/European Excel uses `;`). A BOM, if present, is
+/// stripped first, then the delimiter is sniffed from the header line.
+pub fn reader_from_bytes(data: &[u8]) -> Reader<&[u8]> {
+    let data = data.strip_prefix(UTF8_BOM).unwrap_or(data);
+    ReaderBuilder::new()
+        .delimiter(detect_delimiter(data))
+        .from_reader(data)
+}
+
+/// Pick the field separator by counting `;` versus `,` on the first line. The
+/// header row is a fixed set of unquoted identifiers, so a raw byte count is
+/// unambiguous; ties fall back to `,` (the RFC-4180 default).
+fn detect_delimiter(data: &[u8]) -> u8 {
+    let first_line = data.split(|&byte| byte == b'\n').next().unwrap_or(data);
+    let count = |needle: u8| first_line.iter().filter(|&&byte| byte == needle).count();
+    if count(b';') > count(b',') {
+        b';'
+    } else {
+        b','
+    }
+}
+
 impl<T: DeserializeOwned> Csv<T> {
     pub fn from_bytes(data: &[u8]) -> Result<Vec<T>, Vec<CsvError>> {
         let mut records = vec![];
         let mut errors = vec![];
 
-        Reader::from_reader(data)
+        reader_from_bytes(data)
             .deserialize::<T>()
             .enumerate()
             .for_each(|(count, res)| match res {
@@ -508,6 +546,86 @@ mod tests {
             message,
             "De kandidaat op regel 1 kon niet worden geïmporteerd: het bestand bevat een waarde die niet verwerkt kon worden. invalid record"
         );
+    }
+
+    #[derive(Debug, PartialEq, Serialize, Deserialize)]
+    struct Person {
+        voorletters: String,
+        achternaam: String,
+    }
+
+    #[test]
+    fn from_bytes_reads_comma_delimited() {
+        let parsed = Csv::<Person>::from_bytes(b"voorletters,achternaam\nH.,Jansen\n")
+            .unwrap_or_else(|e| panic!("{}", e[0]));
+        assert_eq!(
+            parsed,
+            vec![Person {
+                voorletters: "H.".to_string(),
+                achternaam: "Jansen".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn from_bytes_reads_semicolon_delimited() {
+        let parsed = Csv::<Person>::from_bytes(b"voorletters;achternaam\nH.;Jansen\n")
+            .unwrap_or_else(|e| panic!("{}", e[0]));
+        assert_eq!(
+            parsed,
+            vec![Person {
+                voorletters: "H.".to_string(),
+                achternaam: "Jansen".to_string(),
+            }]
+        );
+    }
+
+    #[test]
+    fn from_bytes_strips_leading_utf8_bom() {
+        let mut data = UTF8_BOM.to_vec();
+        data.extend_from_slice(b"voorletters;achternaam\nH.;Jansen\n");
+        let parsed = Csv::<Person>::from_bytes(&data).unwrap_or_else(|e| panic!("{}", e[0]));
+        assert_eq!(parsed[0].voorletters, "H.");
+    }
+
+    #[test]
+    fn detect_delimiter_prefers_semicolon_only_when_more_frequent() {
+        assert_eq!(detect_delimiter(b"a;b;c\n1;2;3"), b';');
+        assert_eq!(detect_delimiter(b"a,b,c\n1,2,3"), b',');
+        // A header field that happens to contain a comma must not flip a
+        // genuinely semicolon-delimited file to comma.
+        assert_eq!(detect_delimiter(b"a,x;b;c\n"), b';');
+        // Ties fall back to the RFC-4180 default.
+        assert_eq!(detect_delimiter(b"a;b,c\n"), b',');
+    }
+
+    #[test]
+    fn export_output_round_trips_through_import() {
+        let csv = Csv {
+            filename: "out.csv".to_string(),
+            headers: Some(vec!["voorletters", "achternaam"]),
+            records: vec![Person {
+                voorletters: "H.".to_string(),
+                achternaam: "Jansen".to_string(),
+            }],
+        };
+
+        let mut writer = WriterBuilder::new()
+            .delimiter(b';')
+            .has_headers(false)
+            .from_writer(UTF8_BOM.to_vec());
+        writer.write_record(["voorletters", "achternaam"]).unwrap();
+        for row in &csv.records {
+            write_record_safely(&mut writer, row).unwrap();
+        }
+        let bytes = writer.into_inner().unwrap();
+
+        assert!(
+            bytes.starts_with(UTF8_BOM),
+            "export should begin with a BOM"
+        );
+        let reparsed = Csv::<Person>::from_bytes(&bytes).unwrap_or_else(|e| panic!("{}", e[0]));
+        assert_eq!(reparsed, csv.records);
     }
 
     #[test]
