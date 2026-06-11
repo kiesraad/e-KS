@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use std::collections::HashMap;
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, Overlay,
+    AppError, AppStore, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay,
     candidate_lists::{CandidateListId, FullCandidateList},
     candidates::{AddPerson, AddPersonAction, AddPersonForm},
     filters,
@@ -20,6 +20,7 @@ struct AddExistingPersonTemplate {
     persons: Vec<Person>,
     added_candidates: HashMap<PersonId, usize>,
     form: FormData<AddPersonForm>,
+    allow_add: bool,
     show_add_all: bool,
     show_remove_all: bool,
     overlay: Overlay,
@@ -59,6 +60,7 @@ impl AddExistingPersonTemplate {
         Ok(Self {
             close_action,
             show_add_all,
+            allow_add: full_list.candidates.len() < MAX_CANDIDATES,
             overlay: Overlay::default(),
             show_remove_all: !show_add_all && !candidate_ids.is_empty(),
             persons,

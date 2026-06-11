@@ -9,3 +9,5 @@ pub const DEFAULT_DATE_FORMAT: &str = "%d-%m-%Y";
 pub const DEFAULT_DATE_TIME_FORMAT: &str = "%d-%m-%Y %H:%M";
 
 pub const DEFAULT_TIMEZONE: &Tz = &Europe::Amsterdam;
+
+pub const MAX_CANDIDATES: usize = 80;

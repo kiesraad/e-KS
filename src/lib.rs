@@ -92,8 +92,9 @@ pub use auth::{
 };
 pub use core::{
     AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,
-    Province, TlsConfig, TypstRenderer, WaterCouncil, constants, get_env, http_trace, logging,
-    server, translate,
+    Province, TlsConfig, TypstRenderer, WaterCouncil,
+    constants::{self, MAX_CANDIDATES},
+    get_env, http_trace, logging, server, translate,
 };
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};

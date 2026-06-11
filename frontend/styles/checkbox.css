@@ -3,7 +3,6 @@
   border: none;
   margin: 0;
   padding: var(--space-lg) 0;
-  max-width: 50rem;
   display: flex;
   flex-direction: column;
   gap: var(--space-4);

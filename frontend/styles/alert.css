@@ -3,7 +3,7 @@
   border-left: 4px solid var(--alert-border-color);
   color: var(--alert-color);
   font-size: var(--font-size-md);
-  font-weight: var(--font-weight-bold);
+  font-weight: var(--font-weight-normal);
   line-height: var(--leading-md);
   margin-block: var(--alert-margin-block, var(--space-6));
   padding-block: var(--alert-py, var(--space-4));
