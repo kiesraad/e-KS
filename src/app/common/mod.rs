@@ -22,5 +22,5 @@ pub use structs::{
 
 pub use pages::{
     IndexPath, SelectElectionPath, SwitchElectionPath, SwitchLanguagePath, not_found, router,
-    select_election_router,
+    select_election_router, wellknown_router,
 };

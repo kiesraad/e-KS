@@ -6,6 +6,7 @@ mod not_found;
 mod select_election;
 mod switch_election;
 mod switch_locale;
+mod well_known;
 
 use crate::{AppError, AppState};
 
@@ -41,4 +42,9 @@ pub fn select_election_router() -> Router<AppState> {
     Router::new()
         .typed_get(select_election::select_election)
         .typed_post(select_election::select_election_submit)
+}
+
+/// Routes for paths under .well-known
+pub fn wellknown_router() -> Router<AppState> {
+    Router::new().typed_get(well_known::security_txt)
 }
