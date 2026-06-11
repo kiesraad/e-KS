@@ -209,14 +209,6 @@ label.button {
     background-size: 20px;
   }
 
-  &.icon-print {
-    background-image: url("../icons/printer.svg");
-    background-repeat: no-repeat;
-    background-position: left var(--space-md) center;
-    padding-left: 2.6rem;
-    background-size: 18px;
-  }
-
   &.icon-down {
     background-image: url("../icons/arrowNarrowDown.svg");
     background-repeat: no-repeat;

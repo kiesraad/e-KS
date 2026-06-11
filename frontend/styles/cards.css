@@ -55,13 +55,30 @@
   }
 
   .card-header {
-    align-items: center;
     color: var(--gray-800);
     display: flex;
+    align-items: flex-start;
     font-size: var(--font-size-xl);
     font-weight: 700;
     gap: var(--space-3);
     line-height: var(--leading-xl);
+
+    & > div:not(.badge) {
+      margin-block: auto;
+    }
+
+    p {
+      font-size: var(--font-size-sm);
+      font-weight: normal;
+    }
+
+    .warning {
+      color: var(--color-warning-darker);
+    }
+
+    .error {
+      color: var(--color-error-darker);
+    }
   }
 
   .card-title {
@@ -79,6 +96,10 @@
     font-weight: 300;
     gap: var(--space-3);
     line-height: var(--leading-sm);
+
+    p.warning > strong {
+      color: var(--color-warning-darker);
+    }
   }
 
   ul.card-instruction {

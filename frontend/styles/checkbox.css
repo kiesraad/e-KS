@@ -48,6 +48,10 @@
   display: inline-flex;
   gap: var(--space-2);
 
+  &:has(input[type="checkbox"]) {
+    align-items: center;
+  }
+
   &.radio-card {
     width: 32rem;
     border: 1px solid var(--gray-300);
@@ -81,13 +85,14 @@
     display: inline-block;
     position: relative;
     margin: 0.125rem 0 0 0;
-    flex-shrink: 0; /* do not remove, this keeps the input from misshaping */
+    flex-shrink: 0;
     cursor: pointer;
 
     /* Radio styling */
     &[type="radio"] {
       border-radius: 1rem;
     }
+
     /* Checkbox styling */
     &[type="checkbox"] {
       border-radius: var(--rounded-md);
@@ -97,19 +102,22 @@
     &:checked,
     &.indeterminate {
       background-color: var(--checkbox-radio-color-bg-default-checked);
+
       &:active {
         background-color: var(--checkbox-radio-color-bg-active-checked);
       }
+
       &:hover {
         background-color: var(--checkbox-radio-color-bg-hover-checked);
       }
+
       &:focus,
       &:focus-visible {
         background-color: var(--checkbox-radio-color-bg-focus-checked);
+
         &::before {
-          background-color: var(
-            --base-dark-blue
-          ); /* change icon color as well */
+          /* change icon color as well */
+          background-color: var(--base-dark-blue);
         }
       }
     }
@@ -145,12 +153,15 @@
     &:disabled {
       background-color: var(--checkbox-radio-color-bg-disabled);
       cursor: default;
+
       &:hover {
         border-width: 1px;
         background-color: var(--checkbox-radio-color-bg-disabled);
       }
+
       &:checked {
         background-color: var(--checkbox-radio-color-bg-disabled-checked);
+
         &:hover {
           background-color: var(--checkbox-radio-color-bg-disabled-checked);
         }
@@ -226,9 +237,10 @@ input[type="checkbox"] {
   appearance: none;
   border-radius: var(--rounded-xs);
   border: 1px solid var(--gray-400);
-  min-height: 1.25rem;
-  min-width: 1.25rem;
+  height: 1.25rem;
+  width: 1.25rem;
   margin: 0;
+  vertical-align: baseline;
 
   &:checked {
     background-color: var(--blue-900);

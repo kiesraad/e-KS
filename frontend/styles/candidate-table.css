@@ -32,6 +32,10 @@
   th:last-child {
     text-align: right;
     font-weight: normal;
+
+    &.warning strong {
+      color: var(--color-warning-darker);
+    }
   }
 
   td:last-child {
