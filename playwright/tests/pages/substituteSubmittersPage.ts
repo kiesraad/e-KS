@@ -9,6 +9,11 @@ export class SubstituteSubmittersPage {
   readonly textfieldInitials: Locator;
   readonly textfieldLastNamePrefix: Locator;
   readonly textfieldLastName: Locator;
+  readonly textfieldPostalCode: Locator;
+  readonly textfieldHouseNumber: Locator;
+  readonly textfieldHouseNumberAddition: Locator;
+  readonly textfieldStreetName: Locator;
+  readonly textfieldLocality: Locator;  
 
   constructor(protected readonly page: Page) {
     this.buttonDelete = this.page.getByRole("link", {
@@ -31,6 +36,22 @@ export class SubstituteSubmittersPage {
     });
     this.textfieldLastName = this.page.getByRole("textbox", {
       name: "Achternaam",
+    });
+    this.textfieldPostalCode = this.page.getByRole("textbox", {
+      name: "Postcode",
+    });
+    this.textfieldHouseNumber = this.page.getByRole("textbox", {
+      name: "Huisnummer",
+      exact: true
+    });
+    this.textfieldHouseNumberAddition = this.page.getByRole("textbox", {
+      name: "Huisnummer toevoeging",
+    });
+    this.textfieldStreetName = this.page.getByRole("textbox", {
+      name: "Straatnaam",
+    });
+    this.textfieldLocality = this.page.getByRole("textbox", {
+      name: "Woonplaats",
     });
   }
 
@@ -59,6 +80,11 @@ export class SubstituteSubmittersPage {
     await this.textfieldInitials.fill(listSubmitter.initials);
     await this.textfieldLastNamePrefix.fill(listSubmitter.lastNamePrefix ?? "");
     await this.textfieldLastName.fill(listSubmitter.lastName);
+    await this.textfieldPostalCode.fill(listSubmitter.postalCode ?? "");
+    await this.textfieldHouseNumber.fill(listSubmitter.houseNumber ?? "");
+    await this.textfieldHouseNumberAddition.fill(listSubmitter.houseNumberAddition ?? "");
+    await this.textfieldStreetName.fill(listSubmitter.streetName ?? "");
+    await this.textfieldLocality.fill(listSubmitter.locality ?? "");
     await this.buttonSave.click();
   }
 

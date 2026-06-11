@@ -13,6 +13,8 @@ import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
 import { Candidate } from "./models/candidate.ts";
+import { SubmitPage } from "./pages/submitPage.ts";
+import { stat } from "node:fs/promises";
 
 //user logs in
 test("full happy flow", async ({
@@ -83,7 +85,7 @@ test("full happy flow", async ({
     await manageCandidateListPage.selectDistricts(["Selecteer alle kieskringen"]);
     await expect(manageCandidateListPage.buttonEditList).toBeVisible();
     
-    await new ManageCandidateListPage(page).buttonCSV.click();
+    await manageCandidateListPage.buttonCSV.click();
     const csvImportExport = new CsvImportExportPage(page);
     await csvImportExport.uploadCsvFile("candidate-list-export-nh-1.csv");
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
@@ -92,10 +94,22 @@ test("full happy flow", async ({
         ).toBeVisible();
     
     const candidate: Candidate = {
-          initials: "B",
-          lastName: `Beer ${randomName()}`,
-          firstName: "Bert",
-          locality: "Amsterdam",
+          initials: "K",
+          lastName: "Kandidaat",
+          firstName: "Kees",
+          locality: "Rotterdam",
+          bsn: "000000024",
+          gender: "man",
+          dateOfBirth: {
+            day: "31",
+            month: "01",
+            year: "1980",
+          },
+          postalCode: "1234 AB",
+          houseNumber: "1",
+          houseNumberAddition: "a",
+          streetName: "Kandidatenstraat",
+          countryCode: "NL",
         };
     
         await manageCandidateListPage.addNewCandidates([candidate]);
@@ -108,7 +122,16 @@ test("full happy flow", async ({
         }
     
 //submit list
-//create list and add candidates
+    await manageCandidateListPage.buttonFinalize.click();
+    await page.waitForURL("/submit");
+    const submitPage = new SubmitPage(page);
+    const downloadPromise = page.waitForEvent("download");
+        await new SubmitPage(page).linkDownloadNl.click();
+        const download = await downloadPromise;
+    
+        expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
+        expect((await stat(await download.path())).size).toBeGreaterThan(1024);
+    
 
 //submit list
 
