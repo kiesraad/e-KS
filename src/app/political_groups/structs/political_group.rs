@@ -137,7 +137,7 @@ mod tests {
     #[test]
     fn complete_blank_list_no_problems() {
         let problems = PoliticalGroup {
-            previous_election_results: Some(PreviousElectionResults::ZeroSeats),
+            previous_election_results: None,
             list_designation: Some(ListDesignation::Blank),
             display_name: None,
         }

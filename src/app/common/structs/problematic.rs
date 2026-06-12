@@ -223,7 +223,7 @@ impl PotentialProblems {
             PotentialProblems::NoDateOfBirth => trans!("problems.no_date_of_birth", *locale),
             PotentialProblems::NoRepresentative => trans!("problems.no_representative", *locale),
             PotentialProblems::TooYoungDateOfBirth => {
-                trans!("problems.candidate_too_young", *locale,)
+                trans!("problems.candidate_too_young", *locale)
             }
 
             // name related
@@ -392,9 +392,9 @@ mod tests {
         };
         assert_eq!(no_problems.highest_severity(), None);
         assert_eq!(no_problems.highest_severity_class(), "ok");
-        assert!(!no_problems.has_severity_or_higher(Severity::Info,));
-        assert!(!no_problems.has_severity_or_higher(Severity::Warn,));
-        assert!(!no_problems.has_severity_or_higher(Severity::Error,));
+        assert!(!no_problems.has_severity_or_higher(Severity::Info));
+        assert!(!no_problems.has_severity_or_higher(Severity::Warn));
+        assert!(!no_problems.has_severity_or_higher(Severity::Error));
         assert!(no_problems.is_all_good());
     }
 
@@ -425,9 +425,9 @@ mod tests {
         };
         assert_eq!(info_warn.highest_severity(), Some(Severity::Warn));
         assert_eq!(info_warn.highest_severity_class(), "warning");
-        assert!(info_warn.has_severity_or_higher(Severity::Info,));
-        assert!(info_warn.has_severity_or_higher(Severity::Warn,));
-        assert!(!info_warn.has_severity_or_higher(Severity::Error,));
+        assert!(info_warn.has_severity_or_higher(Severity::Info));
+        assert!(info_warn.has_severity_or_higher(Severity::Warn));
+        assert!(!info_warn.has_severity_or_higher(Severity::Error));
         assert!(!info_warn.is_all_good());
     }
 
@@ -450,9 +450,9 @@ mod tests {
         };
         assert_eq!(with_error.highest_severity(), Some(Severity::Error));
         assert_eq!(with_error.highest_severity_class(), "error");
-        assert!(with_error.has_severity_or_higher(Severity::Info,));
-        assert!(with_error.has_severity_or_higher(Severity::Warn,));
-        assert!(with_error.has_severity_or_higher(Severity::Error,));
+        assert!(with_error.has_severity_or_higher(Severity::Info));
+        assert!(with_error.has_severity_or_higher(Severity::Warn));
+        assert!(with_error.has_severity_or_higher(Severity::Error));
         assert!(!with_error.is_all_good());
     }
 
