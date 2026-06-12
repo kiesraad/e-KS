@@ -13,7 +13,7 @@ export class SubstituteSubmittersPage {
   readonly textfieldHouseNumber: Locator;
   readonly textfieldHouseNumberAddition: Locator;
   readonly textfieldStreetName: Locator;
-  readonly textfieldLocality: Locator;  
+  readonly textfieldLocality: Locator;
 
   constructor(protected readonly page: Page) {
     this.buttonDelete = this.page.getByRole("link", {
@@ -42,7 +42,7 @@ export class SubstituteSubmittersPage {
     });
     this.textfieldHouseNumber = this.page.getByRole("textbox", {
       name: "Huisnummer",
-      exact: true
+      exact: true,
     });
     this.textfieldHouseNumberAddition = this.page.getByRole("textbox", {
       name: "Huisnummer toevoeging",
@@ -82,7 +82,9 @@ export class SubstituteSubmittersPage {
     await this.textfieldLastName.fill(listSubmitter.lastName);
     await this.textfieldPostalCode.fill(listSubmitter.postalCode ?? "");
     await this.textfieldHouseNumber.fill(listSubmitter.houseNumber ?? "");
-    await this.textfieldHouseNumberAddition.fill(listSubmitter.houseNumberAddition ?? "");
+    await this.textfieldHouseNumberAddition.fill(
+      listSubmitter.houseNumberAddition ?? "",
+    );
     await this.textfieldStreetName.fill(listSubmitter.streetName ?? "");
     await this.textfieldLocality.fill(listSubmitter.locality ?? "");
     await this.buttonSave.click();

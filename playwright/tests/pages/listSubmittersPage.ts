@@ -24,7 +24,9 @@ export class ListSubmittersPage {
     this.textfieldLastNamePrefix = this.page.getByLabel("Voorvoegsel");
     this.textfieldLastName = this.page.getByLabel("Achternaam");
     this.textfieldPostalCode = this.page.getByLabel("Postcode");
-    this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", { exact: true });
+    this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", {
+      exact: true,
+    });
     this.textfieldHouseNumberAddition = this.page.getByLabel(
       "Huisnummer toevoeging",
     );
@@ -59,7 +61,9 @@ export class ListSubmittersPage {
     await this.textfieldLastName.fill(listSubmitter.lastName);
     await this.textfieldPostalCode.fill(listSubmitter.postalCode ?? "");
     await this.textfieldHouseNumber.fill(listSubmitter.houseNumber ?? "");
-    await this.textfieldHouseNumberAddition.fill(listSubmitter.houseNumberAddition ?? "");
+    await this.textfieldHouseNumberAddition.fill(
+      listSubmitter.houseNumberAddition ?? "",
+    );
     await this.textfieldStreetName.fill(listSubmitter.streetName ?? "");
     await this.textfieldLocality.fill(listSubmitter.locality ?? "");
     await this.buttonSave.click();

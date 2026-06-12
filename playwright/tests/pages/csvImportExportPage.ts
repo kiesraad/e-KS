@@ -43,27 +43,26 @@ export class CsvImportExportPage {
   //   await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
   // }
 
-//   async uploadCsvFile(filePath: string) {
-//   await this.buttonUpload.click();
-//   const fileChooserPromise = this.page.waitForEvent("filechooser");
-//   if (await this.buttonContinue.isVisible()) {
-//     await this.buttonContinue.click();
-//   }
-//   const fileChooser = await fileChooserPromise;
-//   await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
-// }
+  //   async uploadCsvFile(filePath: string) {
+  //   await this.buttonUpload.click();
+  //   const fileChooserPromise = this.page.waitForEvent("filechooser");
+  //   if (await this.buttonContinue.isVisible()) {
+  //     await this.buttonContinue.click();
+  //   }
+  //   const fileChooser = await fileChooserPromise;
+  //   await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
+  // }
 
-async uploadCsvFile(filePath: string) {
-  const fileChooserPromise = this.page.waitForEvent("filechooser");
+  async uploadCsvFile(filePath: string) {
+    const fileChooserPromise = this.page.waitForEvent("filechooser");
 
-  await this.buttonUpload.click();
+    await this.buttonUpload.click();
 
-  if (await this.buttonContinue.isVisible()) {
-    await this.buttonContinue.click();
+    if (await this.buttonContinue.isVisible()) {
+      await this.buttonContinue.click();
+    }
+
+    const fileChooser = await fileChooserPromise;
+    await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
   }
-
-  const fileChooser = await fileChooserPromise;
-  await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
-}
-  
 }

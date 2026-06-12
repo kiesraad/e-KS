@@ -45,13 +45,20 @@ export class ManageCandidateListPage {
     this.textfieldFirstName = this.page.getByLabel("Roepnaam");
     this.textfieldLocality = this.page.getByLabel("Woonplaats");
     this.textfieldBSN = this.page.getByLabel("Burgerservicenummer (BSN)");
-    this.textfieldBirthDay = this.page.getByRole('textbox', { name: 'Geboortedatum' });
-    this.textfieldBirthMonth = this.page.getByRole('textbox', { name: 'mm', exact: true });
-    this.textfieldBirthYear = this.page.getByRole('textbox', { name: 'jjjj' });
+    this.textfieldBirthDay = this.page.getByRole("textbox", {
+      name: "Geboortedatum",
+    });
+    this.textfieldBirthMonth = this.page.getByRole("textbox", {
+      name: "mm",
+      exact: true,
+    });
+    this.textfieldBirthYear = this.page.getByRole("textbox", { name: "jjjj" });
     this.dropdownGender = this.page.getByLabel("Geslacht");
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
     this.textfieldPostalCode = this.page.getByLabel("Postcode");
-    this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", { exact: true });
+    this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", {
+      exact: true,
+    });
     this.textfieldHouseNumberAddition = this.page.getByLabel(
       "Huisnummer toevoeging",
     );
@@ -127,7 +134,9 @@ export class ManageCandidateListPage {
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.textfieldPostalCode.fill(candidate.postalCode ?? "");
       await this.textfieldHouseNumber.fill(candidate.houseNumber ?? "");
-      await this.textfieldHouseNumberAddition.fill(candidate.houseNumberAddition ?? "");
+      await this.textfieldHouseNumberAddition.fill(
+        candidate.houseNumberAddition ?? "",
+      );
       await this.textfieldStreetName.fill(candidate.streetName ?? "");
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.buttonAdd.click();
