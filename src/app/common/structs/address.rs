@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     OptionAsStrExt,
     common::{
-        PotentialProblems, Problematic, Severity, structs::problematic::EmptyAddressProblems,
+        InfoProblems, PotentialProblems, Problematic, Problems, Severity,
+        structs::problematic::EmptyAddressProblems,
     },
     utils::bag,
 };
@@ -74,38 +75,47 @@ impl DutchAddress {
 }
 
 impl Problematic<Severity> for DutchAddress {
-    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut problems = Vec::new();
-        let mut items = Vec::new();
+    fn get_problems(&self, severity: Severity) -> Problems {
+        let mut potential_problems = Vec::new();
+        let mut info_problems = Vec::new();
+        let mut address_problems = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(EmptyAddressProblems::StreetName);
+            address_problems.push(EmptyAddressProblems::StreetName);
         }
 
         if self.house_number.is_empty_or_none() {
-            items.push(EmptyAddressProblems::HouseNumber);
+            address_problems.push(EmptyAddressProblems::HouseNumber);
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(EmptyAddressProblems::PostalCode);
+            address_problems.push(EmptyAddressProblems::PostalCode);
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(EmptyAddressProblems::Locality);
+            address_problems.push(EmptyAddressProblems::Locality);
         }
 
-        if !items.is_empty() {
-            problems.push(PotentialProblems::IncompleteAddress {
-                severity,
-                problems: items,
-            });
+        if !address_problems.is_empty() {
+            if severity == Severity::Info {
+                info_problems.push(InfoProblems::IncompleteAddress {
+                    problems: address_problems,
+                });
+            } else {
+                potential_problems.push(PotentialProblems::IncompleteAddress {
+                    severity,
+                    problems: address_problems,
+                });
+            }
         }
-
         if self.known_in_bag == Some(false) {
-            problems.push(PotentialProblems::UnknownAddress);
+            potential_problems.push(PotentialProblems::UnknownAddress);
         }
 
-        problems
+        Problems {
+            potential_problems,
+            info_problems,
+        }
     }
 }
 
@@ -145,35 +155,35 @@ impl InternationalAddress {
 }
 
 impl Problematic<Severity> for InternationalAddress {
-    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
-        let mut items = Vec::new();
+    fn get_problems(&self, severity: Severity) -> Problems {
+        let mut problems = Vec::new();
 
         if self.street_name.is_empty_or_none() {
-            items.push(EmptyAddressProblems::StreetName);
+            problems.push(EmptyAddressProblems::StreetName);
         }
         if self.house_number.is_empty_or_none() {
-            items.push(EmptyAddressProblems::HouseNumber);
+            problems.push(EmptyAddressProblems::HouseNumber);
         }
 
         if self.postal_code.is_empty_or_none() {
-            items.push(EmptyAddressProblems::PostalCode);
+            problems.push(EmptyAddressProblems::PostalCode);
         }
 
         if self.locality.is_empty_or_none() {
-            items.push(EmptyAddressProblems::Locality);
+            problems.push(EmptyAddressProblems::Locality);
         }
 
         if self.country.is_empty_or_none() {
-            items.push(EmptyAddressProblems::Country);
+            problems.push(EmptyAddressProblems::Country);
         }
 
-        if items.is_empty() {
-            Vec::new()
-        } else {
-            vec![PotentialProblems::IncompleteAddress {
-                severity,
-                problems: items,
-            }]
+        Problems {
+            potential_problems: if problems.is_empty() {
+                Vec::new()
+            } else {
+                vec![PotentialProblems::IncompleteAddress { severity, problems }]
+            },
+            info_problems: Vec::new(),
         }
     }
 }
@@ -301,7 +311,7 @@ impl Address {
 }
 
 impl Problematic<Severity> for Address {
-    fn get_problems(&self, severity: Severity) -> Vec<PotentialProblems> {
+    fn get_problems(&self, severity: Severity) -> Problems {
         match self {
             Address::Dutch(address) => address.get_problems(severity),
             Address::International(address) => address.get_problems(severity),
@@ -330,7 +340,7 @@ mod tests {
         let mut address = sample_address();
         address.house_number_addition = None;
 
-        assert!(address.is_all_good(Severity::Info));
+        assert!(address.get_problems(Severity::Info).is_all_good());
     }
 
     #[test]
@@ -338,7 +348,7 @@ mod tests {
         let mut address = sample_address();
         address.locality = None;
 
-        assert!(!address.is_all_good(Severity::Info));
+        assert!(!address.get_problems(Severity::Info).is_all_good());
     }
 
     #[test]
@@ -413,7 +423,11 @@ mod tests {
 
     #[test]
     fn international_address_is_all_good_when_required_parts_present() {
-        assert!(sample_international_address().is_all_good(Severity::Info));
+        assert!(
+            sample_international_address()
+                .get_problems(Severity::Info)
+                .is_all_good()
+        );
     }
 
     #[test]
@@ -421,7 +435,7 @@ mod tests {
         let mut address = sample_international_address();
         address.country = None;
 
-        assert!(!address.is_all_good(Severity::Info));
+        assert!(!address.get_problems(Severity::Info).is_all_good());
     }
 
     #[test]
@@ -429,13 +443,16 @@ mod tests {
         let mut address = sample_international_address();
         address.country = None;
 
+        let problems = address.get_problems(Severity::Error);
+
         assert_eq!(
             vec![PotentialProblems::IncompleteAddress {
                 severity: Severity::Error,
                 problems: vec![EmptyAddressProblems::Country]
             }],
-            address.get_problems(Severity::Error)
+            problems.potential_problems
         );
+        assert!(problems.info_problems.is_empty());
     }
 
     #[test]

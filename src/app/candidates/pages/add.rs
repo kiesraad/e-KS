@@ -39,8 +39,8 @@ impl AddExistingPersonTemplate {
             Some(pos) => full_list
                 .candidates
                 .iter()
-                .filter(|candidate| candidate.position >= pos)
-                .map(|candidate| (candidate.person.id, candidate.position))
+                .filter(|candidate| candidate.data.position >= pos)
+                .map(|candidate| (candidate.data.person.id, candidate.data.position))
                 .collect::<HashMap<PersonId, usize>>(),
             None => HashMap::new(),
         };
@@ -253,7 +253,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
-        assert_eq!(full_list.candidates[0].person.id, person.id);
+        assert_eq!(full_list.candidates[0].data.person.id, person.id);
 
         let body = response_body_string(response).await;
         assert!(body.contains("highlight_last=1"));
@@ -298,8 +298,8 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 2);
-        assert_eq!(full_list.candidates[0].person.id, existing_person.id);
-        assert_eq!(full_list.candidates[1].person.id, new_person.id);
+        assert_eq!(full_list.candidates[0].data.person.id, existing_person.id);
+        assert_eq!(full_list.candidates[1].data.person.id, new_person.id);
 
         let body = response_body_string(response).await;
         assert!(body.contains("highlight_last=1"));
@@ -415,7 +415,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
-        assert_eq!(full_list.candidates[0].person.id, existing_person.id);
+        assert_eq!(full_list.candidates[0].data.person.id, existing_person.id);
 
         Ok(())
     }
@@ -530,7 +530,7 @@ mod tests {
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
-        assert_eq!(full_list.candidates[0].person.id, keep_person.id);
+        assert_eq!(full_list.candidates[0].data.person.id, keep_person.id);
 
         Ok(())
     }

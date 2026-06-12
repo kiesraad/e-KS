@@ -21,7 +21,7 @@ pub async fn export_candidate_list(
     let records = full_list
         .candidates
         .into_iter()
-        .map(|candidate| CandidateRecordCsv::from(candidate.person))
+        .map(|candidate| CandidateRecordCsv::from(candidate.data.person))
         .collect::<Vec<_>>();
 
     let csv = Csv {

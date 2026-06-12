@@ -61,7 +61,7 @@ mod tests {
                     let last_name = pagination
                         .persons
                         .first()
-                        .map(|person| person.name.last_name.to_string())
+                        .map(|person| person.data.name.last_name.to_string())
                         .unwrap_or_default();
                     format!("{}:{}", pagination.pagination.page, last_name)
                 }),

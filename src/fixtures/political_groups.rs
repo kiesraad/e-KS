@@ -118,7 +118,7 @@ mod tests {
         load(&store).await.unwrap();
 
         let list_submitter = store.get_list_submitter();
-        assert!(list_submitter.is_all_good(()));
+        assert!(list_submitter.get_problems(()).is_all_good());
 
         let substitute_submitters = store.get_substitute_submitters();
         assert_eq!(substitute_submitters.len(), 2);

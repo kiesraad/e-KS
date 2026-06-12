@@ -2,9 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, Context, HtmlTemplate,
-    common::Problematic,
-    filters,
+    AppError, Context, HtmlTemplate, filters,
     persons::{Person, PersonPagination, PersonSort, pages::PersonsPath},
 };
 
@@ -30,8 +28,9 @@ mod tests {
     use super::*;
     use crate::{
         AppError, AppStore, Context,
+        common::Problems,
         pagination::Pagination,
-        persons::PersonId,
+        persons::{PersonId, structs::PersonWithProblems},
         test_utils::{response_body_string, sample_person},
     };
     use axum::{http::StatusCode, response::IntoResponse};
@@ -48,7 +47,10 @@ mod tests {
             PersonsPath {},
             Context::new_test_without_db(),
             PersonPagination {
-                persons: vec![person],
+                persons: vec![PersonWithProblems {
+                    data: person,
+                    problems: Problems::new_empty(),
+                }],
                 pagination: Pagination::default().set_total(1),
             },
         )

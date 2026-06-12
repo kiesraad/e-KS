@@ -186,6 +186,7 @@ mod tests {
         assert!(
             stored
                 .get_problems(())
+                .potential_problems
                 .contains(&PotentialProblems::UnknownAddress)
         );
 

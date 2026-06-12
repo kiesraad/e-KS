@@ -4,7 +4,6 @@ use axum::response::IntoResponse;
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
-    common::Problematic,
     filters,
 };
 
