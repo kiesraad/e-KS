@@ -34,25 +34,6 @@ export class CsvImportExportPage {
     return this.page.getByText(`Controleer veld ${validationError}`);
   }
 
-  // async uploadCsvFile(filePath: string) {
-  //   await this.buttonUpload.click();
-  //   const [fileChooser] = await Promise.all([
-  //     this.page.waitForEvent("filechooser"),
-  //     this.buttonContinue.click(),
-  //   ]);
-  //   await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
-  // }
-
-  //   async uploadCsvFile(filePath: string) {
-  //   await this.buttonUpload.click();
-  //   const fileChooserPromise = this.page.waitForEvent("filechooser");
-  //   if (await this.buttonContinue.isVisible()) {
-  //     await this.buttonContinue.click();
-  //   }
-  //   const fileChooser = await fileChooserPromise;
-  //   await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
-  // }
-
   async uploadCsvFile(filePath: string) {
     const fileChooserPromise = this.page.waitForEvent("filechooser");
 
