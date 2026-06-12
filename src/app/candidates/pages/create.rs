@@ -148,7 +148,7 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
-        assert_eq!(location, candidate.after_create_path());
+        assert_eq!(location, candidate.data.after_create_path());
 
         Ok(())
     }

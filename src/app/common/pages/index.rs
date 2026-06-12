@@ -2,7 +2,10 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use super::IndexPath;
-use crate::{AppStore, Context, HtmlTemplate, common::Severity, filters, submit::Problems};
+use crate::{
+    AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
+    common::Severity, filters, submit::AllProblems,
+};
 
 #[derive(Template)]
 #[template(path = "common/pages/index.html")]
@@ -13,54 +16,57 @@ pub struct IndexTemplate {
     problematic_lists_severity: &'static str,
 }
 
-pub async fn index(_: IndexPath, context: Context, store: AppStore) -> impl IntoResponse {
-    let problems = Problems::find_all(&store);
-
+pub async fn index(
+    _: IndexPath,
+    context: Context,
+    store: AppStore,
+) -> AppResponse<impl IntoResponse> {
     let political_group = store.get_political_group();
     let general_information_empty = political_group.is_general_information_empty(&store);
 
-    // TODO: refactor this after the problematic refactor
-    let general_problems = if general_information_empty {
-        Vec::new()
+    let (general_problems, general_problems_severity) = if general_information_empty {
+        (0, "")
     } else {
-        problems.general.flatten() // includes info warnings 
+        let (general_problems, general_infos) = AllProblems::find_general_problems(&store);
+        let problems = general_problems.flatten();
+        let severity_class = if problems.is_empty() {
+            (!general_infos.is_empty()).then_some(Severity::Info)
+        } else {
+            problems.iter().map(|p| p.severity()).max()
+        }
+        .map(|severity| severity.class())
+        .unwrap_or("success");
+
+        (problems.len() + general_infos.len(), severity_class)
+    };
+    // no infos, these are also not shown on the candidate list overview page
+    let (list_problems, _) =
+        AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
+
+    let (problematic_lists, problematic_lists_severity) = if list_problems.is_empty() {
+        (0, "")
+    } else {
+        let count = list_problems.len();
+        let severity_class = list_problems
+            .into_iter()
+            .flat_map(|p| p.problems)
+            .map(|p| p.severity())
+            .max()
+            .map(|s| s.class())
+            .unwrap_or_default();
+
+        (count, severity_class)
     };
 
-    let list_problems = problems
-        .lists
-        .iter()
-        .filter_map(|list| {
-            let severity = list.problems.iter().map(|p| p.severity()).max()?;
-            if severity > Severity::Info {
-                Some(severity) // no infos, these are also not shown on the candidate list overview page
-            } else {
-                None
-            }
-        })
-        .collect::<Vec<_>>();
-
-    HtmlTemplate(
+    Ok(HtmlTemplate(
         IndexTemplate {
-            general_problems: general_problems.len(),
-            general_problems_severity: if general_information_empty {
-                ""
-            } else {
-                general_problems
-                    .iter()
-                    .map(|p| p.severity())
-                    .max()
-                    .map(|severity| severity.class())
-                    .unwrap_or("success")
-            },
-            problematic_lists: list_problems.len(),
-            problematic_lists_severity: list_problems
-                .iter()
-                .max()
-                .map(|severity| severity.class())
-                .unwrap_or_default(),
+            general_problems,
+            general_problems_severity,
+            problematic_lists,
+            problematic_lists_severity,
         },
         context,
-    )
+    ))
 }
 
 #[cfg(test)]

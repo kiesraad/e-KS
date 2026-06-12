@@ -328,7 +328,7 @@ impl Eml210 {
                 list_data,
                 candidates: candidates
                     .iter()
-                    .map(TryInto::try_into)
+                    .map(|c| (&c.data).try_into())
                     .collect::<Result<Vec<_>, AppError>>()?,
             })
             .nominate(NominationNominate::new(nominated))

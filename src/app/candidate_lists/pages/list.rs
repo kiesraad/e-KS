@@ -3,7 +3,10 @@ use axum::response::IntoResponse;
 
 use crate::{
     AppError, AppStore, Context, HtmlTemplate,
-    candidate_lists::{CandidateList, CandidateListSummary, pages::CandidateListsPath},
+    candidate_lists::{
+        CandidateList, CandidateListSummary, FullCandidateList, pages::CandidateListsPath,
+        structs::CandidateListWithProblems,
+    },
     common::Problematic,
     filters,
     persons::Person,
@@ -12,7 +15,7 @@ use crate::{
 #[derive(Template)]
 #[template(path = "candidate_lists/pages/list.html")]
 struct CandidateListIndexTemplate {
-    candidate_lists: Vec<CandidateListSummary>,
+    candidate_lists: Vec<CandidateListWithProblems>,
     total_persons: usize,
     persons_with_problems: usize,
     person_problem_severity: &'static str,
@@ -23,15 +26,23 @@ pub async fn list_candidate_lists(
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
-    let candidate_lists = CandidateListSummary::list(&store);
-
+    let mut candidate_lists = Vec::new();
+    for summary in CandidateListSummary::list(&store) {
+        let problems = summary.get_problems(FullCandidateList::get(&store, summary.list.id)?);
+        candidate_lists.push(CandidateListWithProblems {
+            data: summary,
+            problems,
+        });
+    }
     let persons = store.get_persons();
-    let persons_with_problems = persons.iter().filter(|p| !p.is_all_good(())).count();
-    let person_problem_severity = persons
+    let problem_severities = persons
         .iter()
-        .map(|p| p.highest_severity(()))
+        .filter_map(|p| p.get_problems(context.election).highest_severity())
+        .collect::<Vec<_>>();
+    let persons_with_problems = problem_severities.len();
+    let person_problem_severity = problem_severities
+        .iter()
         .max()
-        .flatten()
         .map(|severity| severity.class())
         .unwrap_or_default();
 

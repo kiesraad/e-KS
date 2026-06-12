@@ -1,8 +1,7 @@
 use std::str::FromStr;
 
 use crate::{
-    OptionAsStrExt,
-    common::{PotentialProblems, Problematic},
+    common::{PotentialProblems, Problematic, Problems},
     form::{ValidationError, validate_length, validate_teletex_chars},
     transparent_string,
 };
@@ -35,12 +34,17 @@ constrained_strings! {
     pub struct StateOrProvince;
 }
 
-impl Problematic<()> for Option<LegalName> {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
-        if self.is_empty_or_none() {
+impl Problematic<()> for LegalName {
+    fn get_problems(&self, _: ()) -> Problems {
+        let potential_problems = if self.to_string().is_empty() {
             vec![PotentialProblems::NoLegalName]
         } else {
             Vec::new()
+        };
+
+        Problems {
+            potential_problems,
+            info_problems: Vec::new(),
         }
     }
 }

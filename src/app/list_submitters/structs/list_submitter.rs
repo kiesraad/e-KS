@@ -1,8 +1,8 @@
 use crate::{
     AppError, AppEvent, AppStore,
     common::{
-        Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode,
-        PotentialProblems, Problematic, Severity,
+        Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode, Problematic,
+        Problems, Severity,
     },
     id_newtype,
 };
@@ -77,7 +77,7 @@ pub struct ListSubmitter {
 }
 
 impl Problematic<()> for ListSubmitter {
-    fn get_problems(&self, _: ()) -> Vec<PotentialProblems> {
+    fn get_problems(&self, _: ()) -> Problems {
         let severity = if self.is_substitute {
             Severity::Info
         } else {
@@ -85,16 +85,13 @@ impl Problematic<()> for ListSubmitter {
         };
 
         if self.is_empty() && !self.is_substitute {
-            return vec![]; // error gets returned in general problems
+            return Problems::new_empty(); // error gets returned in general problems
         }
 
-        [
+        Problems::merge(vec![
             self.name.get_problems(severity),
             self.address.get_problems(severity),
-        ]
-        .into_iter()
-        .flatten()
-        .collect()
+        ])
     }
 }
 
@@ -156,7 +153,7 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
 
 #[cfg(test)]
 mod tests {
-    use crate::common::EmptyAddressProblems;
+    use crate::common::{EmptyAddressProblems, InfoProblems, PotentialProblems};
 
     use super::*;
 
@@ -174,14 +171,14 @@ mod tests {
 
     #[test]
     fn main_submitter_problems_use_error_severity() {
-        let submitter = incomplete_submitter(false);
+        let problems = incomplete_submitter(false).get_problems(());
 
         assert!(
-            submitter
-                .get_problems(())
+            problems
+                .potential_problems
                 .contains(&PotentialProblems::NoLastName(Severity::Error))
         );
-        assert!(submitter.get_problems(()).iter().any(|pp| match pp {
+        assert!(problems.potential_problems.iter().any(|pp| match pp {
             PotentialProblems::IncompleteAddress {
                 severity: Severity::Error,
                 problems,
@@ -190,6 +187,7 @@ mod tests {
             }
             _ => false,
         }));
+        assert!(problems.info_problems.is_empty());
     }
 
     #[test]
@@ -217,27 +215,23 @@ mod tests {
         assert!(
             !submitter
                 .get_problems(())
+                .potential_problems
                 .contains(&PotentialProblems::UnknownAddress)
         );
     }
 
     #[test]
     fn substitute_submitter_problems_use_info_severity() {
-        let submitter = incomplete_submitter(true);
+        let problems = incomplete_submitter(true).get_problems(());
 
-        assert!(
-            submitter
-                .get_problems(())
-                .contains(&PotentialProblems::NoLastName(Severity::Info))
-        );
-        assert!(submitter.get_problems(()).iter().any(|pp| match pp {
-            PotentialProblems::IncompleteAddress {
-                severity: Severity::Info,
-                problems,
-            } => {
+        assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
+        assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
+        assert!(problems.info_problems.iter().any(|pp| match pp {
+            InfoProblems::IncompleteAddress { problems } => {
                 problems.contains(&EmptyAddressProblems::StreetName)
             }
             _ => false,
         }));
+        assert!(problems.potential_problems.is_empty());
     }
 }

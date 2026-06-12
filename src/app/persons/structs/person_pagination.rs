@@ -1,10 +1,10 @@
 use crate::{
     pagination::PaginationInfo,
-    persons::{Person, PersonSort},
+    persons::{PersonSort, structs::PersonWithProblems},
 };
 
 #[derive(Debug, Clone)]
 pub struct PersonPagination {
-    pub persons: Vec<Person>,
+    pub persons: Vec<PersonWithProblems>,
     pub pagination: PaginationInfo<PersonSort>,
 }

@@ -4,7 +4,6 @@ use axum::{extract::Query, response::IntoResponse};
 use crate::{
     AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
-    common::Problematic,
     filters,
 };
 

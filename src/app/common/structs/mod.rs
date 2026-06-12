@@ -39,5 +39,8 @@ pub use name::FullName;
 pub use place_of_residence::PlaceOfResidence;
 pub use postal_code::{InternationalPostalCode, PostalCode};
 pub use previous_election_results::PreviousElectionResults;
-pub use problematic::{EmptyAddressProblems, PotentialProblems, Problematic, Severity};
+pub use problematic::{
+    EmptyAddressProblems, InfoProblems, PotentialProblems, Problematic, Problems, Severity,
+    WithProblems,
+};
 pub use utc_date_time::UtcDateTime;
