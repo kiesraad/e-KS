@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, Overlay,
+    AppError, AppStore, Context, Form, HtmlTemplate, MAX_CANDIDATES, Overlay,
     candidate_lists::FullCandidateList,
     filters,
     form::FormData,
@@ -52,6 +52,13 @@ pub async fn create_person_candidate_list_submit(
         )
         .into_response()),
         Ok(person) => {
+            if full_list.list.candidates.len() >= MAX_CANDIDATES {
+                return Ok(
+                    Redirect::to(&full_list.list.max_candidates_reached_path().to_string())
+                        .into_response(),
+                );
+            }
+
             let person =
                 Person::create_from_personal_data(&store, person.name, person.personal_data)
                     .await?;
@@ -72,7 +79,11 @@ mod tests {
     use crate::{
         AppStore, Context, Form,
         candidate_lists::CandidateListId,
-        test_utils::{response_body_string, sample_candidate_list, sample_person_form},
+        persons::PersonId,
+        test_utils::{
+            response_body_string, sample_candidate_list, sample_person_form,
+            sample_person_with_last_name,
+        },
     };
     use axum::{
         http::{StatusCode, header},
@@ -138,6 +149,54 @@ mod tests {
         assert_eq!(full_list.candidates.len(), 1);
         let candidate = full_list.candidates.first().expect("candidate");
         assert_eq!(location, candidate.after_create_path());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_person_candidate_list_redirects_when_full() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        let mut full = Vec::new();
+        for index in 0..MAX_CANDIDATES {
+            let person = sample_person_with_last_name(PersonId::new(), &format!("Bakker{index}"));
+            person.create(&store).await?;
+            full.push(person.id);
+        }
+        list.candidates = full;
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token.clone();
+        let form = sample_person_form(&csrf_token);
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = create_person_candidate_list_submit(
+            CreateCandidatePath { list_id },
+            context,
+            full_list,
+            store.clone(),
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert!(location.contains("max_candidates_reached=true"));
+        // No orphan person is created when the list is already full.
+        assert_eq!(store.get_person_count(), MAX_CANDIDATES);
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
 
         Ok(())
     }

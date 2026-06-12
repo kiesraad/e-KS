@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Locale, TokenValue,
+    AppError, AppEvent, AppStore, Locale, MAX_CANDIDATES, TokenValue,
     candidate_lists::{
         CandidateList,
         structs::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
@@ -218,7 +218,9 @@ async fn emit_import_event(
     file_name: String,
     file_size: usize,
 ) -> Result<(), ImportCandidateListError> {
-    let candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+    let mut candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+    candidates.truncate(MAX_CANDIDATES);
+
     let mut created_persons = Vec::new();
     let mut updated_persons = Vec::new();
     for prepared in persons {
@@ -492,6 +494,40 @@ mod tests {
         assert_eq!(store.current_event_id(), event_id_before_import + 1);
         assert_eq!(store.get_person_count(), 2);
         assert_eq!(store.get_candidate_list(list_id)?.candidates.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_caps_candidates_at_max() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        let mut csv = format!("{}\r\n", csv_headers());
+        for index in 0..(MAX_CANDIDATES + 5) {
+            csv.push_str(&format!(
+                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            ));
+        }
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            &crate::form::generate_csrf_token(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
 
         Ok(())
     }

@@ -132,7 +132,8 @@ impl ErrorResponse {
             | AppError::PathRejection(_)
             | AppError::JsonRejection(_)
             | AppError::QueryRejection(_)
-            | AppError::UserError(_) => (BadRequest, err.to_string()),
+            | AppError::UserError(_)
+            | AppError::TooManyCandidates => (BadRequest, err.to_string()),
             AppError::EmlError(err) => (BadRequest, format!("EML error: {err}")),
             AppError::IncompleteData(err) => (
                 BadRequest,

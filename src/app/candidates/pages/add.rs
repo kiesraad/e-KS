@@ -1,5 +1,5 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use std::collections::HashMap;
 
 use crate::{
@@ -47,7 +47,8 @@ impl AddExistingPersonTemplate {
         };
         let candidate_ids = added_candidates.keys().cloned().collect::<Vec<_>>();
         let persons = full_list.list.persons_not_on_list(store, &candidate_ids)?;
-        let show_add_all = persons.len() != candidate_ids.len();
+        let allow_add = full_list.candidates.len() < MAX_CANDIDATES;
+        let show_add_all = persons.len() != candidate_ids.len() && allow_add;
         let close_action = if !added_candidates.is_empty() {
             full_list
                 .list
@@ -60,7 +61,7 @@ impl AddExistingPersonTemplate {
         Ok(Self {
             close_action,
             show_add_all,
-            allow_add: full_list.candidates.len() < MAX_CANDIDATES,
+            allow_add,
             overlay: Overlay::default(),
             show_remove_all: !show_add_all && !candidate_ids.is_empty(),
             persons,
@@ -93,6 +94,7 @@ async fn handle_add_candidate_form(
                 .collect::<Vec<_>>();
             let mut all_persons = full_list.list.candidates.clone();
             all_persons.extend(person_ids);
+            all_persons.truncate(MAX_CANDIDATES);
 
             full_list.list.update_order(store, &all_persons).await?;
         }
@@ -167,7 +169,16 @@ pub async fn add_person_to_candidate_list(
         )
         .into_response()),
         Ok(mut add_person) => {
-            handle_add_candidate_form(&mut add_person, &mut full_list, &store).await?;
+            match handle_add_candidate_form(&mut add_person, &mut full_list, &store).await {
+                Ok(()) => {}
+                Err(AppError::TooManyCandidates) => {
+                    return Ok(Redirect::to(
+                        &full_list.list.max_candidates_reached_path().to_string(),
+                    )
+                    .into_response());
+                }
+                Err(error) => return Err(error),
+            }
 
             Ok(HtmlTemplate(
                 AddExistingPersonTemplate::from(
@@ -355,6 +366,99 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("highlight_last=2"));
         assert!(body.contains("success=true"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_person_to_candidate_list_add_all_caps_at_max() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        for index in 0..(MAX_CANDIDATES + 5) {
+            sample_person_with_last_name(PersonId::new(), &format!("Bakker{index}"))
+                .create(&store)
+                .await?;
+        }
+
+        let context = Context::new_test_without_db();
+        let form = AddPersonForm {
+            action: AddPersonAction::AddAll.to_string(),
+            added_position: String::new(),
+            csrf_token: context.session.csrf_token.clone(),
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            context,
+            Form(form),
+        )
+        .await?;
+
+        // Bulk add silently caps: no error, just the maximum number of candidates.
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn add_person_to_candidate_list_toggle_over_max_redirects() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        let mut full = Vec::new();
+        for index in 0..MAX_CANDIDATES {
+            let person = sample_person_with_last_name(PersonId::new(), &format!("Bakker{index}"));
+            person.create(&store).await?;
+            full.push(person.id);
+        }
+        list.candidates = full;
+        list.create(&store).await?;
+
+        let overflow = sample_person_with_last_name(PersonId::new(), "Zeeman");
+        overflow.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let form = AddPersonForm {
+            action: overflow.id.to_string(),
+            added_position: String::new(),
+            csrf_token: context.session.csrf_token.clone(),
+        };
+
+        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
+
+        let response = add_person_to_candidate_list(
+            AddCandidatePath { list_id },
+            full_list,
+            store.clone(),
+            context,
+            Form(form),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get(axum::http::header::LOCATION)
+            .expect("location header")
+            .to_str()
+            .expect("location header value");
+        assert!(location.contains("max_candidates_reached=true"));
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
 
         Ok(())
     }

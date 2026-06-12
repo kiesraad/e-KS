@@ -61,9 +61,7 @@
                value="{{ form.data.display_name }}"
                id="display_name" />
         {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
-        {% if !steps.is_combined %}
-          <span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>
-        {% endif %}
+        {% if !steps.is_combined %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
       </div>
     </div>
     <div class="form-row">

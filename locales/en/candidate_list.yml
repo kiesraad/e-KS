@@ -74,3 +74,4 @@ title_single: Candidate list
 view:
   empty: This candidate list has no persons yet.
   max_candidates_exceeded: "The maximum number of candidates ({}) has been exceeded."
+  max_candidates_reached: "You cannot add more than {} candidates to a candidate list."

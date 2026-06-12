@@ -106,6 +106,11 @@ impl CandidateList {
         ViewCandidateListPath { list_id: self.id }
     }
 
+    pub fn max_candidates_reached_path(&self) -> impl TypedPath {
+        ViewCandidateListPath { list_id: self.id }
+            .with_query_params(QueryParamState::max_candidates_reached())
+    }
+
     pub fn reorder_path(&self) -> impl TypedPath {
         CandidateListReorderPath { list_id: self.id }
     }

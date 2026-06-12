@@ -18,7 +18,6 @@
             <li class="tag {% if duplicate_districts.contains(district) %}error{% endif %}">
               <a href="{{ full_list.list.update_path() }}"
                  {% if duplicate_districts.contains(district) %}class="error"{% endif %}>
-                {{ district.region_number() }}
                 {{ district|district_name }}
               </a>
             </li>
@@ -36,6 +35,11 @@
   </div>
 {% endblock %}
 {% block content %}
+  {% if max_candidates_reached %}
+    <div class="alert alert-warning alert-floating">
+      {{ "candidate_list.view.max_candidates_reached"|trans(&crate::MAX_CANDIDATES.to_string() ) }}
+    </div>
+  {% endif %}
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
