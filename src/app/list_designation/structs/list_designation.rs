@@ -1,4 +1,7 @@
-use crate::form::ValidationError;
+use crate::{
+    common::{InfoProblems, Problematic, Problems},
+    form::ValidationError,
+};
 use serde::{Deserialize, Serialize};
 
 #[derive(Default, Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -8,6 +11,19 @@ pub enum ListDesignation {
     Standalone,
     Blank,
     Combined,
+}
+
+impl Problematic<()> for Option<ListDesignation> {
+    fn get_problems(&self, _: ()) -> Problems {
+        Problems {
+            info_problems: if self.is_none() {
+                vec![InfoProblems::NoListDesignation]
+            } else {
+                Vec::new()
+            },
+            potential_problems: Vec::new(),
+        }
+    }
 }
 
 impl std::str::FromStr for ListDesignation {

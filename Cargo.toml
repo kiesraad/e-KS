@@ -34,8 +34,6 @@ livereload = []
 memory-serve = ["dep:memory-serve"]
 # Run the embedded Typst webservice in-process.
 embed-typst = ["dep:typst-webservice"]
-# Embed the bag address lookup library
-embed-bag = ["dep:bag_address_lookup"]
 # Serve over HTTPS via rustls (production deployments).
 tls = ["dep:axum-server", "dep:rustls"]
 
@@ -89,10 +87,10 @@ memory-serve = { version = "2.1.0", optional = true }
 validate = { path = "validate" }
 auth-service = { path = "auth-service" }
 typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"], optional = true }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
 
 # kiesraad
-eml-nl = { git = "https://github.com/kiesraad/rust-eml-nl.git" } # TODO: replace with crates.io version when the branch gets merged
+eml-nl = "0.6.0"
 
 [build-dependencies]
 memory-serve = { version = "2.1.0", optional = true }
@@ -102,6 +100,8 @@ phf_codegen = "0.13.1"
 http-body-util = "0.1"
 tower = "0.5"
 tracing-test = "0.2.6"
+# Adds 'now' to chrono for testing against the current clock
+chrono = { version = "0.4.44", features = ["now"] }
 # Adds rustls to reqwest for TLS server tests. Dev-only: the production
 # binary still builds reqwest without any TLS backend.
 reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }

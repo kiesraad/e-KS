@@ -25,7 +25,7 @@ jobs:
       changed: ${{ steps.filter.outputs.changed }}
     steps:
       - &checkout-with-history
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           fetch-depth: '0'
           persist-credentials: false
@@ -135,7 +135,7 @@ jobs:
         run: cargo --locked clippy --all-targets --no-default-features -- -D warnings
 
       - name: Run tests
-        run: cargo --locked test --features embed-typst,embed-bag -- --nocapture
+        run: cargo --locked test --features embed-typst -- --nocapture
 
       - name: Build docs
         run: cargo doc --workspace --no-deps --all-features
@@ -211,7 +211,7 @@ jobs:
 
       - name: Build
         env:
-          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,embed-typst,embed-bag"
+          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,embed-typst"
         run: bin/build
 
       - name: Strip debug symbols
@@ -246,7 +246,7 @@ jobs:
     env:
       CARGO_TERM_COLOR: always
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -288,7 +288,7 @@ jobs:
     needs: changes
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -303,7 +303,7 @@ jobs:
       security-events: write # Required for upload-sarif (used by zizmor-action) to upload SARIF files.
     steps:
       - name: Checkout repository
-        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 
@@ -328,7 +328,7 @@ jobs:
       cancel-in-progress: false
     runs-on: ubuntu-24.04
     steps:
-      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+      - uses: actions/checkout@df4cb1c069e1874edd31b4311f1884172cec0e10 # v6.0.3
         with:
           persist-credentials: false
 

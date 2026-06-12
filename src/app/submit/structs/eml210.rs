@@ -180,7 +180,10 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
 
     fn try_into(self) -> Result<eml_nl::documents::nomination::NominationCandidate, Self::Error> {
         Ok(eml_nl::documents::nomination::NominationCandidate {
-            identifier: CandidateIdentifier::new(CandidateId::new(self.position.to_string())?),
+            identifier: CandidateIdentifier::new(
+                CandidateId::from_u64(self.position as u64)
+                    .map_err(|_| AppError::IncompleteData("candidate position is 0"))?,
+            ),
             full_name: (&self.person.name).into(),
             date_of_birth: self
                 .person
@@ -220,7 +223,7 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
                 .flatten(),
             date_of_birth_annex: None,
             national_identification_number: match self.person.personal_data.bsn.as_ref() {
-                Some(BsnOrNoneConfirmed::Bsn(bsn)) => Some(bsn.to_exposed_string()),
+                Some(BsnOrNoneConfirmed::Bsn(bsn)) => Some(bsn.to_exposed_string().into()),
                 _ => None,
             },
         })
@@ -230,7 +233,7 @@ impl TryInto<eml_nl::documents::nomination::NominationCandidate> for &Candidate 
 fn nomination_proposer(
     submitter: ListSubmitter,
     job_title: eml_nl::documents::nomination::NominationJobTitle,
-    id: Option<String>,
+    id: Option<Box<str>>,
 ) -> Result<eml_nl::documents::nomination::NominationProposer, AppError> {
     Ok(eml_nl::documents::nomination::NominationProposer {
         name: (&submitter.name).into(),
@@ -265,7 +268,7 @@ impl Eml210 {
             nominated.push(nomination_proposer(
                 sub,
                 eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
-                Some((i + 1).to_string()),
+                Some((i + 1).to_string().into()),
             )?);
         }
 
@@ -320,12 +323,12 @@ impl Eml210 {
                 )
             })
             .affiliation(NominationAffiliation {
-                registered_name: political_group.effective_display_name()?,
+                registered_name: political_group.effective_display_name()?.into(),
                 affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
                 list_data,
                 candidates: candidates
                     .iter()
-                    .map(TryInto::try_into)
+                    .map(|c| (&c.data).try_into())
                     .collect::<Result<Vec<_>, AppError>>()?,
             })
             .nominate(NominationNominate::new(nominated))

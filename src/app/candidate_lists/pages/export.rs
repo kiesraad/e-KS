@@ -21,7 +21,7 @@ pub async fn export_candidate_list(
     let records = full_list
         .candidates
         .into_iter()
-        .map(|candidate| CandidateRecordCsv::from(candidate.person))
+        .map(|candidate| CandidateRecordCsv::from(candidate.data.person))
         .collect::<Vec<_>>();
 
     let csv = Csv {
@@ -157,8 +157,11 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         let expected_csv = format!(
-            "{}\n",
-            CSV_HEADER.trim_end_matches('\n').trim_end_matches('\r')
+            "\u{feff}{}\n",
+            CSV_HEADER
+                .trim_end_matches('\n')
+                .trim_end_matches('\r')
+                .replace(',', ";")
         );
         let body = String::from_utf8(
             body::to_bytes(response.into_body(), expected_csv.len() * 2)

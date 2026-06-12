@@ -18,8 +18,6 @@ mod dev_defaults {
     #[cfg(not(feature = "embed-typst"))]
     pub(super) const TYPST_URL: &str = "http://localhost:8080";
 
-    pub(super) const BAG_SERVICE_URL: &str = "http://localhost:8090";
-
     pub(super) const ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
 
     pub(super) const DEFAULT_ENCRYPTION_DERIVATION_KEY: &str =
@@ -30,7 +28,6 @@ mod dev_defaults {
             ("STORAGE_URL", STORAGE_URL),
             #[cfg(not(feature = "embed-typst"))]
             ("TYPST_URL", TYPST_URL),
-            ("BAG_SERVICE_URL", BAG_SERVICE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
             (
                 "ENCRYPTION_DERIVATION_KEY",

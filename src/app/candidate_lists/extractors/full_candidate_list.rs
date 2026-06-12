@@ -58,7 +58,7 @@ mod tests {
                 get(|full_list: FullCandidateList| async move {
                     let candidate = full_list.candidates.first().expect("candidate");
 
-                    candidate.person.name.last_name.to_string()
+                    candidate.data.person.name.last_name.to_string()
                 }),
             )
             .with_state(app_state);

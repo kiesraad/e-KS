@@ -1,5 +1,5 @@
 actions:
-  delete_name_authorisation: Machtiging verwijderen
+  delete_name_authorisation: Statutaire naam verwijderen
   delete_substitute_submitter: Vervanger verwijderen
 add_legal_name: Statutaire naam toevoegen
 add_list_submitter: Lijstinleveraar toevoegen
@@ -17,17 +17,17 @@ edit_legal_name: Statutaire naam en gemachtigde aanpassen
 edit_list_submitter: Gegevens lijstinleveraar aanpassen
 edit_substitute_submitter: Gegevens vervangers voor het herstel van verzuimen aanpassen
 legal_name: Volledige statutaire naam
-legal_name_data: Statutaire naam en gemachtigde
-legal_name_data_combined: Statutaire namen en gemachtigden
+legal_name_data: Statutaire naam
+legal_name_data_combined: Statutaire namen
 list_submitter: Lijstinleveraar
 list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
 list_submitter_data: Gegevens lijstinleveraar
+list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 list_type: Type lijstaanduiding
 no_legal_names: Geen statutaire naam
 no_list_submitter: Geen lijstinleveraar
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen
 previous_election_results: "Bij de vorige {} had uw partij:"
-select_default_list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 substitute_submitter: Vervanger voor het herstel van verzuimen
 substitute_submitter_data: Gegevens vervanger
 substitute_submitters_data: Gegevens vervangers voor het herstel van verzuimen

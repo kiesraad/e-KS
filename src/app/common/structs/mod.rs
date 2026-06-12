@@ -14,6 +14,7 @@ mod last_name;
 mod last_name_prefix;
 mod locality;
 mod name;
+mod place_of_residence;
 mod postal_code;
 mod previous_election_results;
 mod problematic;
@@ -33,9 +34,13 @@ pub use house_number_addition::HouseNumberAddition;
 pub use initials::Initials;
 pub use last_name::LastName;
 pub use last_name_prefix::LastNamePrefix;
-pub use locality::{Locality, PlaceOfResidence};
+pub use locality::Locality;
 pub use name::FullName;
+pub use place_of_residence::PlaceOfResidence;
 pub use postal_code::{InternationalPostalCode, PostalCode};
 pub use previous_election_results::PreviousElectionResults;
-pub use problematic::{EmptyAddressProblems, PotentialProblems, Problematic, Severity};
+pub use problematic::{
+    EmptyAddressProblems, InfoProblems, PotentialProblems, Problematic, Problems, Severity,
+    WithProblems,
+};
 pub use utc_date_time::UtcDateTime;

@@ -7,6 +7,7 @@ mod query_param_state;
 mod redirect;
 mod slugify_teletex;
 
+pub mod bag;
 pub mod id_newtype;
 pub mod locality_aliases;
 pub mod no_cache_headers;
@@ -17,9 +18,6 @@ pub mod livereload;
 
 #[cfg(feature = "embed-typst")]
 pub mod embed_typst;
-
-#[cfg(feature = "embed-bag")]
-pub mod embed_bag;
 
 #[cfg(test)]
 pub mod test_utils;

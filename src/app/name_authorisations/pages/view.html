@@ -15,13 +15,13 @@
           {{ "political_group.legal_name_data"|trans }}
         {% endif %}
       </h3>
-      <p class="info">{{ "political_group.authorised_agent_info"|trans }}</p>
+      <p class="mb-6">{{ "political_group.authorised_agent_info"|trans }}</p>
       {% if name_authorisations.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>
       {% else %}
         {% for agent in name_authorisations %}
           <a href="{{ agent.update_path() }}"
-             class="person-block {{ agent.highest_severity_class(*() ) }}">
+             class="person-block {{ agent.get_problems(*() ).highest_severity_class() }}">
             {{ agent.legal_name }} ({{ agent.name.display() }})
           </a>
         {% endfor %}

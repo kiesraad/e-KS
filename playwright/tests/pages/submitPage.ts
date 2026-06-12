@@ -20,13 +20,13 @@ export class SubmitPage {
       name: "Geregistreerde aanduiding ontbreekt",
     });
     this.linkNoLegalName = this.page.getByRole("link", {
-      name: "Te weinig gemachtigde/statutaire namen",
+      name: "1 statutaire naam te weinig",
     });
     this.linkBSN = this.page.getByRole("link", {
       name: "BSN ontbreekt",
     });
     this.linkTooManyCandidates = this.page.getByRole("link", {
-      name: "Te veel kandidaten",
+      name: /\d+ (kandidaat|kandidaten) te veel/,
     });
     this.linkIncorrectDate = this.page.getByRole("link", {
       name: "Geboortedatum lijkt onjuist",

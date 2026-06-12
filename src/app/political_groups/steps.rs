@@ -28,7 +28,7 @@ impl PoliticalGroupSteps {
         let list_submitter = store.get_list_submitter();
         let substitute_submitters = store.get_substitute_submitters();
 
-        let basic_info_empty = political_group.is_basic_info_empty();
+        let group_info_empty = political_group.is_group_information_empty();
         let is_blank = political_group.list_designation == Some(ListDesignation::Blank);
         let is_combined = political_group.list_designation == Some(ListDesignation::Combined);
 
@@ -36,9 +36,9 @@ impl PoliticalGroupSteps {
             is_blank,
             is_combined,
             list_designation_state: Self::list_designation_state(&political_group),
-            basic_state: Self::basic_state(basic_info_empty, &political_group),
+            basic_state: Self::basic_state(group_info_empty, &political_group),
             name_authorisations_state: Self::name_authorisations_state(
-                basic_info_empty,
+                group_info_empty,
                 &name_authorisations,
             ),
             submitters_state: Self::submitters_state(
@@ -53,7 +53,7 @@ impl PoliticalGroupSteps {
     }
 
     fn list_designation_state(political_group: &PoliticalGroup) -> &'static str {
-        if political_group.list_designation.is_none() {
+        if political_group.is_list_designation_type_empty() {
             "empty"
         } else {
             "ok"
@@ -64,7 +64,7 @@ impl PoliticalGroupSteps {
         if basic_info_empty {
             "empty"
         } else {
-            political_group.highest_severity_class(())
+            political_group.get_problems(()).highest_severity_class()
         }
     }
 
@@ -78,7 +78,7 @@ impl PoliticalGroupSteps {
 
         match name_authorisations
             .iter()
-            .filter_map(|na| na.highest_severity(()))
+            .filter_map(|na| na.get_problems(()).highest_severity())
             .max()
         {
             None => "ok",
@@ -97,8 +97,8 @@ impl PoliticalGroupSteps {
 
         match substitute_submitters
             .iter()
-            .filter_map(|ss| ss.highest_severity(()))
-            .chain(list_submitter.highest_severity(()))
+            .filter_map(|ss| ss.get_problems(()).highest_severity())
+            .chain(list_submitter.get_problems(()).highest_severity())
             .chain(substitute_submitters.is_empty().then_some(Severity::Info))
             .max()
         {
