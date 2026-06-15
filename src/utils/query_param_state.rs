@@ -18,6 +18,12 @@ pub struct QueryParamState {
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     redirect_to: Option<String>,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    max_candidates_reached: bool,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
+    import_capped: bool,
 }
 
 impl QueryParamState {
@@ -35,6 +41,14 @@ impl QueryParamState {
 
     pub fn is_success(&self) -> bool {
         self.success
+    }
+
+    pub fn is_max_candidates_reached(&self) -> bool {
+        self.max_candidates_reached
+    }
+
+    pub fn is_import_capped(&self) -> bool {
+        self.import_capped
     }
 
     pub fn created() -> Self {
@@ -78,6 +92,20 @@ impl QueryParamState {
         Self {
             success: true,
             highlight_last: Some(last),
+            ..Default::default()
+        }
+    }
+
+    pub fn max_candidates_reached() -> Self {
+        Self {
+            max_candidates_reached: true,
+            ..Default::default()
+        }
+    }
+
+    pub fn import_capped() -> Self {
+        Self {
+            import_capped: true,
             ..Default::default()
         }
     }

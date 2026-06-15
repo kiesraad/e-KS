@@ -70,7 +70,9 @@
                     {% for district in candidate_list.data.list.electoral_districts %}
                       <li class="tag {% if candidate_list.data.duplicate_districts.contains(district) %}error{% endif %}">
                         <a href="{{ candidate_list.data.list.update_path_from(CandidateList::list_path() ) }}"
-                           {% if candidate_list.data.duplicate_districts.contains(district) %}class="error"{% endif %}>{{ district|district_name }}</a>
+                           {% if candidate_list.data.duplicate_districts.contains(district) %}class="error"{% endif %}>
+                          {{ district|district_name }}
+                        </a>
                       </li>
                     {% endfor %}
                   </ul>

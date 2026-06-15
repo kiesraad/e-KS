@@ -1,7 +1,7 @@
 use askama::Template;
 use axum::{
     http::StatusCode,
-    response::{IntoResponse, Response},
+    response::{IntoResponse, Redirect, Response},
 };
 
 use crate::{
@@ -123,7 +123,10 @@ pub async fn import_candidate_list(
     )
     .await
     {
-        Ok(()) => Ok(redirect_success(list.view_path())),
+        Ok(outcome) if outcome.capped => {
+            Ok(Redirect::to(&list.import_capped_path().to_string()).into_response())
+        }
+        Ok(_) => Ok(redirect_success(list.view_path())),
         Err(ImportCandidateListError::App(error)) => Err(error),
         Err(ImportCandidateListError::Messages(messages)) => {
             Ok(render_import_export(list.clone(), messages, context))
@@ -337,6 +340,48 @@ mod tests {
         assert!(body.contains("Postal code"));
         assert!(body.contains("The postal code is not valid, use the format 1234AB."));
         assert_eq!(body.matches("alert alert-warning").count(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_candidate_list_capped_redirects_with_warning() -> Result<(), AppError> {
+        use crate::MAX_CANDIDATES;
+
+        let store = AppStore::new_for_test();
+        let list = sample_candidate_list(CandidateListId::new());
+        list.create(&store).await?;
+
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token.clone();
+
+        let mut csv = format!("{}\r\n", csv_headers());
+        for index in 0..(MAX_CANDIDATES + 5) {
+            csv.push_str(&format!(
+                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            ));
+        }
+
+        let response = import_candidate_list(
+            CandidateListImportPath { list_id: list.id },
+            context,
+            store,
+            Ok(FileForm {
+                csrf_token,
+                file_name: Some("candidates.csv".to_string()),
+                file_data: Some(Bytes::from(csv)),
+            }),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get("Location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.contains("import_capped=true"));
 
         Ok(())
     }

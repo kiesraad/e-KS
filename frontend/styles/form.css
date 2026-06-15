@@ -61,7 +61,7 @@
     }
 
     &.form-field-sm {
-      max-width: 10.875rem;
+      max-width: 15rem;
     }
 
     &.form-field-lg {
@@ -112,12 +112,12 @@
     .no_bsn_confirmed {
       font-size: var(--font-size-md);
       line-height: var(--leading-md);
-      font-weight: var(--font-weight-light);
+      font-weight: var(--font-weight-300);
       color: var(--gray-500);
+
       display: flex;
-      gap: var(--space-xs);
+      gap: var(--space-sm);
       align-items: center;
-      margin-top: calc(-1 * var(--space-xs));
       text-wrap: balance;
     }
   }

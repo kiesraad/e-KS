@@ -1,8 +1,8 @@
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate,
+    AppError, AppStore, Context, ElectoralDistrict, HtmlTemplate, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList, pages::ViewCandidateListPath},
     filters,
 };
@@ -12,6 +12,8 @@ use crate::{
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
     duplicate_districts: Vec<ElectoralDistrict>,
+    max_candidates_reached: bool,
+    import_capped: bool,
 }
 
 pub async fn view_candidate_list(
@@ -19,6 +21,7 @@ pub async fn view_candidate_list(
     context: Context,
     full_list: FullCandidateList,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
     let duplicate_districts = full_list.list.duplicate_districts(&store);
 
@@ -26,6 +29,8 @@ pub async fn view_candidate_list(
         CandidateListViewTemplate {
             full_list,
             duplicate_districts,
+            max_candidates_reached: query.is_max_candidates_reached(),
+            import_capped: query.is_import_capped(),
         },
         context,
     ))
@@ -60,6 +65,7 @@ mod tests {
             Context::new_test_without_db(),
             full_list,
             store,
+            Query(QueryParamState::default()),
         )
         .await?
         .into_response();

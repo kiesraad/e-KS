@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Locale, TokenValue,
+    AppError, AppEvent, AppStore, Locale, MAX_CANDIDATES, TokenValue,
     candidate_lists::{
         CandidateList,
         structs::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
@@ -37,13 +37,19 @@ pub(crate) async fn import_candidate_list_csv(
     locale: Locale,
     file_name: String,
     file_size: usize,
-) -> Result<(), ImportCandidateListError> {
+) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
     let records = parse_records(csv_data, locale)?;
     let persons = collect_persons(records, store.get_persons(), csrf_token, locale)?;
-    emit_import_event(list, store, persons, file_name, file_size).await?;
+    emit_import_event(list, store, persons, file_name, file_size).await
+}
 
-    Ok(())
+/// Information about a successful import that the caller surfaces to the user.
+#[derive(Debug)]
+pub(crate) struct ImportOutcome {
+    /// The number of candidates in the file exceeded [`MAX_CANDIDATES`] and the
+    /// list was truncated to the maximum.
+    pub capped: bool,
 }
 
 fn ensure_expected_headers(data: &[u8], locale: Locale) -> Result<(), ImportCandidateListError> {
@@ -217,8 +223,11 @@ async fn emit_import_event(
     persons: Vec<PreparedPerson>,
     file_name: String,
     file_size: usize,
-) -> Result<(), ImportCandidateListError> {
-    let candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+) -> Result<ImportOutcome, ImportCandidateListError> {
+    let mut candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+    let capped = candidates.len() > MAX_CANDIDATES;
+    candidates.truncate(MAX_CANDIDATES);
+
     let mut created_persons = Vec::new();
     let mut updated_persons = Vec::new();
     for prepared in persons {
@@ -242,7 +251,7 @@ async fn emit_import_event(
 
     *list = store.get_candidate_list(list.id)?;
 
-    Ok(())
+    Ok(ImportOutcome { capped })
 }
 
 #[cfg(test)]
@@ -492,6 +501,41 @@ mod tests {
         assert_eq!(store.current_event_id(), event_id_before_import + 1);
         assert_eq!(store.get_person_count(), 2);
         assert_eq!(store.get_candidate_list(list_id)?.candidates.len(), 2);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_caps_candidates_at_max() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        let mut csv = format!("{}\r\n", csv_headers());
+        for index in 0..(MAX_CANDIDATES + 5) {
+            csv.push_str(&format!(
+                "H.A.H.A.,Henk,,Jansen{index},Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+            ));
+        }
+
+        let outcome = import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            &crate::form::generate_csrf_token(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        assert!(outcome.capped);
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
 
         Ok(())
     }

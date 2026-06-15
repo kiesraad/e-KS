@@ -3,7 +3,7 @@ use crate::core::AnyLocale;
 super::define_districts! {
     GR("1", "GR", "Groningen", fry: "Grinslân"),
     PsGroningen("1", "GRQ", "Groningen"),
-    FR("2", "FR", "Friesland", fry: "Fryslân"),
+    FR("2", "FR", "Fryslân", fry: "Fryslân"),
     PsLeeuwarden("2", "LWR", "Leeuwarden", fry: "Ljouwert"),
     DR("3", "DR", "Drenthe", fry: "Drinte"),
     PsAssen("3", "ASS", "Assen"),
@@ -33,10 +33,10 @@ super::define_districts! {
     LI("12", "LI", "Limburg", fry: "Limboarch"),
     PsMaastricht("19", "MST", "Maastricht"),
     PsVenlo("20", "VEN", "Venlo"),
-    BO("13", "BO", "Kiescollege Bonaire", fry: "Kieskolleezje Bonêre", en: "Electoral College Bonaire"),
-    SE("14", "SE", "Kiescollege Sint Eustatius", fry: "Kieskolleezje Sint Eustaasjus", en: "Electoral College Sint Eustatius"),
-    SA("15", "SA", "Kiescollege Saba", fry: "Kieskolleezje Saba", en: "Electoral College Saba"),
-    KN("16", "KN", "Kiescollege Niet-Ingezetenen", fry: "Kieskolleezje Net-Ynwenners", en: "Electoral College Non-Residents"),
+    BO("13", "BO", "Bonaire", fry: "Bonêre", en: "Bonaire"),
+    SE("14", "SE", "Sint Eustatius", fry: "Sint Eustaasjus", en: "Sint Eustatius"),
+    SA("15", "SA", "Saba", fry: "Saba", en: "Saba"),
+    KN("16", "KN", "Buitenland", fry: "Bûtenlân", en: "Abroad"),
     WsNoorderzijlvest("1", "WS-NZV", "Noorderzijlvest"),
     WsFryslan("2", "WS-FRY", "Fryslân"),
     WsHunzeEnAas("3", "WS-HEA", "Hunze en Aa's"),
@@ -127,7 +127,7 @@ mod tests {
             "Amstel, Gooi en Vecht"
         );
 
-        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Friesland");
+        assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Nl), "Fryslân");
         assert_eq!(ElectoralDistrict::FR.title(AnyLocale::Fry), "Fryslân");
         assert_eq!(ElectoralDistrict::WsFryslan.title(AnyLocale::Nl), "Fryslân");
         assert_eq!(

@@ -287,4 +287,10 @@ label.button {
   .close {
     background-image: url("../icons/deselect.svg");
   }
+
+  ul {
+    margin: var(--space-3) 0;
+    padding-left: var(--space-5);
+    list-style: disc;
+  }
 }

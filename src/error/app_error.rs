@@ -50,6 +50,10 @@ pub enum AppError {
     NoStorageConfigured,
     IntegrityViolation,
 
+    /// Attempted to add a candidate to a list that is already at the maximum
+    /// allowed number of candidates ([`crate::MAX_CANDIDATES`]).
+    TooManyCandidates,
+
     /// A persisted event could not be decrypted or deserialized.
     /// Indicates tampering, a wrong key, or a corrupt/unsupported frame.
     EventDecodeError(String),
@@ -67,6 +71,11 @@ impl Display for AppError {
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
+            AppError::TooManyCandidates => write!(
+                f,
+                "Cannot add more than {} candidates to a candidate list",
+                crate::MAX_CANDIDATES
+            ),
             AppError::InternalServerError => write!(f, "Internal server error"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
             AppError::MissingEnvVar(var) => write!(f, "Missing environment variable: {var}"),

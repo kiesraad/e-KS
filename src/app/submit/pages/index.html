@@ -163,7 +163,9 @@
               <div class="card">
                 <div class="step-downloads">
                   <div class="step-download">
-                    {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+                    {% if frisian_export_allowed %}
+                      <div>{{ "common.languages.dutch"|trans }}:</div>
+                    {% endif %}
                     {% if problems.models_downloadable() %}
                       <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
                       }}</a>

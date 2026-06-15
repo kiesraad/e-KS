@@ -17,7 +17,9 @@
           {% for district in full_list.list.electoral_districts %}
             <li class="tag {% if duplicate_districts.contains(district) %}error{% endif %}">
               <a href="{{ full_list.list.update_path() }}"
-                 {% if duplicate_districts.contains(district) %}class="error"{% endif %}>{{ district|district_name }}</a>
+                 {% if duplicate_districts.contains(district) %}class="error"{% endif %}>
+                {{ district|district_name }}
+              </a>
             </li>
           {% endfor %}
         </ul>
@@ -33,6 +35,17 @@
   </div>
 {% endblock %}
 {% block content %}
+  {% if max_candidates_reached %}
+    <div class="alert alert-warning alert-floating">
+      {{ "candidate_list.view.max_candidates_reached"|trans(&crate::MAX_CANDIDATES.to_string() ) }}
+    </div>
+  {% endif %}
+  {% if import_capped %}
+    {% let max_candidates = crate::MAX_CANDIDATES.to_string() %}
+    <div class="alert alert-warning alert-floating">
+      {{ "candidate_list.view.import_capped"|trans(max_candidates, max_candidates) }}
+    </div>
+  {% endif %}
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
@@ -41,17 +54,19 @@
            class="button secondary icon-download"
            title="{{ "candidate_list.actions.import_export"|trans }}"></a>
       </div>
-      <div>
-        <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>
-        <div class="buttons">
-          <a href="{{ full_list.list.add_candidate_path() }}"
-             class="button secondary icon-plus open-modal"
-             type="button">{{ "candidate_list.actions.add_existing"|trans }}</a>
-          <a href="{{ full_list.list.create_candidate_path() }}"
-             class="button secondary icon-plus open-modal"
-             type="button">{{ "candidate_list.actions.add_new"|trans }}</a>
+      {% if full_list.candidates.len() < crate::MAX_CANDIDATES %}
+        <div>
+          <p>{{ "candidate_list.actions.add_candidates"|trans }}:</p>
+          <div class="buttons">
+            <a href="{{ full_list.list.add_candidate_path() }}"
+               class="button secondary icon-plus open-modal"
+               type="button">{{ "candidate_list.actions.add_existing"|trans }}</a>
+            <a href="{{ full_list.list.create_candidate_path() }}"
+               class="button secondary icon-plus open-modal"
+               type="button">{{ "candidate_list.actions.add_new"|trans }}</a>
+          </div>
         </div>
-      </div>
+      {% endif %}
     </div>
   </nav>
   <section>

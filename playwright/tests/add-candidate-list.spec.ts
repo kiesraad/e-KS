@@ -170,14 +170,26 @@ test.describe("add candidate list", async () => {
       "Groningen",
       "Overijssel",
     ]);
-    await expect(page.locator("//li/a[text()='Zeeland']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Groningen']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Overijssel']")).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='10. Zeeland']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='1. Groningen']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='4. Overijssel']"),
+    ).toBeVisible();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeDistricts(["Zeeland", "Overijssel"]);
-    await expect(page.locator("//li/a[text()='Zeeland']")).not.toBeVisible();
-    await expect(page.locator("//li/a[text()='Groningen']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Overijssel']")).not.toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='10. Zeeland']"),
+    ).not.toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='1. Groningen']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='4. Overijssel']"),
+    ).not.toBeVisible();
   });
 
   test("edit electoral districts provincial council", async ({
@@ -187,14 +199,26 @@ test.describe("add candidate list", async () => {
     await new CandidateListsOverviewPage(page).buttonAddList.click();
 
     await new EditListDetailsPage(page).addDistricts(["Haarlem", "Den Helder"]);
-    await expect(page.locator("//li/a[text()='Haarlem']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Den Helder']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Amsterdam']")).not.toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='10. Haarlem']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='11. Den Helder']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='9. Amsterdam']"),
+    ).not.toBeVisible();
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await manageCandidateListPage.removeDistricts(["Haarlem"]);
     await manageCandidateListPage.addDistricts(["Amsterdam"]);
-    await expect(page.locator("//li/a[text()='Haarlem']")).not.toBeVisible();
-    await expect(page.locator("//li/a[text()='Den Helder']")).toBeVisible();
-    await expect(page.locator("//li/a[text()='Amsterdam']")).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='10. Haarlem']"),
+    ).not.toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='11. Den Helder']"),
+    ).toBeVisible();
+    await expect(
+      page.locator("//li/a[normalize-space()='9. Amsterdam']"),
+    ).toBeVisible();
   });
 });

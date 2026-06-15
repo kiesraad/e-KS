@@ -61,14 +61,13 @@
                value="{{ form.data.display_name }}"
                id="display_name" />
         {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
-        <span class="hint">
-          {% if steps.is_combined %}
-            {{ "political_group.type.display_name_combined_hint"|trans }}
-          {% else %}
-            {{ "political_group.type.display_name_hint"|trans }}
-          {% endif %}
-        </span>
+        {% if !steps.is_combined %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
       </div>
+    </div>
+    <div class="form-row">
+      {% if steps.is_combined %}
+        <span class="alert alert-info">{{ "political_group.type.display_name_combined_hint"|trans }}</span>
+      {% endif %}
     </div>
   </fieldset>
   {% set submit_label = "action.save_and_continue"|trans %}

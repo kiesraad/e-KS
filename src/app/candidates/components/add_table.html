@@ -27,13 +27,15 @@
           {% if let Some(country) = person.personal_data.country && !person.lives_in_nl() %}({{ country }}){% endif %}
         </td>
         <td>
-          <button type="submit" name="action" value="{{ person.id }}">
-            {% if added_candidates.contains_key(&person.id) %}
-              <span>{{ "action.remove"|trans }}</span>
-            {% else %}
-              <span>{{ "action.add"|trans }}</span>
-            {% endif %}
-          </button>
+          {% if allow_add || added_candidates.contains_key(&person.id) %}
+            <button type="submit" name="action" value="{{ person.id }}">
+              {% if added_candidates.contains_key(&person.id) %}
+                <span>{{ "action.remove"|trans }}</span>
+              {% else %}
+                <span>{{ "action.add"|trans }}</span>
+              {% endif %}
+            </button>
+          {% endif %}
         </td>
       </tr>
     {% endfor %}
