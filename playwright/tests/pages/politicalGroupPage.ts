@@ -6,6 +6,7 @@ export class PoliticalGroupPage {
   readonly selectLessThan16Seats: Locator;
   readonly selectNoSeats: Locator;
   readonly textfieldRegisteredDesignation: Locator;
+  readonly textfieldCombinedDesignation: Locator;
   readonly buttonSaveAndNext: Locator;
 
   constructor(protected readonly page: Page) {
@@ -26,6 +27,9 @@ export class PoliticalGroupPage {
     });
     this.textfieldRegisteredDesignation = this.page.getByRole("textbox", {
       name: "Geregistreerde aanduiding",
+    });
+    this.textfieldCombinedDesignation = this.page.getByRole("textbox", {
+      name: "Samengevoegde aanduiding",
     });
   }
 
@@ -50,5 +54,11 @@ export class PoliticalGroupPage {
     await this.page
       .getByRole("textbox", { name: "Geregistreerde aanduiding" })
       .fill(registeredDesignation);
+  }
+
+  async setCombinedDesignation(combinedDesignation: string) {
+    await this.page
+      .getByRole("textbox", { name: "Samengevoegde aanduiding" })
+      .fill(combinedDesignation);
   }
 }
