@@ -37,13 +37,19 @@ pub(crate) async fn import_candidate_list_csv(
     locale: Locale,
     file_name: String,
     file_size: usize,
-) -> Result<(), ImportCandidateListError> {
+) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
     let records = parse_records(csv_data, locale)?;
     let persons = collect_persons(records, store.get_persons(), csrf_token, locale)?;
-    emit_import_event(list, store, persons, file_name, file_size).await?;
+    emit_import_event(list, store, persons, file_name, file_size).await
+}
 
-    Ok(())
+/// Information about a successful import that the caller surfaces to the user.
+#[derive(Debug)]
+pub(crate) struct ImportOutcome {
+    /// The number of candidates in the file exceeded [`MAX_CANDIDATES`] and the
+    /// list was truncated to the maximum.
+    pub capped: bool,
 }
 
 fn ensure_expected_headers(data: &[u8], locale: Locale) -> Result<(), ImportCandidateListError> {
@@ -217,8 +223,9 @@ async fn emit_import_event(
     persons: Vec<PreparedPerson>,
     file_name: String,
     file_size: usize,
-) -> Result<(), ImportCandidateListError> {
+) -> Result<ImportOutcome, ImportCandidateListError> {
     let mut candidates = persons.iter().map(|p| p.person.id).collect::<Vec<_>>();
+    let capped = candidates.len() > MAX_CANDIDATES;
     candidates.truncate(MAX_CANDIDATES);
 
     let mut created_persons = Vec::new();
@@ -244,7 +251,7 @@ async fn emit_import_event(
 
     *list = store.get_candidate_list(list.id)?;
 
-    Ok(())
+    Ok(ImportOutcome { capped })
 }
 
 #[cfg(test)]
@@ -512,7 +519,7 @@ mod tests {
             ));
         }
 
-        import_candidate_list_csv(
+        let outcome = import_candidate_list_csv(
             &mut list,
             &store,
             csv.as_bytes(),
@@ -524,6 +531,7 @@ mod tests {
         .await
         .expect("import should succeed");
 
+        assert!(outcome.capped);
         assert_eq!(
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES

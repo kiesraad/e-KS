@@ -13,6 +13,7 @@ struct CandidateListViewTemplate {
     full_list: FullCandidateList,
     duplicate_districts: Vec<ElectoralDistrict>,
     max_candidates_reached: bool,
+    import_capped: bool,
 }
 
 pub async fn view_candidate_list(
@@ -29,6 +30,7 @@ pub async fn view_candidate_list(
             full_list,
             duplicate_districts,
             max_candidates_reached: query.is_max_candidates_reached(),
+            import_capped: query.is_import_capped(),
         },
         context,
     ))

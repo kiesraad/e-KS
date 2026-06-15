@@ -73,5 +73,6 @@ title_plural: Kandidatenlijsten
 title_single: Kandidatenlijst
 view:
   empty: Deze kandidatenlijst heeft nog geen kandidaten.
+  import_capped: "Het CSV-bestand bevatte meer dan {} kandidaten. Alleen de eerste {} zijn geïmporteerd."
   max_candidates_exceeded: "De lijst mag maximaal uit {} kandidaten bestaan."
   max_candidates_reached: "Je kunt niet meer dan {} kandidaten aan een kandidatenlijst toevoegen."

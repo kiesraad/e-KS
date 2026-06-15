@@ -40,6 +40,12 @@
       {{ "candidate_list.view.max_candidates_reached"|trans(&crate::MAX_CANDIDATES.to_string() ) }}
     </div>
   {% endif %}
+  {% if import_capped %}
+    {% let max_candidates = crate::MAX_CANDIDATES.to_string() %}
+    <div class="alert alert-warning alert-floating">
+      {{ "candidate_list.view.import_capped"|trans(max_candidates, max_candidates) }}
+    </div>
+  {% endif %}
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
