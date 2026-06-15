@@ -1,7 +1,7 @@
 use std::collections::{BTreeMap, BTreeSet};
 
 use crate::{
-    AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict,
+    AppError, AppEvent, AppStore, ElectionConfig, ElectoralDistrict, MAX_CANDIDATES,
     candidate_lists::FullCandidateList,
     candidates::{Candidate, CandidateWithProblems},
     common::{Problematic, UtcDateTime},
@@ -87,6 +87,11 @@ impl CandidateList {
             .map(|p| p.id)
             .collect::<BTreeSet<_>>();
 
+        // never allow a list to grow beyond the hard maximum
+        if person_ids.len() > MAX_CANDIDATES {
+            return Err(AppError::TooManyCandidates);
+        }
+
         // check all new ids exist
         if !person_ids.iter().all(|id| existing_person_ids.contains(id)) {
             return Err(AppError::GenericNotFound);
@@ -136,6 +141,11 @@ impl CandidateList {
         let person = store.get_person(person_id)?;
 
         if !self.candidates.contains(&person.id) {
+            // never allow a list to grow beyond the hard maximum
+            if self.candidates.len() >= MAX_CANDIDATES {
+                return Err(AppError::TooManyCandidates);
+            }
+
             store
                 .update(AppEvent::AddCandidateToCandidateList {
                     list_id: self.id,
@@ -258,7 +268,7 @@ mod tests {
         AppStore,
         candidate_lists::CandidateListSummary,
         persons::PersonId,
-        test_utils::{sample_candidate_list, sample_person_with_last_name},
+        test_utils::{sample_candidate_list, sample_person, sample_person_with_last_name},
     };
     fn base_candidate_list(electoral_districts: Vec<ElectoralDistrict>) -> CandidateList {
         CandidateList {
@@ -667,6 +677,59 @@ mod tests {
             .await
             .unwrap_err();
         assert!(matches!(err, AppError::GenericNotFound));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn append_candidate_rejects_beyond_max() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        for _ in 0..MAX_CANDIDATES {
+            let person = sample_person(PersonId::new());
+            person.create(&store).await?;
+            list.append_candidate(&store, person.id).await?;
+        }
+        assert_eq!(list.candidates.len(), MAX_CANDIDATES);
+
+        let overflow = sample_person(PersonId::new());
+        overflow.create(&store).await?;
+        let err = list
+            .append_candidate(&store, overflow.id)
+            .await
+            .unwrap_err();
+
+        assert!(matches!(err, AppError::TooManyCandidates));
+        assert_eq!(
+            store.get_candidate_list(list_id)?.candidates.len(),
+            MAX_CANDIDATES
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_order_rejects_beyond_max() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.create(&store).await?;
+
+        let mut person_ids = Vec::new();
+        for _ in 0..=MAX_CANDIDATES {
+            let person = sample_person(PersonId::new());
+            person.create(&store).await?;
+            person_ids.push(person.id);
+        }
+        assert_eq!(person_ids.len(), MAX_CANDIDATES + 1);
+
+        let err = list.update_order(&store, &person_ids).await.unwrap_err();
+
+        assert!(matches!(err, AppError::TooManyCandidates));
+        assert!(store.get_candidate_list(list_id)?.candidates.is_empty());
 
         Ok(())
     }
