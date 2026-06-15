@@ -179,7 +179,10 @@ test.describe("provide general information for political group", async () => {
     ).toBeVisible();
     await listSubmittersPage.buttonNext.click();
     await page.waitForURL("/");
-    await expect(page.getByRole("heading", { name: "Eerste Kamerverkiezing der Staten-Generaal 2027" })).toBeVisible();
+    await expect(
+      page.getByRole("heading", {
+        name: "Eerste Kamerverkiezing der Staten-Generaal 2027",
+      }),
+    ).toBeVisible();
   });
-
 });

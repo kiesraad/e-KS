@@ -16,7 +16,6 @@ import { SubmitPage } from "./pages/submitPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 
 test.describe("End-to-end", () => {
-
   test("happy flow", async ({ noExistingData: page }) => {
     //navigate from home page
     const overviewPage = new OverviewPage(page);
@@ -131,13 +130,10 @@ test.describe("End-to-end", () => {
 
     expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
-
-    //submit list
   });
 
-  test("with errors", async ({ noExistingData: page,
-    }) => {
-     //navigate from home page
+  test("with errors", async ({ noExistingData: page }) => {
+    //navigate from home page
     const overviewPage = new OverviewPage(page);
     await overviewPage.linkGeneralInformation.click();
     await page.waitForURL("/political-group");
@@ -149,19 +145,18 @@ test.describe("End-to-end", () => {
     await page.waitForURL("/political-group/information");
 
     const politicalGroupPage = new PoliticalGroupPage(page);
-    //await politicalGroupPage.selectNoSeats.check();
-    await politicalGroupPage.textfieldRegisteredDesignation.fill("Test Partij");
+    await politicalGroupPage.selectNoSeats.check();
     await politicalGroupPage.buttonSaveAndNext.click();
-    // await page.waitForURL("/political-group/name-authorisation");
+    await page.waitForURL("/political-group/name-authorisation");
 
-    // const authorisation: NameAuthorisation = {
-    //   initials: "T",
-    //   lastNamePrefix: "van",
-    //   lastName: "Tester",
-    //   legalName: " ",
-    // };
+    const authorisation: NameAuthorisation = {
+      initials: "T",
+      lastNamePrefix: "van",
+      lastName: "Tester",
+      legalName: "Kiesraad Test Partij",
+    };
     const nameAuthorisationPage = new NameAuthorisationPage(page);
-    // await nameAuthorisationPage.addNameAuthorisation(authorisation);
+    await nameAuthorisationPage.addNameAuthorisation(authorisation);
     await nameAuthorisationPage.buttonNext.click();
     await page.waitForURL("/political-group/list-submitter");
 
@@ -245,14 +240,9 @@ test.describe("End-to-end", () => {
     //submit list
     await manageCandidateListPage.buttonFinalize.click();
     await page.waitForURL("/submit");
-    const _submitPage = new SubmitPage(page);
-    const downloadPromise = page.waitForEvent("download");
-    await new SubmitPage(page).linkDownloadNl.click();
-    const download = await downloadPromise;
-
-    expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
-    expect((await stat(await download.path())).size).toBeGreaterThan(1024);
-
-    //submit list
+    const downloadLink = page.locator("a", { hasText: "Alles in één zip" });
+    await expect(downloadLink).toBeVisible();
+    await expect(downloadLink).toHaveAttribute("aria-disabled", "true");
+    await expect(downloadLink).toHaveClass(/disabled/);
   });
 });
