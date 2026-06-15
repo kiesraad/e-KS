@@ -2,9 +2,14 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use super::IndexPath;
+use axum_extra::routing::TypedPath;
+
 use crate::{
-    AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
-    common::Severity, filters, submit::AllProblems,
+    AppResponse, AppStore, Context, HtmlTemplate, QueryParamState,
+    candidate_lists::CandidateListSummary,
+    common::Severity, filters,
+    list_designation::ListDesignation,
+    submit::AllProblems,
 };
 
 #[derive(Template)]
@@ -12,6 +17,7 @@ use crate::{
 pub struct IndexTemplate {
     general_problems: usize,
     general_problems_severity: &'static str,
+    general_information_path: String,
     problematic_lists: usize,
     problematic_lists_severity: &'static str,
 }
@@ -58,10 +64,19 @@ pub async fn index(
         (count, severity_class)
     };
 
+    let general_information_path = if general_information_empty {
+        ListDesignation::update_path()
+            .with_query_params(QueryParamState::initial())
+            .to_string()
+    } else {
+        ListDesignation::update_path().to_string()
+    };
+
     Ok(HtmlTemplate(
         IndexTemplate {
             general_problems,
             general_problems_severity,
+            general_information_path,
             problematic_lists,
             problematic_lists_severity,
         },

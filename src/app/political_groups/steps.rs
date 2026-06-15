@@ -1,5 +1,7 @@
+use axum_extra::routing::TypedPath;
+
 use crate::{
-    AppError, AppStore,
+    AppError, AppStore, QueryParamState,
     app::list_designation::ListDesignation,
     common::{Problematic, Severity},
     list_submitters::ListSubmitter,
@@ -14,6 +16,7 @@ pub struct PoliticalGroupSteps {
     pub substitute_submitters: Vec<ListSubmitter>,
     pub is_blank: bool,
     pub is_combined: bool,
+    pub initial: bool,
 
     pub list_designation_state: &'static str,
     pub basic_state: &'static str,
@@ -22,27 +25,27 @@ pub struct PoliticalGroupSteps {
 }
 
 impl PoliticalGroupSteps {
-    pub fn new(store: &AppStore) -> Result<Self, AppError> {
+    pub fn new(store: &AppStore, initial: bool) -> Result<Self, AppError> {
         let political_group = store.get_political_group();
         let name_authorisations = store.get_name_authorisations();
         let list_submitter = store.get_list_submitter();
         let substitute_submitters = store.get_substitute_submitters();
 
-        let group_info_empty = political_group.is_group_information_empty();
         let is_blank = political_group.list_designation == Some(ListDesignation::Blank);
         let is_combined = political_group.list_designation == Some(ListDesignation::Combined);
 
         Ok(Self {
+            initial,
             is_blank,
             is_combined,
             list_designation_state: Self::list_designation_state(&political_group),
-            basic_state: Self::basic_state(group_info_empty, &political_group),
+            basic_state: Self::basic_state(initial, &political_group),
             name_authorisations_state: Self::name_authorisations_state(
-                group_info_empty,
+                initial,
                 &name_authorisations,
             ),
             submitters_state: Self::submitters_state(
-                name_authorisations.is_empty(),
+                initial,
                 &list_submitter,
                 &substitute_submitters,
             ),
@@ -60,8 +63,8 @@ impl PoliticalGroupSteps {
         }
     }
 
-    fn basic_state(basic_info_empty: bool, political_group: &PoliticalGroup) -> &'static str {
-        if basic_info_empty {
+    fn basic_state(fine_if_empty: bool, political_group: &PoliticalGroup) -> &'static str {
+        if fine_if_empty && political_group.is_group_information_empty() {
             "empty"
         } else {
             political_group.get_problems(()).highest_severity_class()
@@ -104,6 +107,16 @@ impl PoliticalGroupSteps {
         {
             None => "ok",
             Some(severity) => severity.class(),
+        }
+    }
+
+    /// Returns the URL for a step link, preserving `?initial=true`
+    pub fn step_url(&self, path: impl TypedPath) -> String {
+        if self.initial {
+            path.with_query_params(QueryParamState::initial())
+                .to_string()
+        } else {
+            path.to_string()
         }
     }
 }

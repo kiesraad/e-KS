@@ -27,8 +27,9 @@ pub async fn update_political_group(
     context: Context,
     store: AppStore,
     political_group: PoliticalGroup,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
@@ -51,7 +52,7 @@ pub async fn update_political_group_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PoliticalGroupForm>,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
 
     match form.validate_update(&political_group, &context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -65,7 +66,7 @@ pub async fn update_political_group_submit(
         Ok(political_group) => {
             political_group.update(&store).await?;
 
-            Ok(query.redirect_or(NameAuthorisation::list_path()))
+            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
         }
     }
 }
@@ -97,6 +98,7 @@ mod tests {
             Context::new_test_without_db(),
             store,
             political_group,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

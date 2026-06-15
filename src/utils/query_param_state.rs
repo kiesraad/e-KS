@@ -51,6 +51,13 @@ impl QueryParamState {
         self.import_capped
     }
 
+    pub fn initial() -> Self {
+        Self {
+            initial: true,
+            ..Default::default()
+        }
+    }
+
     pub fn created() -> Self {
         Self {
             initial: true,
@@ -133,6 +140,24 @@ impl QueryParamState {
 
         if !url.contains('?') {
             url.push_str("?&success=true");
+        }
+
+        Redirect::to(&url).into_response()
+    }
+
+    /// Like `redirect_or`, but preserves `initial=true` in the redirect URL when set.
+    /// Use this for inter-step saves within the general information section.
+    pub fn redirect_or_preserving_initial(&self, default: impl std::fmt::Display) -> Response {
+        let mut url = match &self.redirect_to {
+            Some(url) if url.starts_with('/') => url.clone(),
+            _ => default.to_string(),
+        };
+
+        if !url.contains('?') {
+            url.push_str("?&success=true");
+        }
+        if self.initial {
+            url.push_str("&initial=true");
         }
 
         Redirect::to(&url).into_response()

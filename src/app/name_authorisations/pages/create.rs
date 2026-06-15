@@ -1,12 +1,11 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{extract::Query, response::{IntoResponse, Response}};
 
 use super::NameAuthorisationCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState, filters,
     form::FormData,
     name_authorisations::{NameAuthorisation, NameAuthorisationForm},
-    redirect_success,
 };
 
 #[derive(Template)]
@@ -19,11 +18,12 @@ struct NameAuthorisationCreateTemplate {
 pub async fn create_name_authorisation(
     _: NameAuthorisationCreatePath,
     context: Context,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         NameAuthorisationCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
-            overlay: Overlay::default(),
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -33,13 +33,14 @@ pub async fn create_name_authorisation_submit(
     _: NameAuthorisationCreatePath,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
     Form(form): Form<NameAuthorisationForm>,
 ) -> Result<Response, AppError> {
     match form.validate_create(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
             NameAuthorisationCreateTemplate {
                 form: form_data,
-                overlay: Overlay::default(),
+                overlay: Overlay::new(&query),
             },
             context,
         )
@@ -47,7 +48,7 @@ pub async fn create_name_authorisation_submit(
         Ok(authorisation) => {
             authorisation.create(&store).await?;
 
-            Ok(redirect_success(NameAuthorisation::list_path()))
+            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
         }
     }
 }
@@ -60,6 +61,7 @@ mod tests {
         test_utils::{response_body_string, sample_name_authorisation_form},
     };
     use axum::{
+        extract::Query,
         http::{StatusCode, header},
         response::IntoResponse,
     };
@@ -70,6 +72,7 @@ mod tests {
         let response = create_name_authorisation(
             NameAuthorisationCreatePath {},
             Context::new_test_without_db(),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -94,6 +97,7 @@ mod tests {
             NameAuthorisationCreatePath {},
             context,
             store.clone(),
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
@@ -131,6 +135,7 @@ mod tests {
             NameAuthorisationCreatePath {},
             context,
             store,
+            Query(QueryParamState::default()),
             Form(form),
         )
         .await
