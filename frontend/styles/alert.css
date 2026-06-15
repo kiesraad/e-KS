@@ -10,6 +10,7 @@
   padding-inline: var(--alert-px, var(--space-6));
   text-wrap: wrap;
   position: relative;
+  width: fit-content;
 
   &:has(strong) {
     font-weight: var(--font-weight-light);
@@ -69,14 +70,17 @@
     transform: translateX(-120%);
     opacity: 0;
   }
+
   12% {
     transform: translateX(0);
     opacity: 1;
   }
+
   78% {
     transform: translateX(0);
     opacity: 1;
   }
+
   100% {
     transform: translateX(-120%);
     opacity: 0;
