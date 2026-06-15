@@ -2,12 +2,10 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use super::IndexPath;
-use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppResponse, AppStore, Context, HtmlTemplate, QueryParamState,
-    candidate_lists::CandidateListSummary, common::Severity, filters,
-    list_designation::ListDesignation, submit::AllProblems,
+    AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
+    common::Severity, filters, submit::AllProblems,
 };
 
 #[derive(Template)]
@@ -15,7 +13,6 @@ use crate::{
 pub struct IndexTemplate {
     general_problems: usize,
     general_problems_severity: &'static str,
-    general_information_path: String,
     problematic_lists: usize,
     problematic_lists_severity: &'static str,
 }
@@ -62,19 +59,10 @@ pub async fn index(
         (count, severity_class)
     };
 
-    let general_information_path = if general_information_empty {
-        ListDesignation::update_path()
-            .with_query_params(QueryParamState::initial())
-            .to_string()
-    } else {
-        ListDesignation::update_path().to_string()
-    };
-
     Ok(HtmlTemplate(
         IndexTemplate {
             general_problems,
             general_problems_severity,
-            general_information_path,
             problematic_lists,
             problematic_lists_severity,
         },
@@ -98,25 +86,22 @@ mod tests {
 
     #[tokio::test]
     async fn index_renders_html() {
-        let body = index(
-            IndexPath,
-            Context::new_test_without_db(),
-            AppStore::new_for_test(),
-        )
-        .await
-        .into_response();
+        let store = AppStore::new_for_test();
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+            .await
+            .into_response();
         let body = response_body_string(body).await;
         assert!(body.contains(ElectionConfig::EK27.title(AnyLocale::En)));
     }
 
     fn general_information_card_link(initial: bool) -> String {
         format!(
-            r#"<a class="card" href="{}">"#,
+            "\"{}\"",
             if initial {
                 ListDesignation::update_path()
                     .with_query_params(QueryParamState::initial())
                     .to_string()
-                    .replace('&', "&#38;") // Askama HTML-escapes `&` to `&#38;` inside attribute values
+                    .replace('&', "&#38;")
             } else {
                 ListDesignation::update_path().to_string()
             }
@@ -132,7 +117,7 @@ mod tests {
         let pg = store.get_political_group();
         assert!(pg.is_general_information_empty(&store));
 
-        let body = index(IndexPath, Context::new_test_without_db(), store)
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
             .await
             .into_response();
         let body = response_body_string(body).await;
@@ -150,7 +135,7 @@ mod tests {
         let pg = store.get_political_group();
         assert!(!pg.is_general_information_empty(&store));
 
-        let body = index(IndexPath, Context::new_test_without_db(), store)
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
             .await
             .into_response();
         let body = response_body_string(body).await;
