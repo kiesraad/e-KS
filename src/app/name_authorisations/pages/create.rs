@@ -1,5 +1,8 @@
 use askama::Template;
-use axum::{extract::Query, response::{IntoResponse, Response}};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use super::NameAuthorisationCreatePath;
 use crate::{

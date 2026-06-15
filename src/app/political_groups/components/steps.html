@@ -1,18 +1,18 @@
 <div class="steps-nav">
   <ul>
     <li>
-      <a href="{{ steps.step_url(ListDesignation::update_path()) }}"
+      <a href="{{ steps.step_url(ListDesignation::update_path() ) }}"
          class="{{ steps.list_designation_state }}">{{ "political_group.list_type"|trans }}</a>
     </li>
     <li>
-      <a {% if !steps.is_blank %}href="{{ steps.step_url(PoliticalGroup::update_path()) }}"{% endif %}
+      <a {% if !steps.is_blank %}href="{{ steps.step_url(PoliticalGroup::update_path() ) }}"{% endif %}
          class="{% if steps.is_blank %}disabled {% endif %}{{ steps.basic_state }}"
          data-href="{{ PoliticalGroup::update_path() }}"
          data-state-class="{{ steps.basic_state }}"
          data-skip-if-blank>{{ "political_group.basic_information_political_group"|trans }}</a>
     </li>
     <li>
-      <a {% if !steps.is_blank %}href="{{ steps.step_url(NameAuthorisation::list_path()) }}"{% endif %}
+      <a {% if !steps.is_blank %}href="{{ steps.step_url(NameAuthorisation::list_path() ) }}"{% endif %}
          class="{% if steps.is_blank %}disabled {% endif %}{{ steps.name_authorisations_state }}"
          data-href="{{ NameAuthorisation::list_path() }}"
          data-state-class="{{ steps.name_authorisations_state }}"
@@ -27,7 +27,7 @@
       </a>
     </li>
     <li>
-      <a href="{{ steps.step_url(ListSubmitter::view_path()) }}"
+      <a href="{{ steps.step_url(ListSubmitter::view_path() ) }}"
          class="{{ steps.submitters_state }}">{{ "political_group.list_submitter_data"|trans }}</a>
     </li>
   </ul>

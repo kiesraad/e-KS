@@ -120,3 +120,38 @@ impl PoliticalGroupSteps {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        AppError, AppStore, name_authorisations::NameAuthorisationId,
+        test_utils::sample_name_authorisation,
+    };
+
+    #[tokio::test]
+    async fn submitter_state_empty_with_initial() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
+
+        let steps = PoliticalGroupSteps::new(&store, true)?;
+        assert_eq!(steps.submitters_state, "empty");
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn submitter_state_error_without_initial() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
+
+        let steps = PoliticalGroupSteps::new(&store, false)?;
+        assert_eq!(steps.submitters_state, "error");
+
+        Ok(())
+    }
+}
