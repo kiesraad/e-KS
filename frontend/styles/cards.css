@@ -6,7 +6,7 @@
 
 .cards-home {
   --card-min-height: 26rem;
-  --card-min-width: 22rem;
+  --card-min-width: 16rem;
 }
 
 .cards-candidate-lists {
@@ -120,6 +120,7 @@
       content: "";
       mask-image: url("../icons/chevronRight.svg");
       mask-position: center;
+      mask-repeat: no-repeat;
       transition-duration: 300ms;
       transition-property: translate;
       translate: var(--card-chevron-translate, 0);

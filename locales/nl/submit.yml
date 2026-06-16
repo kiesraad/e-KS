@@ -5,9 +5,9 @@ collection:
 complete_list:
   title: Maak uw lijst compleet
 correction:
-  deadline: "Op <strong>{}</strong> tussen 09:00 en 17:00 dient het centraal stembureau de ontbrekende stukken te ontvangen."
-  description: U krijgt van ons per brief een bericht met de ontbrekende stukken. De politieke groepering heeft vervolgens twee dagen de tijd om deze ontbrekende stukken te corrigeren en in te leveren.
-  notice_date: "Bericht op <strong>{}</strong>"
+  deadline: "Uiterlijk <strong>{}</strong> om <strong>17:00</strong> dient het centraal stembureau de ontbrekende stukken te ontvangen."
+  description: "Mocht er iets ontbreken, dan krijgt u van ons per brief een bericht met de ontbrekende stukken. De politieke groepering heeft vervolgens twee dagen de tijd om deze ontbrekende stukken te corrigeren en in te leveren."
+  notice_date: "U ontvangt bericht op <strong>{}</strong>"
   title: Verzuimperiode
 delivery:
   appointment: "Maak hiervoor een afspraak. Het adres is:"
@@ -21,7 +21,7 @@ header:
   description: "U heeft uw kandidaten en kandidatenlijsten aangemaakt. Om af te ronden, zijn er nog een paar stappen te doorlopen. Deze stappen staan uiteengezet op deze pagina."
   title: Nog een paar stappen
 hearing:
-  date: "Zitting is op <strong>{}</strong>"
+  date: "De zitting is op <strong>{}</strong>"
   description: "Hier bepaalt het centraal stembureau welke partijen er op het stembiljet komen te staan, en wat de volgorde van partijen is."
   open_to_public: U kunt deze zitting bijwonen.
   title: Openbare zitting
@@ -39,4 +39,4 @@ verification:
   correction_notice: "Mocht er iets ontbreken, dan zijn er twee dagen waarop dit hersteld kan worden, de zogeheten 'verzuimperiode'. Zie de volgende stap."
   description: Het centraal stembureau onderzoekt uw ingediende documenten op volledigheid en juistheid.
   title: Onderzoek van documenten
-  until: "Het onderzoek loopt tot <strong>{}</strong>"
+  until: "Het onderzoek loopt tot en met <strong>{}</strong>"

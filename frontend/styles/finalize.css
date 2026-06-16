@@ -114,7 +114,8 @@
   position: relative;
   text-wrap: balance;
 
-  p {
+  p,
+  address {
     margin-top: var(--space-3);
   }
 

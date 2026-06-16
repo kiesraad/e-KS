@@ -140,7 +140,7 @@
                 <h5>{{ "submit.print.h9_title"|trans }}</h5>
                 <p>
                   {{ "submit.print.h9_consent"|trans }}
-                  <br />
+                  <br>
                   {{ "submit.print.h9_identity"|trans }}
                 </p>
               </div>
@@ -205,16 +205,16 @@
           <h2>{{ "submit.delivery.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">{{ "submit.delivery.only_on"|trans("02-03-2028") |safe }}</p>
+          <p class="alert alert-info">{{ "submit.delivery.only_on"|trans(&election.nomination_day_date().format("%d-%m-%Y").to_string())|safe }}</p>
           <p>{{ "submit.delivery.description"|trans }}</p>
           <p>{{ "submit.delivery.appointment"|trans }}</p>
-          <p>
+          <address>
             Zurichtoren
-            <br />
+            <br>
             Muzenstraat 85
-            <br />
+            <br>
             2511 WB Den Haag
-          </p>
+          </address>
         </div>
       </div>
     </div>
@@ -224,7 +224,7 @@
           <h2>{{ "submit.verification.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">{{ "submit.verification.until"|trans("04-03-2028") |safe }}</p>
+          <p class="alert alert-info">{{ "submit.verification.until"|trans(&election.document_review_date().format("%d-%m-%Y").to_string())|safe }}</p>
           <p>{{ "submit.verification.description"|trans }}</p>
           <p>{{ "submit.verification.correction_notice"|trans }}</p>
         </div>
@@ -236,9 +236,9 @@
           <h2>{{ "submit.correction.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">{{ "submit.correction.notice_date"|trans("05-03-2028") |safe }}</p>
+          <p class="alert alert-info">{{ "submit.correction.notice_date"|trans(&election.omission_notification_date().format("%d-%m-%Y").to_string())|safe }}</p>
           <p>{{ "submit.correction.description"|trans }}</p>
-          <p>{{ "submit.correction.deadline"|trans("07-03-2028") |safe }}</p>
+          <p>{{ "submit.correction.deadline"|trans(&election.omission_period_end_date().format("%d-%m-%Y").to_string())|safe }}</p>
         </div>
       </div>
     </div>
@@ -248,7 +248,7 @@
           <h2>{{ "submit.hearing.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">{{ "submit.hearing.date"|trans("09-03-2028") |safe }}</p>
+          <p class="alert alert-info">{{ "submit.hearing.date"|trans(&election.public_session_date().format("%d-%m-%Y").to_string())|safe }}</p>
           <p>{{ "submit.hearing.description"|trans }}</p>
           <p>{{ "submit.hearing.open_to_public"|trans }}</p>
         </div>

@@ -5,9 +5,9 @@ collection:
 complete_list:
   title: Complete your list
 correction:
-  deadline: "On <strong>{}</strong> between 09:00 and 17:00 the central electoral committee should receive the missing documents."
-  description: You will receive a letter from us listing the missing documents. The political group then has two days to rectify the omissions and resubmit the missing documents.
-  notice_date: "Notification on <strong>{}</strong>"
+  deadline: "The missing documents must be received by the central electoral committee by <strong>{}</strong> at <strong>17:00</strong>."
+  description: "If anything is missing, you will receive a letter from us listing the missing documents. The political group then has two days to rectify the omissions and resubmit the missing documents."
+  notice_date: "You will be notified on <strong>{}</strong>"
   title: Omission period
 delivery:
   appointment: "Please make an appointment for this. The address is:"
@@ -21,7 +21,7 @@ header:
   description: "You have created your candidates and lists of candidates. To finalize, there are a few more steps to complete. These steps are outlined on this page."
   title: A few more steps
 hearing:
-  date: "Session is on <strong>{}</strong>"
+  date: "The session is on <strong>{}</strong>"
   description: "Here the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
   open_to_public: You may attend this session.
   title: Public session
