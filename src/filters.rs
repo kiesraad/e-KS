@@ -72,6 +72,13 @@ pub fn optional_str_value(
 }
 
 #[askama::filter_fn]
+pub fn str_value(value_name: &str, values: &dyn askama::Values) -> askama::Result<String> {
+    let value = askama::get_value::<String>(values, value_name)?;
+
+    Ok(value.clone())
+}
+
+#[askama::filter_fn]
 pub fn initials_as_printed_on_list(
     value: &Person,
     values: &dyn askama::Values,

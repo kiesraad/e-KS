@@ -11,8 +11,7 @@
 {% block content %}
   <h2 class="hidden">{{ "common.steps"|trans }}</h2>
   <div class="cards cards-home">
-    <a href="{{ crate::list_designation::ListDesignation::update_path() }}"
-       class="card">
+    <a class="card" href="{{ "general_information_path"|str_value }}">
       <div class="card-header">
         <div class="badge badge-data {{ general_problems_severity }}"></div>
         <div>

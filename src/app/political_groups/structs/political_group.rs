@@ -1,5 +1,7 @@
+use axum_extra::routing::TypedPath;
+
 use crate::{
-    AppError, AppEvent, AppStore, OptionAsStrExt,
+    AppError, AppEvent, AppStore, OptionAsStrExt, QueryParamState,
     common::{DisplayName, PreviousElectionResults, Problematic, Problems},
     list_designation::ListDesignation,
 };
@@ -69,6 +71,19 @@ impl PoliticalGroup {
             && store.get_name_authorisations().is_empty()
             && store.get_list_submitter().is_empty()
             && store.get_substitute_submitters().is_empty()
+    }
+
+    /// URL for the "General information" step.
+    /// Includes `initial=true` when all fields are still empty, so the
+    /// first-visit flow suppresses warnings for steps not yet reached.
+    pub fn general_information_path(&self, store: &AppStore) -> String {
+        if self.is_general_information_empty(store) {
+            ListDesignation::update_path()
+                .with_query_params(QueryParamState::initial())
+                .to_string()
+        } else {
+            ListDesignation::update_path().to_string()
+        }
     }
 
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {

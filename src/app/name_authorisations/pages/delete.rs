@@ -51,7 +51,7 @@ pub async fn delete_name_authorisation(
         Ok(_) => {
             name_authorisation.delete(&store).await?;
 
-            Ok(query.redirect_or(NameAuthorisation::list_path()))
+            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
         }
     }
 }

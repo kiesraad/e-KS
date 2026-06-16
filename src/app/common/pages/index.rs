@@ -2,6 +2,7 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use super::IndexPath;
+
 use crate::{
     AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
     common::Severity, filters, submit::AllProblems,
@@ -73,18 +74,73 @@ pub async fn index(
 mod tests {
     use super::*;
 
-    use crate::{ElectionConfig, core::AnyLocale, test_utils::response_body_string};
+    use axum_extra::routing::TypedPath;
+
+    use crate::{
+        ElectionConfig, QueryParamState,
+        core::AnyLocale,
+        list_designation::ListDesignation,
+        political_groups::PoliticalGroup,
+        test_utils::{response_body_string, sample_political_group},
+    };
 
     #[tokio::test]
     async fn index_renders_html() {
-        let body = index(
-            IndexPath,
-            Context::new_test_without_db(),
-            AppStore::new_for_test(),
-        )
-        .await
-        .into_response();
+        let store = AppStore::new_for_test();
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+            .await
+            .into_response();
         let body = response_body_string(body).await;
         assert!(body.contains(ElectionConfig::EK27.title(AnyLocale::En)));
+    }
+
+    fn general_information_card_link(initial: bool) -> String {
+        format!(
+            "\"{}\"",
+            if initial {
+                ListDesignation::update_path()
+                    .with_query_params(QueryParamState::initial())
+                    .to_string()
+                    .replace('&', "&#38;")
+            } else {
+                ListDesignation::update_path().to_string()
+            }
+        )
+    }
+
+    #[tokio::test]
+    async fn general_information_link_has_initial_when_empty() {
+        let store = AppStore::new_for_test();
+
+        // Reset to an empty political group
+        PoliticalGroup::default().update(&store).await.unwrap();
+        let pg = store.get_political_group();
+        assert!(pg.is_general_information_empty(&store));
+
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+            .await
+            .into_response();
+        let body = response_body_string(body).await;
+
+        assert!(body.contains(&general_information_card_link(true)));
+        assert!(!body.contains(&general_information_card_link(false)));
+    }
+
+    #[tokio::test]
+    async fn general_information_link_has_no_initial_when_not_empty() {
+        let store = AppStore::new_for_test();
+
+        // Sample political group with filled in values
+        sample_political_group().update(&store).await.unwrap();
+        let pg = store.get_political_group();
+        assert!(!pg.is_general_information_empty(&store));
+
+        let body = index(IndexPath, Context::new_test_from_store(&store), store)
+            .await
+            .into_response();
+        let body = response_body_string(body).await;
+
+        assert!(!body.contains(&general_information_card_link(true)));
+        assert!(body.contains(&general_information_card_link(false)));
     }
 }

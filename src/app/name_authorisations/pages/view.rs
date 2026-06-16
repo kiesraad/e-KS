@@ -1,6 +1,6 @@
 use super::NameAuthorisationsPath;
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
     app::list_designation::ListDesignation,
     common::Problematic,
     filters,
@@ -9,7 +9,7 @@ use crate::{
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
 };
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::Query, response::IntoResponse};
 
 #[derive(Template)]
 #[template(path = "name_authorisations/pages/view.html")]
@@ -22,8 +22,9 @@ pub async fn list_name_authorisations(
     _: NameAuthorisationsPath,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
     Ok(HtmlTemplate(
         NameAuthorisationTemplate {
             name_authorisations: steps.name_authorisations.clone(),
@@ -37,11 +38,11 @@ pub async fn list_name_authorisations(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState,
         name_authorisations::NameAuthorisationId,
         test_utils::{response_body_string, sample_name_authorisation},
     };
-    use axum::{http::StatusCode, response::IntoResponse};
+    use axum::{extract::Query, http::StatusCode, response::IntoResponse};
 
     #[tokio::test]
     async fn list_name_authorisations_shows_created_agent() -> Result<(), AppError> {
@@ -54,6 +55,7 @@ mod tests {
             NameAuthorisationsPath {},
             Context::new_test_without_db(),
             store.clone(),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -78,6 +80,7 @@ mod tests {
             NameAuthorisationsPath {},
             Context::new_test_without_db(),
             store.clone(),
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

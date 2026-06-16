@@ -30,6 +30,9 @@ pub struct Context {
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer when set.
     pub server_name: Option<&'static str>,
+    /// URL for the "General information" nav link. Includes `initial=true` when
+    /// general information is still empty, so the first-visit flow suppresses warnings.
+    pub general_information_path: String,
 }
 
 impl Context {
@@ -38,6 +41,8 @@ impl Context {
         let political_group = store.get_political_group();
         let max_candidates = political_group.get_max_candidates();
         let multiple_candidate_lists = store.get_candidate_list_count() > 1;
+
+        let general_information_path = political_group.general_information_path(store);
 
         Self {
             election,
@@ -48,14 +53,19 @@ impl Context {
             overlay_referrer: false,
             session,
             server_name: None,
+            general_information_path,
         }
     }
 
     #[cfg(test)]
     pub fn new_test_without_db() -> Self {
         let store = AppStore::new_for_test();
-
         Self::new(&store, Session::new_test_with_locale(Locale::En))
+    }
+
+    #[cfg(test)]
+    pub fn new_test_from_store(store: &AppStore) -> Self {
+        Self::new(store, Session::new_test_with_locale(Locale::En))
     }
 
     pub fn livereload_enabled() -> bool {
@@ -75,6 +85,9 @@ impl askama::Values for Context {
             }
             "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
+            "general_information_path" => {
+                Some(&self.general_information_path as &dyn std::any::Any)
+            }
             _ => None,
         }
     }

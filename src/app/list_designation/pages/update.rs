@@ -28,8 +28,9 @@ pub async fn update_list_designation(
     context: Context,
     store: AppStore,
     political_group: PoliticalGroup,
+    Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
     Ok(HtmlTemplate(
         ListDesignationUpdateTemplate {
             steps,
@@ -51,7 +52,7 @@ pub async fn update_list_designation_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListDesignationForm>,
 ) -> Result<Response, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
 
     match form.validate_update(
         &political_group.list_designation.into(),
@@ -70,9 +71,9 @@ pub async fn update_list_designation_submit(
             political_group.update(&store).await?;
 
             if political_group.list_designation == Some(ListDesignation::Blank) {
-                Ok(query.redirect_or(ListSubmitter::view_path()))
+                Ok(query.redirect_or_preserving_initial(ListSubmitter::view_path()))
             } else {
-                Ok(query.redirect_or(PoliticalGroup::update_path()))
+                Ok(query.redirect_or_preserving_initial(PoliticalGroup::update_path()))
             }
         }
     }
@@ -100,6 +101,7 @@ mod tests {
             Context::new_test_without_db(),
             store,
             political_group,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

@@ -63,7 +63,7 @@ pub async fn update_name_authorisation_submit(
         Ok(name_authorisation) => {
             name_authorisation.update(&store).await?;
 
-            Ok(query.redirect_or(NameAuthorisation::list_path()))
+            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
         }
     }
 }
