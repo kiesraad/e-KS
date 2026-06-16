@@ -101,4 +101,88 @@ test.describe("provide general information for political group", async () => {
       ).toBeVisible();
     }
   });
+
+  test("provide information for combination", async ({
+    noExistingData: page,
+  }) => {
+    const listDesignationPage = new ListDesignationPage(page);
+    await page.goto("/political-group");
+    await listDesignationPage.selectCombined.check();
+    await listDesignationPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/information");
+
+    const politicalGroupPage = new PoliticalGroupPage(page);
+    await politicalGroupPage.selectMoreThan16Seats.check();
+    await politicalGroupPage.textfieldCombinedDesignation.fill("TP/TP2");
+    await politicalGroupPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/name-authorisation");
+
+    await page.goto("/political-group/information");
+    await expect(politicalGroupPage.selectMoreThan16Seats).toBeChecked();
+    await expect(politicalGroupPage.textfieldCombinedDesignation).toHaveValue(
+      "TP/TP2",
+    );
+    await politicalGroupPage.buttonSaveAndNext.click();
+
+    const authorisationOne: NameAuthorisation = {
+      initials: "K",
+      lastNamePrefix: "van",
+      lastName: "Jansen",
+      legalName: "Test Partij 1",
+    };
+
+    const authorisationTwo: NameAuthorisation = {
+      initials: "D",
+      lastNamePrefix: "de",
+      lastName: "Boer",
+      legalName: "Test Partij 2",
+    };
+    const nameAuthorisationPage = new NameAuthorisationPage(page);
+
+    for (const authorisation of [authorisationOne, authorisationTwo]) {
+      await nameAuthorisationPage.addNameAuthorisation(authorisation);
+    }
+
+    for (const authorisation of [authorisationOne, authorisationTwo]) {
+      const agentLastName = authorisation.lastNamePrefix
+        ? `${authorisation.lastNamePrefix} ${authorisation.lastName}`
+        : authorisation.lastName;
+      await expect(
+        nameAuthorisationPage.getAgentLocator(agentLastName),
+      ).toBeVisible();
+    }
+  });
+
+  test("provide general information for blank list", async ({
+    noExistingData: page,
+  }) => {
+    const listDesignationPage = new ListDesignationPage(page);
+    await page.goto("/political-group");
+    await listDesignationPage.selectBlank.check();
+    await listDesignationPage.buttonSaveAndNext.click();
+    await page.waitForURL("/political-group/list-submitter");
+
+    const submitter: ListSubmitter = {
+      initials: "G",
+      lastNamePrefix: "van",
+      lastName: "Veen",
+    };
+    const listSubmittersPage = new ListSubmittersPage(page);
+
+    await listSubmittersPage.setListSubmitter(submitter);
+
+    const submitterLastName = submitter.lastNamePrefix
+      ? `${submitter.lastNamePrefix} ${submitter.lastName}`
+      : submitter.lastName;
+    await expect(
+      listSubmittersPage.getSubmitterLocator(submitterLastName),
+    ).toBeVisible();
+    await listSubmittersPage.buttonNext.click();
+    await page.waitForURL("/");
+    await expect(
+      page.getByRole("heading", {
+        name: "Eerste Kamerverkiezing der Staten-Generaal 2027",
+      }),
+    ).toBeVisible();
+  });
 });
