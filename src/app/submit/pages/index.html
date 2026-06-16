@@ -6,16 +6,13 @@
   {% let election = "election"|election_value %}
   <div class="finalize">
     <div class="finalize-header">
-      <h3>Nog een paar stappen</h3>
-      <p>
-        U heeft uw kandidaten en kandidatenlijsten aangemaakt. Om af te ronden, zijn er nog een paar stappen te
-        doorlopen. Deze stappen staan uiteengezet op deze pagina.
-      </p>
+      <h3>{{ "submit.header.title"|trans }}</h3>
+      <p>{{ "submit.header.description"|trans }}</p>
     </div>
     <div class="step warning illustration-errors">
       <div class="step-main">
         <div class="step-header">
-          <h2>Maak uw lijst compleet</h2>
+          <h2>{{ "submit.complete_list.title"|trans }}</h2>
         </div>
         <div class="step-content">
           <section class="card">
@@ -129,36 +126,27 @@
     <div class="step illustration-printing">
       <div class="step-main">
         <div class="step-header">
-          <h2>Print de documenten uit</h2>
+          <h2>{{ "submit.print.title"|trans }}</h2>
         </div>
         <div class="step-content">
           <section>
-            <div class="alert alert-warning">
-              Let op! U kunt de documenten wel uitprinten, maar ze zullen als incompleet worden beschouwd door het centraal
-              stembureau. Los de foutmeldingen in stap 1 op om de lijst compleet te maken.
-            </div>
+            <div class="alert alert-warning">{{ "submit.print.incomplete_warning"|trans }}</div>
             <div class="step-grid">
               <div>
-                <h5>H1 Kandidatenlijst</h5>
-                <p>Met de H1 stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.</p>
+                <h5>{{ "submit.print.h1_title"|trans }}</h5>
+                <p>{{ "submit.print.h1_description"|trans }}</p>
               </div>
               <div>
-                <h5>H9 Instemmingsverklaringen</h5>
+                <h5>{{ "submit.print.h9_title"|trans }}</h5>
                 <p>
-                  Met dit formulier stemmen kandidaten ermee in dat ze op de kandidatenlijst staan. Ook stemmen ze in met
-                  hun positie op de lijst.
+                  {{ "submit.print.h9_consent"|trans }}
                   <br />
-                  Bij het inleveren van deze H9 hoort ook een leesbare kopie van het
-                  identiteitsbewijs.
+                  {{ "submit.print.h9_identity"|trans }}
                 </p>
               </div>
               <div>
-                <h5>H3-1 Machtiging Plaatsen voor Aanduiding.</h5>
-                <p>
-                  Met de H 3-1 krijgt de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw
-                  politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen. Deze toestemming kan alleen
-                  worden gegeven door iemand die hiertoe gemachtigd is door de politieke groepering.
-                </p>
+                <h5>{{ "submit.print.h3_title"|trans }}</h5>
+                <p>{{ "submit.print.h3_description"|trans }}</p>
               </div>
             </div>
             <div class="card">
@@ -197,49 +185,29 @@
       </div>
     </div>
     <div class="finalize-header">
-      <h3>Vervolgstappen</h3>
-      <p>
-        U bent klaar met de stappen die u binnen e-KS moet zetten, maar u bent nog niet klaar met het volledige proces.
-        Hieronder volgen nog enkele stappen die u moet zetten om alles in te leveren.
-      </p>
+      <h3>{{ "submit.follow_up_steps.title"|trans }}</h3>
+      <p>{{ "submit.follow_up_steps.description"|trans }}</p>
     </div>
     <div class="step illustration-collection">
       <div class="step-main">
         <div class="step-header">
-          <h2>Verzamelen, controleren en ondertekenen</h2>
+          <h2>{{ "submit.collection.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p>
-            Verzamel van alle kandidaten de H9 instemmingsbewijzen. Zorg ook dat alle kopieën van identiteitsbewijzen meegeleverd worden en leesbaar zijn.
-          </p>
-          <p>
-            De 2 weken voor de dag van kandidaatstelling kunt u de documenten alvast laten controleren door het centraal stembureau, de zogeheten 'voorinlevering'.
-            Maak hiervoor een afspraak.
-          </p>
+          <p>{{ "submit.collection.gather_h9"|trans }}</p>
+          <p>{{ "submit.collection.pre_submission"|trans }}</p>
         </div>
       </div>
     </div>
     <div class="step illustration-delivery">
       <div class="step-main">
         <div class="step-header">
-          <h2>Inleveren (dag van kandidaatstelling)</h2>
+          <h2>{{ "submit.delivery.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">Kan alleen op <strong>02-03-2028</strong></p>
-          <p>
-            Mocht er iets ontbreken, dan zijn er twee dagen waarop dit hersteld kan worden, de zogeheten 'verzuimperiode'. Zie de volgende stap.
-          </p>
-        </div>
-      </div>
-    </div>
-    <div class="step illustration-verification">
-      <div class="step-main">
-        <div class="step-header">
-          <h2>Onderzoek van documenten</h2>
-        </div>
-        <div class="step-content less-wide">
-          <p class="alert alert-info">Het onderzoek loopt tot <strong>04-03-2028</strong></p>
-          <p>Lever alle documenten in bij het centraal stembureau. Maak hier een afspraak voor. Het adres is:</p>
+          <p class="alert alert-info">{{ "submit.delivery.only_on"|trans("02-03-2028") |safe }}</p>
+          <p>{{ "submit.delivery.description"|trans }}</p>
+          <p>{{ "submit.delivery.appointment"|trans }}</p>
           <p>
             Zurichtoren
             <br />
@@ -250,31 +218,39 @@
         </div>
       </div>
     </div>
+    <div class="step illustration-verification">
+      <div class="step-main">
+        <div class="step-header">
+          <h2>{{ "submit.verification.title"|trans }}</h2>
+        </div>
+        <div class="step-content less-wide">
+          <p class="alert alert-info">{{ "submit.verification.until"|trans("04-03-2028") |safe }}</p>
+          <p>{{ "submit.verification.description"|trans }}</p>
+          <p>{{ "submit.verification.correction_notice"|trans }}</p>
+        </div>
+      </div>
+    </div>
     <div class="step illustration-correction">
       <div class="step-main">
         <div class="step-header">
-          <h2>Verzuimperiode</h2>
+          <h2>{{ "submit.correction.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">Bericht op <strong>05-03-2028</strong></p>
-          <p>
-            U krijgt van ons per brief een bericht met de ontbrekende stukken. De politieke groepering heeft vervolgens twee dagen de tijd om deze ontbrekende stukken te corrigeren en in te leveren.
-          </p>
-          <p>Op <strong>07-03-2028</strong> tussen <strong>09:00</strong> en <strong>17:00</strong> ontvangt het centraal stembureau de ontbrekende stukken.</p>
+          <p class="alert alert-info">{{ "submit.correction.notice_date"|trans("05-03-2028") |safe }}</p>
+          <p>{{ "submit.correction.description"|trans }}</p>
+          <p>{{ "submit.correction.deadline"|trans("07-03-2028") |safe }}</p>
         </div>
       </div>
     </div>
     <div class="step illustration-hearing">
       <div class="step-main">
         <div class="step-header">
-          <h2>Openbare zitting</h2>
+          <h2>{{ "submit.hearing.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">Zitting is op <strong>09-03-2028</strong></p>
-          <p>
-            Hier bepaalt het centraal stembureau welke partijen er op het stembiljet komen te staan, en wat de volgorde van partijen is.
-          </p>
-          <p>U kunt deze zitting bezoeken.</p>
+          <p class="alert alert-info">{{ "submit.hearing.date"|trans("09-03-2028") |safe }}</p>
+          <p>{{ "submit.hearing.description"|trans }}</p>
+          <p>{{ "submit.hearing.open_to_public"|trans }}</p>
         </div>
       </div>
     </div>

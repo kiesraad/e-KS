@@ -1,0 +1,42 @@
+collection:
+  gather_h9: Collect the H9 declarations of consent from all candidates. Also ensure that all copies of identity documents are included and legible.
+  pre_submission: "In the 2 weeks before nomination day, you can have the documents reviewed in advance by the central electoral committee, known as a 'pre-submission'. Please make an appointment for this."
+  title: "Gather, review and sign"
+complete_list:
+  title: Complete your list
+correction:
+  deadline: "On <strong>{}</strong> between 09:00 and 17:00 the central electoral committee should receive the missing documents."
+  description: You will receive a letter from us listing the missing documents. The political group then has two days to rectify the omissions and resubmit the missing documents.
+  notice_date: "Notification on <strong>{}</strong>"
+  title: Omission period
+delivery:
+  appointment: "Please make an appointment for this. The address is:"
+  description: On nomination day you must submit your documents to the central electoral committee.
+  only_on: "Nomination day is on <strong>{}</strong>"
+  title: Submit documents
+follow_up_steps:
+  description: "You have completed all the steps within e-KS, but you have not yet completed the full process. Below are a few more steps you need to take to submit everything."
+  title: Follow-up steps
+header:
+  description: "You have created your candidates and lists of candidates. To finalize, there are a few more steps to complete. These steps are outlined on this page."
+  title: A few more steps
+hearing:
+  date: "Session is on <strong>{}</strong>"
+  description: "Here the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
+  open_to_public: You may attend this session.
+  title: Public session
+print:
+  h1_description: "With the H1, as the submitter of the list of candidates, you nominate candidates for an election."
+  h1_title: H1 List of candidates
+  h3_description: "With the H3-1, the submitter of the list of candidates receives permission to place the appellation registered by your political group above the list of candidates. This permission can only be granted by a person authorised to do so by the political group."
+  h3_title: H3-1 Authorisation to use appellation
+  h9_consent: "With this form, candidates agree to being placed on the list of candidates. They also agree to their position on the list."
+  h9_identity: "When submitting this H9, a legible copy of the identity document must also be included."
+  h9_title: H9 Declarations of consent
+  incomplete_warning: "Warning! You can print the documents, but they will be considered incomplete by the central electoral committee. Resolve the errors in step 1 to complete the list."
+  title: Print the documents
+verification:
+  correction_notice: "If anything is missing, there are two days during which this can be rectified, known as the 'omission period'. See the next step."
+  description: The central electoral committee reviews the submitted documents for completeness and correctness.
+  title: Review of documents
+  until: "The review runs until <strong>{}</strong>"
