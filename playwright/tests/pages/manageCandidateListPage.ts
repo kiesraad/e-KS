@@ -124,20 +124,23 @@ export class ManageCandidateListPage {
       await this.textfieldInitials.fill(candidate.initials);
       await this.textfieldLastName.fill(candidate.lastName);
       await this.textfieldFirstName.fill(candidate.firstName ?? "");
+      // Step 1 "Woonplaats" is the place of residence (personal data).
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.textfieldBSN.fill(candidate.bsn ?? "");
       await this.textfieldBirthDay.fill(candidate.dateOfBirth?.day ?? "");
       await this.textfieldBirthMonth.fill(candidate.dateOfBirth?.month ?? "");
       await this.textfieldBirthYear.fill(candidate.dateOfBirth?.year ?? "");
-      await this.dropdownGender.selectOption(candidate.gender ?? "");
+      if (candidate.gender) {
+        await this.dropdownGender.selectOption(candidate.gender);
+      }
       await this.buttonNext.click();
-      await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.textfieldPostalCode.fill(candidate.postalCode ?? "");
       await this.textfieldHouseNumber.fill(candidate.houseNumber ?? "");
       await this.textfieldHouseNumberAddition.fill(
         candidate.houseNumberAddition ?? "",
       );
       await this.textfieldStreetName.fill(candidate.streetName ?? "");
+      // Step 2 "Woonplaats" is the address locality (correspondence address).
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.buttonAdd.click();
       await this.headingCandidateList.waitFor();

@@ -39,9 +39,13 @@ export class CsvImportExportPage {
 
     await this.buttonUpload.click();
 
-    if (await this.buttonContinue.isVisible()) {
-      await this.buttonContinue.click();
-    }
+    // Depending on the flow a confirmation dialog ("Doorgaan") may appear
+    // before the file chooser opens. Wait briefly for it and click it if it
+    // shows; otherwise the chooser was opened directly by the upload click.
+    await this.buttonContinue
+      .waitFor({ state: "visible", timeout: 2000 })
+      .then(() => this.buttonContinue.click())
+      .catch(() => {});
 
     const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));

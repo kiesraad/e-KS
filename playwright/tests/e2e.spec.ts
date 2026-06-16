@@ -16,6 +16,12 @@ import { SubmitPage } from "./pages/submitPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 
 test.describe("End-to-end", () => {
+  // These walk the entire application flow (~20+ navigations, a CSV upload and
+  // a download) so they need more than the default per-test timeout.
+  test.beforeEach(() => {
+    test.slow();
+  });
+
   test("happy flow", async ({ noExistingData: page }) => {
     //navigate from home page
     const overviewPage = new OverviewPage(page);
