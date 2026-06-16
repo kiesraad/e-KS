@@ -130,9 +130,9 @@ impl QueryParamState {
             .filter(|url| url.starts_with('/'))
     }
 
-    /// Redirect to `redirect_to` query param if present (and a valid relative path),
-    /// otherwise redirect to the default path with success query params.
-    pub fn redirect_or(&self, default: impl std::fmt::Display) -> Response {
+    /// Builds the redirect URL: the `redirect_to` query param if present (and a
+    /// valid relative path), otherwise the default path with success query params.
+    fn redirect_url_or(&self, default: impl std::fmt::Display) -> String {
         let mut url = match &self.redirect_to {
             Some(url) if url.starts_with('/') => url.clone(),
             _ => default.to_string(),
@@ -142,20 +142,20 @@ impl QueryParamState {
             url.push_str("?&success=true");
         }
 
-        Redirect::to(&url).into_response()
+        url
+    }
+
+    /// Redirect to `redirect_to` query param if present (and a valid relative path),
+    /// otherwise redirect to the default path with success query params.
+    pub fn redirect_or(&self, default: impl std::fmt::Display) -> Response {
+        Redirect::to(&self.redirect_url_or(default)).into_response()
     }
 
     /// Like `redirect_or`, but preserves `initial=true` in the redirect URL when set.
     /// Use this for inter-step saves within the general information section.
     pub fn redirect_or_preserving_initial(&self, default: impl std::fmt::Display) -> Response {
-        let mut url = match &self.redirect_to {
-            Some(url) if url.starts_with('/') => url.clone(),
-            _ => default.to_string(),
-        };
+        let mut url = self.redirect_url_or(default);
 
-        if !url.contains('?') {
-            url.push_str("?&success=true");
-        }
         if self.initial {
             url.push_str("&initial=true");
         }
