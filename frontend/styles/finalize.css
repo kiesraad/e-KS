@@ -152,3 +152,38 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+.section-heading {
+  align-items: end;
+  display: grid;
+  gap: var(--space-lg);
+  grid-template-columns: auto 1fr;
+}
+
+.problem-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-sm);
+  justify-content: flex-end;
+
+  span {
+    padding-left: var(--space-xl);
+    background-repeat: no-repeat;
+    background-position: left var(--space-sm) center;
+    background-size: 1.5rem;
+    font-weight: var(--font-weight-medium);
+    white-space: nowrap;
+  }
+
+  .info {
+    background-image: url("../icons/info.svg");
+  }
+
+  .warning {
+    background-image: url("../icons/warning.svg");
+  }
+
+  .error {
+    background-image: url("../icons/error.svg");
+  }
+}

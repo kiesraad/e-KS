@@ -16,85 +16,98 @@
         </div>
         <div class="step-content">
           <section class="card">
-            <h2 class="mb-sm">{{ "common.general_information"|trans }}</h2>
-            {% if problems.general.flatten().is_empty() %}
-              <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
-            {% else %}
-              <div class="mb-md">
-                <ul class="warnings tags-list">
-                  {% for problem in problems.general.general %}
-                    <li class="tag link">
-                      <a class="{{ problem.severity().class() }}"
-                         href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
-                    </li>
-                  {% endfor %}
-                </ul>
+            <div class="section-heading">
+              <h4>{{ "common.general_information"|trans }}</h4>
+              <div class="problem-legend">
+                <span class="info">{{ "problems.legend.info"|trans }}</span>
+                <span class="warning">{{ "problems.legend.warning"|trans }}</span>
+                <span class="error">{{ "problems.legend.error"|trans }}</span>
               </div>
-              {% for agent_pp in problems.general.name_authorisations %}
-                <div class="mb-md">
-                  <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
-                  <ul class="warnings tags-list">
-                    {% for problem in &agent_pp.problems %}
-                      <li class="tag link">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ agent_pp.entity.update_path() }}">{{ problem.translate(locale) }}</a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              {% endfor %}
-              {% if problems.general.list_submitter.is_some() %}
-                <div class="mb-md">
-                  <div class="mb-sm">
-                    {{ problems.general.list_submitter.as_ref().unwrap().entity.name.display() }} ({{ "political_group.list_submitter"|trans }}):
+            </div>
+            {% if problems.general.flatten().is_empty() %}
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
+            {% else %}
+              <div class="card">
+                {% if !problems.general.general.is_empty() %}
+                  <div class="mb-md">
+                    <ul class="warnings tags-list">
+                      {% for problem in problems.general.general %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
                   </div>
-                  <ul class="warnings tags-list">
-                    {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
-                      <li class="tag link">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ ListSubmitter::update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              {% endif %}
-              {% for ss_pp in problems.general.substitute_submitters %}
-                <div class="mb-md">
-                  <div class="mb-sm">{{ ss_pp.entity.name.display() }} ({{ "political_group.substitute_submitter"|trans }}):</div>
-                  <ul class="warnings tags-list">
-                    {% for problem in &ss_pp.problems %}
-                      <li class="tag link">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ ss_pp.entity.substitute_update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              {% endfor %}
+                {% endif %}
+                {% for agent_pp in problems.general.name_authorisations %}
+                  <div class="mb-md">
+                    <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
+                    <ul class="warnings tags-list">
+                      {% for problem in &agent_pp.problems %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ agent_pp.entity.update_path() }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endfor %}
+                {% if problems.general.list_submitter.is_some() %}
+                  <div class="mb-md">
+                    <div class="mb-sm">
+                      {{ problems.general.list_submitter.as_ref().unwrap().entity.name.display() }} ({{ "political_group.list_submitter"|trans }}):
+                    </div>
+                    <ul class="warnings tags-list">
+                      {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ ListSubmitter::update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endif %}
+                {% for ss_pp in problems.general.substitute_submitters %}
+                  <div class="mb-md">
+                    <div class="mb-sm">{{ ss_pp.entity.name.display() }} ({{ "political_group.substitute_submitter"|trans }}):</div>
+                    <ul class="warnings tags-list">
+                      {% for problem in &ss_pp.problems %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ ss_pp.entity.substitute_update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endfor %}
+              </div>
             {% endif %}
-            <h2 class="mt-md mb-sm">{{ "common.candidates"|trans }}</h2>
+            <h4>{{ "common.candidates"|trans }}</h4>
             {% if problems.candidates.is_empty() %}
-              <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
             {% else %}
-              {% for candidate_pp in &problems.candidates %}
-                <div class="mb-md">
-                  <div class="mb-sm">{{ candidate_pp.entity.name.display() }}:</div>
-                  <ul class="warnings tags-list">
-                    {% for problem in &candidate_pp.problems %}
-                      <li class="tag link">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ problem.person_fix_path(&candidate_pp.entity) }}">{{ problem.translate(locale) }}</a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </div>
-              {% endfor %}
+              <div class="card">
+                {% for candidate_pp in &problems.candidates %}
+                  <div>
+                    <div class="mb-sm">{{ candidate_pp.entity.name.display() }}:</div>
+                    <ul class="warnings tags-list">
+                      {% for problem in &candidate_pp.problems %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ problem.person_fix_path(&candidate_pp.entity) }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endfor %}
+              </div>
             {% endif %}
-            <h2 class="mt-md mb-sm">{{ "candidate_list.title_plural"|trans }}</h2>
+            <h4>{{ "candidate_list.title_plural"|trans }}</h4>
             {% if problems.lists.is_empty() %}
-              <p class="mb-xl">{{ "problems.no_problems"|trans }}</p>
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
             {% else %}
-              <div class="mb-md">
+              <div class="card">
                 <ul class="warnings tags-list">
                   {% for list_problems in &problems.lists %}
                     {% for problem in &list_problems.problems %}
@@ -108,16 +121,20 @@
               </div>
             {% endif %}
             {% if !problems.info_problems.is_empty() %}
-              <section class="card">
-                <ul class="warnings tags-list">
+              <h4>{{ "problems.legend.info"|trans }}</h4>
+              <div class="card read-more">
+                <input type="checkbox" id="info-toggle" class="toggle" hidden>
+                <ul class="warnings tags-list partially-hidden">
                   {% for problem in problems.info_problems %}
-                    <li class="tag">
+                    <li class="tag link">
                       <a class="{{ problem.severity().class() }}"
                          href="{{ problem.fix_path() }}">{{ problem.translate(locale) }}</a>
                     </li>
                   {% endfor %}
                 </ul>
-              </section>
+                <label for="info-toggle" class="more-less center open">{{"action.show"|trans}}</label>
+                <label for="info-toggle" class="more-less center close">{{"action.hide"|trans}}</label>
+              </div>
             {% endif %}
           </section>
         </div>

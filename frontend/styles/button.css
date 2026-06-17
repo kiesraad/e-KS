@@ -262,8 +262,6 @@ label.button {
 }
 
 .read-more {
-  width: fit-content;
-
   .toggle:not(:checked) ~ .content {
     display: none;
   }
@@ -272,11 +270,14 @@ label.button {
     display: none;
   }
 
+  .toggle:not(:checked) ~ .close {
+    display: none;
+  }
+
   .more-less {
     cursor: pointer;
     width: fit-content;
     padding-right: 1rem;
-    font-weight: bold;
     display: block;
     background-image: url("../icons/select.svg");
     background-repeat: no-repeat;
@@ -288,9 +289,23 @@ label.button {
     background-image: url("../icons/deselect.svg");
   }
 
-  ul {
+  .open.center {
+    margin: auto;
+  }
+
+  .close.center {
+    margin: auto;
+  }
+
+  &.with-disc ul {
     margin: var(--space-3) 0;
     padding-left: var(--space-5);
     list-style: disc;
+  }
+
+  .toggle:not(:checked) ~ .partially-hidden {
+    overflow: hidden;
+    height: var(--space-6);
+    mask-image: linear-gradient(to bottom, black, transparent);
   }
 }

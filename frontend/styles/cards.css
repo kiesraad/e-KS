@@ -31,12 +31,12 @@
   text-decoration: none;
   text-wrap: balance;
 
-  &:has(a),
+  &:has(> a),
   &:is(a) {
     cursor: pointer;
   }
 
-  &:has(a):hover,
+  &:has(> a):hover,
   &:is(a):hover {
     --card-bg: var(--gray-25);
     --card-chevron-translate: var(--space-1);
@@ -54,6 +54,17 @@
     justify-content: center;
   }
 
+  &.success {
+    background-color: var(--green-100);
+    color: var(--green-700);
+    border: 1px solid var(--green-700);
+    background-image: url("../icons/checkmarkSmall.svg");
+    background-size: 1.5rem;
+    background-repeat: no-repeat;
+    background-position: left var(--space-8) center;
+    padding-left: var(--space-20);
+  }
+
   .card-header {
     color: var(--gray-800);
     display: flex;
@@ -63,7 +74,7 @@
     gap: var(--space-3);
     line-height: var(--leading-xl);
 
-    & > div:not(.badge) {
+    &>div:not(.badge) {
       margin-block: auto;
     }
 
@@ -97,9 +108,14 @@
     gap: var(--space-3);
     line-height: var(--leading-sm);
 
-    p.warning > strong {
+    p.warning>strong {
       color: var(--color-warning-darker);
     }
+  }
+
+  /* display a card within a card with different color */
+  .card:not(.success) {
+    background-color: var(--gray-25);
   }
 
   ul.card-instruction {

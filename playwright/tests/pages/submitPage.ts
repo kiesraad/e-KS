@@ -17,13 +17,13 @@ export class SubmitPage {
       name: "Alles yn ien zip",
     });
     this.linkRegisteredDesignation = this.page.getByRole("link", {
-      name: "Geregistreerde aanduiding ontbreekt",
+      name: "Geregistreerde aanduiding",
     });
     this.linkNoLegalName = this.page.getByRole("link", {
       name: "1 statutaire naam te weinig",
     });
     this.linkBSN = this.page.getByRole("link", {
-      name: "BSN ontbreekt",
+      name: "BSN",
     });
     this.linkTooManyCandidates = this.page.getByRole("link", {
       name: /\d+ (kandidaat|kandidaten) te veel/,

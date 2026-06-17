@@ -26,19 +26,19 @@ test.describe("End-to-end", () => {
     //navigate from home page
     const overviewPage = new OverviewPage(page);
     await overviewPage.linkGeneralInformation.click();
-    await page.waitForURL("/political-group");
+    await page.waitForURL("/political-group*");
 
     //fill in general information
     const listDesignationPage = new ListDesignationPage(page);
     await listDesignationPage.selectStandalone.check();
     await listDesignationPage.buttonSaveAndNext.click();
-    await page.waitForURL("/political-group/information");
+    await page.waitForURL("/political-group/information*");
 
     const politicalGroupPage = new PoliticalGroupPage(page);
     await politicalGroupPage.selectNoSeats.check();
     await politicalGroupPage.textfieldRegisteredDesignation.fill("Test Partij");
     await politicalGroupPage.buttonSaveAndNext.click();
-    await page.waitForURL("/political-group/name-authorisation");
+    await page.waitForURL("/political-group/name-authorisation*");
 
     const authorisation: NameAuthorisation = {
       initials: "T",
@@ -49,7 +49,7 @@ test.describe("End-to-end", () => {
     const nameAuthorisationPage = new NameAuthorisationPage(page);
     await nameAuthorisationPage.addNameAuthorisation(authorisation);
     await nameAuthorisationPage.buttonNext.click();
-    await page.waitForURL("/political-group/list-submitter");
+    await page.waitForURL("/political-group/list-submitter*");
 
     const submitter: ListSubmitter = {
       initials: "L",
@@ -142,18 +142,18 @@ test.describe("End-to-end", () => {
     //navigate from home page
     const overviewPage = new OverviewPage(page);
     await overviewPage.linkGeneralInformation.click();
-    await page.waitForURL("/political-group");
+    await page.waitForURL("/political-group*");
 
     //fill in general information
     const listDesignationPage = new ListDesignationPage(page);
     await listDesignationPage.selectStandalone.check();
     await listDesignationPage.buttonSaveAndNext.click();
-    await page.waitForURL("/political-group/information");
+    await page.waitForURL("/political-group/information*");
 
     const politicalGroupPage = new PoliticalGroupPage(page);
     await politicalGroupPage.selectNoSeats.check();
     await politicalGroupPage.buttonSaveAndNext.click();
-    await page.waitForURL("/political-group/name-authorisation");
+    await page.waitForURL("/political-group/name-authorisation*");
 
     const authorisation: NameAuthorisation = {
       initials: "T",
@@ -164,7 +164,7 @@ test.describe("End-to-end", () => {
     const nameAuthorisationPage = new NameAuthorisationPage(page);
     await nameAuthorisationPage.addNameAuthorisation(authorisation);
     await nameAuthorisationPage.buttonNext.click();
-    await page.waitForURL("/political-group/list-submitter");
+    await page.waitForURL("/political-group/list-submitter*");
 
     const submitter: ListSubmitter = {
       initials: "L",
