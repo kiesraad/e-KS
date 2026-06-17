@@ -132,22 +132,19 @@ label.button {
   &.xs {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.5rem - var(--button-border-width))
-      calc(0.875rem - var(--button-border-width));
+    padding: calc(0.5rem - var(--button-border-width)) calc(0.875rem - var(--button-border-width));
   }
 
   &.sm {
     font-size: var(--font-size-sm);
     line-height: 1.25rem;
-    padding: calc(0.625rem - var(--button-border-width))
-      calc(1rem - var(--button-border-width));
+    padding: calc(0.625rem - var(--button-border-width)) calc(1rem - var(--button-border-width));
   }
 
   &.lg {
     font-size: var(--font-size-lg);
     line-height: 1.75rem;
-    padding: calc(1rem - var(--button-border-width))
-      calc(1.75rem - var(--button-border-width));
+    padding: calc(1rem - var(--button-border-width)) calc(1.75rem - var(--button-border-width));
   }
 
   &.xl {
@@ -264,11 +261,15 @@ label.button {
 .read-more {
   width: fit-content;
 
-  .toggle:not(:checked) ~ .content {
+  .toggle:not(:checked)~.content {
     display: none;
   }
 
-  .toggle:checked ~ .open {
+  .toggle:checked~.open {
+    display: none;
+  }
+
+  .toggle:not(:checked)~.close {
     display: none;
   }
 
@@ -276,7 +277,6 @@ label.button {
     cursor: pointer;
     width: fit-content;
     padding-right: 1rem;
-    font-weight: bold;
     display: block;
     background-image: url("../icons/select.svg");
     background-repeat: no-repeat;
@@ -288,9 +288,23 @@ label.button {
     background-image: url("../icons/deselect.svg");
   }
 
-  ul {
+  .open.center {
+    margin: auto;
+  }
+
+  .close.center {
+    margin: auto;
+  }
+
+  &.with-disc ul {
     margin: var(--space-3) 0;
     padding-left: var(--space-5);
     list-style: disc;
+  }
+
+  .toggle:not(:checked)~.partially-hidden {
+    overflow: hidden;
+    height: var(--space-6);
+    mask-image: linear-gradient(to bottom, black, transparent);
   }
 }

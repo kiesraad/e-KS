@@ -1,6 +1,6 @@
 and_other_problems: "(en {} andere problemen)"
 and_other_problems_one: (en 1 ander probleem)
-candidate_too_young: Kandidaat te jong om deel te nemen aan de verkiezing
+candidate_too_young: Te jong
 duplicate_districts: Dubbele kieskringen
 few_candidates_with_first_name: "Maar {} van de {} kandidaten hebben een voornaam"
 few_candidates_with_first_name_one: "Maar 1 van de {} kandidaten heeft een voornaam"
@@ -11,6 +11,10 @@ few_candidates_without_first_name_one: "Maar 1 van de {} kandidaten heeft geen v
 few_candidates_without_gender: "Maar {} van de {} kandidaten hebben geen geslacht ingevuld"
 few_candidates_without_gender_one: "Maar 1 van de {} kandidaten heeft geen geslacht ingevuld"
 incomplete_address: Adres
+legend:
+  error: Niet inleverbaar
+  info: Ter info
+  warning: Actie vereist
 no_authorised_agent: Geen gemachtigde
 no_bsn: BSN
 no_candidate_list: Geen kandidatenlijst
@@ -19,7 +23,7 @@ no_country_of_residence: Woonland
 no_date_of_birth: Geboortedatum
 no_designation_type: Lijstaanduiding
 no_display_name: Geregistreerde aanduiding
-no_districts: Lijst zonder kieskringen
+no_districts: Geen kieskringen
 no_initials: Initialen
 no_last_name: Achternaam
 no_legal_name: Statutaire naam

@@ -19,21 +19,28 @@
         </div>
         <div class="step-content">
           <div class="card">
-            <h2 class="mb-sm">{{ "common.general_information"|trans }}</h2>
+            <div class="problem-legend">
+              <span class="error">{{ "problems.legend.error"|trans }}</span>
+              <span class="warning">{{ "problems.legend.warning"|trans }}</span>
+              <span class="info">{{ "problems.legend.info"|trans }}</span>
+            </div>
+            <h2>{{ "common.general_information"|trans }}</h2>
             {% if problems.general.flatten().is_empty() %}
               <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
             {% else %}
               <div class="card">
-                <div class="mb-md">
-                  <ul class="warnings tags-list">
-                    {% for problem in problems.general.general %}
-                      <li class="tag link">
-                        <a class="{{ problem.severity().class() }}"
-                           href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
-                      </li>
-                    {% endfor %}
-                  </ul>
-                </div>
+                {% if !problems.general.general.is_empty() %}
+                  <div class="mb-md">
+                    <ul class="warnings tags-list">
+                      {% for problem in problems.general.general %}
+                        <li class="tag link">
+                          <a class="{{ problem.severity().class() }}"
+                             href="{{ problem.general_fix_path() }}">{{ problem.translate(locale) }}</a>
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                {% endif %}
                 {% for agent_pp in problems.general.name_authorisations %}
                   <div class="mb-md">
                     <div class="mb-sm">{{ agent_pp.entity.name.display() }} ({{ "political_group.authorised_agent"|trans }}):</div>
@@ -77,13 +84,13 @@
                 {% endfor %}
               </div>
             {% endif %}
-            <h2 class="mt-md mb-sm">{{ "common.candidates"|trans }}</h2>
+            <h2>{{ "common.candidates"|trans }}</h2>
             {% if problems.candidates.is_empty() %}
               <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
             {% else %}
               <div class="card">
                 {% for candidate_pp in &problems.candidates %}
-                  <div class="mb-md">
+                  <div>
                     <div class="mb-sm">{{ candidate_pp.entity.name.display() }}:</div>
                     <ul class="warnings tags-list">
                       {% for problem in &candidate_pp.problems %}
@@ -97,7 +104,7 @@
                 {% endfor %}
               </div>
             {% endif %}
-            <h2 class="mt-md mb-sm">{{ "candidate_list.title_plural"|trans }}</h2>
+            <h2>{{ "candidate_list.title_plural"|trans }}</h2>
             {% if problems.lists.is_empty() %}
               <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
             {% else %}
@@ -115,16 +122,18 @@
               </div>
             {% endif %}
             {% if !problems.info_problems.is_empty() %}
-              <!-- TODO make this card partially faded and collapsable -->
-              <div class="card">
-                <ul class="warnings tags-list">
+              <div class="card mt-xl read-more">
+                <input type="checkbox" id="info-toggle" class="toggle" hidden>
+                <ul class="warnings tags-list partially-hidden">
                   {% for problem in problems.info_problems %}
-                    <li class="tag">
+                    <li class="tag link">
                       <a class="{{ problem.severity().class() }}"
                          href="{{ problem.fix_path() }}">{{ problem.translate(locale) }}</a>
                     </li>
                   {% endfor %}
                 </ul>
+                <label for="info-toggle" class="more-less center open">{{"action.show"|trans}}</label>
+                <label for="info-toggle" class="more-less center close">{{"action.hide"|trans}}</label>
               </div>
             {% endif %}
           </div>
@@ -169,9 +178,7 @@
             <div class="card">
               <div class="step-downloads">
                 <div class="step-download">
-                  {% if frisian_export_allowed %}
-                    <div>{{ "common.languages.dutch"|trans }}:</div>
-                  {% endif %}
+                  {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
                   {% if problems.models_downloadable() %}
                     <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
                     }}</a>

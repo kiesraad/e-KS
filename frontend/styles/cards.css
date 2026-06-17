@@ -101,6 +101,10 @@
       color: var(--color-warning-darker);
     }
   }
+  /* display a card within a card with different color */
+  .card:not(.alert) {
+    background-color: var(--gray-25);
+  }
 
   ul.card-instruction {
     list-style-position: inside;

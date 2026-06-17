@@ -127,3 +127,25 @@
   flex-direction: column;
   gap: var(--space-3);
 }
+
+.problem-legend {
+  span {
+    padding-left: var(--space-xl);
+    background-repeat: no-repeat;
+    background-position: left var(--space-sm) center;
+    background-size: 1.5rem;
+    font-weight: var(--font-weight-medium);
+  }
+
+  .info {
+    background-image: url("../icons/info.svg");
+  }
+
+  .warning {
+    background-image: url("../icons/warning.svg");
+  }
+
+  .error {
+    background-image: url("../icons/error.svg");
+  }
+}

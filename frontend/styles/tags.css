@@ -27,6 +27,18 @@
   width: var(--space-4);
 }
 
+.tag.link a.info::after {
+  mask-image: url("../icons/info.svg");
+}
+
+.tag.link a.warning::after {
+  mask-image: url("../icons/warning.svg");
+}
+
+.tag.link a.error::after {
+  mask-image: url("../icons/error.svg");
+}
+
 .tag a {
   border-radius: var(--rounded-md);
   border: 1px solid var(--tag-border-color, var(--gray-50));
