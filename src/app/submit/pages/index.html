@@ -9,7 +9,7 @@
       <h3>{{ "submit.header.title"|trans }}</h3>
       <p>{{ "submit.header.description"|trans }}</p>
     </div>
-    <div class="step warning illustration-errors">
+    <div class="step{% if problems.has_severity_or_higher(Severity::Warn) %} warning{% endif %} illustration-errors">
       <div class="step-main">
         <div class="step-header">
           <h2>{{ "submit.complete_list.title"|trans }}</h2>
@@ -130,7 +130,11 @@
         </div>
         <div class="step-content">
           <section>
-            <div class="alert alert-warning">{{ "submit.print.incomplete_warning"|trans }}</div>
+            {% if problems.highest_severity() == Some(Severity::Error) %}
+              <div class="alert alert-error">{{ "submit.print.errors_warning"|trans }}</div>
+            {% else if problems.highest_severity() == Some(Severity::Warn) %}
+              <div class="alert alert-warning">{{ "submit.print.incomplete_warning"|trans }}</div>
+            {% endif %}
             <div class="step-grid">
               <div>
                 <h5>{{ "submit.print.h1_title"|trans }}</h5>
@@ -152,9 +156,7 @@
             <div class="card">
               <div class="step-downloads">
                 <div class="step-download">
-                  {% if frisian_export_allowed %}
-                    <div>{{ "common.languages.dutch"|trans }}:</div>
-                  {% endif %}
+                  {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
                   {% if problems.models_downloadable() %}
                     <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
                     }}</a>

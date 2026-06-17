@@ -26,6 +26,7 @@ hearing:
   open_to_public: You may attend this session.
   title: Public session
 print:
+  errors_warning: "Before you can print the documents, you must first resolve all errors in step 1."
   h1_description: "With the H1, as the submitter of the list of candidates, you nominate candidates for an election."
   h1_title: H1 List of candidates
   h3_description: "With the H3-1, the submitter of the list of candidates receives permission to place the appellation registered by your political group above the list of candidates. This permission can only be granted by a person authorised to do so by the political group."
@@ -33,7 +34,7 @@ print:
   h9_consent: "With this form, candidates agree to being placed on the list of candidates. They also agree to their position on the list."
   h9_identity: "When submitting this H9, a legible copy of the identity document must also be included."
   h9_title: H9 Declarations of consent
-  incomplete_warning: "Warning! You can print the documents, but they will be considered incomplete by the central electoral committee. Resolve the errors in step 1 to complete the list."
+  incomplete_warning: "Attention! You can print the documents, but they will be considered incomplete by the central electoral committee. Resolve the warnings in step 1 to complete the list."
   title: Print the documents
 verification:
   correction_notice: "If anything is missing, there are two days during which this can be rectified, known as the 'omission period'. See the next step."

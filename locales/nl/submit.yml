@@ -26,6 +26,7 @@ hearing:
   open_to_public: U kunt deze zitting bijwonen.
   title: Openbare zitting
 print:
+  errors_warning: "Voordat u de documenten kunt printen, moet U eerst alle fouten in stap 1 oplossen."
   h1_description: "Met de H1 stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing."
   h1_title: H1 Kandidatenlijst
   h3_description: Met de H 3-1 krijgt de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen. Deze toestemming kan alleen worden gegeven door iemand die hiertoe gemachtigd is door de politieke groepering.
@@ -33,7 +34,7 @@ print:
   h9_consent: Met dit formulier stemmen kandidaten ermee in dat ze op de kandidatenlijst staan. Ook stemmen ze in met hun positie op de lijst.
   h9_identity: Bij het inleveren van deze H9 hoort ook een leesbare kopie van het identiteitsbewijs.
   h9_title: H9 Instemmingsverklaringen
-  incomplete_warning: "Let op! U kunt de documenten wel uitprinten, maar ze zullen als incompleet worden beschouwd door het centraal stembureau. Los de foutmeldingen in stap 1 op om de lijst compleet te maken."
+  incomplete_warning: "Let op! U kunt de documenten wel uitprinten, maar ze zullen als incompleet worden beschouwd door het centraal stembureau. Los de waarschuwingen in stap 1 op om de lijst compleet te maken."
   title: Print de documenten uit
 verification:
   correction_notice: "Mocht er iets ontbreken, dan zijn er twee dagen waarop dit hersteld kan worden, de zogeheten 'verzuimperiode'. Zie de volgende stap."

@@ -1,5 +1,9 @@
 .alert {
   background-color: var(--alert-bg);
+  background-image: var(--alert-icon);
+  background-repeat: no-repeat;
+  background-position: left var(--space-md) center;
+  background-size: 1.5rem;
   border-left: 4px solid var(--alert-border-color);
   color: var(--alert-color);
   font-size: var(--font-size-md);
@@ -7,7 +11,8 @@
   line-height: var(--leading-md);
   margin-block: var(--alert-margin-block, var(--space-6));
   padding-block: var(--alert-py, var(--space-4));
-  padding-inline: var(--alert-px, var(--space-6));
+  padding-left: calc(var(--alert-px, var(--space-6)) + 2rem);
+  padding-right: var(--alert-px, var(--space-6));
   text-wrap: wrap;
   position: relative;
   width: fit-content;
@@ -24,44 +29,45 @@
     --alert-bg: var(--blue-100);
     --alert-border-color: var(--blue-600);
     --alert-color: var(--gray-600);
+    --alert-icon: url("../icons/info.svg");
   }
 
   &.alert-warning {
     --alert-bg: var(--orange-100);
     --alert-border-color: var(--orange-600);
     --alert-color: var(--gray-600);
+    --alert-icon: url("../icons/warning.svg");
+  }
+
+  &.alert-error {
+    --alert-bg: var(--red-100);
+    --alert-border-color: var(--red-600);
+    --alert-color: var(--gray-600);
+    --alert-icon: url("../icons/error.svg");
   }
 
   &.alert-success {
     --alert-bg: var(--green-100);
-    --alert-border-color: var(--green-600);
-    --alert-color: var(--gray-700);
-    background-color: var(--green-100);
-    color: var(--green-700);
-    border: 1px solid var(--green-700);
-    background-image: url("../icons/checkmarkSmall.svg");
-    background-repeat: no-repeat;
-    background-position: left var(--space-md) center;
-    background-size: 1rem;
-    text-transform: capitalize;
+    --alert-border-color: var(--green-700);
+    --alert-color: var(--green-700);
+    --alert-icon: url("../icons/checkmarkSmall.svg");
   }
 
   &.alert-floating {
     font-size: var(--font-size-sm);
     font-weight: 500;
+    background-size: 1rem;
     position: fixed;
     left: 4rem;
     padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl);
     bottom: var(--space-lg);
+    border: 1px solid var(--alert-border-color);
     border-radius: var(--rounded-sm);
     z-index: 1000;
     margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
     animation: alert-float 4.5s ease-in-out forwards;
-  }
-
-  .instruction {
-    font-weight: 300;
+    text-transform: capitalize;
   }
 }
 
