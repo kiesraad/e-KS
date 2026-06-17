@@ -6,7 +6,7 @@ use axum::{
 
 use crate::{
     AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
-    common::Problematic,
+    common::{HasSeverity, Problematic},
     filters,
     form::FormData,
     name_authorisations::{NameAuthorisation, NameAuthorisationForm},

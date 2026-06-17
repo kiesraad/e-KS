@@ -3,7 +3,7 @@ use axum_extra::routing::TypedPath;
 use crate::{
     AppError, AppStore, QueryParamState,
     app::list_designation::ListDesignation,
-    common::{Problematic, Severity},
+    common::{HasSeverity, Problematic, Severity},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     political_groups::PoliticalGroup,

@@ -8,7 +8,7 @@ use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList},
     candidates::Candidate,
-    common::Problematic,
+    common::{HasSeverity, Problematic},
     filters,
     form::{EmptyForm, FormData},
 };

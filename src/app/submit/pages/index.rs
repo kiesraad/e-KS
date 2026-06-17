@@ -2,8 +2,12 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters,
-    list_submitters::ListSubmitter, submit::AllProblems,
+    AppError, AppStore, Context, HtmlTemplate,
+    common::{HasSeverity, Severity},
+    core::ModelLocale,
+    filters,
+    list_submitters::ListSubmitter,
+    submit::AllProblems,
 };
 
 use super::SubmitPath;

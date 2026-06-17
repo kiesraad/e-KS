@@ -1,7 +1,7 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::{Problematic, Severity},
+    common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, Pdf, ZipResponseWriter},
     list_designation::ListDesignation,
     submit::structs::{

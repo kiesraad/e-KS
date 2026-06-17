@@ -2,7 +2,7 @@ use super::NameAuthorisationsPath;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate, QueryParamState,
     app::list_designation::ListDesignation,
-    common::Problematic,
+    common::{HasSeverity, Problematic},
     filters,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
