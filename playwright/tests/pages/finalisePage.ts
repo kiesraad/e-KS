@@ -1,6 +1,6 @@
 import type { Locator, Page } from "@playwright/test";
 
-export class SubmitPage {
+export class FinalisePage {
   readonly linkDownloadNl: Locator;
   readonly linkDownloadFry: Locator;
   readonly linkRegisteredDesignation: Locator;

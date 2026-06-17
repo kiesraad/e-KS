@@ -5,7 +5,7 @@ use super::IndexPath;
 
 use crate::{
     AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
-    common::Severity, filters, submit::AllProblems,
+    common::Severity, filters, finalise::AllProblems,
 };
 
 #[derive(Template)]

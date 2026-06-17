@@ -1,11 +1,11 @@
-.finalize {
+.finalise {
   counter-reset: step;
   display: flex;
   flex-direction: column;
   gap: var(--space-16);
 }
 
-.finalize-header {
+.finalise-header {
   display: flex;
   flex-direction: column;
   font-size: var(--font-size-xl);

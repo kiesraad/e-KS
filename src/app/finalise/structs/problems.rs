@@ -4,12 +4,12 @@ use crate::{
     AppError, AppStore, Locale, QueryParamState,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
     common::{HasSeverity, IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    finalise::FinalisePath,
     list_designation::ListDesignation,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     persons::Person,
     political_groups::PoliticalGroup,
-    submit::SubmitPath,
 };
 
 impl PotentialProblems {
@@ -26,33 +26,33 @@ impl PotentialProblems {
     }
 
     pub fn person_fix_path(&self, person: &Person) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             PotentialProblems::IncompleteAddress { .. } => person
                 .update_address_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
                 person
                     .update_representative_path()
-                    .with_query_params(QueryParamState::redirect_to(submit))
+                    .with_query_params(QueryParamState::redirect_to(finalise))
                     .to_string()
             }
             _ => person
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
         }
     }
 
     pub fn general_fix_path(&self) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             PotentialProblems::NoAuthorisedAgent | PotentialProblems::NoLegalName => {
                 NameAuthorisation::list_path().to_string()
             }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             PotentialProblems::NoCandidateList => CandidateList::list_path().to_string(),
 
@@ -405,7 +405,7 @@ pub enum EntityInfoProblems {
 
 impl EntityInfoProblems {
     pub fn fix_path(&self) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             EntityInfoProblems::AnyProblem(InfoProblems::NoSubstituteSubmitter) => {
                 ListSubmitter::view_path().to_string()
@@ -421,20 +421,20 @@ impl EntityInfoProblems {
             EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
             EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
                 .substitute_update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::Submitter { .. } => ListSubmitter::update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::Person { person, .. } => person
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::NameAuthorisation {
                 name_authorisation, ..
             } => name_authorisation
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
         }
     }

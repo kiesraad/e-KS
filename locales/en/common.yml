@@ -1,8 +1,14 @@
 candidates: Candidates
+continue_to_finalise: Continue to Submit
 continue_to_home: Continue to Home
-continue_to_submit: Continue to Submit
 description: Candidate nomination for elections in the Netherlands
 electoral_districts: Electoral districts
+finalise: Finalise
+finalise_description:
+  download_documents: Download all required documents
+  review_problems: Review potential problems
+  view_follow_up_steps: View follow-up steps
+finalise_instruction: Perform this step at the latest on nomination day
 gender:
   empty: (empty)
   female: Female
@@ -28,12 +34,6 @@ select_election:
   submit: Continue
 step: "Step {}"
 steps: Steps
-submit: Finalize
-submit_description:
-  download_documents: Download all required documents
-  submit: Submit the candidate list(s)
-  view_follow_up_steps: View follow-up steps
-submit_instruction: Perform this step at the latest on nomination day
 switch_election:
   election: Election
   existing: Elections

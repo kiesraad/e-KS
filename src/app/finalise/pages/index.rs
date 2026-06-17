@@ -6,14 +6,14 @@ use crate::{
     common::{HasSeverity, Severity},
     core::ModelLocale,
     filters,
+    finalise::AllProblems,
     list_submitters::ListSubmitter,
-    submit::AllProblems,
 };
 
-use super::SubmitPath;
+use super::FinalisePath;
 
 #[derive(Template)]
-#[template(path = "submit/pages/index.html")]
+#[template(path = "finalise/pages/index.html")]
 pub struct IndexTemplate {
     problems: AllProblems,
     download_path_nl: String,
@@ -22,7 +22,7 @@ pub struct IndexTemplate {
 }
 
 pub async fn index(
-    _: SubmitPath,
+    _: FinalisePath,
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
@@ -74,7 +74,7 @@ mod tests {
         complete_list.create(&store).await?;
         complete_list.append_candidate(&store, person_id).await?;
 
-        let response = index(SubmitPath, Context::new_test_without_db(), store)
+        let response = index(FinalisePath, Context::new_test_without_db(), store)
             .await?
             .into_response();
         let body = response_body_string(response).await;
@@ -129,7 +129,7 @@ mod tests {
             complete_list.append_candidate(&store, person_id).await?;
 
             let response = index(
-                SubmitPath,
+                FinalisePath,
                 Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
                 store,
             )
@@ -190,7 +190,7 @@ mod tests {
             complete_list.append_candidate(&store, person_id).await?;
 
             let response = index(
-                SubmitPath,
+                FinalisePath,
                 Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
                 store,
             )

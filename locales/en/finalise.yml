@@ -18,7 +18,7 @@ follow_up_steps:
   description: "You have completed all the steps within e-KS, but you have not yet completed the full process. Below are a few more steps you need to take to submit everything."
   title: Follow-up steps
 header:
-  description: "You have created your candidates and lists of candidates. To finalize, there are a few more steps to complete. These steps are outlined on this page."
+  description: "You have created your candidates and lists of candidates. To finalise, there are a few more steps to complete. These steps are outlined on this page."
   title: A few more steps
 hearing:
   date: "The session is on <strong>{}</strong>"

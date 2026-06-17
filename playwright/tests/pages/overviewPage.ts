@@ -4,7 +4,7 @@ export class OverviewPage {
   readonly buttonSwitchElection: Locator;
   readonly linkGeneralInformation: Locator;
   readonly linkCandidateList: Locator;
-  readonly linkFinalize: Locator;
+  readonly linkFinalise: Locator;
   readonly linkAuditLog: Locator;
   readonly linkLogout: Locator;
   readonly buttonLanguageNL: Locator;
@@ -20,7 +20,7 @@ export class OverviewPage {
     this.linkCandidateList = this.page.getByRole("link", {
       name: "Stap 2",
     });
-    this.linkFinalize = this.page.getByRole("link", {
+    this.linkFinalise = this.page.getByRole("link", {
       name: "Stap 3",
     });
     this.linkAuditLog = this.page.getByRole("link", {

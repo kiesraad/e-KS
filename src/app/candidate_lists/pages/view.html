@@ -76,7 +76,7 @@
       {% let max_candidates = "max_candidates"|integer_value %}
       {% include "candidate_lists/components/candidates_table.html" %}
       <p class="mt-xl">
-        <a href="{{ crate::submit::SubmitPath{} }}" class="button">{{ "common.continue_to_submit"|trans }}</a>
+        <a href="{{ crate::finalise::FinalisePath{} }}" class="button">{{ "common.continue_to_finalise"|trans }}</a>
       </p>
     {% endif %}
   </section>
