@@ -6,6 +6,7 @@ close: Sluiten
 continue: Doorgaan
 delete: Verwijderen
 edit: Bewerken
+hide: Verberg
 information: Informatie
 manage_candidate_list: Kandidatenlijst beheren
 manage_candidate_lists: Kandidatenlijsten beheren
@@ -18,4 +19,5 @@ remove: Verwijderen
 review_and_submit: Controleren en inleveren
 save: Opslaan
 save_and_continue: Opslaan en volgende
+show: Bekijk
 signout: Afmelden

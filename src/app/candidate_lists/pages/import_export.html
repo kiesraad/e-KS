@@ -47,12 +47,13 @@
         <div class="alert alert-info flow-root mt-xl">
           <h4 class="mb-md font-bold">{{ "candidate_list.import_export.import_instructions_header"|trans }}</h4>
           <p>{{ "candidate_list.import_export.import_instructions_intro"|trans }}</p>
-          <div class="read-more mt-md">
+          <div class="read-more with-disc mt-md">
             <input id="import-extra-info-toggle" class="toggle" type="checkbox" hidden>
-            <label for="import-extra-info-toggle" class="more-less open">{{ "action.read_more"|trans }}</label>
+            <label for="import-extra-info-toggle" class="more-less open font-bold">{{ "action.read_more"|trans }}</label>
             <div class="content">
               <p>{{ "candidate_list.import_export.import_instructions"|trans|safe }}</p>
-              <label for="import-extra-info-toggle" class="more-less close mt-md">{{ "action.read_less"|trans }}</label>
+              <label for="import-extra-info-toggle"
+                     class="more-less close mt-md font-bold">{{ "action.read_less"|trans }}</label>
             </div>
           </div>
           <a href="{{ CandidateList::import_template_path() }}"

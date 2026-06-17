@@ -30,7 +30,9 @@
               {{ c.data.person.name.initials }}
               {% if let Some(first_name) = c.data.person.name.first_name %}({{ first_name }}){% endif %}
             </td>
-            <td>{% if let Some(locality) = c.data.person.address.locality %}{{ locality }}{% endif %}</td>
+            <td>
+              {% if let Some(locality) = c.data.person.address.locality %}{{ locality }}{% endif %}
+            </td>
           </tr>
         {% endfor %}
       </tbody>
