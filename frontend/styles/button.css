@@ -259,8 +259,6 @@ label.button {
 }
 
 .read-more {
-  width: fit-content;
-
   .toggle:not(:checked)~.content {
     display: none;
   }
