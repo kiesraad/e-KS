@@ -56,8 +56,10 @@ impl PotentialProblems {
                 .to_string(),
             PotentialProblems::NoCandidateList => CandidateList::list_path().to_string(),
 
-            PotentialProblems::TooFewAuthorizedNames { .. }
-            | PotentialProblems::TooManyAuthorizedNames { .. } => {
+            PotentialProblems::TooFewAuthorizedNames { .. } => NameAuthorisation::create_path()
+                .with_query_params(QueryParamState::redirect_to(finalise))
+                .to_string(),
+            PotentialProblems::TooManyAuthorizedNames { .. } => {
                 NameAuthorisation::list_path().to_string()
             }
             _ => PoliticalGroup::update_path().to_string(),
@@ -413,7 +415,9 @@ impl EntityInfoProblems {
         let finalise = FinalisePath {}.to_string();
         match self {
             EntityInfoProblems::AnyProblem(InfoProblems::NoSubstituteSubmitter) => {
-                ListSubmitter::view_path().to_string()
+                ListSubmitter::substitute_create_path()
+                    .with_query_params(QueryParamState::redirect_to(finalise))
+                    .to_string()
             }
             EntityInfoProblems::AnyProblem(InfoProblems::NoListDesignation) => {
                 ListDesignation::update_path().to_string()

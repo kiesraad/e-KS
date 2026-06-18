@@ -15,10 +15,9 @@ impl AllProblems {
             .name_authorisations
             .iter_mut()
             .for_each(|ep| ep.problems.sort_by_key(|p| cmp::Reverse(p.severity())));
-        self.general
-            .list_submitter
-            .as_mut()
-            .map(|ls| ls.problems.sort_by_key(|p| cmp::Reverse(p.severity())));
+        if let Some(ls) = self.general.list_submitter.as_mut() {
+            ls.problems.sort_by_key(|p| cmp::Reverse(p.severity()))
+        }
         self.general
             .substitute_submitters
             .iter_mut()

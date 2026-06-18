@@ -1,9 +1,12 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use super::SubstituteSubmitterCreatePath;
 use crate::{
-    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, filters,
+    AppError, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState, filters,
     form::FormData,
     list_submitters::{ListSubmitter, ListSubmitterForm},
     redirect_success,
@@ -19,11 +22,12 @@ struct SubstituteSubmitterCreateTemplate {
 pub async fn create_substitute_submitter(
     _: SubstituteSubmitterCreatePath,
     context: Context,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterCreateTemplate {
             form: FormData::new(&context.session.csrf_token),
-            overlay: Overlay::default(),
+            overlay: Overlay::new(&query),
         },
         context,
     ))
@@ -73,10 +77,14 @@ mod tests {
     async fn create_substitute_submitter_renders_csrf_field() {
         let context = Context::new_test_without_db();
 
-        let response = create_substitute_submitter(SubstituteSubmitterCreatePath {}, context)
-            .await
-            .unwrap()
-            .into_response();
+        let response = create_substitute_submitter(
+            SubstituteSubmitterCreatePath {},
+            context,
+            Query(QueryParamState::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
