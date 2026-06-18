@@ -9,13 +9,13 @@
       <h3>{{ "finalise.header.title"|trans }}</h3>
       <p>{{ "finalise.header.description"|trans }}</p>
     </div>
-    <div class="step{% if problems.has_severity_or_higher(Severity::Warn) %} warning{% endif %} illustration-errors">
+    <div class="step {{ problems.highest_severity_class() }} illustration-errors">
       <div class="step-main">
         <div class="step-header">
           <h2>{{ "finalise.complete_list.title"|trans }}</h2>
         </div>
         <div class="step-content">
-          <section class="card">
+          <section class="card problems-card">
             <div class="section-heading">
               <h4>{{ "common.general_information"|trans }}</h4>
               <div class="problem-legend">
@@ -140,7 +140,7 @@
         </div>
       </div>
     </div>
-    <div class="step illustration-printing">
+    <div class="step {{ problems.highest_severity_class() }} illustration-printing">
       <div class="step-main">
         <div class="step-header">
           <h2>{{ "finalise.print.title"|trans }}</h2>
@@ -157,6 +157,23 @@
                 <h5>{{ "finalise.print.h1_title"|trans }}</h5>
                 <p>{{ "finalise.print.h1_description"|trans }}</p>
               </div>
+              {% if list_designation != Some(ListDesignation::Blank) %}
+                <div>
+                  {% if list_designation == Some(ListDesignation::Combined) %}
+                    <h5>{{ "finalise.print.h3_2_title"|trans }}</h5>
+                    <p>{{ "finalise.print.h3_2_description"|trans }}</p>
+                  {% else %}
+                    <h5>{{ "finalise.print.h3_1_title"|trans }}</h5>
+                    <p>{{ "finalise.print.h3_1_description"|trans }}</p>
+                  {% endif %}
+                </div>
+              {% endif %}
+              {% if !previously_seated %}
+                <div>
+                  <h5>{{ "finalise.print.h4_title"|trans }}</h5>
+                  <p>{{ "finalise.print.h4_description"|trans }}</p>
+                </div>
+              {% endif %}
               <div>
                 <h5>{{ "finalise.print.h9_title"|trans }}</h5>
                 <p>
@@ -165,15 +182,13 @@
                   {{ "finalise.print.h9_identity"|trans }}
                 </p>
               </div>
-              <div>
-                <h5>{{ "finalise.print.h3_title"|trans }}</h5>
-                <p>{{ "finalise.print.h3_description"|trans }}</p>
-              </div>
             </div>
             <div class="card">
               <div class="step-downloads">
                 <div class="step-download">
-                  {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+                  {% if frisian_export_allowed %}
+                    <div>{{ "common.languages.dutch"|trans }}:</div>
+                  {% endif %}
                   {% if problems.models_downloadable() %}
                     <a href="{{ download_path_nl }}" class="button primary icon-download">{{ "action.all_in_one_zip"|trans
                     }}</a>
@@ -255,7 +270,7 @@
           <h2>{{ "finalise.correction.title"|trans }}</h2>
         </div>
         <div class="step-content less-wide">
-          <p class="alert alert-info">{{ "finalise.correction.notice_date"|trans(&election.omission_notification_date().format("%d-%m-%Y").to_string())|safe }}</p>
+          <p class="alert alert-info">{{ "finalise.correction.until"|trans(&election.omission_period_end_date().format("%d-%m-%Y").to_string())|safe }}</p>
           <p>{{ "finalise.correction.description"|trans }}</p>
           <p>{{ "finalise.correction.deadline"|trans(&election.omission_period_end_date().format("%d-%m-%Y").to_string())|safe }}</p>
         </div>

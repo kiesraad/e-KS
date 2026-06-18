@@ -15,7 +15,6 @@ macro_rules! define_elections {
                 eligible_date_of_birth: $eligible_date_of_birth:expr,
                 nomination_day_date: $nomination_day_date:expr,
                 document_review_date: $document_review_date:expr,
-                omission_notification_date: $omission_notification_date:expr,
                 omission_period_end_date: $omission_period_end_date:expr,
                 public_session_date: $public_session_date:expr,
                 election_date: $election_date:expr
@@ -150,15 +149,6 @@ macro_rules! define_elections {
                 match self {
                     $(
                         Self::$name $(($binding))? => $document_review_date,
-                    )*
-                }
-            }
-
-            pub fn omission_notification_date(&self) -> NaiveDate {
-                #[allow(unused)]
-                match self {
-                    $(
-                        Self::$name $(($binding))? => $omission_notification_date,
                     )*
                 }
             }

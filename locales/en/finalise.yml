@@ -6,8 +6,8 @@ complete_list:
   title: Complete your list
 correction:
   deadline: "The missing documents must be received by the central electoral committee by <strong>{}</strong> at <strong>17:00</strong>."
-  description: "If anything is missing, you will receive a letter from us listing the missing documents. The political group then has two days to rectify the omissions and resubmit the missing documents."
-  notice_date: "You will be notified on <strong>{}</strong>"
+  description: "If you have received an omission letter, the political group has two days to rectify the omissions and resubmit the documents."
+  until: "Omissions can be rectified until <strong>{}</strong>"
   title: Omission period
 delivery:
   appointment: "Please make an appointment for this. The address is:"
@@ -29,15 +29,19 @@ print:
   errors_warning: "Before you can print the documents, you must first resolve all errors in step 1."
   h1_description: "With the H1, as the submitter of the list of candidates, you nominate candidates for an election."
   h1_title: H1 List of candidates
-  h3_description: "With the H3-1, the submitter of the list of candidates receives permission to place the appellation registered by your political group above the list of candidates. This permission can only be granted by a person authorised to do so by the political group."
-  h3_title: H3-1 Authorisation to use appellation
+  h3_1_description: "With the H3-1, the submitter of the list of candidates receives permission to place the appellation registered by your political group above the list of candidates. This permission can only be granted by a person authorised to do so by the political group."
+  h3_1_title: H3-1 Authorisation to use appellation
+  h3_2_description: "With the H3-2, the submitter of the list of candidates receives permission to place the combined appellation above the list of candidates. This permission must be granted by a person authorised to do so by each of the political groups involved."
+  h3_2_title: H3-2 Authorisation to use combined appellation
+  h4_description: "With the H4, your political group collects declarations of support from eligible voters. This is required for political groups that are not currently represented in the relevant body or are participating with a blank list."
+  h4_title: H4 Declarations of support
   h9_consent: "With this form, candidates agree to being placed on the list of candidates. They also agree to their position on the list."
   h9_identity: "When submitting this H9, a legible copy of the identity document must also be included."
   h9_title: H9 Declarations of consent
   incomplete_warning: "Attention! You can print the documents, but they will be considered incomplete by the central electoral committee. Resolve the warnings in step 1 to complete the list."
   title: Print the documents
 verification:
-  correction_notice: "If anything is missing, there are two days during which this can be rectified, known as the 'omission period'. See the next step."
+  correction_notice: "If anything is missing, you will receive a letter from us listing the missing documents."
   description: The central electoral committee reviews the submitted documents for completeness and correctness.
   title: Review of documents
   until: "The review runs until <strong>{}</strong>"

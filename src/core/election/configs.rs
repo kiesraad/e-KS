@@ -23,7 +23,6 @@ super::define_elections! {
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
         // Estimated from EK 2023 planning (official 2027 planning not yet published)
         document_review_date: NaiveDate::from_ymd_opt(2027, 4, 25).unwrap(),
-        omission_notification_date: NaiveDate::from_ymd_opt(2027, 4, 26).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 4, 29).unwrap(),
         public_session_date: NaiveDate::from_ymd_opt(2027, 5, 3).unwrap(),
         election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap()
@@ -55,7 +54,6 @@ super::define_elections! {
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
         document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
-        omission_notification_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
         public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
@@ -96,7 +94,6 @@ super::define_elections! {
         eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
         document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
-        omission_notification_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
         public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()

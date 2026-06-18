@@ -7,6 +7,7 @@ use crate::{
     core::ModelLocale,
     filters,
     finalise::AllProblems,
+    list_designation::ListDesignation,
     list_submitters::ListSubmitter,
 };
 
@@ -19,6 +20,8 @@ pub struct IndexTemplate {
     download_path_nl: String,
     download_path_fry: String,
     frisian_export_allowed: bool,
+    list_designation: Option<ListDesignation>,
+    previously_seated: bool,
 }
 
 pub async fn index(
@@ -40,6 +43,8 @@ pub async fn index(
             }
             .to_string(),
             frisian_export_allowed: context.election.frisian_export_allowed(),
+            list_designation: store.get_political_group().list_designation,
+            previously_seated: store.get_political_group().was_previously_seated(),
         },
         context,
     ))
