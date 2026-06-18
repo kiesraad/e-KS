@@ -4,11 +4,50 @@ set -euo pipefail
 
 export MEMORY_SERVE_QUIET=1
 
+FULL=false
+for arg in "$@"; do
+    case "$arg" in
+        --full) FULL=true ;;
+        -h|--help)
+            echo "Usage: bin/check [--full]"
+            echo
+            echo "  --full  Run the Rust checks with --all-features and also check the"
+            echo "          auth-service, tvs_mock, development, and validate crates."
+            exit 0
+            ;;
+        *)
+            echo "Unknown argument: $arg" >&2
+            echo "Usage: bin/check [--full]" >&2
+            exit 1
+            ;;
+    esac
+done
+
+# Run the standard Rust checks in a crate directory. Any extra arguments (e.g.
+# --all-features) are passed through to check/clippy/test.
+rust_checks() {
+    local dir="$1"
+    shift
+    echo "==> Rust checks: ${dir}"
+    (
+        cd "$dir"
+        cargo check "$@"
+        cargo +nightly fmt --all -- --config imports_granularity="Crate"
+        cargo clippy --all-targets "$@" -- -D warnings
+        cargo test "$@"
+    )
+}
+
 # rust
-cargo check
-cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo clippy --all-targets -- -D warnings
-cargo test
+if [ "$FULL" = true ]; then
+    rust_checks "." --all-features
+    rust_checks "auth-service" --all-features
+    rust_checks "development/tvs_mock" --all-features
+    rust_checks "development" --all-features
+    rust_checks "validate" --all-features
+else
+    rust_checks "."
+fi
 
 # typescript
 ./bin/biome check --fix ./frontend

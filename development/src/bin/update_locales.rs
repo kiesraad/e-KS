@@ -285,11 +285,7 @@ fn write_locale_file(node: &LocaleNode, file: &Path) -> Result<()> {
         .with_context(|| format!("failed to write locale file {}", file.display()))
 }
 
-fn process_locale_file(
-    file: &Path,
-    used_keys: &[String],
-    stats: &mut LocaleStats,
-) -> Result<()> {
+fn process_locale_file(file: &Path, used_keys: &[String], stats: &mut LocaleStats) -> Result<()> {
     stats.files_processed += 1;
     let basename = file
         .file_stem()
