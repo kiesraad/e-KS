@@ -15,15 +15,15 @@ delivery:
   only_on: "Nomination day is on <strong>{}</strong>"
   title: Submit documents
 follow_up_steps:
-  description: "You have completed all the steps within e-KS, but you have not yet completed the full process. Below are a few more steps you need to take to submit everything."
+  description: "After downloading the documents, there are a few more steps to take outside of e-KS. Below, the rest of the nomination process up to and including the public session is described."
   title: Follow-up steps
 header:
   description: "You have created your candidates and lists of candidates. To finalise, there are a few more steps to complete. These steps are outlined on this page."
   title: A few more steps
 hearing:
   date: "The session is on <strong>{}</strong>"
-  description: "Here the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
-  open_to_public: You may attend this session.
+  description: "During this session, the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
+  open_to_public: You may attend the session.
   title: Public session
 print:
   errors_warning: "Before you can print the documents, you must first resolve all errors in step 1."
