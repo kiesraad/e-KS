@@ -75,9 +75,14 @@
     <div class="download-warning-banner">
       <div class="alert alert-warning alert-floating">
         <div>{{ "common.download_warning"|trans }}</div>
-        <a href="/" class="close-overlay active" aria-label="Close">
-          <span>Close</span>
-        </a>
+        <form method="post"
+              action="{{ crate::common::HideDownloadWarningPath{}.to_string() }}">
+          <button type="submit"
+                  class="close-overlay"
+                  aria-label="{{ "action.close"|trans }}">
+            <span>{{ "action.close"|trans }}</span>
+          </button>
+        </form>
       </div>
     </div>
   {% endif %}

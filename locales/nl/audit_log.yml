@@ -50,6 +50,7 @@ event:
   delete_substitute_submitter: Vervanger herstel verzuim verwijderd
   developer_login: Ontwikkelaar ingelogd
   download_file: Bestand gedownload
+  hide_download_warning: Downloadwaarschuwing gesloten
   export_csv: CSV geëxporteerd
   import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd

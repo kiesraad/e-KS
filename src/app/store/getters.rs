@@ -149,17 +149,29 @@ impl AppStore {
         data.events.clone()
     }
 
-    pub fn has_download_events(&self) -> bool {
+    /// We show a warning after the user has downloaded the documents.
+    ///
+    /// If the user closes this warning, an `HideDownloadWarning` event is stored and we should no longer show the warning.
+    pub fn should_show_download_warning(&self) -> bool {
         let data = self.data.read();
         data.events
             .iter()
-            .any(|e| matches!(e.payload, crate::AppEvent::DownloadFile { .. }))
+            .rev()
+            .find(|e| {
+                matches!(
+                    e.payload,
+                    crate::AppEvent::DownloadFile { .. } | crate::AppEvent::HideDownloadWarning
+                )
+            })
+            .is_some_and(|e| matches!(e.payload, crate::AppEvent::DownloadFile { .. }))
     }
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{AppStore, list_submitters::ListSubmitterId, test_utils::sample_list_submitter};
+    use crate::{
+        AppEvent, AppStore, list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
+    };
 
     #[tokio::test]
     async fn substitute_submitters_remain_in_order() {
@@ -197,5 +209,37 @@ mod tests {
                 .unwrap()
                 .is_substitute
         );
+    }
+
+    #[tokio::test]
+    async fn should_show_download_warning_tracks_download_and_hide_events() {
+        let store = AppStore::new_for_test();
+
+        // start without warning
+        assert!(!store.should_show_download_warning());
+
+        // after download, the warning should show
+        store
+            .update(AppEvent::DownloadFile {
+                file_name: "documents.zip".to_string(),
+                download_path: "/download".to_string(),
+            })
+            .await
+            .unwrap();
+        assert!(store.should_show_download_warning());
+
+        // after hiding, the warning should no longer show
+        store.update(AppEvent::HideDownloadWarning).await.unwrap();
+        assert!(!store.should_show_download_warning());
+
+        // after downloading again, the warning should show again
+        store
+            .update(AppEvent::DownloadFile {
+                file_name: "documents.zip".to_string(),
+                download_path: "/download".to_string(),
+            })
+            .await
+            .unwrap();
+        assert!(store.should_show_download_warning());
     }
 }

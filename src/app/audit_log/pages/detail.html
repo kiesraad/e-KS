@@ -32,7 +32,7 @@
       {% endif %}
     </dl>
     {% if detail.changes.is_empty() %}
-      <p>{{ "audit_log.detail.no_changes"|trans }}</p>
+      <p class="mb-md">{{ "audit_log.detail.no_changes"|trans }}</p>
     {% else %}
       <table class="diff-table mb-md">
         <thead>

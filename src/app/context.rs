@@ -47,7 +47,7 @@ impl Context {
 
         let general_information_path = political_group.general_information_path(store);
 
-        let show_download_warning = store.has_download_events();
+        let show_download_warning = store.should_show_download_warning();
 
         Self {
             election,
