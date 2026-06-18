@@ -71,6 +71,16 @@
       {% if let Some(server) = "server_name"|optional_str_value %}· <strong>{{ server }}</strong>{% endif %}
     </span>
   </footer>
+  {% if "show_download_warning"|value_true %}
+    <div class="download-warning-banner">
+      <div class="alert alert-warning alert-floating">
+        <div>{{ "common.download_warning"|trans }}</div>
+        <a href="/" class="close-overlay active" aria-label="Close">
+          <span>Close</span>
+        </a>
+      </div>
+    </div>
+  {% endif %}
   {% block overlay %}{% endblock %}
   {% if "show_success_alert"|value_true %}
     <div class="alert alert-success alert-floating">{{ "common.save_success"|trans }}</div>

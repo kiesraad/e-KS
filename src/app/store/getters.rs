@@ -148,6 +148,13 @@ impl AppStore {
         let data = self.data.read();
         data.events.clone()
     }
+
+    pub fn has_download_events(&self) -> bool {
+        let data = self.data.read();
+        data.events
+            .iter()
+            .any(|e| matches!(e.payload, crate::AppEvent::DownloadFile { .. }))
+    }
 }
 
 #[cfg(test)]
