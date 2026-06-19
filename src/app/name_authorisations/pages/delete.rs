@@ -6,7 +6,7 @@ use axum::{
 
 use crate::{
     AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
-    common::Problematic,
+    common::{HasSeverity, Problematic},
     filters,
     form::{EmptyForm, FormData},
     name_authorisations::NameAuthorisation,
@@ -51,7 +51,7 @@ pub async fn delete_name_authorisation(
         Ok(_) => {
             name_authorisation.delete(&store).await?;
 
-            Ok(query.redirect_or(NameAuthorisation::list_path()))
+            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
         }
     }
 }

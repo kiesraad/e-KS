@@ -1,8 +1,14 @@
 candidates: Kandidaten
+continue_to_finalise: Verder naar afronden
 continue_to_home: Verder naar het startscherm
-continue_to_submit: Verder naar afronden
 description: Kandidaatstellen voor verkiezingen in Nederland
 electoral_districts: Kieskringen
+finalise: Afronden
+finalise_description:
+  download_documents: Download alle benodigde documenten
+  review_problems: Controleer mogelijke problemen
+  view_follow_up_steps: Bekijk de vervolgstappen
+finalise_instruction: Doe dit uiterlijk op de dag van kandidaatstelling
 gender:
   empty: (leeg)
   female: vrouw
@@ -28,12 +34,6 @@ select_election:
   submit: Verder
 step: "Stap {}"
 steps: Stappen
-submit: Afronden
-submit_description:
-  download_documents: Download alle benodigde documenten
-  submit: Lever de kandidatenlijst(en) in
-  view_follow_up_steps: Bekijk de vervolgstappen
-submit_instruction: Doe dit uiterlijk op de dag van kandidaatstelling
 switch_election:
   election: Verkiezing
   existing: Verkiezingen

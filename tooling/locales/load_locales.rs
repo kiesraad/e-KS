@@ -11,6 +11,7 @@ pub fn load_locales(out_dir: &str) {
     for lang in &["en", "nl"] {
         let mut map: phf_codegen::Map<String> = phf_codegen::Map::new();
         let locale_dir = std::path::Path::new("./locales").join(lang);
+        println!("cargo:rerun-if-changed={}", locale_dir.display());
         let locale_files = collect_locale_files(&locale_dir);
 
         writeln!(

@@ -11,6 +11,7 @@ export interface Candidate {
   lastNamePrefix?: string;
   lastName: string;
   firstName?: string;
+  bsn?: string;
   gender?: string;
   dateOfBirth?: DateOfBirth;
   postalCode?: string;

@@ -33,8 +33,8 @@
     --badge-icon: url("../icons/badge-politician.svg");
   }
 
-  &:is(.badge-submit) {
-    --badge-icon: url("../icons/badge-submit.svg");
+  &:is(.badge-finalise) {
+    --badge-icon: url("../icons/badge-finalise.svg");
   }
 
   &:is(.locked) {

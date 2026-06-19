@@ -7,7 +7,7 @@ body {
 body {
   display: flex;
   flex-direction: column;
-  min-width: 1200px;
+  min-width: 960px;
 }
 
 main {

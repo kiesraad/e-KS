@@ -1,10 +1,10 @@
 use crate::app::list_designation::ListDesignation;
 use askama::Template;
-use axum::response::IntoResponse;
+use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
-    common::Problematic,
+    AppError, AppStore, Context, HtmlTemplate, QueryParamState,
+    common::{HasSeverity, Problematic},
     filters,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -25,8 +25,9 @@ pub async fn view_list_submitter(
     _: ListSubmitterViewPath,
     context: Context,
     store: AppStore,
+    Query(query): Query<QueryParamState>,
 ) -> Result<impl IntoResponse, AppError> {
-    let steps = PoliticalGroupSteps::new(&store)?;
+    let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
     let list_submitter = steps.list_submitter.clone();
     let substitute_submitters = steps.substitute_submitters.clone();
     Ok(HtmlTemplate(
@@ -43,11 +44,11 @@ pub async fn view_list_submitter(
 mod tests {
     use super::*;
     use crate::{
-        AppError, AppStore, Context,
+        AppError, AppStore, Context, QueryParamState,
         list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter},
     };
-    use axum::{http::StatusCode, response::IntoResponse};
+    use axum::{extract::Query, http::StatusCode, response::IntoResponse};
 
     #[tokio::test]
     async fn view_list_submitter_shows_current_submitter() -> Result<(), AppError> {
@@ -60,6 +61,7 @@ mod tests {
             ListSubmitterViewPath {},
             Context::new_test_without_db(),
             store,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -83,6 +85,7 @@ mod tests {
             ListSubmitterViewPath {},
             Context::new_test_without_db(),
             store,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()
@@ -106,6 +109,7 @@ mod tests {
             ListSubmitterViewPath {},
             Context::new_test_without_db(),
             store,
+            Query(QueryParamState::default()),
         )
         .await
         .unwrap()

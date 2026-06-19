@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{
     core::{ModelLocale, Pdf},
-    submit::{DocumentData, structs::typst_model_data::TypstModelData},
+    finalise::{DocumentData, structs::typst_model_data::TypstModelData},
 };
 
 #[derive(Debug, Serialize)]

@@ -82,7 +82,7 @@
     </span>
     {% for error in form|error("personal_data.date_of_birth") %}<span class="error">{{ error }}</span>{% endfor %}
     {% if form.data.personal_data.is_date_of_birth_too_young(election) && should_warn %}
-      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.candidate_too_young"|trans }}</span>
+      <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.candidate_too_young_long"|trans }}</span>
     {% else if form.data.personal_data.is_date_of_birth_very_old() && should_warn %}
       <span class="warning">{{ "common.warning_prefix"|trans }}: {{ "problems.very_old_date_of_birth"|trans(&crate::common::DateOfBirth::WARN_AGE.to_string() ) }}</span>
     {% endif %}

@@ -2,7 +2,8 @@ use serde::Serialize;
 use tracing::error;
 
 use crate::{
-    AppError, candidates::Candidate, core::ModelLocale, submit::structs::typst_datetime::TypstDate,
+    AppError, candidates::Candidate, core::ModelLocale,
+    finalise::structs::typst_datetime::TypstDate,
 };
 
 #[derive(Debug, Serialize)]

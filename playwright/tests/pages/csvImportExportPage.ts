@@ -35,11 +35,19 @@ export class CsvImportExportPage {
   }
 
   async uploadCsvFile(filePath: string) {
+    const fileChooserPromise = this.page.waitForEvent("filechooser");
+
     await this.buttonUpload.click();
-    const [fileChooser] = await Promise.all([
-      this.page.waitForEvent("filechooser"),
-      this.buttonContinue.click(),
-    ]);
+
+    // Depending on the flow a confirmation dialog ("Doorgaan") may appear
+    // before the file chooser opens. Wait briefly for it and click it if it
+    // shows; otherwise the chooser was opened directly by the upload click.
+    await this.buttonContinue
+      .waitFor({ state: "visible", timeout: 2000 })
+      .then(() => this.buttonContinue.click())
+      .catch(() => {});
+
+    const fileChooser = await fileChooserPromise;
     await fileChooser.setFiles(path.join(__dirname, "../testdata", filePath));
   }
 }

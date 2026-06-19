@@ -9,7 +9,16 @@ export class ManageCandidateListPage {
   readonly textfieldLastName: Locator;
   readonly textfieldFirstName: Locator;
   readonly textfieldLocality: Locator;
+  readonly textfieldBSN: Locator;
+  readonly textfieldBirthDay: Locator;
+  readonly textfieldBirthMonth: Locator;
+  readonly textfieldBirthYear: Locator;
+  readonly dropdownGender: Locator;
   readonly buttonNext: Locator;
+  readonly textfieldPostalCode: Locator;
+  readonly textfieldHouseNumber: Locator;
+  readonly textfieldHouseNumberAddition: Locator;
+  readonly textfieldStreetName: Locator;
   readonly buttonAdd: Locator;
   readonly buttonEditList: Locator;
   readonly buttonRemoveList: Locator;
@@ -19,7 +28,7 @@ export class ManageCandidateListPage {
   readonly buttonRemoveCandidate: Locator;
   readonly buttonRemovefromApplication: Locator;
   readonly buttonRemovefromList: Locator;
-  readonly buttonFinalize: Locator;
+  readonly buttonFinalise: Locator;
 
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
@@ -35,7 +44,25 @@ export class ManageCandidateListPage {
     this.textfieldLastName = this.page.getByLabel("Achternaam");
     this.textfieldFirstName = this.page.getByLabel("Roepnaam");
     this.textfieldLocality = this.page.getByLabel("Woonplaats");
+    this.textfieldBSN = this.page.getByLabel("Burgerservicenummer (BSN)");
+    this.textfieldBirthDay = this.page.getByRole("textbox", {
+      name: "Geboortedatum",
+    });
+    this.textfieldBirthMonth = this.page.getByRole("textbox", {
+      name: "mm",
+      exact: true,
+    });
+    this.textfieldBirthYear = this.page.getByRole("textbox", { name: "jjjj" });
+    this.dropdownGender = this.page.getByLabel("Geslacht");
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
+    this.textfieldPostalCode = this.page.getByLabel("Postcode");
+    this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", {
+      exact: true,
+    });
+    this.textfieldHouseNumberAddition = this.page.getByLabel(
+      "Huisnummer toevoeging",
+    );
+    this.textfieldStreetName = this.page.getByLabel("Straatnaam");
     this.buttonAdd = this.page.getByRole("button", { name: "Toevoegen" });
     this.buttonEditList = this.page.getByRole("link", { name: "Aanpassen" });
     this.buttonRemoveList = this.page.getByRole("link", {
@@ -60,7 +87,7 @@ export class ManageCandidateListPage {
     this.buttonRemovefromList = this.page.getByRole("button", {
       name: "Uit deze lijst verwijderen",
     });
-    this.buttonFinalize = this.page.getByRole("link", {
+    this.buttonFinalise = this.page.getByRole("link", {
       name: "Verder naar afronden",
     });
   }
@@ -97,11 +124,35 @@ export class ManageCandidateListPage {
       await this.textfieldInitials.fill(candidate.initials);
       await this.textfieldLastName.fill(candidate.lastName);
       await this.textfieldFirstName.fill(candidate.firstName ?? "");
+      // Step 1 "Woonplaats" is the place of residence (personal data).
+      await this.textfieldLocality.fill(candidate.locality ?? "");
+      await this.textfieldBSN.fill(candidate.bsn ?? "");
+      await this.textfieldBirthDay.fill(candidate.dateOfBirth?.day ?? "");
+      await this.textfieldBirthMonth.fill(candidate.dateOfBirth?.month ?? "");
+      await this.textfieldBirthYear.fill(candidate.dateOfBirth?.year ?? "");
+      if (candidate.gender) {
+        await this.dropdownGender.selectOption(candidate.gender);
+      }
       await this.buttonNext.click();
+      await this.textfieldPostalCode.fill(candidate.postalCode ?? "");
+      await this.textfieldHouseNumber.fill(candidate.houseNumber ?? "");
+      await this.textfieldHouseNumberAddition.fill(
+        candidate.houseNumberAddition ?? "",
+      );
+      await this.textfieldStreetName.fill(candidate.streetName ?? "");
+      // Step 2 "Woonplaats" is the address locality (correspondence address).
       await this.textfieldLocality.fill(candidate.locality ?? "");
       await this.buttonAdd.click();
       await this.headingCandidateList.waitFor();
     }
+  }
+
+  async selectDistricts(districts: string[]) {
+    for (const district of districts) {
+      await this.page.getByRole("checkbox", { name: district }).check();
+    }
+    await this.buttonNext.click();
+    await this.headingCandidateList.waitFor();
   }
 
   async removeDistricts(districts: string[]) {

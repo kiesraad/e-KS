@@ -40,6 +40,10 @@
   > .checkbox {
     width: 100%;
   }
+
+  :has(.hide-alert:checked) ~ .hide-on-input {
+    display: none;
+  }
 }
 
 /* Checkbox and radio input styling */

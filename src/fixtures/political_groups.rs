@@ -110,7 +110,7 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::common::Problematic;
+    use crate::common::{HasSeverity, Problematic};
 
     #[tokio::test]
     async fn test_load() {

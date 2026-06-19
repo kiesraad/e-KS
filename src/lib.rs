@@ -79,8 +79,8 @@ pub mod fixtures;
 
 pub use app::{
     AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
-    eks_key_middleware, health_router, list_designation, list_submitters, name_authorisations,
-    persons, political_groups, render_error_pages, submit, substitute_list_submitters,
+    eks_key_middleware, finalise, health_router, list_designation, list_submitters,
+    name_authorisations, persons, political_groups, render_error_pages, substitute_list_submitters,
 };
 
 #[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]

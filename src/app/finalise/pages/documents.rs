@@ -2,7 +2,7 @@ use axum::{extract::State, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, TypstRenderer,
-    submit::{DocumentData, pages::DownloadDocumentsPath},
+    finalise::{DocumentData, pages::DownloadDocumentsPath},
 };
 
 pub async fn gen_documents(

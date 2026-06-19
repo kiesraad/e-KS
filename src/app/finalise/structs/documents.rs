@@ -1,15 +1,15 @@
 use crate::{
     AppError, AppStore, Context, ElectionConfig, TypstRenderer,
     candidate_lists::{CandidateListId, FullCandidateList},
-    common::{Problematic, Severity},
+    common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, Pdf, ZipResponseWriter},
-    list_designation::ListDesignation,
-    submit::structs::{
+    finalise::structs::{
         eml210::Eml210, h1::H1, h3::H3, h4::H4, h9::H9, typst_candidate::ordered_candidates,
         typst_datetime::TypstDatetime, typst_detailed_candidate::TypstDetailedCandidate,
         typst_electoral_districts::TypstElectoralDistricts, typst_model_data::TypstModelData,
         typst_name_authorisation::TypstNameAuthorisation, typst_person::TypstPerson,
     },
+    list_designation::ListDesignation,
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{
@@ -281,7 +281,7 @@ impl DocumentData {
             }
 
             if let Err(err) = zipper.finish().await {
-                error!(error = ?err, "failed to finalize submit documents zip");
+                error!(error = ?err, "failed to finalise submit documents zip");
             }
         });
 
