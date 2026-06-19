@@ -18,6 +18,7 @@ mod place_of_residence;
 mod postal_code;
 mod previous_election_results;
 mod problematic;
+mod severity;
 mod utc_date_time;
 
 pub use address::{Address, DutchAddress, InternationalAddress};
@@ -40,7 +41,7 @@ pub use place_of_residence::PlaceOfResidence;
 pub use postal_code::{InternationalPostalCode, PostalCode};
 pub use previous_election_results::PreviousElectionResults;
 pub use problematic::{
-    EmptyAddressProblems, InfoProblems, PotentialProblems, Problematic, Problems, Severity,
-    WithProblems,
+    EmptyAddressProblems, InfoProblems, PotentialProblems, Problematic, Problems, WithProblems,
 };
+pub use severity::{HasSeverity, Severity};
 pub use utc_date_time::UtcDateTime;

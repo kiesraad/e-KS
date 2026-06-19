@@ -22,7 +22,7 @@
       font-weight: bold;
       white-space: nowrap;
 
-      &:has(.optional, .hint) {
+      &:has(.hint) {
         display: flex;
         align-items: center;
         gap: var(--space-1);
@@ -112,7 +112,7 @@
     .no_bsn_confirmed {
       font-size: var(--font-size-md);
       line-height: var(--leading-md);
-      font-weight: var(--font-weight-300);
+      font-weight: var(--font-weight-light);
       color: var(--gray-500);
 
       display: flex;
@@ -173,7 +173,7 @@
     display: inline-block;
     font-size: var(--font-size-md);
     line-height: var(--leading-md);
-    font-weight: var(--font-weight-300);
+    font-weight: var(--font-weight-light);
     color: var(--gray-600);
     text-wrap: balance;
   }
@@ -182,7 +182,7 @@
   span.hint {
     font-size: var(--font-size-md);
     line-height: var(--leading-md);
-    font-weight: var(--font-weight-300);
+    font-weight: var(--font-weight-light);
     color: var(--gray-500);
     text-wrap: balance;
     display: block;

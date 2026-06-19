@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::{
     core::Pdf,
-    submit::{
+    finalise::{
         DocumentData,
         structs::{
             typst_detailed_candidate::TypstDetailedCandidate, typst_model_data::TypstModelData,

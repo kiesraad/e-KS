@@ -6,13 +6,13 @@ import type { ListSubmitter } from "./models/listSubmitter.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
 import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
+import { FinalisePage } from "./pages/finalisePage.ts";
 import { ListDesignationPage } from "./pages/listDesignationPage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { OverviewPage } from "./pages/overviewPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
-import { SubmitPage } from "./pages/submitPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 
 test.describe("End-to-end", () => {
@@ -126,12 +126,12 @@ test.describe("End-to-end", () => {
       ).toBeVisible();
     }
 
-    //submit list
-    await manageCandidateListPage.buttonFinalize.click();
-    await page.waitForURL("/submit");
-    const _submitPage = new SubmitPage(page);
+    //finalise list
+    await manageCandidateListPage.buttonFinalise.click();
+    await page.waitForURL("/finalise");
+    const _submitPage = new FinalisePage(page);
     const downloadPromise = page.waitForEvent("download");
-    await new SubmitPage(page).linkDownloadNl.click();
+    await new FinalisePage(page).linkDownloadNl.click();
     const download = await downloadPromise;
 
     expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
@@ -243,9 +243,9 @@ test.describe("End-to-end", () => {
       ).toBeVisible();
     }
 
-    //submit list
-    await manageCandidateListPage.buttonFinalize.click();
-    await page.waitForURL("/submit");
+    //finalise list
+    await manageCandidateListPage.buttonFinalise.click();
+    await page.waitForURL("/finalise");
     const downloadLink = page.locator("a", { hasText: "Alles in één zip" });
     await expect(downloadLink).toBeVisible();
     await expect(downloadLink).toHaveAttribute("aria-disabled", "true");

@@ -28,7 +28,7 @@ export class ManageCandidateListPage {
   readonly buttonRemoveCandidate: Locator;
   readonly buttonRemovefromApplication: Locator;
   readonly buttonRemovefromList: Locator;
-  readonly buttonFinalize: Locator;
+  readonly buttonFinalise: Locator;
 
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
@@ -87,7 +87,7 @@ export class ManageCandidateListPage {
     this.buttonRemovefromList = this.page.getByRole("button", {
       name: "Uit deze lijst verwijderen",
     });
-    this.buttonFinalize = this.page.getByRole("link", {
+    this.buttonFinalise = this.page.getByRole("link", {
       name: "Verder naar afronden",
     });
   }

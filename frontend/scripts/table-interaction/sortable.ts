@@ -361,7 +361,7 @@ export class SortableTable {
   }
 
   /**
-   * Mouse up handler that finalizes the drag.
+   * Mouse up handler that finalises the drag.
    */
   private handleMouseUp(event: MouseEvent) {
     if (!this.drag) {
@@ -373,7 +373,7 @@ export class SortableTable {
   }
 
   /**
-   * Touch end handler that finalizes the drag.
+   * Touch end handler that finalises the drag.
    */
   private handleTouchEnd(event: TouchEvent) {
     if (!this.drag?.getActiveTouch(event.changedTouches)) {

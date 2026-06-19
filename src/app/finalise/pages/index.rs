@@ -2,23 +2,30 @@ use askama::Template;
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, core::ModelLocale, filters,
-    list_submitters::ListSubmitter, submit::AllProblems,
+    AppError, AppStore, Context, HtmlTemplate,
+    common::{HasSeverity, Severity},
+    core::ModelLocale,
+    filters,
+    finalise::AllProblems,
+    list_designation::ListDesignation,
+    list_submitters::ListSubmitter,
 };
 
-use super::SubmitPath;
+use super::FinalisePath;
 
 #[derive(Template)]
-#[template(path = "submit/pages/index.html")]
+#[template(path = "finalise/pages/index.html")]
 pub struct IndexTemplate {
     problems: AllProblems,
     download_path_nl: String,
     download_path_fry: String,
     frisian_export_allowed: bool,
+    list_designation: Option<ListDesignation>,
+    previously_seated: bool,
 }
 
 pub async fn index(
-    _: SubmitPath,
+    _: FinalisePath,
     context: Context,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
@@ -36,6 +43,8 @@ pub async fn index(
             }
             .to_string(),
             frisian_export_allowed: context.election.frisian_export_allowed(),
+            list_designation: store.get_political_group().list_designation,
+            previously_seated: store.get_political_group().was_previously_seated(),
         },
         context,
     ))
@@ -70,7 +79,7 @@ mod tests {
         complete_list.create(&store).await?;
         complete_list.append_candidate(&store, person_id).await?;
 
-        let response = index(SubmitPath, Context::new_test_without_db(), store)
+        let response = index(FinalisePath, Context::new_test_without_db(), store)
             .await?
             .into_response();
         let body = response_body_string(response).await;
@@ -125,7 +134,7 @@ mod tests {
             complete_list.append_candidate(&store, person_id).await?;
 
             let response = index(
-                SubmitPath,
+                FinalisePath,
                 Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
                 store,
             )
@@ -186,7 +195,7 @@ mod tests {
             complete_list.append_candidate(&store, person_id).await?;
 
             let response = index(
-                SubmitPath,
+                FinalisePath,
                 Context::new(&store, Session::new_test_with_locale(Locale::Nl)),
                 store,
             )

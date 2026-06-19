@@ -22,7 +22,7 @@
             </a>
           </li>
           <li>
-            <a href="{{ crate::submit::SubmitPath{}.to_string() }}">{{ "common.submit"|trans }}</a>
+            <a href="{{ crate::finalise::FinalisePath{}.to_string() }}">{{ "common.finalise"|trans }}</a>
           </li>
         </ul>
         <ul>
@@ -52,9 +52,7 @@
     </nav>
     <div class="header-content">
       <div>
-        <h1>
-          {% block page_title %}{{ "common.title"|trans }}{% endblock %}
-        </h1>
+        <h1>{% block page_title %}{{ "common.title"|trans }}{% endblock %}</h1>
         {% block page_sub_title %}{% endblock %}
       </div>
       {% block header_action %}{% endblock %}

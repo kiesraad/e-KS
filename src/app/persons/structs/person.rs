@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     AppError, AppEvent, AppStore, ElectionConfig,
     common::{
-        DutchAddress, FullName, Gender, PotentialProblems, Problematic, Problems, Severity,
-        UtcDateTime, WithProblems,
+        DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
+        Severity, UtcDateTime, WithProblems,
     },
     core::AnyLocale,
     id_newtype,

@@ -2,25 +2,10 @@ use serde::Serialize;
 
 use crate::{Locale, trans};
 
-use super::DateOfBirth;
-
-/// Problem severities, in increasing order of severity
-#[derive(PartialEq, Eq, PartialOrd, Ord, Clone, Copy, Debug, Serialize)]
-pub enum Severity {
-    Info,
-    Warn,
-    Error,
-}
-
-impl Severity {
-    pub fn class(&self) -> &'static str {
-        match self {
-            Severity::Info => "info",
-            Severity::Warn => "warning",
-            Severity::Error => "error",
-        }
-    }
-}
+use super::{
+    DateOfBirth,
+    severity::{HasSeverity, Severity},
+};
 
 #[derive(Debug, Clone)]
 pub struct Problems {
@@ -34,35 +19,6 @@ impl Problems {
             potential_problems: Vec::new(),
             info_problems: Vec::new(),
         }
-    }
-
-    /// Returns true if there are no problems and/or info problems
-    pub fn is_all_good(&self) -> bool {
-        self.potential_problems.is_empty() && self.info_problems.is_empty()
-    }
-
-    /// Returns the highest severity of the problems, or None if there are no problems
-    pub fn highest_severity(&self) -> Option<Severity> {
-        if !self.potential_problems.is_empty() {
-            self.potential_problems.iter().map(|p| p.severity()).max()
-        } else if !self.info_problems.is_empty() {
-            Some(Severity::Info)
-        } else {
-            None
-        }
-    }
-
-    /// Returns the CSS class associated with the highest severity
-    pub fn highest_severity_class(&self) -> &'static str {
-        self.highest_severity()
-            .map(|severity| severity.class())
-            .unwrap_or("ok")
-    }
-
-    pub fn has_severity_or_higher(&self, severity: Severity) -> bool {
-        self.highest_severity()
-            .map(|highest| highest >= severity)
-            .unwrap_or(false)
     }
 
     /// Get a summary of the potential problems, if any
@@ -93,6 +49,16 @@ impl Problems {
             result.info_problems.extend(problem.info_problems);
         }
         result
+    }
+}
+
+impl HasSeverity for Problems {
+    fn highest_severity(&self) -> Option<Severity> {
+        self.potential_problems
+            .iter()
+            .map(|p| p.severity())
+            .max()
+            .or_else(|| (!self.info_problems.is_empty()).then_some(Severity::Info))
     }
 }
 
@@ -377,12 +343,6 @@ impl InfoProblems {
 #[cfg(test)]
 mod tests {
     use super::*;
-
-    #[test]
-    fn severity_order() {
-        assert!(Severity::Info < Severity::Warn);
-        assert!(Severity::Warn < Severity::Error);
-    }
 
     #[test]
     fn highest_severity_none_when_no_problems() {

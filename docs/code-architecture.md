@@ -65,7 +65,7 @@ that requires it and whose model is fixed by ministerial regulation: H1 (Art.
 H 1), H3-1 / H3-2 (Art. H 3, vijfde lid), H4 (Art. H 4, zevende lid), H9 (Art.
 H 9, vierde lid).
 
-The `submit` domain validates the assembled data and renders the official forms
+The `finalise` domain validates the assembled data and renders the official forms
 (the **H-models** H1, H3-1, H4, H9) as PDF files; `audit_log` is a read view over all
 recorded changes.
 
@@ -164,7 +164,7 @@ per-domain folders are a few app-level files that tie the domains together:
 
 The current domains are: `audit_log`, `candidate_lists`, `candidates`,
 `common`, `list_submitters`, `name_authorisations`, `persons`,
-`political_groups`, `submit`, and `substitute_list_submitters`.
+`political_groups`, `finalise`, and `substitute_list_submitters`.
 (`common` is the shared domain: reusable field types (names, addresses,
 dates, country codes) and shared pages/components rather than a single
 entity.)
@@ -313,7 +313,7 @@ separate asset directory to deploy:
 
 The official candidate-nomination forms (models H1, H3-1, H4, H9, etc.) are produced
 as PDF files from Typst templates. The `submit` domain assembles serializable
-`typst_*` input structs (`src/app/submit/structs/`) and hands them to a
+`typst_*` input structs (`src/app/finalise/structs/`) and hands them to a
 `TypstRenderer` (`src/core/typst_renderer.rs`), which has two modes selected by
 the `embed-typst` feature:
 
@@ -326,7 +326,7 @@ the `embed-typst` feature:
 
 The renderer is built once at startup (`build_typst_renderer` in `state.rs`),
 stored in `AppState`, and reached by handlers via `State<TypstRenderer>`.
-`submit/pages/documents.rs` renders multiple documents and streams them to the
+`finalise/pages/documents.rs` renders multiple documents and streams them to the
 client as a single ZIP download.
 
 ### [`bag_address_lookup`](https://github.com/tweedegolf/bag-address-lookup): Dutch address lookup
