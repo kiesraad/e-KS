@@ -53,7 +53,6 @@ export class NameAuthorisationPage {
   }
 
   async addNameAuthorisation(nameAuthorisation: NameAuthorisation) {
-    await this.buttonAdd.click();
     await this.textfieldLegalName.fill(nameAuthorisation.legalName);
     await this.textfieldInitials.fill(nameAuthorisation.initials);
     await this.textfieldLastNamePrefix.fill(
