@@ -47,15 +47,13 @@ impl Context {
 
         let general_information_path = political_group.general_information_path(store);
 
-        let show_download_warning = store.should_show_download_warning();
-
         Self {
             election,
             political_group,
             max_candidates,
             multiple_candidate_lists,
             show_success_alert: false,
-            show_download_warning,
+            show_download_warning: false,
             overlay_referrer: false,
             session,
             server_name: None,
@@ -111,7 +109,7 @@ impl<S: AppRequestState> FromRequestParts<S> for Context {
         context.server_name = state.config().server_name.as_deref();
 
         let path = parts.uri.path();
-        context.show_download_warning = context.show_download_warning
+        context.show_download_warning = store.should_show_download_warning()
             && (path.starts_with(crate::list_designation::ListDesignationUpdatePath::PATH)
                 || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH)
                 || path.starts_with(crate::persons::PersonsPath::PATH));

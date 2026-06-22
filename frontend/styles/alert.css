@@ -65,7 +65,7 @@
     border: 1px solid var(--alert-border-color);
     border-radius: var(--rounded-sm);
     z-index: 1000;
-    margin: 0 auto;
+    margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
     animation: alert-float 4.5s ease-in-out forwards;
   }
@@ -101,6 +101,7 @@
   .alert-floating {
     background-size: 1.5rem;
     padding-left: var(--space-14);
+    margin: 0 auto;
     max-width: 46rem;
     animation: none;
     display: flex;
