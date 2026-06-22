@@ -53,7 +53,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     let csb_router = csb::import::router().layer(middleware::from_fn_with_state(
         state.clone(),
         csb_store_middleware,
-    ));
+    )).merge(csb::examination::router());
 
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB

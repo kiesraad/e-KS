@@ -5,6 +5,7 @@
 //! placeholder `import` page plus its own request context, event, and
 //! event-sourced store projection (see [`CsbStoreData`]).
 pub mod import;
+pub mod examination;
 
 mod context;
 mod event;
