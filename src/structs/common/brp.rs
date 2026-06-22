@@ -1,9 +1,12 @@
+use chrono::NaiveDate;
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppError,
-    common::{Bsn, DutchAddress, FullName},
+    common::{
+        Bsn, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FullName, PlaceOfResidence,
+    },
     persons::{Person, PersonalData},
 };
 
@@ -36,10 +39,7 @@ impl BrpClient {
             .send()
             .await?;
 
-        // Check for HTTP errors (400, 401, 403, etc.)
-        let response = response.error_for_status()?;
-
-        dbg!(&response);
+        let parsed_response = response.json::<BrpResponse>().await?;
 
         Ok(parsed_response)
     }
@@ -66,29 +66,157 @@ pub enum BrpQuery {
 #[serde(tag = "type")]
 pub enum BrpResponse {
     #[serde(rename = "RaadpleegMetBurgerservicenummer")]
-    ConsultWithBsn { personen: Vec<BrpPerson> },
+    ConsultWithBsn {
+        #[serde(rename = "personen")]
+        persons: Vec<BrpPerson>,
+    },
 }
 
+// --- Intermediate deserialization structs for the BRP JSON format ---
+#[derive(Deserialize)]
+struct BrpGender {
+    gender: String,
+}
+
+#[derive(Deserialize)]
+struct BrpDatum {
+    datum: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct BrpNaam {
+    voornamen: Option<String>,
+    geslachtsnaam: Option<String>,
+    voorvoegsel: Option<String>,
+    voorletters: Option<String>,
+}
+
+#[derive(Deserialize)]
+struct BrpGeboorte {
+    datum: Option<BrpDatum>,
+}
+
+#[derive(Deserialize)]
+struct BrpVerblijfadres {
+    #[serde(rename = "korteStraatnaam")]
+    korte_straatnaam: Option<String>,
+    huisnummer: Option<u32>,
+    huisnummertoevoeging: Option<String>,
+    postcode: Option<String>,
+    woonplaats: Option<String>,
+}
+
+#[derive(Deserialize)]
+#[serde(tag = "type")]
+enum BrpVerblijfplaats {
+    Adres {
+        verblijfadres: Option<BrpVerblijfadres>,
+    },
+    VerblijfplaatsBuitenland {
+        verblijfadres: Option<BrpVerblijfadres>,
+    },
+    #[serde(other)]
+    Other,
+}
+
+#[derive(Deserialize)]
+struct BrpPersonRaw {
+    burgerservicenummer: Option<String>,
+    geslacht: Option<BrpGender>,
+    naam: Option<BrpNaam>,
+    geboorte: Option<BrpGeboorte>,
+    verblijfplaats: Option<BrpVerblijfplaats>,
+}
+
+// --- BrpPerson with custom deserialization via BrpPersonRaw ---
+
 #[derive(Debug, Deserialize)]
+#[serde(try_from = "BrpPersonRaw")]
 struct BrpPerson {
     name: FullName,
     personal_data: PersonalData,
     address: DutchAddress,
 }
 
+impl From<BrpPersonRaw> for BrpPerson {
+    fn from(raw: BrpPersonRaw) -> Self {
+        let name = raw
+            .naam
+            .map(|naam| FullName {
+                first_name: naam.voornamen.and_then(|s| s.parse().ok()),
+                last_name: naam
+                    .geslachtsnaam
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or_default(),
+                last_name_prefix: naam.voorvoegsel.and_then(|s| s.parse().ok()),
+                initials: naam
+                    .voorletters
+                    .and_then(|s| s.parse().ok())
+                    .unwrap_or_default(),
+            })
+            .unwrap_or_default();
+
+        let bsn = raw
+            .burgerservicenummer
+            .and_then(|s| s.parse::<Bsn>().ok())
+            .map(BsnOrNoneConfirmed::Bsn);
+
+        let gender = raw.geslacht.and_then(|g| g.gender.parse().ok());
+
+        let date_of_birth = raw
+            .geboorte
+            .as_ref()
+            .and_then(|g| g.datum.as_ref())
+            .and_then(|d| d.datum.as_ref())
+            .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
+            .map(DateOfBirth::from);
+
+        let (place_of_residence, country, address) = match raw.verblijfplaats {
+            Some(BrpVerblijfplaats::Adres { verblijfadres }) => {
+                let country: Option<CountryCode> = "NL".parse().ok();
+                let (por, addr) = verblijfadres
+                    .map(|va| {
+                        let por: Option<PlaceOfResidence> =
+                            va.woonplaats.as_deref().and_then(|s| s.parse().ok());
+                        let addr = DutchAddress {
+                            street_name: va.korte_straatnaam.and_then(|s| s.parse().ok()),
+                            house_number: va.huisnummer.and_then(|n| n.to_string().parse().ok()),
+                            house_number_addition: va
+                                .huisnummertoevoeging
+                                .and_then(|s| s.parse().ok()),
+                            locality: va.woonplaats.and_then(|s| s.parse().ok()),
+                            postal_code: va.postcode.and_then(|s| s.parse().ok()),
+                            known_in_bag: None,
+                        };
+                        (por, addr)
+                    })
+                    .unzip();
+                (por.flatten(), country, addr.unwrap_or_default())
+            }
+            _ => (None, None, DutchAddress::default()),
+        };
+
+        BrpPerson {
+            name,
+            personal_data: PersonalData {
+                gender,
+                bsn,
+                date_of_birth,
+                place_of_residence,
+                country,
+            },
+            address,
+        }
+    }
+}
+
 // Misschien beter equality?
 impl TryFrom<BrpPerson> for Person {
     type Error = AppError;
 
-    fn try_from(value: BrpPerson) -> Result<Self, Self::Error> {
+    fn try_from(_value: BrpPerson) -> Result<Self, Self::Error> {
         Err(AppError::InternalServerError)
     }
-}
-
-pub trait BrpVerification {
-    // should become AppError
-    // async fn verify(&self) -> Result<bool, String>;
-    fn verify(&self) -> impl std::future::Future<Output = Result<bool, String>> + Send;
 }
 
 #[cfg(test)]

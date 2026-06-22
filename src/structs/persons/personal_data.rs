@@ -3,8 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     ElectionConfig, OptionAsStrExt,
     common::{
-        BrpVerification, BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, InfoProblems,
-        PlaceOfResidence, PotentialProblems, Problematic, Problems,
+        BsnOrNoneConfirmed, CountryCode, DateOfBirth, Gender, InfoProblems, PlaceOfResidence,
+        PotentialProblems, Problematic, Problems,
     },
 };
 
@@ -17,61 +17,6 @@ pub struct PersonalData {
 
     pub place_of_residence: Option<PlaceOfResidence>,
     pub country: Option<CountryCode>,
-}
-
-impl BrpVerification for PersonalData {
-    async fn verify(&self) -> Result<bool, String> {
-        let client = reqwest::Client::new();
-        let resp = client
-            .post("http://localhost:5010/haalcentraal/api/brp/personen")
-            .header("Content-Type", "application/json")
-            .json(
-                r#"{
-                "type": "RaadpleegMetBurgerservicenummer",
-                "burgerservicenummer": ["100600505"],
-                "fields": [
-                    "burgerservicenummer",
-     			"datumInschrijvingInGemeente",
-     			"geboorte.datum",
-     			"gemeenteVanInschrijving",
-     			"geslacht",
-     			"naam.adellijkeTitelPredicaat",
-     			"naam.geslachtsnaam",
-     			"naam.voornamen",
-     			"naam.voorvoegsel",
-     			"naam.aanduidingNaamgebruik",
-     			"nationaliteiten.datumIngangGeldigheid",
-     			"nationaliteiten.nationaliteit",
-     			"overlijden.datum",
-     			"partners.aangaanHuwelijkPartnerschap.datum",
-     			"partners.naam.geslachtsnaam",
-     			"partners.naam.voorvoegsel",
-     			"partners.ontbindingHuwelijkPartnerschap",
-     			"uitsluitingKiesrecht",
-     			"verblijfplaats.verblijfadres.huisletter",
-     			"verblijfplaats.verblijfadres.huisnummer",
-     			"verblijfplaats.verblijfadres.huisnummertoevoeging",
-     			"verblijfplaats.verblijfadres.officieleStraatnaam",
-     			"verblijfplaats.verblijfadres.postcode",
-     			"verblijfplaats.verblijfadres.woonplaats"
-                ]
-            }"#,
-            )
-            .send()
-            .await
-            .map_err(|_| String::from("Request failed"))?;
-
-        // let status = resp.status();
-        let text = resp
-            .text()
-            .await
-            .map_err(|_| String::from("Malformed response body"))?;
-
-        dbg!(&text);
-
-        let x = vec![1, 2];
-        Ok(true)
-    }
 }
 
 impl Problematic<ElectionConfig> for PersonalData {
@@ -259,20 +204,5 @@ mod tests {
                 .potential_problems
                 .contains(&PotentialProblems::NoCountryOfResidence)
         );
-    }
-
-    #[tokio::test]
-    async fn brp() -> Result<(), String> {
-        let data = PersonalData {
-            // First person from the brp personen mock with a PlaceOfResidence
-            gender: None,
-            bsn: Some("100600505".parse().unwrap()),
-            date_of_birth: Some("06-04-1975".parse().unwrap()),
-            place_of_residence: Some("'s-Gravenhage".parse().unwrap()),
-            country: Some("NL".parse().unwrap()),
-        };
-        let result = data.verify().await?;
-        println!("{result}");
-        panic!();
     }
 }

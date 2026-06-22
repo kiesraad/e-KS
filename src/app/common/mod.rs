@@ -12,12 +12,12 @@ pub use forms::{
     SwitchElectionForm,
 };
 pub use structs::{
-    Address, BSN_NONE_CONFIRMATION, BrpVerification, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES,
-    CountryCode, DateOfBirth, DisplayName, DutchAddress, EmptyAddressProblems, FirstName,
-    FormAction, FullName, Gender, HasSeverity, HouseNumber, HouseNumberAddition, InfoProblems,
-    Initials, InternationalAddress, InternationalPostalCode, LastName, LastNamePrefix, LegalName,
-    Locality, PlaceOfResidence, PostalCode, PotentialProblems, PreviousElectionResults,
-    Problematic, Problems, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
+    Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
+    DateOfBirth, DisplayName, DutchAddress, EmptyAddressProblems, FirstName, FormAction, FullName,
+    Gender, HasSeverity, HouseNumber, HouseNumberAddition, InfoProblems, Initials,
+    InternationalAddress, InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality,
+    PlaceOfResidence, PostalCode, PotentialProblems, PreviousElectionResults, Problematic,
+    Problems, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
 };
 
 pub use pages::{
