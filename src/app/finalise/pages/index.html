@@ -1,32 +1,31 @@
 {% extends "common/components/layout.html" %}
-{% block page_title %}{{ "common.submit"|trans }}{% endblock %}
+{% block page_title %}{{ "common.finalise"|trans }}{% endblock %}
 {% block overview_nav_class %}active{% endblock %}
 {% block content %}
   {% let max_candidates = "max_candidates"|integer_value %}
   {% let election = "election"|election_value %}
-  <div class="finalize">
-    <div class="finalize-header">
-      <h3>Nog een paar stappen</h3>
-      <p>
-        U heeft uw kandidaten en kandidatenlijsten aangemaakt. Om af te ronden, zijn er nog een paar stappen te
-        doorlopen. Deze stappen staan uiteengezet op deze pagina.
-      </p>
+  <div class="finalise">
+    <div class="finalise-header">
+      <h3>{{ "finalise.header.title"|trans }}</h3>
+      <p>{{ "finalise.header.description"|trans }}</p>
     </div>
-    <div class="step warning">
+    <div class="step {{ problems.highest_severity_class() }} illustration-errors">
       <div class="step-main">
         <div class="step-header">
-          <h2>Fouten</h2>
+          <h2>{{ "finalise.complete_list.title"|trans }}</h2>
         </div>
         <div class="step-content">
-          <div class="card">
-            <div class="problem-legend">
-              <span class="error">{{ "problems.legend.error"|trans }}</span>
-              <span class="warning">{{ "problems.legend.warning"|trans }}</span>
-              <span class="info">{{ "problems.legend.info"|trans }}</span>
+          <section class="card problems-card">
+            <div class="section-heading">
+              <h4>{{ "common.general_information"|trans }}</h4>
+              <div class="problem-legend">
+                <span class="info">{{ "problems.legend.info"|trans }}</span>
+                <span class="warning">{{ "problems.legend.warning"|trans }}</span>
+                <span class="error">{{ "problems.legend.error"|trans }}</span>
+              </div>
             </div>
-            <h2>{{ "common.general_information"|trans }}</h2>
             {% if problems.general.flatten().is_empty() %}
-              <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
             {% else %}
               <div class="card">
                 {% if !problems.general.general.is_empty() %}
@@ -63,7 +62,7 @@
                       {% for problem in problems.general.list_submitter.as_ref().unwrap().problems %}
                         <li class="tag link">
                           <a class="{{ problem.severity().class() }}"
-                             href="{{ ListSubmitter::update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
+                             href="{{ ListSubmitter::update_path_from(FinalisePath {}) }}">{{ problem.translate(locale) }}</a>
                         </li>
                       {% endfor %}
                     </ul>
@@ -76,7 +75,7 @@
                       {% for problem in &ss_pp.problems %}
                         <li class="tag link">
                           <a class="{{ problem.severity().class() }}"
-                             href="{{ ss_pp.entity.substitute_update_path_from(SubmitPath {}) }}">{{ problem.translate(locale) }}</a>
+                             href="{{ ss_pp.entity.substitute_update_path_from(FinalisePath {}) }}">{{ problem.translate(locale) }}</a>
                         </li>
                       {% endfor %}
                     </ul>
@@ -84,9 +83,9 @@
                 {% endfor %}
               </div>
             {% endif %}
-            <h2>{{ "common.candidates"|trans }}</h2>
+            <h4>{{ "common.candidates"|trans }}</h4>
             {% if problems.candidates.is_empty() %}
-              <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
             {% else %}
               <div class="card">
                 {% for candidate_pp in &problems.candidates %}
@@ -104,9 +103,9 @@
                 {% endfor %}
               </div>
             {% endif %}
-            <h2>{{ "candidate_list.title_plural"|trans }}</h2>
+            <h4>{{ "candidate_list.title_plural"|trans }}</h4>
             {% if problems.lists.is_empty() %}
-              <div class="card alert alert-success">&nbsp;{{ "problems.no_problems"|trans }}</div>
+              <div class="card success">{{ "problems.no_problems"|trans }}</div>
             {% else %}
               <div class="card">
                 <ul class="warnings tags-list">
@@ -122,7 +121,8 @@
               </div>
             {% endif %}
             {% if !problems.info_problems.is_empty() %}
-              <div class="card mt-xl read-more">
+              <h4>{{ "problems.legend.info"|trans }}</h4>
+              <div class="card read-more">
                 <input type="checkbox" id="info-toggle" class="toggle" hidden>
                 <ul class="warnings tags-list partially-hidden">
                   {% for problem in problems.info_problems %}
@@ -136,42 +136,50 @@
                 <label for="info-toggle" class="more-less center close">{{"action.hide"|trans}}</label>
               </div>
             {% endif %}
-          </div>
+          </section>
         </div>
       </div>
     </div>
-    <div class="step">
+    <div class="step {{ problems.highest_severity_class() }} illustration-printing">
       <div class="step-main">
         <div class="step-header">
-          <h2>Print documenten uit</h2>
+          <h2>{{ "finalise.print.title"|trans }}</h2>
         </div>
         <div class="step-content">
           <section>
-            <div class="alert alert-warning">
-              Let op! De documenten kunt u wel uitprinten, zullen als incompleet worden beschouwd door het centraal
-              stembureau. Los de foutmeldingen in stap 1 op om de lijst compleet te maken.
-            </div>
+            {% if problems.highest_severity() == Some(Severity::Error) %}
+              <div class="alert alert-error">{{ "finalise.print.errors_warning"|trans }}</div>
+            {% else if problems.highest_severity() == Some(Severity::Warn) %}
+              <div class="alert alert-warning">{{ "finalise.print.incomplete_warning"|trans }}</div>
+            {% endif %}
             <div class="step-grid">
               <div>
-                <h5>H1 Kandidatenlijst</h5>
-                <p>Met de H1 stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.</p>
+                <h5>{{ "finalise.print.h1_title"|trans }}</h5>
+                <p>{{ "finalise.print.h1_description"|trans }}</p>
               </div>
+              {% if list_designation != Some(ListDesignation::Blank) %}
+                <div>
+                  {% if list_designation == Some(ListDesignation::Combined) %}
+                    <h5>{{ "finalise.print.h3_2_title"|trans }}</h5>
+                    <p>{{ "finalise.print.h3_2_description"|trans }}</p>
+                  {% else %}
+                    <h5>{{ "finalise.print.h3_1_title"|trans }}</h5>
+                    <p>{{ "finalise.print.h3_1_description"|trans }}</p>
+                  {% endif %}
+                </div>
+              {% endif %}
+              {% if !previously_seated %}
+                <div>
+                  <h5>{{ "finalise.print.h4_title"|trans }}</h5>
+                  <p>{{ "finalise.print.h4_description"|trans }}</p>
+                </div>
+              {% endif %}
               <div>
-                <h5>H9 Instemmingsverklaringen</h5>
+                <h5>{{ "finalise.print.h9_title"|trans }}</h5>
                 <p>
-                  Met dit formulier stemmen kandidaten ermee in dat ze op de kandidatenlijst staan. Ook stemmen ze in met
-                  hun positie op de lijst.
-                  <br />
-                  Bij het inleveren van deze H9 hoort ook een leesbare kopie van het
-                  identiteitsbewijs.
-                </p>
-              </div>
-              <div>
-                <h5>H3-1 Machtiging Plaatsen voor Aanduiding.</h5>
-                <p>
-                  Met de H 3-1 krijgt de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw
-                  politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen. Deze toestemming kan alleen
-                  worden gegeven door iemand die hiertoe gemachtigd is door de politieke groepering.
+                  {{ "finalise.print.h9_consent"|trans }}
+                  <br>
+                  {{ "finalise.print.h9_identity"|trans }}
                 </p>
               </div>
             </div>
@@ -210,22 +218,73 @@
         </div>
       </div>
     </div>
-    <div class="step">
+    <div class="finalise-header">
+      <h3>{{ "finalise.follow_up_steps.title"|trans }}</h3>
+      <p>{{ "finalise.follow_up_steps.description"|trans }}</p>
+    </div>
+    <div class="step illustration-collection">
       <div class="step-main">
         <div class="step-header">
-          <h2>Verzamelen, controleren en ondertekenen</h2>
+          <h2>{{ "finalise.collection.title"|trans }}</h2>
         </div>
-        <div class="step-content">
-          <p>
-            <strong>
-              Door op de onderstaande knop de klikken worden alle gegevens naar het centraal stem bureau digitaal
-              verstuurt.
-              Het geprinte document dient u ook in te leveren.
-            </strong>
-          </p>
-          <div class="card">
-            <button class="button primary">Inleveren</button>
-          </div>
+        <div class="step-content less-wide">
+          <p>{{ "finalise.collection.gather_h9"|trans }}</p>
+          <p>{{ "finalise.collection.pre_submission"|trans }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="step illustration-delivery">
+      <div class="step-main">
+        <div class="step-header">
+          <h2>{{ "finalise.delivery.title"|trans }}</h2>
+        </div>
+        <div class="step-content less-wide">
+          <p class="alert alert-info">{{ "finalise.delivery.only_on"|trans(&election.nomination_day_date().format("%d-%m-%Y").to_string())|safe }}</p>
+          <p>{{ "finalise.delivery.description"|trans }}</p>
+          <p>{{ "finalise.delivery.appointment"|trans }}</p>
+          <address>
+            Zurichtoren
+            <br>
+            Muzenstraat 85
+            <br>
+            2511 WB Den Haag
+          </address>
+        </div>
+      </div>
+    </div>
+    <div class="step illustration-verification">
+      <div class="step-main">
+        <div class="step-header">
+          <h2>{{ "finalise.verification.title"|trans }}</h2>
+        </div>
+        <div class="step-content less-wide">
+          <p class="alert alert-info">{{ "finalise.verification.until"|trans(&election.document_review_date().format("%d-%m-%Y").to_string())|safe }}</p>
+          <p>{{ "finalise.verification.description"|trans }}</p>
+          <p>{{ "finalise.verification.correction_notice"|trans }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="step illustration-correction">
+      <div class="step-main">
+        <div class="step-header">
+          <h2>{{ "finalise.correction.title"|trans }}</h2>
+        </div>
+        <div class="step-content less-wide">
+          <p class="alert alert-info">{{ "finalise.correction.until"|trans(&election.omission_period_end_date().format("%d-%m-%Y").to_string())|safe }}</p>
+          <p>{{ "finalise.correction.description"|trans }}</p>
+          <p>{{ "finalise.correction.deadline"|trans(&election.omission_period_end_date().format("%d-%m-%Y").to_string())|safe }}</p>
+        </div>
+      </div>
+    </div>
+    <div class="step illustration-hearing">
+      <div class="step-main">
+        <div class="step-header">
+          <h2>{{ "finalise.hearing.title"|trans }}</h2>
+        </div>
+        <div class="step-content less-wide">
+          <p class="alert alert-info">{{ "finalise.hearing.date"|trans(&election.public_session_date().format("%d-%m-%Y").to_string())|safe }}</p>
+          <p>{{ "finalise.hearing.description"|trans }}</p>
+          <p>{{ "finalise.hearing.open_to_public"|trans }}</p>
         </div>
       </div>
     </div>

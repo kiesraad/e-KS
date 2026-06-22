@@ -3,13 +3,13 @@ use axum_extra::routing::TypedPath as _;
 use crate::{
     AppError, AppStore, Locale, QueryParamState,
     candidate_lists::{CandidateList, CandidateListSummary, FullCandidateList},
-    common::{IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    common::{HasSeverity, IndexPath, InfoProblems, PotentialProblems, Problematic, Severity},
+    finalise::FinalisePath,
     list_designation::ListDesignation,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     persons::Person,
     political_groups::PoliticalGroup,
-    submit::SubmitPath,
 };
 
 impl PotentialProblems {
@@ -26,33 +26,33 @@ impl PotentialProblems {
     }
 
     pub fn person_fix_path(&self, person: &Person) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             PotentialProblems::IncompleteAddress { .. } => person
                 .update_address_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             PotentialProblems::NoRepresentative | PotentialProblems::RepresentativeProblem(_) => {
                 person
                     .update_representative_path()
-                    .with_query_params(QueryParamState::redirect_to(submit))
+                    .with_query_params(QueryParamState::redirect_to(finalise))
                     .to_string()
             }
             _ => person
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
         }
     }
 
     pub fn general_fix_path(&self) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             PotentialProblems::NoAuthorisedAgent | PotentialProblems::NoLegalName => {
                 NameAuthorisation::list_path().to_string()
             }
             PotentialProblems::NoListSubmitter => ListSubmitter::update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             PotentialProblems::NoCandidateList => CandidateList::list_path().to_string(),
 
@@ -306,20 +306,27 @@ impl AllProblems {
         Ok((list_problems, info_problems))
     }
 
-    pub fn models_downloadable(&self) -> bool {
+    fn flatten_problems(&self) -> impl Iterator<Item = &PotentialProblems> {
         let candidate_iter = self.candidates.iter().flat_map(|ci| &ci.problems);
-        // Lists without candidates cannot produce exports, so their errors don't block downloads
-        let list_iter = self
-            .lists
-            .iter()
-            .filter(|li| !li.problems.contains(&PotentialProblems::NoCandidates))
-            .flat_map(|ci| &ci.problems);
+        let list_iter = self.lists.iter().flat_map(|ci| &ci.problems);
         let general_iter = self.general.flatten();
 
-        !candidate_iter
-            .chain(list_iter)
-            .chain(general_iter)
+        candidate_iter.chain(list_iter).chain(general_iter)
+    }
+
+    pub fn models_downloadable(&self) -> bool {
+        !self
+            .flatten_problems()
             .any(|ii| ii.severity() == Severity::Error)
+    }
+}
+
+impl HasSeverity for AllProblems {
+    fn highest_severity(&self) -> Option<Severity> {
+        self.flatten_problems()
+            .map(|p| p.severity())
+            .max()
+            .or_else(|| (!self.info_problems.is_empty()).then_some(Severity::Info))
     }
 }
 
@@ -398,7 +405,7 @@ pub enum EntityInfoProblems {
 
 impl EntityInfoProblems {
     pub fn fix_path(&self) -> String {
-        let submit = SubmitPath {}.to_string();
+        let finalise = FinalisePath {}.to_string();
         match self {
             EntityInfoProblems::AnyProblem(InfoProblems::NoSubstituteSubmitter) => {
                 ListSubmitter::view_path().to_string()
@@ -414,20 +421,20 @@ impl EntityInfoProblems {
             EntityInfoProblems::List { list, .. } => list.view_path().to_string(),
             EntityInfoProblems::SubstituteSubmitter { submitter, .. } => submitter
                 .substitute_update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::Submitter { .. } => ListSubmitter::update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::Person { person, .. } => person
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
             EntityInfoProblems::NameAuthorisation {
                 name_authorisation, ..
             } => name_authorisation
                 .update_path()
-                .with_query_params(QueryParamState::redirect_to(submit))
+                .with_query_params(QueryParamState::redirect_to(finalise))
                 .to_string(),
         }
     }
@@ -459,6 +466,7 @@ mod tests {
     use crate::{
         AppError, ElectoralDistrict,
         candidate_lists::CandidateListId,
+        common::HasSeverity,
         list_submitters::ListSubmitterId,
         name_authorisations::NameAuthorisationId,
         persons::PersonId,
@@ -673,5 +681,64 @@ mod tests {
         );
 
         Ok(())
+    }
+
+    #[test]
+    fn highest_severity_none() {
+        let problems = AllProblems {
+            general: empty_general(),
+            candidates: Vec::new(),
+            lists: Vec::new(),
+            info_problems: Vec::new(),
+        };
+        assert_eq!(problems.highest_severity(), None);
+    }
+
+    #[test]
+    fn highest_severity_info() {
+        let problems = AllProblems {
+            general: empty_general(),
+            candidates: Vec::new(),
+            lists: Vec::new(),
+            info_problems: vec![EntityInfoProblems::AnyProblem(
+                InfoProblems::NoSubstituteSubmitter,
+            )],
+        };
+        assert_eq!(problems.highest_severity(), Some(Severity::Info));
+    }
+
+    #[test]
+    fn highest_severity_error() {
+        let problems = AllProblems {
+            general: empty_general(),
+            candidates: vec![PersonProblems {
+                entity: sample_person(PersonId::new()),
+                problems: vec![PotentialProblems::NoCandidates], // error
+            }],
+            lists: vec![ListProblems {
+                entity: sample_candidate_list(CandidateListId::new()),
+                problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
+            }],
+            info_problems: vec![EntityInfoProblems::AnyProblem(
+                InfoProblems::NoSubstituteSubmitter,
+            )],
+        };
+        assert_eq!(problems.highest_severity(), Some(Severity::Error));
+    }
+
+    #[test]
+    fn highest_severity_warn() {
+        let problems = AllProblems {
+            general: empty_general(),
+            candidates: Vec::new(),
+            lists: vec![ListProblems {
+                entity: sample_candidate_list(CandidateListId::new()),
+                problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
+            }],
+            info_problems: vec![EntityInfoProblems::AnyProblem(
+                InfoProblems::NoSubstituteSubmitter,
+            )],
+        };
+        assert_eq!(problems.highest_severity(), Some(Severity::Warn));
     }
 }

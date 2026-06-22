@@ -10,8 +10,8 @@ mod index;
 mod integration_tests;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path("/submit", rejection(AppError))]
-pub struct SubmitPath;
+#[typed_path("/finalise", rejection(AppError))]
+pub struct FinalisePath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/generate/{locale}/documents.zip", rejection(AppError))]

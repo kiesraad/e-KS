@@ -7,7 +7,7 @@ use crate::{
         CandidateList, CandidateListSummary, FullCandidateList, pages::CandidateListsPath,
         structs::CandidateListWithProblems,
     },
-    common::Problematic,
+    common::{HasSeverity, Problematic},
     filters,
     persons::Person,
 };

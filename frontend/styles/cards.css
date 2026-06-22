@@ -6,7 +6,7 @@
 
 .cards-home {
   --card-min-height: 26rem;
-  --card-min-width: 22rem;
+  --card-min-width: 16rem;
 }
 
 .cards-candidate-lists {
@@ -52,6 +52,17 @@
     --card-min-height: 18.875rem;
     align-items: center;
     justify-content: center;
+  }
+
+  &.success {
+    background-color: var(--green-100);
+    color: var(--green-700);
+    border: 1px solid var(--green-700);
+    background-image: url("../icons/checkmarkSmall.svg");
+    background-size: 1.5rem;
+    background-repeat: no-repeat;
+    background-position: left var(--space-8) center;
+    padding-left: var(--space-20);
   }
 
   .card-header {
@@ -101,8 +112,9 @@
       color: var(--color-warning-darker);
     }
   }
+
   /* display a card within a card with different color */
-  .card:not(.alert) {
+  .card:not(.success) {
     background-color: var(--gray-25);
   }
 
@@ -124,6 +136,7 @@
       content: "";
       mask-image: url("../icons/chevronRight.svg");
       mask-position: center;
+      mask-repeat: no-repeat;
       transition-duration: 300ms;
       transition-property: translate;
       translate: var(--card-chevron-translate, 0);

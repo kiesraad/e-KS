@@ -321,6 +321,8 @@ impl Problematic<Severity> for Address {
 
 #[cfg(test)]
 mod tests {
+    use crate::common::HasSeverity;
+
     use super::*;
     use std::str::FromStr;
 

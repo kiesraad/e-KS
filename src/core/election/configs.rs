@@ -16,12 +16,16 @@ super::define_elections! {
             fry: "Earste Keamerferkiezings fan de Steaten-Generaal 2027",
             en: "Election of the Senate of the States General 2027",
         },
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
-        election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap(),
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
         electoral_districts: ElectoralDistrict::ek27(),
         nineteen_or_more_seats: true,
-        frisian_export_allowed: false
+        frisian_export_allowed: false,
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 4, 20).unwrap(), // TODO: determine definitive date
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 4, 20).unwrap(),
+        // Estimated from EK 2023 planning (official 2027 planning not yet published)
+        document_review_date: NaiveDate::from_ymd_opt(2027, 4, 25).unwrap(),
+        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 4, 29).unwrap(),
+        public_session_date: NaiveDate::from_ymd_opt(2027, 5, 3).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap()
     },
 
     PS27(province: Province) {
@@ -31,9 +35,6 @@ super::define_elections! {
             fry: "Provinsjale Steateferkiezings 2027",
             en: "Elections of the Provincial Council 2027",
         },
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
-        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap(),
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match province {
             Province::GR => &[ElectoralDistrict::PsGroningen],
             Province::FR => &[ElectoralDistrict::PsLeeuwarden],
@@ -49,7 +50,13 @@ super::define_elections! {
             Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
         },
         nineteen_or_more_seats: true, // for this election, all provinces have >= 19 seats
-        frisian_export_allowed: matches!(province, Province::FR)
+        frisian_export_allowed: matches!(province, Province::FR),
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
+        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
+        public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     },
 
     WS27(water_council: WaterCouncil) {
@@ -59,9 +66,6 @@ super::define_elections! {
             fry: "Wetterskipsferkiezings 2027",
             en: "Elections of the Water Authority 2027",
         },
-        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
-        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap(),
-        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
         electoral_districts: match water_council {
             WaterCouncil::Noorderzijlvest => &[ElectoralDistrict::WsNoorderzijlvest],
             WaterCouncil::Fryslan => &[ElectoralDistrict::WsFryslan],
@@ -86,7 +90,13 @@ super::define_elections! {
             WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
         },
         nineteen_or_more_seats: true, // for this election, all councils have >= 19 seats
-        frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan)
+        frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan),
+        eligible_date_of_birth: NaiveDate::from_ymd_opt(2014, 2, 1).unwrap(), // TODO: determine definitive date
+        nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
+        document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
+        omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
+        public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+        election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     }
 }
 

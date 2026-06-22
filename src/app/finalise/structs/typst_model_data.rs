@@ -1,6 +1,6 @@
 use crate::{
     core::{ElectionType, ModelLocale},
-    submit::structs::{TypstCandidate, TypstDatetime, TypstElectoralDistricts},
+    finalise::structs::{TypstCandidate, TypstDatetime, TypstElectoralDistricts},
 };
 use serde::Serialize;
 

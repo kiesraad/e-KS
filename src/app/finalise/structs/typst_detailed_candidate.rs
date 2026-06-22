@@ -5,7 +5,7 @@ use crate::{
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed},
     core::ModelLocale,
-    submit::structs::{
+    finalise::structs::{
         typst_candidate::TypstCandidate, typst_person::TypstPerson,
         typst_postal_address::TypstPostalAddress,
     },

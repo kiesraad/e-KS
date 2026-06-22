@@ -9,6 +9,7 @@
     position: sticky;
     top: var(--space-6);
     left: 0;
+    min-width: 16rem;
   }
 
   .cards {
