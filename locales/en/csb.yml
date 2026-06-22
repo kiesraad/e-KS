@@ -1,2 +1,16 @@
 examination: Examination
+finish_examination: Finish examination
+finish_instruction:
+  create_model_i1: Create model I1
+  create_defects: Create notice of defects
+action:
+  finish: Finish
+  add_party: Add political group
+progress: Progress
+added: Added
+status:
+  in_progress: In progress
+  approved: Approved
+  omission: Defect added
+finished: Finished
 
