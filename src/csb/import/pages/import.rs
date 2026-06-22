@@ -7,8 +7,10 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, StreamId,
-    filters, redirect_success, utils::parse_hash,
+    filters, political_groups::PoliticalGroup, redirect_success, utils::parse_hash,
 };
+
+use crate::csb::import::CsbPoliticalGroups;
 
 use super::CsbImportPath;
 
@@ -16,13 +18,25 @@ use super::CsbImportPath;
 #[template(path = "import/pages/import.html")]
 struct CsbImportTemplate {
     csrf_token: String,
+    political_groups: Vec<PoliticalGroup>,
 }
 
 /// Render the placeholder import page.
-pub async fn import(_: CsbImportPath, context: CsbContext) -> Result<Response, AppError> {
+pub async fn import(
+    _: CsbImportPath,
+    context: CsbContext,
+    CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
+) -> Result<Response, AppError> {
     let csrf_token = context.session.csrf_token.to_string();
 
-    Ok(HtmlTemplate(CsbImportTemplate { csrf_token }, context).into_response())
+    Ok(HtmlTemplate(
+        CsbImportTemplate {
+            csrf_token,
+            political_groups,
+        },
+        context,
+    )
+    .into_response())
 }
 
 /// Form payload for the import page: the chain hash of the package to import.
@@ -85,15 +99,20 @@ pub async fn import_submit(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AppState, CsbContext, test_utils::response_body_string};
     use axum::http::StatusCode;
+
+    use crate::{AppState, CsbContext, test_utils::response_body_string};
 
     #[tokio::test]
     async fn import_renders_placeholder_page() -> Result<(), AppError> {
-        let response = import(CsbImportPath {}, CsbContext::new_test())
-            .await
-            .unwrap()
-            .into_response();
+        let response = import(
+            CsbImportPath {},
+            CsbContext::new_test(),
+            CsbPoliticalGroups(vec![]),
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;

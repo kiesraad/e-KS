@@ -191,6 +191,7 @@ fn message_is_safe_to_log(err: &AppError) -> bool {
         AppError::Unauthorised
             | AppError::GenericNotFound
             | AppError::CsrfTokenInvalid
+            | AppError::UserError(_)
             | AppError::NotFound(_)
             | AppError::IncompleteData(_)
     )
