@@ -7,7 +7,8 @@ use serde::{Deserialize, Serialize};
 
 id_newtype!(pub struct NameAuthorisationId);
 
-#[derive(Default, Debug, Clone, Serialize, Deserialize, PartialEq)]
+#[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct NameAuthorisation {
     pub id: NameAuthorisationId,
     pub name: FullName,

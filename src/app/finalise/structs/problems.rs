@@ -68,7 +68,8 @@ impl PotentialProblems {
 }
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct AllProblems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
@@ -337,7 +338,8 @@ impl HasSeverity for AllProblems {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
     pub name_authorisations: Vec<EntityProblems<NameAuthorisation>>,
@@ -364,7 +366,8 @@ impl GeneralProblems {
     }
 }
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct EntityProblems<T> {
     pub entity: T,
     pub problems: Vec<PotentialProblems>,
@@ -385,7 +388,8 @@ impl<T: Problematic<()>> EntityProblems<T> {
 pub type ListProblems = EntityProblems<CandidateList>;
 pub type PersonProblems = EntityProblems<Person>;
 
-#[derive(Debug, PartialEq, Clone)]
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub enum EntityInfoProblems {
     AnyProblem(InfoProblems),
     List {
