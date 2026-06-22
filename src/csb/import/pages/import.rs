@@ -7,7 +7,7 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
-    StreamId, filters, political_groups::PoliticalGroup, redirect_success, trans,
+    Scope, StreamId, filters, political_groups::PoliticalGroup, redirect_success, trans,
     utils::parse_hash_prefix,
 };
 
@@ -111,6 +111,27 @@ async fn do_import(
         .await?
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
     let source_stream_id = StreamId::from(source_stream_id);
+
+    // Reject if this source stream has already been imported.
+    for (stream_id, election) in state
+        .csb_store_registry
+        .streams_by_scope(Scope::CentralElectoralCommittee)
+        .await?
+    {
+        let store = state
+            .csb_store_registry
+            .get_or_create(stream_id, election)
+            .await?;
+        let already_imported = store.data.read().events.first().is_some_and(|e| {
+            matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
+        });
+        if already_imported {
+            return Err(AppError::UserError(trans!(
+                "csb.import.error.already_imported",
+                locale
+            )));
+        }
+    }
 
     // Replay the source stream up to the matched event into a snapshot.
     let source_store = state
