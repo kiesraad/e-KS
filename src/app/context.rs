@@ -113,7 +113,8 @@ impl<S: AppRequestState> FromRequestParts<S> for Context {
         let path = parts.uri.path();
         context.show_download_warning = context.show_download_warning
             && (path.starts_with(crate::list_designation::ListDesignationUpdatePath::PATH)
-                || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH));
+                || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH)
+                || path.starts_with(crate::persons::PersonsPath::PATH));
 
         context.show_success_alert = parts
             .uri
