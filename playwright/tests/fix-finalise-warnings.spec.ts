@@ -34,7 +34,7 @@ test.describe("fix submit warnings", async () => {
     await expect(finalisePage.linkRegisteredDesignation).not.toBeVisible();
 
     await finalisePage.linkNoLegalName.click();
-    await nameAuthorisationPage.addNameAuthorisation(authorisation);
+    await nameAuthorisationPage.editNameAuthorisation([authorisation]);
     await page.waitForURL("/finalise");
     await expect(finalisePage.linkNoLegalName).not.toBeVisible();
   });
