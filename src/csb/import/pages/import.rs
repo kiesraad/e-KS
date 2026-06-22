@@ -6,8 +6,9 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, StreamId,
-    filters, political_groups::PoliticalGroup, redirect_success, utils::parse_hash,
+    AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
+    StreamId, filters, political_groups::PoliticalGroup, redirect_success, trans,
+    utils::parse_hash_prefix,
 };
 
 use crate::csb::import::CsbPoliticalGroups;
@@ -19,6 +20,26 @@ use super::CsbImportPath;
 struct CsbImportTemplate {
     csrf_token: String,
     political_groups: Vec<PoliticalGroup>,
+    hash: String,
+    error: Option<String>,
+}
+
+fn render_import(
+    context: CsbContext,
+    political_groups: Vec<PoliticalGroup>,
+    hash: String,
+    error: Option<String>,
+) -> Response {
+    HtmlTemplate(
+        CsbImportTemplate {
+            csrf_token: context.session.csrf_token.to_string(),
+            political_groups,
+            hash,
+            error,
+        },
+        context,
+    )
+    .into_response()
 }
 
 /// Render the placeholder import page.
@@ -27,16 +48,12 @@ pub async fn import(
     context: CsbContext,
     CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
 ) -> Result<Response, AppError> {
-    let csrf_token = context.session.csrf_token.to_string();
-
-    Ok(HtmlTemplate(
-        CsbImportTemplate {
-            csrf_token,
-            political_groups,
-        },
+    Ok(render_import(
         context,
-    )
-    .into_response())
+        political_groups,
+        String::new(),
+        None,
+    ))
 }
 
 /// Form payload for the import page: the chain hash of the package to import.
@@ -47,32 +64,52 @@ pub struct ImportForm {
 }
 
 /// Import the package identified by the submitted chain hash.
-///
+pub async fn import_submit(
+    _: CsbImportPath,
+    State(state): State<AppState>,
+    context: CsbContext,
+    CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
+    Form(form): Form<ImportForm>,
+) -> Result<Response, AppError> {
+    context.session.consume_csrf(&form.csrf_token)?;
+
+    let hash = form.hash.clone();
+    let locale = context.session.locale;
+    match do_import(&state, form, locale).await {
+        Ok(response) => Ok(response),
+        Err(AppError::UserError(msg)) => {
+            Ok(render_import(context, political_groups, hash, Some(msg)))
+        }
+        Err(AppError::AmbiguousHash) => Ok(render_import(
+            context,
+            political_groups,
+            hash,
+            Some(trans!("csb.import.error.ambiguous_hash", locale)),
+        )),
+        Err(e) => Err(e),
+    }
+}
+
 /// Locates the political-group event whose hash matches the entry, replays that
 /// stream up to the event into an [`AppStoreData`] snapshot (its event log
 /// excluded), and records the snapshot in a [`CsbEvent::Import`] persisted under
 /// a fresh CSB stream keyed on the source election. The source `stream_id` is
 /// carried on the event for reference; it is never reused as the CSB partition,
 /// which would collide with the app's own events there.
-pub async fn import_submit(
-    _: CsbImportPath,
-    State(state): State<AppState>,
-    context: CsbContext,
-    Form(form): Form<ImportForm>,
+async fn do_import(
+    state: &AppState,
+    form: ImportForm,
+    locale: Locale,
 ) -> Result<Response, AppError> {
-    context.session.consume_csrf(&form.csrf_token)?;
-
-    let hash_prefix = parse_hash(&form.hash)
-        .ok_or_else(|| AppError::UserError("The entered hash is not valid".to_string()))?;
+    let hash_prefix = parse_hash_prefix(&form.hash)
+        .ok_or_else(|| AppError::UserError(trans!("csb.import.error.invalid_hash", locale)))?;
 
     let (source_stream_id, source_election, event_id) = state
         .store_registry
         .persistence()
         .find_event_by_hash_prefix(&hash_prefix)
         .await?
-        .ok_or_else(|| {
-            AppError::UserError("No package was found for the entered hash".to_string())
-        })?;
+        .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
     let source_stream_id = StreamId::from(source_stream_id);
 
     // Replay the source stream up to the matched event into a snapshot.
@@ -129,6 +166,7 @@ mod tests {
             CsbImportPath {},
             State(state),
             CsbContext::new_test(),
+            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token: "wrong".to_string(),
                 hash: "F381 3DE7".to_string(),
@@ -145,18 +183,21 @@ mod tests {
         let context = CsbContext::new_test();
         let csrf_token = context.session.csrf_token.to_string();
 
-        let result = import_submit(
+        let response = import_submit(
             CsbImportPath {},
             State(state),
             context,
+            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token,
                 hash: "not-a-hash".to_string(),
             }),
         )
-        .await;
+        .await
+        .unwrap()
+        .into_response();
 
-        assert!(matches!(result, Err(AppError::UserError(_))));
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]
@@ -167,17 +208,20 @@ mod tests {
         let context = CsbContext::new_test();
         let csrf_token = context.session.csrf_token.to_string();
 
-        let result = import_submit(
+        let response = import_submit(
             CsbImportPath {},
             State(state),
             context,
+            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token,
                 hash: "F381 3DE7 96D3 8033".to_string(),
             }),
         )
-        .await;
+        .await
+        .unwrap()
+        .into_response();
 
-        assert!(matches!(result, Err(AppError::UserError(_))));
+        assert_eq!(response.status(), StatusCode::OK);
     }
 }

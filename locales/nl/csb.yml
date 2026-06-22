@@ -1,1 +1,9 @@
-{}
+form:
+  add_political_group: Politieke groepering toevoegen
+  hash: Voer het begin van de hash code in
+  import: Importeer
+import:
+  error:
+    ambiguous_hash: De ingevoerde hash komt overeen met meer dan één dataset; voer meer tekens in.
+    invalid_hash: "Voer een geldige hash in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4 5E)."
+    not_found: Er is geen data gevonden voor de ingevoerde hash.

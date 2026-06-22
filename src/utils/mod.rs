@@ -23,7 +23,7 @@ pub mod embed_typst;
 pub mod test_utils;
 
 pub use bsn::random_bsn;
-pub use format_hash::{format_hash, parse_hash};
+pub use format_hash::{format_hash, parse_hash_prefix};
 pub use no_cache_headers::generate_attachment_headers;
 pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use overlay::Overlay;

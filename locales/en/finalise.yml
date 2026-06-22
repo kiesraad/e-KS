@@ -7,8 +7,8 @@ complete_list:
 correction:
   deadline: "The missing documents must be received by the central electoral committee by <strong>{}</strong> at <strong>17:00</strong>."
   description: "If you have received an omission letter, the political group has two days to rectify the omissions and resubmit the documents."
-  until: "Omissions can be rectified until <strong>{}</strong>"
   title: Omission period
+  until: "Omissions can be rectified until <strong>{}</strong>"
 delivery:
   appointment: "Please make an appointment for this. The address is:"
   description: On nomination day you must submit your documents to the central electoral committee.

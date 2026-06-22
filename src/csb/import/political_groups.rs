@@ -1,5 +1,7 @@
-use axum::extract::{FromRef, FromRequestParts};
-use axum::http::request::Parts;
+use axum::{
+    extract::{FromRef, FromRequestParts},
+    http::request::Parts,
+};
 
 use crate::{
     AppError, CsbStoreData, Scope, political_groups::PoliticalGroup, store::StoreRegistry,

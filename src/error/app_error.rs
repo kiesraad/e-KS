@@ -54,6 +54,9 @@ pub enum AppError {
     /// allowed number of candidates ([`crate::MAX_CANDIDATES`]).
     TooManyCandidates,
 
+    /// A hash prefix matched more than one event; the user must supply a longer prefix.
+    AmbiguousHash,
+
     /// A persisted event could not be decrypted or deserialized.
     /// Indicates tampering, a wrong key, or a corrupt/unsupported frame.
     EventDecodeError(String),
@@ -76,6 +79,7 @@ impl Display for AppError {
                 "Cannot add more than {} candidates to a candidate list",
                 crate::MAX_CANDIDATES
             ),
+            AppError::AmbiguousHash => write!(f, "Ambiguous hash prefix"),
             AppError::InternalServerError => write!(f, "Internal server error"),
             AppError::JsonRejection(err) => write!(f, "JSON error: {err}"),
             AppError::MissingEnvVar(var) => write!(f, "Missing environment variable: {var}"),
