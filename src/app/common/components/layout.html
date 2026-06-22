@@ -71,6 +71,21 @@
       {% if let Some(server) = "server_name"|optional_str_value %}· <strong>{{ server }}</strong>{% endif %}
     </span>
   </footer>
+  {% if "show_download_warning"|value_true %}
+    <div class="download-warning-banner">
+      <div class="alert alert-warning alert-floating">
+        <div>{{ "common.download_warning"|trans }}</div>
+        <form method="post"
+              action="{{ crate::common::HideDownloadWarningPath{}.to_string() }}">
+          <button type="submit"
+                  class="close-overlay"
+                  aria-label="{{ "action.close"|trans }}">
+            <span>{{ "action.close"|trans }}</span>
+          </button>
+        </form>
+      </div>
+    </div>
+  {% endif %}
   {% block overlay %}{% endblock %}
   {% if "show_success_alert"|value_true %}
     <div class="alert alert-success alert-floating">{{ "common.save_success"|trans }}</div>
