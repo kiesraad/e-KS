@@ -27,8 +27,7 @@ impl BrpClient {
         }
     }
 
-    /// Zoek personen endpoint (POST /personen)
-    pub async fn get_persons(&self, query: &BrpQuery) -> Result<BrpResponse, AppError> {
+    pub async fn get_persons(&self, query: &BrpQuery) -> Result<Vec<BrpPerson>, AppError> {
         let url = format!("{}/{}", self.base_url, self.persons_endpoint);
 
         let response = self
@@ -39,9 +38,57 @@ impl BrpClient {
             .send()
             .await?;
 
-        let parsed_response = response.json::<BrpResponse>().await?;
+        match response.json::<BrpResponse>().await? {
+            BrpResponse::ConsultWithBsn { persons } => Ok(persons),
+        }
+    }
 
-        Ok(parsed_response)
+    async fn verify(&self, person: &Person) -> Result<bool, AppError> {
+        let query = match person.personal_data.bsn {
+            Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
+                burgerservicenummer: vec![bsn.clone()],
+                fields: vec![
+                    "burgerservicenummer".to_string(),
+                    "geboorte".to_string(),
+                    "geslacht".to_string(),
+                    "naam".to_string(),
+                    "verblijfplaats".to_string(),
+                ],
+            },
+            Some(BsnOrNoneConfirmed::NoneConfirmed) => {
+                unimplemented!("BRP search with address? Or manual verification")
+            }
+            None => {
+                unimplemented!(
+                    "Return error, because this person should have a BSN (or none confirmed)?"
+                )
+            }
+        };
+
+        let brp_persons = self.get_persons(&query).await?;
+        let brp_person = match brp_persons.as_slice() {
+            [] => todo!("Handle person not found"),
+            [brp_person] => brp_person,
+            [..] => todo!("Handle person not unique"),
+        };
+
+        Ok([
+            // Check all, except `known_in_bag`
+            person.address.street_name == brp_person.address.street_name,
+            person.address.house_number == brp_person.address.house_number,
+            person.address.house_number_addition == brp_person.address.house_number_addition,
+            person.address.locality == brp_person.address.locality,
+            person.address.postal_code == brp_person.address.postal_code,
+            // Don't check First name (roepnaam)
+            person.name.last_name == brp_person.name.last_name,
+            person.name.last_name_prefix == brp_person.name.last_name_prefix,
+            person.name.initials == brp_person.name.initials,
+            // Check all fields of personal_data
+            brp_person.personal_data == person.personal_data,
+        ]
+        .iter()
+        .inspect(|f| println!("{f:?}"))
+        .all(|&b| b))
     }
 }
 
@@ -75,6 +122,7 @@ pub enum BrpResponse {
 // --- Intermediate deserialization structs for the BRP JSON format ---
 #[derive(Deserialize)]
 struct BrpGender {
+    #[serde(rename = "code")]
     gender: String,
 }
 
@@ -128,8 +176,6 @@ struct BrpPersonRaw {
     verblijfplaats: Option<BrpVerblijfplaats>,
 }
 
-// --- BrpPerson with custom deserialization via BrpPersonRaw ---
-
 #[derive(Debug, Deserialize)]
 #[serde(try_from = "BrpPersonRaw")]
 struct BrpPerson {
@@ -179,6 +225,7 @@ impl From<BrpPersonRaw> for BrpPerson {
                         let por: Option<PlaceOfResidence> =
                             va.woonplaats.as_deref().and_then(|s| s.parse().ok());
                         let addr = DutchAddress {
+                            // TODO: Confirm that this should be korte_straatnaam
                             street_name: va.korte_straatnaam.and_then(|s| s.parse().ok()),
                             house_number: va.huisnummer.and_then(|n| n.to_string().parse().ok()),
                             house_number_addition: va
@@ -210,17 +257,10 @@ impl From<BrpPersonRaw> for BrpPerson {
     }
 }
 
-// Misschien beter equality?
-impl TryFrom<BrpPerson> for Person {
-    type Error = AppError;
-
-    fn try_from(_value: BrpPerson) -> Result<Self, Self::Error> {
-        Err(AppError::InternalServerError)
-    }
-}
-
 #[cfg(test)]
 mod tests {
+    use crate::test_utils::sample_person_from_brp;
+
     use super::*;
 
     #[tokio::test]
@@ -234,5 +274,19 @@ mod tests {
 
         let response = brp_client.get_persons(&query).await.unwrap();
         println!("{:?}", response);
+    }
+
+    #[tokio::test]
+    async fn brp_verify() {
+        let brp_client =
+            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+
+        let person = sample_person_from_brp();
+
+        match brp_client.verify(&person).await {
+            Err(e) => panic!("brp verification error: {}", e.to_string()),
+            Ok(false) => panic!("Valid BRP person should verify"),
+            _ => {}
+        }
     }
 }
