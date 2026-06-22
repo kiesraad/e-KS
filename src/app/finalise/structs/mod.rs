@@ -5,6 +5,7 @@ mod h3;
 mod h4;
 mod h9;
 pub mod problems;
+mod problems_sort;
 mod typst_candidate;
 mod typst_datetime;
 mod typst_detailed_candidate;

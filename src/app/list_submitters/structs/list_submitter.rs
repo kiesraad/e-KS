@@ -68,6 +68,7 @@ impl From<ListSubmitter> for ListSubmitterData {
 }
 
 #[derive(Default, Debug, Clone, Serialize, Deserialize)]
+#[cfg_attr(test, derive(PartialEq))]
 pub struct ListSubmitter {
     pub id: ListSubmitterId,
     pub name: FullName,
