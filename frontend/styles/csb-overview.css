@@ -66,11 +66,12 @@
         font-weight: var(--font-weight-bold);
     }
 
-    .tag {
+    .status {
         border-radius: var(--rounded-xl);
         border: 1px solid;
         width: fit-content;
         padding: var(--space-1) var(--space-2);
+        font-size: var(--font-size-sm);
 
         &.in-progress {
             border-color: var(--blue-200);

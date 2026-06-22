@@ -13,3 +13,6 @@ status:
   approved: Goedgekeurd
   omission: Verzuim toegevoegd
 finished: Afgerond
+brp:
+  correct: Correct
+  errors: Fouten

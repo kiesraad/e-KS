@@ -39,6 +39,10 @@
   mask-image: url("../icons/error.svg");
 }
 
+.tag.link a.ok::after {
+  mask-image: url("../icons/checkmarkSmall.svg");
+}
+
 .tag a {
   border-radius: var(--rounded-md);
   border: 1px solid var(--tag-border-color, var(--gray-50));
@@ -68,6 +72,12 @@
   &:has(.error) {
     --tag-border-color: var(--red-600);
     --tag-color: var(--red-700);
+  }
+
+  &:is(.ok),
+  &:has(.ok) {
+    --tag-border-color: var(--green-600);
+    --tag-color: var(--green-700);
   }
 
   &:hover {

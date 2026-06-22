@@ -4,8 +4,8 @@
 //! electoral council side of the workflow. For now it carries a single
 //! placeholder `import` page plus its own request context, event, and
 //! event-sourced store projection (see [`CsbStoreData`]).
-pub mod import;
 pub mod examination;
+pub mod import;
 
 mod context;
 mod event;

@@ -10,6 +10,5 @@ mod overview;
 pub struct CsbExaminationOverviewPath;
 
 pub fn router() -> Router<AppState> {
-    Router::new()
-        .typed_get(overview::overview)
+    Router::new().typed_get(overview::overview)
 }

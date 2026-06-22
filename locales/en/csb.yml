@@ -13,4 +13,6 @@ status:
   approved: Approved
   omission: Defect added
 finished: Finished
-
+brp:
+  correct: Correct
+  errors: Errors
