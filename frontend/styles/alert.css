@@ -59,7 +59,8 @@
     background-size: 1rem;
     position: fixed;
     left: 4rem;
-    padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-xl);
+    right: 4rem;
+    padding: var(--space-sm) var(--space-md) var(--space-sm) var(--space-12);
     bottom: var(--space-lg);
     border: 1px solid var(--alert-border-color);
     border-radius: var(--rounded-sm);
@@ -67,7 +68,6 @@
     margin: 0;
     box-shadow: 0 0.2rem 0.5rem rgba(0, 0, 0, 0.15);
     animation: alert-float 4.5s ease-in-out forwards;
-    text-transform: capitalize;
   }
 }
 
@@ -90,5 +90,41 @@
   100% {
     transform: translateX(-120%);
     opacity: 0;
+  }
+}
+
+.download-warning-banner {
+  position: fixed;
+  bottom: 0;
+  z-index: 10000;
+
+  .alert-floating {
+    background-size: 1.5rem;
+    padding-left: var(--space-14);
+    margin: 0 auto;
+    max-width: 46rem;
+    animation: none;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .close-overlay {
+    display: block;
+    flex-shrink: 0;
+    background-color: transparent;
+    background-image: url("../icons/cross.svg");
+    background-repeat: no-repeat;
+    background-size: 1.5rem;
+    background-position: right center;
+    width: 2rem;
+    height: 2rem;
+    border: none;
+    cursor: pointer;
+    outline: none;
+
+    span {
+      display: none;
+    }
   }
 }

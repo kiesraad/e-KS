@@ -2,6 +2,7 @@
 //! Extracted from requests and passed into Askama templates.
 
 use axum::{extract::FromRequestParts, http::request::Parts};
+use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, AppRequestState, AppStore, ElectionConfig, Session, political_groups::PoliticalGroup,
@@ -23,6 +24,8 @@ pub struct Context {
     pub multiple_candidate_lists: bool,
     /// Whether to show the success alert based on the request query.
     pub show_success_alert: bool,
+    /// Whether to show a warning that documents were downloaded and changes won't be reflected.
+    pub show_download_warning: bool,
     /// Whether the request came from an overlay page (via referrer query).
     pub overlay_referrer: bool,
     /// Session data for locale and CSRF.
@@ -50,6 +53,7 @@ impl Context {
             max_candidates,
             multiple_candidate_lists,
             show_success_alert: false,
+            show_download_warning: false,
             overlay_referrer: false,
             session,
             server_name: None,
@@ -80,6 +84,7 @@ impl askama::Values for Context {
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
+            "show_download_warning" => Some(&self.show_download_warning as &dyn std::any::Any),
             "multiple_candidate_lists" => {
                 Some(&self.multiple_candidate_lists as &dyn std::any::Any)
             }
@@ -102,6 +107,12 @@ impl<S: AppRequestState> FromRequestParts<S> for Context {
         let mut context = Context::new(&store, session);
 
         context.server_name = state.config().server_name.as_deref();
+
+        let path = parts.uri.path();
+        context.show_download_warning = store.should_show_download_warning()
+            && (path.starts_with(crate::list_designation::ListDesignationUpdatePath::PATH)
+                || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH)
+                || path.starts_with(crate::persons::PersonsPath::PATH));
 
         context.show_success_alert = parts
             .uri

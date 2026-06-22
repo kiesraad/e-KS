@@ -96,6 +96,7 @@ pub(super) fn extract_old_new(
         } => update!(Vec, substitute_submitters, *ss_id),
 
         AppEvent::DeveloperLogin { stream_id } => event!({ stream_id: stream_id.to_string() }),
+        AppEvent::HideDownloadWarning => event!({}),
         AppEvent::DownloadFile {
             file_name,
             download_path,

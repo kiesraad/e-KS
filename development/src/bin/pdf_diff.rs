@@ -60,6 +60,13 @@ struct FileGroups {
     common_files: Vec<PathBuf>,
 }
 
+/// Shared rendering state threaded through the diff comparison helpers.
+struct DiffContext<'a> {
+    paths: &'a WorkspacePaths,
+    current_context: &'a Arc<PdfContext>,
+    main_context: &'a Arc<PdfContext>,
+}
+
 /// Return whether a binary name resolves to an executable file somewhere on `PATH`.
 fn binary_in_path(name: &str) -> bool {
     if let Ok(paths) = env::var("PATH") {
@@ -456,9 +463,7 @@ fn summarize_deleted_files(deleted_files: Vec<PathBuf>) -> Vec<DiffSummaryRow> {
 
 /// Render and compare PDFs for a single input present in both branches.
 async fn diff_changed_input(
-    paths: &WorkspacePaths,
-    current_context: &Arc<PdfContext>,
-    main_context: &Arc<PdfContext>,
+    ctx: &DiffContext<'_>,
     rel: &Path,
     template: &str,
     input_name: &str,
@@ -466,12 +471,12 @@ async fn diff_changed_input(
     main_input: serde_json::Value,
     pdf_rel: &Path,
 ) -> Result<DiffSummaryRow> {
-    let current_pdf = paths.current_pdfs_root.join(pdf_rel);
-    let main_pdf = paths.main_pdfs_root.join(pdf_rel);
-    let diff_pdf = paths.diffs_root.join(pdf_rel);
+    let current_pdf = ctx.paths.current_pdfs_root.join(pdf_rel);
+    let main_pdf = ctx.paths.main_pdfs_root.join(pdf_rel);
+    let diff_pdf = ctx.paths.diffs_root.join(pdf_rel);
 
     render_pdf(
-        Arc::clone(current_context),
+        Arc::clone(ctx.current_context),
         template.to_string(),
         input,
         rel,
@@ -479,7 +484,7 @@ async fn diff_changed_input(
     )
     .await?;
     render_pdf(
-        Arc::clone(main_context),
+        Arc::clone(ctx.main_context),
         template.to_string(),
         main_input,
         rel,
@@ -493,22 +498,26 @@ async fn diff_changed_input(
     }
     let status = if changed { "changed" } else { "identical" };
     let diff_link = changed.then(|| Path::new(DIFFS_DIR_NAME).join(pdf_rel));
-    Ok((rel.to_path_buf(), Some(input_name.to_string()), status, diff_link))
+    Ok((
+        rel.to_path_buf(),
+        Some(input_name.to_string()),
+        status,
+        diff_link,
+    ))
 }
 
 /// Render a newly-added input's PDF for the current branch.
 async fn render_added_input(
-    paths: &WorkspacePaths,
-    current_context: &Arc<PdfContext>,
+    ctx: &DiffContext<'_>,
     rel: &Path,
     template: &str,
     input_name: &str,
     input: serde_json::Value,
     pdf_rel: &Path,
 ) -> Result<DiffSummaryRow> {
-    let added_pdf = paths.diffs_root.join(pdf_rel);
+    let added_pdf = ctx.paths.diffs_root.join(pdf_rel);
     render_pdf(
-        Arc::clone(current_context),
+        Arc::clone(ctx.current_context),
         template.to_string(),
         input,
         rel,
@@ -525,15 +534,13 @@ async fn render_added_input(
 
 /// Process one template that exists in both branches.
 async fn summarize_common_template(
-    paths: &WorkspacePaths,
-    current_context: &Arc<PdfContext>,
-    main_context: &Arc<PdfContext>,
+    ctx: &DiffContext<'_>,
     rel: PathBuf,
 ) -> Result<Vec<DiffSummaryRow>> {
     let template = template_name(&rel)?;
-    let current_inputs = load_render_inputs(&paths.current_root, &template).await?;
+    let current_inputs = load_render_inputs(&ctx.paths.current_root, &template).await?;
     let mut main_inputs: HashMap<String, serde_json::Value> =
-        load_render_inputs(&paths.main_root, &template)
+        load_render_inputs(&ctx.paths.main_root, &template)
             .await?
             .into_iter()
             .collect();
@@ -543,9 +550,7 @@ async fn summarize_common_template(
         let pdf_rel = pdf_output_rel(&rel, &input_name)?;
         let row = if let Some(main_input) = main_inputs.remove(&input_name) {
             diff_changed_input(
-                paths,
-                current_context,
-                main_context,
+                ctx,
                 &rel,
                 &template,
                 &input_name,
@@ -555,16 +560,7 @@ async fn summarize_common_template(
             )
             .await?
         } else {
-            render_added_input(
-                paths,
-                current_context,
-                &rel,
-                &template,
-                &input_name,
-                input,
-                &pdf_rel,
-            )
-            .await?
+            render_added_input(ctx, &rel, &template, &input_name, input, &pdf_rel).await?
         };
         results.push(row);
     }
@@ -578,15 +574,12 @@ async fn summarize_common_template(
 
 /// Render and compare PDFs for templates that exist in both branches.
 async fn summarize_common_files(
-    paths: &WorkspacePaths,
-    current_context: &Arc<PdfContext>,
-    main_context: &Arc<PdfContext>,
+    ctx: &DiffContext<'_>,
     common_files: Vec<PathBuf>,
 ) -> Result<Vec<DiffSummaryRow>> {
     let mut results = Vec::new();
     for rel in common_files {
-        let rows =
-            summarize_common_template(paths, current_context, main_context, rel).await?;
+        let rows = summarize_common_template(ctx, rel).await?;
         results.extend(rows);
     }
     Ok(results)
@@ -649,13 +642,15 @@ async fn run() -> Result<()> {
     log_file_groups(&groups);
 
     let (current_context, main_context) = load_pdf_contexts(&paths).await?;
+    let ctx = DiffContext {
+        paths: &paths,
+        current_context: &current_context,
+        main_context: &main_context,
+    };
 
     let mut results = summarize_new_files(&paths, &current_context, groups.new_files).await?;
     results.extend(summarize_deleted_files(groups.deleted_files));
-    results.extend(
-        summarize_common_files(&paths, &current_context, &main_context, groups.common_files)
-            .await?,
-    );
+    results.extend(summarize_common_files(&ctx, groups.common_files).await?);
 
     let report = build_report(results)?;
     write_report(&paths.results_path, &report).await?;

@@ -9,5 +9,5 @@ pub use forms::{
     AddressForm, PersonalDataFieldsForm, PersonalDataForm, RepresentativeFieldsForm,
     RepresentativeForm,
 };
-pub use pages::{UpdatePersonPath, router};
+pub use pages::{PersonsPath, UpdatePersonPath, router};
 pub use structs::{Person, PersonId, PersonPagination, PersonSort, PersonalData, Representative};

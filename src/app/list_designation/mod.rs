@@ -3,5 +3,5 @@ pub mod forms;
 pub mod pages;
 pub mod structs;
 
-pub use pages::router;
+pub use pages::{ListDesignationUpdatePath, router};
 pub use structs::ListDesignation;

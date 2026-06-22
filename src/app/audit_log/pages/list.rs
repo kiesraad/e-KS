@@ -77,6 +77,7 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
         event_types: &[
             "developer_login",
             "download_file",
+            "hide_download_warning",
             "export_csv",
             "import_csv",
         ],
