@@ -42,7 +42,6 @@ rust_checks() {
 if [ "$FULL" = true ]; then
     rust_checks "." --all-features
     rust_checks "auth-service" --all-features
-    rust_checks "development/tvs_mock" --all-features
     rust_checks "development" --all-features
     rust_checks "validate" --all-features
 else
