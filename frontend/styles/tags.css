@@ -7,7 +7,7 @@
 .tags-label {
   color: var(--gray-500);
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: var(--leading-sm);
 }
 

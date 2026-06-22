@@ -1,1 +1,15 @@
 examination: Onderzoek
+finish_examination: Afronden onderzoek
+finish_instruction:
+  create_model_i1: Aanmaken model I1
+  create_defects: Aanmaken verzuimbrief
+action:
+  finish: Afronden
+  add_party: Politieke groepering toevoegen
+progress: Voortgang
+added: Toegevoegd
+status:
+  in_progress: Controle bezig
+  approved: Goedgekeurd
+  omission: Verzuim toegevoegd
+finished: Afgerond
