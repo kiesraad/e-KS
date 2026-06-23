@@ -2,6 +2,8 @@ candidates: Kandidaten
 continue_to_finalise: Verder naar afronden
 continue_to_home: Verder naar het startscherm
 description: Kandidaatstellen voor verkiezingen in Nederland
+development:
+  login_as_csb: Login als CSB
 electoral_districts: Kieskringen
 finalise: Afronden
 finalise_description:

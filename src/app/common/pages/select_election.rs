@@ -6,8 +6,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, WaterCouncil,
-    common::SelectElectionForm, csb::import::CsbImportPath, filters,
+    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, StreamId,
+    WaterCouncil, common::SelectElectionForm, csb::import::CsbImportPath, filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -88,6 +88,15 @@ pub async fn select_election_submit(
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
+
+    if form.login_as_csb() {
+        session.stream_id = Some(StreamId::new());
+        session.scope = Scope::CentralElectoralCommittee;
+        session.set_current_election(election);
+        state.sessions.insert(session).await;
+
+        return Ok(Redirect::to(&CsbImportPath {}.to_string()).into_response());
+    }
 
     let Some(stream_id) = session.stream_id else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
