@@ -140,7 +140,7 @@ impl AppState {
     /// Streams the given session is allowed to reach.
     ///
     /// A stream is a `(stream_id, election)` pair, so a session can be entitled
-    /// to several streams — including several elections under one `stream_id`.
+    /// to several streams, including several elections under one `stream_id`.
     ///
     /// - A [`Scope::PoliticalGroup`] session may reach every election under the
     ///   single stream derived from its own identifier.

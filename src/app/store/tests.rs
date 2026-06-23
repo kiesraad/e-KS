@@ -449,7 +449,7 @@ mod database_tests {
 
     /// Each stream row carries its scope (set at creation). `streams_by_scope`
     /// lists every data-bearing `(stream_id, election)` of the requested scope,
-    /// and a committee stream never leaks into the political-group listing —
+    /// and a committee stream never leaks into the political-group listing,
     /// even across several elections under one stream_id.
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
     #[sqlx::test(migrations = false)]

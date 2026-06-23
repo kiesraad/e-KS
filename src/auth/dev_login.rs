@@ -66,7 +66,7 @@ async fn perform_dev_login(
     // don't enforce that: logging in with the *same* BSN as both a political
     // group and the committee would point both an app store and a CSB store at
     // the same `(stream_id, election)` partition (one cipher, two event types),
-    // which fails to decode. Accepted as a dev-only limitation — use distinct
+    // which fails to decode. Accepted as a dev-only limitation; use distinct
     // BSNs for the two roles.
     let stream_id = state.id_deriver.derive_stream_id(&id_code);
     drop(id_code);

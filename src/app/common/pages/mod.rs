@@ -44,7 +44,7 @@ pub fn router() -> Router<AppState> {
 /// Routes that need a session but NOT the store middleware.
 ///
 /// `/select-election` must be reachable before a stream is chosen, and
-/// `/language` must be reachable by every session — including committee (CSB)
+/// `/language` must be reachable by every session, including committee (CSB)
 /// sessions, which `store_middleware` redirects away from app routes. Switching
 /// the locale only touches the session, so it belongs here rather than behind
 /// the store.

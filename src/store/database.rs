@@ -169,7 +169,7 @@ pub async fn streams_with_data(
 /// persisted data.
 ///
 /// A stream is identified by its `(stream_id, election)` pair, so a single
-/// `stream_id` can appear multiple times — once per election. Empty placeholder
+/// `stream_id` can appear multiple times, once per election. Empty placeholder
 /// rows (`last_event_id = 0`) are excluded, mirroring [`elections_for_stream`].
 pub async fn streams_by_scope(
     pool: &sqlx::PgPool,

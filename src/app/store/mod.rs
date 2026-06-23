@@ -105,10 +105,10 @@ impl AppStoreData {
     /// Build a point-in-time snapshot of the projection by replaying `events`
     /// up to and including the event with `target_event_id`.
     ///
-    /// The returned snapshot has its own [`events`](AppStoreData::events) log
+    /// The returned snapshot has its own `events` log
     /// cleared: it captures only the derived state, not the event history that
     /// produced it. `events` is expected to be the ordered event log of a single
-    /// stream (as returned by [`StoreData::events`]); later events are ignored.
+    /// stream (as returned by `StoreData::events`); later events are ignored.
     pub fn snapshot_until(events: &[StoreEvent<AppEvent>], target_event_id: usize) -> Self {
         let mut snapshot = AppStoreData::default();
         for event in events

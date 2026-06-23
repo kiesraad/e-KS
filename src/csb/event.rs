@@ -11,8 +11,8 @@ pub enum CsbEvent {
     /// Carries a snapshot of the source [`AppStoreData`] reconstructed by
     /// replaying the source stream up to the matched event (see
     /// [`AppStoreData::snapshot_until`]). The import is persisted under a fresh
-    /// CSB stream — never the source partition, which holds the app's own
-    /// events — so `source_stream_id` is recorded for reference. The election is
+    /// CSB stream (never the source partition, which holds the app's own
+    /// events), so `source_stream_id` is recorded for reference. The election is
     /// not: it is copied onto the CSB stream's own `(stream_id, election)` key.
     Import {
         /// Chain hash of the package, as entered by the committee.
@@ -38,5 +38,28 @@ impl CsbEvent {
         match self {
             CsbEvent::Import { .. } => "import",
         }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn import_event() -> CsbEvent {
+        CsbEvent::Import {
+            hash: "abc123".to_string(),
+            source_stream_id: StreamId::default(),
+            snapshot: Box::new(AppStoreData::default()),
+        }
+    }
+
+    #[test]
+    fn import_event_category() {
+        assert_eq!(import_event().event_category(), "import");
+    }
+
+    #[test]
+    fn import_event_key() {
+        assert_eq!(import_event().event_key(), "import");
     }
 }

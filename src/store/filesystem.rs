@@ -275,7 +275,7 @@ pub async fn streams_by_scope(dir: &Path, scope: Scope) -> Vec<(uuid::Uuid, Elec
 /// Locate the event whose chain hash begins with `hash_prefix`, returning its
 /// `(stream_id, election, event_id)`.
 ///
-/// Every on-disk stream is a political-group stream, so this scans them all —
+/// Every on-disk stream is a political-group stream, so this scans them all,
 /// mirroring the database lookup, which restricts itself to political-group
 /// scope. An ambiguous prefix matching more than one event is reported as
 /// [`AppError::AmbiguousHash`].

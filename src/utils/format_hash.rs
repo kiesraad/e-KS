@@ -16,8 +16,8 @@ pub fn format_hash(hash: &[u8], half: bool) -> String {
 /// The inverse of [`format_hash`]: whitespace is ignored and hex digits are
 /// case-insensitive, so a value copied straight from a rendered hash (e.g.
 /// `"F381 3DE7 96D3 8033 …"`) parses cleanly. The result can be shorter than a
-/// full 32-byte chain hash — [`format_hash`] renders only the first half by
-/// default — and is matched as a prefix when looking the event up.
+/// full 32-byte chain hash ([`format_hash`] renders only the first half by
+/// default) and is matched as a prefix when looking the event up.
 ///
 /// Returns `None` for an odd number of hex digits, a non-hex character, more
 /// than 32 bytes (longer than a chain hash), or shorter than 4 bytes.
