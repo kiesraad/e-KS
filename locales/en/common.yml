@@ -24,6 +24,7 @@ languages:
   frisian: Frisian
 lists_have_problems: "{} lists have problems"
 lists_have_problems_one: 1 list has problems
+political_group: Political group
 possible_problems: "{} possible problems"
 possible_problems_one: 1 possible problem
 save_success: saved
@@ -47,4 +48,3 @@ switch_election:
 title: Kiesraad - Kandidaatstelling
 version: Version
 warning_prefix: Warning
-political_group: Political group

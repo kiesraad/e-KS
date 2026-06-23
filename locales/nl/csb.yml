@@ -1,18 +1,21 @@
-examination: Onderzoek
-finish_examination: Afronden onderzoek
-finish_instruction:
-  create_model_i1: Aanmaken model I1
-  create_defects: Aanmaken verzuimbrief
 action:
-  finish: Afronden
   add_party: Politieke groepering toevoegen
-progress: Voortgang
+  finish: Afronden
 added: Toegevoegd
-status:
-  in_progress: Controle bezig
-  approved: Goedgekeurd
-  omission: Verzuim toegevoegd
-finished: Afgerond
 brp:
   correct: Correct
   errors: Fouten
+examination: Onderzoek
+finish_examination: Afronden onderzoek
+finish_instruction:
+  create_defects: Aanmaken verzuimbrief
+  create_model_i1: Aanmaken model I1
+finished: Afgerond
+form:
+  hash: hash
+  import: import
+progress: Voortgang
+status:
+  approved: Goedgekeurd
+  in_progress: Controle bezig
+  omission: Verzuim toegevoegd

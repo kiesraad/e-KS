@@ -1,18 +1,21 @@
-examination: Examination
-finish_examination: Finish examination
-finish_instruction:
-  create_model_i1: Create model I1
-  create_defects: Create notice of defects
 action:
-  finish: Finish
   add_party: Add political group
-progress: Progress
+  finish: Finish
 added: Added
-status:
-  in_progress: In progress
-  approved: Approved
-  omission: Defect added
-finished: Finished
 brp:
   correct: Correct
   errors: Errors
+examination: Examination
+finish_examination: Finish examination
+finish_instruction:
+  create_defects: Create notice of defects
+  create_model_i1: Create model I1
+finished: Finished
+form:
+  hash: hash
+  import: import
+progress: Progress
+status:
+  approved: Approved
+  in_progress: In progress
+  omission: Defect added
