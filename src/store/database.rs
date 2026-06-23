@@ -214,9 +214,11 @@ pub async fn elections_for_stream(
 /// Returns the `(stream_id, election, event_id)` of the single matching event,
 /// or `None` if nothing matches. The lookup is restricted to
 /// [`Scope::PoliticalGroup`] streams so a prefix can only ever resolve to an
-/// app-store event (never a CSB event), and is backed by the `events_hash_idx`
-/// index. An ambiguous prefix matching more than one event is reported as an
-/// [`AppError::UserError`].
+/// app-store event (never a CSB event). The prefix match uses a `substring`
+/// comparison, which cannot use the `events_hash_idx` btree, so it scans the
+/// `events` table; acceptable at current volumes, but revisit with a
+/// left-anchored range predicate if it grows. An ambiguous prefix matching
+/// more than one event is reported as [`AppError::AmbiguousHash`].
 pub async fn find_event_by_hash_prefix(
     pool: &sqlx::PgPool,
     hash_prefix: &[u8],

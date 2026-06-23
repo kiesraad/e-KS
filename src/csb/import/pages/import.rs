@@ -91,15 +91,11 @@ async fn do_import(
     let source_stream_id = StreamId::from(source_stream_id);
 
     // Reject if this source stream has already been imported.
-    for (stream_id, election) in state
+    for store in state
         .csb_store_registry
-        .streams_by_scope(Scope::CentralElectoralCommittee)
+        .stores_by_scope(Scope::CentralElectoralCommittee)
         .await?
     {
-        let store = state
-            .csb_store_registry
-            .get_or_create(stream_id, election)
-            .await?;
         let already_imported = store.data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
         });
@@ -111,10 +107,14 @@ async fn do_import(
         }
     }
 
-    // Replay the source stream up to the matched event into a snapshot.
+    // Replay the source stream up to the matched event into a snapshot. Reload
+    // first so a cached store that lags the persisted log (e.g. events appended
+    // by another instance) still contains the matched event; otherwise
+    // `snapshot_until` would silently produce an incomplete snapshot.
     let source_store = state
         .store_for_stream(source_stream_id, source_election, false)
         .await?;
+    source_store.load().await?;
     let snapshot = AppStoreData::snapshot_until(&source_store.get_events(), event_id);
 
     // Persist the import under a fresh CSB stream.

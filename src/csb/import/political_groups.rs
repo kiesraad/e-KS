@@ -21,11 +21,10 @@ where
         let registry = StoreRegistry::<CsbStoreData>::from_ref(state);
 
         let mut political_groups = Vec::new();
-        for (stream_id, election) in registry
-            .streams_by_scope(Scope::CentralElectoralCommittee)
+        for store in registry
+            .stores_by_scope(Scope::CentralElectoralCommittee)
             .await?
         {
-            let store = registry.get_or_create(stream_id, election).await?;
             political_groups.push(store.data.read().imported_data.political_group.clone());
         }
 

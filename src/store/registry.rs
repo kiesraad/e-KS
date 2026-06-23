@@ -145,6 +145,18 @@ where
         self.persistence.streams_by_scope(scope).await
     }
 
+    /// Fetch (or create and load) every store with the given scope.
+    ///
+    /// Convenience over [`Self::streams_by_scope`] for callers that need the
+    /// projected store of each stream rather than just its identifier.
+    pub async fn stores_by_scope(&self, scope: Scope) -> Result<Vec<Store<D>>, AppError> {
+        let mut stores = Vec::new();
+        for (stream_id, election) in self.streams_by_scope(scope).await? {
+            stores.push(self.get_or_create(stream_id, election).await?);
+        }
+        Ok(stores)
+    }
+
     /// Check which of the given stream IDs have data (in any election), using
     /// the in-memory cache first and falling back to the persistence backend.
     pub async fn streams_with_data(&self, stream_ids: &[Uuid]) -> Result<HashSet<Uuid>, AppError> {

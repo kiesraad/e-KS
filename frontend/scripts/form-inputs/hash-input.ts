@@ -6,6 +6,8 @@ export default function hashInput() {
         if (
           e.key === "Backspace" &&
           !e.ctrlKey &&
+          !e.metaKey &&
+          !e.altKey &&
           input.selectionStart === input.selectionEnd
         ) {
           const pos = input.selectionStart ?? 0;
