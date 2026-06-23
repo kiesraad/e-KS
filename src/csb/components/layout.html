@@ -48,4 +48,7 @@
     </span>
   </footer>
   {% block overlay %}{% endblock %}
+  {% if "show_success_alert"|value_true %}
+    <div class="alert alert-success alert-floating">{{ "common.save_success"|trans }}</div>
+  {% endif %}
 {% endblock %}

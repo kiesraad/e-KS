@@ -99,7 +99,7 @@ impl StorePersistence {
                 database::ensure_stream(pool, stream_id, election, scope).await?;
             }
             StorePersistence::Local(dir) => {
-                filesystem::ensure_stream_file(dir, stream_id, election).await?;
+                filesystem::ensure_stream_file(dir, stream_id, election, scope).await?;
             }
             StorePersistence::None => {}
         }
@@ -126,8 +126,10 @@ impl StorePersistence {
 
     /// List every `(stream_id, election)` stream with the given scope.
     ///
-    /// Only the database backend tracks scopes; other backends return an empty
-    /// list.
+    /// The database backend reads each stream's recorded scope. Local file
+    /// storage only ever holds political-group streams, so it lists every
+    /// non-empty stream for [`Scope::PoliticalGroup`] and nothing for any other
+    /// scope. The in-memory backend persists nothing and returns an empty list.
     pub async fn streams_by_scope(
         &self,
         scope: Scope,
@@ -137,7 +139,8 @@ impl StorePersistence {
             StorePersistence::Database(pool) => {
                 super::database::streams_by_scope(pool, scope).await
             }
-            StorePersistence::Local(_) | StorePersistence::None => Ok(Vec::new()),
+            StorePersistence::Local(dir) => Ok(filesystem::streams_by_scope(dir, scope).await),
+            StorePersistence::None => Ok(Vec::new()),
         }
     }
 
@@ -161,8 +164,10 @@ impl StorePersistence {
     /// Locate the political-group event whose chain hash begins with
     /// `hash_prefix`, returning its `(stream_id, election, event_id)`.
     ///
-    /// Only the database backend indexes events by hash; the other backends
-    /// have no such lookup and always return `None`.
+    /// The database backend indexes events by hash and restricts the lookup to
+    /// political-group streams; local file storage only holds political-group
+    /// streams, so it scans them directly. The in-memory backend has no such
+    /// lookup and always returns `None`.
     pub async fn find_event_by_hash_prefix(
         &self,
         hash_prefix: &[u8],
@@ -172,7 +177,10 @@ impl StorePersistence {
             StorePersistence::Database(pool) => {
                 database::find_event_by_hash_prefix(pool, hash_prefix).await
             }
-            StorePersistence::Local(_) | StorePersistence::None => Ok(None),
+            StorePersistence::Local(dir) => {
+                filesystem::find_event_by_hash_prefix(dir, hash_prefix).await
+            }
+            StorePersistence::None => Ok(None),
         }
     }
 

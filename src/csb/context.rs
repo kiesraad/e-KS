@@ -16,6 +16,8 @@ pub struct CsbContext {
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer when set.
     pub server_name: Option<&'static str>,
+    /// Whether to show the success alert based on the request query.
+    pub show_success_alert: bool,
 }
 
 impl CsbContext {
@@ -23,6 +25,7 @@ impl CsbContext {
         Self {
             session,
             server_name: None,
+            show_success_alert: false,
         }
     }
 
@@ -41,6 +44,7 @@ impl askama::Values for CsbContext {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
+            "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -54,6 +58,11 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbContext {
         let mut context = CsbContext::new(session);
 
         context.server_name = state.config().server_name.as_deref();
+
+        context.show_success_alert = parts
+            .uri
+            .query()
+            .is_some_and(|q| q.contains("success=true"));
 
         Ok(context)
     }
