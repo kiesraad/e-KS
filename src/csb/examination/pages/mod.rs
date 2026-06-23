@@ -6,7 +6,7 @@ use crate::{AppError, AppState};
 mod overview;
 
 #[derive(TypedPath)]
-#[typed_path("/csb/examination", rejection(AppError))]
+#[typed_path("/csb", rejection(AppError))]
 pub struct CsbExaminationOverviewPath;
 
 pub fn router() -> Router<AppState> {

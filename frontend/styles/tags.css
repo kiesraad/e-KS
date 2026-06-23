@@ -101,5 +101,11 @@
       --tag-border-color: var(--red-700);
       background-color: var(--red-100);
     }
+
+    &:is(.ok),
+    &:has(.ok) {
+      --tag-border-color: var(--green-700);
+      background-color: var(--green-100);
+    }
   }
 }

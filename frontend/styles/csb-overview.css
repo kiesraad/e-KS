@@ -1,95 +1,93 @@
 .examination {
-    display: grid;
-    gap: var(--space-8);
-    grid-template-columns: 1fr 3fr;
-    position: relative;
+  display: grid;
+  gap: var(--space-8);
+  grid-template-columns: 1fr 3fr;
+  position: relative;
 }
 
 .examination-side {
-    flex-direction: column;
-    display: flex;
+  flex-direction: column;
+  display: flex;
 }
 
 .examination-main {
-    flex-direction: column;
-    display: flex;
+  flex-direction: column;
+  display: flex;
 
-    >button {
-        margin-left: auto;
-    }
+  > .button {
+    margin-left: auto;
+  }
 }
 
 .progress-bar {
-    display: flex;
-    align-items: center;
+  display: flex;
+  align-items: center;
 
-    >progress {
-        border-radius: var(--rounded-md);
-        height: var(--space-2);
-        width: 100%;
-        flex: 1;
-        border: none;
-        /* Firefox track */
-        background-color: var(--gray-200);
-    }
+  > progress {
+    border-radius: var(--rounded-md);
+    height: var(--space-2);
+    width: 100%;
+    flex: 1;
+    border: none;
+    /* Firefox track */
+    background-color: var(--gray-200);
+  }
 
-    /* Chrome/Safari track */
-    >progress::-webkit-progress-bar {
-        background-color: var(--gray-200);
+  /* Chrome/Safari track */
+  > progress::-webkit-progress-bar {
+    background-color: var(--gray-200);
+  }
 
-    }
+  /* Chrome/Safari filled part */
+  > progress::-webkit-progress-value {
+    background-color: var(--blue-600);
+    border-radius: var(--rounded-md);
+  }
 
-    /* Chrome/Safari filled part */
-    >progress::-webkit-progress-value {
-        background-color: var(--blue-600);
-        border-radius: var(--rounded-md);
-    }
+  /* Firefox filled part */
+  > progress::-moz-progress-bar {
+    background-color: var(--blue-600);
+    border-radius: var(--rounded-md);
+  }
 
-    /* Firefox filled part */
-    >progress::-moz-progress-bar {
-        background-color: var(--blue-600);
-        border-radius: var(--rounded-md);
-    }
-
-    >.percentage {
-        white-space: no-wrap;
-        margin-left: var(--space-2)
-    }
+  > .percentage {
+    white-space: no-wrap;
+    margin-left: var(--space-2);
+  }
 }
 
 .political-group-table {
-    th {
-        font-weight: var(--font-weight-bold);
+  th {
+    font-weight: var(--font-weight-bold);
+  }
+
+  td:first-child {
+    font-weight: var(--font-weight-bold);
+  }
+
+  .status {
+    border-radius: var(--rounded-xl);
+    border: 1px solid;
+    width: fit-content;
+    padding: var(--space-1) var(--space-2);
+    font-size: var(--font-size-sm);
+
+    &.in-progress {
+      border-color: var(--blue-200);
+      background-color: var(--blue-100);
+      color: var(--blue-700);
     }
 
-    td:first-child {
-        font-weight: var(--font-weight-bold);
+    &.approved {
+      border-color: var(--green-200);
+      background-color: var(--green-100);
+      color: var(--green-700);
     }
 
-    .status {
-        border-radius: var(--rounded-xl);
-        border: 1px solid;
-        width: fit-content;
-        padding: var(--space-1) var(--space-2);
-        font-size: var(--font-size-sm);
-
-        &.in-progress {
-            border-color: var(--blue-200);
-            background-color: var(--blue-100);
-            color: var(--blue-700);
-        }
-
-        &.approved {
-            border-color: var(--green-200);
-            background-color: var(--green-100);
-            color: var(--green-700);
-        }
-
-        &.omission {
-            border-color: var(--orange-200);
-            background-color: var(--orange-100);
-            color: var(--orange-700);
-        }
-
+    &.omission {
+      border-color: var(--orange-200);
+      background-color: var(--orange-100);
+      color: var(--orange-700);
     }
+  }
 }

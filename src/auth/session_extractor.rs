@@ -13,7 +13,8 @@ use axum_extra::extract::{
 use chrono::Utc;
 
 use crate::{
-    AppError, AppState, Scope, Session, common::SelectElectionPath, csb::import::CsbImportPath,
+    AppError, AppState, Scope, Session, common::SelectElectionPath,
+    csb::examination::CsbExaminationOverviewPath,
 };
 
 /// Name of the session cookie used by the application.
@@ -76,7 +77,7 @@ pub async fn store_middleware(
     // can't create an `AppStore` in their CSB-only `(stream_id, election)`
     // partition. They belong on the CSB routes instead.
     if session.scope == Scope::CentralElectoralCommittee {
-        return Redirect::to(&CsbImportPath {}.to_string()).into_response();
+        return Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response();
     }
 
     let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {

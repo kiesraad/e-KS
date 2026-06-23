@@ -50,12 +50,12 @@ pub fn create(state: AppState) -> Router<AppState> {
     // CSB routes need the session plus their own (CSB) store middleware, which
     // also gates them to committee-scoped sessions. They must NOT get the app
     // `store_middleware`, so they are merged here rather than above.
-    let csb_router = csb::import::router()
+    let csb_router = csb::examination::router()
+        .merge(csb::import::router())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             csb_store_middleware,
-        ))
-        .merge(csb::examination::router());
+        ));
 
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB

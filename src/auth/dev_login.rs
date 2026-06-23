@@ -10,7 +10,7 @@ use crate::{
     AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Scope, Session, StreamId,
     auth::session_extractor::build_session_cookie,
     common::{IndexPath, SelectElectionPath},
-    csb::import::CsbImportPath,
+    csb::examination::CsbExaminationOverviewPath,
     political_groups::PoliticalGroup,
     store::Store,
     utils::random_bsn,
@@ -85,7 +85,7 @@ async fn perform_dev_login(
             let election = ElectionConfig::EK27;
             state.csb_store_for_stream(stream_id, election).await?;
             session.set_current_election(election);
-            CsbImportPath {}.to_string()
+            CsbExaminationOverviewPath {}.to_string()
         }
         Scope::PoliticalGroup => {
             if query.select_election.unwrap_or(false) {

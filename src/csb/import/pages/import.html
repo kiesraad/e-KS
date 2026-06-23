@@ -1,13 +1,7 @@
 {% extends "components/layout.html" %}
 {% block page_title %}Centraal stembureau{% endblock %}
 {% block content %}
-  <h2 class="mb-md">Politieke groeperingen</h2>
-  <ul>
-    {% for pg in political_groups %}
-      <li>{{ pg.display_name.as_deref().unwrap_or(&"?".to_string()) }}</li>
-    {% endfor %}
-  </ul>
-  <h2 class="mt-lg mb-md">{{ "csb.form.add_political_group"|trans }}</h2>
+  <h2 class="mt-lg mb-md">{{ "csb.form.import_political_group"|trans }}</h2>
   <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
     <fieldset>

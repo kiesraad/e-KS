@@ -215,11 +215,8 @@ async fn dev_login_csb_scopes_session_to_committee() {
         .expect("response");
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    // Committee members land on their CSB import page, not the app home.
-    assert_eq!(
-        response.headers().get(header::LOCATION).unwrap(),
-        "/csb/import"
-    );
+    // Committee members land on their CSB page, not the app home.
+    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
 
     let session = session_from(&state, &response).await;
     assert_eq!(session.scope, Scope::CentralElectoralCommittee);
@@ -306,10 +303,7 @@ async fn committee_session_redirected_off_app_routes() {
         .expect("response");
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(
-        response.headers().get(header::LOCATION).unwrap(),
-        "/csb/import"
-    );
+    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
 }
 
 /// A political-group session may reach every election under its own stream. A

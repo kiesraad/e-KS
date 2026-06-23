@@ -7,11 +7,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
-    Scope, StreamId, filters, political_groups::PoliticalGroup, redirect_success, trans,
-    utils::parse_hash_prefix,
+    Scope, StreamId, filters, redirect_success, trans, utils::parse_hash_prefix,
 };
-
-use crate::csb::import::CsbPoliticalGroups;
 
 use super::CsbImportPath;
 
@@ -19,21 +16,14 @@ use super::CsbImportPath;
 #[template(path = "import/pages/import.html")]
 struct CsbImportTemplate {
     csrf_token: String,
-    political_groups: Vec<PoliticalGroup>,
     hash: String,
     error: Option<String>,
 }
 
-fn render_import(
-    context: CsbContext,
-    political_groups: Vec<PoliticalGroup>,
-    hash: String,
-    error: Option<String>,
-) -> Response {
+fn render_import(context: CsbContext, hash: String, error: Option<String>) -> Response {
     HtmlTemplate(
         CsbImportTemplate {
             csrf_token: context.session.csrf_token.to_string(),
-            political_groups,
             hash,
             error,
         },
@@ -43,17 +33,8 @@ fn render_import(
 }
 
 /// Render the placeholder import page.
-pub async fn import(
-    _: CsbImportPath,
-    context: CsbContext,
-    CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
-) -> Result<Response, AppError> {
-    Ok(render_import(
-        context,
-        political_groups,
-        String::new(),
-        None,
-    ))
+pub async fn import(_: CsbImportPath, context: CsbContext) -> Result<Response, AppError> {
+    Ok(render_import(context, String::new(), None))
 }
 
 /// Form payload for the import page: the chain hash of the package to import.
@@ -68,7 +49,6 @@ pub async fn import_submit(
     _: CsbImportPath,
     State(state): State<AppState>,
     context: CsbContext,
-    CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
     Form(form): Form<ImportForm>,
 ) -> Result<Response, AppError> {
     context.session.consume_csrf(&form.csrf_token)?;
@@ -77,12 +57,9 @@ pub async fn import_submit(
     let locale = context.session.locale;
     match do_import(&state, form, locale).await {
         Ok(response) => Ok(response),
-        Err(AppError::UserError(msg)) => {
-            Ok(render_import(context, political_groups, hash, Some(msg)))
-        }
+        Err(AppError::UserError(msg)) => Ok(render_import(context, hash, Some(msg))),
         Err(AppError::AmbiguousHash) => Ok(render_import(
             context,
-            political_groups,
             hash,
             Some(trans!("csb.import.error.ambiguous_hash", locale)),
         )),
@@ -163,14 +140,10 @@ mod tests {
 
     #[tokio::test]
     async fn import_renders_placeholder_page() -> Result<(), AppError> {
-        let response = import(
-            CsbImportPath {},
-            CsbContext::new_test(),
-            CsbPoliticalGroups(vec![]),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let response = import(CsbImportPath {}, CsbContext::new_test())
+            .await
+            .unwrap()
+            .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
@@ -187,7 +160,6 @@ mod tests {
             CsbImportPath {},
             State(state),
             CsbContext::new_test(),
-            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token: "wrong".to_string(),
                 hash: "F381 3DE7".to_string(),
@@ -208,7 +180,6 @@ mod tests {
             CsbImportPath {},
             State(state),
             context,
-            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token,
                 hash: "not-a-hash".to_string(),
@@ -233,7 +204,6 @@ mod tests {
             CsbImportPath {},
             State(state),
             context,
-            CsbPoliticalGroups(vec![]),
             Form(ImportForm {
                 csrf_token,
                 hash: "F381 3DE7 96D3 8033".to_string(),
