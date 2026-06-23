@@ -156,10 +156,48 @@ impl QueryParamState {
     pub fn redirect_or_preserving_initial(&self, default: impl std::fmt::Display) -> Response {
         let mut url = self.redirect_url_or(default);
 
-        if self.initial {
-            url.push_str("&initial=true");
+        if self.initial && !url.contains("initial=") {
+            if url.contains('?') {
+                url.push_str("&initial=true");
+            } else {
+                url.push_str("?initial=true");
+            }
         }
 
         Redirect::to(&url).into_response()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use axum::http::header::LOCATION;
+
+    use super::*;
+
+    fn location(response: axum::response::Response) -> String {
+        response
+            .headers()
+            .get(LOCATION)
+            .unwrap()
+            .to_str()
+            .unwrap()
+            .to_string()
+    }
+
+    #[test]
+    fn redirect_or_preserving_initial_does_not_duplicate_initial_param() {
+        // redirect_to already carries initial=true
+        let state = QueryParamState {
+            initial: true,
+            redirect_to: Some("/foo?initial=true".to_string()),
+            ..Default::default()
+        };
+        let loc = location(state.redirect_or_preserving_initial("/fallback"));
+        assert_eq!(loc, "/foo?initial=true");
+
+        // default path already carries initial=true
+        let state = QueryParamState::initial();
+        let loc = location(state.redirect_or_preserving_initial("/bar?initial=true"));
+        assert_eq!(loc, "/bar?initial=true");
     }
 }

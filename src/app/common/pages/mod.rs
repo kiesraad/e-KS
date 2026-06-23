@@ -1,6 +1,7 @@
 use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 
+mod hide_download_warning;
 mod index;
 mod not_found;
 mod select_election;
@@ -28,11 +29,16 @@ pub struct SwitchElectionPath;
 #[typed_path("/select-election", rejection(AppError))]
 pub struct SelectElectionPath;
 
+#[derive(TypedPath)]
+#[typed_path("/hide-download-warning", rejection(AppError))]
+pub struct HideDownloadWarningPath;
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)
         .typed_get(switch_election::switch_election)
         .typed_post(switch_election::switch_election_submit)
+        .typed_post(hide_download_warning::hide_download_warning)
 }
 
 /// Routes that need a session but NOT the store middleware.

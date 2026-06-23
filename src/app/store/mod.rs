@@ -91,6 +91,7 @@ impl StoreData for AppStoreData {
             // Only the serialized event is relevant for logging.
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
+            | AppEvent::HideDownloadWarning
             | AppEvent::ExportCsv { .. } => {}
         }
     }

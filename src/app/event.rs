@@ -76,6 +76,7 @@ pub enum AppEvent {
         file_name: String,
         download_path: String,
     },
+    HideDownloadWarning,
 
     ExportCsv {
         file_name: String,
@@ -120,6 +121,7 @@ impl AppEvent {
             | AppEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
+            | AppEvent::HideDownloadWarning
             | AppEvent::ExportCsv { .. }
             | AppEvent::ImportCandidates { .. } => "system",
         }
@@ -155,6 +157,7 @@ impl AppEvent {
             AppEvent::DeleteSubstituteSubmitter { .. } => "delete_substitute_submitter",
             AppEvent::DeveloperLogin { .. } => "developer_login",
             AppEvent::DownloadFile { .. } => "download_file",
+            AppEvent::HideDownloadWarning => "hide_download_warning",
             AppEvent::ExportCsv { .. } => "export_csv",
             AppEvent::ImportCandidates { .. } => "import_csv",
         }

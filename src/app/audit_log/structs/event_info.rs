@@ -74,6 +74,7 @@ pub(super) fn event_description(event: &AppEvent, locale: Locale) -> String {
         }
         AppEvent::DeveloperLogin { .. } => trans!("audit_log.event.developer_login", locale),
         AppEvent::DownloadFile { .. } => trans!("audit_log.event.download_file", locale),
+        AppEvent::HideDownloadWarning => trans!("audit_log.event.hide_download_warning", locale),
         AppEvent::ExportCsv { .. } => trans!("audit_log.event.export_csv", locale),
         AppEvent::ImportCandidates { .. } => {
             trans!("audit_log.event.import_csv", locale)
@@ -124,7 +125,8 @@ pub(super) fn event_details(event: &AppEvent) -> String {
         | AppEvent::DeleteCandidateList(..)
         | AppEvent::DeleteNameAuthorisation(..)
         | AppEvent::DeleteSubstituteSubmitter { .. }
-        | AppEvent::DeveloperLogin { .. } => DEFAULT_DETAILS.to_string(),
+        | AppEvent::DeveloperLogin { .. }
+        | AppEvent::HideDownloadWarning => DEFAULT_DETAILS.to_string(),
     }
 }
 
@@ -198,7 +200,7 @@ pub(super) fn subject_id_full(event: &AppEvent) -> String {
         AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
             list_id.to_string()
         }
-        AppEvent::DownloadFile { .. } => String::new(),
+        AppEvent::DownloadFile { .. } | AppEvent::HideDownloadWarning => String::new(),
     }
 }
 

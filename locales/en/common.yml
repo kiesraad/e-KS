@@ -29,7 +29,8 @@ lists_have_problems_one: 1 list has problems
 political_group: Political group
 possible_problems: "{} possible problems"
 possible_problems_one: 1 possible problem
-save_success: saved
+download_warning: "Warning: the documents have already been downloaded. The data on paper is leading. If any changes are still needed, make sure to reprint the documents and submit the correct version."
+save_success: Saved
 select_election:
   description: Select the election you want to work on to continue.
   label: Select election

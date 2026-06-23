@@ -56,8 +56,10 @@ impl PotentialProblems {
                 .to_string(),
             PotentialProblems::NoCandidateList => CandidateList::list_path().to_string(),
 
-            PotentialProblems::TooFewAuthorizedNames { .. }
-            | PotentialProblems::TooManyAuthorizedNames { .. } => {
+            PotentialProblems::TooFewAuthorizedNames { .. } => NameAuthorisation::create_path()
+                .with_query_params(QueryParamState::redirect_to(finalise))
+                .to_string(),
+            PotentialProblems::TooManyAuthorizedNames { .. } => {
                 NameAuthorisation::list_path().to_string()
             }
             _ => PoliticalGroup::update_path().to_string(),
@@ -67,6 +69,7 @@ impl PotentialProblems {
 
 /// Aggregation struct for everything that can be missing or incomplete for a list submission
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct AllProblems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
@@ -80,7 +83,8 @@ impl AllProblems {
         let (general, general_info) = Self::find_general_problems(store);
         let (candidates, candidates_info) = Self::find_candidate_problems(store, &candidate_lists);
         let (lists, lists_info) = Self::find_list_problems(&candidate_lists, store)?;
-        Ok(Self {
+
+        let mut all_problems = Self {
             general,
             candidates,
             lists,
@@ -88,7 +92,11 @@ impl AllProblems {
                 .into_iter()
                 .flatten()
                 .collect(),
-        })
+        };
+
+        all_problems.sort_problems_by_severity();
+
+        Ok(all_problems)
     }
 
     pub fn find_general_problems(store: &AppStore) -> (GeneralProblems, Vec<EntityInfoProblems>) {
@@ -331,6 +339,7 @@ impl HasSeverity for AllProblems {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct GeneralProblems {
     pub general: Vec<PotentialProblems>,
     pub name_authorisations: Vec<EntityProblems<NameAuthorisation>>,
@@ -358,6 +367,7 @@ impl GeneralProblems {
 }
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub struct EntityProblems<T> {
     pub entity: T,
     pub problems: Vec<PotentialProblems>,
@@ -379,6 +389,7 @@ pub type ListProblems = EntityProblems<CandidateList>;
 pub type PersonProblems = EntityProblems<Person>;
 
 #[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
 pub enum EntityInfoProblems {
     AnyProblem(InfoProblems),
     List {
@@ -408,7 +419,9 @@ impl EntityInfoProblems {
         let finalise = FinalisePath {}.to_string();
         match self {
             EntityInfoProblems::AnyProblem(InfoProblems::NoSubstituteSubmitter) => {
-                ListSubmitter::view_path().to_string()
+                ListSubmitter::substitute_create_path()
+                    .with_query_params(QueryParamState::redirect_to(finalise))
+                    .to_string()
             }
             EntityInfoProblems::AnyProblem(InfoProblems::NoListDesignation) => {
                 ListDesignation::update_path().to_string()

@@ -9,5 +9,5 @@ mod pages;
 mod structs;
 
 pub use forms::{CandidateListCreateForm, CandidateListForm};
-pub use pages::{ViewCandidateListPath, router};
+pub use pages::{CandidateListsPath, ViewCandidateListPath, router};
 pub use structs::{CandidateList, CandidateListId, CandidateListSummary, FullCandidateList};
