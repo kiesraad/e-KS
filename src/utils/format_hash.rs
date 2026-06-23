@@ -19,11 +19,15 @@ pub fn format_hash(hash: &[u8], half: bool) -> String {
 /// full 32-byte chain hash — [`format_hash`] renders only the first half by
 /// default — and is matched as a prefix when looking the event up.
 ///
-/// Returns `None` for empty input, an odd number of hex digits, a non-hex
-/// character, or more than 32 bytes (longer than a chain hash).
-pub fn parse_hash(input: &str) -> Option<Vec<u8>> {
+/// Returns `None` for an odd number of hex digits, a non-hex character, more
+/// than 32 bytes (longer than a chain hash), or shorter than 4 bytes.
+///
+/// The 4 byte minimum length requirement makes it unlikely that you accidentally
+/// end up with a different event if a typo happens, but does not protect against
+/// trying to find events with brute-force.
+pub fn parse_hash_prefix(input: &str) -> Option<Vec<u8>> {
     let digits: Vec<char> = input.chars().filter(|c| !c.is_whitespace()).collect();
-    if digits.is_empty() || !digits.len().is_multiple_of(2) || digits.len() > 64 {
+    if digits.len() < 8 || digits.len() > 64 || !digits.len().is_multiple_of(2) {
         return None;
     }
 
@@ -80,26 +84,30 @@ mod tests {
             0xE9, 0x2C, 0xE9, 0x8A,
         ];
 
-        assert_eq!(parse_hash(&format_hash(&hash, false)).unwrap(), hash);
+        assert_eq!(parse_hash_prefix(&format_hash(&hash, false)).unwrap(), hash);
         // The half-hash that documents render parses to the first 16 bytes.
-        assert_eq!(parse_hash(&format_hash(&hash, true)).unwrap(), hash[..16]);
+        assert_eq!(
+            parse_hash_prefix(&format_hash(&hash, true)).unwrap(),
+            hash[..16]
+        );
     }
 
     #[test]
     fn parse_hash_is_case_insensitive_and_ignores_whitespace() {
         assert_eq!(
-            parse_hash("de ad\tBE\nef").unwrap(),
+            parse_hash_prefix("de ad\tBE\nef").unwrap(),
             [0xDE, 0xAD, 0xBE, 0xEF]
         );
     }
 
     #[test]
     fn parse_hash_rejects_malformed_input() {
-        assert_eq!(parse_hash(""), None);
-        assert_eq!(parse_hash("   "), None);
-        assert_eq!(parse_hash("abc"), None); // odd digit count
-        assert_eq!(parse_hash("zz"), None); // non-hex
-        assert_eq!(parse_hash(&"a".repeat(66)), None); // longer than 32 bytes
+        assert_eq!(parse_hash_prefix(""), None);
+        assert_eq!(parse_hash_prefix("   "), None);
+        assert_eq!(parse_hash_prefix("abc"), None); // odd digit count
+        assert_eq!(parse_hash_prefix("zz"), None); // non-hex
+        assert_eq!(parse_hash_prefix(&"a".repeat(6)), None); // shorter than 4 bytes
+        assert_eq!(parse_hash_prefix(&"a".repeat(66)), None); // longer than 32 bytes
     }
 
     #[test]

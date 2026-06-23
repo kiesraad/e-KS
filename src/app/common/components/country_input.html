@@ -6,7 +6,8 @@
          value="{{ country_value }}"
          minlength="2"
          maxlength="2"
-         required />
+         required
+         class="uppercase" />
   <ul>
     {% for country in crate::common::COUNTRY_CODES %}
       <li data-country="{{ country }}">

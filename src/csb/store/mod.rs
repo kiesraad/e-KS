@@ -6,7 +6,7 @@ use axum::{extract::FromRequestParts, http::request::Parts};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, CsbEvent,
+    AppError, AppStoreData, CsbEvent,
     store::{StoreData, StoreEvent},
 };
 
@@ -14,8 +14,7 @@ use crate::{
 /// CSB side.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CsbStoreData {
-    /// Chain hashes of the packages that have been imported, in order.
-    pub(crate) imported_hashes: Vec<String>,
+    pub(crate) imported_data: AppStoreData,
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
 }
 
@@ -26,7 +25,7 @@ impl StoreData for CsbStoreData {
         self.events.push(event.clone());
 
         match event.payload {
-            CsbEvent::Import { hash, .. } => self.imported_hashes.push(hash),
+            CsbEvent::Import { snapshot, .. } => self.imported_data = *snapshot,
         }
     }
 

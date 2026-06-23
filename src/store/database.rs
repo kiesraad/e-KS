@@ -237,9 +237,7 @@ pub async fn find_event_by_hash_prefix(
     .await?;
 
     if rows.len() > 1 {
-        return Err(AppError::UserError(
-            "The entered hash matches more than one event; enter more characters".to_string(),
-        ));
+        return Err(AppError::AmbiguousHash);
     }
 
     Ok(rows
