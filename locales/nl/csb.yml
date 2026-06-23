@@ -13,7 +13,7 @@ finish_instruction:
 finished: Afgerond
 form:
   import_political_group: Politieke groepering importeren
-  hash: Voer het begin van de hash code in
+  hash: Voer het begin van de hash code in (minimaal 8 tekens)
   import: Importeer
 import:
   error:

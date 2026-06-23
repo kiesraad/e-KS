@@ -13,7 +13,7 @@ finish_instruction:
 finished: Finished
 form:
   import_political_group: Import political group
-  hash: Enter the beginning of the hash code
+  hash: Enter the beginning of the hash code (at least 8 characters)
   import: Import
 import:
   error:

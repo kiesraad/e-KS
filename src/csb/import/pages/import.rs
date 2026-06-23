@@ -7,7 +7,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
-    Scope, StreamId, filters, redirect_success, trans, utils::parse_hash_prefix,
+    Scope, StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success,
+    trans, utils::parse_hash_prefix,
 };
 
 use super::CsbImportPath;
@@ -128,7 +129,7 @@ async fn do_import(
         })
         .await?;
 
-    Ok(redirect_success(CsbImportPath {}))
+    Ok(redirect_success(CsbExaminationOverviewPath {}))
 }
 
 #[cfg(test)]
