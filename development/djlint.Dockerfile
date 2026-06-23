@@ -11,7 +11,7 @@ WORKDIR /work/
 RUN addgroup --system --gid "${GID}" djlint \
     && adduser --system --uid "${UID}" --ingroup djlint --home /home/djlint djlint \
     && chown -R djlint:djlint /work \
-    && pip install --no-cache-dir djlint
+    && pip install --no-cache-dir "djlint==1.39.2"
 
 USER djlint
 
