@@ -50,8 +50,8 @@ event:
   delete_substitute_submitter: Deleted substitute submitter of the list
   developer_login: Developer login
   download_file: Downloaded file
-  hide_download_warning: Dismissed download warning
   export_csv: Exported CSV
+  hide_download_warning: Dismissed download warning
   import_csv: Imported CSV
   remove_candidate_from_list: Removed candidate from list
   update_candidate_list_districts: Updated electoral districts of list

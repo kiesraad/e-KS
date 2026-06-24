@@ -424,10 +424,6 @@ impl ListProblems {
         self.flatten().is_empty()
     }
 
-    pub fn len(&self) -> usize {
-        self.flatten().len()
-    }
-
     pub fn highest_severity(&self) -> Option<Severity> {
         self.flatten().iter().map(|p| p.severity()).max()
     }
