@@ -7,7 +7,7 @@
 .tags-label {
   color: var(--gray-500);
   font-size: var(--font-size-sm);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
   line-height: var(--leading-sm);
 }
 
@@ -37,6 +37,10 @@
 
 .tag.link a.error::after {
   mask-image: url("../icons/error.svg");
+}
+
+.tag.link a.ok::after {
+  mask-image: url("../icons/checkmarkSmall.svg");
 }
 
 .tag a {
@@ -70,6 +74,12 @@
     --tag-color: var(--red-700);
   }
 
+  &:is(.ok),
+  &:has(.ok) {
+    --tag-border-color: var(--green-600);
+    --tag-color: var(--green-700);
+  }
+
   &:hover {
     --tag-border-color: var(--gray-200);
     background-color: var(--gray-50);
@@ -90,6 +100,12 @@
     &:has(.error) {
       --tag-border-color: var(--red-700);
       background-color: var(--red-100);
+    }
+
+    &:is(.ok),
+    &:has(.ok) {
+      --tag-border-color: var(--green-700);
+      background-color: var(--green-100);
     }
   }
 }

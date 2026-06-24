@@ -58,7 +58,7 @@ header {
           }
 
           &.logout {
-            --header-item-font-weight: 700;
+            --header-item-font-weight: var(--font-weight-bold);
             --header-item-color: var(--base-white);
           }
 
@@ -66,7 +66,7 @@ header {
             --header-item-indicator-opacity: 1;
             --header-item-indicator-bg: var(--blue-600);
             --header-item-color: var(--base-white);
-            --header-item-font-weight: 700;
+            --header-item-font-weight: var(--font-weight-bold);
           }
 
           &.home {

@@ -1,0 +1,28 @@
+action:
+  add_political_group: Politieke groepering toevoegen
+  finish: Afronden
+added: Toegevoegd
+brp:
+  correct: Correct
+  errors: Fouten
+examination: Onderzoek
+finish_examination: Afronden onderzoek
+finish_instruction:
+  create_defects: Aanmaken verzuimbrief
+  create_model_i1: Aanmaken model I1
+finished: Afgerond
+form:
+  import_political_group: Politieke groepering importeren
+  hash: Voer het begin van de hash code in (minimaal 8 tekens)
+  import: Importeer
+import:
+  error:
+    already_imported: Deze politieke groepering is al geïmporteerd.
+    ambiguous_hash: De ingevoerde hash komt overeen met meer dan één dataset; voer meer tekens in.
+    invalid_hash: "Voer een geldige hash in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
+    not_found: Er is geen data gevonden voor de ingevoerde hash.
+progress: Voortgang
+status:
+  approved: Goedgekeurd
+  in_progress: Controle bezig
+  omission: Verzuim toegevoegd

@@ -2,6 +2,8 @@ candidates: Candidates
 continue_to_finalise: Continue to finalise page
 continue_to_home: Continue to home
 description: Candidate nomination for elections in the Netherlands
+development:
+  login_as_csb: Login as CSB
 electoral_districts: Electoral districts
 finalise: Finalise
 finalise_description:
@@ -24,6 +26,7 @@ languages:
   frisian: Frisian
 lists_have_problems: "{} lists have problems"
 lists_have_problems_one: 1 list has problems
+political_group: Political group
 possible_problems: "{} possible problems"
 possible_problems_one: 1 possible problem
 download_warning: "Warning: the documents have already been downloaded. The data on paper is leading. If any changes are still needed, make sure to reprint the documents and submit the correct version."

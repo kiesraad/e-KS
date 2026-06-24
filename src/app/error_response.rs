@@ -133,7 +133,8 @@ impl ErrorResponse {
             | AppError::JsonRejection(_)
             | AppError::QueryRejection(_)
             | AppError::UserError(_)
-            | AppError::TooManyCandidates => (BadRequest, err.to_string()),
+            | AppError::TooManyCandidates
+            | AppError::AmbiguousHash => (BadRequest, err.to_string()),
             AppError::EmlError(err) => (BadRequest, format!("EML error: {err}")),
             AppError::IncompleteData(err) => (
                 BadRequest,
@@ -191,6 +192,7 @@ fn message_is_safe_to_log(err: &AppError) -> bool {
         AppError::Unauthorised
             | AppError::GenericNotFound
             | AppError::CsrfTokenInvalid
+            | AppError::UserError(_)
             | AppError::NotFound(_)
             | AppError::IncompleteData(_)
     )

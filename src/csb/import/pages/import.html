@@ -1,0 +1,28 @@
+{% extends "components/layout.html" %}
+{% block page_title %}Centraal stembureau{% endblock %}
+{% block header_action %}<a href="{{ CsbExaminationOverviewPath }}" class="button secondary">{{ "action.back"|trans }}</a>{% endblock %}
+{% block content %}
+  <h2 class="mt-lg mb-md">{{ "csb.form.import_political_group"|trans }}</h2>
+  <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
+    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <fieldset>
+      <div class="form-field form-field-lg {% if error.is_some() %}error{% endif %}">
+        <label for="hash">{{ "csb.form.hash"|trans }}</label>
+        <input id="hash"
+               type="text"
+               name="hash"
+               value="{{ hash }}"
+               required
+               autocomplete="off"
+               minlength="8"
+               class="font-number uppercase"
+               data-hash-input
+               data-invalid-hash-message="{{ "csb.import.error.invalid_hash"|trans }}" />
+        {% if let Some(msg) = error %}<span class="error">{{ msg }}</span>{% endif %}
+      </div>
+      <div class="form-actions">
+        <button type="submit" class="button lg" name="action" value="save">{{ "csb.form.import"|trans }}</button>
+      </div>
+    </fieldset>
+  </form>
+{% endblock %}

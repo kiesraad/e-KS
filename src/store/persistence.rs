@@ -6,7 +6,7 @@ use std::path::PathBuf;
 use url::Url;
 use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig};
+use crate::{AppError, ElectionConfig, Scope};
 
 use super::{
     Store, StoreData, StoreEvent, chain_hash,
@@ -85,19 +85,21 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Ensure the given (stream, election) exists in the selected backend.
+    /// Ensure the given (stream, election) exists in the selected backend,
+    /// recording its `scope` when the row is first created.
     pub async fn ensure_stream(
         &self,
         stream_id: Uuid,
         election: ElectionConfig,
+        scope: Scope,
     ) -> Result<(), AppError> {
         match self {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
-                database::ensure_stream(pool, stream_id, election).await?;
+                database::ensure_stream(pool, stream_id, election, scope).await?;
             }
             StorePersistence::Local(dir) => {
-                filesystem::ensure_stream_file(dir, stream_id, election).await?;
+                filesystem::ensure_stream_file(dir, stream_id, election, scope).await?;
             }
             StorePersistence::None => {}
         }
@@ -122,6 +124,26 @@ impl StorePersistence {
         }
     }
 
+    /// List every `(stream_id, election)` stream with the given scope.
+    ///
+    /// The database backend reads each stream's recorded scope. Local file
+    /// storage only ever holds political-group streams, so it lists every
+    /// non-empty stream for [`Scope::PoliticalGroup`] and nothing for any other
+    /// scope. The in-memory backend persists nothing and returns an empty list.
+    pub async fn streams_by_scope(
+        &self,
+        scope: Scope,
+    ) -> Result<Vec<(Uuid, ElectionConfig)>, AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                super::database::streams_by_scope(pool, scope).await
+            }
+            StorePersistence::Local(dir) => Ok(filesystem::streams_by_scope(dir, scope).await),
+            StorePersistence::None => Ok(Vec::new()),
+        }
+    }
+
     /// List the elections under the given stream that have persisted events.
     pub async fn elections_for_stream(
         &self,
@@ -136,6 +158,29 @@ impl StorePersistence {
                 Ok(filesystem::elections_for_stream(dir, stream_id).await)
             }
             StorePersistence::None => Ok(Vec::new()),
+        }
+    }
+
+    /// Locate the political-group event whose chain hash begins with
+    /// `hash_prefix`, returning its `(stream_id, election, event_id)`.
+    ///
+    /// The database backend indexes events by hash and restricts the lookup to
+    /// political-group streams; local file storage only holds political-group
+    /// streams, so it scans them directly. The in-memory backend has no such
+    /// lookup and always returns `None`.
+    pub async fn find_event_by_hash_prefix(
+        &self,
+        hash_prefix: &[u8],
+    ) -> Result<Option<(Uuid, ElectionConfig, usize)>, AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                database::find_event_by_hash_prefix(pool, hash_prefix).await
+            }
+            StorePersistence::Local(dir) => {
+                filesystem::find_event_by_hash_prefix(dir, hash_prefix).await
+            }
+            StorePersistence::None => Ok(None),
         }
     }
 
@@ -260,7 +305,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::store::encryption::EventEncryption;
+    use crate::{Scope, store::encryption::EventEncryption};
     use secrecy::SecretString;
     use std::{fs, path::PathBuf};
     use uuid::Uuid;
@@ -330,8 +375,7 @@ mod tests {
 
     #[derive(Default)]
     struct TestData {
-        last_event_id: usize,
-        last_event_hash: [u8; 32],
+        events: Vec<StoreEvent<usize>>,
         applied: Vec<usize>,
     }
 
@@ -339,17 +383,12 @@ mod tests {
         type Event = usize;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
-            self.last_event_id = event.event_id;
-            self.last_event_hash = event.hash;
             self.applied.push(event.payload);
+            self.events.push(event);
         }
 
-        fn last_event_id(&self) -> usize {
-            self.last_event_id
-        }
-
-        fn last_event_hash(&self) -> [u8; 32] {
-            self.last_event_hash
+        fn events(&self) -> &[StoreEvent<Self::Event>] {
+            &self.events
         }
     }
 
@@ -370,7 +409,7 @@ mod tests {
         store.update(11).await?;
 
         let data = store.data.read();
-        assert_eq!(data.last_event_id, 2);
+        assert_eq!(data.last_event_id(), 2);
         assert_eq!(data.applied, vec![10, 11]);
 
         Ok(())
@@ -387,6 +426,7 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -398,13 +438,14 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
         fresh.load().await?;
 
         let data = fresh.data.read();
-        assert_eq!(data.last_event_id, 2);
+        assert_eq!(data.last_event_id(), 2);
         assert_eq!(data.applied, vec![10, 20]);
 
         Ok(())
@@ -421,6 +462,7 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -433,6 +475,7 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &wrong_encryption,
         )
         .await?;
@@ -459,6 +502,7 @@ mod tests {
             persistence.clone(),
             stream_a,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -475,6 +519,7 @@ mod tests {
             persistence,
             stream_b,
             TEST_ELECTION,
+            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;

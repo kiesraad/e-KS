@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig};
+use crate::{AppError, ElectionConfig, Scope};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -62,6 +62,7 @@ async fn create_streams_table(conn: &mut sqlx::PgConnection) -> Result<(), AppEr
           stream_id UUID NOT NULL,
           election TEXT NOT NULL,
           last_event_id BIGINT NOT NULL,
+          scope TEXT NOT NULL DEFAULT 'political_group',
           PRIMARY KEY (stream_id, election)
         )
         "#,
@@ -107,7 +108,8 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           current_election JSONB,
           locale TEXT NOT NULL,
           csrf_token TEXT NOT NULL,
-          last_activity TIMESTAMPTZ NOT NULL
+          last_activity TIMESTAMPTZ NOT NULL,
+          scope TEXT NOT NULL DEFAULT 'political_group'
         )
         "#,
     )
@@ -124,19 +126,23 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     Ok(())
 }
 
-/// Ensure a stream row exists for the given (stream_id, election).
+/// Ensure a stream row exists for the given (stream_id, election), recording its
+/// `scope`. The scope is fixed when the row is first created (a stream is only
+/// ever used by one store type); later calls leave the existing scope untouched.
 pub async fn ensure_stream(
     pool: &sqlx::PgPool,
     stream_id: uuid::Uuid,
     election: ElectionConfig,
+    scope: Scope,
 ) -> Result<(), AppError> {
     sqlx::query(
-        r#"INSERT INTO streams (stream_id, election, last_event_id)
-        VALUES ($1, $2, 0)
+        r#"INSERT INTO streams (stream_id, election, last_event_id, scope)
+        VALUES ($1, $2, 0, $3)
         ON CONFLICT (stream_id, election) DO NOTHING"#,
     )
     .bind(stream_id)
     .bind(election.stable_id())
+    .bind(scope.as_str())
     .execute(pool)
     .await?;
 
@@ -159,6 +165,31 @@ pub async fn streams_with_data(
     Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
+/// List every `(stream_id, election)` stream with the given scope that has
+/// persisted data.
+///
+/// A stream is identified by its `(stream_id, election)` pair, so a single
+/// `stream_id` can appear multiple times, once per election. Empty placeholder
+/// rows (`last_event_id = 0`) are excluded, mirroring [`elections_for_stream`].
+pub async fn streams_by_scope(
+    pool: &sqlx::PgPool,
+    scope: Scope,
+) -> Result<Vec<(uuid::Uuid, ElectionConfig)>, AppError> {
+    let rows: Vec<(uuid::Uuid, String)> = sqlx::query_as(
+        r#"SELECT stream_id, election
+           FROM streams
+           WHERE scope = $1 AND last_event_id > 0"#,
+    )
+    .bind(scope.as_str())
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (id, election)))
+        .collect())
+}
+
 /// List the elections that have persisted events under the given stream.
 pub async fn elections_for_stream(
     pool: &sqlx::PgPool,
@@ -176,6 +207,47 @@ pub async fn elections_for_stream(
         .into_iter()
         .filter_map(|(code,)| parse_stable_id(&code))
         .collect())
+}
+
+/// Locate the political-group event whose chain hash begins with `hash_prefix`.
+///
+/// Returns the `(stream_id, election, event_id)` of the single matching event,
+/// or `None` if nothing matches. The lookup is restricted to
+/// [`Scope::PoliticalGroup`] streams so a prefix can only ever resolve to an
+/// app-store event (never a CSB event). The prefix match uses a `substring`
+/// comparison, which cannot use the `events_hash_idx` btree, so it scans the
+/// `events` table; acceptable at current volumes, but revisit with a
+/// left-anchored range predicate if it grows. An ambiguous prefix matching
+/// more than one event is reported as [`AppError::AmbiguousHash`].
+pub async fn find_event_by_hash_prefix(
+    pool: &sqlx::PgPool,
+    hash_prefix: &[u8],
+) -> Result<Option<(uuid::Uuid, ElectionConfig, usize)>, AppError> {
+    let rows: Vec<(uuid::Uuid, String, i64)> = sqlx::query_as(
+        r#"
+        SELECT e.stream_id, e.election, e.event_id
+        FROM events e
+        JOIN streams s ON s.stream_id = e.stream_id AND s.election = e.election
+        WHERE s.scope = $1
+          AND substring(e.hash from 1 for octet_length($2)) = $2
+        LIMIT 2
+        "#,
+    )
+    .bind(Scope::PoliticalGroup.as_str())
+    .bind(hash_prefix)
+    .fetch_all(pool)
+    .await?;
+
+    if rows.len() > 1 {
+        return Err(AppError::AmbiguousHash);
+    }
+
+    Ok(rows
+        .into_iter()
+        .next()
+        .and_then(|(stream_id, code, event_id)| {
+            parse_stable_id(&code).map(|election| (stream_id, election, event_id as usize))
+        }))
 }
 
 /// Parse a `stable_id()` string (e.g. `"EK27"`, `"PS27:GR"`) back to an `ElectionConfig`.

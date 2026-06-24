@@ -12,7 +12,10 @@ use axum_extra::extract::{
 };
 use chrono::Utc;
 
-use crate::{AppError, AppState, Session, common::SelectElectionPath};
+use crate::{
+    AppError, AppState, Scope, Session, common::SelectElectionPath,
+    csb::examination::CsbExaminationOverviewPath,
+};
 
 /// Name of the session cookie used by the application.
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
@@ -70,11 +73,56 @@ pub async fn store_middleware(
         return next.run(request).await;
     };
 
+    // Committee sessions never use app stores: keep them off app routes so they
+    // can't create an `AppStore` in their CSB-only `(stream_id, election)`
+    // partition. They belong on the CSB routes instead.
+    if session.scope == Scope::CentralElectoralCommittee {
+        return Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response();
+    }
+
     let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {
         return Redirect::to(&SelectElectionPath.to_string()).into_response();
     };
 
     let store = match state.store_for_stream(stream_id, election, false).await {
+        Ok(store) => store,
+        Err(err) => return err.into_response(),
+    };
+
+    // catch up with the latest events
+    if let Err(err) = store.load().await {
+        return err.into_response();
+    }
+
+    request.extensions_mut().insert(store);
+
+    next.run(request).await
+}
+
+/// Middleware that resolves the scoped CSB store for the session's current
+/// election and injects it into request extensions. Restricts CSB routes to
+/// [`Scope::CentralElectoralCommittee`] sessions; other sessions are rejected.
+pub async fn csb_store_middleware(
+    State(state): State<AppState>,
+    mut request: Request,
+    next: Next,
+) -> Response {
+    let Some(session) = request.extensions().get::<Session>() else {
+        return next.run(request).await;
+    };
+
+    // Only the central electoral committee may reach CSB routes.
+    if session.scope != Scope::CentralElectoralCommittee {
+        return AppError::Unauthorised.into_response();
+    }
+
+    let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {
+        // A committee session without an election is incomplete; send it back
+        // through login rather than the app's election picker.
+        return Redirect::to("/login").into_response();
+    };
+
+    let store = match state.csb_store_for_stream(stream_id, election).await {
         Ok(store) => store,
         Err(err) => return err.into_response(),
     };

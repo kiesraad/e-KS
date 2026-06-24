@@ -21,7 +21,7 @@ use tokio::{
 };
 
 use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig};
+use crate::{AppError, ElectionConfig, Scope};
 
 const FRAME_HEADER_LEN: usize = 4;
 
@@ -221,11 +221,27 @@ fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
 }
 
 /// Ensure a stream file exists for local storage.
+///
+/// File storage only ever holds [`Scope::PoliticalGroup`] streams (CSB data
+/// lives only in the database backend), so a stream of any other scope is
+/// rejected here rather than persisted. Because every store is created through
+/// [`super::persistence::StorePersistence::ensure_stream`] before its first
+/// write, this is the single gate that keeps non-political-group events off
+/// disk.
 pub async fn ensure_stream_file(
     dir: &Path,
     stream_id: uuid::Uuid,
     election: ElectionConfig,
+    scope: Scope,
 ) -> Result<(), AppError> {
+    if scope != Scope::PoliticalGroup {
+        return Err(AppError::ConfigLoadError(format!(
+            "local file storage only supports political-group streams, \
+             got scope `{}`; use database storage for CSB",
+            scope.as_str()
+        )));
+    }
+
     let path = stream_path(dir, stream_id, election);
     OpenOptions::new()
         .create(true)
@@ -236,6 +252,90 @@ pub async fn ensure_stream_file(
         .map_err(AppError::ServerError)?;
 
     Ok(())
+}
+
+/// List every `(stream_id, election)` stream with the given scope.
+///
+/// All on-disk streams are [`Scope::PoliticalGroup`] (enforced by
+/// [`ensure_stream_file`]), so a political-group query returns every non-empty
+/// stream and any other scope returns nothing.
+pub async fn streams_by_scope(dir: &Path, scope: Scope) -> Vec<(uuid::Uuid, ElectionConfig)> {
+    if scope != Scope::PoliticalGroup {
+        return Vec::new();
+    }
+
+    let mut result = Vec::new();
+    visit_non_empty_stream_files(dir, |stream_id, election| {
+        result.push((stream_id, election));
+    })
+    .await;
+    result
+}
+
+/// Locate the event whose chain hash begins with `hash_prefix`, returning its
+/// `(stream_id, election, event_id)`.
+///
+/// Every on-disk stream is a political-group stream, so this scans them all,
+/// mirroring the database lookup, which restricts itself to political-group
+/// scope. An ambiguous prefix matching more than one event is reported as
+/// [`AppError::AmbiguousHash`].
+pub async fn find_event_by_hash_prefix(
+    dir: &Path,
+    hash_prefix: &[u8],
+) -> Result<Option<(uuid::Uuid, ElectionConfig, usize)>, AppError> {
+    let mut streams = Vec::new();
+    visit_non_empty_stream_files(dir, |stream_id, election| {
+        streams.push((stream_id, election));
+    })
+    .await;
+
+    let mut matches = Vec::new();
+    for (stream_id, election) in streams {
+        let path = stream_path(dir, stream_id, election);
+        for (event_id, hash) in scan_frame_hashes(&path).await? {
+            if hash.starts_with(hash_prefix) {
+                matches.push((stream_id, election, event_id));
+                if matches.len() > 1 {
+                    return Err(AppError::AmbiguousHash);
+                }
+            }
+        }
+    }
+
+    Ok(matches.into_iter().next())
+}
+
+/// Read each frame's `(event_id, chain hash)` from a stream file without
+/// decrypting payloads. Returns an empty vector if the file does not exist.
+async fn scan_frame_hashes(path: &Path) -> Result<Vec<(usize, [u8; 32])>, AppError> {
+    let mut file = match File::open(path).await {
+        Ok(file) => file,
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(err) => return Err(AppError::ServerError(err)),
+    };
+
+    let mut result = Vec::new();
+    loop {
+        let mut len_buf = [0u8; FRAME_HEADER_LEN];
+        match file.read_exact(&mut len_buf).await {
+            Ok(_) => {}
+            Err(err) if err.kind() == std::io::ErrorKind::UnexpectedEof => break,
+            Err(err) => return Err(AppError::ServerError(err)),
+        }
+        let body_len = u32::from_le_bytes(len_buf) as usize;
+
+        let mut body = vec![0u8; body_len];
+        file.read_exact(&mut body)
+            .await
+            .map_err(AppError::ServerError)?;
+
+        let Frame::V1 { event_id, hash, .. } = postcard::from_bytes::<Frame>(&body)
+            .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
+
+        result.push((event_id as usize, hash));
+    }
+
+    Ok(result)
 }
 
 /// Encrypt `payload`, append a frame for it to the stream file, and return the
@@ -317,26 +417,18 @@ mod tests {
 
     #[derive(Default)]
     struct TestData {
-        events: Vec<(usize, TestEvent)>,
-        last_event_id: usize,
-        last_event_hash: [u8; 32],
+        events: Vec<StoreEvent<TestEvent>>,
     }
 
     impl StoreData for TestData {
         type Event = TestEvent;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
-            self.last_event_id = event.event_id;
-            self.last_event_hash = event.hash;
-            self.events.push((event.event_id, event.payload));
+            self.events.push(event);
         }
 
-        fn last_event_id(&self) -> usize {
-            self.last_event_id
-        }
-
-        fn last_event_hash(&self) -> [u8; 32] {
-            self.last_event_hash
+        fn events(&self) -> &[StoreEvent<Self::Event>] {
+            &self.events
         }
     }
 
@@ -412,8 +504,13 @@ mod tests {
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 2);
         assert_ne!(data.last_event_hash(), GENESIS_HASH);
+        let applied: Vec<(usize, TestEvent)> = data
+            .events
+            .iter()
+            .map(|e| (e.event_id, e.payload.clone()))
+            .collect();
         assert_eq!(
-            data.events,
+            applied,
             vec![
                 (
                     1,
@@ -543,11 +640,117 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = uuid::Uuid::new_v4();
-        ensure_stream_file(&dir, stream_id, TEST_ELECTION).await?;
+        ensure_stream_file(&dir, stream_id, TEST_ELECTION, Scope::PoliticalGroup).await?;
 
         let path = stream_path(&dir, stream_id, TEST_ELECTION);
         let metadata = fs::metadata(&path).await.map_err(AppError::ServerError)?;
         assert_eq!(metadata.len(), 0);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn ensure_stream_rejects_non_political_group_scope() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        let err = ensure_stream_file(
+            &dir,
+            stream_id,
+            TEST_ELECTION,
+            Scope::CentralElectoralCommittee,
+        )
+        .await
+        .expect_err("non-political-group scope must be rejected on file storage");
+        assert!(matches!(err, AppError::ConfigLoadError(_)));
+
+        // Nothing was written to disk.
+        let path = stream_path(&dir, stream_id, TEST_ELECTION);
+        assert!(fs::metadata(&path).await.is_err());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn streams_by_scope_lists_political_group_streams_only() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
+        update_in_filesystem(
+            &store,
+            &dir,
+            &cipher,
+            TestEvent {
+                label: "one".to_string(),
+            },
+        )
+        .await?;
+
+        let political = streams_by_scope(&dir, Scope::PoliticalGroup).await;
+        assert_eq!(political, vec![(stream_id, TEST_ELECTION)]);
+
+        let committee = streams_by_scope(&dir, Scope::CentralElectoralCommittee).await;
+        assert!(committee.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn find_event_by_hash_prefix_locates_and_detects_ambiguity() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let stream_id = uuid::Uuid::new_v4();
+        let store = test_store(stream_id);
+        let cipher = test_cipher(stream_id);
+        update_in_filesystem(
+            &store,
+            &dir,
+            &cipher,
+            TestEvent {
+                label: "one".to_string(),
+            },
+        )
+        .await?;
+
+        let target_hash = store.data.read().last_event_hash();
+
+        // Full hash resolves to the single event.
+        assert_eq!(
+            find_event_by_hash_prefix(&dir, &target_hash).await?,
+            Some((stream_id, TEST_ELECTION, 1))
+        );
+        // A short prefix still resolves.
+        assert_eq!(
+            find_event_by_hash_prefix(&dir, &target_hash[..8]).await?,
+            Some((stream_id, TEST_ELECTION, 1))
+        );
+        // A non-matching prefix resolves to nothing.
+        assert_eq!(find_event_by_hash_prefix(&dir, &[0xFFu8; 32]).await?, None);
+        // The empty prefix matches every event; with one event that is unique.
+        assert_eq!(
+            find_event_by_hash_prefix(&dir, &[]).await?,
+            Some((stream_id, TEST_ELECTION, 1))
+        );
+
+        // A second event makes the empty prefix ambiguous.
+        update_in_filesystem(
+            &store,
+            &dir,
+            &cipher,
+            TestEvent {
+                label: "two".to_string(),
+            },
+        )
+        .await?;
+        assert!(matches!(
+            find_event_by_hash_prefix(&dir, &[]).await,
+            Err(AppError::AmbiguousHash)
+        ));
 
         Ok(())
     }
@@ -588,7 +791,7 @@ mod tests {
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 6);
         assert_eq!(data.events.len(), 2);
-        assert_eq!(data.events[1].0, 6);
+        assert_eq!(data.events[1].event_id, 6);
 
         Ok(())
     }

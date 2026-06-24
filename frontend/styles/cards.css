@@ -31,12 +31,12 @@
   text-decoration: none;
   text-wrap: balance;
 
-  &:has(> a),
+  &:not(.card-plain):has(> a),
   &:is(a) {
     cursor: pointer;
   }
 
-  &:has(> a):hover,
+  &:not(.card-plain):has(> a):hover,
   &:is(a):hover {
     --card-bg: var(--gray-25);
     --card-chevron-translate: var(--space-1);
@@ -70,7 +70,7 @@
     display: flex;
     align-items: flex-start;
     font-size: var(--font-size-xl);
-    font-weight: 700;
+    font-weight: var(--font-weight-bold);
     gap: var(--space-3);
     line-height: var(--leading-xl);
 

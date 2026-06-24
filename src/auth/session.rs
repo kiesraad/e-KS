@@ -4,7 +4,9 @@ use chrono::{DateTime, Duration, Utc};
 use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 
-use crate::{AppError, ElectionConfig, Locale, StreamId, TokenValue, form::generate_csrf_token};
+use crate::{
+    AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue, form::generate_csrf_token,
+};
 
 /// Idle timeout (in seconds) after which a session is considered expired.
 const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60;
@@ -65,6 +67,9 @@ pub struct Session {
     pub last_activity: DateTime<Utc>,
     /// Stream belonging to the user (set on login).
     pub stream_id: Option<StreamId>,
+    /// Authorization scope of the session, set on login. Governs which streams
+    /// the session may reach (see [`crate::Scope`]).
+    pub scope: Scope,
     /// Election the user is currently working on (set after login).
     pub current_election: Option<ElectionConfig>,
     /// Active locale for the session.
@@ -80,6 +85,7 @@ impl std::fmt::Debug for Session {
             .field("token", &"***")
             .field("last_activity", &self.last_activity)
             .field("stream_id", &self.stream_id)
+            .field("scope", &self.scope)
             .field("current_election", &self.current_election)
             .field("locale", &self.locale)
             .finish()
@@ -116,6 +122,7 @@ impl Session {
             token: generate_session_token(),
             last_activity: Utc::now(),
             stream_id: None,
+            scope: Scope::default(),
             current_election: None,
             locale,
             csrf_token: generate_csrf_token(),
@@ -125,6 +132,11 @@ impl Session {
     /// Assigns the stream for this session.
     pub fn set_stream_id(&mut self, stream_id: StreamId) {
         self.stream_id = Some(stream_id);
+    }
+
+    /// Assigns the authorization scope for this session.
+    pub fn set_scope(&mut self, scope: Scope) {
+        self.scope = scope;
     }
 
     /// Assigns the current election for this session.
