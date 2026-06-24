@@ -4,6 +4,7 @@ continue_to_home: Verder naar het startscherm
 description: Kandidaatstellen voor verkiezingen in Nederland
 development:
   login_as_csb: Login als CSB
+download_warning: "Let op: de documenten zijn al gedownload. De gegevens op papier zijn leidend. Zorg ervoor dat u de documenten opnieuw print en de juiste versie inlevert als er nog wijzigingen nodig zijn."
 electoral_districts: Kieskringen
 finalise: Afronden
 finalise_description:
@@ -29,7 +30,6 @@ lists_have_problems_one: 1 lijst heeft problemen
 political_group: Politieke groepering
 possible_problems: "{} mogelijke problemen"
 possible_problems_one: 1 mogelijk probleem
-download_warning: "Let op: de documenten zijn al gedownload. De gegevens op papier zijn leidend. Zorg ervoor dat u de documenten opnieuw print en de juiste versie inlevert als er nog wijzigingen nodig zijn."
 save_success: Opgeslagen
 select_election:
   description: Kies de verkiezing waar je mee wilt werken om verder te gaan.
