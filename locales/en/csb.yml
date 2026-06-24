@@ -12,9 +12,9 @@ finish_instruction:
   create_model_i1: Create model I1
 finished: Finished
 form:
-  import_political_group: Import political group
   hash: Enter the beginning of the hash code (at least 8 characters)
   import: Import
+  import_political_group: Import political group
 import:
   error:
     already_imported: This political group has already been imported.

@@ -44,6 +44,7 @@ pub async fn migrate(pool: &sqlx::PgPool) -> Result<(), AppError> {
         create_streams_table(&mut conn).await?;
         create_events_table(&mut conn).await?;
         create_sessions_table(&mut conn).await?;
+        create_pending_requests_table(&mut conn).await?;
         Ok::<(), AppError>(())
     }
     .await
@@ -109,6 +110,7 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           locale TEXT NOT NULL,
           csrf_token TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
+          saml_name_id TEXT,
           scope TEXT NOT NULL DEFAULT 'political_group'
         )
         "#,
@@ -116,9 +118,47 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     .execute(&mut *conn)
     .await?;
 
+    // Additive column for tables created before SP-initiated logout needed the
+    // SAML NameID persisted (eID §7.7.1); idempotent so existing deployments
+    // pick it up without a versioned migration.
+    sqlx::query(r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS saml_name_id TEXT"#)
+        .execute(&mut *conn)
+        .await?;
+
+    // Additive column for tables created before sessions carried an
+    // authorization scope; idempotent for the same reason as `saml_name_id`.
+    sqlx::query(
+        r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'political_group'"#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx
            ON sessions(last_activity)"#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    Ok(())
+}
+
+#[cfg(feature = "migrations")]
+async fn create_pending_requests_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
+    sqlx::query(
+        r#"
+        CREATE TABLE IF NOT EXISTS pending_requests (
+          id TEXT PRIMARY KEY,
+          created_at TIMESTAMPTZ NOT NULL
+        )
+        "#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    sqlx::query(
+        r#"CREATE INDEX IF NOT EXISTS pending_requests_created_at_idx
+           ON pending_requests(created_at)"#,
     )
     .execute(&mut *conn)
     .await?;

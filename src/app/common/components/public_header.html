@@ -1,0 +1,11 @@
+{# Header for the public, pre-session pages (login start, logout, auth error/
+   cancelled). Reuses the main layout's header styling: a plain blue bar on top
+   (an empty, decorative `nav` — there are no navigation items without a
+   session) followed by the title area. #}
+<header>
+  <nav aria-hidden="true">
+  </nav>
+  <div class="header-content">
+    <h1>{{ "common.title"|trans }}</h1>
+  </div>
+</header>

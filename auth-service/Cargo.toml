@@ -8,7 +8,23 @@ publish = false
 [lib]
 path = "src/lib.rs"
 
+[features]
+# Placeholder for the SAML implementation's `tvs-mock` feature, kept so the
+# embedding `eks` crate's `tvs-mock` feature (which enables `auth-service/tvs-mock`)
+# still resolves. No effect in this placeholder build; the real SAML SP lives on
+# a separate branch.
+tvs-mock = []
+
 [dependencies]
-axum = { version = "0.8", features = ["macros"] }
+# Web server
+axum = "0.8"
 axum-extra = { version = "0.12", features = ["cookie"] }
+
+# Keep subject identifiers (PII) out of Debug output and zeroize them on drop.
+# Version kept in sync with the embedding `eks` crate.
 secrecy = "0.10.3"
+
+# Placeholder login mints a random valid test BSN, mirroring the `eks` dev login.
+rand = "0.10.1"
+
+thiserror = "2"

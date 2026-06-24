@@ -63,6 +63,14 @@ pub struct Config {
     /// matches this secret. Intended for gating the app behind a known
     /// upstream (e.g. a load balancer that injects the header).
     pub eks_key: Option<SecretString>,
+    /// When true, opts this instance out of the live auth-service (so
+    /// `AuthServiceState::new_empty` is used instead of
+    /// `AuthServiceState::new_from_env`, skipping the startup IdP-metadata
+    /// fetch). Intended for environments that only ever use the `/dev/login`
+    /// bypass and must boot without outbound connectivity, e.g. the Playwright
+    /// container. Set via `DISABLE_AUTH_SERVICE` (`1`, `true`, or `yes`,
+    /// case-insensitive); anything else leaves the auth-service enabled.
+    pub disable_auth_service: bool,
 }
 
 /// Helper function to get environment variable or return an error
@@ -119,6 +127,13 @@ impl Config {
             .filter(|s| !s.is_empty())
             .map(SecretString::from);
 
+        let disable_auth_service = lookup("DISABLE_AUTH_SERVICE").is_ok_and(|value| {
+            matches!(
+                value.trim().to_ascii_lowercase().as_str(),
+                "1" | "true" | "yes"
+            )
+        });
+
         Ok(Self {
             storage_url: SecretString::from(storage_url),
             #[cfg(not(feature = "embed-typst"))]
@@ -128,6 +143,7 @@ impl Config {
             tls,
             server_name,
             eks_key,
+            disable_auth_service,
         })
     }
 
@@ -142,6 +158,7 @@ impl Config {
             tls: None,
             server_name: None,
             eks_key: None,
+            disable_auth_service: false,
         }
     }
 }

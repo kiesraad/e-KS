@@ -65,9 +65,7 @@ mod tests {
     async fn app_with_key(eks_key: Option<&str>) -> Router {
         let mut config = Config::new_test();
         config.eks_key = eks_key.map(SecretString::from);
-        let state = AppState::new_with_config(config)
-            .await
-            .expect("state from config");
+        let state = AppState::new_for_tests_with_config(config).await;
 
         Router::new()
             .route("/probe", get(|| async { "ok" }))

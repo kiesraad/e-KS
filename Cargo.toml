@@ -12,9 +12,15 @@ repository = "https://github.com/kiesraad/e-KS"
 
 [features]
 # Default development-oriented feature set.
-default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests"]
+default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests", "tvs-mock"]
 # Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
+# Talk to the online TVS mock service: default TVS_ENV to `test` (so the RD
+# endpoint resolves to the shared TVS mock) and embed the committed DV
+# cert/key bundle (auth-service/fixtures) into the binary, so the auth flow works on
+# a deployed host with no CERTS_DIR on disk. Does NOT run a TVS back-channel
+# itself. Test keys only — never enable for a real deployment.
+tvs-mock = ["auth-service/tvs-mock"]
 # Enable database-backed storage via Postgres / SQLx.
 database = ["dep:sqlx"]
 # Run database migrations on startup.

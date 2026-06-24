@@ -1,46 +1,31 @@
+//! Placeholder auth-service: the public API surface only.
+//!
+pub mod error;
+pub mod pending;
+pub mod state;
+
+mod handlers;
+
 use axum::{
     Router,
-    extract::State,
-    http::HeaderMap,
-    response::{IntoResponse, Redirect, Response},
-    routing::get,
+    extract::FromRef,
+    routing::{get, post},
 };
-use axum_extra::extract::CookieJar;
 
-pub trait AuthState: Clone + Send + Sync + 'static {
-    fn on_authenticated(
-        &self,
-        jar: CookieJar,
-        headers: &HeaderMap,
-    ) -> impl std::future::Future<Output = Response> + Send;
+pub use crate::{
+    handlers::{handle_login, handle_logout},
+    pending::{PENDING_REQUEST_TTL, PendingRequests},
+    state::{AuthFailure, AuthServiceState, AuthState, SubjectId},
+};
 
-    fn logout_session(
-        &self,
-        jar: CookieJar,
-    ) -> impl std::future::Future<Output = Option<CookieJar>> + Send;
-}
-
-pub async fn handle_logout<S: AuthState>(State(state): State<S>, jar: CookieJar) -> Response {
-    let Some(cleared_jar) = state.logout_session(jar).await else {
-        return Redirect::to("/").into_response();
-    };
-
-    let mut response = Redirect::to("/").into_response();
-    response.extensions_mut().insert(cleared_jar);
-
-    response
-}
-
-pub async fn handle_login<S: AuthState>(
-    State(state): State<S>,
-    jar: CookieJar,
-    headers: HeaderMap,
-) -> Response {
-    state.on_authenticated(jar, &headers).await
-}
-
-pub fn router<S: AuthState>() -> Router<S> {
+/// Build the SAML SP router for the protocol endpoints (metadata, ACS, SLS).
+pub fn router<S>() -> Router<S>
+where
+    S: AuthState,
+    AuthServiceState: FromRef<S>,
+{
     Router::new()
-        .route("/login", get(handle_login::<S>))
-        .route("/logout", get(handle_logout::<S>))
+        .route("/saml/sp/metadata", get(handlers::handle_metadata))
+        .route("/saml/sp/acs", get(handlers::handle_acs))
+        .route("/saml/sp/logout", post(handlers::handle_sls))
 }
