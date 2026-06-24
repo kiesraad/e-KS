@@ -344,7 +344,9 @@ impl crate::store::Store<AppStoreData> {
         crate::store::Store {
             stream_id: uuid::Uuid::new_v4(),
             election,
-            backend: crate::store::persistence::StoreBackend::Memory,
+            backend: crate::store::persistence::StoreBackend::Memory {
+                store: crate::store::memory::MemoryStore::default(),
+            },
             data: std::sync::Arc::new(parking_lot::RwLock::new(data)),
         }
     }

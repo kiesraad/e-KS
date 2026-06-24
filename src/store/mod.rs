@@ -6,6 +6,7 @@ pub(crate) mod persistence;
 
 mod event;
 mod filesystem;
+pub(crate) mod memory;
 mod registry;
 mod store_handle;
 

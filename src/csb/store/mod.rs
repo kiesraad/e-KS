@@ -55,7 +55,9 @@ impl crate::CsbStore {
         crate::store::Store {
             stream_id: uuid::Uuid::new_v4(),
             election: crate::ElectionConfig::EK27,
-            backend: crate::store::persistence::StoreBackend::Memory,
+            backend: crate::store::persistence::StoreBackend::Memory {
+                store: crate::store::memory::MemoryStore::default(),
+            },
             data: std::sync::Arc::new(parking_lot::RwLock::new(CsbStoreData::default())),
         }
     }
