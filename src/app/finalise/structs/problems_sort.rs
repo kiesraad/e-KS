@@ -2,7 +2,7 @@ use std::cmp;
 
 use crate::{
     common::Severity,
-    finalise::{AllProblems, ListProblems},
+    finalise::{AllProblems, EntityProblems},
 };
 
 impl AllProblems {
@@ -29,10 +29,14 @@ impl AllProblems {
             .for_each(|c| c.problems.sort_by_key(|p| cmp::Reverse(p.severity())));
 
         // list sorting
+        self.lists
+            .general
+            .sort_by_key(|p| cmp::Reverse(p.severity()));
+
         let mut list_error_problems = Vec::new();
         let mut list_other_problems = Vec::new();
-        self.lists.iter().for_each(|l| {
-            list_error_problems.push(ListProblems {
+        self.lists.per_list.iter().for_each(|l| {
+            list_error_problems.push(EntityProblems {
                 entity: l.entity.clone(),
                 problems: l
                     .problems
@@ -41,7 +45,7 @@ impl AllProblems {
                     .cloned()
                     .collect(),
             });
-            list_other_problems.push(ListProblems {
+            list_other_problems.push(EntityProblems {
                 entity: l.entity.clone(),
                 problems: l
                     .problems
@@ -53,7 +57,7 @@ impl AllProblems {
         });
         list_error_problems.extend(list_other_problems);
         list_error_problems.retain(|p| !p.problems.is_empty());
-        self.lists = list_error_problems;
+        self.lists.per_list = list_error_problems;
     }
 }
 
@@ -66,7 +70,8 @@ mod tests {
             PotentialProblems,
         },
         finalise::{
-            EntityProblems, GeneralProblems, PersonProblems, structs::problems::EntityInfoProblems,
+            EntityProblems, GeneralProblems, ListProblems, PersonProblems,
+            structs::problems::EntityInfoProblems,
         },
         list_submitters::ListSubmitterId,
         name_authorisations::NameAuthorisationId,
@@ -157,16 +162,19 @@ mod tests {
                     problems: problem_vec_unordered(),
                 },
             ],
-            lists: vec![
-                ListProblems {
-                    entity: cl1.clone(),
-                    problems: problem_vec_unordered(),
-                },
-                ListProblems {
-                    entity: cl2.clone(),
-                    problems: problem_vec_unordered(),
-                },
-            ],
+            lists: ListProblems {
+                general: problem_vec_unordered(),
+                per_list: vec![
+                    EntityProblems {
+                        entity: cl1.clone(),
+                        problems: problem_vec_unordered(),
+                    },
+                    EntityProblems {
+                        entity: cl2.clone(),
+                        problems: problem_vec_unordered(),
+                    },
+                ],
+            },
             info_problems: info_problems.clone(),
         };
 
@@ -212,24 +220,27 @@ mod tests {
                         problems: problem_vec_ordered(),
                     },
                 ],
-                lists: vec![
-                    ListProblems {
-                        entity: cl1.clone(),
-                        problems: vec![PotentialProblems::NoInitials(Severity::Error)],
-                    },
-                    ListProblems {
-                        entity: cl2.clone(),
-                        problems: vec![PotentialProblems::NoInitials(Severity::Error)],
-                    },
-                    ListProblems {
-                        entity: cl1,
-                        problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
-                    },
-                    ListProblems {
-                        entity: cl2,
-                        problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
-                    },
-                ],
+                lists: ListProblems {
+                    general: problem_vec_ordered(),
+                    per_list: vec![
+                        EntityProblems {
+                            entity: cl1.clone(),
+                            problems: vec![PotentialProblems::NoInitials(Severity::Error)],
+                        },
+                        EntityProblems {
+                            entity: cl2.clone(),
+                            problems: vec![PotentialProblems::NoInitials(Severity::Error)],
+                        },
+                        EntityProblems {
+                            entity: cl1.clone(),
+                            problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
+                        },
+                        EntityProblems {
+                            entity: cl2.clone(),
+                            problems: vec![PotentialProblems::NoInitials(Severity::Warn)],
+                        },
+                    ],
+                },
                 info_problems,
             }
         )
@@ -300,16 +311,19 @@ mod tests {
                     problems: problem_vec_unordered(),
                 },
             ],
-            lists: vec![
-                ListProblems {
-                    entity: cl1.clone(),
-                    problems: problem_vec_unordered(),
-                },
-                ListProblems {
-                    entity: cl2.clone(),
-                    problems: problem_vec_unordered(),
-                },
-            ],
+            lists: ListProblems {
+                general: problem_vec_unordered(),
+                per_list: vec![
+                    EntityProblems {
+                        entity: cl1.clone(),
+                        problems: problem_vec_unordered(),
+                    },
+                    EntityProblems {
+                        entity: cl2.clone(),
+                        problems: problem_vec_unordered(),
+                    },
+                ],
+            },
             info_problems: info_problems.clone(),
         };
 
