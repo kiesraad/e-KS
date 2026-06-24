@@ -64,12 +64,19 @@ impl AllProblems {
 #[cfg(test)]
 mod tests {
     use crate::{
-        candidate_lists::CandidateListId, common::{
+        candidate_lists::CandidateListId,
+        common::{
             InfoProblems::{self},
             PotentialProblems,
-        }, finalise::{
-            EntityProblems, GeneralProblems, ListProblems, PersonProblems, structs::problems::EntityInfoProblems,
-        }, list_submitters::ListSubmitterId, name_authorisations::NameAuthorisationId, persons::PersonId, test_utils::{
+        },
+        finalise::{
+            EntityProblems, GeneralProblems, ListProblems, PersonProblems,
+            structs::problems::EntityInfoProblems,
+        },
+        list_submitters::ListSubmitterId,
+        name_authorisations::NameAuthorisationId,
+        persons::PersonId,
+        test_utils::{
             sample_candidate_list, sample_list_submitter, sample_name_authorisation, sample_person,
         },
     };

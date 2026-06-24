@@ -621,13 +621,11 @@ mod tests {
     #[tokio::test]
     async fn no_candidate_list_added() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        // make sure no other general errors occur
-        add_submitters(&store).await?;
-        add_name_authorisations(&store, 1).await?;
 
-        let (problems, _) = AllProblems::find_general_problems(&store);
+        let (problems, _) = AllProblems::find_list_problems(&[], &store)?;
 
         assert_eq!(problems.general.len(), 1);
+
         assert_eq!(problems.general[0], PotentialProblems::NoCandidateList);
 
         Ok(())

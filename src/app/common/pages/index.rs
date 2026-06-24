@@ -45,17 +45,19 @@ pub async fn index(
     let (list_problems, _) =
         AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
 
-    let (problematic_lists, general_list_problems, problematic_lists_severity, ) = if list_problems.is_empty() {
-        (0, 0, "")
-    } else {
-        let list_count = list_problems.per_list.len();
-        let general_count = list_problems.general.len();
-        let severity_class = list_problems.highest_severity()
-            .map(|s| s.class())
-            .unwrap_or_default();
+    let (problematic_lists, general_list_problems, problematic_lists_severity) =
+        if list_problems.is_empty() {
+            (0, 0, "")
+        } else {
+            let list_count = list_problems.per_list.len();
+            let general_count = list_problems.general.len();
+            let severity_class = list_problems
+                .highest_severity()
+                .map(|s| s.class())
+                .unwrap_or_default();
 
-        (list_count, general_count, severity_class)
-    };
+            (list_count, general_count, severity_class)
+        };
 
     Ok(HtmlTemplate(
         IndexTemplate {
