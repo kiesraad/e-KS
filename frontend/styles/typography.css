@@ -48,21 +48,21 @@ h4,
 .h4 {
   font-size: var(--font-size-xl);
   line-height: var(--leading-xl);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 h5,
 .h5 {
   font-size: var(--font-size-lg);
   line-height: var(--leading-lg);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 h6,
 .h6 {
   font-size: var(--font-size-md);
   line-height: var(--leading-md);
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }
 
 a {
@@ -88,11 +88,11 @@ a {
 
 /* Font weight */
 .font-bold {
-  font-weight: bold;
+  font-weight: var(--font-weight-bold);
 }
 
 .font-light {
-  font-weight: 300;
+  font-weight: var(--font-weight-light);
 }
 
 .font-italic {
@@ -145,5 +145,5 @@ a {
 }
 
 strong {
-  font-weight: 700;
+  font-weight: var(--font-weight-bold);
 }

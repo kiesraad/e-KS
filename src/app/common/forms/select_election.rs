@@ -12,6 +12,7 @@ pub struct SelectElectionForm {
     region_province: Option<String>,
     region_water_council: Option<String>,
     load_fixtures: Option<String>,
+    login_as_csb: Option<String>,
 }
 
 impl SelectElectionForm {
@@ -29,6 +30,10 @@ impl SelectElectionForm {
 
     pub fn load_fixtures(&self) -> bool {
         self.load_fixtures.is_some()
+    }
+
+    pub fn login_as_csb(&self) -> bool {
+        self.login_as_csb.is_some()
     }
 }
 

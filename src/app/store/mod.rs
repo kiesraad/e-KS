@@ -21,7 +21,7 @@ use crate::{
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair.
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct AppStoreData {
     pub(crate) political_group: PoliticalGroup,
     pub(crate) persons: HashMap<PersonId, Person>,
@@ -29,9 +29,6 @@ pub struct AppStoreData {
     pub(crate) name_authorisations: HashMap<NameAuthorisationId, NameAuthorisation>,
     pub(crate) list_submitter: ListSubmitter,
     pub(crate) substitute_submitters: Vec<ListSubmitter>,
-
-    // Download path, file name, downloader id
-    pub(crate) downloaded_files: Vec<(String, String, CandidateListId)>,
     pub(crate) events: Vec<StoreEvent<AppEvent>>,
 }
 
@@ -99,19 +96,31 @@ impl StoreData for AppStoreData {
         }
     }
 
-    fn last_event_id(&self) -> usize {
-        self.events.last().map(|e| e.event_id).unwrap_or(0)
-    }
-
-    fn last_event_hash(&self) -> [u8; 32] {
-        self.events
-            .last()
-            .map(|e| e.hash)
-            .unwrap_or(crate::store::GENESIS_HASH)
+    fn events(&self) -> &[StoreEvent<Self::Event>] {
+        &self.events
     }
 }
 
 impl AppStoreData {
+    /// Build a point-in-time snapshot of the projection by replaying `events`
+    /// up to and including the event with `target_event_id`.
+    ///
+    /// The returned snapshot has its own `events` log
+    /// cleared: it captures only the derived state, not the event history that
+    /// produced it. `events` is expected to be the ordered event log of a single
+    /// stream (as returned by `StoreData::events`); later events are ignored.
+    pub fn snapshot_until(events: &[StoreEvent<AppEvent>], target_event_id: usize) -> Self {
+        let mut snapshot = AppStoreData::default();
+        for event in events
+            .iter()
+            .filter(|event| event.event_id <= target_event_id)
+        {
+            snapshot.apply(event.clone());
+        }
+        snapshot.events.clear();
+        snapshot
+    }
+
     /// Apply a person-related event. Routed here exclusively by [`Self::apply`].
     fn apply_person_event(&mut self, event: AppEvent, event_time: UtcDateTime) {
         match event {
@@ -317,16 +326,6 @@ impl AppStoreData {
         self.candidate_lists.entry(list_id).and_modify(|existing| {
             existing.candidates = candidates;
         });
-    }
-}
-
-impl crate::store::Store<AppStoreData> {
-    pub fn current_event_id(&self) -> usize {
-        self.data.read().last_event_id()
-    }
-
-    pub fn current_event_hash(&self) -> [u8; 32] {
-        self.data.read().last_event_hash()
     }
 }
 

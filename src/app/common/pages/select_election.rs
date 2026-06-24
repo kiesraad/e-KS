@@ -6,8 +6,9 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Session, WaterCouncil,
-    common::SelectElectionForm, filters,
+    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, StreamId,
+    WaterCouncil, common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath,
+    filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -79,9 +80,24 @@ pub async fn select_election_submit(
 ) -> Result<Response, AppError> {
     session.consume_csrf(&form.csrf_token)?;
 
+    // Committee sessions use CSB stores, not app stores; never create an
+    // `AppStore` in their `(stream_id, election)` partition.
+    if session.scope == Scope::CentralElectoralCommittee {
+        return Ok(Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response());
+    }
+
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
+
+    if form.login_as_csb() {
+        session.stream_id = Some(StreamId::new());
+        session.scope = Scope::CentralElectoralCommittee;
+        session.set_current_election(election);
+        state.sessions.insert(session).await;
+
+        return Ok(Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response());
+    }
 
     let Some(stream_id) = session.stream_id else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());

@@ -5,7 +5,7 @@ use std::sync::Arc;
 use chrono::{DateTime, Utc};
 use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig};
+use crate::{AppError, ElectionConfig, Scope};
 
 use super::{
     StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, persistence::StoreBackend,
@@ -59,21 +59,27 @@ where
         storage_url: &str,
         stream_id: Uuid,
         election: ElectionConfig,
+        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
+            .await
     }
 
-    /// Create a new store for a stream using an already-initialized persistence backend.
+    /// Create a new store for a stream using an already-initialized persistence
+    /// backend. `scope` is recorded on the stream row when it is first created.
     pub async fn new_for_stream_with_persistence(
         persistence: StorePersistence,
         stream_id: Uuid,
         election: ElectionConfig,
+        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
-        persistence.ensure_stream(stream_id, election).await?;
+        persistence
+            .ensure_stream(stream_id, election, scope)
+            .await?;
 
         let cipher = encryption.derive_cipher(stream_id, election);
         Ok(Store {
@@ -90,11 +96,13 @@ where
         pool: sqlx::PgPool,
         stream_id: Uuid,
         election: ElectionConfig,
+        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
+            .await
     }
 
     /// Apply a single event to the in-memory projection.
@@ -128,6 +136,17 @@ where
             hash,
         });
     }
+
+    /// Last event ID applied to the in-memory projection, or 0 if none.
+    pub fn current_event_id(&self) -> usize {
+        self.data.read().last_event_id()
+    }
+
+    /// Chain hash of the last applied event, or
+    /// [`GENESIS_HASH`](crate::store::GENESIS_HASH) if none.
+    pub fn current_event_hash(&self) -> [u8; 32] {
+        self.data.read().last_event_hash()
+    }
 }
 
 #[cfg(test)]
@@ -138,8 +157,7 @@ mod tests {
 
     #[derive(Default)]
     struct TestData {
-        last_event_id: usize,
-        last_event_hash: [u8; 32],
+        events: Vec<StoreEvent<usize>>,
         applied: Vec<usize>,
     }
 
@@ -147,17 +165,12 @@ mod tests {
         type Event = usize;
 
         fn apply(&mut self, event: StoreEvent<Self::Event>) {
-            self.last_event_id = event.event_id;
-            self.last_event_hash = event.hash;
             self.applied.push(event.payload);
+            self.events.push(event);
         }
 
-        fn last_event_id(&self) -> usize {
-            self.last_event_id
-        }
-
-        fn last_event_hash(&self) -> [u8; 32] {
-            self.last_event_hash
+        fn events(&self) -> &[StoreEvent<Self::Event>] {
+            &self.events
         }
     }
 
@@ -177,7 +190,7 @@ mod tests {
         store.apply_event(StoreEvent::new(1, 42));
 
         let data = store.data.read();
-        assert_eq!(data.last_event_id, 1);
+        assert_eq!(data.last_event_id(), 1);
         assert_eq!(data.applied, vec![42]);
     }
 
@@ -187,13 +200,13 @@ mod tests {
 
         {
             let mut data = store.data.write();
-            data.last_event_id = 2;
+            data.events.push(StoreEvent::new(2, 0));
         }
 
         store.apply_event(StoreEvent::new(1, 7));
 
         let data = store.data.read();
-        assert_eq!(data.last_event_id, 2);
+        assert_eq!(data.last_event_id(), 2);
         assert!(data.applied.is_empty());
     }
 }

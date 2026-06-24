@@ -53,7 +53,7 @@ fi
 ./bin/biome check --fix ./playwright/tests
 
 # html
-docker run --rm -v ./src/app:/work/templates djlint
+docker run --rm -v ./src:/work/templates djlint
 
 # generic
 ./bin/check_newline

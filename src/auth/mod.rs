@@ -3,6 +3,9 @@
 /// BSN-based identifier derivation using HKDF-SHA256.
 pub mod derive_id;
 
+/// Authorization scope for sessions and streams.
+pub mod scope;
+
 /// Session model and token utilities.
 pub mod session;
 

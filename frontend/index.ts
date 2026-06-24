@@ -4,6 +4,7 @@ import dateInput from "./scripts/form-inputs/date-input";
 import electionRegion from "./scripts/form-inputs/election-region";
 import listDesignation from "./scripts/form-inputs/list-designation";
 import setupFileImport from "./scripts/form-inputs/file-import";
+import hashInput from "./scripts/form-inputs/hash-input";
 import initialsInput from "./scripts/form-inputs/initials-input";
 import localitySuggestions from "./scripts/form-inputs/locality-suggestions";
 import addressLookup from "./scripts/form-inputs/lookup";
@@ -37,6 +38,7 @@ highlightRow();
 // form inputs
 bsnInput();
 countryCodeInput();
+hashInput();
 dateInput();
 initialsInput();
 setupFileImport();

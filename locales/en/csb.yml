@@ -1,0 +1,28 @@
+action:
+  add_political_group: Add political group
+  finish: Finish
+added: Added
+brp:
+  correct: Correct
+  errors: Errors
+examination: Examination
+finish_examination: Finish examination
+finish_instruction:
+  create_defects: Create notice of defects
+  create_model_i1: Create model I1
+finished: Finished
+form:
+  import_political_group: Import political group
+  hash: Enter the beginning of the hash code (at least 8 characters)
+  import: Import
+import:
+  error:
+    already_imported: This political group has already been imported.
+    ambiguous_hash: The entered hash matches more than one data set; enter more characters.
+    invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
+    not_found: No data was found for the entered hash.
+progress: Progress
+status:
+  approved: Approved
+  in_progress: In progress
+  omission: Defect added

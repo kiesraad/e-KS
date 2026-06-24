@@ -22,9 +22,12 @@ fn find_used_keys(path: &std::path::Path) -> Vec<String> {
     let mut used_keys = Vec::new();
 
     let re = regex::Regex::new(r#""([\w\.]+)"\|trans"#).unwrap();
-    let templates_dir = path.join("src").join("app");
     let mut template_files = Vec::new();
-    collect_files_recursively(&templates_dir, "html", &mut template_files);
+    // Scan every template root listed in `askama.toml` (`src/app` and `src/csb`).
+    for templates_dir in ["app", "csb"] {
+        let templates_dir = path.join("src").join(templates_dir);
+        collect_files_recursively(&templates_dir, "html", &mut template_files);
+    }
 
     for template_file in template_files {
         let haystack = std::fs::read_to_string(&template_file).unwrap();
