@@ -13,6 +13,7 @@ use crate::{
 pub struct IndexTemplate {
     general_problems: usize,
     general_problems_severity: &'static str,
+    general_list_problems: usize,
     problematic_lists: usize,
     problematic_lists_severity: &'static str,
 }
@@ -44,25 +45,23 @@ pub async fn index(
     let (list_problems, _) =
         AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
 
-    let (problematic_lists, problematic_lists_severity) = if list_problems.is_empty() {
-        (0, "")
+    let (problematic_lists, general_list_problems, problematic_lists_severity, ) = if list_problems.is_empty() {
+        (0, 0, "")
     } else {
-        let count = list_problems.len();
-        let severity_class = list_problems
-            .into_iter()
-            .flat_map(|p| p.problems)
-            .map(|p| p.severity())
-            .max()
+        let list_count = list_problems.per_list.len();
+        let general_count = list_problems.general.len();
+        let severity_class = list_problems.highest_severity()
             .map(|s| s.class())
             .unwrap_or_default();
 
-        (count, severity_class)
+        (list_count, general_count, severity_class)
     };
 
     Ok(HtmlTemplate(
         IndexTemplate {
             general_problems,
             general_problems_severity,
+            general_list_problems,
             problematic_lists,
             problematic_lists_severity,
         },
