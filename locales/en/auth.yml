@@ -12,3 +12,6 @@ signed_out:
 start:
   intro: You log in first. After that you have access to the Candidate Nomination application of the Kiesraad. Click the button below to log in; you will be guided through the login process step by step.
   title: Log in to Candidate Nomination
+unavailable:
+  message: The login service is currently unavailable. Please try again in a few minutes.
+  title: Login temporarily unavailable

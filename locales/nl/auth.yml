@@ -12,3 +12,6 @@ signed_out:
 start:
   intro: "U logt eerst in. Daarna heeft u toegang tot de applicatie Kandidaatstelling van de Kiesraad. Klik op de knop hieronder om in te loggen, u doorloopt dan stapsgewijs het inlogproces."
   title: Inloggen bij Kandidaatstelling
+unavailable:
+  message: De inlogdienst is op dit moment niet beschikbaar. Probeert u het over enkele minuten opnieuw.
+  title: Inloggen tijdelijk niet mogelijk

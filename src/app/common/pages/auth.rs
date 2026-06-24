@@ -37,6 +37,10 @@ struct AuthErrorTemplate;
 #[template(path = "common/pages/auth_cancelled.html")]
 struct AuthCancelledTemplate;
 
+#[derive(Template)]
+#[template(path = "common/pages/auth_unavailable.html")]
+struct AuthUnavailableTemplate;
+
 /// Minimal template values for a standalone, pre-session page: only the locale
 /// is known, which is all the `trans` filter needs. The full request
 /// [`Context`] is unavailable here because there is no session or election yet.
@@ -115,13 +119,14 @@ fn logged_out_page(headers: &HeaderMap) -> Response {
     .into_response()
 }
 
-/// Render the page for a cancelled (T3) or failed (L10) authentication attempt,
-/// localised via the request's `Accept-Language`.
+/// Render the page for a cancelled (T3), failed (L10), or service-unavailable
+/// authentication attempt, localised via the request's `Accept-Language`.
 pub fn auth_failure_response(failure: AuthFailure, locale: Locale) -> Response {
     let values = PublicPageValues { locale };
     match failure {
         AuthFailure::Cancelled => HtmlTemplate(AuthCancelledTemplate, values).into_response(),
         AuthFailure::Error => HtmlTemplate(AuthErrorTemplate, values).into_response(),
+        AuthFailure::Unavailable => HtmlTemplate(AuthUnavailableTemplate, values).into_response(),
     }
 }
 
@@ -178,5 +183,12 @@ mod tests {
         let response = auth_failure_response(AuthFailure::Cancelled, Locale::Nl);
         let body = response_body_string(response).await;
         assert!(body.contains("Inloggen geannuleerd"));
+    }
+
+    #[tokio::test]
+    async fn unavailable_page_shows_temporary_notice() {
+        let response = auth_failure_response(AuthFailure::Unavailable, Locale::Nl);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Inloggen tijdelijk niet mogelijk"));
     }
 }

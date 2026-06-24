@@ -112,13 +112,9 @@ pub struct SubjectId {
 /// application can show the appropriate user-facing page.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum AuthFailure {
-    /// The user cancelled at the IdP (TVS "Checklist Testen" v2.1 T3): return
-    /// the user to the application with a notice that login was cancelled.
     Cancelled,
-    /// Anything else: a DigiD/RD error status (TVS L10) or a protocol/security
-    /// validation failure. The application shows a generic "login could not be
-    /// completed" page.
     Error,
+    Unavailable,
 }
 
 #[cfg(test)]
