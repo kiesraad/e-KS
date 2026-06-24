@@ -73,7 +73,7 @@ impl PotentialProblems {
 pub struct AllProblems {
     pub general: GeneralProblems,
     pub candidates: Vec<PersonProblems>,
-    pub lists: Vec<ListProblems>,
+    pub lists: ListProblems,
     pub info_problems: Vec<EntityInfoProblems>,
 }
 
@@ -114,10 +114,6 @@ impl AllProblems {
                 .collect::<Vec<_>>(),
         );
         general.extend(pg_problems.potential_problems);
-
-        if store.get_candidate_list_count() == 0 {
-            general.push(PotentialProblems::NoCandidateList);
-        }
 
         let name_authorisations = store.get_name_authorisations();
         let name_authorisations = match political_group.list_designation {
@@ -276,7 +272,7 @@ impl AllProblems {
     pub fn find_list_problems(
         candidate_lists: &[CandidateListSummary],
         store: &AppStore,
-    ) -> Result<(Vec<ListProblems>, Vec<EntityInfoProblems>), AppError> {
+    ) -> Result<(ListProblems, Vec<EntityInfoProblems>), AppError> {
         let mut list_problems = Vec::new();
         let mut info_problems = Vec::new();
         let mut seen_duplicate_district = false;
@@ -295,7 +291,7 @@ impl AllProblems {
                 seen_duplicate_district = true;
             }
             if !problems.potential_problems.is_empty() {
-                list_problems.push(ListProblems {
+                list_problems.push(EntityProblems {
                     entity: candidate_list.list.clone(),
                     problems: problems.potential_problems,
                 })
@@ -311,15 +307,32 @@ impl AllProblems {
                     .collect::<Vec<_>>(),
             );
         }
-        Ok((list_problems, info_problems))
+
+        let general = if store.get_candidate_list_count() == 0 {
+            vec![PotentialProblems::NoCandidateList]
+        } else {
+            Vec::new()
+        };
+
+        Ok((
+            ListProblems {
+                general,
+                per_list: list_problems,
+            },
+            info_problems,
+        ))
     }
 
     fn flatten_problems(&self) -> impl Iterator<Item = &PotentialProblems> {
         let candidate_iter = self.candidates.iter().flat_map(|ci| &ci.problems);
-        let list_iter = self.lists.iter().flat_map(|ci| &ci.problems);
+        let list_iter = self.lists.per_list.iter().flat_map(|ci| &ci.problems);
+        let list_general_iter = self.lists.general.iter();
         let general_iter = self.general.flatten();
 
-        candidate_iter.chain(list_iter).chain(general_iter)
+        candidate_iter
+            .chain(list_iter)
+            .chain(general_iter)
+            .chain(list_general_iter)
     }
 
     pub fn models_downloadable(&self) -> bool {
@@ -385,8 +398,36 @@ impl<T: Problematic<()>> EntityProblems<T> {
         )
     }
 }
-pub type ListProblems = EntityProblems<CandidateList>;
+
 pub type PersonProblems = EntityProblems<Person>;
+
+#[derive(Debug)]
+#[cfg_attr(test, derive(PartialEq, Clone))]
+pub struct ListProblems {
+    pub general: Vec<PotentialProblems>,
+    pub per_list: Vec<EntityProblems<CandidateList>>,
+}
+
+impl ListProblems {
+    fn flatten(&self) -> Vec<&PotentialProblems> {
+        let mut result = self.general.iter().collect::<Vec<_>>();
+        result.extend(
+            self.per_list
+                .iter()
+                .flat_map(|l| &l.problems)
+                .collect::<Vec<_>>(),
+        );
+        result
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.flatten().is_empty()
+    }
+
+    pub fn highest_severity(&self) -> Option<Severity> {
+        self.flatten().iter().map(|p| p.severity()).max()
+    }
+}
 
 #[derive(Debug)]
 #[cfg_attr(test, derive(PartialEq, Clone))]
@@ -531,7 +572,10 @@ mod tests {
             AllProblems {
                 general: empty_general(),
                 candidates: Vec::new(),
-                lists: Vec::new(),
+                lists: ListProblems {
+                    general: Vec::new(),
+                    per_list: Vec::new()
+                },
                 info_problems: Vec::new()
             }
             .models_downloadable()
@@ -541,10 +585,13 @@ mod tests {
             AllProblems {
                 general: empty_general(),
                 candidates: vec![],
-                lists: vec![ListProblems {
-                    entity: sample_candidate_list(CandidateListId::new()),
-                    problems: vec![PotentialProblems::TooManyCandidates { count: 1 }],
-                }],
+                lists: ListProblems {
+                    general: Vec::new(),
+                    per_list: vec![EntityProblems {
+                        entity: sample_candidate_list(CandidateListId::new()),
+                        problems: vec![PotentialProblems::TooManyCandidates { count: 1 }],
+                    }]
+                },
                 info_problems: Vec::new()
             }
             .models_downloadable()
@@ -557,7 +604,10 @@ mod tests {
                     entity: sample_person(PersonId::new()),
                     problems: vec![PotentialProblems::NoCandidates]
                 }],
-                lists: Vec::new(),
+                lists: ListProblems {
+                    general: Vec::new(),
+                    per_list: Vec::new(),
+                },
                 info_problems: Vec::new()
             }
             .models_downloadable()
@@ -567,13 +617,11 @@ mod tests {
     #[tokio::test]
     async fn no_candidate_list_added() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
-        // make sure no other general errors occur
-        add_submitters(&store).await?;
-        add_name_authorisations(&store, 1).await?;
 
-        let (problems, _) = AllProblems::find_general_problems(&store);
+        let (problems, _) = AllProblems::find_list_problems(&[], &store)?;
 
         assert_eq!(problems.general.len(), 1);
+
         assert_eq!(problems.general[0], PotentialProblems::NoCandidateList);
 
         Ok(())
@@ -686,6 +734,7 @@ mod tests {
         assert_eq!(
             problems
                 .lists
+                .per_list
                 .iter()
                 .flat_map(|list_problems| &list_problems.problems)
                 .filter(|problem| **problem == PotentialProblems::DuplicateDistricts)
@@ -701,7 +750,10 @@ mod tests {
         let problems = AllProblems {
             general: empty_general(),
             candidates: Vec::new(),
-            lists: Vec::new(),
+            lists: ListProblems {
+                general: Vec::new(),
+                per_list: Vec::new(),
+            },
             info_problems: Vec::new(),
         };
         assert_eq!(problems.highest_severity(), None);
@@ -712,7 +764,10 @@ mod tests {
         let problems = AllProblems {
             general: empty_general(),
             candidates: Vec::new(),
-            lists: Vec::new(),
+            lists: ListProblems {
+                general: Vec::new(),
+                per_list: Vec::new(),
+            },
             info_problems: vec![EntityInfoProblems::AnyProblem(
                 InfoProblems::NoSubstituteSubmitter,
             )],
@@ -728,10 +783,13 @@ mod tests {
                 entity: sample_person(PersonId::new()),
                 problems: vec![PotentialProblems::NoCandidates], // error
             }],
-            lists: vec![ListProblems {
-                entity: sample_candidate_list(CandidateListId::new()),
-                problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
-            }],
+            lists: ListProblems {
+                general: Vec::new(),
+                per_list: vec![EntityProblems {
+                    entity: sample_candidate_list(CandidateListId::new()),
+                    problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
+                }],
+            },
             info_problems: vec![EntityInfoProblems::AnyProblem(
                 InfoProblems::NoSubstituteSubmitter,
             )],
@@ -744,10 +802,13 @@ mod tests {
         let problems = AllProblems {
             general: empty_general(),
             candidates: Vec::new(),
-            lists: vec![ListProblems {
-                entity: sample_candidate_list(CandidateListId::new()),
-                problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
-            }],
+            lists: ListProblems {
+                general: Vec::new(),
+                per_list: vec![EntityProblems {
+                    entity: sample_candidate_list(CandidateListId::new()),
+                    problems: vec![PotentialProblems::TooManyCandidates { count: 1 }], // warning
+                }],
+            },
             info_problems: vec![EntityInfoProblems::AnyProblem(
                 InfoProblems::NoSubstituteSubmitter,
             )],

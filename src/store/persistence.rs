@@ -12,6 +12,7 @@ use super::{
     Store, StoreData, StoreEvent, chain_hash,
     encryption::EventCipher,
     filesystem::{self, replay_from_file, update_in_filesystem},
+    memory::{self, MemoryStore},
 };
 
 #[cfg(feature = "database")]
@@ -25,8 +26,9 @@ pub enum StorePersistence {
     Database(sqlx::PgPool),
     /// Local filesystem persistence under the provided directory.
     Local(PathBuf),
-    /// In-memory only (no persistence).
-    None,
+    /// In-memory only (no durable persistence). Carries a shared index of stream
+    /// scopes and event hashes so lookups resolve like the other backends.
+    Memory(MemoryStore),
 }
 
 impl StorePersistence {
@@ -36,7 +38,7 @@ impl StorePersistence {
             .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
 
         match url.scheme() {
-            "memory" => Ok(StorePersistence::None),
+            "memory" => Ok(StorePersistence::Memory(MemoryStore::default())),
             "local" => {
                 let path_string = storage_url.strip_prefix("local://").unwrap_or("");
                 let path = PathBuf::from(path_string);
@@ -79,7 +81,7 @@ impl StorePersistence {
             StorePersistence::Local(dir) => {
                 filesystem::init_local(dir).await?;
             }
-            StorePersistence::None => {}
+            StorePersistence::Memory(_) => {}
         }
 
         Ok(())
@@ -101,7 +103,9 @@ impl StorePersistence {
             StorePersistence::Local(dir) => {
                 filesystem::ensure_stream_file(dir, stream_id, election, scope).await?;
             }
-            StorePersistence::None => {}
+            StorePersistence::Memory(store) => {
+                memory::ensure_stream(store, stream_id, election, scope);
+            }
         }
 
         Ok(())
@@ -120,7 +124,7 @@ impl StorePersistence {
             StorePersistence::Local(dir) => {
                 Ok(filesystem::streams_with_data(dir, stream_ids).await)
             }
-            StorePersistence::None => Ok(std::collections::HashSet::new()),
+            StorePersistence::Memory(store) => Ok(memory::streams_with_data(store, stream_ids)),
         }
     }
 
@@ -129,7 +133,8 @@ impl StorePersistence {
     /// The database backend reads each stream's recorded scope. Local file
     /// storage only ever holds political-group streams, so it lists every
     /// non-empty stream for [`Scope::PoliticalGroup`] and nothing for any other
-    /// scope. The in-memory backend persists nothing and returns an empty list.
+    /// scope. The in-memory backend tracks each stream's scope in its shared
+    /// index and lists the non-empty streams matching `scope`.
     pub async fn streams_by_scope(
         &self,
         scope: Scope,
@@ -140,7 +145,7 @@ impl StorePersistence {
                 super::database::streams_by_scope(pool, scope).await
             }
             StorePersistence::Local(dir) => Ok(filesystem::streams_by_scope(dir, scope).await),
-            StorePersistence::None => Ok(Vec::new()),
+            StorePersistence::Memory(store) => Ok(memory::streams_by_scope(store, scope)),
         }
     }
 
@@ -157,7 +162,7 @@ impl StorePersistence {
             StorePersistence::Local(dir) => {
                 Ok(filesystem::elections_for_stream(dir, stream_id).await)
             }
-            StorePersistence::None => Ok(Vec::new()),
+            StorePersistence::Memory(store) => Ok(memory::elections_for_stream(store, stream_id)),
         }
     }
 
@@ -166,8 +171,8 @@ impl StorePersistence {
     ///
     /// The database backend indexes events by hash and restricts the lookup to
     /// political-group streams; local file storage only holds political-group
-    /// streams, so it scans them directly. The in-memory backend has no such
-    /// lookup and always returns `None`.
+    /// streams, so it scans them directly. The in-memory backend scans its
+    /// shared index, likewise restricted to political-group streams.
     pub async fn find_event_by_hash_prefix(
         &self,
         hash_prefix: &[u8],
@@ -180,7 +185,9 @@ impl StorePersistence {
             StorePersistence::Local(dir) => {
                 filesystem::find_event_by_hash_prefix(dir, hash_prefix).await
             }
-            StorePersistence::None => Ok(None),
+            StorePersistence::Memory(store) => {
+                memory::find_event_by_hash_prefix(store, hash_prefix)
+            }
         }
     }
 
@@ -205,7 +212,7 @@ impl StorePersistence {
                     )))
                 }
             }
-            StorePersistence::None => Ok(()),
+            StorePersistence::Memory(_) => Ok(()),
         }
     }
 }
@@ -215,7 +222,8 @@ impl StorePersistence {
 ///
 /// The persisting variants (`Database`, `Local`) cannot be constructed
 /// without a cipher, so events written to disk or database are *always*
-/// encrypted. `Memory` carries no cipher because it never writes events out.
+/// encrypted. `Memory` carries no cipher because it never writes events out; it
+/// keeps only the shared index used to answer cross-stream lookups.
 #[derive(Clone, Debug)]
 pub(crate) enum StoreBackend {
     /// PostgreSQL-backed, encrypted persistence.
@@ -229,13 +237,14 @@ pub(crate) enum StoreBackend {
         dir: PathBuf,
         cipher: Box<EventCipher>,
     },
-    /// In-memory only: no persistence, and therefore no encryption.
-    Memory,
+    /// In-memory only: no durable persistence and no encryption, just the shared
+    /// index that records event hashes and stream scopes.
+    Memory { store: MemoryStore },
 }
 
 impl StorePersistence {
     /// Pair this persistence target with a stream's cipher to form a
-    /// [`StoreBackend`]. The cipher is dropped for [`StorePersistence::None`],
+    /// [`StoreBackend`]. The cipher is dropped for [`StorePersistence::Memory`],
     /// since an in-memory store neither persists nor encrypts events.
     pub(crate) fn into_backend(self, cipher: EventCipher) -> StoreBackend {
         let cipher = Box::new(cipher);
@@ -243,7 +252,7 @@ impl StorePersistence {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => StoreBackend::Database { pool, cipher },
             StorePersistence::Local(dir) => StoreBackend::Local { dir, cipher },
-            StorePersistence::None => StoreBackend::Memory,
+            StorePersistence::Memory(store) => StoreBackend::Memory { store },
         }
     }
 }
@@ -263,7 +272,9 @@ where
             StoreBackend::Local { dir, cipher } => {
                 replay_from_file(self, dir, cipher).await?;
             }
-            StoreBackend::Memory => {}
+            // The in-memory projection is the only copy of the events, so there
+            // is nothing to replay back into it.
+            StoreBackend::Memory { .. } => {}
         }
 
         Ok(())
@@ -279,7 +290,7 @@ where
             StoreBackend::Local { dir, cipher } => {
                 update_in_filesystem(self, dir, cipher, event).await
             }
-            StoreBackend::Memory => {
+            StoreBackend::Memory { store } => {
                 let mut data = self.data.write();
                 let event_id = data.last_event_id() + 1;
                 let created_at = Utc::now();
@@ -289,6 +300,9 @@ where
                     AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
                 })?;
                 let hash = chain_hash(&prev_hash, event_id, created_at, &body);
+                // Record the hash in the shared index so cross-stream lookups
+                // (by scope, by hash prefix) resolve like the other backends.
+                memory::record_event(store, self.stream_id, self.election, event_id, hash);
                 data.apply(StoreEvent {
                     event_id,
                     payload: event,
@@ -326,7 +340,7 @@ mod tests {
     fn from_storage_url_accepts_memory() {
         let persistence = StorePersistence::from_storage_url("memory://").unwrap();
 
-        assert!(matches!(persistence, StorePersistence::None));
+        assert!(matches!(persistence, StorePersistence::Memory(_)));
     }
 
     #[test]
@@ -396,7 +410,9 @@ mod tests {
         Store {
             stream_id: Uuid::new_v4(),
             election: TEST_ELECTION,
-            backend: StoreBackend::Memory,
+            backend: StoreBackend::Memory {
+                store: MemoryStore::default(),
+            },
             data: std::sync::Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
