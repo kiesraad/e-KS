@@ -137,7 +137,23 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::{AppState, CsbContext, test_utils::response_body_string};
+    use crate::{
+        AppEvent, AppState, CsbContext, ElectionConfig, test_utils::response_body_string,
+        utils::format_hash,
+    };
+
+    /// Populate a political-group stream with a single event in the (in-memory)
+    /// test store and return its `(stream_id, formatted chain hash)`.
+    async fn seed_source_event(state: &AppState) -> Result<(StreamId, String), AppError> {
+        let source_stream = StreamId::new();
+        let source_store = state
+            .store_for_stream(source_stream, ElectionConfig::EK27, false)
+            .await?;
+        source_store.update(AppEvent::HideDownloadWarning).await?;
+
+        let hash = source_store.get_events()[0].hash;
+        Ok((source_stream, format_hash(&hash, false)))
+    }
 
     #[tokio::test]
     async fn import_renders_placeholder_page() -> Result<(), AppError> {
@@ -195,8 +211,8 @@ mod tests {
 
     #[tokio::test]
     async fn import_submit_rejects_unknown_hash() {
-        // The in-memory test backend has no event index, so a well-formed hash
-        // resolves to no package.
+        // A fresh in-memory backend has no cached political-group streams, so a
+        // well-formed hash resolves to no package.
         let state = AppState::new_for_tests().await;
         let context = CsbContext::new_test();
         let csrf_token = context.session.csrf_token.to_string();
@@ -215,5 +231,86 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    #[tokio::test]
+    async fn import_submit_imports_event_from_in_memory_store() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let (source_stream, hash) = seed_source_event(&state).await?;
+
+        let context = CsbContext::new_test();
+        let csrf_token = context.session.csrf_token.to_string();
+
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { csrf_token, hash }),
+        )
+        .await?
+        .into_response();
+
+        // A successful import redirects to the examination overview.
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        // The import is recorded under a fresh CSB stream, carrying the source.
+        let csb_stores = state
+            .csb_store_registry
+            .stores_by_scope(Scope::CentralElectoralCommittee)
+            .await?;
+        assert_eq!(csb_stores.len(), 1);
+        let imported = csb_stores[0].data.read().events.first().is_some_and(|e| {
+            matches!(&e.payload, CsbEvent::Import { source_stream_id, .. } if *source_stream_id == source_stream)
+        });
+        assert!(imported);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_submit_rejects_already_imported_in_memory_store() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let (_, hash) = seed_source_event(&state).await?;
+
+        // First import succeeds.
+        let context = CsbContext::new_test();
+        let csrf_token = context.session.csrf_token.to_string();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm {
+                csrf_token,
+                hash: hash.clone(),
+            }),
+        )
+        .await?
+        .into_response();
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        // Re-importing the same source stream is rejected against the cached CSB
+        // store (the in-memory backend persists nothing, so the duplicate check
+        // must consult the live registry).
+        let context = CsbContext::new_test();
+        let csrf_token = context.session.csrf_token.to_string();
+        let response = import_submit(
+            CsbImportPath {},
+            State(state.clone()),
+            context,
+            Form(ImportForm { csrf_token, hash }),
+        )
+        .await?
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+
+        // Only the first import was recorded.
+        let csb_stores = state
+            .csb_store_registry
+            .stores_by_scope(Scope::CentralElectoralCommittee)
+            .await?;
+        assert_eq!(csb_stores.len(), 1);
+
+        Ok(())
     }
 }

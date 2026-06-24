@@ -8,7 +8,8 @@ use uuid::Uuid;
 use crate::{AppError, ElectionConfig, Scope};
 
 use super::{
-    StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, persistence::StoreBackend,
+    StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, memory::MemoryStore,
+    persistence::StoreBackend,
 };
 
 /// Event-sourced store handle for a single (stream, election) pair.
@@ -49,7 +50,9 @@ where
         Store {
             stream_id: Uuid::new_v4(),
             election,
-            backend: StoreBackend::Memory,
+            backend: StoreBackend::Memory {
+                store: MemoryStore::default(),
+            },
             data: Arc::new(parking_lot::RwLock::new(D::default())),
         }
     }
@@ -178,7 +181,9 @@ mod tests {
         Store {
             stream_id: Uuid::new_v4(),
             election: TEST_ELECTION,
-            backend: StoreBackend::Memory,
+            backend: StoreBackend::Memory {
+                store: MemoryStore::default(),
+            },
             data: Arc::new(parking_lot::RwLock::new(TestData::default())),
         }
     }
