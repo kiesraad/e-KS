@@ -12,17 +12,16 @@ mod political_group;
 pub struct CsbExaminationOverviewPath;
 
 #[derive(TypedPath, Deserialize)]
-#[typed_path(
-    "/csb/examination/{stream_id}",
-    rejection(AppError)
-)]
+#[typed_path("/csb/examination/{stream_id}", rejection(AppError))]
 pub struct CsbPoliticalGroupPath {
-    pub stream_id: StreamId
+    pub stream_id: StreamId,
 }
 
 impl CsbPoliticalGroup {
     pub fn examination_path(&self) -> impl TypedPath {
-        CsbPoliticalGroupPath {stream_id: self.stream_id}
+        CsbPoliticalGroupPath {
+            stream_id: self.stream_id,
+        }
     }
 }
 

@@ -11,7 +11,10 @@
 //! [`Frame`] is a versioned enum; postcard encodes the variant discriminant as a
 //! varint, giving us a per-frame version marker for future format migrations.
 
-use std::{path::{Path, PathBuf}, str::FromStr};
+use std::{
+    path::{Path, PathBuf},
+    str::FromStr,
+};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -429,6 +432,10 @@ mod tests {
 
         fn events(&self) -> &[StoreEvent<Self::Event>] {
             &self.events
+        }
+
+        fn scope() -> Scope {
+            Scope::PoliticalGroup
         }
     }
 

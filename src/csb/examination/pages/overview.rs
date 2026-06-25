@@ -4,8 +4,10 @@ use axum::response::{IntoResponse, Response};
 use crate::{
     AppError, Context, CsbContext, HtmlTemplate,
     csb::{
-        examination::extractors::{CsbPoliticalGroup, CsbPoliticalGroups},
-        examination::pages::CsbExaminationOverviewPath,
+        examination::{
+            extractors::{CsbPoliticalGroup, CsbPoliticalGroups},
+            pages::CsbExaminationOverviewPath,
+        },
         import::CsbImportPath,
     },
     filters,

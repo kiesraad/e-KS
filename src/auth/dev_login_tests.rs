@@ -8,8 +8,8 @@ use tower::ServiceExt;
 use secrecy::SecretString;
 
 use crate::{
-    AppEvent, AppState, AppStore, ElectionConfig, Locale, Province, Scope, Session, StreamId,
-    router, store::StoreEvent, test_utils::response_body_string,
+    AppEvent, AppState, AppStore, ElectionConfig, Locale, Scope, Session, StreamId, router,
+    store::StoreEvent, test_utils::response_body_string,
 };
 
 const TEST_ID_CODE: &str = "999999990";
@@ -304,44 +304,4 @@ async fn committee_session_redirected_off_app_routes() {
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
-}
-
-/// A political-group session may reach every election under its own stream. A
-/// stream is a `(stream_id, election)` pair, so multiple streams sharing one
-/// `stream_id` are returned.
-#[tokio::test]
-async fn accessible_streams_for_political_group_lists_all_its_elections() {
-    let state = AppState::new_for_tests().await;
-    let stream_id = StreamId::new();
-
-    // Two streams under the same stream_id, each with an event so the registry
-    // reports them.
-    for election in [ElectionConfig::EK27, ElectionConfig::PS27(Province::GE)] {
-        let store = state
-            .store_for_stream(stream_id, election, false)
-            .await
-            .expect("store");
-        store
-            .update(AppEvent::DeveloperLogin { stream_id })
-            .await
-            .expect("event");
-    }
-
-    let mut session = Session::new_test();
-    session.set_stream_id(stream_id);
-    session.set_scope(Scope::PoliticalGroup);
-
-    let mut accessible = state
-        .accessible_streams(&session)
-        .await
-        .expect("accessible streams");
-    accessible.sort_by_key(|(_, election)| election.stable_id());
-
-    assert_eq!(
-        accessible,
-        vec![
-            (stream_id, ElectionConfig::EK27),
-            (stream_id, ElectionConfig::PS27(Province::GE)),
-        ]
-    );
 }

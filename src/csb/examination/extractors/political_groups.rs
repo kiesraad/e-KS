@@ -2,10 +2,9 @@ use axum::{
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
 };
-use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, CsbStoreData, Scope, StreamId, political_groups::PoliticalGroup, store::StoreRegistry,
+    AppError, CsbStoreData, StreamId, political_groups::PoliticalGroup, store::StoreRegistry,
 };
 
 pub struct CsbPoliticalGroup {
@@ -27,10 +26,7 @@ where
         let registry = StoreRegistry::<CsbStoreData>::from_ref(state);
 
         let mut political_groups = Vec::new();
-        for store in registry
-            .stores_by_scope(Scope::CentralElectoralCommittee)
-            .await?
-        {
+        for store in registry.stores_by_scope().await? {
             political_groups.push(CsbPoliticalGroup {
                 stream_id: store.stream_id,
                 political_group: store.data.read().imported_data.political_group.clone(),

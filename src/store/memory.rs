@@ -85,7 +85,10 @@ pub(crate) fn streams_with_data(store: &MemoryStore, stream_ids: &[StreamId]) ->
 }
 
 /// List every non-empty `(stream_id, election)` stream with the given scope.
-pub(crate) fn streams_by_scope(store: &MemoryStore, scope: Scope) -> Vec<(StreamId, ElectionConfig)> {
+pub(crate) fn streams_by_scope(
+    store: &MemoryStore,
+    scope: Scope,
+) -> Vec<(StreamId, ElectionConfig)> {
     let index = store.inner.read();
     index
         .iter()
@@ -96,7 +99,10 @@ pub(crate) fn streams_by_scope(store: &MemoryStore, scope: Scope) -> Vec<(Stream
 }
 
 /// List the elections under the given stream that have recorded events.
-pub(crate) fn elections_for_stream(store: &MemoryStore, stream_id: StreamId) -> Vec<ElectionConfig> {
+pub(crate) fn elections_for_stream(
+    store: &MemoryStore,
+    stream_id: StreamId,
+) -> Vec<ElectionConfig> {
     let index = store.inner.read();
     index
         .iter()

@@ -403,6 +403,10 @@ mod tests {
         fn events(&self) -> &[StoreEvent<Self::Event>] {
             &self.events
         }
+
+        fn scope() -> Scope {
+            Scope::PoliticalGroup
+        }
     }
 
     fn test_store() -> Store<TestData> {
@@ -441,7 +445,6 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -453,7 +456,6 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -477,7 +479,6 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -490,7 +491,6 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &wrong_encryption,
         )
         .await?;
@@ -517,7 +517,6 @@ mod tests {
             persistence.clone(),
             stream_a,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -534,7 +533,6 @@ mod tests {
             persistence,
             stream_b,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;

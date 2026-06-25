@@ -18,6 +18,8 @@ pub use store_handle::Store;
 
 pub(crate) use event::{chain_hash, event_aad};
 
+use crate::Scope;
+
 pub trait StoreData: Default + Send + Sync + 'static {
     type Event;
 
@@ -37,4 +39,6 @@ pub trait StoreData: Default + Send + Sync + 'static {
     fn last_event_hash(&self) -> [u8; 32] {
         self.events().last().map(|e| e.hash).unwrap_or(GENESIS_HASH)
     }
+
+    fn scope() -> Scope;
 }

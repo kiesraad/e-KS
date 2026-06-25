@@ -348,7 +348,6 @@ mod database_tests {
             pool.clone(),
             group_id,
             ElectionConfig::EK27,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -361,15 +360,10 @@ mod database_tests {
         let loaded = store.get_person(person_id)?;
         assert_eq!(loaded.id, person_id);
 
-        let fresh_store = AppStore::new_with_pool_for_stream(
-            pool,
-            group_id,
-            ElectionConfig::EK27,
-            Scope::PoliticalGroup,
-            &encryption,
-        )
-        .await
-        .unwrap();
+        let fresh_store =
+            AppStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &encryption)
+                .await
+                .unwrap();
         fresh_store.load().await?;
 
         let reloaded = fresh_store.get_person(person_id)?;
@@ -390,7 +384,6 @@ mod database_tests {
             pool.clone(),
             group_id,
             ElectionConfig::EK27,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await
@@ -428,15 +421,10 @@ mod database_tests {
         .execute(&pool)
         .await?;
 
-        let fresh_store = AppStore::new_with_pool_for_stream(
-            pool,
-            group_id,
-            ElectionConfig::EK27,
-            Scope::PoliticalGroup,
-            &encryption,
-        )
-        .await
-        .unwrap();
+        let fresh_store =
+            AppStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &encryption)
+                .await
+                .unwrap();
 
         let err = fresh_store
             .load()
@@ -468,20 +456,8 @@ mod database_tests {
 
         // The committee stream joins two elections; each row is created with the
         // committee scope. The political group joins one.
-        ensure_stream(
-            &pool,
-            committee,
-            ek27,
-            Scope::CentralElectoralCommittee,
-        )
-        .await?;
-        ensure_stream(
-            &pool,
-            committee,
-            ps27,
-            Scope::CentralElectoralCommittee,
-        )
-        .await?;
+        ensure_stream(&pool, committee, ek27, Scope::CentralElectoralCommittee).await?;
+        ensure_stream(&pool, committee, ps27, Scope::CentralElectoralCommittee).await?;
         ensure_stream(&pool, group, ek27, Scope::PoliticalGroup).await?;
 
         // Empty placeholder rows (last_event_id = 0) are not yet accessible.
@@ -533,7 +509,6 @@ mod database_tests {
             pool.clone(),
             group,
             ElectionConfig::EK27,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await

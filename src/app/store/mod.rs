@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    AppEvent,
+    AppEvent, Scope,
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
     list_submitters::ListSubmitter,
@@ -98,6 +98,10 @@ impl StoreData for AppStoreData {
 
     fn events(&self) -> &[StoreEvent<Self::Event>] {
         &self.events
+    }
+
+    fn scope() -> Scope {
+        Scope::PoliticalGroup
     }
 }
 

@@ -4,7 +4,7 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
 
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use crate::{AppError, ElectionConfig, StreamId};
 
 use super::{
     StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, memory::MemoryStore,
@@ -61,13 +61,11 @@ where
         storage_url: &str,
         stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Create a new store for a stream using an already-initialized persistence
@@ -76,11 +74,10 @@ where
         persistence: StorePersistence,
         stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         persistence
-            .ensure_stream(stream_id, election, scope)
+            .ensure_stream(stream_id, election, D::scope())
             .await?;
 
         let cipher = encryption.derive_cipher(stream_id, election);
@@ -98,13 +95,11 @@ where
         pool: sqlx::PgPool,
         stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Apply a single event to the in-memory projection.
@@ -153,6 +148,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::Scope;
+
     use super::*;
 
     const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
@@ -173,6 +170,10 @@ mod tests {
 
         fn events(&self) -> &[StoreEvent<Self::Event>] {
             &self.events
+        }
+
+        fn scope() -> Scope {
+            Scope::PoliticalGroup
         }
     }
 

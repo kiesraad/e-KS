@@ -27,7 +27,10 @@ where
 
         let registry = StoreRegistry::<CsbStoreData>::from_ref(state);
 
-        let election = Session::from_request_parts(parts, state).await?.current_election.ok_or(AppError::InternalServerError)?;
+        let election = Session::from_request_parts(parts, state)
+            .await?
+            .current_election
+            .ok_or(AppError::InternalServerError)?;
 
         registry.get_store(stream_id, election).await
     }

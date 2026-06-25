@@ -246,7 +246,8 @@ pub async fn find_event_by_hash_prefix(
         .into_iter()
         .next()
         .and_then(|(stream_id, code, event_id)| {
-            parse_stable_id(&code).map(|election| (StreamId(stream_id), election, event_id as usize))
+            parse_stable_id(&code)
+                .map(|election| (StreamId(stream_id), election, event_id as usize))
         }))
 }
 

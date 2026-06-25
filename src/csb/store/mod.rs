@@ -2,11 +2,10 @@
 //! request extractor that pulls a [`CsbStore`](crate::CsbStore) out of the
 //! request extensions.
 
-use axum::{extract::FromRequestParts, http::request::Parts};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppStoreData, CsbEvent,
+    AppStoreData, CsbEvent, Scope,
     store::{StoreData, StoreEvent},
 };
 
@@ -31,6 +30,10 @@ impl StoreData for CsbStoreData {
 
     fn events(&self) -> &[StoreEvent<Self::Event>] {
         &self.events
+    }
+
+    fn scope() -> Scope {
+        Scope::CentralElectoralCommittee
     }
 }
 
