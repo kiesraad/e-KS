@@ -3,4 +3,4 @@ mod pages;
 mod political_groups;
 
 pub use pages::{CsbImportPath, router};
-pub use political_groups::CsbPoliticalGroups;
+pub use political_groups::{CsbPoliticalGroups, CsbPoliticalGroup};

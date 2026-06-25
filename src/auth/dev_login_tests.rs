@@ -57,7 +57,7 @@ async fn open_store(state: &AppState) -> AppStore {
     let expected_id = derive_test_id(state, TEST_ID_CODE);
     state
         .store_registry
-        .get_or_create(expected_id.uuid(), ElectionConfig::EK27)
+        .get_or_create(expected_id, ElectionConfig::EK27)
         .await
         .expect("store")
 }
@@ -340,8 +340,8 @@ async fn accessible_streams_for_political_group_lists_all_its_elections() {
     assert_eq!(
         accessible,
         vec![
-            (stream_id.uuid(), ElectionConfig::EK27),
-            (stream_id.uuid(), ElectionConfig::PS27(Province::GE)),
+            (stream_id, ElectionConfig::EK27),
+            (stream_id, ElectionConfig::PS27(Province::GE)),
         ]
     );
 }

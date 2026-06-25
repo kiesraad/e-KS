@@ -11,7 +11,7 @@
 //! [`Frame`] is a versioned enum; postcard encodes the variant discriminant as a
 //! varint, giving us a per-frame version marker for future format migrations.
 
-use std::path::{Path, PathBuf};
+use std::{path::{Path, PathBuf}, str::FromStr};
 
 use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
@@ -21,7 +21,7 @@ use tokio::{
 };
 
 use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 const FRAME_HEADER_LEN: usize = 4;
 
@@ -149,9 +149,9 @@ where
 /// Check which of the given stream IDs have persisted events on disk (any election).
 pub async fn streams_with_data(
     dir: &Path,
-    stream_ids: &[uuid::Uuid],
-) -> std::collections::HashSet<uuid::Uuid> {
-    let wanted: std::collections::HashSet<uuid::Uuid> = stream_ids.iter().copied().collect();
+    stream_ids: &[StreamId],
+) -> std::collections::HashSet<StreamId> {
+    let wanted: std::collections::HashSet<StreamId> = stream_ids.iter().copied().collect();
     let mut found = std::collections::HashSet::new();
 
     visit_non_empty_stream_files(dir, |stream_id, _election| {
@@ -165,7 +165,7 @@ pub async fn streams_with_data(
 }
 
 /// List the elections that have persisted events under the given stream.
-pub async fn elections_for_stream(dir: &Path, stream_id: uuid::Uuid) -> Vec<ElectionConfig> {
+pub async fn elections_for_stream(dir: &Path, stream_id: StreamId) -> Vec<ElectionConfig> {
     let mut result = Vec::new();
     visit_non_empty_stream_files(dir, |id, election| {
         if id == stream_id {
@@ -181,7 +181,7 @@ pub async fn elections_for_stream(dir: &Path, stream_id: uuid::Uuid) -> Vec<Elec
 /// unparseable filenames are ignored.
 async fn visit_non_empty_stream_files(
     dir: &Path,
-    mut callback: impl FnMut(uuid::Uuid, ElectionConfig),
+    mut callback: impl FnMut(StreamId, ElectionConfig),
 ) {
     let Ok(mut entries) = fs::read_dir(dir).await else {
         return;
@@ -201,11 +201,11 @@ async fn visit_non_empty_stream_files(
 
 /// Parse a filename of the form `{uuid}_{election_stable_id}.bin` back into its
 /// `(stream_id, election)` parts. Returns `None` for unrelated files.
-fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(uuid::Uuid, ElectionConfig)> {
+fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(StreamId, ElectionConfig)> {
     let name = file_name.to_str()?;
     let stem = name.strip_suffix(".bin")?;
     let (id_str, election_segment) = stem.split_once('_')?;
-    let stream_id = uuid::Uuid::parse_str(id_str).ok()?;
+    let stream_id = StreamId::from_str(id_str).ok()?;
     let election = parse_stable_id(election_segment)?;
     Some((stream_id, election))
 }
@@ -230,7 +230,7 @@ fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
 /// disk.
 pub async fn ensure_stream_file(
     dir: &Path,
-    stream_id: uuid::Uuid,
+    stream_id: StreamId,
     election: ElectionConfig,
     scope: Scope,
 ) -> Result<(), AppError> {
@@ -259,7 +259,7 @@ pub async fn ensure_stream_file(
 /// All on-disk streams are [`Scope::PoliticalGroup`] (enforced by
 /// [`ensure_stream_file`]), so a political-group query returns every non-empty
 /// stream and any other scope returns nothing.
-pub async fn streams_by_scope(dir: &Path, scope: Scope) -> Vec<(uuid::Uuid, ElectionConfig)> {
+pub async fn streams_by_scope(dir: &Path, scope: Scope) -> Vec<(StreamId, ElectionConfig)> {
     if scope != Scope::PoliticalGroup {
         return Vec::new();
     }
@@ -282,7 +282,7 @@ pub async fn streams_by_scope(dir: &Path, scope: Scope) -> Vec<(uuid::Uuid, Elec
 pub async fn find_event_by_hash_prefix(
     dir: &Path,
     hash_prefix: &[u8],
-) -> Result<Option<(uuid::Uuid, ElectionConfig, usize)>, AppError> {
+) -> Result<Option<(StreamId, ElectionConfig, usize)>, AppError> {
     let mut streams = Vec::new();
     visit_non_empty_stream_files(dir, |stream_id, election| {
         streams.push((stream_id, election));
@@ -394,7 +394,7 @@ async fn append_event<E: Serialize>(
     Ok(hash)
 }
 
-fn stream_path(dir: &Path, stream_id: uuid::Uuid, election: ElectionConfig) -> PathBuf {
+fn stream_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> PathBuf {
     // Election identifiers can contain ':' (e.g. `PS27:GR`); replace with '_'
     // so the filename stays portable on all filesystems.
     let election_segment = election.stable_id().replace(':', "_");
@@ -445,7 +445,7 @@ mod tests {
         dir
     }
 
-    fn test_store(stream_id: uuid::Uuid) -> Store<TestData> {
+    fn test_store(stream_id: StreamId) -> Store<TestData> {
         Store {
             stream_id,
             election: TEST_ELECTION,
@@ -457,7 +457,7 @@ mod tests {
     }
 
     /// The cipher a real store would derive for this stream.
-    fn test_cipher(stream_id: uuid::Uuid) -> EventCipher {
+    fn test_cipher(stream_id: StreamId) -> EventCipher {
         test_encryption().derive_cipher(stream_id, TEST_ELECTION)
     }
 
@@ -473,7 +473,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(
@@ -537,7 +537,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(
@@ -585,7 +585,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(
@@ -641,7 +641,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         ensure_stream_file(&dir, stream_id, TEST_ELECTION, Scope::PoliticalGroup).await?;
 
         let path = stream_path(&dir, stream_id, TEST_ELECTION);
@@ -656,7 +656,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let err = ensure_stream_file(
             &dir,
             stream_id,
@@ -679,7 +679,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(
@@ -706,7 +706,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(
@@ -762,7 +762,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let store = test_store(uuid::Uuid::new_v4());
+        let store = test_store(StreamId::new());
         let cipher = test_cipher(store.stream_id);
         let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
         append_event(
@@ -803,7 +803,7 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let stream_id = uuid::Uuid::new_v4();
+        let stream_id = StreamId::new();
         let store = test_store(stream_id);
         let cipher = test_cipher(stream_id);
         update_in_filesystem(

@@ -11,12 +11,11 @@ use std::{
 
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
-use uuid::Uuid;
 
 use super::{Store, StoreData, StorePersistence, encryption::EventEncryption};
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
-type StoreKey = (Uuid, ElectionConfig);
+type StoreKey = (StreamId, ElectionConfig);
 type StoreMap<D> = Arc<RwLock<HashMap<StoreKey, Store<D>>>>;
 
 /// Cache of per-(stream, election) stores backed by a shared persistence backend.
@@ -97,7 +96,7 @@ where
     /// Fetch an existing store or create and load it for the given (stream, election).
     pub async fn get_or_create(
         &self,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<Store<D>, AppError> {
         self.get_or_create_with_init(stream_id, election, |_| async { Ok(()) })
@@ -107,7 +106,7 @@ where
     /// Fetch or create a store, then run a one-time async init hook before caching.
     pub async fn get_or_create_with_init<F, Fut>(
         &self,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
         init: F,
     ) -> Result<Store<D>, AppError>
@@ -141,7 +140,7 @@ where
     pub async fn streams_by_scope(
         &self,
         scope: Scope,
-    ) -> Result<Vec<(Uuid, ElectionConfig)>, AppError> {
+    ) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         self.persistence.streams_by_scope(scope).await
     }
 
@@ -159,11 +158,11 @@ where
 
     /// Check which of the given stream IDs have data (in any election), using
     /// the in-memory cache first and falling back to the persistence backend.
-    pub async fn streams_with_data(&self, stream_ids: &[Uuid]) -> Result<HashSet<Uuid>, AppError> {
+    pub async fn streams_with_data(&self, stream_ids: &[StreamId]) -> Result<HashSet<StreamId>, AppError> {
         let (mut found, remaining) = {
             let cached = self.inner.read();
             let mut found = HashSet::new();
-            let mut remaining: HashSet<Uuid> = stream_ids.iter().copied().collect();
+            let mut remaining: HashSet<StreamId> = stream_ids.iter().copied().collect();
 
             for ((id, _), store) in cached.iter() {
                 if remaining.contains(id) && store.data.read().last_event_id() > 0 {
@@ -187,7 +186,7 @@ where
     /// consulting the in-memory cache first.
     pub async fn elections_for_stream(
         &self,
-        stream_id: Uuid,
+        stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {
         let mut found: HashSet<ElectionConfig> = {
             let cached = self.inner.read();

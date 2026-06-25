@@ -346,7 +346,7 @@ mod database_tests {
         let group_id = StreamId::new();
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
-            group_id.uuid(),
+            group_id,
             ElectionConfig::EK27,
             Scope::PoliticalGroup,
             &encryption,
@@ -363,7 +363,7 @@ mod database_tests {
 
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
-            group_id.uuid(),
+            group_id,
             ElectionConfig::EK27,
             Scope::PoliticalGroup,
             &encryption,
@@ -388,7 +388,7 @@ mod database_tests {
         let group_id = StreamId::new();
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
-            group_id.uuid(),
+            group_id,
             ElectionConfig::EK27,
             Scope::PoliticalGroup,
             &encryption,
@@ -409,7 +409,7 @@ mod database_tests {
             r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
             VALUES ($1, $2, $3, $4, $5, $6)"#,
         )
-        .bind(store.stream_id)
+        .bind(store.stream_id.uuid())
         .bind(&election_id)
         .bind(2_i64)
         .bind(Utc::now())
@@ -422,7 +422,7 @@ mod database_tests {
             r#"UPDATE streams SET last_event_id = $3
                WHERE stream_id = $1 AND election = $2"#,
         )
-        .bind(store.stream_id)
+        .bind(store.stream_id.uuid())
         .bind(&election_id)
         .bind(2_i64)
         .execute(&pool)
@@ -430,7 +430,7 @@ mod database_tests {
 
         let fresh_store = AppStore::new_with_pool_for_stream(
             pool,
-            group_id.uuid(),
+            group_id,
             ElectionConfig::EK27,
             Scope::PoliticalGroup,
             &encryption,
@@ -470,19 +470,19 @@ mod database_tests {
         // committee scope. The political group joins one.
         ensure_stream(
             &pool,
-            committee.uuid(),
+            committee,
             ek27,
             Scope::CentralElectoralCommittee,
         )
         .await?;
         ensure_stream(
             &pool,
-            committee.uuid(),
+            committee,
             ps27,
             Scope::CentralElectoralCommittee,
         )
         .await?;
-        ensure_stream(&pool, group.uuid(), ek27, Scope::PoliticalGroup).await?;
+        ensure_stream(&pool, group, ek27, Scope::PoliticalGroup).await?;
 
         // Empty placeholder rows (last_event_id = 0) are not yet accessible.
         assert!(
@@ -503,13 +503,13 @@ mod database_tests {
         committee_streams.sort_by_key(|(_, election)| election.stable_id());
         assert_eq!(
             committee_streams,
-            vec![(committee.uuid(), ek27), (committee.uuid(), ps27)]
+            vec![(committee, ek27), (committee, ps27)]
         );
 
         // The committee stream never leaks into the (default) political-group
         // listing; only the political group's own stream appears there.
         let political = streams_by_scope(&pool, Scope::PoliticalGroup).await?;
-        assert_eq!(political, vec![(group.uuid(), ek27)]);
+        assert_eq!(political, vec![(group, ek27)]);
 
         Ok(())
     }
@@ -531,7 +531,7 @@ mod database_tests {
         let group = StreamId::new();
         let store = AppStore::new_with_pool_for_stream(
             pool.clone(),
-            group.uuid(),
+            group,
             ElectionConfig::EK27,
             Scope::PoliticalGroup,
             &encryption,
@@ -545,7 +545,7 @@ mod database_tests {
             .last()
             .cloned()
             .expect("at least one event");
-        let expected = Some((group.uuid(), ElectionConfig::EK27, target.event_id));
+        let expected = Some((group, ElectionConfig::EK27, target.event_id));
 
         assert_eq!(
             find_event_by_hash_prefix(&pool, &target.hash).await?,
@@ -576,7 +576,7 @@ mod database_tests {
         let election_id = ElectionConfig::EK27.stable_id();
         ensure_stream(
             &pool,
-            committee.uuid(),
+            committee,
             ElectionConfig::EK27,
             Scope::CentralElectoralCommittee,
         )

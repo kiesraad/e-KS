@@ -336,13 +336,15 @@ impl crate::store::Store<AppStoreData> {
     }
 
     pub fn new_for_test_with_election(election: crate::ElectionConfig) -> Self {
+        use crate::StreamId;
+
         let data = AppStoreData {
             political_group: crate::test_utils::sample_political_group(),
             ..AppStoreData::default()
         };
 
         crate::store::Store {
-            stream_id: uuid::Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election,
             backend: crate::store::persistence::StoreBackend::Memory {
                 store: crate::store::memory::MemoryStore::default(),

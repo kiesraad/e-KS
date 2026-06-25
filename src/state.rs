@@ -94,7 +94,7 @@ impl AppState {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
-                .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
+                .get_or_create_with_init(stream_id, election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
                         crate::fixtures::load(&store).await?;
                     }
@@ -107,7 +107,7 @@ impl AppState {
             let _ = load_fixtures; // avoid unused parameter warning
 
             self.store_registry
-                .get_or_create(stream_id.uuid(), election)
+                .get_or_create(stream_id, election)
                 .await
         }
     }
@@ -123,7 +123,7 @@ impl AppState {
         election: ElectionConfig,
     ) -> Result<CsbStore, AppError> {
         self.csb_store_registry
-            .get_or_create(stream_id.uuid(), election)
+            .get_or_create(stream_id, election)
             .await
     }
 
@@ -133,7 +133,7 @@ impl AppState {
         stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {
         self.store_registry
-            .elections_for_stream(stream_id.uuid())
+            .elections_for_stream(stream_id)
             .await
     }
 
@@ -149,7 +149,7 @@ impl AppState {
     pub async fn accessible_streams(
         &self,
         session: &Session,
-    ) -> Result<Vec<(uuid::Uuid, ElectionConfig)>, AppError> {
+    ) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         match session.scope {
             Scope::PoliticalGroup => {
                 let Some(stream_id) = session.stream_id else {
@@ -158,7 +158,7 @@ impl AppState {
                 let elections = self.existing_elections_for_stream(stream_id).await?;
                 Ok(elections
                     .into_iter()
-                    .map(|election| (stream_id.uuid(), election))
+                    .map(|election| (stream_id, election))
                     .collect())
             }
             Scope::CentralElectoralCommittee => {

@@ -2,19 +2,15 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, CsbContext, HtmlTemplate,
-    csb::{
-        examination::pages::CsbExaminationOverviewPath,
-        import::{CsbImportPath, CsbPoliticalGroups},
-    },
-    filters,
-    political_groups::PoliticalGroup,
+    AppError, Context, CsbContext, HtmlTemplate, csb::{
+        examination::pages::CsbExaminationOverviewPath, import::{CsbImportPath, CsbPoliticalGroup, CsbPoliticalGroups},
+    }, filters,
 };
 
 #[derive(Template)]
 #[template(path = "examination/pages/overview.html")]
 struct CsbExaminationOverviewTemplate {
-    political_groups: Vec<PoliticalGroup>,
+    political_groups: Vec<CsbPoliticalGroup>,
 }
 
 /// Render the placeholder overview page.

@@ -2,13 +2,19 @@ use axum::{
     extract::{FromRef, FromRequestParts},
     http::request::Parts,
 };
+use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, CsbStoreData, Scope, political_groups::PoliticalGroup, store::StoreRegistry,
+    AppError, CsbStoreData, Scope, StreamId, political_groups::PoliticalGroup, store::StoreRegistry,
 };
 
+pub struct CsbPoliticalGroup {
+    pub political_group: PoliticalGroup,
+    pub stream_id: StreamId,
+}
+
 /// Extracts all imported political groups visible to the CSB scope.
-pub struct CsbPoliticalGroups(pub Vec<PoliticalGroup>);
+pub struct CsbPoliticalGroups(pub Vec<CsbPoliticalGroup>);
 
 impl<S> FromRequestParts<S> for CsbPoliticalGroups
 where
@@ -25,7 +31,10 @@ where
             .stores_by_scope(Scope::CentralElectoralCommittee)
             .await?
         {
-            political_groups.push(store.data.read().imported_data.political_group.clone());
+            political_groups.push(CsbPoliticalGroup {
+                stream_id: store.stream_id,
+                political_group: store.data.read().imported_data.political_group.clone(),
+            });
         }
 
         Ok(CsbPoliticalGroups(political_groups))

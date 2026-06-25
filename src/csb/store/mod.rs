@@ -52,8 +52,10 @@ where
 #[cfg(test)]
 impl crate::CsbStore {
     pub fn new_for_test() -> Self {
+        use crate::StreamId;
+
         crate::store::Store {
-            stream_id: uuid::Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election: crate::ElectionConfig::EK27,
             backend: crate::store::persistence::StoreBackend::Memory {
                 store: crate::store::memory::MemoryStore::default(),
