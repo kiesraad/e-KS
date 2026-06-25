@@ -45,7 +45,7 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.6.11", features = ["set-header", "trace"] }
+tower-http = { version = "0.7.0", features = ["set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
 bytes = "1.11.1"
