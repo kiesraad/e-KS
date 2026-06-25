@@ -1,6 +1,6 @@
 use chrono::NaiveDate;
 use reqwest::Client;
-use serde::{Deserialize, Serialize};
+use serde::{Deserialize, Deserializer, Serialize};
 
 use crate::{
     AppError,
@@ -46,8 +46,9 @@ impl BrpClient {
     async fn verify(&self, person: &Person) -> Result<bool, AppError> {
         let query = match person.personal_data.bsn {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
-                burgerservicenummer: vec![bsn.clone()],
+                bsn: vec![bsn.clone()],
                 fields: vec![
+                    // TODO: Create a Field type?
                     "burgerservicenummer".to_string(),
                     "geboorte".to_string(),
                     "geslacht".to_string(),
@@ -97,16 +98,10 @@ impl BrpClient {
 pub enum BrpQuery {
     #[serde(rename = "RaadpleegMetBurgerservicenummer")]
     ConsultWithBsn {
-        burgerservicenummer: Vec<Bsn>,
+        #[serde(rename = "burgerservicenummer")]
+        bsn: Vec<Bsn>,
         fields: Vec<String>,
     },
-    // SearchWithLastNameAndDateOfBirth,
-    // SearchWithLastNameAndRegisteredMunicipality,
-    // SearchWithPostalCodeAndHouseNumber,
-    // SearchWithStreetHouseNumberAndRegisteredMunicipality,
-    // // TODO: translate this better if we ever end up using it.
-    // // Seems to be related to identifying a residence
-    // SearchWithNumberingIdentification,
 }
 
 #[derive(Debug, Deserialize)]
@@ -127,41 +122,58 @@ struct BrpGender {
 }
 
 #[derive(Deserialize)]
-struct BrpDatum {
-    datum: Option<String>,
+struct BrpDate {
+    #[serde(rename = "datum")]
+    date: Option<String>,
 }
 
 #[derive(Deserialize)]
-struct BrpNaam {
-    voornamen: Option<String>,
-    geslachtsnaam: Option<String>,
-    voorvoegsel: Option<String>,
-    voorletters: Option<String>,
+struct BrpName {
+    #[serde(rename = "voornamen")]
+    first_names: Option<String>,
+    #[serde(rename = "geslachtsnaam")]
+    last_name: Option<String>,
+    #[serde(rename = "voorvoegsel")]
+    last_name_prefix: Option<String>,
+    #[serde(rename = "voorletters")]
+    initials: Option<String>,
 }
 
 #[derive(Deserialize)]
-struct BrpGeboorte {
-    datum: Option<BrpDatum>,
+struct BrpBirth {
+    #[serde(rename = "datum")]
+    date: Option<BrpDate>,
 }
 
 #[derive(Deserialize)]
-struct BrpVerblijfadres {
-    #[serde(rename = "korteStraatnaam")]
-    korte_straatnaam: Option<String>,
-    huisnummer: Option<u32>,
-    huisnummertoevoeging: Option<String>,
-    postcode: Option<String>,
-    woonplaats: Option<String>,
+struct BrpAddress {
+    // TODO: Confirm that this should be officieleStraatnaam
+    // Or handle this by checking if either matches? If this is only used as a correspondence address,
+    // than that should be sufficient
+    #[serde(rename = "officieleStraatnaam")]
+    street_name: Option<String>,
+    #[serde(rename = "huisnummer")]
+    house_number: Option<u32>,
+    #[serde(rename = "huisnummertoevoeging")]
+    house_number_addition: Option<String>,
+    #[serde(rename = "postcode")]
+    postal_code: Option<String>,
+    #[serde(rename = "woonplaats")]
+    place_of_residence: Option<String>,
 }
 
 #[derive(Deserialize)]
 #[serde(tag = "type")]
-enum BrpVerblijfplaats {
-    Adres {
-        verblijfadres: Option<BrpVerblijfadres>,
+enum BrpPlaceOfResidence {
+    #[serde(rename = "Adres")]
+    Address {
+        #[serde(rename = "verblijfadres")]
+        residence_address: Option<BrpAddress>,
     },
-    VerblijfplaatsBuitenland {
-        verblijfadres: Option<BrpVerblijfadres>,
+    #[serde(rename = "VerblijfPlaatsBuitenland")]
+    InternationalResidenceAddress {
+        #[serde(rename = "verblijfadres")]
+        residence_address: Option<BrpAddress>,
     },
     #[serde(other)]
     Other,
@@ -169,16 +181,21 @@ enum BrpVerblijfplaats {
 
 #[derive(Deserialize)]
 struct BrpPersonRaw {
-    burgerservicenummer: Option<String>,
-    geslacht: Option<BrpGender>,
-    naam: Option<BrpNaam>,
-    geboorte: Option<BrpGeboorte>,
-    verblijfplaats: Option<BrpVerblijfplaats>,
+    #[serde(rename = "burgerservicenummer")]
+    bsn: Option<String>,
+    #[serde(rename = "geslacht")]
+    gender: Option<BrpGender>,
+    #[serde(rename = "naam")]
+    name: Option<BrpName>,
+    #[serde(rename = "geboorte")]
+    birth: Option<BrpBirth>,
+    #[serde(rename = "verblijfplaats")]
+    place_of_residence: Option<BrpPlaceOfResidence>,
 }
 
 #[derive(Debug, Deserialize)]
-#[serde(try_from = "BrpPersonRaw")]
-struct BrpPerson {
+#[serde(from = "BrpPersonRaw")]
+pub struct BrpPerson {
     name: FullName,
     personal_data: PersonalData,
     address: DutchAddress,
@@ -187,52 +204,54 @@ struct BrpPerson {
 impl From<BrpPersonRaw> for BrpPerson {
     fn from(raw: BrpPersonRaw) -> Self {
         let name = raw
-            .naam
+            .name
             .map(|naam| FullName {
-                first_name: naam.voornamen.and_then(|s| s.parse().ok()),
+                // First name isn't checked, because this does not necessarily need to be the same (roepnaam)
+                first_name: None,
                 last_name: naam
-                    .geslachtsnaam
+                    .last_name
                     .and_then(|s| s.parse().ok())
                     .unwrap_or_default(),
-                last_name_prefix: naam.voorvoegsel.and_then(|s| s.parse().ok()),
+                last_name_prefix: naam.last_name_prefix.and_then(|s| s.parse().ok()),
                 initials: naam
-                    .voorletters
+                    .initials
                     .and_then(|s| s.parse().ok())
                     .unwrap_or_default(),
             })
             .unwrap_or_default();
 
         let bsn = raw
-            .burgerservicenummer
+            .bsn
             .and_then(|s| s.parse::<Bsn>().ok())
             .map(BsnOrNoneConfirmed::Bsn);
 
-        let gender = raw.geslacht.and_then(|g| g.gender.parse().ok());
+        let gender = raw.gender.and_then(|g| g.gender.parse().ok());
 
         let date_of_birth = raw
-            .geboorte
+            .birth
             .as_ref()
-            .and_then(|g| g.datum.as_ref())
-            .and_then(|d| d.datum.as_ref())
+            .and_then(|b| b.date.as_ref())
+            .and_then(|d| d.date.as_ref())
             .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
             .map(DateOfBirth::from);
 
-        let (place_of_residence, country, address) = match raw.verblijfplaats {
-            Some(BrpVerblijfplaats::Adres { verblijfadres }) => {
+        let (place_of_residence, country, address) = match raw.place_of_residence {
+            Some(BrpPlaceOfResidence::Address { residence_address }) => {
                 let country: Option<CountryCode> = "NL".parse().ok();
-                let (por, addr) = verblijfadres
+                let (por, addr) = residence_address
                     .map(|va| {
-                        let por: Option<PlaceOfResidence> =
-                            va.woonplaats.as_deref().and_then(|s| s.parse().ok());
+                        let por: Option<PlaceOfResidence> = va
+                            .place_of_residence
+                            .as_deref()
+                            .and_then(|s| s.parse().ok());
                         let addr = DutchAddress {
-                            // TODO: Confirm that this should be korte_straatnaam
-                            street_name: va.korte_straatnaam.and_then(|s| s.parse().ok()),
-                            house_number: va.huisnummer.and_then(|n| n.to_string().parse().ok()),
+                            street_name: va.street_name.and_then(|s| s.parse().ok()),
+                            house_number: va.house_number.and_then(|n| n.to_string().parse().ok()),
                             house_number_addition: va
-                                .huisnummertoevoeging
+                                .house_number_addition
                                 .and_then(|s| s.parse().ok()),
-                            locality: va.woonplaats.and_then(|s| s.parse().ok()),
-                            postal_code: va.postcode.and_then(|s| s.parse().ok()),
+                            locality: va.place_of_residence.and_then(|s| s.parse().ok()),
+                            postal_code: va.postal_code.and_then(|s| s.parse().ok()),
                             known_in_bag: None,
                         };
                         (por, addr)
@@ -268,7 +287,7 @@ mod tests {
         let brp_client =
             BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
         let query = BrpQuery::ConsultWithBsn {
-            burgerservicenummer: vec!["100600505".parse().unwrap()],
+            bsn: vec!["100600505".parse().unwrap()],
             fields: vec!["naam".to_string()],
         };
 
@@ -284,8 +303,11 @@ mod tests {
         let person = sample_person_from_brp();
 
         match brp_client.verify(&person).await {
-            Err(e) => panic!("brp verification error: {}", e.to_string()),
-            Ok(false) => panic!("Valid BRP person should verify"),
+            Err(e) => panic!("brp verification error: {e}"),
+            Ok(false) => panic!(
+                "person could not be verified: {}",
+                serde_json::to_string_pretty(&person).unwrap()
+            ),
             _ => {}
         }
     }
