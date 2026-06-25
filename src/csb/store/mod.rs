@@ -34,20 +34,20 @@ impl StoreData for CsbStoreData {
     }
 }
 
-impl<S> FromRequestParts<S> for crate::CsbStore
-where
-    S: Send + Sync,
-{
-    type Rejection = AppError;
+// impl<S> FromRequestParts<S> for crate::CsbStore
+// where
+//     S: Send + Sync,
+// {
+//     type Rejection = AppError;
 
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<crate::CsbStore>()
-            .cloned()
-            .ok_or(AppError::Unauthorised)
-    }
-}
+//     async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
+//         parts
+//             .extensions
+//             .get::<crate::CsbStore>()
+//             .cloned()
+//             .ok_or(AppError::Unauthorised)
+//     }
+// }
 
 #[cfg(test)]
 impl crate::CsbStore {

@@ -2,7 +2,7 @@ use axum::Router;
 use axum_extra::routing::{RouterExt, TypedPath};
 use serde::Deserialize;
 
-use crate::{AppError, AppState, StreamId, csb::import::CsbPoliticalGroup};
+use crate::{AppError, AppState, StreamId, csb::examination::extractors::CsbPoliticalGroup};
 
 mod overview;
 mod political_group;

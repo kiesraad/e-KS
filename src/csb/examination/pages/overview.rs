@@ -2,9 +2,13 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, CsbContext, HtmlTemplate, csb::{
-        examination::pages::CsbExaminationOverviewPath, import::{CsbImportPath, CsbPoliticalGroup, CsbPoliticalGroups},
-    }, filters,
+    AppError, Context, CsbContext, HtmlTemplate,
+    csb::{
+        examination::extractors::{CsbPoliticalGroup, CsbPoliticalGroups},
+        examination::pages::CsbExaminationOverviewPath,
+        import::CsbImportPath,
+    },
+    filters,
 };
 
 #[derive(Template)]

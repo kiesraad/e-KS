@@ -13,7 +13,7 @@ use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StorePersistence, encryption::EventEncryption};
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use crate::{AppError, CsbStore, ElectionConfig, Scope, StreamId};
 
 type StoreKey = (StreamId, ElectionConfig);
 type StoreMap<D> = Arc<RwLock<HashMap<StoreKey, Store<D>>>>;
@@ -103,6 +103,18 @@ where
             .await
     }
 
+    pub async fn get_store(
+        &self,
+        stream_id: StreamId,
+        election: ElectionConfig,
+    ) -> Result<Store<D>, AppError> {
+        self.inner
+            .read()
+            .get(&(stream_id, election))
+            .cloned()
+            .ok_or(AppError::NotFound("Stream not found".to_string()))
+    }
+
     /// Fetch or create a store, then run a one-time async init hook before caching.
     pub async fn get_or_create_with_init<F, Fut>(
         &self,
@@ -158,7 +170,10 @@ where
 
     /// Check which of the given stream IDs have data (in any election), using
     /// the in-memory cache first and falling back to the persistence backend.
-    pub async fn streams_with_data(&self, stream_ids: &[StreamId]) -> Result<HashSet<StreamId>, AppError> {
+    pub async fn streams_with_data(
+        &self,
+        stream_ids: &[StreamId],
+    ) -> Result<HashSet<StreamId>, AppError> {
         let (mut found, remaining) = {
             let cached = self.inner.read();
             let mut found = HashSet::new();
