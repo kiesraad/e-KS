@@ -1,12 +1,10 @@
 use chrono::NaiveDate;
 use reqwest::Client;
-use serde::{Deserialize, Deserializer, Serialize};
+use serde::{Deserialize, Serialize};
 
 use crate::{
     AppError,
-    common::{
-        Bsn, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FullName, PlaceOfResidence,
-    },
+    common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName},
     persons::{Person, PersonalData},
 };
 
@@ -73,23 +71,33 @@ impl BrpClient {
             [..] => todo!("Handle person not unique"),
         };
 
-        Ok([
-            // Check all, except `known_in_bag`
-            person.address.street_name == brp_person.address.street_name,
-            person.address.house_number == brp_person.address.house_number,
-            person.address.house_number_addition == brp_person.address.house_number_addition,
-            person.address.locality == brp_person.address.locality,
-            person.address.postal_code == brp_person.address.postal_code,
+        let address_is_valid = match &brp_person.address {
+            Some(address) => {
+                // Check all, except `known_in_bag`
+                person.address.street_name == address.street_name
+                    && person.address.house_number == address.house_number
+                    && person.address.house_number_addition == address.house_number_addition
+                    && person.address.locality == address.locality
+                    && person.address.postal_code == address.postal_code
+            }
+            None => {
+                eprintln!(
+                    "Not a Dutch Address or no address at all (because the field 'verblijfplaats' was not included)"
+                );
+                true
+            }
+        };
+
+        Ok(address_is_valid &&
             // Don't check First name (roepnaam)
-            person.name.last_name == brp_person.name.last_name,
-            person.name.last_name_prefix == brp_person.name.last_name_prefix,
-            person.name.initials == brp_person.name.initials,
-            // Check all fields of personal_data
-            brp_person.personal_data == person.personal_data,
-        ]
-        .iter()
-        .inspect(|f| println!("{f:?}"))
-        .all(|&b| b))
+            person.name.last_name == brp_person.name.last_name &&
+            person.name.last_name_prefix == brp_person.name.last_name_prefix &&
+            person.name.initials == brp_person.name.initials &&
+            // Check all fields of personal_data except country, check gender only when filled in
+            brp_person.personal_data.bsn == person.personal_data.bsn &&
+            brp_person.personal_data.date_of_birth  == person.personal_data.date_of_birth &&
+            // Gender field is optional, but if it filled in, we check it
+            (brp_person.personal_data.gender == person.personal_data.gender || person.personal_data.gender.is_none()))
     }
 }
 
@@ -149,7 +157,7 @@ struct BrpBirth {
 struct BrpAddress {
     // TODO: Confirm that this should be officieleStraatnaam
     // Or handle this by checking if either matches? If this is only used as a correspondence address,
-    // than that should be sufficient
+    // then that should be sufficient
     #[serde(rename = "officieleStraatnaam")]
     street_name: Option<String>,
     #[serde(rename = "huisnummer")]
@@ -168,15 +176,10 @@ enum BrpPlaceOfResidence {
     #[serde(rename = "Adres")]
     Address {
         #[serde(rename = "verblijfadres")]
-        residence_address: Option<BrpAddress>,
-    },
-    #[serde(rename = "VerblijfPlaatsBuitenland")]
-    InternationalResidenceAddress {
-        #[serde(rename = "verblijfadres")]
-        residence_address: Option<BrpAddress>,
+        residence_address: BrpAddress,
     },
     #[serde(other)]
-    Other,
+    NonDutchAddress,
 }
 
 #[derive(Deserialize)]
@@ -198,7 +201,7 @@ struct BrpPersonRaw {
 pub struct BrpPerson {
     name: FullName,
     personal_data: PersonalData,
-    address: DutchAddress,
+    address: Option<DutchAddress>,
 }
 
 impl From<BrpPersonRaw> for BrpPerson {
@@ -235,31 +238,39 @@ impl From<BrpPersonRaw> for BrpPerson {
             .and_then(|s| NaiveDate::parse_from_str(s, "%Y-%m-%d").ok())
             .map(DateOfBirth::from);
 
-        let (place_of_residence, country, address) = match raw.place_of_residence {
-            Some(BrpPlaceOfResidence::Address { residence_address }) => {
-                let country: Option<CountryCode> = "NL".parse().ok();
-                let (por, addr) = residence_address
-                    .map(|va| {
-                        let por: Option<PlaceOfResidence> = va
-                            .place_of_residence
-                            .as_deref()
-                            .and_then(|s| s.parse().ok());
-                        let addr = DutchAddress {
-                            street_name: va.street_name.and_then(|s| s.parse().ok()),
-                            house_number: va.house_number.and_then(|n| n.to_string().parse().ok()),
-                            house_number_addition: va
-                                .house_number_addition
-                                .and_then(|s| s.parse().ok()),
-                            locality: va.place_of_residence.and_then(|s| s.parse().ok()),
-                            postal_code: va.postal_code.and_then(|s| s.parse().ok()),
-                            known_in_bag: None,
-                        };
-                        (por, addr)
-                    })
-                    .unzip();
-                (por.flatten(), country, addr.unwrap_or_default())
+        let (address, place_of_residence) = match raw.place_of_residence {
+            Some(BrpPlaceOfResidence::Address {
+                residence_address: ra,
+            }) => {
+                let addr = Some(DutchAddress {
+                    street_name: ra.street_name.and_then(|s| s.parse().ok()),
+                    house_number: ra.house_number.and_then(|s| s.to_string().parse().ok()),
+                    house_number_addition: ra.house_number_addition.and_then(|s| s.parse().ok()),
+                    locality: ra
+                        .place_of_residence
+                        .as_deref()
+                        .and_then(|s| s.parse().ok()),
+                    postal_code: ra.postal_code.and_then(|s| s.parse().ok()),
+                    // Known in BRP probably implies known in bag, I guess maybe this could be Some(true), but
+                    // I don't think it matters
+                    known_in_bag: None,
+                });
+
+                // TODO: Is place of residence really the same as locality (above).
+                // (though note that above is parsed as `Locality`, and below as `PlaceOfResidence`)
+                let por = ra.place_of_residence.and_then(|s| s.parse().ok());
+
+                (addr, por)
             }
-            _ => (None, None, DutchAddress::default()),
+            Some(BrpPlaceOfResidence::NonDutchAddress) => {
+                // TODO: How to handle this? Set the address to None and conduct an additional BRP check
+                // for the Authorised Person?
+                todo!("Not a Dutch Address")
+            }
+            None => {
+                eprintln!("Field 'verblijfplaats' not included");
+                (None, None)
+            }
         };
 
         BrpPerson {
@@ -269,7 +280,10 @@ impl From<BrpPersonRaw> for BrpPerson {
                 bsn,
                 date_of_birth,
                 place_of_residence,
-                country,
+                // TODO: Can country be None here? Because we check with the BRP whether the address is international.
+                // If it is, then `address` will be None (since we can't verify international addresses) and we know that
+                // instead, it is necesarry to verify the Authorised Person's address
+                country: None,
             },
             address,
         }
