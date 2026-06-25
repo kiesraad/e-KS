@@ -21,6 +21,7 @@ pub use structs::{
 };
 
 pub use pages::{
-    HideDownloadWarningPath, IndexPath, SelectElectionPath, SwitchElectionPath, SwitchLanguagePath,
-    not_found, router, session_only_router, wellknown_router,
+    HideDownloadWarningPath, IndexPath, LoginStartPath, LogoutPath, SelectElectionPath,
+    SwitchElectionPath, SwitchLanguagePath, auth_failure_response, not_found, public_router,
+    router, session_only_router, wellknown_router,
 };

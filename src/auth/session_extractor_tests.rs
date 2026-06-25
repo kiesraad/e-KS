@@ -10,7 +10,7 @@ use tower::ServiceExt;
 
 use crate::{AppState, Session, test_utils::response_body_string};
 
-/// Redirects to /login when no session cookie is present.
+/// Redirects to the login start page when no session cookie is present.
 #[tokio::test]
 async fn middleware_redirects_to_login_without_cookie() {
     let state = AppState::new_for_tests().await;

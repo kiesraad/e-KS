@@ -47,6 +47,8 @@ pub enum AppError {
 
     EmlError(eml_nl::EMLError),
 
+    AuthError(auth_service::error::AuthError),
+
     NoStorageConfigured,
     IntegrityViolation,
 
@@ -97,6 +99,7 @@ impl Display for AppError {
             AppError::IncompleteData(err) => write!(f, "Missing data when generating PDF: {err}"),
             AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),
             AppError::EmlError(err) => write!(f, "EML error: {err}"),
+            AppError::AuthError(err) => write!(f, "Authentication error: {err}"),
         }
     }
 }
@@ -192,6 +195,12 @@ impl From<csv::Error> for AppError {
 impl From<eml_nl::EMLError> for AppError {
     fn from(err: eml_nl::EMLError) -> Self {
         AppError::EmlError(err)
+    }
+}
+
+impl From<auth_service::error::AuthError> for AppError {
+    fn from(err: auth_service::error::AuthError) -> Self {
+        AppError::AuthError(err)
     }
 }
 #[cfg(test)]

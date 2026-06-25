@@ -13,7 +13,7 @@ services:
     networks: [pw_network]
     
   application:
-    image: debian:bookworm-slim
+    image: debian:trixie-slim
     working_dir: /app
     volumes:
       - ../target/release/eks:/app/eks:ro
@@ -21,6 +21,9 @@ services:
     environment:
       STORAGE_URL: memory://ephemeral
       LOAD_FIXTURES: "true"
+      # Tests authenticate via the /dev/login bypass; skip the live auth-service
+      # so the container boots without reaching the TVS for IdP metadata.
+      DISABLE_AUTH_SERVICE: "true"
     networks: [pw_network]
 
 networks:

@@ -1,0 +1,61 @@
+/*
+ * DigiD login button, per the Logius "Stijlhandleiding aansluiten Toegang":
+ * https://www.logius.nl/onze-dienstverlening/toegang/stijlhandleiding-aansluiten-toegang
+ *
+ * White background, black label, 1px #EDEDED border, 8px radius, the official
+ * DigiD logo on the right with 5px spacing. Width 336px (capped to the
+ * container on small screens), min height 47px, 15px/20px padding. The
+ * specified RijksoverheidSansWebText font is not bundled; the app font is used
+ * as a fallback.
+ */
+.digid-login-form {
+  margin: 0;
+}
+
+.digid-login {
+  box-sizing: border-box;
+  display: inline-flex;
+  align-items: center;
+  width: 336px;
+  max-width: 100%;
+  min-height: 47px;
+  /* Reset the user-agent <button> styling so the shared rules below render
+     identically whether the element is an <a> or a <button>. */
+  appearance: none;
+  cursor: pointer;
+  text-align: left;
+  /* 20px right inset + 30px logo + 5px gap leaves room for the background logo */
+  padding: 15px calc(20px + 30px + 5px) 15px 20px;
+
+  border: 1px solid #ededed;
+  border-radius: 8px;
+  background-color: #ffffff;
+  background-image: url("../icons/digid.svg");
+  background-repeat: no-repeat;
+  background-position: right 20px center;
+  background-size: 30px 30px;
+
+  color: #000000;
+  font-family: var(--font-text), sans-serif;
+  font-size: 19px;
+  font-weight: 400;
+  line-height: 1.2;
+  text-decoration: none;
+}
+
+.digid-login:hover {
+  background-color: #f5f5f5;
+}
+
+.digid-login:focus-visible {
+  outline: 2px solid var(--border-color-focus);
+  outline-offset: 2px;
+}
+
+.auth-container {
+  p {
+    max-width: 50ch;
+    margin-top: var(--space-4);
+    margin-bottom: var(--space-4);
+  }
+}

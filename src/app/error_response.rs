@@ -152,7 +152,8 @@ impl ErrorResponse {
             | AppError::TemplateError(_)
             | AppError::UpstreamError(_)
             | AppError::ServerError(_)
-            | AppError::EventDecodeError(_) => internal(),
+            | AppError::EventDecodeError(_)
+            | AppError::AuthError(_) => internal(),
         };
 
         ErrorResponse { error, message }

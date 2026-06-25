@@ -127,7 +127,7 @@ mod tests {
 
     #[cfg_attr(not(feature = "net-tests"), ignore = "requires network")]
     #[tokio::test]
-    async fn start_binds_and_serves_login_flow() {
+    async fn start_serves_the_application() {
         let port = StdTcpListener::bind("127.0.0.1:0")
             .unwrap()
             .local_addr()
@@ -159,28 +159,14 @@ mod tests {
         }
         assert!(ready, "server never became ready");
 
-        // /login creates a new session and redirects to /select-election
-        // (no existing election for a fresh user)
-        let resp = no_redirect
-            .get(format!("{base}/login"))
-            .send()
-            .await
-            .unwrap();
-        assert_eq!(resp.status(), StatusCode::SEE_OTHER);
-        let location = resp.headers().get("location").unwrap().to_str().unwrap();
-        assert_eq!(location, "/select-election");
-        let cookie = resp
-            .headers()
-            .get("set-cookie")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(';').next())
-            .expect("session cookie")
-            .to_string();
+        // SAML /login can't be exercised end-to-end without an IdP; use the
+        // dev-features shortcut to mint a session. dev_login attaches a default
+        // election (EK27) and redirects to "/", so verify the index page renders.
+        let cookie = dev_login(&base).await;
 
-        // Follow the redirect to /select-election with the session cookie
-        let (status, body) = fetch_with_cookie(&format!("{base}{location}"), &cookie).await;
+        let (status, body) = fetch_with_cookie(&format!("{base}/"), &cookie).await;
         assert_eq!(status, StatusCode::OK);
-        assert!(body.contains("select-election") || body.contains("Verkiezing"));
+        assert!(body.contains("Kiesraad - Kandidaatstelling"));
 
         server.abort();
     }

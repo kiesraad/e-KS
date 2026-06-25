@@ -87,6 +87,7 @@ pub use app::{
 pub use app::proxy_handler;
 pub use auth::{
     derive_id::IdDeriver,
+    pending_request_store::PendingRequestStore,
     scope::Scope,
     session::{Session, session_idle_timeout},
     session_extractor::{
