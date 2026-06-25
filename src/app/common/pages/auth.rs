@@ -1,14 +1,5 @@
-//! Public, pre-session pages for the TVS/SAML login flow, all rendered by the
-//! eks crate (so they carry the application's own layout and styling) and all
-//! reachable without a session — they are mounted outside the session
-//! middleware:
-//!
-//! - the login *start* page (DigiD button + a short explanation), shown instead
-//!   of redirecting the browser straight to TVS;
-//! - the logout confirmation page (TVS "Checklist Testen" v2.1 T7);
-//! - the cancelled / failed authentication pages (T3 / L10), reached when the
-//!   auth-service calls
-//!   [`AuthState::on_authentication_failed`](auth_service::AuthState::on_authentication_failed).
+//! Pre-session pages for the SAML login flow: login start, logout confirmation
+//! (TVS T7), and cancelled/failed authentication (T3/L10).
 
 use askama::Template;
 use auth_service::{AuthFailure, AuthServiceState, handle_logout};
@@ -41,9 +32,7 @@ struct AuthCancelledTemplate;
 #[template(path = "common/pages/auth_unavailable.html")]
 struct AuthUnavailableTemplate;
 
-/// Minimal template values for a standalone, pre-session page: only the locale
-/// is known, which is all the `trans` filter needs. The full request
-/// [`Context`] is unavailable here because there is no session or election yet.
+/// Template values for pre-session pages: only locale is known (no session/election yet).
 struct PublicPageValues {
     locale: Locale,
 }
@@ -57,9 +46,7 @@ impl askama::Values for PublicPageValues {
     }
 }
 
-/// Resolve the display locale from the request's `Accept-Language`, falling back
-/// to the application default. These pages run before a session exists, so the
-/// session locale is not yet available.
+/// Resolve locale from `Accept-Language`, falling back to the application default.
 fn request_locale(headers: &HeaderMap) -> Locale {
     headers
         .get(axum::http::header::ACCEPT_LANGUAGE)
@@ -68,9 +55,7 @@ fn request_locale(headers: &HeaderMap) -> Locale {
         .unwrap_or_default()
 }
 
-/// GET `/login` — DigiD start page. Shows the DigiD login button (which POSTs
-/// back to `/login` to begin SAML SSO) and a short explanation of the flow,
-/// instead of redirecting the browser straight to TVS.
+/// GET `/login`: DigiD start page with login button and flow explanation.
 pub async fn login_start(headers: HeaderMap) -> impl IntoResponse {
     HtmlTemplate(
         LoginStartTemplate,
@@ -80,14 +65,9 @@ pub async fn login_start(headers: HeaderMap) -> impl IntoResponse {
     )
 }
 
-/// GET `/logout` — the whole sign-out flow under a single path.
-///
-/// With an active session it starts SP-initiated logout (eID §7.7.1) by
-/// delegating to the auth-service `handle_logout`, which auto-POSTs a signed
-/// LogoutRequest to TVS. With no session it renders the post-logout
-/// confirmation page (TVS T7) — which is also where the SLO round-trip lands
-/// (`post_logout_redirect` points back here), since the session has been
-/// cleared by then.
+/// GET `/logout`: starts SP-initiated logout (eID §7.7.1) when a session is
+/// active, or renders the post-logout confirmation (TVS T7) when there isn't one.
+/// The SLO round-trip lands back here after the session is cleared.
 pub async fn logout(
     State(state): State<AppState>,
     State(auth_state): State<AuthServiceState>,
@@ -107,8 +87,7 @@ pub async fn logout(
     }
 }
 
-/// Render the post-logout confirmation page (TVS T7), confirming the user is
-/// logged out and offering to log in again.
+/// Post-logout confirmation page (TVS T7).
 fn logged_out_page(headers: &HeaderMap) -> Response {
     HtmlTemplate(
         LoggedOutTemplate,
@@ -119,8 +98,7 @@ fn logged_out_page(headers: &HeaderMap) -> Response {
     .into_response()
 }
 
-/// Render the page for a cancelled (T3), failed (L10), or service-unavailable
-/// authentication attempt, localised via the request's `Accept-Language`.
+/// Response page for a cancelled (T3), failed (L10), or unavailable auth attempt.
 pub fn auth_failure_response(failure: AuthFailure, locale: Locale) -> Response {
     let values = PublicPageValues { locale };
     match failure {

@@ -70,15 +70,9 @@ pub fn wellknown_router() -> Router<AppState> {
     Router::new().typed_get(well_known::security_txt)
 }
 
-/// Public routes reachable without a session, mounted outside the session
-/// middleware so they are not themselves redirected to the login flow.
-///
-/// Each flow lives under a single path:
-/// - `GET /login` shows the DigiD start page; `POST /login` (the button)
-///   initiates SAML SSO (delegated to the auth-service `handle_login`).
-/// - `GET /logout` initiates SP-initiated logout when a session is active, and
-///   otherwise renders the post-logout confirmation page (TVS T7) — which is
-///   also where the SLO round-trip lands once the session is gone.
+/// Routes mounted outside the session middleware (no session required):
+/// - `/login`: GET shows the DigiD start page, POST starts SAML SSO
+/// - `/logout`: GET initiates logout or shows the post-logout confirmation page (TVS T7)
 pub fn public_router() -> Router<AppState> {
     Router::new()
         .route(

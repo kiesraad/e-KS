@@ -138,7 +138,7 @@ mod tests {
         )
     }
 
-    /// The SAML NameID survives the row → `Session` mapping so SP-initiated
+    /// The SAML NameID survives the row to `Session` mapping so SP-initiated
     /// logout (eID §7.7.1) still works for database-backed sessions.
     #[test]
     fn session_from_row_preserves_saml_name_id() {

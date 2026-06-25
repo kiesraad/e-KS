@@ -1,11 +1,6 @@
-//! Storage for outstanding SAML AuthnRequest IDs used by the `InResponseTo`
-//! replay check (eID §7.6.3.5 rule 4 / §9.7).
-//!
-//! Mirrors [`crate::SessionStore`]: in-memory by default, Postgres when
-//! `STORAGE_URL` is a `postgres://` URL. Sharing the IDs across instances
-//! matters for horizontal scaling: a login started on one server may have its
-//! ACS callback handled by another, which must still see the pending ID to
-//! validate `InResponseTo` (and to consume it so it cannot be replayed).
+//! Storage for outstanding AuthnRequest IDs (`InResponseTo` replay check,
+//! eID §9.7). Mirrors [`crate::SessionStore`]: in-memory by default, Postgres
+//! when `STORAGE_URL` is `postgres://` (required for multi-instance deploys).
 
 use auth_service::PendingRequests;
 use url::Url;
@@ -34,9 +29,8 @@ impl Default for PendingRequestStore {
 }
 
 impl PendingRequestStore {
-    /// Construct a pending-request store from `STORAGE_URL`, using the same
-    /// scheme rules as [`crate::SessionStore`] (disk is not a valid backend and
-    /// falls back to in-memory).
+    /// Construct from `STORAGE_URL`. Same scheme rules as [`crate::SessionStore`];
+    /// disk is not a valid backend and falls back to in-memory.
     pub fn from_storage_url(storage_url: &str) -> Result<Self, AppError> {
         let url = Url::parse(storage_url)
             .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
@@ -63,13 +57,8 @@ impl PendingRequestStore {
         }
     }
 
-    /// Atomically validate and consume a matched AuthnRequest ID (eID §7.6.3.5
-    /// rule 4 / §9.7). Returns `true` iff `id` was a still-valid outstanding
-    /// request, consuming it in the same step so it cannot be replayed.
-    ///
-    /// A storage error fails closed (returns `false`), so the `InResponseTo`
-    /// check rejects the Assertion rather than letting an unverified one
-    /// through.
+    /// Consume a pending AuthnRequest ID (eID §7.6.3.5 / §9.7). Returns `true`
+    /// once for a valid pending ID. Storage errors fail closed (`false`).
     pub async fn consume_if_pending(&self, id: &str) -> bool {
         match self {
             PendingRequestStore::InMemory(inner) => inner.consume_if_pending(id),
@@ -110,13 +99,10 @@ mod tests {
         store.register("req-1".to_string()).await;
         store.register("req-2".to_string()).await;
 
-        // A registered ID is matched and consumed exactly once.
         assert!(store.consume_if_pending("req-1").await);
-        assert!(!store.consume_if_pending("req-1").await);
-        // An unknown ID never matches.
-        assert!(!store.consume_if_pending("never").await);
-        // Other registered IDs remain available.
-        assert!(store.consume_if_pending("req-2").await);
+        assert!(!store.consume_if_pending("req-1").await); // replayed ID rejected
+        assert!(!store.consume_if_pending("never").await); // unknown ID rejected
+        assert!(store.consume_if_pending("req-2").await); // other ID remains unaffected
     }
 
     #[test]

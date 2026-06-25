@@ -19,7 +19,7 @@ dev-features = []
 # endpoint resolves to the shared TVS mock) and embed the committed DV
 # cert/key bundle (auth-service/fixtures) into the binary, so the auth flow works on
 # a deployed host with no CERTS_DIR on disk. Does NOT run a TVS back-channel
-# itself. Test keys only — never enable for a real deployment.
+# itself. For test keys only, never enable for a real deployment.
 tvs-mock = ["auth-service/tvs-mock"]
 # Enable database-backed storage via Postgres / SQLx.
 database = ["dep:sqlx"]
