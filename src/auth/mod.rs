@@ -16,6 +16,13 @@ pub mod session_store;
 #[cfg(feature = "database")]
 mod session_db;
 
+/// Pending AuthnRequest ID storage with pluggable in-memory or Postgres backends.
+pub mod pending_request_store;
+
+/// Postgres-backed pending-request persistence (feature-gated).
+#[cfg(feature = "database")]
+mod pending_request_db;
+
 /// Session middleware and request extraction.
 pub mod session_extractor;
 

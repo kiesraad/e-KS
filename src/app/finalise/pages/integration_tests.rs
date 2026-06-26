@@ -28,7 +28,7 @@ use super::DownloadDocumentsPath;
 async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
     let config = Config::new_test();
 
-    let state = AppState::new_with_config(config).await?;
+    let state = AppState::new_for_tests_with_config(config).await;
     let stream_id = StreamId::new();
     let store = state
         .store_for_stream(stream_id, ElectionConfig::EK27, false)

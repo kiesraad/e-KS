@@ -9,7 +9,7 @@ use crate::{
 };
 
 /// Idle timeout (in seconds) after which a session is considered expired.
-const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60;
+const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60; // 10 minutes, per TVS "Checklist Testen" v2.1 T8: max 15 minutes inactivity.
 
 /// Idle timeout after which a session is considered expired.
 pub fn session_idle_timeout() -> Duration {
@@ -77,6 +77,9 @@ pub struct Session {
     /// CSRF token scoped to this session. Fixed for the session's lifetime;
     /// rotation happens when the session itself is replaced (login/logout).
     pub csrf_token: TokenValue,
+    /// SAML `NameID` from the authenticating Assertion. Required to build a
+    /// `LogoutRequest` for SP-initiated logout (eID §7.7.1).
+    pub saml_name_id: Option<String>,
 }
 
 impl std::fmt::Debug for Session {
@@ -126,6 +129,7 @@ impl Session {
             current_election: None,
             locale,
             csrf_token: generate_csrf_token(),
+            saml_name_id: None,
         }
     }
 

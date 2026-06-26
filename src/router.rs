@@ -77,6 +77,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     let router = router
         .merge(bag::router())
         .merge(auth_service::router())
+        .merge(common::public_router())
         .merge(health_router())
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,

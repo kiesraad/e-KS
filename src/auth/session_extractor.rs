@@ -13,7 +13,8 @@ use axum_extra::extract::{
 use chrono::Utc;
 
 use crate::{
-    AppError, AppState, Scope, Session, common::SelectElectionPath,
+    AppError, AppState, Scope, Session,
+    common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
 };
 
@@ -49,8 +50,9 @@ pub async fn session_middleware(
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
     let Some(mut session) = state.sessions.get_existing(token).await else {
-        // redirect to home (/), which will show a login button
-        return Redirect::to("/login").into_response();
+        // Send unauthenticated users to the login start page (DigiD button +
+        // explanation), not straight into the SAML flow at `/login`.
+        return Redirect::to(&LoginStartPath.to_string()).into_response();
     };
 
     session.last_activity = Utc::now();

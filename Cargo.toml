@@ -12,9 +12,15 @@ repository = "https://github.com/kiesraad/e-KS"
 
 [features]
 # Default development-oriented feature set.
-default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests"]
+default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests", "tvs-mock"]
 # Development-only defaults (relaxes some config requirements + proxy to bag service).
 dev-features = []
+# Talk to the online TVS mock service: default TVS_ENV to `test` (so the RD
+# endpoint resolves to the shared TVS mock) and embed the committed DV
+# cert/key bundle (auth-service/fixtures) into the binary, so the auth flow works on
+# a deployed host with no CERTS_DIR on disk. Does NOT run a TVS back-channel
+# itself. For test keys only, never enable for a real deployment.
+tvs-mock = ["auth-service/tvs-mock"]
 # Enable database-backed storage via Postgres / SQLx.
 database = ["dep:sqlx"]
 # Run database migrations on startup.
@@ -45,7 +51,7 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
 rustls = { version = "0.23.40", optional = true }
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.6.11", features = ["set-header", "trace"] }
+tower-http = { version = "0.7.0", features = ["set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
 bytes = "1.11.1"
