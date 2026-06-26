@@ -4,7 +4,6 @@ cancelled:
   message: You cancelled the login. You are not logged in to Candidate Nomination of the Kiesraad. Log in again to continue.
   title: Login cancelled
 error:
-  # TVS "Checklist Testen" v2.1 L10: this is the translated DICTU-mandated DigiD error text
   message: Logging in to this organisation did not succeed. Please try again later. Still not working? Log in to Mijn DigiD to check that your DigiD works correctly. There may be a malfunction at the organisation you are logging in to.
   title: Login failed
 signed_out:

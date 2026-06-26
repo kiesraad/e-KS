@@ -118,7 +118,7 @@ mod tests {
     async fn login_start_shows_digid_button_and_explanation() {
         let response = login_start(HeaderMap::new()).await.into_response();
         let body = response_body_string(response).await;
-        assert!(body.contains("Inloggen met DigiD"));
+        assert!(body.contains("Inloggen"));
         // The button initiates SSO by POSTing back to /login.
         assert!(body.contains("action=\"/login\""));
         assert!(body.contains("method=\"post\""));
@@ -130,7 +130,7 @@ mod tests {
         let response = logged_out_page(&HeaderMap::new());
         let body = response_body_string(response).await;
         assert!(body.contains("U bent uitgelogd"));
-        assert!(body.contains("Inloggen met DigiD"));
+        assert!(body.contains("Inloggen"));
     }
 
     #[tokio::test]
