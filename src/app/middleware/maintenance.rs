@@ -32,7 +32,7 @@ impl askama::Values for MaintenanceValues {
 
 /// Paths that must keep working while the database is unavailable: the health
 /// probe (so orchestration can still read liveness) and static assets / live
-/// reload (so the maintenance page can load its stylesheet).
+/// reload (so the maintenance page can load its style sheet).
 fn is_exempt(path: &str) -> bool {
     path == "/health"
         || path.starts_with("/static/")

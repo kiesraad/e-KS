@@ -61,19 +61,17 @@ impl DbHealth {
     /// Mark the database unavailable and wake the prober. Preserves the original
     /// `since` across repeated reports, updating only the latest error.
     pub fn mark_unavailable(&self, error: impl std::fmt::Display) {
-        {
-            let mut state = self.state.write();
-            match &mut *state {
-                HealthState::Healthy => {
-                    tracing::warn!("database unavailable: {error}; serving maintenance page");
-                    *state = HealthState::Unavailable {
-                        since: Utc::now(),
-                        last_error: error.to_string(),
-                    };
-                }
-                HealthState::Unavailable { last_error, .. } => {
-                    *last_error = error.to_string();
-                }
+        let mut state = self.state.write();
+        match &mut *state {
+            HealthState::Healthy => {
+                tracing::warn!("database unavailable: {error}; serving maintenance page");
+                *state = HealthState::Unavailable {
+                    since: Utc::now(),
+                    last_error: error.to_string(),
+                };
+            }
+            HealthState::Unavailable { last_error, .. } => {
+                *last_error = error.to_string();
             }
         }
         self.wake.notify_one();
