@@ -149,24 +149,6 @@ where
     Ok(last_file_id)
 }
 
-/// Check which of the given stream IDs have persisted events on disk (any election).
-pub async fn streams_with_data(
-    dir: &Path,
-    stream_ids: &[StreamId],
-) -> std::collections::HashSet<StreamId> {
-    let wanted: std::collections::HashSet<StreamId> = stream_ids.iter().copied().collect();
-    let mut found = std::collections::HashSet::new();
-
-    visit_non_empty_stream_files(dir, |stream_id, _election| {
-        if wanted.contains(&stream_id) {
-            found.insert(stream_id);
-        }
-    })
-    .await;
-
-    found
-}
-
 /// List the elections that have persisted events under the given stream.
 pub async fn elections_for_stream(dir: &Path, stream_id: StreamId) -> Vec<ElectionConfig> {
     let mut result = Vec::new();
@@ -181,7 +163,7 @@ pub async fn elections_for_stream(dir: &Path, stream_id: StreamId) -> Vec<Electi
 
 /// Iterate non-empty `{stream_id}_{election}.bin` files in `dir`, invoking
 /// `callback` for each successfully parsed entry. Directory read errors and
-/// unparseable filenames are ignored.
+/// unparsable filenames are ignored.
 async fn visit_non_empty_stream_files(
     dir: &Path,
     mut callback: impl FnMut(StreamId, ElectionConfig),

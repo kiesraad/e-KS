@@ -149,22 +149,6 @@ pub async fn ensure_stream(
     Ok(())
 }
 
-/// Check which of the given stream IDs have persisted events in any election.
-pub async fn streams_with_data(
-    pool: &sqlx::PgPool,
-    stream_ids: &[StreamId],
-) -> Result<std::collections::HashSet<StreamId>, AppError> {
-    let rows: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        "SELECT DISTINCT stream_id FROM streams
-         WHERE stream_id = ANY($1) AND last_event_id > 0",
-    )
-    .bind(stream_ids.iter().map(StreamId::uuid).collect::<Vec<_>>())
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|(id,)| StreamId(id)).collect())
-}
-
 /// List every `(stream_id, election)` stream with the given scope that has
 /// persisted data.
 ///

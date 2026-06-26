@@ -216,7 +216,10 @@ async fn dev_login_csb_scopes_session_to_committee() {
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     // Committee members land on their CSB page, not the app home.
-    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
+    assert_eq!(
+        response.headers().get(header::LOCATION).unwrap(),
+        "/csb/examination"
+    );
 
     let session = session_from(&state, &response).await;
     assert_eq!(session.scope, Scope::CentralElectoralCommittee);
@@ -303,5 +306,8 @@ async fn committee_session_redirected_off_app_routes() {
         .expect("response");
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
-    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
+    assert_eq!(
+        response.headers().get(header::LOCATION).unwrap(),
+        "/csb/examination"
+    );
 }

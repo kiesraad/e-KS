@@ -110,23 +110,6 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Check which of the given stream IDs have any persisted events (in any election).
-    pub async fn streams_with_data(
-        &self,
-        stream_ids: &[StreamId],
-    ) -> Result<std::collections::HashSet<StreamId>, AppError> {
-        match self {
-            #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => {
-                super::database::streams_with_data(pool, stream_ids).await
-            }
-            StorePersistence::Local(dir) => {
-                Ok(filesystem::streams_with_data(dir, stream_ids).await)
-            }
-            StorePersistence::Memory(store) => Ok(memory::streams_with_data(store, stream_ids)),
-        }
-    }
-
     /// List every `(stream_id, election)` stream with the given scope.
     ///
     /// The database backend reads each stream's recorded scope. Local file

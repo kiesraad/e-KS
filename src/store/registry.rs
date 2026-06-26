@@ -152,36 +152,6 @@ where
         Ok(stores)
     }
 
-    /// Check which of the given stream IDs have data (in any election), using
-    /// the in-memory cache first and falling back to the persistence backend.
-    // TODO is this used???
-    pub async fn streams_with_data(
-        &self,
-        stream_ids: &[StreamId],
-    ) -> Result<HashSet<StreamId>, AppError> {
-        let (mut found, remaining) = {
-            let cached = self.inner.read();
-            let mut found = HashSet::new();
-            let mut remaining: HashSet<StreamId> = stream_ids.iter().copied().collect();
-
-            for ((id, _, _), store) in cached.iter() {
-                if remaining.contains(id) && store.data.read().last_event_id() > 0 {
-                    found.insert(*id);
-                    remaining.remove(id);
-                }
-            }
-
-            (found, remaining.into_iter().collect::<Vec<_>>())
-        };
-
-        if !remaining.is_empty() {
-            let persisted = self.persistence.streams_with_data(&remaining).await?;
-            found.extend(persisted);
-        }
-
-        Ok(found)
-    }
-
     /// List the elections under the given stream that have persisted events,
     /// consulting the in-memory cache first.
     pub async fn elections_for_stream(

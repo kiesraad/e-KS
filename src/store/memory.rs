@@ -12,10 +12,7 @@
 //! registries built on the same in-memory backend, e.g. the app and CSB
 //! registries, observe each other's writes, mirroring a shared database pool.
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use parking_lot::RwLock;
 
@@ -70,18 +67,6 @@ pub(crate) fn record_event(
         .or_default()
         .events
         .push((event_id, hash));
-}
-
-/// Which of the given stream IDs have any recorded events (in any election).
-pub(crate) fn streams_with_data(store: &MemoryStore, stream_ids: &[StreamId]) -> HashSet<StreamId> {
-    let wanted: HashSet<StreamId> = stream_ids.iter().copied().collect();
-    let index = store.inner.read();
-    index
-        .iter()
-        .filter_map(|((id, _), entry)| {
-            (wanted.contains(id) && !entry.events.is_empty()).then_some(*id)
-        })
-        .collect()
 }
 
 /// List every non-empty `(stream_id, election)` stream with the given scope.
