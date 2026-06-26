@@ -4,9 +4,8 @@ use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
 use url::Url;
-use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 use super::{
     Store, StoreData, StoreEvent, chain_hash,
@@ -91,7 +90,7 @@ impl StorePersistence {
     /// recording its `scope` when the row is first created.
     pub async fn ensure_stream(
         &self,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
         scope: Scope,
     ) -> Result<(), AppError> {
@@ -111,23 +110,6 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Check which of the given stream IDs have any persisted events (in any election).
-    pub async fn streams_with_data(
-        &self,
-        stream_ids: &[Uuid],
-    ) -> Result<std::collections::HashSet<Uuid>, AppError> {
-        match self {
-            #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => {
-                super::database::streams_with_data(pool, stream_ids).await
-            }
-            StorePersistence::Local(dir) => {
-                Ok(filesystem::streams_with_data(dir, stream_ids).await)
-            }
-            StorePersistence::Memory(store) => Ok(memory::streams_with_data(store, stream_ids)),
-        }
-    }
-
     /// List every `(stream_id, election)` stream with the given scope.
     ///
     /// The database backend reads each stream's recorded scope. Local file
@@ -138,7 +120,7 @@ impl StorePersistence {
     pub async fn streams_by_scope(
         &self,
         scope: Scope,
-    ) -> Result<Vec<(Uuid, ElectionConfig)>, AppError> {
+    ) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         match self {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
@@ -152,7 +134,7 @@ impl StorePersistence {
     /// List the elections under the given stream that have persisted events.
     pub async fn elections_for_stream(
         &self,
-        stream_id: Uuid,
+        stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {
         match self {
             #[cfg(feature = "database")]
@@ -176,7 +158,7 @@ impl StorePersistence {
     pub async fn find_event_by_hash_prefix(
         &self,
         hash_prefix: &[u8],
-    ) -> Result<Option<(Uuid, ElectionConfig, usize)>, AppError> {
+    ) -> Result<Option<(StreamId, ElectionConfig, usize)>, AppError> {
         match self {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
@@ -404,11 +386,15 @@ mod tests {
         fn events(&self) -> &[StoreEvent<Self::Event>] {
             &self.events
         }
+
+        fn scope() -> Scope {
+            Scope::PoliticalGroup
+        }
     }
 
     fn test_store() -> Store<TestData> {
         Store {
-            stream_id: Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election: TEST_ELECTION,
             backend: StoreBackend::Memory {
                 store: MemoryStore::default(),
@@ -435,14 +421,13 @@ mod tests {
     async fn correct_key_loads_persisted_events() -> Result<(), AppError> {
         let dir = temp_dir();
         let encryption = test_encryption();
-        let stream_id = Uuid::new_v4();
+        let stream_id = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
 
         let store = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -454,7 +439,6 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -471,14 +455,13 @@ mod tests {
     async fn wrong_secret_cannot_load_persisted_events() -> Result<(), AppError> {
         let dir = temp_dir();
         let encryption = test_encryption();
-        let stream_id = Uuid::new_v4();
+        let stream_id = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
 
         let store = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -491,7 +474,6 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &wrong_encryption,
         )
         .await?;
@@ -510,15 +492,14 @@ mod tests {
     async fn wrong_stream_cannot_load_events_from_other_stream() -> Result<(), AppError> {
         let dir = temp_dir();
         let encryption = test_encryption();
-        let stream_a = Uuid::new_v4();
-        let stream_b = Uuid::new_v4();
+        let stream_a = StreamId::new();
+        let stream_b = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
 
         let store_a = Store::<TestData>::new_for_stream_with_persistence(
             persistence.clone(),
             stream_a,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;
@@ -535,7 +516,6 @@ mod tests {
             persistence,
             stream_b,
             TEST_ELECTION,
-            Scope::PoliticalGroup,
             &encryption,
         )
         .await?;

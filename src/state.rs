@@ -12,7 +12,7 @@ use secrecy::ExposeSecret;
 
 use crate::{
     AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, ElectionConfig, IdDeriver,
-    PendingRequestStore, Scope, Session, SessionStore, StreamId, TypstRenderer,
+    PendingRequestStore, Session, SessionStore, StreamId, TypstRenderer,
     auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
     common::{IndexPath, SelectElectionPath},
     store::{EventEncryption, StoreRegistry},
@@ -64,17 +64,13 @@ impl AppState {
         let store_registry = StoreRegistry::new(
             config.storage_url.expose_secret().to_string(),
             encryption.clone(),
-            Scope::PoliticalGroup,
         )
         .await?;
         // The CSB registry reuses the app registry's (already-initialized)
         // persistence backend; it only differs in the projection it caches and
         // the scope it records on the streams it creates.
-        let csb_store_registry = StoreRegistry::with_persistence(
-            store_registry.persistence().clone(),
-            encryption,
-            Scope::CentralElectoralCommittee,
-        );
+        let csb_store_registry =
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
         let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())?;
         let pending_requests =
             PendingRequestStore::from_storage_url(config.storage_url.expose_secret())?;
@@ -108,7 +104,7 @@ impl AppState {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
-                .get_or_create_with_init(stream_id.uuid(), election, |store| async move {
+                .get_or_create_with_init(stream_id, election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
                         crate::fixtures::load(&store).await?;
                     }
@@ -120,24 +116,18 @@ impl AppState {
         {
             let _ = load_fixtures; // avoid unused parameter warning
 
-            self.store_registry
-                .get_or_create(stream_id.uuid(), election)
-                .await
+            self.store_registry.get_or_create(stream_id, election).await
         }
     }
 
     /// Fetch (or create and load) the CSB store for a (stream, election).
-    ///
-    /// CSB and app stores must never share a `(stream_id, election)` partition:
-    /// they write different event types into the same encrypted event stream, so
-    /// scope gating (see [`Scope`]) keeps a given session on a single store type.
     pub async fn csb_store_for_stream(
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<CsbStore, AppError> {
         self.csb_store_registry
-            .get_or_create(stream_id.uuid(), election)
+            .get_or_create(stream_id, election)
             .await
     }
 
@@ -146,41 +136,7 @@ impl AppState {
         &self,
         stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {
-        self.store_registry
-            .elections_for_stream(stream_id.uuid())
-            .await
-    }
-
-    /// Streams the given session is allowed to reach.
-    ///
-    /// A stream is a `(stream_id, election)` pair, so a session can be entitled
-    /// to several streams, including several elections under one `stream_id`.
-    ///
-    /// - A [`Scope::PoliticalGroup`] session may reach every election under the
-    ///   single stream derived from its own identifier.
-    /// - A [`Scope::CentralElectoralCommittee`] session may reach every stream
-    ///   whose `stream_id` is scoped to the committee.
-    pub async fn accessible_streams(
-        &self,
-        session: &Session,
-    ) -> Result<Vec<(uuid::Uuid, ElectionConfig)>, AppError> {
-        match session.scope {
-            Scope::PoliticalGroup => {
-                let Some(stream_id) = session.stream_id else {
-                    return Ok(Vec::new());
-                };
-                let elections = self.existing_elections_for_stream(stream_id).await?;
-                Ok(elections
-                    .into_iter()
-                    .map(|election| (stream_id.uuid(), election))
-                    .collect())
-            }
-            Scope::CentralElectoralCommittee => {
-                self.store_registry
-                    .streams_by_scope(Scope::CentralElectoralCommittee)
-                    .await
-            }
-        }
+        self.store_registry.elections_for_stream(stream_id).await
     }
 
     /// If the stream already has data for some election, prime its store and
@@ -240,15 +196,11 @@ impl AppState {
         let store_registry = StoreRegistry::new(
             config.storage_url.expose_secret().to_string(),
             encryption.clone(),
-            Scope::PoliticalGroup,
         )
         .await
         .expect("test StoreRegistry must initialize");
-        let csb_store_registry = StoreRegistry::with_persistence(
-            store_registry.persistence().clone(),
-            encryption,
-            Scope::CentralElectoralCommittee,
-        );
+        let csb_store_registry =
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
 
         Self {
             store_registry,

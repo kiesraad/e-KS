@@ -131,7 +131,7 @@ async fn ensure_dev_store(
 ) -> Result<(Store<AppStoreData>, bool), AppError> {
     let store = state
         .store_registry
-        .get_or_create(stream_id.uuid(), election)
+        .get_or_create(stream_id, election)
         .await?;
     let store_is_empty = store.data.read().events.is_empty();
 

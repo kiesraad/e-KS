@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -171,7 +171,7 @@ async fn create_pending_requests_table(conn: &mut sqlx::PgConnection) -> Result<
 /// ever used by one store type); later calls leave the existing scope untouched.
 pub async fn ensure_stream(
     pool: &sqlx::PgPool,
-    stream_id: uuid::Uuid,
+    stream_id: StreamId,
     election: ElectionConfig,
     scope: Scope,
 ) -> Result<(), AppError> {
@@ -180,29 +180,13 @@ pub async fn ensure_stream(
         VALUES ($1, $2, 0, $3)
         ON CONFLICT (stream_id, election) DO NOTHING"#,
     )
-    .bind(stream_id)
+    .bind(stream_id.uuid())
     .bind(election.stable_id())
     .bind(scope.as_str())
     .execute(pool)
     .await?;
 
     Ok(())
-}
-
-/// Check which of the given stream IDs have persisted events in any election.
-pub async fn streams_with_data(
-    pool: &sqlx::PgPool,
-    stream_ids: &[uuid::Uuid],
-) -> Result<std::collections::HashSet<uuid::Uuid>, AppError> {
-    let rows: Vec<(uuid::Uuid,)> = sqlx::query_as(
-        "SELECT DISTINCT stream_id FROM streams
-         WHERE stream_id = ANY($1) AND last_event_id > 0",
-    )
-    .bind(stream_ids)
-    .fetch_all(pool)
-    .await?;
-
-    Ok(rows.into_iter().map(|(id,)| id).collect())
 }
 
 /// List every `(stream_id, election)` stream with the given scope that has
@@ -214,7 +198,7 @@ pub async fn streams_with_data(
 pub async fn streams_by_scope(
     pool: &sqlx::PgPool,
     scope: Scope,
-) -> Result<Vec<(uuid::Uuid, ElectionConfig)>, AppError> {
+) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
     let rows: Vec<(uuid::Uuid, String)> = sqlx::query_as(
         r#"SELECT stream_id, election
            FROM streams
@@ -226,20 +210,20 @@ pub async fn streams_by_scope(
 
     Ok(rows
         .into_iter()
-        .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (id, election)))
+        .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (StreamId(id), election)))
         .collect())
 }
 
 /// List the elections that have persisted events under the given stream.
 pub async fn elections_for_stream(
     pool: &sqlx::PgPool,
-    stream_id: uuid::Uuid,
+    stream_id: StreamId,
 ) -> Result<Vec<ElectionConfig>, AppError> {
     let rows: Vec<(String,)> = sqlx::query_as(
         "SELECT election FROM streams
          WHERE stream_id = $1 AND last_event_id > 0",
     )
-    .bind(stream_id)
+    .bind(stream_id.uuid())
     .fetch_all(pool)
     .await?;
 
@@ -262,7 +246,7 @@ pub async fn elections_for_stream(
 pub async fn find_event_by_hash_prefix(
     pool: &sqlx::PgPool,
     hash_prefix: &[u8],
-) -> Result<Option<(uuid::Uuid, ElectionConfig, usize)>, AppError> {
+) -> Result<Option<(StreamId, ElectionConfig, usize)>, AppError> {
     let rows: Vec<(uuid::Uuid, String, i64)> = sqlx::query_as(
         r#"
         SELECT e.stream_id, e.election, e.event_id
@@ -286,7 +270,8 @@ pub async fn find_event_by_hash_prefix(
         .into_iter()
         .next()
         .and_then(|(stream_id, code, event_id)| {
-            parse_stable_id(&code).map(|election| (stream_id, election, event_id as usize))
+            parse_stable_id(&code)
+                .map(|election| (StreamId(stream_id), election, event_id as usize))
         }))
 }
 
@@ -382,7 +367,7 @@ where
         WHERE stream_id = $1 AND election = $2
         FOR UPDATE"#,
     )
-    .bind(store.stream_id)
+    .bind(store.stream_id.uuid())
     .bind(&election_id)
     .fetch_one(&mut **tx)
     .await?;
@@ -395,7 +380,7 @@ where
         ORDER BY event_id ASC
         "#,
     )
-    .bind(store.stream_id)
+    .bind(store.stream_id.uuid())
     .bind(&election_id)
     .bind(last_id as i64)
     .fetch_all(&mut **tx)
@@ -460,7 +445,7 @@ where
         r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
         VALUES ($1, $2, $3, $4, $5, $6)"#,
     )
-    .bind(store.stream_id)
+    .bind(store.stream_id.uuid())
     .bind(&election_id)
     .bind(event_id as i64)
     .bind(created_at)
@@ -473,7 +458,7 @@ where
         r#"UPDATE streams SET last_event_id = $3
            WHERE stream_id = $1 AND election = $2"#,
     )
-    .bind(store.stream_id)
+    .bind(store.stream_id.uuid())
     .bind(&election_id)
     .bind(event_id as i64)
     .execute(&mut **tx)

@@ -39,7 +39,7 @@
         <tbody>
           {% for pg in political_groups %}
             <tr class="clickable">
-              <td>{{ pg.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
+              <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
               <td>
                 <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
               </td>
@@ -51,7 +51,7 @@
                 </ul>
               </td>
               <td>
-                <a href="#"></a>
+                <a href="{{ pg.examination_path() }}"></a>
               </td>
             </tr>
           {% endfor %}

@@ -2,11 +2,10 @@
 //! request extractor that pulls a [`CsbStore`](crate::CsbStore) out of the
 //! request extensions.
 
-use axum::{extract::FromRequestParts, http::request::Parts};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, AppStoreData, CsbEvent,
+    AppStoreData, CsbEvent, Scope,
     store::{StoreData, StoreEvent},
 };
 
@@ -32,28 +31,19 @@ impl StoreData for CsbStoreData {
     fn events(&self) -> &[StoreEvent<Self::Event>] {
         &self.events
     }
-}
 
-impl<S> FromRequestParts<S> for crate::CsbStore
-where
-    S: Send + Sync,
-{
-    type Rejection = AppError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<crate::CsbStore>()
-            .cloned()
-            .ok_or(AppError::Unauthorised)
+    fn scope() -> Scope {
+        Scope::CentralElectoralCommittee
     }
 }
 
 #[cfg(test)]
 impl crate::CsbStore {
     pub fn new_for_test() -> Self {
+        use crate::StreamId;
+
         crate::store::Store {
-            stream_id: uuid::Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election: crate::ElectionConfig::EK27,
             backend: crate::store::persistence::StoreBackend::Memory {
                 store: crate::store::memory::MemoryStore::default(),

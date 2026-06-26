@@ -7,8 +7,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
-    Scope, StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success,
-    trans, utils::parse_hash_prefix,
+    StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success, trans,
+    utils::parse_hash_prefix,
 };
 
 use super::CsbImportPath;
@@ -88,14 +88,9 @@ async fn do_import(
         .find_event_by_hash_prefix(&hash_prefix)
         .await?
         .ok_or_else(|| AppError::UserError(trans!("csb.import.error.not_found", locale)))?;
-    let source_stream_id = StreamId::from(source_stream_id);
 
     // Reject if this source stream has already been imported.
-    for store in state
-        .csb_store_registry
-        .stores_by_scope(Scope::CentralElectoralCommittee)
-        .await?
-    {
+    for store in state.csb_store_registry.stores_by_scope().await? {
         let already_imported = store.data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id: sid, .. } if *sid == source_stream_id)
         });
@@ -254,10 +249,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
 
         // The import is recorded under a fresh CSB stream, carrying the source.
-        let csb_stores = state
-            .csb_store_registry
-            .stores_by_scope(Scope::CentralElectoralCommittee)
-            .await?;
+        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
         let imported = csb_stores[0].data.read().events.first().is_some_and(|e| {
             matches!(&e.payload, CsbEvent::Import { source_stream_id, .. } if *source_stream_id == source_stream)
@@ -305,10 +297,7 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
 
         // Only the first import was recorded.
-        let csb_stores = state
-            .csb_store_registry
-            .stores_by_scope(Scope::CentralElectoralCommittee)
-            .await?;
+        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
 
         Ok(())
