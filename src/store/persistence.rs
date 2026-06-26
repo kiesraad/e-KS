@@ -76,7 +76,13 @@ impl StorePersistence {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
                 #[cfg(feature = "migrations")]
-                database::migrate(pool).await?;
+                if let Err(err) = database::migrate(pool).await {
+                    tracing::warn!(
+                        "initial database migration failed; \
+                         starting anyway and retrying in the background: {err}"
+                    );
+                }
+                let _ = pool;
             }
             StorePersistence::Local(dir) => {
                 filesystem::init_local(dir).await?;
@@ -213,6 +219,19 @@ impl StorePersistence {
                 }
             }
             StorePersistence::Memory(_) => Ok(()),
+        }
+    }
+
+    pub async fn verify_ready(&self) -> Result<(), AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                #[cfg(feature = "migrations")]
+                database::migrate(pool).await?;
+                database::verify_schema(pool).await?;
+                Ok(())
+            }
+            other => other.health_check().await,
         }
     }
 }

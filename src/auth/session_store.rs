@@ -62,19 +62,41 @@ impl SessionStore {
 
     /// Returns a session for the provided token, if it exists and is still valid.
     pub async fn get(&self, token: &str) -> Option<Session> {
-        let session = self.load(token).await?;
-        if session.is_expired() {
-            self.drop_token(token).await;
-            return None;
-        }
-        Some(session)
+        self.try_get(token).await.unwrap_or_else(|err| {
+            tracing::error!("failed to load session: {err}");
+            None
+        })
     }
 
-    /// Returns an existing session if it is still valid.
+    /// Returns an existing session if it is still valid
     pub async fn get_existing(&self, token: Option<&str>) -> Option<Session> {
+        self.try_get_existing(token).await.unwrap_or_else(|err| {
+            tracing::error!("failed to load session: {err}");
+            None
+        })
+    }
+
+    /// Like [`Self::get`], but surfaces a storage error instead of mapping it to
+    /// "no session". A valid-but-expired session is dropped and reported as
+    /// `Ok(None)`.
+    pub async fn try_get(&self, token: &str) -> Result<Option<Session>, AppError> {
+        let Some(session) = self.load(token).await? else {
+            return Ok(None);
+        };
+        if session.is_expired() {
+            self.drop_token(token).await;
+            return Ok(None);
+        }
+        Ok(Some(session))
+    }
+
+    /// Like [`Self::get_existing`], but surfaces a storage error. Used by the
+    /// session middleware so a database outage trips the maintenance gate rather
+    /// than redirecting the user to login as if they were signed out.
+    pub async fn try_get_existing(&self, token: Option<&str>) -> Result<Option<Session>, AppError> {
         match token {
-            Some(token) => self.get(token).await,
-            None => None,
+            Some(token) => self.try_get(token).await,
+            None => Ok(None),
         }
     }
 
@@ -131,11 +153,11 @@ impl SessionStore {
         }
     }
 
-    async fn load(&self, token: &str) -> Option<Session> {
+    async fn load(&self, token: &str) -> Result<Option<Session>, AppError> {
         match self {
-            SessionStore::InMemory(inner) => inner.read().get(token).cloned(),
+            SessionStore::InMemory(inner) => Ok(inner.read().get(token).cloned()),
             #[cfg(feature = "database")]
-            SessionStore::Database(pool) => session_db::load(pool, token).await.ok().flatten(),
+            SessionStore::Database(pool) => session_db::load(pool, token).await,
         }
     }
 

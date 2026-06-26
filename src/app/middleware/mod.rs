@@ -6,6 +6,7 @@
 
 pub mod eks_key;
 pub mod health;
+pub mod maintenance;
 
 #[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub mod proxy;

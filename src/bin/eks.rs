@@ -1,4 +1,4 @@
-use eks::{AppError, AppState, Config, logging, router, server};
+use eks::{AppError, AppState, Config, logging, router, run_db_prober, server};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -50,6 +50,14 @@ async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
     let state = AppState::new_with_config(config).await?;
 
     // Stores are loaded per political group on demand via StoreRegistry.
+
+    // Keep the database-health gate current and self-heal (re-run migrations)
+    // when the database recovers, without blocking startup or requiring a
+    // restart. The application starts even if the database is currently down.
+    tokio::spawn(run_db_prober(
+        state.store_registry.persistence().clone(),
+        state.db_health.clone(),
+    ));
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());

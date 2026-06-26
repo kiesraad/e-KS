@@ -166,6 +166,25 @@ async fn create_pending_requests_table(conn: &mut sqlx::PgConnection) -> Result<
     Ok(())
 }
 
+/// Probe every table the application depends on, so a missing or broken schema
+/// (for example a dropped `sessions` table) surfaces as an error rather than a
+/// confusing per-request failure later
+pub async fn verify_schema(pool: &sqlx::PgPool) -> Result<(), AppError> {
+    sqlx::query("SELECT 1 FROM streams LIMIT 0")
+        .execute(pool)
+        .await?;
+    sqlx::query("SELECT 1 FROM events LIMIT 0")
+        .execute(pool)
+        .await?;
+    sqlx::query("SELECT 1 FROM sessions LIMIT 0")
+        .execute(pool)
+        .await?;
+    sqlx::query("SELECT 1 FROM pending_requests LIMIT 0")
+        .execute(pool)
+        .await?;
+    Ok(())
+}
+
 /// Ensure a stream row exists for the given (stream_id, election), recording its
 /// `scope`. The scope is fixed when the row is first created (a stream is only
 /// ever used by one store type); later calls leave the existing scope untouched.

@@ -16,6 +16,7 @@ enum ErrorResponseVariant {
     Unauthorised,
     BadRequest,
     InternalServerError,
+    ServiceUnavailable,
     NotFound,
 }
 
@@ -26,6 +27,7 @@ impl ErrorResponseVariant {
             ErrorResponseVariant::BadRequest => StatusCode::BAD_REQUEST,
             ErrorResponseVariant::Unauthorised => StatusCode::UNAUTHORIZED,
             ErrorResponseVariant::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorResponseVariant::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
         }
     }
 
@@ -34,6 +36,7 @@ impl ErrorResponseVariant {
             ErrorResponseVariant::Unauthorised => "Unauthorised",
             ErrorResponseVariant::BadRequest => "Bad request",
             ErrorResponseVariant::InternalServerError => "Internal server error",
+            ErrorResponseVariant::ServiceUnavailable => "Service unavailable",
             ErrorResponseVariant::NotFound => "Not found",
         }
     }
@@ -118,6 +121,16 @@ impl ErrorResponse {
             )
         };
 
+        // Infrastructure failures (database unreachable, broken schema) become a
+        // 503 so clients and proxies can retry
+        if err.is_infrastructure_failure() {
+            return ErrorResponse {
+                error: ServiceUnavailable,
+                message: "The service is temporarily unavailable. Please try again shortly."
+                    .to_string(),
+            };
+        }
+
         let (error, message) = match err {
             AppError::NotFound(msg) => (NotFound, msg.to_string()),
             AppError::GenericNotFound => (NotFound, "Page not found".to_string()),
@@ -163,7 +176,7 @@ impl ErrorResponse {
 /// Emit a single tracing event for an error response.
 fn log_app_error(err: &AppError, response: &ErrorResponse) {
     match response.error {
-        ErrorResponseVariant::InternalServerError => {
+        ErrorResponseVariant::InternalServerError | ErrorResponseVariant::ServiceUnavailable => {
             error!(error = ?err, "5xx error");
         }
         ErrorResponseVariant::BadRequest

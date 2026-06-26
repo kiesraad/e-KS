@@ -49,10 +49,14 @@ pub async fn session_middleware(
 
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
-    let Some(mut session) = state.sessions.get_existing(token).await else {
+    let mut session = match state.sessions.try_get_existing(token).await {
+        Ok(Some(session)) => session,
         // Send unauthenticated users to the login start page (DigiD button +
         // explanation), not straight into the SAML flow at `/login`.
-        return Redirect::to(&LoginStartPath.to_string()).into_response();
+        Ok(None) => return Redirect::to(&LoginStartPath.to_string()).into_response(),
+        // A database error here must not masquerade as "logged out": trip the
+        // maintenance gate instead of redirecting to login.
+        Err(err) => return state.handle_db_error(err, request.headers(), request.uri()),
     };
 
     session.last_activity = Utc::now();
@@ -88,12 +92,12 @@ pub async fn store_middleware(
 
     let store = match state.store_for_stream(stream_id, election, false).await {
         Ok(store) => store,
-        Err(err) => return err.into_response(),
+        Err(err) => return state.handle_db_error(err, request.headers(), request.uri()),
     };
 
     // catch up with the latest events
     if let Err(err) = store.load().await {
-        return err.into_response();
+        return state.handle_db_error(err, request.headers(), request.uri());
     }
 
     request.extensions_mut().insert(store);
@@ -126,12 +130,12 @@ pub async fn csb_store_middleware(
 
     let store = match state.csb_store_for_stream(stream_id, election).await {
         Ok(store) => store,
-        Err(err) => return err.into_response(),
+        Err(err) => return state.handle_db_error(err, request.headers(), request.uri()),
     };
 
     // catch up with the latest events
     if let Err(err) = store.load().await {
-        return err.into_response();
+        return state.handle_db_error(err, request.headers(), request.uri());
     }
 
     request.extensions_mut().insert(store);

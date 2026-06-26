@@ -79,8 +79,9 @@ pub mod fixtures;
 
 pub use app::{
     AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
-    eks_key_middleware, finalise, health_router, list_designation, list_submitters,
-    name_authorisations, persons, political_groups, render_error_pages, substitute_list_submitters,
+    db_gate_middleware, eks_key_middleware, finalise, health_router, list_designation,
+    list_submitters, maintenance_response, name_authorisations, persons, political_groups,
+    render_error_pages, substitute_list_submitters,
 };
 
 #[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
@@ -105,6 +106,7 @@ pub use csb::{CsbContext, CsbEvent, CsbStoreData};
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
+pub use store::{DbHealth, HealthState, run_db_prober};
 pub use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, id_newtype, redirect_success,
     transparent_string,

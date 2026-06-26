@@ -11,9 +11,9 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
     AppState, audit_log, candidate_lists, candidates, common, csb, csb_store_middleware,
-    eks_key_middleware, finalise, health_router, http_trace, list_designation, list_submitters,
-    name_authorisations, persons, political_groups, render_error_pages, session_middleware,
-    store_middleware, substitute_list_submitters, utils::bag,
+    db_gate_middleware, eks_key_middleware, finalise, health_router, http_trace, list_designation,
+    list_submitters, name_authorisations, persons, political_groups, render_error_pages,
+    session_middleware, store_middleware, substitute_list_submitters, utils::bag,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -95,6 +95,10 @@ pub fn create(state: AppState) -> Router<AppState> {
             header::REFERRER_POLICY,
             HeaderValue::from_static("same-origin"),
         ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            db_gate_middleware,
+        ))
         .layer(http_trace::layer());
 
     #[cfg(feature = "livereload")]
@@ -169,6 +173,41 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
+    }
+
+    #[tokio::test]
+    async fn db_gate_serves_maintenance_when_unhealthy() {
+        let state = AppState::new_for_tests().await;
+        // Simulate the prober (or a request handler) tripping the gate.
+        state.db_health.mark_unavailable("test: database down");
+
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(response.headers().get("retry-after").unwrap(), "30");
+        let body = response_body_string(response).await;
+        assert!(body.contains("Tijdelijk niet beschikbaar"));
+    }
+
+    #[tokio::test]
+    async fn db_gate_exempts_health_endpoint_when_unhealthy() {
+        let state = AppState::new_for_tests().await;
+        state.db_health.mark_unavailable("test: database down");
+
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        // The health probe must keep answering (memory backend is reachable),
+        // not be swallowed by the maintenance gate.
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]

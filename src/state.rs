@@ -11,8 +11,8 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, ElectionConfig, IdDeriver,
-    PendingRequestStore, Scope, Session, SessionStore, StreamId, TypstRenderer,
+    AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, DbHealth, ElectionConfig,
+    IdDeriver, PendingRequestStore, Scope, Session, SessionStore, StreamId, TypstRenderer,
     auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
     common::{IndexPath, SelectElectionPath},
     store::{EventEncryption, StoreRegistry},
@@ -36,6 +36,7 @@ pub struct AppState {
     pub id_deriver: IdDeriver,
     pub auth_service_state: AuthServiceState,
     pub typst_renderer: TypstRenderer,
+    pub db_health: DbHealth,
 }
 
 /// Contract the application's request extractors expect from the router
@@ -96,6 +97,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             typst_renderer,
+            db_health: DbHealth::default(),
         })
     }
 
@@ -204,6 +206,23 @@ impl AppState {
         Ok(true)
     }
 
+    /// Turn a request-path error into a response, tripping the database-health
+    /// gate when the failure is an infrastructure outage
+    /// Non-infrastructure errors fall through to the normal error response.
+    pub fn handle_db_error(
+        &self,
+        err: AppError,
+        headers: &axum::http::HeaderMap,
+        uri: &axum::http::Uri,
+    ) -> Response {
+        if err.is_infrastructure_failure() {
+            self.db_health.mark_unavailable(&err);
+            crate::maintenance_response(headers, uri)
+        } else {
+            err.into_response()
+        }
+    }
+
     /// Remove the current session (if any) from the store and return a jar with
     /// the session cookie cleared on the client. Used when an authentication
     /// attempt fails so no stale session survives (TVS L10).
@@ -259,6 +278,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             typst_renderer,
+            db_health: DbHealth::default(),
         }
     }
 }
