@@ -29,7 +29,6 @@ where
     inner: StoreMap<D>,
 }
 
-// TODO can't we derive clone?
 impl<D> Clone for StoreRegistry<D>
 where
     D: StoreData,
@@ -90,6 +89,7 @@ where
             .await
     }
 
+    /// Fetch an existing store
     pub async fn get_store(
         &self,
         stream_id: StreamId,
@@ -134,16 +134,17 @@ where
         Ok(entry.clone())
     }
 
-    /// List every `(stream_id, election)` stream with the given scope.
+    /// List every `(stream_id, election)` stream matching the [crate::Scope] 
+    /// of the related data type of the store.
     pub async fn streams_by_scope(&self) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         self.persistence.streams_by_scope(D::scope()).await
     }
 
-    /// Fetch (or create and load) every store with the given scope.
+    /// Fetch (or create and load) every store matching the [crate::Scope] 
+    /// of the related data type of the store.
     ///
     /// Convenience over [`Self::streams_by_scope`] for callers that need the
     /// projected store of each stream rather than just its identifier.
-    // TODO remove by scope where it is irrelevant
     pub async fn stores_by_scope(&self) -> Result<Vec<Store<D>>, AppError> {
         let mut stores = Vec::new();
         for (stream_id, election) in self.streams_by_scope().await? {
