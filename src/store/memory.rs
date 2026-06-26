@@ -12,15 +12,11 @@
 //! registries built on the same in-memory backend, e.g. the app and CSB
 //! registries, observe each other's writes, mirroring a shared database pool.
 
-use std::{
-    collections::{HashMap, HashSet},
-    sync::Arc,
-};
+use std::{collections::HashMap, sync::Arc};
 
 use parking_lot::RwLock;
-use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 /// Per-stream metadata recorded by the in-memory backend.
 #[derive(Debug, Default)]
@@ -34,7 +30,7 @@ struct StreamEntry {
 /// Shared in-memory index of streams and their event hashes.
 #[derive(Clone, Debug, Default)]
 pub struct MemoryStore {
-    inner: Arc<RwLock<HashMap<(Uuid, ElectionConfig), StreamEntry>>>,
+    inner: Arc<RwLock<HashMap<(StreamId, ElectionConfig), StreamEntry>>>,
 }
 
 /// Record `scope` for `(stream_id, election)` when the stream is first created.
@@ -43,7 +39,7 @@ pub struct MemoryStore {
 /// already exists, so a stream's scope is never overwritten.
 pub(crate) fn ensure_stream(
     store: &MemoryStore,
-    stream_id: Uuid,
+    stream_id: StreamId,
     election: ElectionConfig,
     scope: Scope,
 ) {
@@ -59,7 +55,7 @@ pub(crate) fn ensure_stream(
 /// Record a freshly applied event's `(event_id, chain hash)` under its stream.
 pub(crate) fn record_event(
     store: &MemoryStore,
-    stream_id: Uuid,
+    stream_id: StreamId,
     election: ElectionConfig,
     event_id: usize,
     hash: [u8; 32],
@@ -73,20 +69,11 @@ pub(crate) fn record_event(
         .push((event_id, hash));
 }
 
-/// Which of the given stream IDs have any recorded events (in any election).
-pub(crate) fn streams_with_data(store: &MemoryStore, stream_ids: &[Uuid]) -> HashSet<Uuid> {
-    let wanted: HashSet<Uuid> = stream_ids.iter().copied().collect();
-    let index = store.inner.read();
-    index
-        .iter()
-        .filter_map(|((id, _), entry)| {
-            (wanted.contains(id) && !entry.events.is_empty()).then_some(*id)
-        })
-        .collect()
-}
-
 /// List every non-empty `(stream_id, election)` stream with the given scope.
-pub(crate) fn streams_by_scope(store: &MemoryStore, scope: Scope) -> Vec<(Uuid, ElectionConfig)> {
+pub(crate) fn streams_by_scope(
+    store: &MemoryStore,
+    scope: Scope,
+) -> Vec<(StreamId, ElectionConfig)> {
     let index = store.inner.read();
     index
         .iter()
@@ -97,7 +84,10 @@ pub(crate) fn streams_by_scope(store: &MemoryStore, scope: Scope) -> Vec<(Uuid, 
 }
 
 /// List the elections under the given stream that have recorded events.
-pub(crate) fn elections_for_stream(store: &MemoryStore, stream_id: Uuid) -> Vec<ElectionConfig> {
+pub(crate) fn elections_for_stream(
+    store: &MemoryStore,
+    stream_id: StreamId,
+) -> Vec<ElectionConfig> {
     let index = store.inner.read();
     index
         .iter()
@@ -117,7 +107,7 @@ pub(crate) fn elections_for_stream(store: &MemoryStore, stream_id: Uuid) -> Vec<
 pub(crate) fn find_event_by_hash_prefix(
     store: &MemoryStore,
     hash_prefix: &[u8],
-) -> Result<Option<(Uuid, ElectionConfig, usize)>, AppError> {
+) -> Result<Option<(StreamId, ElectionConfig, usize)>, AppError> {
     let index = store.inner.read();
     let mut matches = Vec::new();
     for ((stream_id, election), entry) in index.iter() {
@@ -146,9 +136,9 @@ mod tests {
     #[test]
     fn streams_by_scope_filters_on_scope_and_data() {
         let store = MemoryStore::default();
-        let pg = Uuid::new_v4();
-        let csb = Uuid::new_v4();
-        let empty = Uuid::new_v4();
+        let pg = StreamId::new();
+        let csb = StreamId::new();
+        let empty = StreamId::new();
 
         ensure_stream(&store, pg, ELECTION, Scope::PoliticalGroup);
         ensure_stream(&store, csb, ELECTION, Scope::CentralElectoralCommittee);
@@ -169,8 +159,8 @@ mod tests {
     #[test]
     fn find_event_by_hash_prefix_matches_political_group_only() {
         let store = MemoryStore::default();
-        let pg = Uuid::new_v4();
-        let csb = Uuid::new_v4();
+        let pg = StreamId::new();
+        let csb = StreamId::new();
         ensure_stream(&store, pg, ELECTION, Scope::PoliticalGroup);
         ensure_stream(&store, csb, ELECTION, Scope::CentralElectoralCommittee);
 
@@ -195,7 +185,7 @@ mod tests {
     #[test]
     fn find_event_by_hash_prefix_detects_ambiguity() {
         let store = MemoryStore::default();
-        let stream = Uuid::new_v4();
+        let stream = StreamId::new();
         ensure_stream(&store, stream, ELECTION, Scope::PoliticalGroup);
         let mut first = [0x01u8; 32];
         let mut second = [0x02u8; 32];
@@ -212,7 +202,7 @@ mod tests {
     #[test]
     fn ensure_stream_does_not_overwrite_scope() {
         let store = MemoryStore::default();
-        let stream = Uuid::new_v4();
+        let stream = StreamId::new();
         ensure_stream(&store, stream, ELECTION, Scope::PoliticalGroup);
         ensure_stream(&store, stream, ELECTION, Scope::CentralElectoralCommittee);
         record_event(&store, stream, ELECTION, 1, [1u8; 32]);

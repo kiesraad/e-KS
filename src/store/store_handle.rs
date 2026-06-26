@@ -3,9 +3,8 @@
 use std::sync::Arc;
 
 use chrono::{DateTime, Utc};
-use uuid::Uuid;
 
-use crate::{AppError, ElectionConfig, Scope};
+use crate::{AppError, ElectionConfig, StreamId};
 
 use super::{
     StoreData, StoreEvent, StorePersistence, encryption::EventEncryption, memory::MemoryStore,
@@ -16,7 +15,7 @@ use super::{
 pub struct Store<D> {
     /// Stream identifier. One stream per user; events are partitioned by
     /// `(stream_id, election)`.
-    pub stream_id: Uuid,
+    pub stream_id: StreamId,
     /// Election this store instance is scoped to.
     pub election: ElectionConfig,
     /// Persistence target paired with its cipher. Persisting backends are
@@ -48,7 +47,7 @@ where
     /// (see [`StoreBackend::Memory`]).
     pub fn new_for_temp_stream(election: ElectionConfig) -> Self {
         Store {
-            stream_id: Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election,
             backend: StoreBackend::Memory {
                 store: MemoryStore::default(),
@@ -60,28 +59,25 @@ where
     /// Create a new store scoped to a specific (stream_id, election) pair.
     pub async fn new_for_stream(
         storage_url: &str,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(storage_url)?;
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Create a new store for a stream using an already-initialized persistence
     /// backend. `scope` is recorded on the stream row when it is first created.
     pub async fn new_for_stream_with_persistence(
         persistence: StorePersistence,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         persistence
-            .ensure_stream(stream_id, election, scope)
+            .ensure_stream(stream_id, election, D::scope())
             .await?;
 
         let cipher = encryption.derive_cipher(stream_id, election);
@@ -97,15 +93,13 @@ where
     /// Create a new store backed by the provided database pool for a (stream, election).
     pub async fn new_with_pool_for_stream(
         pool: sqlx::PgPool,
-        stream_id: Uuid,
+        stream_id: StreamId,
         election: ElectionConfig,
-        scope: Scope,
         encryption: &EventEncryption,
     ) -> Result<Self, AppError> {
         let persistence = StorePersistence::Database(pool);
         persistence.init().await?;
-        Self::new_for_stream_with_persistence(persistence, stream_id, election, scope, encryption)
-            .await
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 
     /// Apply a single event to the in-memory projection.
@@ -154,6 +148,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use crate::Scope;
+
     use super::*;
 
     const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
@@ -175,11 +171,15 @@ mod tests {
         fn events(&self) -> &[StoreEvent<Self::Event>] {
             &self.events
         }
+
+        fn scope() -> Scope {
+            Scope::PoliticalGroup
+        }
     }
 
     fn test_store() -> Store<TestData> {
         Store {
-            stream_id: Uuid::new_v4(),
+            stream_id: StreamId::new(),
             election: TEST_ELECTION,
             backend: StoreBackend::Memory {
                 store: MemoryStore::default(),
