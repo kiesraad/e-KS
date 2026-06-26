@@ -25,6 +25,7 @@
   mask-image: url("../icons/arrowNarrowRight.svg");
   mask-size: contain;
   width: var(--space-4);
+  margin-left: auto;
 }
 
 .tag.link a.info::after {
@@ -108,4 +109,8 @@
       background-color: var(--green-100);
     }
   }
+}
+
+.tag.width-md {
+  width: var(--space-22);
 }

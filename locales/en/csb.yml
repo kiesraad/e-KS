@@ -9,7 +9,7 @@ examination: Examination
 finish_examination: Finish examination
 finish_instruction:
   create_defects: Create notice of defects
-  create_model_i1: Create model I1
+  create_model_i1: Create model I 1
 finished: Finished
 form:
   hash: Enter the beginning of the hash code (at least 8 characters)
