@@ -36,3 +36,68 @@ where
         Ok(CsbPoliticalGroups(political_groups))
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{body::Body, http::Request};
+
+    use crate::{AppState, AppStoreData, CsbEvent, ElectionConfig};
+
+    /// Persist a CSB stream carrying a single import event in the (in-memory)
+    /// test registry, returning its `stream_id`.
+    async fn seed_csb_store(state: &AppState, election: ElectionConfig) -> StreamId {
+        let stream_id = StreamId::new();
+        let store = state
+            .csb_store_for_stream(stream_id, election)
+            .await
+            .unwrap();
+        store
+            .update(CsbEvent::Import {
+                hash: "AAAA BBBB".to_string(),
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(AppStoreData::default()),
+            })
+            .await
+            .unwrap();
+        stream_id
+    }
+
+    fn empty_parts() -> axum::http::request::Parts {
+        Request::builder()
+            .uri("/csb/examination")
+            .body(Body::empty())
+            .unwrap()
+            .into_parts()
+            .0
+    }
+
+    #[tokio::test]
+    async fn returns_every_csb_scoped_political_group() {
+        let state = AppState::new_for_tests().await;
+        let first = seed_csb_store(&state, ElectionConfig::EK27).await;
+        let second = seed_csb_store(&state, ElectionConfig::EK27).await;
+
+        let mut parts = empty_parts();
+        let CsbPoliticalGroups(groups) = CsbPoliticalGroups::from_request_parts(&mut parts, &state)
+            .await
+            .unwrap();
+
+        assert_eq!(groups.len(), 2);
+        let stream_ids: Vec<_> = groups.iter().map(|g| g.stream_id).collect();
+        assert!(stream_ids.contains(&first));
+        assert!(stream_ids.contains(&second));
+    }
+
+    #[tokio::test]
+    async fn returns_empty_when_nothing_imported() {
+        let state = AppState::new_for_tests().await;
+
+        let mut parts = empty_parts();
+        let CsbPoliticalGroups(groups) = CsbPoliticalGroups::from_request_parts(&mut parts, &state)
+            .await
+            .unwrap();
+
+        assert!(groups.is_empty());
+    }
+}
