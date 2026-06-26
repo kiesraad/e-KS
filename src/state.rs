@@ -121,10 +121,6 @@ impl AppState {
     }
 
     /// Fetch (or create and load) the CSB store for a (stream, election).
-    ///
-    /// CSB and app stores must never share a `(stream_id, election)` partition:
-    /// they write different event types into the same encrypted event stream, so
-    /// scope gating (see [`Scope`]) keeps a given session on a single store type.
     pub async fn csb_store_for_stream(
         &self,
         stream_id: StreamId,

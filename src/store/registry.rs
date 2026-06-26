@@ -13,10 +13,14 @@ use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StorePersistence, encryption::EventEncryption};
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use crate::{AppError, ElectionConfig, StreamId};
 
-type StoreKey = (StreamId, ElectionConfig, Scope);
+type StoreKey = (StreamId, ElectionConfig);
 type StoreMap<D> = Arc<RwLock<HashMap<StoreKey, Store<D>>>>;
+
+/// Closure type for the init-less ([`StoreRegistry::get_store`]) path, so the
+/// `None` case has a concrete type to infer.
+type NoInit<D> = fn(Store<D>) -> std::future::Ready<Result<(), AppError>>;
 
 /// Cache of per-(stream, election) stores backed by a shared persistence backend.
 pub struct StoreRegistry<D>
@@ -89,17 +93,16 @@ where
             .await
     }
 
-    /// Fetch an existing store
+    /// Fetch an **existing** stream's store, loading from persistence on a
+    /// cache miss. Returns [`AppError::NotFound`] if no stream with this
+    /// registry's scope was ever persisted for `(stream_id, election)`. Never
+    /// creates one.
     pub async fn get_store(
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<Store<D>, AppError> {
-        self.inner
-            .read()
-            .get(&(stream_id, election, D::scope()))
-            .cloned()
-            .ok_or(AppError::NotFound("Stream not found".to_string()))
+        self.lookup(stream_id, election, None::<NoInit<D>>).await
     }
 
     /// Fetch or create a store, then run a one-time async init hook before caching.
@@ -113,9 +116,40 @@ where
         F: FnOnce(Store<D>) -> Fut,
         Fut: Future<Output = Result<(), AppError>>,
     {
-        let key = (stream_id, election, D::scope());
+        self.lookup(stream_id, election, Some(init)).await
+    }
+
+    /// The single fetch path. The in-memory map is only ever an optimization:
+    /// a cache miss always consults persistence, so no caller can read absent
+    /// state by accident.
+    ///
+    /// `init` doubles as the create policy. `Some(hook)` creates the stream if
+    /// it is missing and runs `hook` on first load; `None` is a read-only
+    /// lookup that refuses to materialise a stream that was never persisted.
+    async fn lookup<F, Fut>(
+        &self,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        init: Option<F>,
+    ) -> Result<Store<D>, AppError>
+    where
+        F: FnOnce(Store<D>) -> Fut,
+        Fut: Future<Output = Result<(), AppError>>,
+    {
+        let key = (stream_id, election);
+
         if let Some(existing) = self.inner.read().get(&key) {
             return Ok(existing.clone());
+        }
+
+        if init.is_none()
+            && !self
+                .streams_by_scope()
+                .await?
+                .iter()
+                .any(|(id, e)| *id == stream_id && *e == election)
+        {
+            return Err(AppError::NotFound("Stream not found".to_string()));
         }
 
         let store = Store::new_for_stream_with_persistence(
@@ -126,7 +160,9 @@ where
         )
         .await?;
         store.load().await?;
-        init(store.clone()).await?;
+        if let Some(init) = init {
+            init(store.clone()).await?;
+        }
 
         let mut stores = self.inner.write();
         let entry = stores.entry(key).or_insert(store);
@@ -134,17 +170,14 @@ where
         Ok(entry.clone())
     }
 
-    /// List every `(stream_id, election)` stream matching the [crate::Scope] 
+    /// List every `(stream_id, election)` stream matching the [crate::Scope]
     /// of the related data type of the store.
     pub async fn streams_by_scope(&self) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         self.persistence.streams_by_scope(D::scope()).await
     }
 
-    /// Fetch (or create and load) every store matching the [crate::Scope] 
+    /// Fetch (or create and load) every store matching the [crate::Scope]
     /// of the related data type of the store.
-    ///
-    /// Convenience over [`Self::streams_by_scope`] for callers that need the
-    /// projected store of each stream rather than just its identifier.
     pub async fn stores_by_scope(&self) -> Result<Vec<Store<D>>, AppError> {
         let mut stores = Vec::new();
         for (stream_id, election) in self.streams_by_scope().await? {
@@ -163,11 +196,8 @@ where
             let cached = self.inner.read();
             cached
                 .iter()
-                .filter_map(|((id, election, scope), store)| {
-                    (*id == stream_id
-                        && store.data.read().last_event_id() > 0
-                        && scope == &D::scope())
-                        .then_some(*election)
+                .filter_map(|((id, election), store)| {
+                    (*id == stream_id && store.data.read().last_event_id() > 0).then_some(*election)
                 })
                 .collect()
         };
