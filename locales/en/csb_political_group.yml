@@ -1,0 +1,8 @@
+actions:
+  examine_all_brp_errors: Examine all BRP errors
+all_brp_errors: All BRP errors
+all_brp_errors_note: All BRP errors are collectively listed here
+brp_errors:
+  plural: BRP errors
+  singular: BRP error
+  none: No BRP errors

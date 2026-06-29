@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
+use rand::{RngExt, rng};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, HtmlTemplate,
@@ -10,6 +11,7 @@ use crate::{
 #[template(path = "examination/pages/political_group.html")]
 struct CsbPoliticalGroupTemplate {
     political_group_name: String,
+    brp_error_count: usize,
 }
 
 /// Render the placeholder political group overview page.
@@ -28,6 +30,7 @@ pub async fn overview(
                 .display_name
                 .as_ref()
                 .map_or("?".to_string(), |dn| dn.to_string()),
+            brp_error_count: rng().random_range(0..2),
         },
         context,
     )

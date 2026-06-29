@@ -1,0 +1,8 @@
+actions:
+  examine_all_brp_errors: Alle BRP fouten controleren
+all_brp_errors: Alle BRP fouten
+all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
+brp_errors:
+  plural: BRP fouten
+  singular: BRP fout
+  none: Geen BRP fouten
