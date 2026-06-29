@@ -3,15 +3,20 @@ use axum::response::{IntoResponse, Response};
 use rand::{RngExt, rng};
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, HtmlTemplate,
-    csb::examination::pages::CsbPoliticalGroupPath, filters,
+    AppError, Context, CsbContext, CsbStore, ElectionConfig, HtmlTemplate,
+    csb::examination::{pages::CsbPoliticalGroupPath, structs::CsbCandidateList},
+    filters,
 };
 
 #[derive(Template)]
 #[template(path = "examination/pages/political_group.html")]
 struct CsbPoliticalGroupTemplate {
+    // TODO make election part of CsbContext?
+    election: ElectionConfig,
     political_group_name: String,
-    brp_error_count: usize,
+    all_brp_error_count: usize,
+    candidate_lists: Vec<CsbCandidateList>,
+    general_brp_error_count: usize,
 }
 
 /// Render the placeholder political group overview page.
@@ -20,17 +25,33 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
+    let data = &store.data.read().imported_data;
+    let election = store.election;
+    let political_group_name = data
+        .political_group
+        .display_name
+        .as_ref()
+        // TODO figure out what to do with blanco lijsten, see #870
+        .map_or("?".to_string(), |dn| dn.to_string());
+    let general_brp_error_count = rng().random_range(0..=2);
+    let candidate_lists = data
+        .candidate_lists
+        .values()
+        .cloned()
+        .map(CsbCandidateList::placeholder)
+        .collect::<Vec<_>>();
+    let all_brp_error_count = candidate_lists
+        .iter()
+        .map(|cl| cl.brp_error_count)
+        .sum::<usize>()
+        + general_brp_error_count;
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
-            political_group_name: store
-                .data
-                .read()
-                .imported_data
-                .political_group
-                .display_name
-                .as_ref()
-                .map_or("?".to_string(), |dn| dn.to_string()),
-            brp_error_count: rng().random_range(0..2),
+            election,
+            political_group_name,
+            all_brp_error_count,
+            general_brp_error_count,
+            candidate_lists,
         },
         context,
     )

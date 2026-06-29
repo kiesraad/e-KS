@@ -1,8 +1,10 @@
 actions:
   examine_all_brp_errors: Alle BRP fouten controleren
+  examine_list: Kandidatenlijst controleren
 all_brp_errors: Alle BRP fouten
 all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
 brp_errors:
-  plural: BRP fouten
-  singular: BRP fout
+  plural: "{} BRP fouten"
+  singular: 1 BRP fout
   none: Geen BRP fouten
+candidate_count: "<strong>{}</strong> kandidaten"
