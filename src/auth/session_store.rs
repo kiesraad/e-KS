@@ -60,26 +60,13 @@ impl SessionStore {
         }
     }
 
-    /// Returns a session for the provided token, if it exists and is still valid.
-    pub async fn get(&self, token: &str) -> Option<Session> {
-        self.try_get(token).await.unwrap_or_else(|err| {
-            tracing::error!("failed to load session: {err}");
-            None
-        })
-    }
-
-    /// Returns an existing session if it is still valid
-    pub async fn get_existing(&self, token: Option<&str>) -> Option<Session> {
-        self.try_get_existing(token).await.unwrap_or_else(|err| {
-            tracing::error!("failed to load session: {err}");
-            None
-        })
-    }
-
-    /// Like [`Self::get`], but surfaces a storage error instead of mapping it to
-    /// "no session". A valid-but-expired session is dropped and reported as
-    /// `Ok(None)`.
-    pub async fn try_get(&self, token: &str) -> Result<Option<Session>, AppError> {
+    /// Returns the session for `token` if it exists and is still valid.
+    ///
+    /// A storage failure is surfaced as `Err` rather than mapped to "no
+    /// session", so a database outage trips the maintenance gate instead of
+    /// looking like a signed-out user. A valid-but-expired session is dropped
+    /// and reported as `Ok(None)`.
+    pub async fn get(&self, token: &str) -> Result<Option<Session>, AppError> {
         let Some(session) = self.load(token).await? else {
             return Ok(None);
         };
@@ -90,12 +77,11 @@ impl SessionStore {
         Ok(Some(session))
     }
 
-    /// Like [`Self::get_existing`], but surfaces a storage error. Used by the
-    /// session middleware so a database outage trips the maintenance gate rather
-    /// than redirecting the user to login as if they were signed out.
-    pub async fn try_get_existing(&self, token: Option<&str>) -> Result<Option<Session>, AppError> {
+    /// Like [`Self::get`], but accepts an optional token; `None` yields
+    /// `Ok(None)` without touching the store.
+    pub async fn get_existing(&self, token: Option<&str>) -> Result<Option<Session>, AppError> {
         match token {
-            Some(token) => self.try_get(token).await,
+            Some(token) => self.get(token).await,
             None => Ok(None),
         }
     }
@@ -201,7 +187,10 @@ mod tests {
         let token = session.token().to_exposed_string();
         store.insert(session.clone()).await;
 
-        let loaded = store.get_existing(Some(&token)).await;
+        let loaded = store
+            .get_existing(Some(&token))
+            .await
+            .expect("load session");
 
         assert_eq!(loaded, Some(session));
     }
@@ -212,7 +201,10 @@ mod tests {
         let store = SessionStore::default();
         let session = store.create_new(Locale::default()).await;
 
-        let loaded = store.get(session.token().expose()).await;
+        let loaded = store
+            .get(session.token().expose())
+            .await
+            .expect("load session");
 
         assert_eq!(loaded, Some(session));
     }
@@ -226,7 +218,7 @@ mod tests {
         let token = session.token().to_exposed_string();
         store.insert(session).await;
 
-        let loaded = store.get(&token).await;
+        let loaded = store.get(&token).await.expect("load session");
 
         assert!(loaded.is_none());
     }
@@ -245,8 +237,8 @@ mod tests {
 
         store.cleanup_expired().await;
 
-        assert!(store.get(&expired_token).await.is_none());
-        assert!(store.get(&active_token).await.is_some());
+        assert!(store.get(&expired_token).await.expect("load").is_none());
+        assert!(store.get(&active_token).await.expect("load").is_some());
     }
 
     #[test]

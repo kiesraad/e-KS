@@ -162,23 +162,6 @@ impl AppState {
         Ok(true)
     }
 
-    /// Turn a request-path error into a response, tripping the database-health
-    /// gate when the failure is an infrastructure outage
-    /// Non-infrastructure errors fall through to the normal error response.
-    pub fn handle_db_error(
-        &self,
-        err: AppError,
-        headers: &axum::http::HeaderMap,
-        uri: &axum::http::Uri,
-    ) -> Response {
-        if err.is_infrastructure_failure() {
-            self.db_health.mark_unavailable(&err);
-            crate::maintenance_response(headers, uri)
-        } else {
-            err.into_response()
-        }
-    }
-
     /// Remove the current session (if any) from the store and return a jar with
     /// the session cookie cleared on the client. Used when an authentication
     /// attempt fails so no stale session survives (TVS L10).
@@ -478,7 +461,14 @@ mod tests {
             .on_authentication_failed(AuthFailure::Error, jar, &HeaderMap::new())
             .await;
 
-        assert!(state.sessions.get_existing(Some(&token)).await.is_none());
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
         assert!(response.status().is_success());
     }
 }

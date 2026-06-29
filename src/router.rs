@@ -17,18 +17,7 @@ use crate::{
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
-    let app_router = Router::new()
-        .merge(audit_log::router())
-        .merge(candidates::router())
-        .merge(candidate_lists::router())
-        .merge(common::router())
-        .merge(list_designation::router())
-        .merge(list_submitters::router())
-        .merge(name_authorisations::router())
-        .merge(persons::router())
-        .merge(political_groups::router())
-        .merge(finalise::router())
-        .merge(substitute_list_submitters::router());
+    let app_router = app_feature_router();
 
     #[cfg(feature = "dev-features")]
     let dev_router = Router::new().route(
@@ -78,7 +67,48 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(bag::router())
         .merge(auth_service::router())
         .merge(common::public_router())
-        .merge(health_router())
+        .merge(health_router());
+
+    let router = apply_security_headers(router)
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            db_gate_middleware,
+        ))
+        .layer(http_trace::layer());
+
+    #[cfg(feature = "livereload")]
+    let router = router.merge(crate::utils::livereload::livereload_router());
+
+    let router = mount_static_assets(router).nest("/.well-known", common::wellknown_router());
+
+    router.layer(middleware::from_fn_with_state(
+        state.clone(),
+        eks_key_middleware,
+    ))
+}
+
+/// The application's feature routes (everything that sits behind the session
+/// and store middleware). Kept separate from [`create`] so the wiring of
+/// global layers stays readable.
+fn app_feature_router() -> Router<AppState> {
+    Router::new()
+        .merge(audit_log::router())
+        .merge(candidates::router())
+        .merge(candidate_lists::router())
+        .merge(common::router())
+        .merge(list_designation::router())
+        .merge(list_submitters::router())
+        .merge(name_authorisations::router())
+        .merge(persons::router())
+        .merge(political_groups::router())
+        .merge(finalise::router())
+        .merge(substitute_list_submitters::router())
+}
+
+/// Apply the static security response headers (CSP, framing, MIME sniffing,
+/// referrer) that every response shares.
+fn apply_security_headers(router: Router<AppState>) -> Router<AppState> {
+    router
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
             HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
@@ -95,15 +125,11 @@ pub fn create(state: AppState) -> Router<AppState> {
             header::REFERRER_POLICY,
             HeaderValue::from_static("same-origin"),
         ))
-        .layer(middleware::from_fn_with_state(
-            state.clone(),
-            db_gate_middleware,
-        ))
-        .layer(http_trace::layer());
+}
 
-    #[cfg(feature = "livereload")]
-    let router = router.merge(crate::utils::livereload::livereload_router());
-
+/// Mount the cache-busted `/static` asset routes: served from the embedded
+/// bundle in release builds, proxied to the dev asset server otherwise.
+fn mount_static_assets(router: Router<AppState>) -> Router<AppState> {
     let code = crate::filters::cache_buster();
     let index_js = format!("/{code}-index.js");
     let index_css = format!("/{code}-index.css");
@@ -130,12 +156,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         )),
     );
 
-    let router = router.nest("/.well-known", common::wellknown_router());
-
-    router.layer(middleware::from_fn_with_state(
-        state.clone(),
-        eks_key_middleware,
-    ))
+    router
 }
 
 #[cfg(test)]

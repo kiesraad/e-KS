@@ -170,18 +170,17 @@ async fn create_pending_requests_table(conn: &mut sqlx::PgConnection) -> Result<
 /// (for example a dropped `sessions` table) surfaces as an error rather than a
 /// confusing per-request failure later
 pub async fn verify_schema(pool: &sqlx::PgPool) -> Result<(), AppError> {
-    sqlx::query("SELECT 1 FROM streams LIMIT 0")
-        .execute(pool)
-        .await?;
-    sqlx::query("SELECT 1 FROM events LIMIT 0")
-        .execute(pool)
-        .await?;
-    sqlx::query("SELECT 1 FROM sessions LIMIT 0")
-        .execute(pool)
-        .await?;
-    sqlx::query("SELECT 1 FROM pending_requests LIMIT 0")
-        .execute(pool)
-        .await?;
+    // `LIMIT 0` checks each table exists and is readable without scanning rows.
+    const TABLE_PROBES: [&str; 4] = [
+        "SELECT 1 FROM streams LIMIT 0",
+        "SELECT 1 FROM events LIMIT 0",
+        "SELECT 1 FROM sessions LIMIT 0",
+        "SELECT 1 FROM pending_requests LIMIT 0",
+    ];
+
+    for probe in TABLE_PROBES {
+        sqlx::query(probe).execute(pool).await?;
+    }
     Ok(())
 }
 

@@ -106,9 +106,25 @@ impl From<AppError> for ErrorResponse {
 
 impl ErrorResponse {
     fn from_app_error(err: &AppError) -> Self {
-        let response = Self::build(err);
+        // Infrastructure failures (database unreachable, broken schema) become a
+        // 503 so clients and proxies can retry, regardless of which variant
+        // carried the failure. Everything else maps per-variant in `build`.
+        let response = if err.is_infrastructure_failure() {
+            Self::service_unavailable()
+        } else {
+            Self::build(err)
+        };
         log_app_error(err, &response);
         response
+    }
+
+    /// The temporary-outage response shared by every infrastructure failure.
+    fn service_unavailable() -> Self {
+        ErrorResponse {
+            error: ErrorResponseVariant::ServiceUnavailable,
+            message: "The service is temporarily unavailable. Please try again shortly."
+                .to_string(),
+        }
     }
 
     fn build(err: &AppError) -> Self {
@@ -120,16 +136,6 @@ impl ErrorResponse {
                 "An internal server error occurred.".to_string(),
             )
         };
-
-        // Infrastructure failures (database unreachable, broken schema) become a
-        // 503 so clients and proxies can retry
-        if err.is_infrastructure_failure() {
-            return ErrorResponse {
-                error: ServiceUnavailable,
-                message: "The service is temporarily unavailable. Please try again shortly."
-                    .to_string(),
-            };
-        }
 
         let (error, message) = match err {
             AppError::NotFound(msg) => (NotFound, msg.to_string()),

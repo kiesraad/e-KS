@@ -2,11 +2,11 @@
 //!
 //! When the database is unavailable (see [`crate::DbHealth`]), every
 //! DB-dependent route is short-circuited to a static 503 maintenance page
-use crate::{AppState, Context, HtmlTemplate, Locale, filters};
+use crate::{AppError, AppState, Context, DbHealth, HtmlTemplate, Locale, filters};
 use askama::Template;
 use axum::{
     extract::{Request, State},
-    http::{HeaderMap, StatusCode, Uri, header},
+    http::{StatusCode, header},
     middleware::Next,
     response::{IntoResponse, Response},
 };
@@ -51,19 +51,34 @@ pub async fn db_gate_middleware(
         return next.run(request).await;
     }
 
-    maintenance_response(request.headers(), request.uri())
+    maintenance_response(&request)
+}
+
+/// Turn a request-path error into a response, tripping the database-health gate
+/// when the failure is an infrastructure outage so subsequent requests get the
+/// maintenance page too. Non-infrastructure errors fall through to the normal
+/// error response.
+pub fn handle_db_error(health: &DbHealth, err: AppError, request: &Request) -> Response {
+    if err.is_infrastructure_failure() {
+        health.mark_unavailable(&err);
+        maintenance_response(request)
+    } else {
+        err.into_response()
+    }
 }
 
 /// Render the static 503 maintenance page, localized from `Accept-Language`,
-/// with a `Retry-After` header and a "try again" link back to `uri`.
-pub fn maintenance_response(headers: &HeaderMap, uri: &Uri) -> Response {
-    let locale = headers
+/// with a `Retry-After` header and a "try again" link back to the request path.
+fn maintenance_response(request: &Request) -> Response {
+    let locale = request
+        .headers()
         .get(header::ACCEPT_LANGUAGE)
         .and_then(|value| value.to_str().ok())
         .and_then(Locale::from_accept_language)
         .unwrap_or_default();
 
-    let retry_path = uri
+    let retry_path = request
+        .uri()
         .path_and_query()
         .map(|pq| pq.as_str().to_string())
         .unwrap_or_else(|| "/".to_string());
@@ -86,6 +101,11 @@ pub fn maintenance_response(headers: &HeaderMap, uri: &Uri) -> Response {
 mod tests {
     use super::*;
     use crate::test_utils::response_body_string;
+    use axum::body::Body;
+
+    fn request_for(uri: &str) -> Request {
+        Request::builder().uri(uri).body(Body::empty()).unwrap()
+    }
 
     #[test]
     fn exempts_health_static_and_wellknown() {
@@ -98,8 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn maintenance_response_is_503_with_retry_after() {
-        let uri: Uri = "/persons?success=true".parse().unwrap();
-        let response = maintenance_response(&HeaderMap::new(), &uri);
+        let response = maintenance_response(&request_for("/persons?success=true"));
 
         assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
         assert_eq!(response.headers().get(header::RETRY_AFTER).unwrap(), "30");
@@ -111,10 +130,38 @@ mod tests {
 
     #[tokio::test]
     async fn maintenance_response_localizes_from_accept_language() {
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-        let response = maintenance_response(&headers, &Uri::from_static("/"));
+        let request = Request::builder()
+            .uri("/")
+            .header(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9")
+            .body(Body::empty())
+            .unwrap();
+        let response = maintenance_response(&request);
         let body = response_body_string(response).await;
         assert!(body.contains("Temporarily unavailable"));
+    }
+
+    #[cfg(feature = "database")]
+    #[tokio::test]
+    async fn handle_db_error_trips_gate_on_infrastructure_failure() {
+        let health = DbHealth::default();
+        let err = AppError::DatabaseError(sqlx::Error::PoolTimedOut);
+
+        let response = handle_db_error(&health, err, &request_for("/"));
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert!(
+            !health.is_healthy(),
+            "infrastructure failure must trip the gate"
+        );
+    }
+
+    #[tokio::test]
+    async fn handle_db_error_passes_through_logic_errors() {
+        let health = DbHealth::default();
+
+        let response = handle_db_error(&health, AppError::GenericNotFound, &request_for("/"));
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
+        assert!(health.is_healthy(), "a logic error must not trip the gate");
     }
 }

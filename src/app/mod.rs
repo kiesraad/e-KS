@@ -22,7 +22,7 @@ pub use event::AppEvent;
 pub use middleware::{
     eks_key::eks_key_middleware,
     health::health_router,
-    maintenance::{db_gate_middleware, maintenance_response},
+    maintenance::{db_gate_middleware, handle_db_error},
 };
 pub use store::AppStoreData;
 

@@ -75,12 +75,12 @@ pub async fn logout(
     headers: HeaderMap,
 ) -> Response {
     let token = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string());
-    if state
-        .sessions
-        .get_existing(token.as_deref())
-        .await
-        .is_some()
-    {
+    // On a storage error we can't confirm a session, so fall through to the
+    // post-logout page rather than failing the logout.
+    if matches!(
+        state.sessions.get_existing(token.as_deref()).await,
+        Ok(Some(_))
+    ) {
         handle_logout(State(state), State(auth_state), jar).await
     } else {
         logged_out_page(&headers)

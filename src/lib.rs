@@ -79,8 +79,8 @@ pub mod fixtures;
 
 pub use app::{
     AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
-    db_gate_middleware, eks_key_middleware, finalise, health_router, list_designation,
-    list_submitters, maintenance_response, name_authorisations, persons, political_groups,
+    db_gate_middleware, eks_key_middleware, finalise, handle_db_error, health_router,
+    list_designation, list_submitters, name_authorisations, persons, political_groups,
     render_error_pages, substitute_list_submitters,
 };
 

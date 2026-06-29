@@ -51,14 +51,14 @@ pub async fn session_middleware(
 
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
-    let mut session = match state.sessions.try_get_existing(token).await {
+    let mut session = match state.sessions.get_existing(token).await {
         Ok(Some(session)) => session,
         // Send unauthenticated users to the login start page (DigiD button +
         // explanation), not straight into the SAML flow at `/login`.
         Ok(None) => return Redirect::to(&LoginStartPath.to_string()).into_response(),
         // A database error here must not masquerade as "logged out": trip the
         // maintenance gate instead of redirecting to login.
-        Err(err) => return state.handle_db_error(err, request.headers(), request.uri()),
+        Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
 
     session.last_activity = Utc::now();
@@ -140,12 +140,12 @@ where
 {
     let store = match resolved {
         Ok(store) => store,
-        Err(err) => return state.handle_db_error(err, request.headers(), request.uri()),
+        Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
 
     // catch up with the latest events
     if let Err(err) = store.load().await {
-        return state.handle_db_error(err, request.headers(), request.uri());
+        return crate::handle_db_error(&state.db_health, err, &request);
     }
 
     request.extensions_mut().insert(store);
