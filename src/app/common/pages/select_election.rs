@@ -6,9 +6,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, StreamId,
-    WaterCouncil, common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath,
-    filters,
+    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, WaterCouncil,
+    common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath, filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -21,7 +20,6 @@ struct SelectElectionTemplate {
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
     csrf_token: crate::TokenValue,
-    fixtures: bool,
 }
 
 struct LocaleValues {
@@ -55,7 +53,6 @@ pub async fn select_election(
         provinces: Province::ALL,
         water_councils: WaterCouncil::ALL,
         csrf_token,
-        fixtures: cfg!(feature = "fixtures"),
     };
 
     let values = LocaleValues {
@@ -90,26 +87,15 @@ pub async fn select_election_submit(
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
 
+    #[cfg(feature = "dev-features")]
     if form.login_as_csb() {
-        session.stream_id = Some(StreamId::new());
+        session.stream_id = Some(crate::StreamId::new());
         session.scope = Scope::CentralElectoralCommittee;
         session.set_current_election(election);
 
         #[cfg(feature = "fixtures")]
         if form.load_fixtures() {
-            let pg_stream_id = StreamId::new();
-            let app_store = state.store_for_stream(pg_stream_id, election, true).await?;
-            let snapshot = crate::AppStoreData::snapshot_until(&app_store.get_events(), usize::MAX);
-
-            state
-                .csb_store_for_stream(StreamId::new(), election)
-                .await?
-                .update(crate::CsbEvent::Import {
-                    hash: "fixtures".to_string(),
-                    source_stream_id: pg_stream_id,
-                    snapshot: Box::new(snapshot),
-                })
-                .await?;
+            crate::auth::dev_login::import_csb_fixture(&state, election).await?;
         }
 
         state.sessions.insert(session).await;
