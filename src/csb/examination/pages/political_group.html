@@ -5,9 +5,9 @@
 {% endblock %}
 {% block header_action %}
   <div class="header-controls">
-    <div class="switch-group {% if is_examination_finished %} finished {% else %} unfinished {% endif %}">
+    <div class="switch-group {% if political_group.is_examination_finished %} finished {% else %} unfinished {% endif %}">
       <p>
-        {% if is_examination_finished %}
+        {% if political_group.is_examination_finished %}
           {{ "csb_political_group.examination_finished"|trans }}
         {% else %}
           {{ "csb_political_group.examination_unfinished"|trans }}
@@ -21,11 +21,14 @@
         </label>
       </form>
     </div>
-    <a class="button secondary icon-restoration">Alle herstelacties</a>
+    <a class="button secondary icon-restoration">
+      {{ "csb_political_group.all_restorations"|trans }}
+      <span class="restoration_count">{{ restoration_count }}</span>
+    </a>
   </div>
 {% endblock %}
 {% block content %}
-  <section class="candidate-lists {% if is_examination_finished %} disabled {% endif %}">
+  <section class="candidate-lists {% if political_group.is_examination_finished %} disabled {% endif %}">
     <div class="candidates">
       <div data-href="#" class="card card-brp-errors">
         <div class="card-header">

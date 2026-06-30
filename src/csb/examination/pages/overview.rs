@@ -16,7 +16,8 @@ use crate::{
 #[derive(Template)]
 #[template(path = "examination/pages/overview.html")]
 struct CsbExaminationOverviewTemplate {
-    political_groups: Vec<CsbPoliticalGroup>,
+    unfinished_political_groups: Vec<CsbPoliticalGroup>,
+    finished_political_groups: Vec<CsbPoliticalGroup>,
 }
 
 /// Render the placeholder overview page.
@@ -25,7 +26,23 @@ pub async fn overview(
     context: CsbContext,
     CsbPoliticalGroups(political_groups): CsbPoliticalGroups,
 ) -> Result<Response, AppError> {
-    Ok(HtmlTemplate(CsbExaminationOverviewTemplate { political_groups }, context).into_response())
+    let mut unfinished_political_groups = Vec::new();
+    let mut finished_political_groups = Vec::new();
+    for political_group in political_groups {
+        if political_group.is_examination_finished {
+            finished_political_groups.push(political_group)
+        } else {
+            unfinished_political_groups.push(political_group);
+        }
+    }
+    Ok(HtmlTemplate(
+        CsbExaminationOverviewTemplate {
+            unfinished_political_groups,
+            finished_political_groups,
+        },
+        context,
+    )
+    .into_response())
 }
 
 #[cfg(test)]

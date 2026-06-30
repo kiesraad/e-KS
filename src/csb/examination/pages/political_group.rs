@@ -23,7 +23,7 @@ struct CsbPoliticalGroupTemplate {
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
     general_brp_error_count: usize,
-    is_examination_finished: bool,
+    restoration_count: usize,
 }
 
 /// Render the placeholder political group overview page.
@@ -33,10 +33,7 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let store_data = &store.data.read();
-    let political_group = CsbPoliticalGroup {
-        political_group: store_data.imported_data.political_group.clone(),
-        stream_id: store.stream_id,
-    };
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let general_brp_error_count = rng().random_range(0..=2);
     let candidate_lists = store_data
         .imported_data
@@ -57,7 +54,7 @@ pub async fn overview(
             all_brp_error_count,
             general_brp_error_count,
             candidate_lists,
-            is_examination_finished: store_data.is_examination_finished,
+            restoration_count: rng().random_range(0..=20),
         },
         context,
     )
@@ -69,15 +66,10 @@ pub async fn toggle_examination_finish(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     store.update(CsbEvent::ToggleFinish).await?;
-    let political_group = store.data.read().imported_data.political_group.clone();
-
     Ok(Redirect::to(
-        &CsbPoliticalGroup {
-            political_group,
-            stream_id: store.stream_id,
-        }
-        .after_toggle_finish_examination_path()
-        .to_string(),
+        &CsbPoliticalGroup::new_from_csb_store(&store)
+            .after_toggle_finish_examination_path()
+            .to_string(),
     )
     .into_response())
 }

@@ -4,6 +4,7 @@ actions:
   examine_list: Kandidatenlijst controleren
 all_brp_errors: Alle BRP fouten
 all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
+all_restorations: Alle herstelacties
 brp_errors:
   none: Geen BRP fouten
   plural: "{} BRP fouten"

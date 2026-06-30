@@ -190,3 +190,20 @@
   background-color: var(--slider-color);
   border-radius: 50%;
 }
+
+.restoration_count {
+  display: inline-flex;
+  position: relative;
+  margin-left: -1em;
+  margin-top: -1em;
+  align-items: center;
+  justify-content: center;
+  font-size: var(--font-size-xs);
+  background-color: var(--red-600);
+  color: var(--base-white);
+  border-radius: 50%;
+  aspect-ratio: 1/1;
+  width: 1em;
+  height: 1em;
+  padding: var(--space-2);
+}

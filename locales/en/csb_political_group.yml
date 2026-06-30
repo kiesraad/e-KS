@@ -4,6 +4,7 @@ actions:
   examine_list: Examine candidate list
 all_brp_errors: All BRP errors
 all_brp_errors_note: All BRP errors are collectively listed here
+all_restorations: All restorations
 brp_errors:
   none: No BRP errors
   plural: "{} BRP errors"

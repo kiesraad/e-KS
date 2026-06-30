@@ -37,7 +37,7 @@
           </tr>
         </thead>
         <tbody>
-          {% for pg in political_groups %}
+          {% for pg in unfinished_political_groups %}
             <tr class="clickable">
               <!-- TODO figure out what to do with blanco lijsten, see #870 -->
               <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
@@ -58,7 +58,6 @@
           {% endfor %}
         </tbody>
       </table>
-      <!-- TODO: filter political groups by whether or not they are filtered -->
       <h2>{{ "csb.finished"|trans }}</h2>
       <table class="political-group-table mb-xl mt-md">
         <thead>
@@ -70,26 +69,29 @@
           </tr>
         </thead>
         <tbody>
+          {% for pg in finished_political_groups %}
+            <tr class="clickable">
+              <!-- TODO figure out what to do with blanco lijsten, see #870 -->
+              <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
+              <td>
+                <div class="status approved">{{ "csb.status.approved"|trans }}</div>
+              </td>
+              <td>
+                <ul class="tags-list">
+                  <li class="tag link width-md">
+                    <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                  </li>
+                </ul>
+              </td>
+              <td>
+                <a href="{{ pg.examination_path() }}"></a>
+              </td>
+            </tr>
+          {% endfor %}
           <tr class="clickable">
             <td>Kiesraad Demo Kiesraad Demo Kiesraa</td>
             <td>
               <div class="status omission">{{ "csb.status.omission"|trans }}</div>
-            </td>
-            <td>
-              <ul class="tags-list">
-                <li class="tag link width-md">
-                  <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
-                </li>
-              </ul>
-            </td>
-            <td>
-              <a href="#"></a>
-            </td>
-          </tr>
-          <tr class="clickable">
-            <td>Partij van de Toekomst</td>
-            <td>
-              <div class="status approved">{{ "csb.status.approved"|trans }}</div>
             </td>
             <td>
               <ul class="tags-list">
