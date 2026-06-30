@@ -1,21 +1,31 @@
 {% extends "components/layout.html" %}
-{% block page_title %}{{ political_group_name }}{% endblock %}
+{% block page_title %}
+  <!-- TODO figure out what to do with blanco lijsten, see #870 -->
+  {{ political_group.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}
+{% endblock %}
 {% block header_action %}
   <div class="header-controls">
-    <div class="switch-group unfinished"> <!-- TODO make finished/unfinished conditional -->
-      <p>Onderzoek afronden</p>
-      <form method="post">
-      <label class="switch">
-        <input type="submit">
-        <span class="slider"></span>
-      </label>
+    <div class="switch-group {% if is_examination_finished %} finished {% else %} unfinished {% endif %}">
+      <p>
+        {% if is_examination_finished %}
+          {{ "csb_political_group.examination_finished"|trans }}
+        {% else %}
+          {{ "csb_political_group.examination_unfinished"|trans }}
+        {% endif %}
+      </p>
+      <form method="post"
+            action="{{ political_group.examination_toggle_finish_path() }}">
+        <label class="switch">
+          <input type="submit">
+          <span class="slider"></span>
+        </label>
       </form>
     </div>
     <a class="button secondary icon-restoration">Alle herstelacties</a>
   </div>
 {% endblock %}
 {% block content %}
-  <section class="candidate-lists">
+  <section class="candidate-lists {% if is_examination_finished %} disabled {% endif %}">
     <div class="candidates">
       <div data-href="#" class="card card-brp-errors">
         <div class="card-header">

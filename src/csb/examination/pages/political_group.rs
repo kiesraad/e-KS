@@ -1,10 +1,16 @@
 use askama::Template;
-use axum::response::{IntoResponse, Response};
+use axum::response::{IntoResponse, Redirect, Response};
 use rand::{RngExt, rng};
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, ElectionConfig, HtmlTemplate,
-    csb::examination::{pages::CsbPoliticalGroupPath, structs::CsbCandidateList},
+    AppError, Context, CsbContext,
+    CsbEvent::{self},
+    CsbStore, ElectionConfig, HtmlTemplate,
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
+        structs::CsbCandidateList,
+    },
     filters,
 };
 
@@ -13,10 +19,11 @@ use crate::{
 struct CsbPoliticalGroupTemplate {
     // TODO make election part of CsbContext?
     election: ElectionConfig,
-    political_group_name: String,
+    political_group: CsbPoliticalGroup,
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
     general_brp_error_count: usize,
+    is_examination_finished: bool,
 }
 
 /// Render the placeholder political group overview page.
@@ -25,16 +32,14 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let data = &store.data.read().imported_data;
-    let election = store.election;
-    let political_group_name = data
-        .political_group
-        .display_name
-        .as_ref()
-        // TODO figure out what to do with blanco lijsten, see #870
-        .map_or("?".to_string(), |dn| dn.to_string());
+    let store_data = &store.data.read();
+    let political_group = CsbPoliticalGroup {
+        political_group: store_data.imported_data.political_group.clone(),
+        stream_id: store.stream_id,
+    };
     let general_brp_error_count = rng().random_range(0..=2);
-    let candidate_lists = data
+    let candidate_lists = store_data
+        .imported_data
         .candidate_lists
         .values()
         .cloned()
@@ -47,13 +52,32 @@ pub async fn overview(
         + general_brp_error_count;
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
-            election,
-            political_group_name,
+            election: store.election,
+            political_group,
             all_brp_error_count,
             general_brp_error_count,
             candidate_lists,
+            is_examination_finished: store_data.is_examination_finished,
         },
         context,
+    )
+    .into_response())
+}
+
+pub async fn toggle_examination_finish(
+    _: CsbPoliticalGroupToggleFinishPath,
+    store: CsbStore,
+) -> Result<Response, AppError> {
+    store.update(CsbEvent::ToggleFinish).await?;
+    let political_group = store.data.read().imported_data.political_group.clone();
+
+    Ok(Redirect::to(
+        &CsbPoliticalGroup {
+            political_group,
+            stream_id: store.stream_id,
+        }
+        .after_toggle_finish_examination_path()
+        .to_string(),
     )
     .into_response())
 }

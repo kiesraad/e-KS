@@ -23,6 +23,7 @@ pub enum CsbEvent {
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<AppStoreData>,
     },
+    ToggleFinish
 }
 
 impl CsbEvent {
@@ -30,6 +31,7 @@ impl CsbEvent {
     pub fn event_category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::ToggleFinish => "toggle_finish",
         }
     }
 
@@ -37,6 +39,7 @@ impl CsbEvent {
     pub fn event_key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::ToggleFinish => "toggle_finish",
         }
     }
 }

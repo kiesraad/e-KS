@@ -15,6 +15,7 @@ use crate::{
 pub struct CsbStoreData {
     pub(crate) imported_data: AppStoreData,
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
+    pub(crate) is_examination_finished: bool,
 }
 
 impl StoreData for CsbStoreData {
@@ -25,6 +26,7 @@ impl StoreData for CsbStoreData {
 
         match event.payload {
             CsbEvent::Import { snapshot, .. } => self.imported_data = *snapshot,
+            CsbEvent::ToggleFinish => self.is_examination_finished = !self.is_examination_finished,
         }
     }
 

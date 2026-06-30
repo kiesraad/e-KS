@@ -9,5 +9,7 @@ brp_errors:
   plural: "{} BRP errors"
   singular: 1 BRP error
 candidate_count: "<strong>{}</strong> candidates"
-general_instruction_list_submitter: Examine information about the list submitter(s) 
-general_instruction_political_group: Examine information about the political group  
+examination_finished: Examination finished
+examination_unfinished: Finish examination
+general_instruction_list_submitter: Examine information about the list submitter(s)
+general_instruction_political_group: Examine information about the political group
