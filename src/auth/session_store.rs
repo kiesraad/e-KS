@@ -60,21 +60,29 @@ impl SessionStore {
         }
     }
 
-    /// Returns a session for the provided token, if it exists and is still valid.
-    pub async fn get(&self, token: &str) -> Option<Session> {
-        let session = self.load(token).await?;
+    /// Returns the session for `token` if it exists and is still valid.
+    ///
+    /// A storage failure is surfaced as `Err` rather than mapped to "no
+    /// session", so a database outage trips the maintenance gate instead of
+    /// looking like a signed-out user. A valid-but-expired session is dropped
+    /// and reported as `Ok(None)`.
+    pub async fn get(&self, token: &str) -> Result<Option<Session>, AppError> {
+        let Some(session) = self.load(token).await? else {
+            return Ok(None);
+        };
         if session.is_expired() {
             self.drop_token(token).await;
-            return None;
+            return Ok(None);
         }
-        Some(session)
+        Ok(Some(session))
     }
 
-    /// Returns an existing session if it is still valid.
-    pub async fn get_existing(&self, token: Option<&str>) -> Option<Session> {
+    /// Like [`Self::get`], but accepts an optional token; `None` yields
+    /// `Ok(None)` without touching the store.
+    pub async fn get_existing(&self, token: Option<&str>) -> Result<Option<Session>, AppError> {
         match token {
             Some(token) => self.get(token).await,
-            None => None,
+            None => Ok(None),
         }
     }
 
@@ -131,11 +139,11 @@ impl SessionStore {
         }
     }
 
-    async fn load(&self, token: &str) -> Option<Session> {
+    async fn load(&self, token: &str) -> Result<Option<Session>, AppError> {
         match self {
-            SessionStore::InMemory(inner) => inner.read().get(token).cloned(),
+            SessionStore::InMemory(inner) => Ok(inner.read().get(token).cloned()),
             #[cfg(feature = "database")]
-            SessionStore::Database(pool) => session_db::load(pool, token).await.ok().flatten(),
+            SessionStore::Database(pool) => session_db::load(pool, token).await,
         }
     }
 
@@ -179,7 +187,10 @@ mod tests {
         let token = session.token().to_exposed_string();
         store.insert(session.clone()).await;
 
-        let loaded = store.get_existing(Some(&token)).await;
+        let loaded = store
+            .get_existing(Some(&token))
+            .await
+            .expect("load session");
 
         assert_eq!(loaded, Some(session));
     }
@@ -190,7 +201,10 @@ mod tests {
         let store = SessionStore::default();
         let session = store.create_new(Locale::default()).await;
 
-        let loaded = store.get(session.token().expose()).await;
+        let loaded = store
+            .get(session.token().expose())
+            .await
+            .expect("load session");
 
         assert_eq!(loaded, Some(session));
     }
@@ -204,7 +218,7 @@ mod tests {
         let token = session.token().to_exposed_string();
         store.insert(session).await;
 
-        let loaded = store.get(&token).await;
+        let loaded = store.get(&token).await.expect("load session");
 
         assert!(loaded.is_none());
     }
@@ -223,8 +237,8 @@ mod tests {
 
         store.cleanup_expired().await;
 
-        assert!(store.get(&expired_token).await.is_none());
-        assert!(store.get(&active_token).await.is_some());
+        assert!(store.get(&expired_token).await.expect("load").is_none());
+        assert!(store.get(&active_token).await.expect("load").is_some());
     }
 
     #[test]

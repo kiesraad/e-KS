@@ -197,7 +197,12 @@ mod tests {
             .expect("response");
         assert_eq!(get.status(), StatusCode::OK);
 
-        let session = state.sessions.get(&token).await.expect("session");
+        let session = state
+            .sessions
+            .get(&token)
+            .await
+            .expect("load session")
+            .expect("session");
         let csrf = session.csrf_token.clone();
 
         let body = format!("csrf_token={csrf}&election=EK27");
@@ -220,7 +225,12 @@ mod tests {
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
 
-        let session = state.sessions.get(&token).await.expect("session");
+        let session = state
+            .sessions
+            .get(&token)
+            .await
+            .expect("load session")
+            .expect("session");
         assert_eq!(session.current_election, Some(ElectionConfig::EK27));
     }
 }

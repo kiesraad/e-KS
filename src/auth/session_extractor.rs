@@ -11,11 +11,13 @@ use axum_extra::extract::{
     cookie::{Cookie, SameSite},
 };
 use chrono::Utc;
+use serde::{Serialize, de::DeserializeOwned};
 
 use crate::{
     AppError, AppState, Scope, Session,
     common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
+    store::{Store, StoreData},
 };
 
 /// Name of the session cookie used by the application.
@@ -49,10 +51,14 @@ pub async fn session_middleware(
 
     let token = jar.get(SESSION_COOKIE_NAME).map(|cookie| cookie.value());
 
-    let Some(mut session) = state.sessions.get_existing(token).await else {
+    let mut session = match state.sessions.get_existing(token).await {
+        Ok(Some(session)) => session,
         // Send unauthenticated users to the login start page (DigiD button +
         // explanation), not straight into the SAML flow at `/login`.
-        return Redirect::to(&LoginStartPath.to_string()).into_response();
+        Ok(None) => return Redirect::to(&LoginStartPath.to_string()).into_response(),
+        // A database error here must not masquerade as "logged out": trip the
+        // maintenance gate instead of redirecting to login.
+        Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
 
     session.last_activity = Utc::now();
@@ -68,7 +74,7 @@ pub async fn session_middleware(
 /// election, so the user cannot reach a route that needs a store without one.
 pub async fn store_middleware(
     State(state): State<AppState>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     let Some(session) = request.extensions().get::<Session>() else {
@@ -86,19 +92,8 @@ pub async fn store_middleware(
         return Redirect::to(&SelectElectionPath.to_string()).into_response();
     };
 
-    let store = match state.store_for_stream(stream_id, election, false).await {
-        Ok(store) => store,
-        Err(err) => return err.into_response(),
-    };
-
-    // catch up with the latest events
-    if let Err(err) = store.load().await {
-        return err.into_response();
-    }
-
-    request.extensions_mut().insert(store);
-
-    next.run(request).await
+    let resolved = state.store_for_stream(stream_id, election, false).await;
+    inject_loaded_store(&state, resolved, request, next).await
 }
 
 /// Middleware that resolves the scoped CSB store for the session's current
@@ -106,7 +101,7 @@ pub async fn store_middleware(
 /// [`Scope::CentralElectoralCommittee`] sessions; other sessions are rejected.
 pub async fn csb_store_middleware(
     State(state): State<AppState>,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     let Some(session) = request.extensions().get::<Session>() else {
@@ -124,14 +119,33 @@ pub async fn csb_store_middleware(
         return Redirect::to("/login").into_response();
     };
 
-    let store = match state.csb_store_for_stream(stream_id, election).await {
+    let resolved = state.csb_store_for_stream(stream_id, election).await;
+    inject_loaded_store(&state, resolved, request, next).await
+}
+
+/// Replay a resolved store's latest events, inject it into the request, and
+/// continue down the chain. Shared by [`store_middleware`] and
+/// [`csb_store_middleware`]: a failure to resolve or replay is an
+/// infrastructure problem, so it trips the maintenance gate rather than
+/// serving a stale or missing store.
+async fn inject_loaded_store<D>(
+    state: &AppState,
+    resolved: Result<Store<D>, AppError>,
+    mut request: Request,
+    next: Next,
+) -> Response
+where
+    D: StoreData,
+    D::Event: Serialize + DeserializeOwned,
+{
+    let store = match resolved {
         Ok(store) => store,
-        Err(err) => return err.into_response(),
+        Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
 
     // catch up with the latest events
     if let Err(err) = store.load().await {
-        return err.into_response();
+        return crate::handle_db_error(&state.db_health, err, &request);
     }
 
     request.extensions_mut().insert(store);

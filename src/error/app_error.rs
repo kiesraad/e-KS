@@ -106,6 +106,49 @@ impl Display for AppError {
 
 impl std::error::Error for AppError {}
 
+impl AppError {
+    /// Whether this error reflects the database (or another backing service)
+    /// being unreachable or structurally broken, as opposed to a logic error
+    /// for one request.
+    pub fn is_infrastructure_failure(&self) -> bool {
+        #[cfg(feature = "database")]
+        if let AppError::DatabaseError(err) = self {
+            return sqlx_error_is_infrastructure(err);
+        }
+        false
+    }
+}
+
+/// Classify a `sqlx::Error` as an infrastructure failure (connection lost,
+/// pool exhausted, missing table, server shutting down) rather than a
+/// per-query logic error (`RowNotFound`, decode mismatch, etc.).
+#[cfg(feature = "database")]
+pub(crate) fn sqlx_error_is_infrastructure(err: &sqlx::Error) -> bool {
+    use sqlx::Error;
+
+    match err {
+        // Transport/pool level: the database could not be reached at all.
+        Error::Io(_)
+        | Error::Tls(_)
+        | Error::Protocol(_)
+        | Error::PoolTimedOut
+        | Error::PoolClosed
+        | Error::WorkerCrashed => true,
+        // Server-reported errors: classify by SQLSTATE. Class 08 = connection
+        // exceptions, 53 = insufficient resources, 57 = operator intervention
+        // (e.g. admin shutdown / crash), 42P01 = undefined table (broken or
+        // missing schema). Everything else is treated as a logic error.
+        Error::Database(db) => db.code().is_some_and(|code| {
+            let code = code.as_ref();
+            code.starts_with("08")
+                || code.starts_with("53")
+                || code.starts_with("57")
+                || code == "42P01"
+        }),
+        _ => false,
+    }
+}
+
 #[cfg(feature = "database")]
 impl From<sqlx::Error> for AppError {
     fn from(err: sqlx::Error) -> Self {
@@ -226,5 +269,32 @@ mod tests {
             let err = AppError::DatabaseError(sqlx::Error::RowNotFound);
             assert!(err.to_string().contains("Database error"));
         }
+    }
+
+    #[cfg(feature = "database")]
+    #[test]
+    fn classifies_connection_errors_as_infrastructure() {
+        // Transport-level failures are infrastructure failures.
+        let io = AppError::DatabaseError(sqlx::Error::Io(std::io::Error::new(
+            std::io::ErrorKind::ConnectionRefused,
+            "refused",
+        )));
+        assert!(io.is_infrastructure_failure());
+
+        let timed_out = AppError::DatabaseError(sqlx::Error::PoolTimedOut);
+        assert!(timed_out.is_infrastructure_failure());
+
+        let closed = AppError::DatabaseError(sqlx::Error::PoolClosed);
+        assert!(closed.is_infrastructure_failure());
+    }
+
+    #[cfg(feature = "database")]
+    #[test]
+    fn does_not_classify_logic_errors_as_infrastructure() {
+        // A missing row is a per-query outcome, not an outage.
+        assert!(!AppError::DatabaseError(sqlx::Error::RowNotFound).is_infrastructure_failure());
+        // Non-database errors are never infrastructure failures.
+        assert!(!AppError::Unauthorised.is_infrastructure_failure());
+        assert!(!AppError::GenericNotFound.is_infrastructure_failure());
     }
 }

@@ -49,7 +49,12 @@ async fn session_from(state: &AppState, response: &Response) -> Session {
         .split_once('=')
         .map(|(_, value)| value)
         .expect("session token");
-    state.sessions.get(token).await.expect("session")
+    state
+        .sessions
+        .get(token)
+        .await
+        .expect("load session")
+        .expect("session")
 }
 
 /// Open the per-stream store for the dev-login test user.
