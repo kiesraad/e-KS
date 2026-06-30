@@ -9,8 +9,10 @@ pub mod import;
 
 mod context;
 mod event;
+mod omission;
 mod store;
 
 pub use context::CsbContext;
 pub use event::CsbEvent;
+pub use omission::{Omission, OmissionId};
 pub use store::CsbStoreData;

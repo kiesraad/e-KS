@@ -1,11 +1,14 @@
-//! Event-sourced projection for the CSB (Centraal Stembureau) domain and the
-//! request extractor that pulls a [`CsbStore`](crate::CsbStore) out of the
-//! request extensions.
+mod extractor;
+mod getters;
+
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppStoreData, CsbEvent, Scope,
+    common::UtcDateTime,
+    csb::{Omission, OmissionId},
     store::{StoreData, StoreEvent},
 };
 
@@ -15,6 +18,7 @@ use crate::{
 pub struct CsbStoreData {
     pub(crate) imported_data: AppStoreData,
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
+    pub(crate) omissions: HashMap<OmissionId, Omission>,
 }
 
 impl StoreData for CsbStoreData {
@@ -23,8 +27,24 @@ impl StoreData for CsbStoreData {
     fn apply(&mut self, event: StoreEvent<CsbEvent>) {
         self.events.push(event.clone());
 
+        let event_time = UtcDateTime::from(event.created_at);
+
         match event.payload {
             CsbEvent::Import { snapshot, .. } => self.imported_data = *snapshot,
+            CsbEvent::CreateOmission(mut omission) => {
+                omission.updated_at = event_time;
+                self.omissions.insert(omission.id, omission);
+            }
+            CsbEvent::UpdateOmission(mut omission) => {
+                omission.updated_at = event_time;
+                let omission_id = omission.id;
+                self.omissions.entry(omission_id).and_modify(|existing| {
+                    *existing = omission;
+                });
+            }
+            CsbEvent::DeleteOmission { omission_id } => {
+                self.omissions.remove(&omission_id);
+            }
         }
     }
 
