@@ -144,6 +144,22 @@ mod tests {
     };
 
     #[tokio::test]
+    async fn name_authorisations_state_error_when_too_many() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
+        sample_name_authorisation(NameAuthorisationId::new())
+            .create(&store)
+            .await?;
+
+        let steps = PoliticalGroupSteps::new(&store, false)?;
+        assert_eq!(steps.name_authorisations_state, "error");
+
+        Ok(())
+    }
+
+    #[tokio::test]
     async fn submitter_state_empty_with_initial() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         sample_name_authorisation(NameAuthorisationId::new())
