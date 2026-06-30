@@ -1,5 +1,19 @@
 {% extends "components/layout.html" %}
 {% block page_title %}{{ political_group_name }}{% endblock %}
+{% block header_action %}
+  <div class="header-controls">
+    <div class="switch-group finished"> <!-- TODO make finished/unfinished conditional -->
+      <p>Onderzoek afronden</p>
+      <form method="post">
+      <label class="switch">
+        <input type="submit">
+        <span class="slider on"></span>
+      </label>
+      </form>
+    </div>
+    <a class="button secondary icon-restoration">Alle herstelacties</a>
+  </div>
+{% endblock %}
 {% block content %}
   <section class="candidate-lists">
     <div class="candidates">
@@ -47,8 +61,12 @@
               {% endif %}
             </li>
           </ul>
+          <ul class="card-instruction">
+            <li>{{ "csb_political_group.general_instruction_political_group"|trans }}</li>
+            <li>{{ "csb_political_group.general_instruction_list_submitter"|trans }}</li>
+          </ul>
         </div>
-        <a class="card-footer" href="#">{{ "csb_political_group.actions.examine_list"|trans }}</a>
+        <a class="card-footer" href="#">{{ "csb_political_group.actions.examine_general"|trans }}</a>
       </div>
       {% for candidate_list in candidate_lists %}
         <div class="card card-candidate-list" data-href="#">
