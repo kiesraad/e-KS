@@ -90,7 +90,7 @@ async fn perform_dev_login(
 
             #[cfg(feature = "fixtures")]
             if load_fixtures {
-                import_csb_fixture(&state, election).await?;
+                crate::csb::import::import_csb_fixture(&state, election).await?;
             }
 
             CsbExaminationOverviewPath {}.to_string()
@@ -128,28 +128,6 @@ pub(crate) fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
         .and_then(|value| value.to_str().ok())
         .and_then(Locale::from_accept_language)
         .unwrap_or_default()
-}
-
-/// Create a political group stream with fixtures and import it as a CSB stream
-#[cfg(feature = "fixtures")]
-pub(crate) async fn import_csb_fixture(
-    state: &AppState,
-    election: ElectionConfig,
-) -> Result<(), AppError> {
-    let pg_stream_id = StreamId::new();
-    let app_store = state.store_for_stream(pg_stream_id, election, true).await?;
-    let events = app_store.get_events();
-    let snapshot = AppStoreData::snapshot_until(&events, usize::MAX);
-
-    state
-        .csb_store_for_stream(StreamId::new(), election)
-        .await?
-        .update(crate::CsbEvent::Import {
-            hash: "fixtures".to_string(),
-            source_stream_id: pg_stream_id,
-            snapshot: Box::new(snapshot),
-        })
-        .await
 }
 
 async fn ensure_dev_store(

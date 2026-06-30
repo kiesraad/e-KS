@@ -87,7 +87,6 @@ pub async fn select_election_submit(
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
 
-    #[cfg(feature = "dev-features")]
     if form.login_as_csb() {
         session.stream_id = Some(crate::StreamId::new());
         session.scope = Scope::CentralElectoralCommittee;
@@ -95,7 +94,7 @@ pub async fn select_election_submit(
 
         #[cfg(feature = "fixtures")]
         if form.load_fixtures() {
-            crate::auth::dev_login::import_csb_fixture(&state, election).await?;
+            crate::csb::import::import_csb_fixture(&state, election).await?;
         }
 
         state.sessions.insert(session).await;
