@@ -2,8 +2,9 @@ use super::NameAuthorisationsPath;
 use crate::{
     AppError, AppStore, Context, HtmlTemplate, QueryParamState,
     app::list_designation::ListDesignation,
-    common::{HasSeverity, Problematic},
+    common::{HasSeverity, PotentialProblems, Problematic},
     filters,
+    finalise::AllProblems,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
@@ -15,6 +16,7 @@ use axum::{extract::Query, response::IntoResponse};
 #[template(path = "name_authorisations/pages/view.html")]
 struct NameAuthorisationTemplate {
     name_authorisations: Vec<NameAuthorisation>,
+    size_problems: Vec<PotentialProblems>,
     steps: PoliticalGroupSteps,
 }
 
@@ -28,6 +30,10 @@ pub async fn list_name_authorisations(
     Ok(HtmlTemplate(
         NameAuthorisationTemplate {
             name_authorisations: steps.name_authorisations.clone(),
+            size_problems: AllProblems::find_name_authorisation_size_problems(
+                steps.list_designation,
+                steps.name_authorisations.len(),
+            ),
             steps,
         },
         context,

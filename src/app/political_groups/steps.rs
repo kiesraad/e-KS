@@ -2,7 +2,7 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, AppStore, QueryParamState,
-    app::list_designation::ListDesignation,
+    app::{finalise::AllProblems, list_designation::ListDesignation},
     common::{HasSeverity, Problematic, Severity},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -14,8 +14,7 @@ pub struct PoliticalGroupSteps {
     pub name_authorisations: Vec<NameAuthorisation>,
     pub list_submitter: ListSubmitter,
     pub substitute_submitters: Vec<ListSubmitter>,
-    pub is_blank: bool,
-    pub is_combined: bool,
+    pub list_designation: Option<ListDesignation>,
     pub initial: bool,
 
     pub list_designation_state: &'static str,
@@ -31,17 +30,13 @@ impl PoliticalGroupSteps {
         let list_submitter = store.get_list_submitter();
         let substitute_submitters = store.get_substitute_submitters();
 
-        let is_blank = political_group.list_designation == Some(ListDesignation::Blank);
-        let is_combined = political_group.list_designation == Some(ListDesignation::Combined);
-
         Ok(Self {
             initial,
-            is_blank,
-            is_combined,
             list_designation_state: Self::list_designation_state(&political_group),
             basic_state: Self::basic_state(initial, &political_group),
             name_authorisations_state: Self::name_authorisations_state(
                 initial,
+                political_group.list_designation,
                 &name_authorisations,
             ),
             submitters_state: Self::submitters_state(
@@ -52,6 +47,7 @@ impl PoliticalGroupSteps {
             name_authorisations,
             list_submitter,
             substitute_submitters,
+            list_designation: political_group.list_designation,
         })
     }
 
@@ -73,15 +69,25 @@ impl PoliticalGroupSteps {
 
     fn name_authorisations_state(
         fine_if_empty: bool,
+        list_designation: Option<ListDesignation>,
         name_authorisations: &[NameAuthorisation],
     ) -> &'static str {
         if name_authorisations.is_empty() {
             return if fine_if_empty { "empty" } else { "warning" };
         }
 
+        let size_severity = AllProblems::find_name_authorisation_size_problems(
+            list_designation,
+            name_authorisations.len(),
+        )
+        .iter()
+        .map(|p| p.severity())
+        .max();
+
         match name_authorisations
             .iter()
             .filter_map(|na| na.get_problems(()).highest_severity())
+            .chain(size_severity)
             .max()
         {
             None => "ok",
@@ -108,6 +114,14 @@ impl PoliticalGroupSteps {
             None => "ok",
             Some(severity) => severity.class(),
         }
+    }
+
+    pub fn is_blank(&self) -> bool {
+        self.list_designation == Some(ListDesignation::Blank)
+    }
+
+    pub fn is_combined(&self) -> bool {
+        self.list_designation == Some(ListDesignation::Combined)
     }
 
     /// Returns the URL for a step link, preserving `?initial=true`

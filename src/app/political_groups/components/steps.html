@@ -5,21 +5,21 @@
          class="{{ steps.list_designation_state }}">{{ "political_group.list_type"|trans }}</a>
     </li>
     <li>
-      <a {% if !steps.is_blank %}href="{{ steps.step_url(PoliticalGroup::update_path() ) }}"{% endif %}
-         class="{% if steps.is_blank %}disabled {% endif %}{{ steps.basic_state }}"
+      <a {% if !steps.is_blank() %}href="{{ steps.step_url(PoliticalGroup::update_path() ) }}"{% endif %}
+         class="{% if steps.is_blank() %}disabled {% endif %}{{ steps.basic_state }}"
          data-href="{{ PoliticalGroup::update_path() }}"
          data-state-class="{{ steps.basic_state }}"
          data-skip-if-blank>{{ "political_group.basic_information_political_group"|trans }}</a>
     </li>
     <li>
-      <a {% if !steps.is_blank %}href="{{ steps.step_url(NameAuthorisation::list_path() ) }}"{% endif %}
-         class="{% if steps.is_blank %}disabled {% endif %}{{ steps.name_authorisations_state }}"
+      <a {% if !steps.is_blank() %}href="{{ steps.step_url(NameAuthorisation::list_path() ) }}"{% endif %}
+         class="{% if steps.is_blank() %}disabled {% endif %}{{ steps.name_authorisations_state }}"
          data-href="{{ NameAuthorisation::list_path() }}"
          data-state-class="{{ steps.name_authorisations_state }}"
          data-label="{{ "political_group.legal_name_data"|trans }}"
          data-label-combined="{{ "political_group.legal_name_data_combined"|trans }}"
          data-skip-if-blank>
-        {% if steps.is_combined %}
+        {% if steps.is_combined() %}
           {{ "political_group.legal_name_data_combined"|trans }}
         {% else %}
           {{ "political_group.legal_name_data"|trans }}
