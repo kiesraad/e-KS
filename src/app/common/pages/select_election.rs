@@ -94,11 +94,30 @@ pub async fn select_election_submit(
         session.stream_id = Some(StreamId::new());
         session.scope = Scope::CentralElectoralCommittee;
         session.set_current_election(election);
+
+        #[cfg(feature = "fixtures")]
+        if form.load_fixtures() {
+            let pg_stream_id = StreamId::new();
+            let app_store = state.store_for_stream(pg_stream_id, election, true).await?;
+            let snapshot = crate::AppStoreData::snapshot_until(&app_store.get_events(), usize::MAX);
+
+            state
+                .csb_store_for_stream(StreamId::new(), election)
+                .await?
+                .update(crate::CsbEvent::Import {
+                    hash: "fixtures".to_string(),
+                    source_stream_id: pg_stream_id,
+                    snapshot: Box::new(snapshot),
+                })
+                .await?;
+        }
+
         state.sessions.insert(session).await;
 
         return Ok(Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response());
     }
 
+    // use the stream ID derived from the authenticated login
     let Some(stream_id) = session.stream_id else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
