@@ -1,6 +1,9 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{AppStoreData, StreamId};
+use crate::{
+    AppStoreData, StreamId,
+    csb::{Omission, OmissionId},
+};
 
 /// Domain events that mutate the CSB (Centraal Stembureau) store.
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -24,6 +27,11 @@ pub enum CsbEvent {
         snapshot: Box<AppStoreData>,
     },
     ToggleFinish,
+    CreateOmission(Omission),
+    UpdateOmission(Omission),
+    DeleteOmission {
+        omission_id: OmissionId,
+    },
 }
 
 impl CsbEvent {
@@ -32,6 +40,9 @@ impl CsbEvent {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::ToggleFinish => "toggle_finish",
+            CsbEvent::CreateOmission(_)
+            | CsbEvent::UpdateOmission(_)
+            | CsbEvent::DeleteOmission { .. } => "omission",
         }
     }
 
@@ -40,6 +51,9 @@ impl CsbEvent {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::ToggleFinish => "toggle_finish",
+            CsbEvent::CreateOmission(_) => "update_omission",
+            CsbEvent::UpdateOmission(_) => "update_omission",
+            CsbEvent::DeleteOmission { .. } => "delete_omission",
         }
     }
 }

@@ -6,12 +6,14 @@ pub(crate) mod persistence;
 
 mod event;
 mod filesystem;
+mod health;
 pub(crate) mod memory;
 mod registry;
 mod store_handle;
 
 pub use encryption::EventEncryption;
 pub use event::{GENESIS_HASH, StoreEvent};
+pub use health::{DbHealth, HealthState, run_db_prober};
 pub use persistence::StorePersistence;
 pub use registry::StoreRegistry;
 pub use store_handle::Store;

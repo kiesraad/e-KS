@@ -131,9 +131,7 @@ mod tests {
         assert!(!store.data.read().is_examination_finished);
 
         toggle_examination_finish(
-            CsbPoliticalGroupToggleFinishPath {
-                stream_id,
-            },
+            CsbPoliticalGroupToggleFinishPath { stream_id },
             store.clone(),
         )
         .await
@@ -143,9 +141,7 @@ mod tests {
         assert!(store.data.read().is_examination_finished);
 
         toggle_examination_finish(
-            CsbPoliticalGroupToggleFinishPath {
-                stream_id,
-            },
+            CsbPoliticalGroupToggleFinishPath { stream_id },
             store.clone(),
         )
         .await
@@ -153,7 +149,6 @@ mod tests {
 
         // toggle twice => false
         assert!(!store.data.read().is_examination_finished);
-
     }
 
     #[tokio::test]

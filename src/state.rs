@@ -11,8 +11,8 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, ElectionConfig, IdDeriver,
-    PendingRequestStore, Session, SessionStore, StreamId, TypstRenderer,
+    AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, DbHealth, ElectionConfig,
+    IdDeriver, PendingRequestStore, Session, SessionStore, StreamId, TypstRenderer,
     auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
     common::{IndexPath, SelectElectionPath},
     store::{EventEncryption, StoreRegistry},
@@ -36,6 +36,7 @@ pub struct AppState {
     pub id_deriver: IdDeriver,
     pub auth_service_state: AuthServiceState,
     pub typst_renderer: TypstRenderer,
+    pub db_health: DbHealth,
 }
 
 /// Contract the application's request extractors expect from the router
@@ -92,6 +93,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             typst_renderer,
+            db_health: DbHealth::default(),
         })
     }
 
@@ -211,6 +213,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             typst_renderer,
+            db_health: DbHealth::default(),
         }
     }
 }
@@ -458,7 +461,14 @@ mod tests {
             .on_authentication_failed(AuthFailure::Error, jar, &HeaderMap::new())
             .await;
 
-        assert!(state.sessions.get_existing(Some(&token)).await.is_none());
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
         assert!(response.status().is_success());
     }
 }

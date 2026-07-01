@@ -76,6 +76,8 @@ async fn perform_dev_login(
     session.set_stream_id(stream_id);
     session.set_scope(scope);
 
+    let load_fixtures = query.fixtures.unwrap_or(false);
+
     let redirect_to = match scope {
         Scope::CentralElectoralCommittee => {
             // Prime the CSB store. Creating it records the committee scope on the
@@ -85,6 +87,12 @@ async fn perform_dev_login(
             let election = ElectionConfig::EK27;
             state.csb_store_for_stream(stream_id, election).await?;
             session.set_current_election(election);
+
+            #[cfg(feature = "fixtures")]
+            if load_fixtures {
+                crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
+            }
+
             CsbExaminationOverviewPath {}.to_string()
         }
         Scope::PoliticalGroup => {
@@ -92,7 +100,6 @@ async fn perform_dev_login(
                 SelectElectionPath.to_string()
             } else {
                 let election = ElectionConfig::EK27;
-                let load_fixtures = query.fixtures.unwrap_or(false);
                 let (store, was_new) =
                     ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
 

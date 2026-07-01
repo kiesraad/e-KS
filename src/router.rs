@@ -11,24 +11,13 @@ use tower_http::set_header::SetResponseHeaderLayer;
 
 use crate::{
     AppState, audit_log, candidate_lists, candidates, common, csb, csb_store_middleware,
-    eks_key_middleware, finalise, health_router, http_trace, list_designation, list_submitters,
-    name_authorisations, persons, political_groups, render_error_pages, session_middleware,
-    store_middleware, substitute_list_submitters, utils::bag,
+    db_gate_middleware, eks_key_middleware, finalise, health_router, http_trace, list_designation,
+    list_submitters, name_authorisations, persons, political_groups, render_error_pages,
+    session_middleware, store_middleware, substitute_list_submitters, utils::bag,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
-    let app_router = Router::new()
-        .merge(audit_log::router())
-        .merge(candidates::router())
-        .merge(candidate_lists::router())
-        .merge(common::router())
-        .merge(list_designation::router())
-        .merge(list_submitters::router())
-        .merge(name_authorisations::router())
-        .merge(persons::router())
-        .merge(political_groups::router())
-        .merge(finalise::router())
-        .merge(substitute_list_submitters::router());
+    let app_router = app_feature_router();
 
     #[cfg(feature = "dev-features")]
     let dev_router = Router::new().route(
@@ -79,7 +68,48 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(bag::router())
         .merge(auth_service::router())
         .merge(common::public_router())
-        .merge(health_router())
+        .merge(health_router());
+
+    let router = apply_security_headers(router)
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            db_gate_middleware,
+        ))
+        .layer(http_trace::layer());
+
+    #[cfg(feature = "livereload")]
+    let router = router.merge(crate::utils::livereload::livereload_router());
+
+    let router = mount_static_assets(router).nest("/.well-known", common::wellknown_router());
+
+    router.layer(middleware::from_fn_with_state(
+        state.clone(),
+        eks_key_middleware,
+    ))
+}
+
+/// The application's feature routes (everything that sits behind the session
+/// and store middleware). Kept separate from [`create`] so the wiring of
+/// global layers stays readable.
+fn app_feature_router() -> Router<AppState> {
+    Router::new()
+        .merge(audit_log::router())
+        .merge(candidates::router())
+        .merge(candidate_lists::router())
+        .merge(common::router())
+        .merge(list_designation::router())
+        .merge(list_submitters::router())
+        .merge(name_authorisations::router())
+        .merge(persons::router())
+        .merge(political_groups::router())
+        .merge(finalise::router())
+        .merge(substitute_list_submitters::router())
+}
+
+/// Apply the static security response headers (CSP, framing, MIME sniffing,
+/// referrer) that every response shares.
+fn apply_security_headers(router: Router<AppState>) -> Router<AppState> {
+    router
         .layer(SetResponseHeaderLayer::if_not_present(
             header::CONTENT_SECURITY_POLICY,
             HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
@@ -96,11 +126,11 @@ pub fn create(state: AppState) -> Router<AppState> {
             header::REFERRER_POLICY,
             HeaderValue::from_static("same-origin"),
         ))
-        .layer(http_trace::layer());
+}
 
-    #[cfg(feature = "livereload")]
-    let router = router.merge(crate::utils::livereload::livereload_router());
-
+/// Mount the cache-busted `/static` asset routes: served from the embedded
+/// bundle in release builds, proxied to the dev asset server otherwise.
+fn mount_static_assets(router: Router<AppState>) -> Router<AppState> {
     let code = crate::filters::cache_buster();
     let index_js = format!("/{code}-index.js");
     let index_css = format!("/{code}-index.css");
@@ -127,12 +157,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         )),
     );
 
-    let router = router.nest("/.well-known", common::wellknown_router());
-
-    router.layer(middleware::from_fn_with_state(
-        state.clone(),
-        eks_key_middleware,
-    ))
+    router
 }
 
 #[cfg(test)]
@@ -170,6 +195,41 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad - Kandidaatstelling"));
+    }
+
+    #[tokio::test]
+    async fn db_gate_serves_maintenance_when_unhealthy() {
+        let state = AppState::new_for_tests().await;
+        // Simulate the prober (or a request handler) tripping the gate.
+        state.db_health.mark_unavailable("test: database down");
+
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder().uri("/").body(Body::empty()).unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SERVICE_UNAVAILABLE);
+        assert_eq!(response.headers().get("retry-after").unwrap(), "30");
+        let body = response_body_string(response).await;
+        assert!(body.contains("Tijdelijk niet beschikbaar"));
+    }
+
+    #[tokio::test]
+    async fn db_gate_exempts_health_endpoint_when_unhealthy() {
+        let state = AppState::new_for_tests().await;
+        state.db_health.mark_unavailable("test: database down");
+
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri("/health")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        // The health probe must keep answering (memory backend is reachable),
+        // not be swallowed by the maintenance gate.
+        assert_eq!(response.status(), StatusCode::OK);
     }
 
     #[tokio::test]

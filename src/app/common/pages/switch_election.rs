@@ -156,7 +156,12 @@ mod tests {
         assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
 
         // Verify session current_election was updated (stream_id stays the same).
-        let session = state.sessions.get(&token_value).await.expect("session");
+        let session = state
+            .sessions
+            .get(&token_value)
+            .await
+            .expect("load session")
+            .expect("session");
         assert_eq!(session.stream_id, Some(stream_id));
         assert_eq!(
             session.current_election,

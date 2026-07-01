@@ -38,14 +38,9 @@ impl StoreData for AppStoreData {
     fn apply(&mut self, event: StoreEvent<AppEvent>) {
         self.events.push(event.clone());
 
-        let StoreEvent {
-            payload,
-            created_at,
-            ..
-        } = event;
-        let event_time = UtcDateTime::from(created_at);
+        let event_time = UtcDateTime::from(event.created_at);
 
-        match payload {
+        match event.payload {
             AppEvent::UpdatePoliticalGroup(pg) => self.political_group = pg,
 
             event @ (AppEvent::CreatePerson(_)

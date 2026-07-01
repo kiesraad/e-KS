@@ -16,6 +16,7 @@ enum ErrorResponseVariant {
     Unauthorised,
     BadRequest,
     InternalServerError,
+    ServiceUnavailable,
     NotFound,
 }
 
@@ -26,6 +27,7 @@ impl ErrorResponseVariant {
             ErrorResponseVariant::BadRequest => StatusCode::BAD_REQUEST,
             ErrorResponseVariant::Unauthorised => StatusCode::UNAUTHORIZED,
             ErrorResponseVariant::InternalServerError => StatusCode::INTERNAL_SERVER_ERROR,
+            ErrorResponseVariant::ServiceUnavailable => StatusCode::SERVICE_UNAVAILABLE,
         }
     }
 
@@ -34,6 +36,7 @@ impl ErrorResponseVariant {
             ErrorResponseVariant::Unauthorised => "Unauthorised",
             ErrorResponseVariant::BadRequest => "Bad request",
             ErrorResponseVariant::InternalServerError => "Internal server error",
+            ErrorResponseVariant::ServiceUnavailable => "Service unavailable",
             ErrorResponseVariant::NotFound => "Not found",
         }
     }
@@ -103,9 +106,25 @@ impl From<AppError> for ErrorResponse {
 
 impl ErrorResponse {
     fn from_app_error(err: &AppError) -> Self {
-        let response = Self::build(err);
+        // Infrastructure failures (database unreachable, broken schema) become a
+        // 503 so clients and proxies can retry, regardless of which variant
+        // carried the failure. Everything else maps per-variant in `build`.
+        let response = if err.is_infrastructure_failure() {
+            Self::service_unavailable()
+        } else {
+            Self::build(err)
+        };
         log_app_error(err, &response);
         response
+    }
+
+    /// The temporary-outage response shared by every infrastructure failure.
+    fn service_unavailable() -> Self {
+        ErrorResponse {
+            error: ErrorResponseVariant::ServiceUnavailable,
+            message: "The service is temporarily unavailable. Please try again shortly."
+                .to_string(),
+        }
     }
 
     fn build(err: &AppError) -> Self {
@@ -163,7 +182,7 @@ impl ErrorResponse {
 /// Emit a single tracing event for an error response.
 fn log_app_error(err: &AppError, response: &ErrorResponse) {
     match response.error {
-        ErrorResponseVariant::InternalServerError => {
+        ErrorResponseVariant::InternalServerError | ErrorResponseVariant::ServiceUnavailable => {
             error!(error = ?err, "5xx error");
         }
         ErrorResponseVariant::BadRequest

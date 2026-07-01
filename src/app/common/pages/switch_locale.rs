@@ -71,7 +71,12 @@ mod tests {
             "https://example.com/return"
         );
 
-        let session = state.sessions.get(&token).await.expect("session");
+        let session = state
+            .sessions
+            .get(&token)
+            .await
+            .expect("load session")
+            .expect("session");
         assert_eq!(session.locale, Locale::En);
     }
 }
