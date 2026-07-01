@@ -16,9 +16,17 @@
         {% endif %}
       </h3>
       <p class="mb-6">{{ "political_group.authorised_agent_info"|trans }}</p>
-      {% for size_problem in size_problems %}
-        <p class="alert alert-{{ size_problem.severity().class() }}">{{ size_problem.translate(locale) }}</p>
-      {% endfor %}
+      {% if !(steps.initial && name_authorisations.is_empty()) && let Some(size_problem) = size_problem %}
+        <p class="alert alert-{{ size_problem.severity().class() }}">
+          {% if steps.is_combined() %}
+            {{ "political_group.names_size_hint_combination"|trans }}
+          {% else if name_authorisations.is_empty() %}
+            {{ "political_group.names_size_hint_add_name"|trans }}
+          {% else %}
+            {{ size_problem.translate(locale) }}. {{ "political_group.names_size_hint_standalone"|trans }}
+          {% endif %}
+        </p>
+      {% endif %}
       {% if name_authorisations.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>
       {% else %}

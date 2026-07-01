@@ -15,7 +15,7 @@ use axum::{extract::Query, response::IntoResponse};
 #[template(path = "name_authorisations/pages/view.html")]
 struct NameAuthorisationTemplate {
     name_authorisations: Vec<NameAuthorisation>,
-    size_problems: Vec<PotentialProblems>,
+    size_problem: Option<PotentialProblems>,
     steps: PoliticalGroupSteps,
 }
 
@@ -29,7 +29,7 @@ pub async fn list_name_authorisations(
     Ok(HtmlTemplate(
         NameAuthorisationTemplate {
             name_authorisations: steps.name_authorisations.clone(),
-            size_problems: NameAuthorisation::get_size_problems(
+            size_problem: NameAuthorisation::get_size_problems(
                 steps.list_designation,
                 steps.name_authorisations.len(),
             ),

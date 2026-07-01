@@ -29,22 +29,22 @@ impl NameAuthorisation {
     pub fn get_size_problems(
         list_designation: Option<ListDesignation>,
         name_authorisation_count: usize,
-    ) -> Vec<PotentialProblems> {
+    ) -> Option<PotentialProblems> {
         match list_designation.unwrap_or(ListDesignation::Standalone) {
             ListDesignation::Standalone if name_authorisation_count > 1 => {
-                vec![PotentialProblems::TooManyAuthorizedNames {
+                Some(PotentialProblems::TooManyAuthorizedNames {
                     count: name_authorisation_count - 1,
-                }]
+                })
             }
             ListDesignation::Standalone if name_authorisation_count < 1 => {
-                vec![PotentialProblems::TooFewAuthorizedNames { count: 1 }]
+                Some(PotentialProblems::TooFewAuthorizedNames { count: 1 })
             }
             ListDesignation::Combined if name_authorisation_count < 2 => {
-                vec![PotentialProblems::TooFewAuthorizedNames {
+                Some(PotentialProblems::TooFewAuthorizedNames {
                     count: 2 - name_authorisation_count,
-                }]
+                })
             }
-            _ => Vec::new(),
+            _ => None,
         }
     }
 
