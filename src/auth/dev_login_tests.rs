@@ -8,8 +8,8 @@ use tower::ServiceExt;
 use secrecy::SecretString;
 
 use crate::{
-    AppEvent, AppState, AppStore, ElectionConfig, Locale, Scope, Session, StreamId, router,
-    store::StoreEvent, test_utils::response_body_string,
+    AppEvent, AppState, AppStore, CsbEvent, ElectionConfig, Locale, Scope, Session, StreamId,
+    router, store::StoreEvent, test_utils::response_body_string,
 };
 
 const TEST_ID_CODE: &str = "999999990";
@@ -208,6 +208,44 @@ fn dev_login_csb_request(query: &str) -> Request<Body> {
         .uri(format!("/dev/login?csb=true&bsn={TEST_ID_CODE}&{query}"))
         .body(Body::empty())
         .unwrap()
+}
+
+#[cfg(feature = "fixtures")]
+#[tokio::test]
+async fn dev_login_csb_with_fixtures_creates_imported_stream() {
+    let (state, app) = test_app().await;
+
+    let response = app
+        .oneshot(dev_login_csb_request("fixtures=true"))
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    let csb_stores = state
+        .csb_store_registry
+        .stores_by_scope()
+        .await
+        .expect("csb stores");
+
+    assert_eq!(csb_stores.len(), 1);
+    let csb_store = &csb_stores[0];
+
+    let events = csb_store.data.read().events.clone();
+    assert_eq!(events.len(), 1);
+
+    let event = events[0].clone();
+    let StoreEvent {
+        payload: CsbEvent::Import { hash, snapshot, .. },
+        ..
+    } = event
+    else {
+        panic!("unexpected event: {event:?}");
+    };
+
+    assert_eq!(hash, crate::csb::import::fixture::FIXTURE_IMPORT_HASH);
+    assert!(!snapshot.persons.is_empty());
+    assert!(!snapshot.candidate_lists.is_empty());
 }
 
 #[tokio::test]

@@ -6,9 +6,8 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, StreamId,
-    WaterCouncil, common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath,
-    filters,
+    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, WaterCouncil,
+    common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath, filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -21,7 +20,6 @@ struct SelectElectionTemplate {
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
     csrf_token: crate::TokenValue,
-    fixtures: bool,
 }
 
 struct LocaleValues {
@@ -55,7 +53,6 @@ pub async fn select_election(
         provinces: Province::ALL,
         water_councils: WaterCouncil::ALL,
         csrf_token,
-        fixtures: cfg!(feature = "fixtures"),
     };
 
     let values = LocaleValues {
@@ -90,15 +87,24 @@ pub async fn select_election_submit(
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
 
+    // Only available with the `fixtures` feature: this is a test/dev shortcut
+    // into the committee (CSB) scope
+    #[cfg(feature = "fixtures")]
     if form.login_as_csb() {
-        session.stream_id = Some(StreamId::new());
+        session.stream_id = Some(crate::StreamId::new());
         session.scope = Scope::CentralElectoralCommittee;
         session.set_current_election(election);
+
+        if form.load_fixtures() {
+            crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
+        }
+
         state.sessions.insert(session).await;
 
         return Ok(Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response());
     }
 
+    // use the stream ID derived from the authenticated login
     let Some(stream_id) = session.stream_id else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
