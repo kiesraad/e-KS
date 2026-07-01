@@ -31,9 +31,10 @@ pub struct DevLoginQuery {
 /// [`Scope::PoliticalGroup`] and the group only sees its own stream.
 ///
 /// When `csb=true` the login is instead a member of the central electoral
-/// committee (CSB): the session and its stream are scoped to
-/// [`Scope::CentralElectoralCommittee`], giving access to all committee-scoped
-/// streams.
+/// committee (CSB): the session is scoped to
+/// [`Scope::CentralElectoralCommittee`], giving access to the shared committee
+/// main stream and to all streams scoped to [`Scope::ImportedByCsb`]. No
+/// per-session committee stream is created.
 pub async fn dev_login(
     State(state): State<AppState>,
     jar: CookieJar,
