@@ -25,8 +25,8 @@ list_submitter_data: Gegevens lijstinleveraar
 list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
 list_type: Type lijstaanduiding
 names_size_hint_add_name: Voeg de statutaire naam van de partij toe.
-names_size_hint_combination: Combinaties van meerdere geregistreerde namen moeten uit minstens 2 statutaire namen bestaan.
-names_size_hint_standalone: "Verwijder de ongewenste namen, of kies bij type lijstaanduiding voor een combinatie van meerdere geregistreerde namen."
+names_size_hint_combination: Combinaties van meerdere geregistreerde namen moeten uit minstens twee statutaire namen bestaan.
+names_size_hint_standalone: Een op zichzelf staande geregistreerde naam moet uit één naam bestaan.
 no_legal_names: Geen statutaire naam
 no_list_submitter: Geen lijstinleveraar
 no_substitute_submitters: Geen vervangers voor het herstel van verzuimen

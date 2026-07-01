@@ -25,8 +25,8 @@ list_submitter_data: List submitter data
 list_submitter_info: The list submitter is the only person authorised to submit the candidate list and to remedy omissions.
 list_type: List designation type
 names_size_hint_add_name: Add the statutory name of the party.
-names_size_hint_combination: Combinations must consist of at least 2 statutory names.
-names_size_hint_standalone: "Remove the unwanted names, or choose a combination of multiple registered names as the list designation type."
+names_size_hint_combination: Combinations must consist of at least two statutory names.
+names_size_hint_standalone: A standalone registered name must consist of a single name.
 no_legal_names: No statutory name
 no_list_submitter: No list submitter
 no_substitute_submitters: No substitute submitters
