@@ -1,3 +1,27 @@
+.breadcrumbs {
+  > :last-child:has(a) {
+    --header-item-indicator-opacity: 1;
+    --header-item-indicator-bg: var(--blue-600);
+    --header-item-color: var(--base-white);
+    --header-item-font-weight: var(--font-weight-bold);
+    border-inline-end: 1px solid var(--blue-1000);
+  }
+
+  a {
+    padding-left: 0;
+    border-inline-end: none;
+  }
+
+  .breadcrumb > ::before {
+    background-color: currentColor;
+    content: "";
+    height: var(--space-6);
+    mask-image: url("../icons/chevronRight.svg");
+    mask-size: contain;
+    width: var(--space-6);
+  }
+}
+
 .examination {
   display: grid;
   gap: var(--space-8);
@@ -14,7 +38,7 @@
   flex-direction: column;
   display: flex;
 
-  >.button {
+  > .button {
     margin-left: auto;
   }
 }
@@ -23,7 +47,7 @@
   display: flex;
   align-items: center;
 
-  >progress {
+  > progress {
     border-radius: var(--rounded-md);
     height: var(--space-2);
     width: 100%;
@@ -34,23 +58,23 @@
   }
 
   /* Chrome/Safari track */
-  >progress::-webkit-progress-bar {
+  > progress::-webkit-progress-bar {
     background-color: var(--gray-200);
   }
 
   /* Chrome/Safari filled part */
-  >progress::-webkit-progress-value {
+  > progress::-webkit-progress-value {
     background-color: var(--blue-600);
     border-radius: var(--rounded-md);
   }
 
   /* Firefox filled part */
-  >progress::-moz-progress-bar {
+  > progress::-moz-progress-bar {
     background-color: var(--blue-600);
     border-radius: var(--rounded-md);
   }
 
-  >.percentage {
+  > .percentage {
     white-space: no-wrap;
     margin-left: var(--space-2);
   }
@@ -123,7 +147,7 @@
     align-items: center;
     margin-right: var(--space-4);
 
-    >* {
+    > * {
       margin-right: var(--space-1);
     }
 
@@ -155,7 +179,6 @@
     }
   }
 }
-
 
 .switch {
   position: relative;
@@ -202,7 +225,7 @@
   background-color: var(--red-600);
   color: var(--base-white);
   border-radius: 50%;
-  aspect-ratio: 1/1;
+  aspect-ratio: 1 / 1;
   width: 1em;
   height: 1em;
   padding: var(--space-2);

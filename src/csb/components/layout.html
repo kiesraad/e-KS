@@ -3,10 +3,15 @@
   <header>
     <nav>
       <div>
-        <ul>
+        <ul class="breadcrumbs">
           <li>
-            <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">{{ "csb.examination"|trans }}</a>
+            <a href="{{ crate::csb::index::pages::CsbIndexPath }}"
+               class="home"
+               aria-label="{{ "common.home"|trans }}">
+              <span>{{ "common.home"|trans }}</span>
+            </a>
           </li>
+          {% block breadcrumbs %}{% endblock %}
         </ul>
         <ul>
           <li>

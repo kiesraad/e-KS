@@ -60,6 +60,7 @@ mod tests {
         let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
+            is_examination_finished: false,
         }]);
 
         let response = overview(

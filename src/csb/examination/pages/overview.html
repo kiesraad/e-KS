@@ -1,4 +1,9 @@
 {% extends "components/layout.html" %}
+{% block breadcrumbs %}
+  <li class="breadcrumb">
+    <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">{{ "csb.examination"|trans }}</a>
+  </li>
+{% endblock %}
 {% block page_title %}{{ "csb.examination"|trans }}{% endblock %}
 {% block content %}
   <div class="examination">

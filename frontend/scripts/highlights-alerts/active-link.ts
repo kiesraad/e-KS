@@ -2,6 +2,10 @@
 export default function highlightActiveLinks() {
   document.querySelectorAll("a").forEach((link) => {
     const current = globalThis.location.pathname;
+    // csb uses breadcrumbs, skip this script for highlighting
+    if (current.startsWith("/csb")) {
+      return;
+    }
     const isMain = Boolean(link.closest("header"));
 
     // highlight active links or main menu items if the current path starts with the same segment

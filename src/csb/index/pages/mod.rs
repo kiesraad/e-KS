@@ -9,6 +9,5 @@ mod index;
 pub struct CsbIndexPath;
 
 pub fn router() -> Router<AppState> {
-    Router::new()
-    .typed_get(index::index)
+    Router::new().typed_get(index::index)
 }

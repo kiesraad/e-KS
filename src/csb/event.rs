@@ -23,7 +23,7 @@ pub enum CsbEvent {
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<AppStoreData>,
     },
-    ToggleFinish
+    ToggleFinish,
 }
 
 impl CsbEvent {

@@ -1,3 +1,3 @@
-mod pages;
+pub mod pages;
 
-pub use pages::router;
+pub use pages::{CsbIndexPath, router};

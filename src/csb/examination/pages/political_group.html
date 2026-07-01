@@ -1,4 +1,14 @@
 {% extends "components/layout.html" %}
+{% block breadcrumbs %}
+  <li class="breadcrumb">
+    <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">{{ "csb.examination"|trans }}</a>
+  </li>
+  <li class="breadcrumb">
+    <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">
+      {{ political_group.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}
+    </a>
+  </li>
+{% endblock %}
 {% block page_title %}
   <!-- TODO figure out what to do with blanco lijsten, see #870 -->
   {{ political_group.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}
