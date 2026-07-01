@@ -21,6 +21,9 @@ import:
     ambiguous_hash: The entered hash matches more than one data set; enter more characters.
     invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
     not_found: No data was found for the entered hash.
+no_finished_political_group: There are no finished examinations of any political group.
+no_political_groups_added: No examinations of any political group have been added yet.
+no_unfinished_political_groups: There are no unfinished examinations of any political group.
 progress: Progress
 status:
   approved: Approved
