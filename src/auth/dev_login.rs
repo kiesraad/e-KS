@@ -7,7 +7,8 @@ use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppEvent, AppState, AppStoreData, ElectionConfig, Locale, Scope, Session, StreamId,
+    AppError, AppEvent, AppState, AppStoreData, CsbMainEvent, ElectionConfig, Locale, Scope,
+    Session, StreamId,
     auth::session_extractor::build_session_cookie,
     common::{IndexPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
@@ -80,12 +81,13 @@ async fn perform_dev_login(
 
     let redirect_to = match scope {
         Scope::CentralElectoralCommittee => {
-            // Prime the CSB store. Creating it records the committee scope on the
-            // stream row (via the CSB registry). Committee members never get an
-            // app store: their `(stream_id, election)` partition holds CSB events
-            // only.
+            // All committee members share a single stream
+            // The session's own stream_id is not used for CSB state (other than for logging)
             let election = ElectionConfig::EK27;
-            state.csb_store_for_stream(stream_id, election).await?;
+            let store = state.csb_main_store(election).await?;
+            store
+                .update(CsbMainEvent::DeveloperLogin { stream_id })
+                .await?;
             session.set_current_election(election);
 
             #[cfg(feature = "fixtures")]
@@ -95,6 +97,7 @@ async fn perform_dev_login(
 
             CsbExaminationOverviewPath {}.to_string()
         }
+        Scope::ImportedByCsb => return Err(AppError::Unauthorised),
         Scope::PoliticalGroup => {
             if query.select_election.unwrap_or(false) {
                 SelectElectionPath.to_string()

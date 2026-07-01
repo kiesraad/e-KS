@@ -141,7 +141,7 @@ mod tests {
         // Guards the scope wiring the extractor relies on for registry lookups.
         assert_eq!(
             <CsbStoreData as crate::store::StoreData>::scope(),
-            crate::Scope::CentralElectoralCommittee
+            crate::Scope::ImportedByCsb
         );
     }
 }

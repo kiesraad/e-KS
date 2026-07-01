@@ -96,7 +96,7 @@ pub async fn store_middleware(
     inject_loaded_store(&state, resolved, request, next).await
 }
 
-/// Middleware that resolves the scoped CSB store for the session's current
+/// Middleware that loads the global CSB main store for the session's current
 /// election and injects it into request extensions. Restricts CSB routes to
 /// [`Scope::CentralElectoralCommittee`] sessions; other sessions are rejected.
 pub async fn csb_store_middleware(
@@ -113,13 +113,13 @@ pub async fn csb_store_middleware(
         return AppError::Unauthorised.into_response();
     }
 
-    let (Some(stream_id), Some(election)) = (session.stream_id, session.current_election) else {
+    let Some(election) = session.current_election else {
         // A committee session without an election is incomplete; send it back
         // through login rather than the app's election picker.
         return Redirect::to("/login").into_response();
     };
 
-    let resolved = state.csb_store_for_stream(stream_id, election).await;
+    let resolved = state.csb_main_store(election).await;
     inject_loaded_store(&state, resolved, request, next).await
 }
 

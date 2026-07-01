@@ -102,7 +102,7 @@ pub use core::{
     constants::{self, MAX_CANDIDATES},
     get_env, http_trace, logging, server, translate,
 };
-pub use csb::{CsbContext, CsbEvent, CsbStoreData};
+pub use csb::{CsbContext, CsbEvent, CsbMainEvent, CsbMainStoreData, CsbStoreData};
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
@@ -120,3 +120,4 @@ id_newtype!(pub struct StreamId);
 pub type AppStore = store::Store<AppStoreData>;
 
 pub type CsbStore = store::Store<CsbStoreData>;
+pub type CsbMainStore = store::Store<CsbMainStoreData>;
