@@ -2,7 +2,7 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, AppStore, QueryParamState,
-    app::{finalise::AllProblems, list_designation::ListDesignation},
+    app::list_designation::ListDesignation,
     common::{HasSeverity, Problematic, Severity},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -76,13 +76,11 @@ impl PoliticalGroupSteps {
             return if fine_if_empty { "empty" } else { "warning" };
         }
 
-        let size_severity = AllProblems::find_name_authorisation_size_problems(
-            list_designation,
-            name_authorisations.len(),
-        )
-        .iter()
-        .map(|p| p.severity())
-        .max();
+        let size_severity =
+            NameAuthorisation::get_size_problems(list_designation, name_authorisations.len())
+                .iter()
+                .map(|p| p.severity())
+                .max();
 
         match name_authorisations
             .iter()

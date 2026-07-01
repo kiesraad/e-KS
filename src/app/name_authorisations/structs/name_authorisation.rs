@@ -1,7 +1,8 @@
 use crate::{
     AppError, AppEvent, AppStore,
-    common::{FullName, LegalName, Problematic, Problems, Severity},
+    common::{FullName, LegalName, PotentialProblems, Problematic, Problems, Severity},
     id_newtype,
+    list_designation::ListDesignation,
 };
 use serde::{Deserialize, Serialize};
 
@@ -25,6 +26,28 @@ impl Problematic<()> for NameAuthorisation {
 }
 
 impl NameAuthorisation {
+    pub fn get_size_problems(
+        list_designation: Option<ListDesignation>,
+        name_authorisation_count: usize,
+    ) -> Vec<PotentialProblems> {
+        match list_designation.unwrap_or(ListDesignation::Standalone) {
+            ListDesignation::Standalone if name_authorisation_count > 1 => {
+                vec![PotentialProblems::TooManyAuthorizedNames {
+                    count: name_authorisation_count - 1,
+                }]
+            }
+            ListDesignation::Standalone if name_authorisation_count < 1 => {
+                vec![PotentialProblems::TooFewAuthorizedNames { count: 1 }]
+            }
+            ListDesignation::Combined if name_authorisation_count < 2 => {
+                vec![PotentialProblems::TooFewAuthorizedNames {
+                    count: 2 - name_authorisation_count,
+                }]
+            }
+            _ => Vec::new(),
+        }
+    }
+
     pub async fn create(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::CreateNameAuthorisation(self.clone()))

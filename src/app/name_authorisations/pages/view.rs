@@ -4,7 +4,6 @@ use crate::{
     app::list_designation::ListDesignation,
     common::{HasSeverity, PotentialProblems, Problematic},
     filters,
-    finalise::AllProblems,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     political_groups::{PoliticalGroup, PoliticalGroupSteps},
@@ -30,7 +29,7 @@ pub async fn list_name_authorisations(
     Ok(HtmlTemplate(
         NameAuthorisationTemplate {
             name_authorisations: steps.name_authorisations.clone(),
-            size_problems: AllProblems::find_name_authorisation_size_problems(
+            size_problems: NameAuthorisation::get_size_problems(
                 steps.list_designation,
                 steps.name_authorisations.len(),
             ),

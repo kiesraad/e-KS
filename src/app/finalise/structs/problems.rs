@@ -119,7 +119,7 @@ impl AllProblems {
         let name_authorisations = match political_group.list_designation {
             Some(ListDesignation::Blank) => Vec::new(),
             list_designation => {
-                general.extend(Self::find_name_authorisation_size_problems(
+                general.extend(NameAuthorisation::get_size_problems(
                     list_designation,
                     name_authorisations.len(),
                 ));
@@ -213,28 +213,6 @@ impl AllProblems {
             );
         }
         (problems, info_problems)
-    }
-
-    pub fn find_name_authorisation_size_problems(
-        list_designation: Option<ListDesignation>,
-        authorised_names_count: usize,
-    ) -> Vec<PotentialProblems> {
-        match list_designation.unwrap_or(ListDesignation::Standalone) {
-            ListDesignation::Standalone if authorised_names_count > 1 => {
-                vec![PotentialProblems::TooManyAuthorizedNames {
-                    count: authorised_names_count - 1,
-                }]
-            }
-            ListDesignation::Standalone if authorised_names_count < 1 => {
-                vec![PotentialProblems::TooFewAuthorizedNames { count: 1 }]
-            }
-            ListDesignation::Combined if authorised_names_count < 2 => {
-                vec![PotentialProblems::TooFewAuthorizedNames {
-                    count: 2 - authorised_names_count,
-                }]
-            }
-            _ => Vec::new(),
-        }
     }
 
     pub fn find_candidate_problems(
