@@ -243,7 +243,7 @@ async fn dev_login_csb_with_fixtures_creates_imported_stream() {
         panic!("unexpected event: {event:?}");
     };
 
-    assert_eq!(hash, "fixtures");
+    assert_eq!(hash, crate::csb::import::fixture::FIXTURE_IMPORT_HASH);
     assert!(!snapshot.persons.is_empty());
     assert!(!snapshot.candidate_lists.is_empty());
 }

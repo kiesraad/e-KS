@@ -87,14 +87,16 @@ pub async fn select_election_submit(
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
 
+    // Only available with the `fixtures` feature: this is a test/dev shortcut
+    // into the committee (CSB) scope
+    #[cfg(feature = "fixtures")]
     if form.login_as_csb() {
         session.stream_id = Some(crate::StreamId::new());
         session.scope = Scope::CentralElectoralCommittee;
         session.set_current_election(election);
 
-        #[cfg(feature = "fixtures")]
         if form.load_fixtures() {
-            crate::csb::import::import_csb_fixture(&state, election).await?;
+            crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
         }
 
         state.sessions.insert(session).await;

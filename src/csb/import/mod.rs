@@ -2,9 +2,6 @@
 mod pages;
 
 #[cfg(feature = "fixtures")]
-mod fixture;
-
-#[cfg(feature = "fixtures")]
-pub use fixture::import_csb_fixture;
+pub mod fixture;
 
 pub use pages::{CsbImportPath, router};

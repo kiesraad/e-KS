@@ -90,7 +90,7 @@ async fn perform_dev_login(
 
             #[cfg(feature = "fixtures")]
             if load_fixtures {
-                crate::csb::import::import_csb_fixture(&state, election).await?;
+                crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
             }
 
             CsbExaminationOverviewPath {}.to_string()
