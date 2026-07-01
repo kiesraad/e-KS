@@ -92,8 +92,19 @@ pub async fn run_db_prober(persistence: StorePersistence, health: DbHealth) {
 
     let mut consecutive_failures: usize = 0;
 
+    let mut migrated = false;
+
     loop {
-        match persistence.verify_ready().await {
+        let ready = async {
+            if !migrated {
+                persistence.migrate().await?;
+                migrated = true;
+            }
+            persistence.verify_ready().await
+        }
+        .await;
+
+        match ready {
             Ok(()) => {
                 health.mark_healthy();
                 consecutive_failures = 0;
