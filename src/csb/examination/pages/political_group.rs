@@ -121,4 +121,60 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("?"));
     }
+
+    #[tokio::test]
+    async fn toggle_examination_finish_twice() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        // default unfinished => false
+        assert!(!store.data.read().is_examination_finished);
+
+        toggle_examination_finish(
+            CsbPoliticalGroupToggleFinishPath {
+                stream_id,
+            },
+            store.clone(),
+        )
+        .await
+        .unwrap();
+
+        // toggle once => true
+        assert!(store.data.read().is_examination_finished);
+
+        toggle_examination_finish(
+            CsbPoliticalGroupToggleFinishPath {
+                stream_id,
+            },
+            store.clone(),
+        )
+        .await
+        .unwrap();
+
+        // toggle twice => false
+        assert!(!store.data.read().is_examination_finished);
+
+    }
+
+    #[tokio::test]
+    async fn toggle_examination_finish_redirects() {
+        let store = CsbStore::new_for_test();
+
+        let stream_id = store.stream_id;
+
+        let response =
+            toggle_examination_finish(CsbPoliticalGroupToggleFinishPath { stream_id }, store)
+                .await
+                .unwrap()
+                .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get("Location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.contains(&format!("csb/examination/{stream_id}")));
+    }
 }

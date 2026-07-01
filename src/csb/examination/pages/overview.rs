@@ -90,5 +90,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("<table>"));
     }
 }
