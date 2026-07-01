@@ -42,3 +42,19 @@ impl StoreData for CsbMainStoreData {
 pub enum CsbMainEvent {
     DeveloperLogin { stream_id: StreamId },
 }
+
+#[cfg(test)]
+impl crate::CsbMainStore {
+    pub fn new_for_test() -> Self {
+        use crate::ElectionConfig;
+
+        crate::store::Store {
+            stream_id: CSB_MAIN_STREAM_ID,
+            election: ElectionConfig::EK27,
+            backend: crate::store::persistence::StoreBackend::Memory {
+                store: crate::store::memory::MemoryStore::default(),
+            },
+            data: std::sync::Arc::new(parking_lot::RwLock::new(CsbMainStoreData::default())),
+        }
+    }
+}
