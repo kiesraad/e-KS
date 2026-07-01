@@ -51,9 +51,11 @@ async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
 
     // Stores are loaded per political group on demand via StoreRegistry.
 
-    // Keep the database-health gate current and self-heal (re-run migrations)
-    // when the database recovers, without blocking startup or requiring a
-    // restart. The application starts even if the database is currently down.
+    // Keep the database-health gate current without blocking startup or
+    // requiring a restart. The prober runs migrations once, the first time the
+    // database is reachable (so a database that is down at boot is migrated on
+    // recovery), then only verifies the schema. The application starts even if
+    // the database is currently down.
     tokio::spawn(run_db_prober(
         state.store_registry.persistence().clone(),
         state.db_health.clone(),
