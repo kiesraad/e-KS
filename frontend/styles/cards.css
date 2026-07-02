@@ -75,7 +75,7 @@
     gap: var(--space-3);
     line-height: var(--leading-xl);
 
-    &>div:not(.badge) {
+    & > div:not(.badge) {
       margin-block: auto;
     }
 
@@ -113,7 +113,7 @@
     gap: var(--space-3);
     line-height: var(--leading-sm);
 
-    p.warning>strong {
+    p.warning > strong {
       color: var(--color-warning-darker);
     }
   }

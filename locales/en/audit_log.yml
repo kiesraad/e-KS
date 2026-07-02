@@ -42,22 +42,27 @@ event:
   add_candidate_to_list: Added candidate to list
   create_candidate_list: Created list of candidates
   create_name_authorisation: Created statutory name and authorised agent
+  create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
   delete_candidate_list: Deleted list of candidates
   delete_name_authorisation: Deleted statutory name and authorised agent
+  delete_omission: Deleted omission
   delete_person: Deleted person
   delete_substitute_submitter: Deleted substitute submitter of the list
   developer_login: Developer login
   download_file: Downloaded file
   export_csv: Exported CSV
   hide_download_warning: Dismissed download warning
+  import: Imported political group
   import_csv: Imported CSV
   remove_candidate_from_list: Removed candidate from list
+  set_finished: Set finished state
   update_candidate_list_districts: Updated electoral districts of list
   update_candidate_list_order: Updated order of list of candidates
   update_list_submitter: Updated submitter of the list
   update_name_authorisation: Updated statutory name and authorised agent
+  update_omission: Updated omission
   update_person: Updated person
   update_person_address: Updated person address
   update_person_representative: Updated person representative
@@ -67,21 +72,27 @@ fields:
   details: Details
   event: Event
   event_id: "#"
+  stream: Stream
   subject_id: Subject ID
   timestamp: Timestamp
 filter:
   all_events: All events
+  all_streams: All streams
   apply: Filter
   category:
     candidate_list: Candidate list
+    import: Import
     list_submitter: List submitter
     name_authorisation: Statutory name and authorised agent
+    omission: Omission
     person: Person
     political_group: Political group
     substitute_submitter: Substitute submitter
     system: System
+  csb_main_stream: Main CSB stream
   event_type: Event type
   reset: Reset
   search: Search
   search_placeholder: "Search by name, ID..."
+  stream: Filter by stream
 title: Audit log

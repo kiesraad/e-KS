@@ -18,15 +18,15 @@ pub enum CsbEvent {
     /// events), so `source_stream_id` is recorded for reference. The election is
     /// not: it is copied onto the CSB stream's own `(stream_id, election)` key.
     Import {
-        /// Chain hash of the package, as entered by the committee.
-        hash: String,
-        /// Stream the imported package was produced from.
+        /// Hash of the imported event
+        hash: [u8; 32],
+        /// Stream the imported package was produced from
         source_stream_id: StreamId,
         /// Snapshot of the source projection at the matched event, with its own
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<AppStoreData>,
     },
-    ToggleFinish,
+    SetFinished(bool),
     CreateOmission(Omission),
     UpdateOmission(Omission),
     DeleteOmission {
@@ -39,7 +39,7 @@ impl CsbEvent {
     pub fn event_category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
-            CsbEvent::ToggleFinish => "toggle_finish",
+            CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_)
             | CsbEvent::UpdateOmission(_)
             | CsbEvent::DeleteOmission { .. } => "omission",
@@ -50,8 +50,8 @@ impl CsbEvent {
     pub fn event_key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
-            CsbEvent::ToggleFinish => "toggle_finish",
-            CsbEvent::CreateOmission(_) => "update_omission",
+            CsbEvent::SetFinished(_) => "set_finished",
+            CsbEvent::CreateOmission(_) => "create_omission",
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
         }
@@ -64,7 +64,7 @@ mod tests {
 
     fn import_event() -> CsbEvent {
         CsbEvent::Import {
-            hash: "abc123".to_string(),
+            hash: [42; 32],
             source_stream_id: StreamId::default(),
             snapshot: Box::new(AppStoreData::default()),
         }

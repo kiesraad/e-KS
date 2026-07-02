@@ -1,0 +1,116 @@
+{% extends "csb/components/layout.html" %}
+{% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
+{% block content %}
+  <section>
+    <form method="get" action="/csb/audit-log" class="form audit-log-filters">
+      <fieldset role="group">
+        <input type="text"
+               name="search"
+               placeholder="{{ "audit_log.filter.search_placeholder"|trans }}"
+               value="{{ filter.search.as_deref().unwrap_or_default() }}"
+               class="form-control"
+               aria-label="{{ "audit_log.filter.search"|trans }}" />
+        <label for="stream" class="visually-hidden">{{ "audit_log.filter.stream"|trans }}</label>
+        <select name="stream" id="stream" class="form-control">
+          <option value="">{{ "audit_log.filter.all_streams"|trans }}</option>
+          <option value="main"
+                  {% if filter.stream.as_deref() == Some("main") %}selected{% endif %}>
+            {{ "audit_log.filter.csb_main_stream"|trans }}
+          </option>
+          {% for (stream_id, label) in import_streams %}
+            {% let stream_id_str = stream_id.to_string() %}
+            <option value="{{ stream_id_str }}"
+                    {% if filter.stream.as_deref() == Some(stream_id_str.as_str()) %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+        <label for="event_type" class="visually-hidden">{{ "audit_log.filter.event_type"|trans }}</label>
+        <select name="event_type" id="event_type" class="form-control">
+          <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
+          {% for group in event_types_by_category %}
+            {% let category_key = format!("audit_log.filter.category.{}", group.key) %}
+            <optgroup label="{{ category_key.as_str() |trans }}">
+              {% for event_key in group.event_types.iter() %}
+                {% let event_label_key = format!("audit_log.event.{}", event_key) %}
+                <option value="{{ event_key }}"
+                        {% if filter.event_type.as_deref() == Some(event_key.as_ref()) %}selected{% endif %}>
+                  {{ event_label_key.as_str() |trans }}
+                </option>
+              {% endfor %}
+            </optgroup>
+          {% endfor %}
+        </select>
+        <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
+        {% if filter.is_active() %}
+          <a href="/csb/audit-log" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
+        {% endif %}
+      </fieldset>
+    </form>
+  </section>
+  {% if entries.is_empty() %}
+    <section>
+      <p>{{ "audit_log.empty"|trans }}</p>
+    </section>
+  {% else %}
+    <section>
+      <table class="audit-log">
+        <thead>
+          <tr>
+            <th scope="col">{{ "audit_log.fields.event_id"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.stream"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr class="clickable">
+              <td>{{ entry.event_id }}</td>
+              <td>{{ entry.created_at|datetime_seconds }}</td>
+              <td>{{ entry.stream_label }}</td>
+              <td>{{ entry.description }}</td>
+              <td>
+                <a href="{{ entry.detail_path() }}">
+                  <span>{{ "audit_log.fields.details"|trans }}</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% if pagination.total_pages > 1 %}
+      <nav aria-label="Pagination" class="pagination">
+        {% let suffix = filter.as_query_suffix() %}
+        {% if pagination.has_prev %}
+          <a href="{{ pagination.prev() }}{{ suffix }}"
+             rel="prev"
+             class="button secondary">&lt;</a>
+        {% else %}
+          <a class="button disabled" disabled aria-disabled="true">&lt;</a>
+        {% endif %}
+        {% for link in pagination.links %}
+          {% if let Some(number) = link.number %}
+            {% if link.current %}
+              <a class="button disabled" disabled aria-current="page">{{ number }}</a>
+            {% else %}
+              <a href="{{ pagination.goto(number) }}{{ suffix }}"
+                 class="button secondary">{{ number }}</a>
+            {% endif %}
+          {% else %}
+            <span aria-hidden="true">...</span>
+          {% endif %}
+        {% endfor %}
+        {% if pagination.has_next %}
+          <a href="{{ pagination.next() }}{{ suffix }}"
+             rel="next"
+             class="button secondary">&gt;</a>
+        {% else %}
+          <a class="button disabled" disabled aria-disabled="true">&gt;</a>
+        {% endif %}
+      </nav>
+    {% endif %}
+  {% endif %}
+{% endblock %}
