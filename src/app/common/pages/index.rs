@@ -45,19 +45,22 @@ pub async fn index(
         (problems.len() + general_infos.len(), severity_class)
     };
     // no infos, these are also not shown on the candidate list overview page
-    let (list_problems, _) =
+    let (mut list_problems, _) =
         AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
+
+    // Don't show NoCandidateList problem on the home page, only on the finalise page
+    list_problems.general = list_problems
+        .general
+        .into_iter()
+        .filter(|problem| *problem != PotentialProblems::NoCandidateList)
+        .collect();
 
     let (problematic_lists, general_list_problems, problematic_lists_severity) =
         if list_problems.is_empty() {
             (0, 0, "")
         } else {
             let list_count = list_problems.per_list.len();
-            let general_count = list_problems
-                .general
-                .iter()
-                .filter(|&problem| problem != &PotentialProblems::NoCandidateList)
-                .count();
+            let general_count = list_problems.general.len();
             let severity_class = list_problems
                 .highest_severity()
                 .map(|s| s.class())
