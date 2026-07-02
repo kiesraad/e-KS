@@ -5,17 +5,28 @@
   <div class="steps">
     {% include "political_groups/components/steps.html" %}
     <div>
-      {% if steps.is_blank %}
+      {% if steps.is_blank() %}
         <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
       {% endif %}
       <h3 class="mb-6">
-        {% if steps.is_combined %}
+        {% if steps.is_combined() %}
           {{ "political_group.legal_name_data_combined"|trans }}
         {% else %}
           {{ "political_group.legal_name_data"|trans }}
         {% endif %}
       </h3>
       <p class="mb-6">{{ "political_group.authorised_agent_info"|trans }}</p>
+      {% if !(steps.initial && name_authorisations.is_empty()) && let Some(size_problem) = size_problem %}
+        <p class="alert alert-{{ size_problem.severity().class() }}">
+          {% if steps.is_combined() %}
+            {{ "political_group.names_size_hint_combination"|trans }}
+          {% else if name_authorisations.is_empty() %}
+            {{ "political_group.names_size_hint_add_name"|trans }}
+          {% else %}
+            {{ size_problem.translate(locale) }}. {{ "political_group.names_size_hint_standalone"|trans }}
+          {% endif %}
+        </p>
+      {% endif %}
       {% if name_authorisations.is_empty() %}
         <p class="mt-md font-italic">{{ "political_group.no_legal_names"|trans }}</p>
       {% else %}
@@ -26,7 +37,7 @@
           </a>
         {% endfor %}
       {% endif %}
-      {% if name_authorisations.is_empty() || steps.is_combined %}
+      {% if name_authorisations.is_empty() || steps.is_combined() %}
         <p class="mt-lg">
           <a href="{{ steps.step_url(NameAuthorisation::create_path() ) }}"
              class="button secondary icon-plus"

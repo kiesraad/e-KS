@@ -204,15 +204,24 @@ impl StorePersistence {
         }
     }
 
+    pub async fn migrate(&self) -> Result<(), AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(_pool) => {
+                #[cfg(feature = "migrations")]
+                database::migrate(_pool).await?;
+                Ok(())
+            }
+            _ => Ok(()),
+        }
+    }
+
+    /// Verify the persistence backend is ready to serve: reachable with its
+    /// schema present.
     pub async fn verify_ready(&self) -> Result<(), AppError> {
         match self {
             #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => {
-                #[cfg(feature = "migrations")]
-                database::migrate(pool).await?;
-                database::verify_schema(pool).await?;
-                Ok(())
-            }
+            StorePersistence::Database(pool) => database::verify_schema(pool).await,
             other => other.health_check().await,
         }
     }

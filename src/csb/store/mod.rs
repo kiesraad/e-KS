@@ -1,5 +1,8 @@
 mod extractor;
 mod getters;
+mod main_store;
+
+pub use main_store::{CSB_MAIN_STREAM_ID, CsbMainEvent, CsbMainStoreData};
 
 use std::collections::HashMap;
 
@@ -57,7 +60,7 @@ impl StoreData for CsbStoreData {
     }
 
     fn scope() -> Scope {
-        Scope::CentralElectoralCommittee
+        Scope::ImportedByCsb
     }
 }
 

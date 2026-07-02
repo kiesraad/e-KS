@@ -8,8 +8,8 @@ use tower::ServiceExt;
 use secrecy::SecretString;
 
 use crate::{
-    AppEvent, AppState, AppStore, CsbEvent, ElectionConfig, Locale, Scope, Session, StreamId,
-    router, store::StoreEvent, test_utils::response_body_string,
+    AppEvent, AppState, AppStore, CsbEvent, CsbMainEvent, ElectionConfig, Locale, Scope, Session,
+    StreamId, router, store::StoreEvent, test_utils::response_body_string,
 };
 
 const TEST_ID_CODE: &str = "999999990";
@@ -147,6 +147,28 @@ async fn dev_login_without_fixtures_adds_dev_login_event() {
             }
         ],
     ))
+}
+
+#[tokio::test]
+async fn dev_login_csb_without_fixtures_adds_dev_login_event() {
+    let (state, app) = test_app().await;
+
+    app.oneshot(dev_login_csb_request("fixtures=false"))
+        .await
+        .expect("response");
+
+    let store = state
+        .csb_main_store(ElectionConfig::EK27)
+        .await
+        .expect("main store");
+
+    assert!(matches!(
+        store.data.read().events.as_slice(),
+        &[StoreEvent {
+            payload: CsbMainEvent::DeveloperLogin { .. },
+            ..
+        }]
+    ));
 }
 
 #[tokio::test]
