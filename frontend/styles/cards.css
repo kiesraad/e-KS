@@ -75,13 +75,17 @@
     gap: var(--space-3);
     line-height: var(--leading-xl);
 
-    & > div:not(.badge) {
+    &>div:not(.badge) {
       margin-block: auto;
     }
 
     p {
       font-size: var(--font-size-sm);
       font-weight: normal;
+    }
+
+    .info {
+      color: var(--blue-600);
     }
 
     .warning {
@@ -109,7 +113,7 @@
     gap: var(--space-3);
     line-height: var(--leading-sm);
 
-    p.warning > strong {
+    p.warning>strong {
       color: var(--color-warning-darker);
     }
   }
