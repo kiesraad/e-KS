@@ -1,13 +1,15 @@
 [package]
 name = "validate"
 version = "0.1.0"
-edition = "2024"
-license = "EUPL-1.2"
-publish = false
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
 
 [lib]
 proc-macro = true
 
+# proc-macro2/quote/syn are used only by this proc-macro crate, so they are kept
+# local rather than in the workspace dependency table.
 [dependencies]
 proc-macro2 = "1.0"
 quote = "1.0"

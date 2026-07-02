@@ -13,14 +13,14 @@ else
     exit 0
 fi
 
-pushd development
-    cargo build --release
-popd
+# The development crate is a workspace member, so its binaries land in the
+# shared workspace target/ directory rather than development/target/.
+cargo build --release -p eks-development
 
-cp development/target/release/dev bin/dev
-cp development/target/release/setup bin/setup
-cp development/target/release/update_locales bin/update_locales
-cp development/target/release/pdf_diff bin/pdf_diff
+cp target/release/dev bin/dev
+cp target/release/setup bin/setup
+cp target/release/update_locales bin/update_locales
+cp target/release/pdf_diff bin/pdf_diff
 
 echo "$CARGO_VERSION" > bin/version
 bin/setup "$@"
