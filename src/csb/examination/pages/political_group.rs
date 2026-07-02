@@ -34,7 +34,9 @@ pub async fn overview(
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let general_brp_error_count = rng().random_range(0..=2);
-    let candidate_lists = store.get_candidate_lists().into_iter()
+    let candidate_lists = store
+        .get_candidate_lists()
+        .into_iter()
         .map(CsbCandidateList::placeholder)
         .collect::<Vec<_>>();
     let all_brp_error_count = candidate_lists
