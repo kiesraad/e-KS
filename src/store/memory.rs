@@ -16,6 +16,7 @@ use std::{collections::HashMap, sync::Arc};
 
 use parking_lot::RwLock;
 
+use super::StreamMeta;
 use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 /// Per-stream metadata recorded by the in-memory backend.
@@ -79,6 +80,28 @@ pub(crate) fn streams_by_scope(
         .iter()
         .filter_map(|((id, election), entry)| {
             (entry.scope == Some(scope) && !entry.events.is_empty()).then_some((*id, *election))
+        })
+        .collect()
+}
+
+/// List [`StreamMeta`] for every non-empty stream with the given scope. The
+/// in-memory index keeps no timestamps, so they are always `None`.
+pub(crate) fn stream_metadata_by_scope(store: &MemoryStore, scope: Scope) -> Vec<StreamMeta> {
+    let index = store.inner.read();
+    index
+        .iter()
+        .filter(|(_, entry)| entry.scope == Some(scope) && !entry.events.is_empty())
+        .map(|((id, election), entry)| StreamMeta {
+            stream_id: *id,
+            election: *election,
+            event_count: entry
+                .events
+                .iter()
+                .map(|(event_id, _)| *event_id)
+                .max()
+                .unwrap_or(0),
+            created_at: None,
+            last_event_at: None,
         })
         .collect()
 }
