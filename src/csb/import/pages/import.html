@@ -1,10 +1,13 @@
 {% extends "components/layout.html" %}
-{% block page_title %}Centraal stembureau{% endblock %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+  {{ breadcrumb(crate::csb::import::CsbImportPath, "csb.form.import_political_group") }}
+{% endblock %}
+{% block page_title %}{{ "csb.form.import_political_group"|trans }}{% endblock %}
 {% block header_action %}
   <a href="{{ CsbExaminationOverviewPath }}" class="button secondary">{{ "action.back"|trans }}</a>
 {% endblock %}
 {% block content %}
-  <h2 class="mt-lg mb-md">{{ "csb.form.import_political_group"|trans }}</h2>
   <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
     <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
     <fieldset>

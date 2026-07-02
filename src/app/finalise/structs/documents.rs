@@ -133,7 +133,7 @@ impl DocumentData {
         let electoral_districts = TypstElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        let designation = group.effective_display_name()?;
+        let designation = group.display_name_for_exports()?;
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty()

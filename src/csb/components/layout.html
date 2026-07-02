@@ -1,4 +1,15 @@
 {% extends "common/components/base.html" %}
+{% macro breadcrumb(href, name, is_translatable=true) %}
+  <li class="breadcrumb">
+    <a href="{{ href }}">
+      {% if is_translatable %}
+        {{ name|trans }}
+      {% else %}
+        {{ name }}
+      {% endif %}
+    </a>
+  </li>
+{% endmacro breadcrumb %}
 {% block body %}
   <header>
     <nav>

@@ -1,8 +1,6 @@
 {% extends "components/layout.html" %}
 {% block breadcrumbs %}
-  <li class="breadcrumb">
-    <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">{{ "csb.examination"|trans }}</a>
-  </li>
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
 {% endblock %}
 {% block page_title %}{{ "csb.examination"|trans }}{% endblock %}
 {% block content %}
@@ -49,8 +47,7 @@
           <tbody>
             {% for pg in unfinished_political_groups %}
               <tr class="clickable">
-                <!-- TODO figure out what to do with blanco lijsten, see #870 -->
-                <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
+                <td>{{ pg.political_group.csb_display_name() }}</td>
                 <td>
                   <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
                 </td>
@@ -85,8 +82,7 @@
           <tbody>
             {% for pg in finished_political_groups %}
               <tr class="clickable">
-                <!-- TODO figure out what to do with blanco lijsten, see #870 -->
-                <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
+                <td>{{ pg.political_group.csb_display_name() }}</td>
                 <td>
                   <div class="status approved">{{ "csb.status.approved"|trans }}</div>
                 </td>
