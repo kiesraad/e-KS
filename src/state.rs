@@ -11,10 +11,12 @@ use axum_extra::extract::{CookieJar, cookie::Cookie};
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, CsbStore, CsbStoreData, DbHealth, ElectionConfig,
-    IdDeriver, PendingRequestStore, Session, SessionStore, StreamId, TypstRenderer,
+    AppError, AppStore, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore,
+    CsbStoreData, DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore,
+    StreamId, TypstRenderer,
     auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
     common::{IndexPath, SelectElectionPath},
+    csb::CSB_MAIN_STREAM_ID,
     store::{EventEncryption, StoreRegistry},
 };
 
@@ -23,10 +25,10 @@ use crate::{
 pub struct AppState {
     pub config: &'static Config,
     pub store_registry: StoreRegistry<AppStoreData>,
-    /// Registry for CSB (Centraal Stembureau) stores. Shares the same
-    /// persistence backend as `store_registry` but caches a separate
-    /// `CsbStoreData` projection.
+    /// Registry for per-import CSB stores (one per imported political group)
     pub csb_store_registry: StoreRegistry<CsbStoreData>,
+    /// Registry for the single global CSB main stream shared by all committee members
+    pub csb_main_store_registry: StoreRegistry<CsbMainStoreData>,
     /// Active sessions for this application instance (backed by the configured storage).
     pub sessions: SessionStore,
     /// Outstanding SAML AuthnRequest IDs for the `InResponseTo` replay check
@@ -67,10 +69,12 @@ impl AppState {
             encryption.clone(),
         )
         .await?;
-        // The CSB registry reuses the app registry's (already-initialized)
-        // persistence backend; it only differs in the projection it caches and
-        // the scope it records on the streams it creates.
-        let csb_store_registry =
+        // Both CSB registries reuse the app registry's persistence backend
+        let csb_store_registry = StoreRegistry::with_persistence(
+            store_registry.persistence().clone(),
+            encryption.clone(),
+        );
+        let csb_main_store_registry =
             StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
         let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())?;
         let pending_requests =
@@ -88,6 +92,7 @@ impl AppState {
             config: Box::leak(Box::new(config)),
             store_registry,
             csb_store_registry,
+            csb_main_store_registry,
             sessions,
             pending_requests,
             id_deriver,
@@ -130,6 +135,14 @@ impl AppState {
     ) -> Result<CsbStore, AppError> {
         self.csb_store_registry
             .get_or_create(stream_id, election)
+            .await
+    }
+
+    /// Fetch (or create) the global CSB main store for the given election.
+    /// All committee members share a single stream [`CSB_MAIN_STREAM_ID`].
+    pub async fn csb_main_store(&self, election: ElectionConfig) -> Result<CsbMainStore, AppError> {
+        self.csb_main_store_registry
+            .get_or_create(CSB_MAIN_STREAM_ID, election)
             .await
     }
 
@@ -201,12 +214,17 @@ impl AppState {
         )
         .await
         .expect("test StoreRegistry must initialize");
-        let csb_store_registry =
+        let csb_store_registry = StoreRegistry::with_persistence(
+            store_registry.persistence().clone(),
+            encryption.clone(),
+        );
+        let csb_main_store_registry =
             StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
 
         Self {
             store_registry,
             csb_store_registry,
+            csb_main_store_registry,
             config: Box::leak(Box::new(config)),
             sessions,
             pending_requests,

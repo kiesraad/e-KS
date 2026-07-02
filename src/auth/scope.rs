@@ -19,8 +19,11 @@ pub enum Scope {
     #[default]
     PoliticalGroup,
     /// The central electoral committee (CSB). A committee member has access to
-    /// every stream scoped to the committee.
+    /// every stream scoped to `ImportedByCsb`.
     CentralElectoralCommittee,
+    /// A candidate-list package that was imported by the CSB from a political
+    /// group's stream. One stream per import action.
+    ImportedByCsb,
 }
 
 impl Scope {
@@ -29,6 +32,7 @@ impl Scope {
         match self {
             Scope::PoliticalGroup => "political_group",
             Scope::CentralElectoralCommittee => "central_electoral_committee",
+            Scope::ImportedByCsb => "imported_by_csb",
         }
     }
 }
@@ -40,6 +44,7 @@ impl FromStr for Scope {
         match s {
             "political_group" => Ok(Scope::PoliticalGroup),
             "central_electoral_committee" => Ok(Scope::CentralElectoralCommittee),
+            "imported_by_csb" => Ok(Scope::ImportedByCsb),
             _ => Err("invalid scope"),
         }
     }
@@ -56,7 +61,11 @@ mod tests {
 
     #[test]
     fn as_str_and_from_str_round_trip() {
-        for scope in [Scope::PoliticalGroup, Scope::CentralElectoralCommittee] {
+        for scope in [
+            Scope::PoliticalGroup,
+            Scope::CentralElectoralCommittee,
+            Scope::ImportedByCsb,
+        ] {
             assert_eq!(Scope::from_str(scope.as_str()), Ok(scope));
         }
     }

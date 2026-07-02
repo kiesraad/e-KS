@@ -3,9 +3,7 @@
 //! Builds an `http_request` span carrying the HTTP method, matched route
 //! template, and the request path (never the query string, which can contain
 //! tokens). Emits one event per response whose level reflects the status
-//! class: 5xx → ERROR, 4xx → WARN, otherwise INFO. The path field is what
-//! identifies the requested URL on 404s, where the matched route is
-//! `<unmatched>`.
+//! class: 5xx → ERROR, 4xx → WARN, otherwise INFO.
 
 use std::time::Duration;
 
@@ -38,12 +36,13 @@ pub fn layer()
 
 fn make_span(request: &Request<Body>) -> Span {
     let method = request.method().as_str();
+    let path = request.uri().path();
+
     let route = request
         .extensions()
         .get::<MatchedPath>()
         .map(|m| m.as_str())
-        .unwrap_or("<unmatched>");
-    let path = request.uri().path();
+        .unwrap_or(path);
 
     tracing::info_span!(
         "http_request",
