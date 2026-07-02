@@ -49,11 +49,9 @@ pub async fn index(
         AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
 
     // Don't show NoCandidateList problem on the home page, only on the finalise page
-    list_problems.general = list_problems
+    list_problems
         .general
-        .into_iter()
-        .filter(|problem| *problem != PotentialProblems::NoCandidateList)
-        .collect();
+        .retain(|problem| *problem != PotentialProblems::NoCandidateList);
 
     let (problematic_lists, general_list_problems, problematic_lists_severity) =
         if list_problems.is_empty() {
