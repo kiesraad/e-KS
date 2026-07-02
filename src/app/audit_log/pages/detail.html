@@ -1,5 +1,5 @@
-{% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% set close_action = AuditLogPath.to_string() %}
 {% block overlay_title %}{{ detail.description }}{% endblock %}
 {% block overlay_steps %}<div class="steps-nav"></div>{% endblock %}

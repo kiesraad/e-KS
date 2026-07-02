@@ -15,7 +15,7 @@ use crate::{
 use super::SubstituteSubmitterDeletePath;
 
 #[derive(Template)]
-#[template(path = "substitute_list_submitters/pages/delete.html")]
+#[template(path = "app/substitute_list_submitters/pages/delete.html")]
 struct DeleteSubstituteSubmitterTemplate {
     substitute_submitter: ListSubmitter,
     form: FormData<EmptyForm>,

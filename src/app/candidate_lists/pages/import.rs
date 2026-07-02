@@ -22,7 +22,7 @@ pub(crate) const MAX_IMPORT_SIZE_BYTES: usize = 5 * 1024 * 1024;
 const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
 
 #[derive(Template)]
-#[template(path = "candidate_lists/pages/import_export.html")]
+#[template(path = "app/candidate_lists/pages/import_export.html")]
 struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,

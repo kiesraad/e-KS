@@ -1,14 +1,14 @@
-{% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% set close_action = ListSubmitter::view_path() %}
 {% block overlay_title %}{{ "political_group.edit_substitute_submitter"|trans }}{% endblock %}
 {% block overlay_steps %}
-  {% include "substitute_list_submitters/components/update_steps.html" %}
+  {% include "app/substitute_list_submitters/components/update_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   <fieldset>
     {% set should_warn = true %}
-    {% include "common/components/name_fields.html" %}
-    {% include "list_submitters/components/address_fields.html" %}
+    {% include "app/common/components/name_fields.html" %}
+    {% include "app/list_submitters/components/address_fields.html" %}
   </fieldset>
 {% endblock %}

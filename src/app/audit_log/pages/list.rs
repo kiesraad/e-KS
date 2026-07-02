@@ -110,7 +110,7 @@ impl AuditLogFilter {
 }
 
 #[derive(Template)]
-#[template(path = "audit_log/pages/list.html")]
+#[template(path = "app/audit_log/pages/list.html")]
 struct AuditLogTemplate {
     entries: Vec<AuditLogEntry>,
     pagination: crate::pagination::PaginationInfo<NoSort>,

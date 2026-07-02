@@ -16,7 +16,7 @@ use crate::{
 use super::CandidateListDeletePersonPath;
 
 #[derive(Template)]
-#[template(path = "candidates/pages/delete.html")]
+#[template(path = "app/candidates/pages/delete.html")]
 struct DeleteCandidateTemplate {
     candidate: Candidate,
     full_list: FullCandidateList,

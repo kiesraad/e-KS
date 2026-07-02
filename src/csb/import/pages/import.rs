@@ -14,7 +14,7 @@ use crate::{
 use super::CsbImportPath;
 
 #[derive(Template)]
-#[template(path = "import/pages/import.html")]
+#[template(path = "csb/import/pages/import.html")]
 struct CsbImportTemplate {
     csrf_token: String,
     hash: String,

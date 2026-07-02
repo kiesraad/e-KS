@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "common/pages/index.html")]
+#[template(path = "app/common/pages/index.html")]
 pub struct IndexTemplate {
     general_problems: usize,
     general_problems_severity: &'static str,

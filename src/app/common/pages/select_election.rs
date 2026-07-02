@@ -13,7 +13,7 @@ use crate::{
 use super::{IndexPath, SelectElectionPath};
 
 #[derive(Template)]
-#[template(path = "common/pages/select_election.html")]
+#[template(path = "app/common/pages/select_election.html")]
 struct SelectElectionTemplate {
     elections: Vec<crate::ElectionConfig>,
     title_locale: AnyLocale,

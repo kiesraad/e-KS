@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "examination/pages/political_group.html")]
+#[template(path = "csb/examination/pages/political_group.html")]
 struct CsbPoliticalGroupTemplate {
     // TODO make election part of CsbContext?
     election: ElectionConfig,

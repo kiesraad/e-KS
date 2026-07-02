@@ -12,7 +12,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "name_authorisations/pages/create.html")]
+#[template(path = "app/name_authorisations/pages/create.html")]
 struct NameAuthorisationCreateTemplate {
     form: FormData<NameAuthorisationForm>,
     overlay: Overlay,

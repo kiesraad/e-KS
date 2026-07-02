@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/pages/create.html")]
+#[template(path = "app/candidate_lists/pages/create.html")]
 struct CandidateListCreateTemplate {
     form: FormData<CandidateListCreateForm>,
     available_districts: Vec<ElectoralDistrict>,
