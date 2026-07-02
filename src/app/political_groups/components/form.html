@@ -1,6 +1,6 @@
 <div>
   <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
-  {% if steps.is_blank %}
+  {% if steps.is_blank() %}
     <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
   {% endif %}
   <h3 class="mb-6">{{ "common.political_group"|trans }}</h3>
@@ -9,7 +9,7 @@
       <fieldset class="checklist">
         {% let election = "election"|election_value %}
         <legend class="legend-md">
-          {% if steps.is_combined %}
+          {% if steps.is_combined() %}
             {{ "political_group.type.previous_election_results_combined"|trans(&election|election_type_title) }}
           {% else %}
             {{ "political_group.previous_election_results"|trans(&election|election_type_title) }}
@@ -46,14 +46,14 @@
         </div>
         <span class="alert alert-info hide-on-input">
           {{ "political_group.type.previous_election_results_hint"|trans }}
-          {% if steps.is_combined %}{{ "political_group.type.previous_election_results_combined_hint"|trans }}{% endif %}
+          {% if steps.is_combined() %}{{ "political_group.type.previous_election_results_combined_hint"|trans }}{% endif %}
         </span>
       </fieldset>
     </div>
     <div class="form-row">
       <div class="form-field {% if form.data.display_name.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
         <label for="display_name">
-          {% if steps.is_combined %}
+          {% if steps.is_combined() %}
             {{ "political_group.display_name_combined"|trans }}
           {% else %}
             {{ "political_group.display_name"|trans }}
@@ -64,11 +64,11 @@
                value="{{ form.data.display_name }}"
                id="display_name" />
         {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
-        {% if !steps.is_combined %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
+        {% if !steps.is_combined() %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
       </div>
     </div>
     <div class="form-row">
-      {% if steps.is_combined %}
+      {% if steps.is_combined() %}
         <span class="alert alert-info">{{ "political_group.type.display_name_combined_hint"|trans }}</span>
       {% endif %}
     </div>

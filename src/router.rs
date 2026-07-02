@@ -67,8 +67,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     let router = router
         .merge(bag::router())
         .merge(auth_service::router())
-        .merge(common::public_router())
-        .merge(health_router());
+        .merge(common::public_router());
 
     let router = apply_security_headers(router)
         .layer(middleware::from_fn_with_state(
@@ -76,6 +75,10 @@ pub fn create(state: AppState) -> Router<AppState> {
             db_gate_middleware,
         ))
         .layer(http_trace::layer());
+
+    // The health probe is polled continuously; merging it
+    // after the trace layer keeps those requests out of the request log
+    let router = router.merge(health_router());
 
     #[cfg(feature = "livereload")]
     let router = router.merge(crate::utils::livereload::livereload_router());
