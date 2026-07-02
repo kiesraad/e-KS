@@ -26,7 +26,7 @@ impl Problematic<()> for PoliticalGroup {
 }
 
 impl PoliticalGroup {
-    /// display name to use in exported documents such as 
+    /// display name to use in exported documents such as EMLs or H-models
     pub fn display_name_for_exports(&self) -> Result<String, AppError> {
         if self.list_designation == Some(ListDesignation::Blank) {
             return Ok(String::new());
@@ -42,7 +42,10 @@ impl PoliticalGroup {
     /// display name to use in the UI of the CSB module.
     /// TODO: figure out what to do with blanco lijsten, see #870
     pub fn csb_display_name(&self) -> String {
-        self.display_name.as_deref().unwrap_or(&"?".to_string()).clone()
+        self.display_name
+            .as_deref()
+            .unwrap_or(&"?".to_string())
+            .clone()
     }
 
     pub fn get_max_candidates(&self) -> usize {
