@@ -123,85 +123,74 @@ pub enum BrpResponse {
 }
 
 // --- Intermediate deserialization structs for the BRP JSON format ---
-#[derive(Deserialize)]
-struct BrpGender {
-    #[serde(rename = "code")]
-    gender: String,
-}
-
-#[derive(Deserialize)]
-struct BrpDate {
-    #[serde(rename = "datum")]
-    date: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct BrpName {
-    #[serde(rename = "voornamen")]
-    first_names: Option<String>,
-    #[serde(rename = "geslachtsnaam")]
-    last_name: Option<String>,
-    #[serde(rename = "voorvoegsel")]
-    last_name_prefix: Option<String>,
-    #[serde(rename = "voorletters")]
-    initials: Option<String>,
-}
-
-#[derive(Deserialize)]
-struct BrpBirth {
-    #[serde(rename = "datum")]
-    date: Option<BrpDate>,
-}
-
-#[derive(Deserialize)]
-struct BrpAddress {
-    // TODO: Confirm that this should be officieleStraatnaam
-    // Or handle this by checking if either matches? If this is only used as a correspondence address,
-    // then that should be sufficient
-    #[serde(rename = "officieleStraatnaam")]
-    street_name: Option<String>,
-    #[serde(rename = "huisnummer")]
-    house_number: Option<u32>,
-    #[serde(rename = "huisnummertoevoeging")]
-    house_number_addition: Option<String>,
-    #[serde(rename = "postcode")]
-    postal_code: Option<String>,
-    #[serde(rename = "woonplaats")]
-    place_of_residence: Option<String>,
-}
-
-#[derive(Deserialize)]
-#[serde(tag = "type")]
-enum BrpPlaceOfResidence {
-    #[serde(rename = "Adres")]
-    Address {
-        #[serde(rename = "verblijfadres")]
-        residence_address: BrpAddress,
-    },
-    #[serde(other)]
-    NonDutchAddress,
-}
-
-#[derive(Deserialize)]
-struct BrpPersonRaw {
-    #[serde(rename = "burgerservicenummer")]
-    bsn: Option<String>,
-    #[serde(rename = "geslacht")]
-    gender: Option<BrpGender>,
-    #[serde(rename = "naam")]
-    name: Option<BrpName>,
-    #[serde(rename = "geboorte")]
-    birth: Option<BrpBirth>,
-    #[serde(rename = "verblijfplaats")]
-    place_of_residence: Option<BrpPlaceOfResidence>,
-}
-
 #[derive(Debug, Deserialize)]
 #[serde(from = "BrpPersonRaw")]
 pub struct BrpPerson {
     name: FullName,
     personal_data: PersonalData,
     address: Option<DutchAddress>,
+}
+
+structstruck::strike! {
+    #[structstruck::each[derive(Debug, Deserialize)]]
+    struct BrpPersonRaw {
+        #[serde(rename = "burgerservicenummer")]
+        bsn: Option<String>,
+        #[serde(rename = "geslacht")]
+        gender: Option<struct BrpGender {
+            // This should probably be an enum, but I'm not sure what values.
+            // IIRC you can have 'X' in your passport, not sure if this is also
+            // possible in BRP. For what it's worth; only M/F are included in
+            // the BRP personen mock
+            #[serde(rename = "code")]
+            gender: String
+        }>,
+        #[serde(rename = "naam")]
+        name: Option<struct BrpName {
+            #[serde(rename = "voornamen")]
+            first_names: Option<String>,
+            #[serde(rename = "geslachtsnaam")]
+            last_name: Option<String>,
+            #[serde(rename = "voorvoegsel")]
+            last_name_prefix: Option<String>,
+            #[serde(rename = "voorletters")]
+            initials: Option<String>
+        }>,
+        #[serde(rename = "geboorte")]
+        birth: Option<struct BrpBirth {
+            #[serde(rename = "datum")]
+            date: Option<struct BrpDate {
+                #[serde(rename = "datum")]
+                date: Option<String>
+            }>
+        }>,
+        #[serde(rename = "woonplaats")]
+        place_of_residence: Option<
+            #[serde(tag = "type")]
+            enum BrpPlaceOfResidence {
+            #[serde(rename = "Adres")]
+            Address {
+                #[serde(rename = "verblijfplaats")]
+                residence_address: struct BrpAddress {
+                    // TODO: Confirm that this should be officieleStraatnaam
+                    // Or handle this by checking if either matches? If this is only used as a correspondence address,
+                    // then that should be sufficient
+                    #[serde(rename = "officieleStraatnaam")]
+                    street_name: Option<String>,
+                    #[serde(rename = "huisnummer")]
+                    house_number: Option<u32>,
+                    #[serde(rename = "huisnummertoevoeging")]
+                    house_number_addition: Option<String>,
+                    #[serde(rename = "postcode")]
+                    postal_code: Option<String>,
+                    #[serde(rename = "woonplaats")]
+                    place_of_residence: Option<String>,
+                }
+            },
+            #[serde(other)]
+            NonDutchAddress
+        }>
+    }
 }
 
 impl From<BrpPersonRaw> for BrpPerson {
