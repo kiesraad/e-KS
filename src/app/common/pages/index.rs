@@ -4,8 +4,11 @@ use axum::response::IntoResponse;
 use super::IndexPath;
 
 use crate::{
-    AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
-    common::Severity, filters, finalise::AllProblems,
+    AppResponse, AppStore, Context, HtmlTemplate,
+    candidate_lists::CandidateListSummary,
+    common::{PotentialProblems, Severity},
+    filters,
+    finalise::AllProblems,
 };
 
 #[derive(Template)]
@@ -50,12 +53,15 @@ pub async fn index(
             (0, 0, "")
         } else {
             let list_count = list_problems.per_list.len();
-            let general_count = list_problems.general.len();
+            let general_count = list_problems
+                .general
+                .iter()
+                .filter(|&problem| problem != &PotentialProblems::NoCandidateList)
+                .count();
             let severity_class = list_problems
                 .highest_severity()
                 .map(|s| s.class())
                 .unwrap_or_default();
-
             (list_count, general_count, severity_class)
         };
 
