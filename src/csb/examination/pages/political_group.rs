@@ -32,14 +32,9 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let store_data = &store.data.read();
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let general_brp_error_count = rng().random_range(0..=2);
-    let candidate_lists = store_data
-        .imported_data
-        .candidate_lists
-        .values()
-        .cloned()
+    let candidate_lists = store.get_candidate_lists().into_iter()
         .map(CsbCandidateList::placeholder)
         .collect::<Vec<_>>();
     let all_brp_error_count = candidate_lists
@@ -84,7 +79,7 @@ mod tests {
     #[tokio::test]
     async fn political_group_renders_imported_display_name() {
         let store = CsbStore::new_for_test();
-        store.data.write().imported_data.political_group = sample_political_group();
+        store.set_political_group(sample_political_group());
         let stream_id = store.stream_id;
 
         let response = overview(
@@ -128,7 +123,7 @@ mod tests {
         let stream_id = store.stream_id;
 
         // default unfinished => false
-        assert!(!store.data.read().is_examination_finished);
+        assert!(!store.is_examination_finished());
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
@@ -138,7 +133,7 @@ mod tests {
         .unwrap();
 
         // toggle once => true
-        assert!(store.data.read().is_examination_finished);
+        assert!(store.is_examination_finished());
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
@@ -148,7 +143,7 @@ mod tests {
         .unwrap();
 
         // toggle twice => false
-        assert!(!store.data.read().is_examination_finished);
+        assert!(!store.is_examination_finished());
     }
 
     #[tokio::test]

@@ -5,6 +5,8 @@ use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
+#[cfg(test)]
+use crate::political_groups::PoliticalGroup;
 use crate::{
     AppStoreData, CsbEvent, Scope,
     common::UtcDateTime,
@@ -16,7 +18,7 @@ use crate::{
 /// CSB side.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CsbStoreData {
-    pub(crate) imported_data: AppStoreData,
+    imported_data: AppStoreData,
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
@@ -72,5 +74,9 @@ impl crate::CsbStore {
             },
             data: std::sync::Arc::new(parking_lot::RwLock::new(CsbStoreData::default())),
         }
+    }
+
+    pub fn set_political_group(&self, political_group: PoliticalGroup) {
+        self.data.write().imported_data.political_group = political_group;
     }
 }

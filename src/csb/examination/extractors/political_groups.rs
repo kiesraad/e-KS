@@ -16,11 +16,10 @@ pub struct CsbPoliticalGroup {
 
 impl CsbPoliticalGroup {
     pub fn new_from_csb_store(store: &CsbStore) -> Self {
-        let store_data = store.data.read();
         CsbPoliticalGroup {
-            political_group: store_data.imported_data.political_group.clone(),
+            political_group: store.get_political_group(),
             stream_id: store.stream_id,
-            is_examination_finished: store_data.is_examination_finished,
+            is_examination_finished: store.is_examination_finished(),
         }
     }
 }
@@ -40,12 +39,7 @@ where
 
         let mut political_groups = Vec::new();
         for store in registry.stores_by_scope().await? {
-            let store_data = store.data.read();
-            political_groups.push(CsbPoliticalGroup {
-                stream_id: store.stream_id,
-                political_group: store_data.imported_data.political_group.clone(),
-                is_examination_finished: store_data.is_examination_finished,
-            });
+            political_groups.push(CsbPoliticalGroup::new_from_csb_store(&store));
         }
 
         Ok(CsbPoliticalGroups(political_groups))
