@@ -1,10 +1,92 @@
+[workspace]
+members = ["validate", "auth-service", "development"]
+resolver = "3"
+
+# Fields shared by every crate in the workspace. Individual crates inherit these
+# via `edition.workspace = true` etc. Versions are intentionally NOT shared: each
+# crate is versioned independently.
+[workspace.package]
+edition = "2024"
+license = "EUPL-1.2"
+publish = false
+
+# Single source of truth for third-party dependency versions and their base
+# feature set. Member crates opt in with `<dep> = { workspace = true }` and may
+# add extra features or mark the dependency optional. Path and git dependencies
+# whose requirements diverge between crates (e.g. typst-webservice) stay local
+# to the crate that uses them.
+[workspace.dependencies]
+# tokio universe
+axum = { version = "0.8.9" }
+axum-extra = { version = "0.12.6", features = ["cookie"] }
+axum-server = { version = "0.8.0", features = ["tls-rustls"] }
+rustls = "0.23.40"
+hyper-util = { version = "0.1.20", features = ["client-legacy"] }
+tokio = { version = "1.52.1", features = ["full"] }
+tower-http = { version = "0.7.0", features = ["set-header", "trace"] }
+tracing = "0.1.44"
+tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
+bytes = "1.11.1"
+tokio-util = { version = "0.7", features = ["io"] }
+
+# rust-lang
+futures-core = "0.3.32"
+regex = "1.12.3"
+
+# blessed.rs / dtolnay
+anyhow = "1.0.102"
+serde = { version = "1.0.228", features = ["derive"] }
+serde_json = "1.0.150"
+serde_urlencoded = "0.7"
+thiserror = "2"
+
+# blessed.rs
+chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
+parking_lot = "0.12.5"
+rand = "0.10.1"
+sha2 = "0.11.0"
+sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-rustls-aws-lc-rs"] }
+uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
+url = "2.5.8"
+reqwest = { version = "0.13.4", default-features = false, features = ["json", "stream"] }
+
+# well maintained + many downloads
+askama = "0.16.0" # 38M downloads (Dirkjan Ochtman)
+async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 5M downloads (Harry Majored)
+chrono-tz = "0.10.4" # 125M downloads (Dirkjan Ochtman)
+csv = "1.4.0" # 203M downloads (Andrew Gallant)
+phf = { version = "0.13.1", default-features = false } # 411M downloads (Steven Fackler)
+phf_codegen = "0.13.1"
+aes-gcm = "0.10.3" # 118M downloads (RustCrypto)
+hkdf = "0.13.0" # 198M downloads (RustCrypto)
+postcard = { version = "1.1.3", features = ["alloc"] } # 42M downloads (James Munns)
+secrecy = "0.10.3" # 126M downloads (Tony Arcieri)
+urlencoding = "2.1.3" # 213M downloads (Kornel)
+
+# yaml (development tooling)
+saphyr = "0.0.6"
+serde-saphyr = "0.0.13"
+
+# tweedegolf
+memory-serve = "2.1.0"
+typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false }
+bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
+
+# kiesraad
+eml-nl = "0.6.0"
+
+# dev-dependencies
+http-body-util = "0.1"
+tower = "0.5"
+tracing-test = "0.2.6"
+
 [package]
 name = "eks"
 version = "0.12.0"
-edition = "2024"
-license = "EUPL-1.2"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
 rust-version = "1.96.1"
-publish = false
 readme = "README.md"
 description = "Elektronisch kandidaatstellingssysteem"
 documentation = "https://kiesraad.github.io/e-KS/e_ks/"
@@ -44,73 +126,57 @@ embed-typst = ["dep:typst-webservice"]
 tls = ["dep:axum-server", "dep:rustls"]
 
 [dependencies]
-# tokio universe
-axum = { version = "0.8.9", features = ["multipart", "macros"] }
-axum-extra = { version = "0.12.6", features = ["routing", "typed-routing", "form", "cookie", "typed-header"] }
-axum-server = { version = "0.8.0", features = ["tls-rustls"], optional = true }
-rustls = { version = "0.23.40", optional = true }
-hyper-util = { version = "0.1.20", features = ["client-legacy"] }
-tokio = { version = "1.52.1", features = ["full", "test-util"] }
-tower-http = { version = "0.7.0", features = ["set-header", "trace"] }
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter", "fmt", "json"] }
-bytes = "1.11.1"
-tokio-util = { version = "0.7", features = ["io"] }
-
-# rust-lang
-futures-core = "0.3.32"
-regex = "1.12.3"
-
-# blessed.rs / dtolnay
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0.150"
-serde_urlencoded = "0.7"
-
-# blessed.rs
-chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
-parking_lot = "0.12.5"
-rand = "0.10.1"
-sha2 = "0.11.0"
-sqlx = { version = "0.9.0", optional = true, features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-rustls-aws-lc-rs"] }
-uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
-url = "2.5.8"
-reqwest = { version = "0.13.4", default-features = false, features = ["json", "stream"] }
-
-# well maintained + many downloads
-askama = "0.16.0" # 33M downloads (Dirkjan Ochtman)
-async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 4M downloads (Harry Majored)
-chrono-tz = "0.10.4" # 107M downloads (Dirkjan Ochtman)
-csv = "1.4.0" # 179M downloads (Andrew Gallant)
-phf = { version = "0.14.0", default-features = false } # 340M downloads (Steven Fackler)
-aes-gcm = "0.10.3" # 100M downloads (RustCrypto)
-hkdf = "0.13.0" # 166M downloads (RustCrypto)
-postcard = { version = "1.1.3", features = ["alloc"] } # 31M downloads (James Munns)
-secrecy = "0.10.3" # 108M downloads (Tony Arcieri)
-urlencoding = "2.1.3" # 184M downloads (Kornel)
-
-# tweedegolf
-memory-serve = { version = "2.1.0", optional = true }
-validate = { path = "validate" }
+aes-gcm = { workspace = true }
+askama = { workspace = true }
+async_zip = { workspace = true }
 auth-service = { path = "auth-service" }
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false, optional = true }
-bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
-
-# kiesraad
-eml-nl = "0.6.0"
+axum = { workspace = true, features = ["multipart", "macros"] }
+axum-extra = { workspace = true, features = ["routing", "typed-routing", "form", "typed-header"] }
+axum-server = { workspace = true, optional = true }
+bag_address_lookup = { workspace = true, default-features = false, features = ["compressed_database"] }
+bytes = { workspace = true }
+chrono = { workspace = true }
+chrono-tz = { workspace = true }
+csv = { workspace = true }
+eml-nl = { workspace = true }
+futures-core = { workspace = true }
+hkdf = { workspace = true }
+hyper-util = { workspace = true }
+memory-serve = { workspace = true, optional = true }
+parking_lot = { workspace = true }
+phf = { workspace = true }
+postcard = { workspace = true }
+rand = { workspace = true }
+regex = { workspace = true }
+reqwest = { workspace = true }
+rustls = { workspace = true, optional = true }
+secrecy = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+serde_urlencoded = { workspace = true }
+sha2 = { workspace = true }
+sqlx = { workspace = true, optional = true }
+tokio = { workspace = true, features = ["test-util"] }
+tokio-util = { workspace = true }
+tower-http = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true, features = ["fmt", "json"] }
+typst-webservice = { workspace = true, default-features = false, optional = true }
+url = { workspace = true }
+urlencoding = { workspace = true }
+uuid = { workspace = true }
+validate = { path = "validate" }
 
 [build-dependencies]
-memory-serve = { version = "2.1.0", optional = true }
-phf_codegen = "0.14.0"
+memory-serve = { workspace = true, optional = true }
+phf_codegen = { workspace = true }
 
 [dev-dependencies]
-http-body-util = "0.1"
-tower = "0.5"
-tracing-test = "0.2.6"
-# Adds 'now' to chrono for testing against the current clock
-chrono = { version = "0.4.44", features = ["now"] }
-# Adds rustls to reqwest for TLS server tests. Dev-only: the production
-# binary still builds reqwest without any TLS backend.
-reqwest = { version = "0.13.4", default-features = false, features = ["rustls"] }
+http-body-util = { workspace = true }
+tower = { workspace = true }
+tracing-test = { workspace = true }
+chrono = { workspace = true, features = ["now"] }
+reqwest = { workspace = true, features = ["rustls"] }
 
 [lints.rust]
 unsafe_code = "forbid"

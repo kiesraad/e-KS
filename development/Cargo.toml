@@ -1,9 +1,9 @@
 [package]
 name = "eks-development"
-version = "0.4.11"
-edition = "2024"
-license = "EUPL-1.2"
-publish = false
+version = "0.4.12"
+edition.workspace = true
+license.workspace = true
+publish.workspace = true
 
 [[bin]]
 name = "dev"
@@ -22,13 +22,13 @@ name = "pdf_diff"
 test = false
 
 [dependencies]
-anyhow = { version = "1.0.102" }
-tokio = { version = "1.52.0", features = ["full"] }
-serde = { version = "1.0.228", features = ["derive"] }
-serde_json = "1.0"
-saphyr = "0.0.6"
-serde-saphyr = "0.0.13"
-regex = "1.12.3"
-tracing = "0.1.44"
-tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.6.0" }
+anyhow = { workspace = true }
+tokio = { workspace = true }
+serde = { workspace = true }
+serde_json = { workspace = true }
+saphyr = { workspace = true }
+serde-saphyr = { workspace = true }
+regex = { workspace = true }
+tracing = { workspace = true }
+tracing-subscriber = { workspace = true }
+typst-webservice = { workspace = true }

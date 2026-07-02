@@ -44,6 +44,8 @@ ignore = [
     { id = "RUSTSEC-2025-0141", reason = "bincode is used by Typst, see https://github.com/trishume/syntect/issues/606" },
     { id = "RUSTSEC-2026-0192", reason = "ttf-parser is used by Typst" },
     { id = "RUSTSEC-2023-0071", reason = "rsa 0.9 pulled transitively by bergshamra-crypto; no patched release available upstream. Server-side use only, revisit when bergshamra publishes a release on a constant-time rsa." },
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml <0.41 DoS (quadratic duplicate-attribute check) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml <0.41 DoS (unbounded namespace-declaration allocation) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
 ]
 
 [sources]
