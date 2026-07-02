@@ -26,6 +26,7 @@ pub enum CsbEvent {
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<AppStoreData>,
     },
+    ToggleFinish,
     CreateOmission(Omission),
     UpdateOmission(Omission),
     DeleteOmission {
@@ -38,6 +39,7 @@ impl CsbEvent {
     pub fn event_category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::ToggleFinish => "toggle_finish",
             CsbEvent::CreateOmission(_)
             | CsbEvent::UpdateOmission(_)
             | CsbEvent::DeleteOmission { .. } => "omission",
@@ -48,6 +50,7 @@ impl CsbEvent {
     pub fn event_key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::ToggleFinish => "toggle_finish",
             CsbEvent::CreateOmission(_) => "update_omission",
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",

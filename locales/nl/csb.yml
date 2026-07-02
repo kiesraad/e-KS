@@ -21,6 +21,9 @@ import:
     ambiguous_hash: De ingevoerde hash komt overeen met meer dan één dataset; voer meer tekens in.
     invalid_hash: "Voer een geldige hash in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
     not_found: Er is geen data gevonden voor de ingevoerde hash.
+no_finished_political_group: Er zijn geen afgeronde onderzoeken naar politieke groeperingen.
+no_political_groups_added: Er zijn geen onderzoeken voor politieke groeperingen toegevoegd.
+no_unfinished_political_groups: Er zijn geen onafgeronde onderzoeken naar politieke groeperingen.
 progress: Voortgang
 status:
   approved: Goedgekeurd

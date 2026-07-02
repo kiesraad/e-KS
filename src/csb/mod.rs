@@ -6,6 +6,7 @@
 //! event-sourced store projection (see [`CsbStoreData`]).
 pub mod examination;
 pub mod import;
+pub mod index;
 
 mod context;
 mod event;

@@ -81,7 +81,7 @@
     --tag-color: var(--green-700);
   }
 
-  &:hover {
+  &:hover:not(.unclickable) {
     --tag-border-color: var(--gray-200);
     background-color: var(--gray-50);
 

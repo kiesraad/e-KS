@@ -11,6 +11,10 @@
     left: 0;
     min-width: 16rem;
   }
+  &.disabled {
+    opacity: 50%;
+    pointer-events: none;
+  }
 
   .cards {
     grid-column: span 3;

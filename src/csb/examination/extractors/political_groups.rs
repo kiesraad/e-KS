@@ -4,12 +4,24 @@ use axum::{
 };
 
 use crate::{
-    AppError, CsbStoreData, StreamId, political_groups::PoliticalGroup, store::StoreRegistry,
+    AppError, CsbStore, CsbStoreData, StreamId, political_groups::PoliticalGroup,
+    store::StoreRegistry,
 };
 
 pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
+    pub is_examination_finished: bool,
+}
+
+impl CsbPoliticalGroup {
+    pub fn new_from_csb_store(store: &CsbStore) -> Self {
+        CsbPoliticalGroup {
+            political_group: store.get_political_group(),
+            stream_id: store.stream_id,
+            is_examination_finished: store.is_examination_finished(),
+        }
+    }
 }
 
 /// Extracts all imported political groups visible to the CSB scope.
@@ -27,10 +39,7 @@ where
 
         let mut political_groups = Vec::new();
         for store in registry.stores_by_scope().await? {
-            political_groups.push(CsbPoliticalGroup {
-                stream_id: store.stream_id,
-                political_group: store.data.read().imported_data.political_group.clone(),
-            });
+            political_groups.push(CsbPoliticalGroup::new_from_csb_store(&store));
         }
 
         Ok(CsbPoliticalGroups(political_groups))

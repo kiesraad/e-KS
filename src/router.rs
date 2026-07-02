@@ -39,7 +39,8 @@ pub fn create(state: AppState) -> Router<AppState> {
     // CSB routes need the session plus their own (CSB) store middleware, which
     // also gates them to committee-scoped sessions. They must NOT get the app
     // `store_middleware`, so they are merged here rather than above.
-    let csb_router = csb::examination::router()
+    let csb_router = csb::index::router()
+        .merge(csb::examination::router())
         .merge(csb::import::router())
         .layer(middleware::from_fn_with_state(
             state.clone(),

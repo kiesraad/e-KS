@@ -57,7 +57,7 @@
     --badge-icon: url("../icons/badge-error.svg");
   }
 
-  &:not(.badge-position)::after {
+  &:not(.position-badge)::after {
     content: "";
     position: absolute;
     inset: 0;

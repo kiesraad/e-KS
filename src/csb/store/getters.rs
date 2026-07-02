@@ -1,7 +1,9 @@
 use crate::{
     AppError, CsbStore,
+    candidate_lists::CandidateList,
     csb::{Omission, OmissionId, omission::OmissionCategory},
     persons::PersonId,
+    political_groups::PoliticalGroup,
 };
 
 impl CsbStore {
@@ -50,6 +52,28 @@ impl CsbStore {
         data.omissions
             .values()
             .filter(|o| matches!(&o.category, OmissionCategory::Candidate { person, .. } if *person == person_id))
+            .cloned()
+            .collect()
+    }
+
+    pub fn is_examination_finished(&self) -> bool {
+        let data = self.data.read();
+
+        data.is_examination_finished
+    }
+
+    pub fn get_political_group(&self) -> PoliticalGroup {
+        let data = self.data.read();
+
+        data.imported_data.political_group.clone()
+    }
+
+    pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
+        let data = self.data.read();
+
+        data.imported_data
+            .candidate_lists
+            .values()
             .cloned()
             .collect()
     }

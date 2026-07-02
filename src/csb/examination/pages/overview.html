@@ -1,4 +1,7 @@
 {% extends "components/layout.html" %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+{% endblock %}
 {% block page_title %}{{ "csb.examination"|trans }}{% endblock %}
 {% block content %}
   <div class="examination">
@@ -27,82 +30,93 @@
     <div class="examination-main card card-plain">
       <a href="{{ CsbImportPath }}" class="button secondary icon-plus">{{ "csb.action.add_political_group"|trans }}</a>
       <h2>{{ "csb.added"|trans }}</h2>
-      <table class="political-group-table mb-xl mt-md">
-        <thead>
-          <tr>
-            <th>{{ "common.political_group"|trans }}</th>
-            <th>Status</th>
-            <th>BRP check</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          {% for pg in political_groups %}
+      {% if unfinished_political_groups.is_empty() && finished_political_groups.is_empty() %}
+        <p class="font-italic">{{ "csb.no_political_groups_added"|trans }}</p>
+      {% else if unfinished_political_groups.is_empty() %}
+        <p class="font-italic">{{ "csb.no_unfinished_political_groups"|trans }}</p>
+      {% else %}
+        <table class="political-group-table mb-xl mt-md">
+          <thead>
+            <tr>
+              <th>{{ "common.political_group"|trans }}</th>
+              <th>Status</th>
+              <th>BRP check</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pg in unfinished_political_groups %}
+              <tr class="clickable">
+                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>
+                  <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
+                </td>
+                <td>
+                  <ul class="tags-list">
+                    <li class="tag link width-md">
+                      <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                    </li>
+                  </ul>
+                </td>
+                <td>
+                  <a href="{{ pg.examination_path() }}"></a>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% endif %}
+      <h2>{{ "csb.finished"|trans }}</h2>
+      {% if finished_political_groups.is_empty() %}
+        <p class="font-italic">{{ "csb.no_finished_political_group"|trans }}</p>
+      {% else %}
+        <table class="political-group-table mb-xl mt-md">
+          <thead>
+            <tr>
+              <th>{{ "common.political_group"|trans }}</th>
+              <th>Status</th>
+              <th>BRP check</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for pg in finished_political_groups %}
+              <tr class="clickable">
+                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>
+                  <div class="status approved">{{ "csb.status.approved"|trans }}</div>
+                </td>
+                <td>
+                  <ul class="tags-list">
+                    <li class="tag link width-md">
+                      <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                    </li>
+                  </ul>
+                </td>
+                <td>
+                  <a href="{{ pg.examination_path() }}"></a>
+                </td>
+              </tr>
+            {% endfor %}
             <tr class="clickable">
-              <td>{{ pg.political_group.display_name.as_deref().unwrap_or(&"?".to_string()) }}</td>
+              <td>Kiesraad Demo Kiesraad Demo Kiesraa</td>
               <td>
-                <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
+                <div class="status omission">{{ "csb.status.omission"|trans }}</div>
               </td>
               <td>
                 <ul class="tags-list">
                   <li class="tag link width-md">
-                    <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
+                    <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
                   </li>
                 </ul>
               </td>
               <td>
-                <a href="{{ pg.examination_path() }}"></a>
+                <a href="#"></a>
               </td>
             </tr>
-          {% endfor %}
-        </tbody>
-      </table>
-      <!-- TODO: filter political groups by whether or not they are filtered -->
-      <h2>{{ "csb.finished"|trans }}</h2>
-      <table class="political-group-table mb-xl mt-md">
-        <thead>
-          <tr>
-            <th>{{ "common.political_group"|trans }}</th>
-            <th>Status</th>
-            <th>BRP check</th>
-            <th></th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr class="clickable">
-            <td>Kiesraad Demo Kiesraad Demo Kiesraa</td>
-            <td>
-              <div class="status omission">{{ "csb.status.omission"|trans }}</div>
-            </td>
-            <td>
-              <ul class="tags-list">
-                <li class="tag link width-md">
-                  <a class="ok" href="#">{{ "csb.brp.correct"|trans }}</a>
-                </li>
-              </ul>
-            </td>
-            <td>
-              <a href="#"></a>
-            </td>
-          </tr>
-          <tr class="clickable">
-            <td>Partij van de Toekomst</td>
-            <td>
-              <div class="status approved">{{ "csb.status.approved"|trans }}</div>
-            </td>
-            <td>
-              <ul class="tags-list">
-                <li class="tag link width-md">
-                  <a class="error" href="#">{{ "csb.brp.errors"|trans }}</a>
-                </li>
-              </ul>
-            </td>
-            <td>
-              <a href="#"></a>
-            </td>
-          </tr>
-        </tbody>
-      </table>
+          </tbody>
+        </table>
+      {% endif %}
     </div>
   </div>
 {% endblock %}

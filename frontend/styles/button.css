@@ -190,6 +190,16 @@ label.button {
     width: var(--space-5);
   }
 
+  &.icon-restoration::before {
+    content: "";
+    height: var(--space-5);
+    background-image: url("../icons/restoration.svg");
+    background-repeat: no-repeat;
+    background-size: contain;
+    background-position: left center;
+    width: var(--space-8);
+  }
+
   &.icon-edit::after {
     background-color: currentColor;
     content: "";

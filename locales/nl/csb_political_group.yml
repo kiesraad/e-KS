@@ -1,0 +1,16 @@
+actions:
+  examine_all_brp_errors: Alle BRP fouten controleren
+  examine_general: Basisgegevens controleren
+  examine_list: Kandidatenlijst controleren
+all_brp_errors: Alle BRP fouten
+all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
+all_restorations: Alle herstelacties
+brp_errors:
+  none: Geen BRP fouten
+  plural: "{} BRP fouten"
+  singular: 1 BRP fout
+candidate_count: "<strong>{}</strong> kandidaten"
+examination_finished: Onderzoek afgerond
+examination_unfinished: Onderzoek afronden
+general_instruction_list_submitter: Controleer de gegevens van de lijstinleveraar(s)
+general_instruction_political_group: Controleer de gegevens van de politieke groepering
