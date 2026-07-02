@@ -1,6 +1,6 @@
 {% extends "persons/pages/update_address.html" %}
 {% block overlay_title %}
-  <span class="badge badge-position">{{ candidate.position }}</span>
+  <span class="badge position-badge">{{ candidate.position }}</span>
   {{ candidate.person.name.display() }}
 {% endblock %}
 {% set close_action = full_list.list.highlight_path(*candidate.person.id) %}
