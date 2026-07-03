@@ -19,6 +19,11 @@ async fn main() -> Result<()> {
 
     let config = load_config().await?;
 
+    let wild_env = wild_linker_env();
+    if !wild_env.is_empty() {
+        println!("🔗 Using the wild linker for faster Rust builds");
+    }
+
     let mut children = Vec::new();
     let mut waited_for_postgres = false;
 
@@ -30,7 +35,7 @@ async fn main() -> Result<()> {
 
         println!("🚀 Starting {}", config.name);
         children.push(ManagedChild {
-            child: config.spawn()?,
+            child: config.spawn(&wild_env)?,
             config,
         });
     }
@@ -62,12 +67,41 @@ struct DevelopmentConfig {
 }
 
 impl ChildConfig {
-    fn spawn(&self) -> io::Result<Child> {
+    fn spawn(&self, wild_env: &[(&str, &str)]) -> io::Result<Child> {
         Command::new(&self.command)
             .args(&self.args)
+            .envs(wild_env.iter().copied())
             .stdin(Stdio::null())
             .spawn()
     }
+}
+
+/// Environment overrides that route Rust builds through the wild linker
+/// (https://github.com/davidlattimore/wild), which links substantially faster
+/// than the default GNU ld and shortens the edit-compile-run loop. Wild is
+/// driven through clang via `--ld-path`, so both must be on PATH; when either
+/// is missing we return no overrides and builds use the default linker. Kept
+/// dev-only (here, not in .cargo/config.toml) so release builds via bin/build
+/// stay reproducible and need neither tool.
+fn wild_linker_env() -> Vec<(&'static str, &'static str)> {
+    if is_on_path("wild") && is_on_path("clang") {
+        vec![
+            ("CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_LINKER", "clang"),
+            (
+                "CARGO_TARGET_X86_64_UNKNOWN_LINUX_GNU_RUSTFLAGS",
+                "-C link-arg=--ld-path=wild",
+            ),
+        ]
+    } else {
+        Vec::new()
+    }
+}
+
+fn is_on_path(bin: &str) -> bool {
+    let Some(path) = std::env::var_os("PATH") else {
+        return false;
+    };
+    std::env::split_paths(&path).any(|dir| dir.join(bin).is_file())
 }
 
 async fn load_config() -> Result<DevelopmentConfig> {
