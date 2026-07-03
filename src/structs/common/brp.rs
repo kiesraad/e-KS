@@ -46,12 +46,17 @@ impl BrpClient {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
                 bsn: vec![bsn.clone()],
                 fields: vec![
-                    // TODO: Create a Field type?
-                    "burgerservicenummer".to_string(),
-                    "geboorte".to_string(),
-                    "geslacht".to_string(),
-                    "naam".to_string(),
-                    "verblijfplaats".to_string(),
+                    BrpField::Bsn,
+                    BrpField::DateOfBirth,
+                    BrpField::Gender,
+                    BrpField::Initials,
+                    BrpField::LastNamePrefix,
+                    BrpField::LastName,
+                    BrpField::StreetName,
+                    BrpField::HouseNumber,
+                    BrpField::HouseNumberAddition,
+                    BrpField::PostalCode,
+                    BrpField::PlaceOfResidence,
                 ],
             },
             Some(BsnOrNoneConfirmed::NoneConfirmed) => {
@@ -88,6 +93,9 @@ impl BrpClient {
             }
         };
 
+        // dbg!(&person);
+        // dbg!(&brp_person);
+
         Ok(address_is_valid &&
             // Don't check First name (roepnaam)
             person.name.last_name == brp_person.name.last_name &&
@@ -101,6 +109,84 @@ impl BrpClient {
     }
 }
 
+// ontbreekt: Aanduiding bijzonder Nederlanderschap
+// ontbreekt: Ingangsdatum geldigheid met betrekking tot de elementen van de categorie Nationaliteit
+#[derive(Debug, Serialize)]
+pub enum BrpField {
+    // Personen
+    #[serde(rename = "burgerservicenummer")]
+    Bsn,
+    #[serde(rename = "naam.voornamen")]
+    FirstNames,
+    #[serde(rename = "naam.voorletters")]
+    Initials,
+    #[serde(rename = "naam.adellijkeTitelPredicaat")]
+    TitleOfNobility,
+    #[serde(rename = "naam.voorvoegsel")]
+    LastNamePrefix,
+    #[serde(rename = "naam.geslachtsnaam")]
+    LastName,
+    #[serde(rename = "geboorte.datum")]
+    DateOfBirth,
+    #[serde(rename = "geslacht")]
+    Gender,
+    #[serde(rename = "naam.aanduidingNaamgebruik")]
+    DesignatedNameUsage,
+
+    // Nationaliteit
+    #[serde(rename = "nationaliteiten.nationaliteit")]
+    Nationality,
+
+    // Partners
+    #[serde(rename = "partners.naam.voorvoegsel")]
+    PartnerLastNamePrefix,
+    #[serde(rename = "partners.naam.geslachtsnaam")]
+    PartnerLastName,
+    #[serde(rename = "partners.aangaanHuwelijkPartnerschap.datum")]
+    DateOfMarriage,
+    #[serde(rename = "partners.ontbindingHuwelijkPartnerschap")]
+    DateOfDissolutionMarriage,
+
+    // Date of death
+    #[serde(rename = "overlijden.datum")]
+    DateOfDeath,
+
+    // Place of residence
+    // TODO: What to do with Registratie Niet Ingezetenen?
+    #[serde(rename = "gemeenteVanInschrijving")]
+    RegisteredMunicipality,
+    #[serde(rename = "datumInschrijvingInGemeente")]
+    DateMunicipalRegistration,
+    #[serde(rename = "verblijfplaats.verblijfadres.korteStraatnaam")]
+    StreetName,
+    // I think this is 'Naam openbare ruimte'
+    #[serde(rename = "verblijfplaats.verblijfadres.officieleStraatnaam")]
+    OfficialStreetName,
+    #[serde(rename = "verblijfplaats.verblijfadres.huisnummer")]
+    HouseNumber,
+    #[serde(rename = "verblijfplaats.verblijfadres.huisletter")]
+    HouseLetter,
+    #[serde(rename = "verblijfplaats.verblijfadres.huisnummertoevoeging")]
+    HouseNumberAddition,
+    #[serde(rename = "verblijfplaats.verblijfadres.postcode")]
+    PostalCode,
+    #[serde(rename = "verblijfplaats.verblijfadres.woonplaats")]
+    PlaceOfResidence,
+
+    // Not sure if these are correct. They should be specifically foreign, but they
+    // may also apply to interior addresses
+    #[serde(rename = "verblijfplaats.verblijfadres.land")]
+    CountryOfResidence, // Land adres buitenland
+    #[serde(rename = "verblijfplaats.datumVan")]
+    ResidenceDateFrom, // Datum aanvang adres buitenland
+    #[serde(rename = "verblijfplaats.verblijfadres.regel1")]
+    AddressLine1, // Regel 1 adres buitenland
+    #[serde(rename = "verblijfplaats.verblijfadres.regel2")]
+    AddressLine2, // Regel 2 adres buitenland
+    #[serde(rename = "verblijfplaats.verblijfadres.regel3")]
+    AddressLine3, // Regel 3 adres buitenland
+}
+
 #[derive(Debug, Serialize)]
 #[serde(tag = "type")]
 pub enum BrpQuery {
@@ -108,7 +194,7 @@ pub enum BrpQuery {
     ConsultWithBsn {
         #[serde(rename = "burgerservicenummer")]
         bsn: Vec<Bsn>,
-        fields: Vec<String>,
+        fields: Vec<BrpField>,
     },
 }
 
@@ -284,7 +370,7 @@ mod tests {
             BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
         let query = BrpQuery::ConsultWithBsn {
             bsn: vec!["100600505".parse().unwrap()],
-            fields: vec!["naam".to_string()],
+            fields: vec![BrpField::LastName],
         };
 
         let response = brp_client.get_persons(&query).await.unwrap();
