@@ -1,8 +1,10 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppStoreData, StreamId,
+    AppStoreData, Event, StreamId,
     csb::{Omission, OmissionId},
+    trans,
+    utils::format_hash,
 };
 
 /// Domain events that mutate the CSB (Centraal Stembureau) store.
@@ -34,9 +36,8 @@ pub enum CsbEvent {
     },
 }
 
-impl CsbEvent {
-    /// Return a stable category key for filtering in the audit log.
-    pub fn event_category(&self) -> &'static str {
+impl Event for CsbEvent {
+    fn category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::SetFinished(_) => "set_finished",
@@ -46,14 +47,41 @@ impl CsbEvent {
         }
     }
 
-    /// Return a stable snake_case key identifying the event variant.
-    pub fn event_key(&self) -> &'static str {
+    fn key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_) => "create_omission",
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
+        }
+    }
+
+    fn description(&self, locale: crate::Locale) -> String {
+        match self {
+            CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
+            CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
+            CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
+            CsbEvent::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
+            CsbEvent::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
+        }
+    }
+
+    fn details(&self) -> String {
+        match self {
+            CsbEvent::Import {
+                hash,
+                source_stream_id,
+                ..
+            } => {
+                format!(
+                    "Hash: {}\nSource stream: {source_stream_id}",
+                    format_hash(hash, true)
+                )
+            }
+            CsbEvent::SetFinished(value) => value.to_string(),
+            CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
+            CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
         }
     }
 }
@@ -72,11 +100,11 @@ mod tests {
 
     #[test]
     fn import_event_category() {
-        assert_eq!(import_event().event_category(), "import");
+        assert_eq!(import_event().category(), "import");
     }
 
     #[test]
     fn import_event_key() {
-        assert_eq!(import_event().event_key(), "import");
+        assert_eq!(import_event().key(), "import");
     }
 }

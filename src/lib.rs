@@ -106,10 +106,10 @@ pub use csb::{CsbContext, CsbEvent, CsbMainEvent, CsbMainStoreData, CsbStoreData
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
-pub use store::{DbHealth, HealthState, run_db_prober};
+pub use store::{DbHealth, Event, HealthState, run_db_prober};
 pub use utils::{
-    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, id_newtype, redirect_success,
-    transparent_string,
+    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
+    redirect_success, transparent_string,
 };
 
 #[cfg(test)]

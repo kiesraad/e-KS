@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::StreamId;
+use crate::{Event, StreamId, trans};
 
 /// Events for the global CSB stream. Variants will be added as committee-wide
 /// features are implemented (process steps, audit log, etc.).
@@ -9,16 +9,30 @@ pub enum CsbMainEvent {
     DeveloperLogin { stream_id: StreamId },
 }
 
-impl CsbMainEvent {
-    pub fn event_category(&self) -> &'static str {
+impl Event for CsbMainEvent {
+    fn category(&self) -> &'static str {
         match self {
             CsbMainEvent::DeveloperLogin { .. } => "system",
         }
     }
 
-    pub fn event_key(&self) -> &'static str {
+    fn key(&self) -> &'static str {
         match self {
             CsbMainEvent::DeveloperLogin { .. } => "developer_login",
+        }
+    }
+
+    fn description(&self, locale: crate::Locale) -> String {
+        match self {
+            CsbMainEvent::DeveloperLogin { .. } => {
+                trans!("audit_log.event.developer_login", locale)
+            }
+        }
+    }
+
+    fn details(&self) -> String {
+        match self {
+            CsbMainEvent::DeveloperLogin { .. } => "".to_string(),
         }
     }
 }

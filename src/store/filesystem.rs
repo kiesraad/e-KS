@@ -389,7 +389,10 @@ fn stream_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> Pat
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::store::{GENESIS_HASH, encryption::EventEncryption};
+    use crate::{
+        Event,
+        store::{GENESIS_HASH, encryption::EventEncryption},
+    };
     use parking_lot::RwLock;
     use secrecy::SecretString;
     use serde::{Deserialize, Serialize};
@@ -398,6 +401,24 @@ mod tests {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     struct TestEvent {
         label: String,
+    }
+
+    impl Event for TestEvent {
+        fn category(&self) -> &'static str {
+            "test_event"
+        }
+
+        fn key(&self) -> &'static str {
+            "test_event"
+        }
+
+        fn description(&self, _locale: crate::Locale) -> String {
+            self.label.to_string()
+        }
+
+        fn details(&self) -> String {
+            self.label.to_string()
+        }
     }
 
     #[derive(Default)]

@@ -2,7 +2,7 @@ use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate,
+    AppError, AppStore, Context, Event, HtmlTemplate,
     audit_log::{AuditLogEntry, pages::AuditLogPath},
     filters,
     pagination::Pagination,
@@ -140,7 +140,7 @@ pub async fn audit_log(
         .rev()
         .filter(|event| {
             active_event_type
-                .map(|et| event.payload.event_category() == et || event.payload.event_key() == et)
+                .map(|et| event.payload.category() == et || event.payload.key() == et)
                 .unwrap_or(true)
         })
         .map(|event| AuditLogEntry::new(event, locale))

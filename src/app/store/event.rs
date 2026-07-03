@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict, StreamId,
+    ElectoralDistrict, Event, StreamId,
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, FullName},
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -94,9 +94,9 @@ pub enum AppEvent {
     },
 }
 
-impl AppEvent {
+impl Event for AppEvent {
     /// Return a stable category key for filtering in the audit log.
-    pub fn event_category(&self) -> &'static str {
+    fn category(&self) -> &'static str {
         match self {
             AppEvent::UpdatePoliticalGroup(_) => "political_group",
             AppEvent::CreatePerson(_)
@@ -130,7 +130,7 @@ impl AppEvent {
     /// Return a stable snake_case key identifying the event variant.
     /// Variants that share a user-facing description share a key (e.g. both
     /// `CreatePerson` and `CreatePersonPersonalData` map to `create_person`).
-    pub fn event_key(&self) -> &'static str {
+    fn key(&self) -> &'static str {
         match self {
             AppEvent::UpdatePoliticalGroup(_) => "update_political_group",
             AppEvent::CreatePerson(_) | AppEvent::CreatePersonPersonalData { .. } => {
@@ -161,5 +161,13 @@ impl AppEvent {
             AppEvent::ExportCsv { .. } => "export_csv",
             AppEvent::ImportCandidates { .. } => "import_csv",
         }
+    }
+
+    fn description(&self, locale: crate::Locale) -> String {
+        super::event_info::event_description(self, locale)
+    }
+
+    fn details(&self) -> String {
+        super::event_info::event_details(self)
     }
 }

@@ -13,13 +13,6 @@ use crate::{
     trans,
 };
 
-pub(super) const DEFAULT_DETAILS: &str = "-";
-
-/// Abbreviate a string to its first 8 characters (used for UUID previews).
-pub fn abbreviate_str(s: &str) -> String {
-    s[..8.min(s.len())].to_string()
-}
-
 /// Translated label describing what the event did.
 pub(super) fn event_description(event: &AppEvent, locale: Locale) -> String {
     match event {
@@ -126,101 +119,84 @@ pub(super) fn event_details(event: &AppEvent) -> String {
         | AppEvent::DeleteNameAuthorisation(..)
         | AppEvent::DeleteSubstituteSubmitter { .. }
         | AppEvent::DeveloperLogin { .. }
-        | AppEvent::HideDownloadWarning => DEFAULT_DETAILS.to_string(),
+        | AppEvent::HideDownloadWarning => AppEvent::DEFAULT_DETAILS.to_string(),
     }
 }
 
-/// URL to the subject entity's page, or empty when none applies (deleted
-/// entities, system events).
-pub(super) fn subject_path(event: &AppEvent) -> String {
-    fn person_path(person_id: PersonId) -> String {
-        UpdatePersonPath { person_id }.to_string()
-    }
-    fn candidate_list_path(list_id: CandidateListId) -> String {
-        ViewCandidateListPath { list_id }.to_string()
-    }
+impl AppEvent {
+    pub const DEFAULT_DETAILS: &str = "-";
 
-    match event {
-        AppEvent::UpdatePoliticalGroup(_) => PoliticalGroupUpdatePath {}.to_string(),
-        AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => person_path(p.id),
-        AppEvent::CreatePersonPersonalData { person_id, .. }
-        | AppEvent::UpdatePersonPersonalData { person_id, .. }
-        | AppEvent::UpdatePersonAddress { person_id, .. }
-        | AppEvent::UpdatePersonRepresentative { person_id, .. } => person_path(*person_id),
-        AppEvent::CreateCandidateList(cl) => cl.view_path().to_string(),
-        AppEvent::UpdateCandidateListDistricts { list_id, .. }
-        | AppEvent::UpdateCandidateListOrder { list_id, .. }
-        | AppEvent::AddCandidateToCandidateList { list_id, .. }
-        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
-            candidate_list_path(*list_id)
+    /// Primary subject ID (full UUID string); empty for events without one.
+    pub fn subject_id_full(&self) -> String {
+        match self {
+            AppEvent::UpdatePoliticalGroup(_) => String::new(),
+            AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.id.to_string(),
+            AppEvent::CreatePersonPersonalData { person_id, .. }
+            | AppEvent::UpdatePersonPersonalData { person_id, .. }
+            | AppEvent::UpdatePersonAddress { person_id, .. }
+            | AppEvent::UpdatePersonRepresentative { person_id, .. }
+            | AppEvent::DeletePerson { person_id } => person_id.to_string(),
+            AppEvent::CreateCandidateList(cl) => cl.id.to_string(),
+            AppEvent::UpdateCandidateListDistricts { list_id, .. }
+            | AppEvent::UpdateCandidateListOrder { list_id, .. }
+            | AppEvent::AddCandidateToCandidateList { list_id, .. }
+            | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => list_id.to_string(),
+            AppEvent::DeleteCandidateList(cl_id) => cl_id.to_string(),
+            AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
+                aa.id.to_string()
+            }
+            AppEvent::DeleteNameAuthorisation(aa_id) => aa_id.to_string(),
+            AppEvent::UpdateListSubmitter(_) => String::new(),
+            AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
+                ss.id.to_string()
+            }
+            AppEvent::DeleteSubstituteSubmitter {
+                substitute_submitter_id,
+                ..
+            } => substitute_submitter_id.to_string(),
+            AppEvent::DeveloperLogin { stream_id, .. } => stream_id.to_string(),
+            AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
+                list_id.to_string()
+            }
+            AppEvent::DownloadFile { .. } | AppEvent::HideDownloadWarning => String::new(),
         }
-        AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
-            aa.update_path().to_string()
-        }
-        AppEvent::UpdateListSubmitter(_) => ListSubmitter::update_path().to_string(),
-        AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
-            ss.substitute_update_path().to_string()
-        }
-        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
-            candidate_list_path(*list_id)
-        }
-        _ => String::new(),
-    }
-}
-
-/// Primary subject ID (full UUID string); empty for events without one.
-pub(super) fn subject_id_full(event: &AppEvent) -> String {
-    match event {
-        AppEvent::UpdatePoliticalGroup(_) => String::new(),
-        AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => p.id.to_string(),
-        AppEvent::CreatePersonPersonalData { person_id, .. }
-        | AppEvent::UpdatePersonPersonalData { person_id, .. }
-        | AppEvent::UpdatePersonAddress { person_id, .. }
-        | AppEvent::UpdatePersonRepresentative { person_id, .. }
-        | AppEvent::DeletePerson { person_id } => person_id.to_string(),
-        AppEvent::CreateCandidateList(cl) => cl.id.to_string(),
-        AppEvent::UpdateCandidateListDistricts { list_id, .. }
-        | AppEvent::UpdateCandidateListOrder { list_id, .. }
-        | AppEvent::AddCandidateToCandidateList { list_id, .. }
-        | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => list_id.to_string(),
-        AppEvent::DeleteCandidateList(cl_id) => cl_id.to_string(),
-        AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
-            aa.id.to_string()
-        }
-        AppEvent::DeleteNameAuthorisation(aa_id) => aa_id.to_string(),
-        AppEvent::UpdateListSubmitter(_) => String::new(),
-        AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
-            ss.id.to_string()
-        }
-        AppEvent::DeleteSubstituteSubmitter {
-            substitute_submitter_id,
-            ..
-        } => substitute_submitter_id.to_string(),
-        AppEvent::DeveloperLogin { stream_id, .. } => stream_id.to_string(),
-        AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
-            list_id.to_string()
-        }
-        AppEvent::DownloadFile { .. } | AppEvent::HideDownloadWarning => String::new(),
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn abbreviate_str_short_string() {
-        assert_eq!(abbreviate_str("abc"), "abc");
-        assert_eq!(abbreviate_str(""), "");
     }
 
-    #[test]
-    fn abbreviate_str_long_string() {
-        assert_eq!(abbreviate_str("123456789abcdef"), "12345678");
-    }
+    /// URL to the subject entity's page, or empty when none applies (deleted
+    /// entities, system events).
+    pub fn subject_path(&self) -> String {
+        fn person_path(person_id: PersonId) -> String {
+            UpdatePersonPath { person_id }.to_string()
+        }
+        fn candidate_list_path(list_id: CandidateListId) -> String {
+            ViewCandidateListPath { list_id }.to_string()
+        }
 
-    #[test]
-    fn abbreviate_str_exactly_eight() {
-        assert_eq!(abbreviate_str("12345678"), "12345678");
+        match self {
+            AppEvent::UpdatePoliticalGroup(_) => PoliticalGroupUpdatePath {}.to_string(),
+            AppEvent::CreatePerson(p) | AppEvent::UpdatePerson(p) => person_path(p.id),
+            AppEvent::CreatePersonPersonalData { person_id, .. }
+            | AppEvent::UpdatePersonPersonalData { person_id, .. }
+            | AppEvent::UpdatePersonAddress { person_id, .. }
+            | AppEvent::UpdatePersonRepresentative { person_id, .. } => person_path(*person_id),
+            AppEvent::CreateCandidateList(cl) => cl.view_path().to_string(),
+            AppEvent::UpdateCandidateListDistricts { list_id, .. }
+            | AppEvent::UpdateCandidateListOrder { list_id, .. }
+            | AppEvent::AddCandidateToCandidateList { list_id, .. }
+            | AppEvent::RemoveCandidateFromCandidateList { list_id, .. } => {
+                candidate_list_path(*list_id)
+            }
+            AppEvent::CreateNameAuthorisation(aa) | AppEvent::UpdateNameAuthorisation(aa) => {
+                aa.update_path().to_string()
+            }
+            AppEvent::UpdateListSubmitter(_) => ListSubmitter::update_path().to_string(),
+            AppEvent::CreateSubstituteSubmitter(ss) | AppEvent::UpdateSubstituteSubmitter(ss) => {
+                ss.substitute_update_path().to_string()
+            }
+            AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
+                candidate_list_path(*list_id)
+            }
+            _ => String::new(),
+        }
     }
 }

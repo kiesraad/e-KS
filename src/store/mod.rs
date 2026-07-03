@@ -12,7 +12,7 @@ mod registry;
 mod store_handle;
 
 pub use encryption::EventEncryption;
-pub use event::{GENESIS_HASH, StoreEvent};
+pub use event::{Event, GENESIS_HASH, StoreEvent};
 pub use health::{DbHealth, HealthState, run_db_prober};
 pub use persistence::StorePersistence;
 pub use registry::StoreRegistry;
@@ -23,7 +23,7 @@ pub(crate) use event::{chain_hash, event_aad};
 use crate::Scope;
 
 pub trait StoreData: Default + Send + Sync + 'static {
-    type Event;
+    type Event: Event;
 
     /// Apply a fully wrapped store event to the data projection.
     fn apply(&mut self, event: StoreEvent<Self::Event>);

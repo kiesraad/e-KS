@@ -4,7 +4,25 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use crate::{AppError, ElectionConfig, Event, Scope, StreamId};
+
+impl Event for Vec<u8> {
+    fn category(&self) -> &'static str {
+        "encrypted_blob"
+    }
+
+    fn key(&self) -> &'static str {
+        "encrypted_blob"
+    }
+
+    fn description(&self, _locale: crate::Locale) -> String {
+        "encrypted blob".to_string()
+    }
+
+    fn details(&self) -> String {
+        "encrypted blob".to_string()
+    }
+}
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {

@@ -9,11 +9,30 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
+use crate::Locale;
+
 /// Hash linked to the (virtual) event preceding the first event of a stream.
 pub const GENESIS_HASH: [u8; 32] = [0u8; 32];
 
+pub trait Event {
+    /// Return a stable category key for filtering in the audit log
+    fn category(&self) -> &'static str;
+
+    /// Return a stable snake_case key identifying the event variant
+    ///
+    /// Variants that share a user-facing description share a key (e.g. both
+    /// `CreatePerson` and `CreatePersonPersonalData` map to `create_person`).
+    fn key(&self) -> &'static str;
+
+    /// Translated label describing what the event did
+    fn description(&self, locale: Locale) -> String;
+
+    /// Short human-readable details for a listing row (name, file, districts, ...)
+    fn details(&self) -> String;
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoreEvent<E> {
+pub struct StoreEvent<E: Event> {
     /// Monotonic event identifier within a stream.
     pub event_id: usize,
     /// Domain-specific event payload.
@@ -27,7 +46,7 @@ pub struct StoreEvent<E> {
     pub hash: [u8; 32],
 }
 
-impl<E> StoreEvent<E> {
+impl<E: Event> StoreEvent<E> {
     /// Construct a store event with a placeholder ([`GENESIS_HASH`]) chain hash
     /// and `created_at` set to now.
     ///
@@ -100,11 +119,11 @@ mod tests {
     #[test]
     fn new_sets_timestamp_and_fields() {
         let before = Utc::now();
-        let event = StoreEvent::new(3, "payload");
+        let event = StoreEvent::new(3, 37);
         let after = Utc::now();
 
         assert_eq!(event.event_id, 3);
-        assert_eq!(event.payload, "payload");
+        assert_eq!(event.payload, 37);
         assert!(event.created_at >= before);
         assert!(event.created_at <= after);
         assert_eq!(event.hash, GENESIS_HASH);
@@ -113,10 +132,10 @@ mod tests {
     #[test]
     fn new_at_uses_provided_timestamp() {
         let timestamp = DateTime::from_timestamp(1_700_000_000, 0).unwrap();
-        let event = StoreEvent::new_at(7, 42, timestamp);
+        let event = StoreEvent::new_at(7, 37, timestamp);
 
         assert_eq!(event.event_id, 7);
-        assert_eq!(event.payload, 42);
+        assert_eq!(event.payload, 37);
         assert_eq!(event.created_at, timestamp);
     }
 

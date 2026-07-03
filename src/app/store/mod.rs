@@ -1,4 +1,5 @@
 mod event;
+mod event_info;
 mod extractor;
 mod getters;
 

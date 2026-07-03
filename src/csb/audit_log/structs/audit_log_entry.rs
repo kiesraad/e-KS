@@ -1,6 +1,6 @@
 use chrono::{DateTime, Utc};
 
-use crate::{CsbEvent, CsbMainEvent, Locale, StreamId, store::StoreEvent, trans};
+use crate::{CsbEvent, CsbMainEvent, Event, Locale, StreamId, store::StoreEvent, trans};
 
 /// A single row in the CSB audit log, covering events from both the global
 /// main stream and per-import political-group streams.
@@ -25,9 +25,9 @@ impl CsbAuditLogEntry {
             event_id: event.event_id,
             stream_id,
             stream_label: trans!("audit_log.filter.csb_main_stream", locale),
-            event_category: event.payload.event_category(),
-            event_key: event.payload.event_key(),
-            description: csb_main_event_description(&event.payload, locale),
+            event_category: event.payload.category(),
+            event_key: event.payload.key(),
+            description: event.payload.description(locale),
             created_at: event.created_at,
         }
     }
@@ -42,9 +42,9 @@ impl CsbAuditLogEntry {
             event_id: event.event_id,
             stream_id,
             stream_label,
-            event_category: event.payload.event_category(),
-            event_key: event.payload.event_key(),
-            description: csb_event_description(&event.payload, locale),
+            event_category: event.payload.category(),
+            event_key: event.payload.key(),
+            description: event.payload.description(locale),
             created_at: event.created_at,
         }
     }
@@ -57,21 +57,5 @@ impl CsbAuditLogEntry {
 
     pub fn detail_path(&self) -> String {
         format!("/csb/audit-log/{}/{}", self.stream_id, self.event_id)
-    }
-}
-
-pub fn csb_main_event_description(event: &CsbMainEvent, locale: Locale) -> String {
-    match event {
-        CsbMainEvent::DeveloperLogin { .. } => trans!("audit_log.event.developer_login", locale),
-    }
-}
-
-pub fn csb_event_description(event: &CsbEvent, locale: Locale) -> String {
-    match event {
-        CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
-        CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
-        CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
-        CsbEvent::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
-        CsbEvent::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
     }
 }

@@ -148,7 +148,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::Scope;
+    use crate::{Event, Scope};
 
     use super::*;
 
@@ -158,6 +158,24 @@ mod tests {
     struct TestData {
         events: Vec<StoreEvent<usize>>,
         applied: Vec<usize>,
+    }
+
+    impl Event for usize {
+        fn category(&self) -> &'static str {
+            "number"
+        }
+
+        fn key(&self) -> &'static str {
+            ""
+        }
+
+        fn description(&self, _locale: crate::Locale) -> String {
+            "a number".to_string()
+        }
+
+        fn details(&self) -> String {
+            self.to_string()
+        }
     }
 
     impl StoreData for TestData {
