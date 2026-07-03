@@ -227,6 +227,12 @@ impl CsbStore {
             .collect()
     }
 
+    pub fn get_persons(&self) -> Vec<Person> {
+        let data = self.data.read();
+
+        data.imported_data.persons.values().cloned().collect()
+    }
+
     /// Return the single stored omission. Test-only helper for asserting on
     /// omissions whose category has no dedicated getter (e.g. candidate lists).
     #[cfg(test)]

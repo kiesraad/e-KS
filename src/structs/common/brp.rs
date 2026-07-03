@@ -41,7 +41,7 @@ impl BrpClient {
         }
     }
 
-    async fn verify(&self, person: &Person) -> Result<bool, AppError> {
+    pub async fn verify(&self, person: &Person) -> Result<bool, AppError> {
         let query = match person.personal_data.bsn {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
                 bsn: vec![bsn.clone()],
@@ -137,10 +137,6 @@ structstruck::strike! {
         bsn: Option<String>,
         #[serde(rename = "geslacht")]
         gender: Option<struct BrpGender {
-            // This should probably be an enum, but I'm not sure what values.
-            // IIRC you can have 'X' in your passport, not sure if this is also
-            // possible in BRP. For what it's worth; only M/F are included in
-            // the BRP personen mock
             #[serde(rename = "code")]
             gender: String
         }>,

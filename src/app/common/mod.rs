@@ -12,7 +12,7 @@ pub use forms::{
     SwitchElectionForm,
 };
 pub use structs::{
-    Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
+    Address, BSN_NONE_CONFIRMATION, BrpClient, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
     DateOfBirth, DisplayName, DutchAddress, EmptyAddressProblems, FirstName, FormAction, FullName,
     Gender, HasSeverity, HouseNumber, HouseNumberAddition, InfoProblems, Initials,
     InternationalAddress, InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality,
