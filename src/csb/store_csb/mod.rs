@@ -30,6 +30,7 @@ pub struct CsbStoreData {
     pub(crate) omissions: HashMap<OmissionId, Omission>,
     pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
     pub(crate) csb_corrected_display_name: Option<DisplayName>,
+    pub(crate) brp_validations: HashMap<PersonId, bool>,
 }
 
 impl StoreData for CsbStoreData {
@@ -107,6 +108,9 @@ impl StoreData for CsbStoreData {
                     correction.apply(person);
                 }
             },
+            CsbEvent::BrpValidation { person, valid } => {
+                self.brp_validations.insert(person, valid);
+            }
         }
     }
 

@@ -40,6 +40,7 @@ documents:
 empty: Er zijn nog geen gebeurtenissen vastgelegd.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
+  brp_validation: Kandidaat gevalideerd tegen de BRP
   create_candidate_list: Kandidatenlijst aangemaakt
   create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_omission: Verzuim aangemaakt

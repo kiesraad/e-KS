@@ -2,11 +2,13 @@ mod event;
 mod extractor;
 
 pub use event::CsbMainEvent;
+use std::collections::HashMap;
 
 use serde::{Deserialize, Serialize};
 
 use crate::{
     Scope, StreamId,
+    persons::PersonId,
     store::{StoreData, StoreEvent},
 };
 
@@ -20,6 +22,7 @@ pub const CSB_MAIN_STREAM_ID: StreamId = StreamId(uuid::Uuid::from_u128(
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CsbMainStoreData {
     pub(crate) events: Vec<StoreEvent<CsbMainEvent>>,
+    pub(crate) brp_verifications: HashMap<PersonId, bool>,
 }
 
 impl StoreData for CsbMainStoreData {

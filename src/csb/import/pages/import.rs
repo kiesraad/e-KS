@@ -1,5 +1,3 @@
-use std::collections::HashMap;
-
 use askama::Template;
 use axum::{
     extract::State,
@@ -9,9 +7,8 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate, Locale,
-    PgStoreData, StreamId, csb::examination::CsbExaminationOverviewPath, filters,
-    persons::PersonId, redirect_success, store::Store, structs::common::BrpClient, trans,
-    utils::parse_hash_prefix,
+    PgStoreData, StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success,
+    store::Store, structs::common::BrpClient, trans, utils::parse_hash_prefix,
 };
 
 use super::CsbImportPath;
@@ -127,18 +124,20 @@ async fn do_import(
     Ok(redirect_success(CsbExaminationOverviewPath {}))
 }
 
-pub async fn do_brp_verification(
-    store: &Store<CsbStoreData>,
-) -> Result<HashMap<PersonId, bool>, AppError> {
+pub async fn do_brp_verification(store: &Store<CsbStoreData>) -> Result<(), AppError> {
     // TODO: get from env probably
     let brp_client = BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
 
-    let mut verified_persons = HashMap::new();
     for person in store.get_persons() {
-        verified_persons.insert(person.id, brp_client.verify(&person).await?);
+        let event = CsbEvent::BrpValidation {
+            person: person.id,
+            valid: brp_client.verify(&person).await?,
+        };
+
+        store.update(event).await?;
     }
 
-    Ok(verified_persons)
+    Ok(())
 }
 
 #[cfg(test)]

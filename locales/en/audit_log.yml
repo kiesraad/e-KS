@@ -40,6 +40,7 @@ documents:
 empty: No events have been recorded yet.
 event:
   add_candidate_to_list: Added candidate to list
+  brp_validation: Validated candidate against the BRP
   create_candidate_list: Created list of candidates
   create_name_authorisation: Created statutory name and authorised agent
   create_omission: Created omission

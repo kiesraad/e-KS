@@ -2,6 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Event, PgEvent, PgStoreData, StreamId,
+    persons::PersonId,
     structs::csb::{Correction, Omission, OmissionId},
     trans,
     utils::format_hash,
@@ -38,6 +39,10 @@ pub enum CsbEvent {
         omission_id: OmissionId,
     },
     UpdateCorrection(Correction),
+    BrpValidation {
+        person: PersonId,
+        valid: bool,
+    },
 }
 
 impl Event for CsbEvent {
@@ -50,6 +55,7 @@ impl Event for CsbEvent {
             | CsbEvent::UpdateOmission(_)
             | CsbEvent::DeleteOmission { .. } => "omission",
             CsbEvent::UpdateCorrection(_) => "correction",
+            CsbEvent::BrpValidation { .. } => "brp_validation",
         }
     }
 
@@ -62,6 +68,7 @@ impl Event for CsbEvent {
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
             CsbEvent::UpdateCorrection(_) => "update_correction",
+            CsbEvent::BrpValidation { .. } => "brep_validation",
         }
     }
 
@@ -76,6 +83,7 @@ impl Event for CsbEvent {
             CsbEvent::UpdateCorrection { .. } => {
                 trans!("audit_log.event.update_correction", locale)
             }
+            CsbEvent::BrpValidation { .. } => trans!("audit_log.event.brp_validation", locale),
         }
     }
 
@@ -96,6 +104,7 @@ impl Event for CsbEvent {
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
             CsbEvent::UpdateCorrection(_) => String::new(),
+            CsbEvent::BrpValidation { person, .. } => person.to_string(),
         }
     }
 
