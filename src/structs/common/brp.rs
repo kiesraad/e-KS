@@ -96,7 +96,7 @@ impl BrpClient {
             // Check all fields of personal_data except country, check gender only when filled in
             brp_person.personal_data.bsn == person.personal_data.bsn &&
             brp_person.personal_data.date_of_birth  == person.personal_data.date_of_birth &&
-            // Gender field is optional, but if it filled in, we check it
+            // Gender field is optional, but if it is filled in, we check it
             (brp_person.personal_data.gender == person.personal_data.gender || person.personal_data.gender.is_none()))
     }
 }
@@ -122,7 +122,6 @@ pub enum BrpResponse {
     },
 }
 
-// --- Intermediate deserialization structs for the BRP JSON format ---
 #[derive(Debug, Deserialize)]
 #[serde(from = "BrpPersonRaw")]
 pub struct BrpPerson {
@@ -147,8 +146,6 @@ structstruck::strike! {
         }>,
         #[serde(rename = "naam")]
         name: Option<struct BrpName {
-            #[serde(rename = "voornamen")]
-            first_names: Option<String>,
             #[serde(rename = "geslachtsnaam")]
             last_name: Option<String>,
             #[serde(rename = "voorvoegsel")]
