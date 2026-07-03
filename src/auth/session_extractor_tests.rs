@@ -1,4 +1,4 @@
-use super::session_extractor::*;
+use super::{session::hash_token, session_extractor::*};
 use axum::{
     Router,
     body::Body,
@@ -17,7 +17,7 @@ async fn middleware_redirects_to_login_without_cookie() {
     let app = Router::new()
         .route(
             "/",
-            get(|session: Session| async move { session.token().to_exposed_string() }),
+            get(|session: Session| async move { session.token_hash().to_string() }),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -41,7 +41,7 @@ async fn middleware_reuses_session_with_cookie() {
     let app = Router::new()
         .route(
             "/",
-            get(|session: Session| async move { session.token().to_exposed_string() }),
+            get(|session: Session| async move { session.token_hash().to_string() }),
         )
         .layer(middleware::from_fn_with_state(
             state.clone(),
@@ -50,7 +50,7 @@ async fn middleware_reuses_session_with_cookie() {
         .with_state(state.clone());
 
     let session = Session::new_test();
-    let token = session.token().to_exposed_string();
+    let token = session.token_string();
     state.sessions.insert(session).await;
     let cookie_value = format!("{SESSION_COOKIE_NAME}={token}");
 
@@ -67,8 +67,91 @@ async fn middleware_reuses_session_with_cookie() {
 
     let status = response.status();
     let sets_cookie = response.headers().get(header::SET_COOKIE).is_some();
-    let returned_token = response_body_string(response).await;
+    let returned_hash = response_body_string(response).await;
     assert_eq!(status, StatusCode::OK);
     assert!(!sets_cookie);
-    assert_eq!(returned_token, token);
+    // Session reused: the handler saw it, keyed by the cookie token's hash.
+    assert_eq!(returned_hash, hash_token(&token));
+}
+
+/// Builds an app whose only route echoes the session token hash behind the
+/// session middleware.
+fn session_app(state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/",
+            get(|session: Session| async move { session.token_hash().to_string() }),
+        )
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
+        ))
+        .with_state(state)
+}
+
+/// Inserts a session pinned to `user_agent` and returns its raw cookie token.
+async fn insert_pinned_session(state: &AppState, user_agent: &str) -> String {
+    let mut ua_headers = axum::http::HeaderMap::new();
+    ua_headers.insert(header::USER_AGENT, user_agent.parse().unwrap());
+
+    let mut session = Session::new_test();
+    session.set_user_agent_hash(user_agent_hash(&ua_headers));
+    let token = session.token_string();
+    state.sessions.insert(session).await;
+    token
+}
+
+/// A cookie replayed with a different User-Agent is rejected and dropped.
+#[tokio::test]
+async fn middleware_rejects_mismatched_user_agent() {
+    let state = AppState::new_for_tests().await;
+    let app = session_app(state.clone());
+    let token = insert_pinned_session(&state, "browser-1").await;
+
+    let response = app
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/")
+                .header(header::COOKIE, format!("{SESSION_COOKIE_NAME}={token}"))
+                .header(header::USER_AGENT, "browser-2")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/login");
+    assert!(
+        state
+            .sessions
+            .get_existing(Some(&token))
+            .await
+            .expect("load session")
+            .is_none(),
+        "a session rejected on UA mismatch must be dropped"
+    );
+}
+
+/// The same client (matching User-Agent) is accepted and the session reused.
+#[tokio::test]
+async fn middleware_accepts_matching_user_agent() {
+    let state = AppState::new_for_tests().await;
+    let app = session_app(state.clone());
+    let token = insert_pinned_session(&state, "browser-1").await;
+
+    let response = app
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/")
+                .header(header::COOKIE, format!("{SESSION_COOKIE_NAME}={token}"))
+                .header(header::USER_AGENT, "browser-1")
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    assert_eq!(response_body_string(response).await, hash_token(&token));
 }

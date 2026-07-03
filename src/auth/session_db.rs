@@ -11,23 +11,28 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     AppError, ElectionConfig, Locale, Scope, Session, StreamId, TokenValue,
-    auth::session::{SessionToken, session_idle_timeout},
+    auth::session::{session_absolute_timeout, session_idle_timeout},
 };
 
-type SessionRow = (
-    String,
-    Option<uuid::Uuid>,
-    Option<serde_json::Value>,
-    String,
-    String,
-    DateTime<Utc>,
-    Option<String>,
-    String,
-);
+/// A `sessions` row, mapped by column name. `token` holds the token hash.
+#[derive(sqlx::FromRow)]
+struct SessionRow {
+    token: String,
+    stream_id: Option<uuid::Uuid>,
+    current_election: Option<serde_json::Value>,
+    locale: String,
+    csrf_token: String,
+    last_activity: DateTime<Utc>,
+    saml_name_id: Option<String>,
+    scope: String,
+    created_at: DateTime<Utc>,
+    user_agent_hash: Option<String>,
+}
 
-/// Insert or update a session row.
+/// Insert or update a session row (`token` column holds the hash). `created_at`
+/// and `user_agent_hash` are omitted from `ON CONFLICT` so a touch can't reset
+/// them.
 pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppError> {
-    let token = session.token().to_exposed_string();
     let current_election_json = session
         .current_election
         .map(serde_json::to_value)
@@ -36,8 +41,8 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     sqlx::query(
         r#"
         INSERT INTO sessions
-            (token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
+            (token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope, created_at, user_agent_hash)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (token) DO UPDATE SET
             stream_id = EXCLUDED.stream_id,
             current_election = EXCLUDED.current_election,
@@ -47,7 +52,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
             scope = EXCLUDED.scope
         "#,
     )
-    .bind(&token)
+    .bind(session.token_hash())
     .bind(session.stream_id.map(|s| s.uuid()))
     .bind(current_election_json)
     .bind(session.locale.as_str())
@@ -55,19 +60,21 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     .bind(session.last_activity)
     .bind(&session.saml_name_id)
     .bind(session.scope.as_str())
+    .bind(session.created_at)
+    .bind(&session.user_agent_hash)
     .execute(pool)
     .await?;
 
     Ok(())
 }
 
-/// Fetch a single session by token.
-pub async fn load(pool: &sqlx::PgPool, token: &str) -> Result<Option<Session>, AppError> {
+/// Fetch a single session by its token hash.
+pub async fn load(pool: &sqlx::PgPool, token_hash: &str) -> Result<Option<Session>, AppError> {
     let row: Option<SessionRow> = sqlx::query_as(
-        r#"SELECT token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope
+        r#"SELECT token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope, created_at, user_agent_hash
            FROM sessions WHERE token = $1"#,
     )
-    .bind(token)
+    .bind(token_hash)
     .fetch_optional(pool)
     .await?;
 
@@ -75,47 +82,44 @@ pub async fn load(pool: &sqlx::PgPool, token: &str) -> Result<Option<Session>, A
 }
 
 fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
-    let (
-        token_str,
-        stream_id_uuid,
-        current_election_json,
-        locale_str,
-        csrf_token,
-        last_activity,
-        saml_name_id,
-        scope_str,
-    ) = row;
-
-    let current_election = current_election_json
+    let current_election = row
+        .current_election
         .map(serde_json::from_value::<ElectionConfig>)
         .transpose()?;
 
     Ok(Session {
-        token: SessionToken::new(token_str),
-        last_activity,
-        stream_id: stream_id_uuid.map(StreamId::from),
-        scope: Scope::from_str(&scope_str).unwrap_or_default(),
+        token_hash: row.token,
+        raw_token: None, // never carried by a reloaded session
+        created_at: row.created_at,
+        last_activity: row.last_activity,
+        user_agent_hash: row.user_agent_hash,
+        stream_id: row.stream_id.map(StreamId::from),
+        scope: Scope::from_str(&row.scope).unwrap_or_default(),
         current_election,
-        locale: Locale::from_str(&locale_str).unwrap_or_default(),
-        csrf_token: TokenValue(csrf_token),
-        saml_name_id,
+        locale: Locale::from_str(&row.locale).unwrap_or_default(),
+        csrf_token: TokenValue(row.csrf_token),
+        saml_name_id: row.saml_name_id,
     })
 }
 
-/// Delete a single session by token.
-pub async fn delete(pool: &sqlx::PgPool, token: &str) -> Result<(), AppError> {
+/// Delete a single session by its token hash.
+pub async fn delete(pool: &sqlx::PgPool, token_hash: &str) -> Result<(), AppError> {
     sqlx::query("DELETE FROM sessions WHERE token = $1")
-        .bind(token)
+        .bind(token_hash)
         .execute(pool)
         .await?;
     Ok(())
 }
 
-/// Delete all sessions whose `last_activity` has aged past the idle timeout.
+/// Delete all sessions that have passed either the idle timeout or the absolute
+/// lifetime cap (mirrors [`Session::is_expired`]).
 pub async fn cleanup_expired(pool: &sqlx::PgPool) -> Result<(), AppError> {
-    let cutoff = Utc::now() - session_idle_timeout();
-    sqlx::query("DELETE FROM sessions WHERE last_activity < $1")
-        .bind(cutoff)
+    let now = Utc::now();
+    let idle_cutoff = now - session_idle_timeout();
+    let absolute_cutoff = now - session_absolute_timeout();
+    sqlx::query("DELETE FROM sessions WHERE last_activity < $1 OR created_at < $2")
+        .bind(idle_cutoff)
+        .bind(absolute_cutoff)
         .execute(pool)
         .await?;
     Ok(())
@@ -126,16 +130,18 @@ mod tests {
     use super::*;
 
     fn sample_row(saml_name_id: Option<String>) -> SessionRow {
-        (
-            "token-abc".to_string(),
-            None,
-            None,
-            Locale::default().as_str().to_string(),
-            "csrf-xyz".to_string(),
-            Utc::now(),
+        SessionRow {
+            token: "token-hash-abc".to_string(),
+            stream_id: None,
+            current_election: None,
+            locale: Locale::default().as_str().to_string(),
+            csrf_token: "csrf-xyz".to_string(),
+            last_activity: Utc::now(),
             saml_name_id,
-            Scope::default().as_str().to_string(),
-        )
+            scope: Scope::default().as_str().to_string(),
+            created_at: Utc::now(),
+            user_agent_hash: Some("ua-hash".to_string()),
+        }
     }
 
     /// The SAML NameID survives the row to `Session` mapping so SP-initiated

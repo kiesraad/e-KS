@@ -3,7 +3,7 @@
 
 use axum::{
     Router,
-    http::{HeaderValue, header},
+    http::{HeaderName, HeaderValue, header},
     middleware,
     routing::get,
 };
@@ -109,8 +109,8 @@ fn app_feature_router() -> Router<AppState> {
         .merge(substitute_list_submitters::router())
 }
 
-/// Apply the static security response headers (CSP, framing, MIME sniffing,
-/// referrer) that every response shares.
+/// Static security response headers shared by every response. HSTS is added
+/// separately on the TLS listener (see `core::server`), only over https.
 fn apply_security_headers(router: Router<AppState>) -> Router<AppState> {
     router
         .layer(SetResponseHeaderLayer::if_not_present(
@@ -128,6 +128,21 @@ fn apply_security_headers(router: Router<AppState>) -> Router<AppState> {
         .layer(SetResponseHeaderLayer::if_not_present(
             header::REFERRER_POLICY,
             HeaderValue::from_static("same-origin"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            HeaderName::from_static("cross-origin-opener-policy"),
+            HeaderValue::from_static("same-origin"),
+        ))
+        .layer(SetResponseHeaderLayer::if_not_present(
+            HeaderName::from_static("cross-origin-resource-policy"),
+            HeaderValue::from_static("same-origin"),
+        ))
+        // Deny all powerful browser features by default; the app uses none.
+        .layer(SetResponseHeaderLayer::if_not_present(
+            HeaderName::from_static("permissions-policy"),
+            HeaderValue::from_static(
+                "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()",
+            ),
         ))
 }
 
@@ -183,7 +198,7 @@ mod tests {
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(crate::ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
@@ -247,7 +262,7 @@ mod tests {
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(crate::ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(

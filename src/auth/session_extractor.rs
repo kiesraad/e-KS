@@ -2,7 +2,7 @@
 
 use axum::{
     extract::{FromRequestParts, Request, State},
-    http::request::Parts,
+    http::{HeaderMap, header::USER_AGENT, request::Parts},
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
@@ -12,6 +12,7 @@ use axum_extra::extract::{
 };
 use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
+use sha2::{Digest, Sha256};
 
 use crate::{
     AppError, AppState, Scope, Session,
@@ -20,12 +21,34 @@ use crate::{
     store::{Store, StoreData},
 };
 
-/// Name of the session cookie used by the application.
+/// Name of the session cookie. The `__Host-` prefix (production only) forbids a
+/// `Domain` and requires `Secure` + `Path=/`, blocking sibling-subdomain
+/// shadowing. It mandates `Secure`, so dev over http keeps the bare name.
+#[cfg(feature = "dev-features")]
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
+#[cfg(not(feature = "dev-features"))]
+pub const SESSION_COOKIE_NAME: &str = "__Host-EKS_SESSION_ID";
 
-/// Builds an HTTP-only cookie that carries the session token.
+/// Builds the session cookie. Only valid right after creation, while the raw
+/// token is still in memory.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
-    let mut cookie = Cookie::new(SESSION_COOKIE_NAME, session.token().to_exposed_string());
+    let token = session
+        .reveal_token()
+        .expect("build_session_cookie requires a freshly created session with its raw token");
+    let mut cookie = Cookie::new(SESSION_COOKIE_NAME, token.to_exposed_string());
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
+/// Expired twin of the session cookie for clearing it. Attributes must match the
+/// set cookie (esp. `Secure` + `Path=/` for the `__Host-` prefix) or it lingers.
+pub(crate) fn build_removal_cookie() -> Cookie<'static> {
+    let mut cookie = Cookie::from(SESSION_COOKIE_NAME);
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
+fn apply_session_cookie_attributes(cookie: &mut Cookie<'static>) {
     cookie.set_http_only(true);
     #[cfg(feature = "dev-features")]
     cookie.set_secure(false);
@@ -33,8 +56,20 @@ pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
     cookie.set_secure(true);
     cookie.set_same_site(SameSite::Lax);
     cookie.set_path("/");
+}
 
-    cookie
+/// Truncated (64-bit) hex SHA-256 of the request `User-Agent` for session
+/// pinning; a missing UA hashes the empty string.
+pub(crate) fn user_agent_hash(headers: &HeaderMap) -> String {
+    let ua = headers
+        .get(USER_AGENT)
+        .and_then(|value| value.to_str().ok())
+        .unwrap_or_default();
+    Sha256::digest(ua.as_bytes())
+        .iter()
+        .take(8)
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 /// Middleware that loads or creates a session and stores it in request extensions.
@@ -60,6 +95,20 @@ pub async fn session_middleware(
         // maintenance gate instead of redirecting to login.
         Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
+
+    // User-agent pinning: reject (and drop) a session replayed from a different
+    // client. Only enforced when the session recorded a UA.
+    let ua_mismatch = session
+        .user_agent_hash
+        .as_deref()
+        .is_some_and(|expected| user_agent_hash(request.headers()) != expected);
+    if ua_mismatch {
+        tracing::warn!("session user-agent mismatch; dropping session");
+        if let Some(token) = token {
+            state.sessions.remove(token).await;
+        }
+        return Redirect::to(&LoginStartPath.to_string()).into_response();
+    }
 
     session.last_activity = Utc::now();
     state.sessions.insert(session.clone()).await;
