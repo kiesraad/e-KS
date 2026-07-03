@@ -2,12 +2,12 @@
 
 #let muted(content) = text(fill: rgb("888888"), content)
 
-#let highlight_color = rgb("F6F6F6")
+#let highlight_colour = rgb("F6F6F6")
 
-#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
+#let translator(locale) = (dutch, frisian) => if locale == "fry" { frisian } else { dutch }
 
 #let conf(doc, model, name, explanation, warning: none, input) = [
-  #let trans = translator(input.locale)
+  #let trans = if "locale" in input { translator(input.locale) } else { translator("nl") }
 
   #set text(
     lang: "nl",
@@ -24,9 +24,17 @@
     context grid(
       columns: (1fr, auto),
       [
-        #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
-        #h(1em)
-        #muted[Hash:] #mono(input.sha_hash)
+        #if "event_id" in input {
+          [
+            #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
+            #h(1em)
+          ]
+        }
+        #if "sha_hash" in input {
+          [
+            #muted[Hash:] #mono(input.sha_hash)
+          ]
+        }
       ],
       counter(page).display((n, m) => trans([Pagina #n van #m], [Side #n fan #m]), both: true),
     ),
@@ -54,7 +62,7 @@
     }),
     text(explanation),
     if (warning != none) {
-      block(fill: highlight_color, inset: 1em, width: 100%, warning)
+      block(fill: highlight_colour, inset: 1em, width: 100%, warning)
     }
   )
 
@@ -76,8 +84,17 @@
   block(breakable: values.len() > 10, table(
     columns: columns,
     rows: 1.5em,
-    fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_color },
+    fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_colour },
     table.header(..headers.map(value => { text(style: "italic", value) })),
+    ..values.flatten(),
+  ))
+}
+/// Table without alternating row colors and row height that fits content
+#let plain_table(columns: (), headers: (), values: ()) = {
+  block(breakable: values.len() > 10, table(
+    columns: columns,
+    align: top,
+    table.header(..headers.map(value => { text(style: "italic", size: .9em, value) })),
     ..values.flatten(),
   ))
 }
