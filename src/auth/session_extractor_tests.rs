@@ -101,9 +101,11 @@ async fn insert_pinned_session(state: &AppState, user_agent: &str) -> String {
     token
 }
 
-/// A cookie replayed with a different User-Agent is rejected and dropped.
-#[tokio::test]
-async fn middleware_rejects_mismatched_user_agent() {
+/// Sets up an app with a session pinned to `browser-1`, then replays the cookie
+/// with `request_user_agent`. Returns the state, raw token, and the response.
+async fn replay_pinned_session_with_user_agent(
+    request_user_agent: &str,
+) -> (AppState, String, axum::response::Response) {
     let state = AppState::new_for_tests().await;
     let app = session_app(state.clone());
     let token = insert_pinned_session(&state, "browser-1").await;
@@ -113,12 +115,20 @@ async fn middleware_rejects_mismatched_user_agent() {
             HttpRequest::builder()
                 .uri("/")
                 .header(header::COOKIE, format!("{SESSION_COOKIE_NAME}={token}"))
-                .header(header::USER_AGENT, "browser-2")
+                .header(header::USER_AGENT, request_user_agent)
                 .body(Body::empty())
                 .unwrap(),
         )
         .await
         .expect("response");
+
+    (state, token, response)
+}
+
+/// A cookie replayed with a different User-Agent is rejected and dropped.
+#[tokio::test]
+async fn middleware_rejects_mismatched_user_agent() {
+    let (state, token, response) = replay_pinned_session_with_user_agent("browser-2").await;
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/login");
@@ -136,21 +146,7 @@ async fn middleware_rejects_mismatched_user_agent() {
 /// The same client (matching User-Agent) is accepted and the session reused.
 #[tokio::test]
 async fn middleware_accepts_matching_user_agent() {
-    let state = AppState::new_for_tests().await;
-    let app = session_app(state.clone());
-    let token = insert_pinned_session(&state, "browser-1").await;
-
-    let response = app
-        .oneshot(
-            HttpRequest::builder()
-                .uri("/")
-                .header(header::COOKIE, format!("{SESSION_COOKIE_NAME}={token}"))
-                .header(header::USER_AGENT, "browser-1")
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .expect("response");
+    let (_state, token, response) = replay_pinned_session_with_user_agent("browser-1").await;
 
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response_body_string(response).await, hash_token(&token));

@@ -1,8 +1,8 @@
 //! Session middleware and request extraction.
 
 use axum::{
-    extract::{FromRequestParts, Request, State},
-    http::{HeaderMap, header::USER_AGENT, request::Parts},
+    extract::{Request, State},
+    http::{HeaderMap, header::USER_AGENT},
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
@@ -16,6 +16,7 @@ use sha2::{Digest, Sha256};
 
 use crate::{
     AppError, AppState, Scope, Session,
+    app::extension_extractor,
     common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
     store::{Store, StoreData},
@@ -96,18 +97,10 @@ pub async fn session_middleware(
         Err(err) => return crate::handle_db_error(&state.db_health, err, &request),
     };
 
-    // User-agent pinning: reject (and drop) a session replayed from a different
-    // client. Only enforced when the session recorded a UA.
-    let ua_mismatch = session
-        .user_agent_hash
-        .as_deref()
-        .is_some_and(|expected| user_agent_hash(request.headers()) != expected);
-    if ua_mismatch {
-        tracing::warn!("session user-agent mismatch; dropping session");
-        if let Some(token) = token {
-            state.sessions.remove(token).await;
-        }
-        return Redirect::to(&LoginStartPath.to_string()).into_response();
+    if let Some(rejection) =
+        reject_on_user_agent_mismatch(&state, &session, request.headers(), token).await
+    {
+        return rejection;
     }
 
     session.last_activity = Utc::now();
@@ -116,6 +109,27 @@ pub async fn session_middleware(
     request.extensions_mut().insert(session);
 
     next.run(request).await
+}
+
+/// User-agent pinning: reject (and drop) a session replayed from a different
+/// client. Only enforced when the session recorded a UA; returns the login
+/// redirect to short-circuit the middleware, or `None` when the UA matches.
+async fn reject_on_user_agent_mismatch(
+    state: &AppState,
+    session: &Session,
+    headers: &HeaderMap,
+    token: Option<&str>,
+) -> Option<Response> {
+    let expected = session.user_agent_hash.as_deref()?;
+    if user_agent_hash(headers) == expected {
+        return None;
+    }
+
+    tracing::warn!("session user-agent mismatch; dropping session");
+    if let Some(token) = token {
+        state.sessions.remove(token).await;
+    }
+    Some(Redirect::to(&LoginStartPath.to_string()).into_response())
 }
 
 /// Middleware that resolves the scoped store for the session's current election.
@@ -202,19 +216,6 @@ where
     next.run(request).await
 }
 
-/// Extracts the current session from request extensions.
-impl<S> FromRequestParts<S> for Session
-where
-    S: Send + Sync,
-{
-    type Rejection = AppError;
-
-    /// Retrieves the session that was injected by the session middleware.
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<Session>()
-            .cloned()
-            .ok_or(AppError::InternalServerError)
-    }
-}
+// Extracts the current session that the session middleware injected into the
+// request extensions.
+extension_extractor!(Session, AppError::InternalServerError);
