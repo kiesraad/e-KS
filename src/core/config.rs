@@ -73,11 +73,6 @@ pub struct Config {
     pub disable_auth_service: bool,
 }
 
-/// Helper function to get environment variable or return an error
-pub fn get_env(name: &'static str) -> Result<String, AppError> {
-    get_env_with(name, &mut |key| env::var(key))
-}
-
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
 where
     F: FnMut(&'static str) -> Result<String, env::VarError>,

@@ -4,7 +4,6 @@ mod forms;
 mod pages;
 mod structs;
 
-pub use crate::QueryParamState;
 pub use forms::{
     AddressForm, PersonalDataFieldsForm, PersonalDataForm, RepresentativeFieldsForm,
     RepresentativeForm,

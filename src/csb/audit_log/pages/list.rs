@@ -21,7 +21,7 @@ pub struct EventTypeCategory {
 }
 
 /// Event type categories grouped with their specific event keys, used by the
-/// filter dropdown to render <optgroup>s with fine-grained <option>s.
+/// filter dropdown to render `<optgroup>`s with fine-grained `<option>`s.
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)

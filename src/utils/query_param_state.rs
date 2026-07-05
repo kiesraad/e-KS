@@ -35,14 +35,6 @@ impl QueryParamState {
         !self.initial
     }
 
-    pub fn get_highlight(&self) -> Option<Uuid> {
-        self.highlight
-    }
-
-    pub fn is_success(&self) -> bool {
-        self.success
-    }
-
     pub fn is_max_candidates_reached(&self) -> bool {
         self.max_candidates_reached
     }

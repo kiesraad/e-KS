@@ -39,7 +39,7 @@ jobs:
       - name: Build Documentation
         env:
           RUSTDOCFLAGS: "-D warnings"
-        run: cargo doc --workspace --no-deps --all-features
+        run: cargo doc --workspace --no-deps --all-features --document-private-items
 
       - name: Add redirect to main crate docs
         run: echo '<meta http-equiv="refresh" content="0; url=eks/index.html">' > target/doc/index.html

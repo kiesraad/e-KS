@@ -2,7 +2,6 @@ use crate::{
     AppError, AppStore,
     candidate_lists::{CandidateList, CandidateListId},
     candidates::CandidateWithProblems,
-    persons::PersonId,
 };
 
 #[derive(Debug, Clone)]
@@ -19,21 +18,12 @@ impl FullCandidateList {
     }
 }
 
+#[cfg(test)]
 impl FullCandidateList {
-    pub fn get_index(&self, person_id: PersonId) -> Option<usize> {
-        self.candidates
-            .iter()
-            .position(|c| c.data.person.id == person_id)
-    }
-
-    pub fn contains(&self, person_id: PersonId) -> bool {
+    pub fn contains(&self, person_id: crate::persons::PersonId) -> bool {
         self.candidates
             .iter()
             .any(|c| c.data.person.id == person_id)
-    }
-
-    pub fn get_ids(&self) -> Vec<PersonId> {
-        self.candidates.iter().map(|c| c.data.person.id).collect()
     }
 
     pub fn id(&self) -> CandidateListId {

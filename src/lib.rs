@@ -40,9 +40,9 @@
 //! **Directory layout (high level)**
 //! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc),
 //!   plus the per-stream [`AppStoreData`] projection (`app/store/`), shared HTTP
-//!   infrastructure that needs [`AppState`] (`app/middleware/`: health, proxy,
-//!   eks_key), and the HTML error-page renderer.
-//! - `src/auth/`: authentication, sessions, and session extractors (see [`Session`], [`SessionStore`]).
+//!   infrastructure that needs [`AppState`] (`app/middleware/`: session/store
+//!   middleware, health, proxy, eks_key, dev login), and the HTML error-page renderer.
+//! - `src/auth/`: authentication, the session model, and session storage (see [`Session`], [`SessionStore`]).
 //! - `src/core/`: shared configuration, logging, server setup, and core helpers (see [`Config`], [`logging`], [`server`]).
 //! - `src/store/`: generic event store, persistence, and registry logic (see [`AppStore`]).
 //! - `src/state.rs`: [`AppState`] definition and extractors.
@@ -63,61 +63,73 @@
 mod app;
 mod auth;
 mod core;
-pub mod csb;
+mod csb;
 mod error;
+mod filters;
 mod form;
 mod pagination;
 mod state;
 mod store;
+mod utils;
 
-pub mod filters;
 pub mod router;
-pub mod utils;
 
 #[cfg(feature = "fixtures")]
-pub mod fixtures;
+mod fixtures;
 
-pub use app::{
-    AppEvent, AppStoreData, Context, ErrorResponse, audit_log, candidate_lists, candidates, common,
-    db_gate_middleware, eks_key_middleware, finalise, handle_db_error, health_router,
+// The crate's public API is exactly what the `eks` binary needs; everything
+// else is re-exported `pub(crate)` so the flat `crate::X` import style keeps
+// working internally without growing the external interface.
+pub use auth::session_store::run_session_sweeper;
+pub use core::{Config, logging, server};
+pub use error::AppError;
+pub use state::AppState;
+pub use store::run_db_prober;
+
+pub(crate) use app::{
+    AppEvent, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
+    csb_store_middleware, db_gate_middleware, eks_key_middleware, finalise, health_router,
     list_designation, list_submitters, name_authorisations, persons, political_groups,
-    render_error_pages, substitute_list_submitters,
+    render_error_pages, session_middleware, store_middleware, substitute_list_submitters,
 };
 
-#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
-pub use app::proxy_handler;
-pub use auth::{
-    derive_id::IdDeriver,
-    pending_request_store::PendingRequestStore,
-    scope::Scope,
-    session::{Session, session_idle_timeout},
-    session_extractor::{
-        SESSION_COOKIE_NAME, csb_store_middleware, session_middleware, store_middleware,
-    },
-    session_store::{SessionStore, run_session_sweeper},
+#[cfg(not(feature = "memory-serve"))]
+pub(crate) use app::proxy_handler;
+pub(crate) use auth::{
+    derive_id::IdDeriver, pending_request_store::PendingRequestStore, session::Session,
+    session_extractor::SESSION_COOKIE_NAME, session_store::SessionStore,
 };
-pub use core::{
-    AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,
-    Province, TlsConfig, TypstRenderer, WaterCouncil,
+#[cfg(feature = "tls")]
+pub(crate) use core::TlsConfig;
+pub(crate) use core::{
+    AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale, Province,
+    Scope, TypstRenderer, WaterCouncil,
     constants::{self, MAX_CANDIDATES},
-    get_env, http_trace, logging, server, translate,
+    http_trace, translate,
 };
-pub use csb::{CsbContext, CsbEvent, CsbMainEvent, CsbMainStoreData, CsbStoreData};
-pub use error::{AppError, AppResponse};
-pub use form::{Form, TokenValue};
-pub use state::{AppRequestState, AppState};
-pub use store::{DbHealth, Event, HealthState, run_db_prober};
-pub use utils::{
+#[cfg(any(test, feature = "dev-features"))]
+pub(crate) use csb::CsbMainEvent;
+pub(crate) use csb::{CsbContext, CsbEvent, CsbMainStoreData, CsbStoreData};
+pub(crate) use error::AppResponse;
+pub(crate) use form::{Form, TokenValue};
+pub(crate) use state::AppRequestState;
+pub(crate) use store::{DbHealth, Event};
+pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
     redirect_success, transparent_string,
 };
 
 #[cfg(test)]
-pub use utils::test_utils;
+pub(crate) use utils::test_utils;
 
-id_newtype!(pub struct StreamId);
+// Nominally `pub` in a private module (then re-exported `pub(crate)`) so the
+// many nominally-`pub` signatures mentioning it don't trip `private_interfaces`.
+mod stream_id {
+    crate::id_newtype!(pub struct StreamId);
+}
+pub(crate) use stream_id::StreamId;
 
-pub type AppStore = store::Store<AppStoreData>;
+pub(crate) type AppStore = store::Store<AppStoreData>;
 
-pub type CsbStore = store::Store<CsbStoreData>;
-pub type CsbMainStore = store::Store<CsbMainStoreData>;
+pub(crate) type CsbStore = store::Store<CsbStoreData>;
+pub(crate) type CsbMainStore = store::Store<CsbMainStoreData>;

@@ -67,25 +67,26 @@ async fn open_store(state: &AppState) -> AppStore {
         .expect("store")
 }
 
+/// Log in with the given dev-login request, then load `path` with the
+/// session cookie and return the response.
+async fn login_then_get(app: axum::Router, login_request: Request<Body>, path: &str) -> Response {
+    let login = app.clone().oneshot(login_request).await.expect("response");
+
+    app.oneshot(
+        Request::builder()
+            .uri(path)
+            .header(header::COOKIE, cookie_value(&login))
+            .body(Body::empty())
+            .unwrap(),
+    )
+    .await
+    .expect("response")
+}
+
 /// Dev-login without fixtures and then load the home page, asserting it
 /// rendered successfully.
 async fn login_without_fixtures_then_home(app: axum::Router) {
-    let login = app
-        .clone()
-        .oneshot(dev_login_request("fixtures=false"))
-        .await
-        .expect("response");
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/")
-                .header(header::COOKIE, cookie_value(&login))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .expect("response");
+    let response = login_then_get(app, dev_login_request("fixtures=false"), "/").await;
 
     assert_eq!(response.status(), StatusCode::OK);
     let body = response_body_string(response).await;
@@ -300,22 +301,8 @@ async fn dev_login_csb_scopes_session_to_committee() {
 async fn csb_import_reachable_for_committee_session() {
     let (_state, app) = test_app().await;
 
-    let login = app
-        .clone()
-        .oneshot(dev_login_csb_request("fixtures=false"))
-        .await
-        .expect("response");
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/csb/import")
-                .header(header::COOKIE, cookie_value(&login))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .expect("response");
+    let response =
+        login_then_get(app, dev_login_csb_request("fixtures=false"), "/csb/import").await;
 
     assert_eq!(response.status(), StatusCode::OK);
     let body = response_body_string(response).await;
@@ -327,22 +314,7 @@ async fn csb_import_reachable_for_committee_session() {
 async fn csb_import_rejected_for_political_group_session() {
     let (_state, app) = test_app().await;
 
-    let login = app
-        .clone()
-        .oneshot(dev_login_request("fixtures=false"))
-        .await
-        .expect("response");
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/csb/import")
-                .header(header::COOKIE, cookie_value(&login))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .expect("response");
+    let response = login_then_get(app, dev_login_request("fixtures=false"), "/csb/import").await;
 
     assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
 }
@@ -353,22 +325,7 @@ async fn csb_import_rejected_for_political_group_session() {
 async fn committee_session_redirected_off_app_routes() {
     let (_state, app) = test_app().await;
 
-    let login = app
-        .clone()
-        .oneshot(dev_login_csb_request("fixtures=false"))
-        .await
-        .expect("response");
-
-    let response = app
-        .oneshot(
-            Request::builder()
-                .uri("/")
-                .header(header::COOKIE, cookie_value(&login))
-                .body(Body::empty())
-                .unwrap(),
-        )
-        .await
-        .expect("response");
+    let response = login_then_get(app, dev_login_csb_request("fixtures=false"), "/").await;
 
     assert_eq!(response.status(), StatusCode::SEE_OTHER);
     assert_eq!(
