@@ -52,7 +52,7 @@ impl BrpClient {
                     BrpField::Initials,
                     BrpField::LastNamePrefix,
                     BrpField::LastName,
-                    BrpField::StreetName,
+                    BrpField::OfficialStreetName,
                     BrpField::HouseNumber,
                     BrpField::HouseNumberAddition,
                     BrpField::PostalCode,
@@ -92,9 +92,6 @@ impl BrpClient {
                 true
             }
         };
-
-        // dbg!(&person);
-        // dbg!(&brp_person);
 
         Ok(address_is_valid &&
             // Don't check First name (roepnaam)
@@ -243,13 +240,13 @@ structstruck::strike! {
                 date: Option<String>
             }>
         }>,
-        #[serde(rename = "woonplaats")]
+        #[serde(rename = "verblijfplaats")]
         place_of_residence: Option<
             #[serde(tag = "type")]
             enum BrpPlaceOfResidence {
             #[serde(rename = "Adres")]
             Address {
-                #[serde(rename = "verblijfplaats")]
+                #[serde(rename = "verblijfadres")]
                 residence_address: struct BrpAddress {
                     // TODO: Confirm that this should be officieleStraatnaam
                     // Or handle this by checking if either matches? If this is only used as a correspondence address,
@@ -374,7 +371,8 @@ mod tests {
         };
 
         let response = brp_client.get_persons(&query).await.unwrap();
-        println!("{:?}", response);
+        let expected = "Digid 1 100600505 geslachtsnaam".parse().unwrap();
+        assert!(response.first().unwrap().name.last_name == expected);
     }
 
     #[tokio::test]
