@@ -255,6 +255,34 @@ impl Address {
         }
     }
 
+    pub fn street_name(&self) -> Option<String> {
+        match self {
+            Address::Dutch(address) => address.street_name.as_ref().map(ToString::to_string),
+            Address::International(address) => {
+                address.street_name.as_ref().map(ToString::to_string)
+            }
+        }
+    }
+
+    /// The house number with its addition appended, e.g. "5A".
+    pub fn house_number(&self) -> Option<String> {
+        let (house_number, addition) = match self {
+            Address::Dutch(address) => (
+                address.house_number.as_ref(),
+                address.house_number_addition.as_ref(),
+            ),
+            Address::International(address) => (
+                address.house_number.as_ref(),
+                address.house_number_addition.as_ref(),
+            ),
+        };
+
+        house_number.map(|house_number| match addition {
+            Some(addition) => format!("{house_number}{addition}"),
+            None => house_number.to_string(),
+        })
+    }
+
     /// The street name, house number, and house number addition, e.g. "Main Street 10A".
     ///
     /// Returns `None` if the street name or house number are `None`.
@@ -409,6 +437,59 @@ mod tests {
         address.house_number = None;
 
         assert_eq!(None, Address::Dutch(address).address_line_1());
+    }
+
+    #[test]
+    fn street_name_returns_value_for_both_variants() {
+        assert_eq!(
+            Some("Hoofdstraat".to_string()),
+            Address::Dutch(sample_address()).street_name()
+        );
+        assert_eq!(
+            Some("Downing Street".to_string()),
+            Address::International(sample_international_address()).street_name()
+        );
+    }
+
+    #[test]
+    fn street_name_is_none_when_absent() {
+        let mut address = sample_address();
+        address.street_name = None;
+
+        assert_eq!(None, Address::Dutch(address).street_name());
+    }
+
+    #[test]
+    fn house_number_appends_addition() {
+        assert_eq!(
+            Some("123a".to_string()),
+            Address::Dutch(sample_address()).house_number()
+        );
+    }
+
+    #[test]
+    fn house_number_without_addition() {
+        let mut address = sample_address();
+        address.house_number_addition = None;
+
+        assert_eq!(
+            Some("123".to_string()),
+            Address::Dutch(address).house_number()
+        );
+
+        // The international sample has no addition either.
+        assert_eq!(
+            Some("10".to_string()),
+            Address::International(sample_international_address()).house_number()
+        );
+    }
+
+    #[test]
+    fn house_number_is_none_when_absent() {
+        let mut address = sample_address();
+        address.house_number = None;
+
+        assert_eq!(None, Address::Dutch(address).house_number());
     }
 
     fn sample_international_address() -> InternationalAddress {
