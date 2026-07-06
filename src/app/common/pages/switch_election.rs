@@ -131,7 +131,7 @@ mod tests {
         let mut session = crate::Session::new();
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
-        let token_value = session.token().to_exposed_string();
+        let token_value = session.token_string();
         let csrf_token = session.csrf_token.clone();
         state.sessions.insert(session).await;
 
