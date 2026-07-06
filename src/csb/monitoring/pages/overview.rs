@@ -8,7 +8,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "monitoring/pages/overview.html")]
+#[template(path = "csb/monitoring/pages/overview.html")]
 struct CsbMonitoringOverviewTemplate {
     monitor: StreamMonitor,
 }

@@ -1,6 +1,9 @@
+mod event;
+mod event_info;
 mod extractor;
 mod getters;
 
+pub use event::AppEvent;
 pub(crate) use extractor::{extension_extractor, request_extractor};
 
 #[cfg(test)]
@@ -10,7 +13,7 @@ use serde::{Deserialize, Serialize};
 use std::collections::HashMap;
 
 use crate::{
-    AppEvent, Scope,
+    Scope,
     candidate_lists::{CandidateList, CandidateListId},
     common::UtcDateTime,
     list_submitters::ListSubmitter,

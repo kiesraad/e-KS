@@ -1,4 +1,4 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% block overlay_title %}{{ "candidate_list.add_candidate"|trans }}{% endblock %}
 {% block overlay_content %}
   <div class="form overlay-content">
@@ -31,7 +31,7 @@
                   value="remove-all">{{ "candidate_list.remove_all_added_candidates"|trans }}</button>
         </p>
       {% endif %}
-      {% include "candidates/components/add_table.html" %}
+      {% include "app/candidates/components/add_table.html" %}
     {% endif %}
   </div>
 {% endblock %}

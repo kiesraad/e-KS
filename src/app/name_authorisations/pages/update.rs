@@ -15,7 +15,7 @@ use crate::{
 use super::NameAuthorisationUpdatePath;
 
 #[derive(Template)]
-#[template(path = "name_authorisations/pages/update.html")]
+#[template(path = "app/name_authorisations/pages/update.html")]
 struct NameAuthorisationUpdateTemplate {
     name_authorisation: NameAuthorisation,
     form: FormData<NameAuthorisationForm>,

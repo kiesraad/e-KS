@@ -3,7 +3,7 @@
 use chrono::{DateTime, Utc};
 
 use crate::{
-    ElectionConfig, ElectoralDistrict, Locale, audit_log,
+    ElectionConfig, ElectoralDistrict, Locale,
     constants::{DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIMEZONE},
     core::AnyLocale,
     form::{FormData, WithCsrfToken},
@@ -206,7 +206,7 @@ pub fn error<T: WithCsrfToken>(
 
 #[askama::filter_fn]
 pub fn abbreviate_str(s: &str, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(audit_log::abbreviate_str(s))
+    Ok(crate::abbreviate_str(s))
 }
 
 /// Returns a cache buster string based on the current git commit hash (set during build on github).

@@ -13,7 +13,7 @@ use crate::{
 use super::ListSubmitterUpdatePath;
 
 #[derive(Template)]
-#[template(path = "list_submitters/pages/update.html")]
+#[template(path = "app/list_submitters/pages/update.html")]
 struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
     should_warn: bool,

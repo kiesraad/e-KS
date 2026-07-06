@@ -1,8 +1,8 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% set close_action = CandidateList::list_path() %}
 {% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
 {% block overlay_steps %}
-  {% include "candidate_lists/components/create_steps.html" %}
+  {% include "app/candidate_lists/components/create_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   {% if has_previous_list %}
@@ -18,9 +18,9 @@
       </div>
     </fieldset>
   {% endif %}
-  {% include "candidate_lists/components/districts_form.html" %}
+  {% include "app/candidate_lists/components/districts_form.html" %}
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "common/components/submit.html" %}
+  {% include "app/common/components/submit.html" %}
 {% endblock %}

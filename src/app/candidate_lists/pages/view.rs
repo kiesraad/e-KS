@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "candidate_lists/pages/view.html")]
+#[template(path = "app/candidate_lists/pages/view.html")]
 struct CandidateListViewTemplate {
     full_list: FullCandidateList,
     duplicate_districts: Vec<ElectoralDistrict>,

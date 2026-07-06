@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "persons/pages/update_address.html")]
+#[template(path = "app/persons/pages/update_address.html")]
 struct PersonAddressUpdateTemplate {
     should_warn: bool,
     person: Person,

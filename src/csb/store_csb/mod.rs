@@ -1,8 +1,8 @@
+mod event;
 mod extractor;
 mod getters;
-mod main_store;
 
-pub use main_store::{CSB_MAIN_STREAM_ID, CsbMainEvent, CsbMainStoreData};
+pub use event::CsbEvent;
 
 use std::collections::HashMap;
 
@@ -11,7 +11,7 @@ use serde::{Deserialize, Serialize};
 #[cfg(test)]
 use crate::political_groups::PoliticalGroup;
 use crate::{
-    AppStoreData, CsbEvent, Scope,
+    AppStoreData, Scope,
     common::UtcDateTime,
     csb::{Omission, OmissionId},
     store::{StoreData, StoreEvent},
@@ -37,7 +37,7 @@ impl StoreData for CsbStoreData {
 
         match event.payload {
             CsbEvent::Import { snapshot, .. } => self.imported_data = *snapshot,
-            CsbEvent::ToggleFinish => self.is_examination_finished = !self.is_examination_finished,
+            CsbEvent::SetFinished(value) => self.is_examination_finished = value,
             CsbEvent::CreateOmission(mut omission) => {
                 omission.updated_at = event_time;
                 self.omissions.insert(omission.id, omission);

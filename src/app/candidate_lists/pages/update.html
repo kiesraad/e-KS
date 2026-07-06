@@ -1,14 +1,14 @@
-{% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% set close_action = candidate_list.view_path() %}
 {% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
 {% block overlay_steps %}
-  {% include "candidate_lists/components/update_steps.html" %}
+  {% include "app/candidate_lists/components/update_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
-  {% include "candidate_lists/components/districts_form.html" %}
+  {% include "app/candidate_lists/components/districts_form.html" %}
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "common/components/submit.html" %}
+  {% include "app/common/components/submit.html" %}
 {% endblock %}

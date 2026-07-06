@@ -14,7 +14,7 @@ use crate::{
 use super::ListSubmitterViewPath;
 
 #[derive(Template)]
-#[template(path = "list_submitters/pages/view.html")]
+#[template(path = "app/list_submitters/pages/view.html")]
 struct ListSubmitterViewTemplate {
     list_submitter: ListSubmitter,
     substitute_submitters: Vec<ListSubmitter>,

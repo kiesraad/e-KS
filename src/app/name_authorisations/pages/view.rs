@@ -12,7 +12,7 @@ use askama::Template;
 use axum::{extract::Query, response::IntoResponse};
 
 #[derive(Template)]
-#[template(path = "name_authorisations/pages/view.html")]
+#[template(path = "app/name_authorisations/pages/view.html")]
 struct NameAuthorisationTemplate {
     name_authorisations: Vec<NameAuthorisation>,
     size_problem: Option<PotentialProblems>,

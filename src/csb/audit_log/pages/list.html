@@ -1,0 +1,76 @@
+{% extends "csb/components/layout.html" %}
+{% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
+{% block content %}
+  {% set audit_log_path = crate::csb::audit_log::CsbAuditLogPath{}.to_string() %}
+  <section>
+    <form method="get"
+          action="{{ audit_log_path }}"
+          class="form audit-log-filters">
+      <fieldset role="group">
+        <input type="text"
+               name="search"
+               placeholder="{{ "audit_log.filter.search_placeholder"|trans }}"
+               value="{{ filter.search.as_deref().unwrap_or_default() }}"
+               class="form-control"
+               aria-label="{{ "audit_log.filter.search"|trans }}" />
+        <label for="stream" class="visually-hidden">{{ "audit_log.filter.stream"|trans }}</label>
+        <select name="stream" id="stream" class="form-control">
+          <option value=""
+                  {% if filter.stream.as_deref().unwrap_or_default().is_empty() %}selected{% endif %}>
+            {{ "audit_log.filter.csb_main_stream"|trans }}
+          </option>
+          {% for (stream_id, label) in import_streams %}
+            {% let stream_id_str = stream_id.to_string() %}
+            <option value="{{ stream_id_str }}"
+                    {% if filter.stream.as_deref() == Some(stream_id_str.as_str()) %}selected{% endif %}>
+              {{ label }}
+            </option>
+          {% endfor %}
+        </select>
+        {% include "app/common/components/audit_log_event_type_filter.html" %}
+        <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
+        {% if filter.is_active() %}
+          <a href="{{ audit_log_path }}" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
+        {% endif %}
+      </fieldset>
+    </form>
+  </section>
+  {% if entries.is_empty() %}
+    <section>
+      <p>{{ "audit_log.empty"|trans }}</p>
+    </section>
+  {% else %}
+    <section>
+      <table class="audit-log">
+        <thead>
+          <tr>
+            <th scope="col">{{ "audit_log.fields.event_id"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.timestamp"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.stream"|trans }}</th>
+            <th scope="col">{{ "audit_log.fields.event"|trans }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for entry in entries %}
+            <tr class="clickable">
+              <td>{{ entry.event_id }}</td>
+              <td>{{ entry.created_at|datetime_seconds }}</td>
+              <td>{{ entry.stream_label }}</td>
+              <td>{{ entry.description }}</td>
+              <td>
+                <a href="{{ entry.detail_path_with_return(return_url.as_str() ) }}">
+                  <span>{{ "audit_log.fields.details"|trans }}</span>
+                </a>
+              </td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+    {% if pagination.total_pages > 1 %}
+      {% set suffix = filter.as_query_suffix() %}
+      {% include "app/common/components/pagination.html" %}
+    {% endif %}
+  {% endif %}
+{% endblock %}
