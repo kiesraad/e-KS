@@ -77,7 +77,7 @@ impl ChildConfig {
 }
 
 /// Environment overrides that route Rust builds through the wild linker
-/// (https://github.com/davidlattimore/wild), which links substantially faster
+/// <https://github.com/davidlattimore/wild>, which links substantially faster
 /// than the default GNU ld and shortens the edit-compile-run loop. Wild is
 /// driven through clang via `--ld-path`, so both must be on PATH; when either
 /// is missing we return no overrides and builds use the default linker. Kept
