@@ -5,10 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbMainStore, HtmlTemplate, StreamId,
+    AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, StreamId,
     csb::audit_log::{pages::CsbAuditLogPath, structs::CsbAuditLogEntry},
     filters,
     pagination::Pagination,
+    store::StoreEvent,
     trans,
 };
 
@@ -95,6 +96,20 @@ struct CsbAuditLogTemplate {
     return_url: String,
 }
 
+fn filter_events<'a, E: Event + 'a>(
+    iter: impl DoubleEndedIterator<Item = &'a StoreEvent<E>> + 'a,
+    stream_id: StreamId,
+    label: String,
+    locale: Locale,
+    event_type: Option<&'a str>,
+    search: Option<&'a str>,
+) -> impl Iterator<Item = CsbAuditLogEntry> + 'a {
+    iter.rev()
+        .map(move |event| CsbAuditLogEntry::from_event(event, stream_id, label.clone(), locale))
+        .filter(move |e| event_type.is_none_or(|et| e.event_category == et || e.event_key == et))
+        .filter(move |e| search.is_none_or(|q| e.matches_search(q)))
+}
+
 pub async fn csb_audit_log(
     _: CsbAuditLogPath,
     context: CsbContext,
@@ -119,55 +134,34 @@ pub async fn csb_audit_log(
     let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
     let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
 
-    let mut all_entries: Vec<CsbAuditLogEntry> = Vec::new();
-
-    if let Some(stream_id) = active_stream {
+    let all_entries: Vec<CsbAuditLogEntry> = if let Some(stream_id) = active_stream {
         // Add import stream events
         let store = import_stores
             .iter()
             .find(|s| s.stream_id.to_string() == stream_id)
             .ok_or(AppError::GenericNotFound)?;
 
-        let label = store.get_political_group().csb_display_name();
-
-        for event in store.data.read().events.iter() {
-            all_entries.push(CsbAuditLogEntry::from_event(
-                event,
-                store.stream_id,
-                label.clone(),
-                locale,
-            ));
-        }
+        filter_events(
+            store.data.read().events.iter(),
+            store.stream_id,
+            store.get_political_group().csb_display_name(),
+            locale,
+            active_event_type,
+            active_search,
+        )
+        .collect()
     } else {
         // Add main stream events
-        let label = trans!("audit_log.filter.csb_main_stream", locale);
-        for event in main_store.data.read().events.iter() {
-            all_entries.push(CsbAuditLogEntry::from_event(
-                event,
-                main_store.stream_id,
-                label.clone(),
-                locale,
-            ));
-        }
-    }
-
-    // Apply event type filter.
-    if let Some(et) = active_event_type {
-        all_entries.retain(|e| e.event_category == et || e.event_key == et);
-    }
-
-    // Apply search filter.
-    if let Some(q) = active_search {
-        all_entries.retain(|e| e.matches_search(q));
-    }
-
-    // Newest first, with equal timestamps kept newest-first (later event_id wins).
-    all_entries.sort_by_key(|b| {
-        (
-            std::cmp::Reverse(b.created_at),
-            std::cmp::Reverse(b.event_id),
+        filter_events(
+            main_store.data.read().events.iter(),
+            main_store.stream_id,
+            trans!("audit_log.filter.csb_main_stream", locale),
+            locale,
+            active_event_type,
+            active_search,
         )
-    });
+        .collect()
+    };
 
     let total = all_entries.len();
     let pagination = Pagination {
