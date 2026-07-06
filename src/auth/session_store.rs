@@ -14,7 +14,7 @@ use tracing::error;
 use tracing::info;
 use url::Url;
 
-use crate::{AppError, Locale, Session};
+use crate::{AppError, Locale, Session, auth::session::hash_token};
 
 #[cfg(feature = "database")]
 use crate::auth::session_db;
@@ -67,11 +67,13 @@ impl SessionStore {
     /// looking like a signed-out user. A valid-but-expired session is dropped
     /// and reported as `Ok(None)`.
     pub async fn get(&self, token: &str) -> Result<Option<Session>, AppError> {
-        let Some(session) = self.load(token).await? else {
+        // The cookie carries the raw token; the store is keyed by its hash.
+        let token_hash = hash_token(token);
+        let Some(session) = self.load(&token_hash).await? else {
             return Ok(None);
         };
         if session.is_expired() {
-            self.drop_token(token).await;
+            self.drop_token(&token_hash).await;
             return Ok(None);
         }
         Ok(Some(session))
@@ -92,7 +94,7 @@ impl SessionStore {
             SessionStore::InMemory(inner) => {
                 inner
                     .write()
-                    .insert(session.token().to_exposed_string(), session);
+                    .insert(session.token_hash().to_string(), session);
             }
             #[cfg(feature = "database")]
             SessionStore::Database(pool) => {
@@ -105,12 +107,13 @@ impl SessionStore {
 
     /// Removes a session by its token. Returns the removed session, if any.
     pub async fn remove(&self, token: &str) -> Option<Session> {
+        let token_hash = hash_token(token);
         match self {
-            SessionStore::InMemory(inner) => inner.write().remove(token),
+            SessionStore::InMemory(inner) => inner.write().remove(&token_hash),
             #[cfg(feature = "database")]
             SessionStore::Database(pool) => {
-                let session = session_db::load(pool, token).await.ok().flatten();
-                let _ = session_db::delete(pool, token).await;
+                let session = session_db::load(pool, &token_hash).await.ok().flatten();
+                let _ = session_db::delete(pool, &token_hash).await;
                 session
             }
         }
@@ -139,24 +142,36 @@ impl SessionStore {
         }
     }
 
-    async fn load(&self, token: &str) -> Result<Option<Session>, AppError> {
+    async fn load(&self, token_hash: &str) -> Result<Option<Session>, AppError> {
         match self {
-            SessionStore::InMemory(inner) => Ok(inner.read().get(token).cloned()),
+            SessionStore::InMemory(inner) => Ok(inner.read().get(token_hash).cloned()),
             #[cfg(feature = "database")]
-            SessionStore::Database(pool) => session_db::load(pool, token).await,
+            SessionStore::Database(pool) => session_db::load(pool, token_hash).await,
         }
     }
 
-    async fn drop_token(&self, token: &str) {
+    async fn drop_token(&self, token_hash: &str) {
         match self {
             SessionStore::InMemory(inner) => {
-                inner.write().remove(token);
+                inner.write().remove(token_hash);
             }
             #[cfg(feature = "database")]
             SessionStore::Database(pool) => {
-                let _ = session_db::delete(pool, token).await;
+                let _ = session_db::delete(pool, token_hash).await;
             }
         }
+    }
+}
+
+/// Periodically evict expired sessions, bounding how long expired rows linger
+/// beyond the lazy per-lookup cleanup (matters for the Postgres backend).
+pub async fn run_session_sweeper(sessions: SessionStore) {
+    const SWEEP_INTERVAL: std::time::Duration = std::time::Duration::from_secs(5 * 60);
+
+    let mut ticker = tokio::time::interval(SWEEP_INTERVAL);
+    loop {
+        ticker.tick().await;
+        sessions.cleanup_expired().await;
     }
 }
 
@@ -184,7 +199,7 @@ mod tests {
     async fn get_existing_returns_session() {
         let store = SessionStore::default();
         let session = Session::new_test();
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         store.insert(session.clone()).await;
 
         let loaded = store
@@ -202,7 +217,7 @@ mod tests {
         let session = store.create_new(Locale::default()).await;
 
         let loaded = store
-            .get(session.token().expose())
+            .get(&session.token_string())
             .await
             .expect("load session");
 
@@ -215,7 +230,7 @@ mod tests {
         let store = SessionStore::default();
         let mut session = Session::new_test();
         session.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         store.insert(session).await;
 
         let loaded = store.get(&token).await.expect("load session");
@@ -230,8 +245,8 @@ mod tests {
         let mut expired = Session::new_test();
         expired.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
         let active = Session::new_test();
-        let expired_token = expired.token().to_exposed_string();
-        let active_token = active.token().to_exposed_string();
+        let expired_token = expired.token_string();
+        let active_token = active.token_string();
         store.insert(expired).await;
         store.insert(active).await;
 
@@ -262,5 +277,49 @@ mod tests {
             Ok(_) => panic!("expected an error for unsupported scheme"),
             Err(err) => panic!("unexpected error variant: {err:?}"),
         }
+    }
+
+    /// Postgres round-trip: hash-at-rest, NameID/UA persistence, `created_at`
+    /// fixed across a touch, and `remove`.
+    #[cfg(feature = "database")]
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn database_backend_roundtrips_session(pool: sqlx::PgPool) -> Result<(), AppError> {
+        crate::store::database::migrate(&pool).await?;
+        let store = SessionStore::Database(pool);
+
+        let mut session = Session::new_test();
+        session.saml_name_id = Some("nid-1".to_string());
+        session.set_user_agent_hash("ua-hash-xyz".to_string());
+        let token = session.token_string();
+        let created_at = session.created_at;
+        store.insert(session).await;
+
+        // Look up by the raw cookie token (hashed internally).
+        let loaded = store.get(&token).await?.expect("session present");
+        assert_eq!(loaded.saml_name_id.as_deref(), Some("nid-1"));
+        assert_eq!(loaded.user_agent_hash.as_deref(), Some("ua-hash-xyz"));
+        assert_eq!(loaded.token_hash(), hash_token(&token));
+        assert!(
+            loaded.reveal_token().is_none(),
+            "a reloaded session must not carry its raw token"
+        );
+
+        // A touch must not reset created_at, even carrying a bogus one.
+        let mut touched = loaded;
+        touched.last_activity = Utc::now();
+        touched.created_at = created_at + Duration::hours(1);
+        store.insert(touched).await;
+        let reloaded = store.get(&token).await?.expect("still present");
+        // Tolerance: Postgres TIMESTAMPTZ truncates the Rust DateTime's nanoseconds.
+        assert!(
+            (reloaded.created_at - created_at).abs() < Duration::milliseconds(1),
+            "created_at must be fixed across touches (got {}, expected ~{created_at})",
+            reloaded.created_at,
+        );
+
+        store.remove(&token).await;
+        assert!(store.get(&token).await?.is_none());
+        Ok(())
     }
 }

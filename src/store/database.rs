@@ -103,6 +103,7 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
 
 #[cfg(feature = "migrations")]
 async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
+    // `token` holds the token's SHA-256 hash, not the token itself.
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS sessions (
@@ -113,24 +114,11 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           csrf_token TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
           saml_name_id TEXT,
-          scope TEXT NOT NULL DEFAULT 'political_group'
+          scope TEXT NOT NULL DEFAULT 'political_group',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          user_agent_hash TEXT
         )
         "#,
-    )
-    .execute(&mut *conn)
-    .await?;
-
-    // Additive column for tables created before SP-initiated logout needed the
-    // SAML NameID persisted (eID §7.7.1); idempotent so existing deployments
-    // pick it up without a versioned migration.
-    sqlx::query(r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS saml_name_id TEXT"#)
-        .execute(&mut *conn)
-        .await?;
-
-    // Additive column for tables created before sessions carried an
-    // authorization scope; idempotent for the same reason as `saml_name_id`.
-    sqlx::query(
-        r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'political_group'"#,
     )
     .execute(&mut *conn)
     .await?;

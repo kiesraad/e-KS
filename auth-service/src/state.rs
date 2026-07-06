@@ -45,13 +45,13 @@ pub trait AuthState: Clone + Send + Sync + 'static {
         headers: &HeaderMap,
     ) -> impl std::future::Future<Output = Response> + Send;
 
-    /// Clear the session for SP-initiated logout. Returns the `NameID` (needed
-    /// for the `LogoutRequest`, eID 7.7.1) and the cleared cookie jar, or
-    /// `None` if no session is active.
+    /// Terminate the local session for SP-initiated logout. Always returns the
+    /// jar with the session cookie cleared, plus the SAML `NameID` if one was
+    /// recorded (needed for the `LogoutRequest`, eID §7.7.1).
     fn logout_session(
         &self,
         jar: CookieJar,
-    ) -> impl std::future::Future<Output = Option<(String, CookieJar)>> + Send;
+    ) -> impl std::future::Future<Output = (CookieJar, Option<String>)> + Send;
 
     /// Persist an outgoing AuthnRequest ID for the `InResponseTo` check (eID §7.6.3.5 rule 4 / §9.7).
     fn register_pending_request(&self, id: String) -> impl std::future::Future<Output = ()> + Send;

@@ -1,4 +1,6 @@
-use eks::{AppError, AppState, Config, logging, router, run_db_prober, server};
+use eks::{
+    AppError, AppState, Config, logging, router, run_db_prober, run_session_sweeper, server,
+};
 use tokio::net::TcpListener;
 
 #[tokio::main]
@@ -60,6 +62,10 @@ async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
         state.store_registry.persistence().clone(),
         state.db_health.clone(),
     ));
+
+    // Periodically evict expired sessions (Postgres backend accumulates rows
+    // otherwise).
+    tokio::spawn(run_session_sweeper(state.sessions.clone()));
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());

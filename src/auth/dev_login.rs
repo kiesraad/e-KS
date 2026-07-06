@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, CsbMainEvent, ElectionConfig, Locale, Scope,
     Session, StreamId,
-    auth::session_extractor::build_session_cookie,
+    auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
     political_groups::PoliticalGroup,
@@ -77,6 +77,7 @@ async fn perform_dev_login(
     let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
     session.set_scope(scope);
+    session.set_user_agent_hash(user_agent_hash(&headers));
 
     let load_fixtures = query.fixtures.unwrap_or(false);
 

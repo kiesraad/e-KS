@@ -2,24 +2,31 @@
 //! shared boilerplate for `FromRequestParts` extractors that load a domain
 //! object from it.
 
-use axum::{extract::FromRequestParts, http::request::Parts};
+use crate::AppStore;
 
-use crate::{AppError, AppStore};
+/// Generate a [`FromRequestParts`](axum::extract::FromRequestParts) impl that
+/// pulls `$target` out of the request extensions (where an upstream middleware
+/// inserted it), returning `$missing` when it is absent.
+macro_rules! extension_extractor {
+    ($target:ty, $missing:expr) => {
+        impl<S> axum::extract::FromRequestParts<S> for $target
+        where
+            S: Send + Sync,
+        {
+            type Rejection = $crate::AppError;
 
-impl<S> FromRequestParts<S> for AppStore
-where
-    S: Send + Sync,
-{
-    type Rejection = AppError;
-
-    async fn from_request_parts(parts: &mut Parts, _state: &S) -> Result<Self, Self::Rejection> {
-        parts
-            .extensions
-            .get::<AppStore>()
-            .cloned()
-            .ok_or(AppError::Unauthorised)
-    }
+            async fn from_request_parts(
+                parts: &mut axum::http::request::Parts,
+                _state: &S,
+            ) -> Result<Self, Self::Rejection> {
+                parts.extensions.get::<$target>().cloned().ok_or($missing)
+            }
+        }
+    };
 }
+pub(crate) use extension_extractor;
+
+extension_extractor!(AppStore, crate::AppError::Unauthorised);
 
 /// Generate a [`FromRequestParts`](axum::extract::FromRequestParts) impl for
 /// `$target`.

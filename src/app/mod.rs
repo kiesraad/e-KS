@@ -26,7 +26,7 @@ pub use middleware::{
 };
 pub use store::AppStoreData;
 
-pub(crate) use store::request_extractor;
+pub(crate) use store::{extension_extractor, request_extractor};
 
 #[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub use middleware::proxy::proxy_handler;
