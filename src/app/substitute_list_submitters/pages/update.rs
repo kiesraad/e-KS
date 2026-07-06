@@ -30,10 +30,7 @@ pub async fn update_substitute_submitter(
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
-            form: FormData::new_with_data(
-                substitute_submitter.clone().into(),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(substitute_submitter.clone().into()),
             substitute_submitter,
             overlay: Overlay::new(&query),
         },
@@ -50,10 +47,7 @@ pub async fn update_substitute_submitter_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(
-        &ListSubmitterData::from(substitute_submitter.clone()),
-        &context.session.csrf_token,
-    ) {
+    match form.validate_update_with_checks(&ListSubmitterData::from(substitute_submitter.clone())) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
                 substitute_submitter,
@@ -126,8 +120,7 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         form.name.last_name = "Updated".to_string();
 
         let response = update_substitute_submitter_submit(
@@ -170,8 +163,7 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         form.name.last_name = " ".to_string();
 
         let response = update_substitute_submitter_submit(

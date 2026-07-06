@@ -2,7 +2,7 @@
 
 use axum::{
     extract::{Request, State},
-    http::{HeaderMap, header::USER_AGENT},
+    http::{HeaderMap, Method, header::USER_AGENT},
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
@@ -15,10 +15,11 @@ use serde::{Serialize, de::DeserializeOwned};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    AppError, AppState, Scope, Session,
+    AppError, AppState, Scope, Session, TokenValue,
     app::extension_extractor,
     common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
+    form::generate_csrf_token,
     store::{Store, StoreData},
 };
 
@@ -29,6 +30,12 @@ use crate::{
 pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 #[cfg(not(feature = "dev-features"))]
 pub const SESSION_COOKIE_NAME: &str = "__Host-EKS_SESSION_ID";
+
+/// CSRF cookie carrying the raw token; `HttpOnly` (server echoes it into forms).
+#[cfg(feature = "dev-features")]
+pub const CSRF_COOKIE_NAME: &str = "EKS_CSRF";
+#[cfg(not(feature = "dev-features"))]
+pub const CSRF_COOKIE_NAME: &str = "__Host-EKS_CSRF";
 
 /// Builds the session cookie. Only valid right after creation, while the raw
 /// token is still in memory.
@@ -45,6 +52,20 @@ pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
 /// set cookie (esp. `Secure` + `Path=/` for the `__Host-` prefix) or it lingers.
 pub(crate) fn build_removal_cookie() -> Cookie<'static> {
     let mut cookie = Cookie::from(SESSION_COOKIE_NAME);
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
+/// CSRF cookie with the raw token, same attributes as the session cookie.
+pub(crate) fn build_csrf_cookie(raw: TokenValue) -> Cookie<'static> {
+    let mut cookie = Cookie::new(CSRF_COOKIE_NAME, raw.0);
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
+/// Expired twin of the CSRF cookie, for logout.
+pub(crate) fn build_csrf_removal_cookie() -> Cookie<'static> {
+    let mut cookie = Cookie::from(CSRF_COOKIE_NAME);
     apply_session_cookie_attributes(&mut cookie);
     cookie
 }
@@ -103,12 +124,36 @@ pub async fn session_middleware(
         return rejection;
     }
 
+    // Source the raw CSRF token from its cookie for form rendering; re-mint a
+    // missing/stale one only on safe methods, so a mutating request is always
+    // verified against the hash that issued its token.
+    let is_safe_method = matches!(
+        request.method(),
+        &Method::GET | &Method::HEAD | &Method::OPTIONS
+    );
+    let refreshed_csrf = match jar.get(CSRF_COOKIE_NAME).map(|c| c.value().to_string()) {
+        Some(value) if session.csrf_matches(&value) => {
+            session.set_csrf(TokenValue(value));
+            None
+        }
+        _ if is_safe_method => {
+            let raw = generate_csrf_token();
+            session.set_csrf(raw.clone());
+            Some(raw)
+        }
+        _ => None,
+    };
+
     session.last_activity = Utc::now();
     state.sessions.insert(session.clone()).await;
 
     request.extensions_mut().insert(session);
 
-    next.run(request).await
+    let response = next.run(request).await;
+    match refreshed_csrf {
+        Some(raw) => (jar.add(build_csrf_cookie(raw)), response).into_response(),
+        None => response,
+    }
 }
 
 /// User-agent pinning: reject (and drop) a session replayed from a different

@@ -174,7 +174,7 @@ pub fn sample_person_with(
     person
 }
 
-pub fn sample_person_form(csrf_token: &TokenValue) -> PersonalDataForm {
+pub fn sample_person_form() -> PersonalDataForm {
     PersonalDataForm {
         name: sample_full_name_form("Henk", "Jansen", "", "H.A.H.A."),
         personal_data: crate::persons::PersonalDataFieldsForm {
@@ -184,22 +184,19 @@ pub fn sample_person_form(csrf_token: &TokenValue) -> PersonalDataForm {
             place_of_residence: "Juinen".to_string(),
             country: "NL".to_string(),
         },
-        csrf_token: csrf_token.clone(),
     }
 }
 
-pub fn sample_address_form(csrf_token: &TokenValue) -> AddressForm {
+pub fn sample_address_form() -> AddressForm {
     AddressForm {
         address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
-        csrf_token: csrf_token.clone(),
     }
 }
 
-pub fn sample_representative_form(csrf_token: &TokenValue) -> RepresentativeForm {
+pub fn sample_representative_form() -> RepresentativeForm {
     RepresentativeForm {
         name: sample_full_name_form("", "Bakker", "", "A.B."),
         address: sample_dutch_address_form("Juinen", "1234 AB", "10", "A", "Stationsstraat"),
-        csrf_token: csrf_token.clone(),
     }
 }
 
@@ -223,11 +220,10 @@ pub fn sample_name_authorisation(id: NameAuthorisationId) -> NameAuthorisation {
     }
 }
 
-pub fn sample_name_authorisation_form(csrf_token: &TokenValue) -> NameAuthorisationForm {
+pub fn sample_name_authorisation_form() -> NameAuthorisationForm {
     NameAuthorisationForm {
         name: sample_minimal_name_form("Jansen", "de", "A.B."),
         legal_name: "Kiesraad Demo Partij".to_string(),
-        csrf_token: csrf_token.clone(),
     }
 }
 
@@ -246,7 +242,7 @@ pub fn sample_list_submitter(id: ListSubmitterId) -> ListSubmitter {
     }
 }
 
-pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm {
+pub fn sample_list_submitter_form() -> ListSubmitterForm {
     ListSubmitterForm {
         name: crate::common::MinimalNameForm {
             last_name: "Bos".to_string(),
@@ -262,15 +258,13 @@ pub fn sample_list_submitter_form(csrf_token: &TokenValue) -> ListSubmitterForm 
             house_number_addition: "B".to_string(),
             street_name: "Coolsingel".to_string(),
         },
-        csrf_token: csrf_token.clone(),
     }
 }
 
-pub fn sample_political_group_form(csrf_token: &TokenValue) -> PoliticalGroupForm {
+pub fn sample_political_group_form() -> PoliticalGroupForm {
     PoliticalGroupForm {
         previous_election_results: PreviousElectionResults::OneToFifteenSeats.to_string(),
         display_name: "Updated Display Name".to_string(),
-        csrf_token: csrf_token.clone(),
     }
 }
 

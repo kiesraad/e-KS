@@ -6,7 +6,6 @@ use crate::ElectionConfig;
 /// JavaScript is disabled and every region picker submits a value.
 #[derive(Deserialize)]
 pub struct SwitchElectionForm {
-    pub csrf_token: String,
     election: String,
     region_province: Option<String>,
     region_water_council: Option<String>,
@@ -41,7 +40,6 @@ mod tests {
     #[test]
     fn deserializes_with_optional_region_fields_absent() {
         let form = parse("csrf_token=abc&election=EK27");
-        assert_eq!(form.csrf_token, "abc");
         assert_eq!(form.into_election_config(), Some(ElectionConfig::EK27));
     }
 

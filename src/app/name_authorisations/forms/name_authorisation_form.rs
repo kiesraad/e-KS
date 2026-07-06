@@ -1,5 +1,4 @@
 use crate::{
-    TokenValue,
     common::{LegalName, MinimalNameForm},
     name_authorisations::NameAuthorisation,
 };
@@ -15,8 +14,6 @@ pub struct NameAuthorisationForm {
     pub name: MinimalNameForm,
     #[validate(parse = "LegalName")]
     pub legal_name: String,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
 }
 
 impl From<NameAuthorisation> for NameAuthorisationForm {
@@ -24,7 +21,6 @@ impl From<NameAuthorisation> for NameAuthorisationForm {
         NameAuthorisationForm {
             name: MinimalNameForm::from(value.name),
             legal_name: value.legal_name.to_string(),
-            csrf_token: Default::default(),
         }
     }
 }

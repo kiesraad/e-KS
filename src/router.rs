@@ -7,7 +7,7 @@ use axum::{
     middleware,
     routing::get,
 };
-use tower_http::set_header::SetResponseHeaderLayer;
+use tower_http::{csrf::CsrfLayer, set_header::SetResponseHeaderLayer};
 
 use crate::{
     AppState, audit_log, candidate_lists, candidates, common, csb, csb_store_middleware,
@@ -52,9 +52,12 @@ pub fn create(state: AppState) -> Router<AppState> {
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB
     // (committee) sessions that store_middleware redirects off app routes.
+    // CSRF token verification for every mutating request, directly inside the
+    // session middleware so no handler can forget it.
     let app_router = app_router
         .merge(common::session_only_router())
         .merge(csb_router)
+        .layer(middleware::from_fn(crate::csrf_middleware))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             session_middleware,
@@ -87,10 +90,19 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     let router = mount_static_assets(router).nest("/.well-known", common::wellknown_router());
 
-    router.layer(middleware::from_fn_with_state(
-        state.clone(),
-        eks_key_middleware,
-    ))
+    router
+        .layer(csrf_layer())
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            eks_key_middleware,
+        ))
+}
+
+/// Global fetch-metadata CSRF protection (`Sec-Fetch-Site`/`Origin` checks),
+/// backstopping the per-session token middleware. `/saml/sp/logout` is exempt:
+/// it receives cross-site IdP POSTs by design and validates SAML signatures.
+fn csrf_layer() -> CsrfLayer {
+    CsrfLayer::new().with_insecure_bypass(|_, uri| uri.path() == "/saml/sp/logout")
 }
 
 /// The application's feature routes (everything that sits behind the session
@@ -250,6 +262,61 @@ mod tests {
         // The health probe must keep answering (memory backend is reachable),
         // not be swallowed by the maintenance gate.
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    /// A cross-site POST is rejected by the global CSRF layer before it
+    /// reaches any session or handler logic.
+    #[tokio::test]
+    async fn cross_site_post_is_rejected_by_csrf_layer() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/switch-election")
+            .header("sec-fetch-site", "cross-site")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// A same-origin POST passes the CSRF layer: without a session cookie it
+    /// reaches the session middleware, which redirects to login.
+    #[tokio::test]
+    async fn same_origin_post_passes_csrf_layer() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/switch-election")
+            .header("sec-fetch-site", "same-origin")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    }
+
+    /// The SAML single-logout endpoint receives cross-site POSTs from the IdP
+    /// by design and must bypass the CSRF layer (it validates SAML signatures
+    /// instead).
+    #[tokio::test]
+    async fn cross_site_post_to_saml_logout_bypasses_csrf_layer() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/saml/sp/logout")
+            .header("sec-fetch-site", "cross-site")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_ne!(response.status(), StatusCode::FORBIDDEN);
     }
 
     #[tokio::test]

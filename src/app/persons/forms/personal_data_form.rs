@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    AppStore, ElectionConfig, OptionStringExt, TokenValue,
+    AppStore, ElectionConfig, OptionStringExt,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, FullNameForm, Gender, Initials, LastName,
         LastNamePrefix, PlaceOfResidence,
@@ -40,8 +40,6 @@ pub struct PersonalDataForm {
     #[validate(flatten)]
     #[serde(flatten)]
     pub personal_data: PersonalDataFieldsForm,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
 }
 
 impl PersonalDataFieldsForm {
@@ -84,7 +82,6 @@ impl From<Person> for PersonalDataForm {
         PersonalDataForm {
             name: FullNameForm::from(person.name),
             personal_data: PersonalDataFieldsForm::from(person.personal_data),
-            csrf_token: Default::default(),
         }
     }
 }
@@ -93,31 +90,29 @@ impl PersonalDataForm {
     /// Also checks person uniqueness
     pub fn validate_create_with_checks(
         self,
-        csrf_token: &TokenValue,
         store: &AppStore,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
         let existing_ref = existing.iter().collect();
-        let person_result = self.clone().validate_create(csrf_token);
+        let person_result = self.clone().validate_create();
         let errors = self.uniqueness_errors(existing_ref);
 
-        self.merge_validation_results(person_result, errors, csrf_token)
+        self.merge_validation_results(person_result, errors)
     }
 
     /// Also checks date of birth
     pub fn validate_update_with_checks(
         self,
         current: &Person,
-        csrf_token: &TokenValue,
         store: &AppStore,
     ) -> Result<Person, Box<FormData<Self>>> {
         let existing = store.get_persons();
         let existing_without_current: Vec<&Person> =
             existing.iter().filter(|p| *p != current).collect();
-        let person_result = self.clone().validate_update(current, csrf_token);
+        let person_result = self.clone().validate_update(current);
         let errors = self.uniqueness_errors(existing_without_current);
 
-        self.merge_validation_results(person_result, errors, csrf_token)
+        self.merge_validation_results(person_result, errors)
     }
 
     /// Validate that the BSN is unique OR the name (initials, prefix, lastname) is unique
@@ -179,23 +174,16 @@ impl PersonalDataForm {
         self,
         person_result: Result<Person, FormData<Self>>,
         additional_errors: FieldErrors,
-        csrf_token: &TokenValue,
     ) -> Result<Person, Box<FormData<Self>>> {
         if additional_errors.is_empty() {
             return Ok(person_result?);
         }
         match person_result {
-            Ok(_) => Err(Box::new(FormData::new_with_errors(
-                self,
-                csrf_token,
-                additional_errors,
-            ))),
+            Ok(_) => Err(Box::new(FormData::new_with_errors(self, additional_errors))),
             Err(form_data) => {
                 let mut errors = form_data.errors();
                 errors.extend(additional_errors);
-                Err(Box::new(FormData::new_with_errors(
-                    self, csrf_token, errors,
-                )))
+                Err(Box::new(FormData::new_with_errors(self, errors)))
             }
         }
     }
@@ -207,7 +195,7 @@ mod tests {
     use crate::{
         OptionAsStrExt,
         common::{DutchAddress, UtcDateTime},
-        form::{ValidationError, generate_csrf_token},
+        form::ValidationError,
         persons::PersonId,
         test_utils::{self, parse_country_code, sample_person_with},
     };
@@ -229,7 +217,6 @@ mod tests {
             known_in_bag: Some(true),
         };
         current.updated_at = UtcDateTime::default();
-        let csrf_token = generate_csrf_token();
 
         let form = PersonalDataForm {
             name: FullNameForm {
@@ -245,10 +232,9 @@ mod tests {
                 place_of_residence: "Waterdam".to_string(),
                 country: " nl ".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
-        let updated = form.validate_update(&current, &csrf_token).unwrap();
+        let updated = form.validate_update(&current).unwrap();
 
         assert_eq!(updated.id, current.id);
         assert_eq!(updated.personal_data.gender, Some(Gender::Male));
@@ -326,7 +312,6 @@ mod tests {
 
     #[test]
     fn personal_data_form_collects_validation_errors() {
-        let csrf_token = generate_csrf_token();
         let form = PersonalDataForm {
             name: FullNameForm {
                 first_name: "🤔".to_string(),
@@ -341,10 +326,9 @@ mod tests {
                 place_of_residence: "".to_string(),
                 country: "xx".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
-        let Err(data) = form.validate_create(&csrf_token) else {
+        let Err(data) = form.validate_create() else {
             panic!("expected validation errors");
         };
 
@@ -408,7 +392,6 @@ mod tests {
                 place_of_residence: "Amsterdam".to_string(),
                 country: "NL".to_string(),
             },
-            csrf_token: generate_csrf_token(),
         };
 
         let errors = form.uniqueness_errors(vec![&existing]);
@@ -443,7 +426,6 @@ mod tests {
                 place_of_residence: "Amsterdam".to_string(),
                 country: "NL".to_string(),
             },
-            csrf_token: generate_csrf_token(),
         };
 
         let errors = form.uniqueness_errors(vec![&existing]);
@@ -477,7 +459,6 @@ mod tests {
                 place_of_residence: "Amsterdam".to_string(),
                 country: "NL".to_string(),
             },
-            csrf_token: generate_csrf_token(),
         };
 
         let errors = form.uniqueness_errors(vec![&existing]);
@@ -493,14 +474,12 @@ mod tests {
         sample_person.personal_data.bsn = Some("111222333".parse().unwrap());
         sample_person.create(&store).await.unwrap();
 
-        let csrf_token = generate_csrf_token();
-
-        let mut form = test_utils::sample_person_form(&csrf_token);
+        let mut form = test_utils::sample_person_form();
         form.personal_data.bsn = "111222333".parse().unwrap();
         form.name.last_name_prefix = "invalid".to_string();
 
         let form_data = form
-            .validate_create_with_checks(&csrf_token, &store)
+            .validate_create_with_checks(&store)
             .expect_err("form shouldn't validate");
 
         let errors = form_data.errors();

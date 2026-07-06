@@ -87,6 +87,7 @@ pub use app::{
 #[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
 pub use app::proxy_handler;
 pub use auth::{
+    csrf_middleware::csrf_middleware,
     derive_id::IdDeriver,
     pending_request_store::PendingRequestStore,
     scope::Scope,

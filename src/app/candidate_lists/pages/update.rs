@@ -33,10 +33,7 @@ pub async fn update_candidate_list(
     let duplicate_districts = candidate_list.duplicate_districts(&store);
     Ok(HtmlTemplate(
         CandidateListUpdateTemplate {
-            form: FormData::new_with_data(
-                CandidateListForm::from(candidate_list.clone()),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(CandidateListForm::from(candidate_list.clone())),
             should_warn: query.should_warn(),
             overlay: Overlay::new(&query),
             candidate_list,
@@ -65,7 +62,7 @@ pub async fn update_candidate_list_submit(
     let duplicate_districts = candidate_list.duplicate_districts(&store);
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
-    match form.validate_update(&candidate_list, &context.session.csrf_token) {
+    match form.validate_update(&candidate_list) {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListUpdateTemplate {
                 should_warn: query.should_warn(),
@@ -90,7 +87,7 @@ pub async fn update_candidate_list_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, ElectionConfig, ElectoralDistrict, Form, QueryParamState, TokenValue,
+        AppStore, Context, ElectionConfig, ElectoralDistrict, Form, QueryParamState,
         candidate_lists::{CandidateListId, CandidateListSummary},
         test_utils::{response_body_string, sample_candidate_list},
     };
@@ -132,7 +129,6 @@ mod tests {
     async fn update_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -141,7 +137,6 @@ mod tests {
 
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::DR],
-            csrf_token,
         };
         let response = update_candidate_list_submit(
             CandidateListUpdatePath {
@@ -197,8 +192,7 @@ mod tests {
         candidate_list.create(&store).await?;
 
         let form = CandidateListForm {
-            electoral_districts: vec![ElectoralDistrict::DR],
-            csrf_token: TokenValue("invalid".to_string()),
+            electoral_districts: vec![],
         };
         let response = update_candidate_list_submit(
             CandidateListUpdatePath {
@@ -235,7 +229,6 @@ mod tests {
         // setup
         let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -244,7 +237,6 @@ mod tests {
 
         let form = CandidateListForm {
             electoral_districts: vec![ElectoralDistrict::DR, ElectoralDistrict::WsFryslan],
-            csrf_token,
         };
 
         // test

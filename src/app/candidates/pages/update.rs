@@ -33,10 +33,7 @@ pub async fn update_person(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
-            form: FormData::new_with_data(
-                PersonalDataForm::from(candidate.person.clone()),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(PersonalDataForm::from(candidate.person.clone())),
             overlay: Overlay::new(&query),
             candidate,
             full_list,
@@ -54,7 +51,7 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(&candidate.person, &context.session.csrf_token, &store) {
+    match form.validate_update_with_checks(&candidate.person, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 full_list,
@@ -148,8 +145,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.name.last_name = "Updated".to_string();
         let expected_path = format!("{}?&success=true", candidate.after_update_path());
 
@@ -204,8 +200,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.name.last_name = " ".to_string();
 
         let response = update_person_submit(

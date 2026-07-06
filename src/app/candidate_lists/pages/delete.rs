@@ -5,17 +5,15 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, pages::CandidateListsDeletePath},
     filters,
-    form::{EmptyForm, FormData},
 };
 
 #[derive(Template)]
 #[template(path = "app/candidate_lists/pages/delete.html")]
 struct DeleteCandidateListTemplate {
     candidate_list: CandidateList,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -27,7 +25,6 @@ pub async fn delete_candidate_list_confirm(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteCandidateListTemplate {
-            form: FormData::new(&context.session.csrf_token),
             overlay: Overlay::new(&query),
             candidate_list,
         },
@@ -37,28 +34,22 @@ pub async fn delete_candidate_list_confirm(
 
 pub async fn delete_candidate_list(
     _: CandidateListsDeletePath,
-    context: Context,
+    _context: Context,
     candidate_list: CandidateList,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
-        Err(_) => Err(AppError::CsrfTokenInvalid),
-        Ok(_) => {
-            candidate_list.delete(&store).await?;
+    candidate_list.delete(&store).await?;
 
-            Ok(query.redirect_or(CandidateList::list_path()))
-        }
-    }
+    Ok(query.redirect_or(CandidateList::list_path()))
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use crate::{
-        AppStore, ElectoralDistrict, Form, QueryParamState, TokenValue,
-        candidate_lists::CandidateListSummary, test_utils::response_body_string,
+        AppStore, ElectoralDistrict, QueryParamState, candidate_lists::CandidateListSummary,
+        test_utils::response_body_string,
     };
     use axum::{
         extract::Query,
@@ -95,7 +86,6 @@ mod tests {
     async fn delete_candidate_list_and_redirect() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let candidate_list = CandidateList {
             electoral_districts: vec![ElectoralDistrict::UT],
             ..Default::default()
@@ -110,7 +100,6 @@ mod tests {
             candidate_list.clone(),
             store.clone(),
             Query(QueryParamState::default()),
-            Form(EmptyForm { csrf_token }),
         )
         .await?;
 
@@ -133,39 +122,6 @@ mod tests {
         // verify deletion (i.e. no lists in database left)
         let lists = CandidateListSummary::list(&store);
         assert_eq!(lists.len(), 0);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn delete_candidate_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-        let context = Context::new_test_without_db();
-        let csrf_token = TokenValue("invalid".to_string());
-        let candidate_list = CandidateList {
-            electoral_districts: vec![ElectoralDistrict::UT],
-            ..Default::default()
-        };
-        candidate_list.create(&store).await?;
-
-        let response = delete_candidate_list(
-            CandidateListsDeletePath {
-                list_id: candidate_list.id,
-            },
-            context,
-            candidate_list.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
-            Form(EmptyForm { csrf_token }),
-        )
-        .await
-        .unwrap_err();
-
-        assert!(matches!(response, AppError::CsrfTokenInvalid));
-
-        // verify deletion didn't go through (i.e. still 1 list in database left)
-        let lists = CandidateListSummary::list(&store);
-        assert_eq!(lists.len(), 1);
 
         Ok(())
     }

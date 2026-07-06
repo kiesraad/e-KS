@@ -6,7 +6,8 @@ use secrecy::{ExposeSecret, SecretString};
 use sha2::{Digest, Sha256};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue, form::generate_csrf_token,
+    ElectionConfig, Locale, Scope, StreamId, TokenValue,
+    form::{csrf_token_matches, generate_csrf_token, hash_csrf_token},
 };
 
 /// Idle timeout (in seconds) after which a session is considered expired.
@@ -71,6 +72,11 @@ pub struct Session {
     /// Raw token, held only until the `Set-Cookie` is emitted; `None` once loaded
     /// from storage, so a reloaded session can't re-expose it.
     pub(crate) raw_token: Option<SessionToken>,
+    /// Hash of the random CSRF token: the only CSRF material at rest.
+    pub(crate) csrf_token_hash: String,
+    /// Raw CSRF token for form rendering; sourced from the CSRF cookie, never
+    /// persisted (like `raw_token`).
+    pub(crate) csrf_raw: Option<TokenValue>,
     /// Creation time, for the absolute-lifetime cap.
     pub created_at: DateTime<Utc>,
     /// Timestamp of the last activity for idle-timeout validation.
@@ -87,9 +93,6 @@ pub struct Session {
     pub current_election: Option<ElectionConfig>,
     /// Active locale for the session.
     pub locale: Locale,
-    /// CSRF token scoped to this session. Fixed for the session's lifetime;
-    /// rotation happens when the session itself is replaced (login/logout).
-    pub csrf_token: TokenValue,
     /// SAML `NameID` from the authenticating Assertion. Required to build a
     /// `LogoutRequest` for SP-initiated logout (eID §7.7.1).
     pub saml_name_id: Option<String>,
@@ -136,10 +139,13 @@ impl Session {
     /// Creates a new session using the provided locale.
     pub fn new_with_locale(locale: Locale) -> Self {
         let raw_token = generate_session_token();
+        let csrf_raw = generate_csrf_token();
         let now = Utc::now();
         Self {
             token_hash: hash_token(raw_token.expose()),
             raw_token: Some(raw_token),
+            csrf_token_hash: hash_csrf_token(&csrf_raw.0),
+            csrf_raw: Some(csrf_raw),
             created_at: now,
             last_activity: now,
             user_agent_hash: None,
@@ -147,7 +153,6 @@ impl Session {
             scope: Scope::default(),
             current_election: None,
             locale,
-            csrf_token: generate_csrf_token(),
             saml_name_id: None,
         }
     }
@@ -197,14 +202,21 @@ impl Session {
             || now - self.created_at >= session_absolute_timeout()
     }
 
-    /// Verify a submitted CSRF token against the session's token, returning
-    /// [`AppError::CsrfTokenInvalid`] if it does not match.
-    pub fn consume_csrf(&self, token: &str) -> Result<(), AppError> {
-        if self.csrf_token.0 == token {
-            Ok(())
-        } else {
-            Err(AppError::CsrfTokenInvalid)
-        }
+    /// Raw CSRF token to embed in forms; empty when no cookie has been sourced
+    /// yet (fails the check, the safe default).
+    pub fn csrf_token(&self) -> TokenValue {
+        self.csrf_raw.clone().unwrap_or_default()
+    }
+
+    /// Constant-time check of a submitted CSRF token against the stored hash.
+    pub fn csrf_matches(&self, submitted: &str) -> bool {
+        csrf_token_matches(submitted, &self.csrf_token_hash)
+    }
+
+    /// Set the CSRF token, updating both the stored hash and the raw value.
+    pub fn set_csrf(&mut self, raw: TokenValue) {
+        self.csrf_token_hash = hash_csrf_token(&raw.0);
+        self.csrf_raw = Some(raw);
     }
 }
 
@@ -249,6 +261,42 @@ mod tests {
         assert_eq!(session.token_hash(), hash_token(&raw));
         assert_eq!(session.token_hash().len(), 64); // 32 bytes hex-encoded
         assert_ne!(session.token_hash(), raw);
+    }
+
+    /// The CSRF token is random and independent of the session token; only its
+    /// hash is kept, and that hash is distinct from the raw token.
+    #[test]
+    fn csrf_token_is_random_and_independent_of_session_token() {
+        let session = Session::new_test();
+
+        assert!(!session.csrf_token().0.is_empty());
+        assert_ne!(session.csrf_token().0, session.token_hash());
+        assert_ne!(session.csrf_token().0, session.token_string());
+        assert_ne!(session.csrf_token().0, session.csrf_token_hash);
+        // Distinct sessions get distinct CSRF tokens.
+        assert_ne!(session.csrf_token(), Session::new_test().csrf_token());
+    }
+
+    /// The stored hash verifies the raw token and rejects other values.
+    #[test]
+    fn csrf_matches_verifies_submitted_token() {
+        let session = Session::new_test();
+        let token = session.csrf_token().to_string();
+
+        assert!(session.csrf_matches(&token));
+        assert!(!session.csrf_matches("wrong"));
+    }
+
+    /// `set_csrf` rotates both the raw token and its stored hash together.
+    #[test]
+    fn set_csrf_rotates_token_and_hash() {
+        let mut session = Session::new_test();
+        let old = session.csrf_token().to_string();
+
+        session.set_csrf(crate::form::generate_csrf_token());
+
+        assert!(!session.csrf_matches(&old));
+        assert!(session.csrf_matches(&session.csrf_token().to_string()));
     }
 
     /// Confirms idle timeout invalidates stale sessions.

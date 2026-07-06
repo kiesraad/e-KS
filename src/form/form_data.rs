@@ -1,7 +1,4 @@
-use crate::{
-    Locale, TokenValue,
-    form::{FieldErrors, WithCsrfToken},
-};
+use crate::{Locale, form::FieldErrors};
 
 #[derive(Debug, Clone)]
 pub struct FormData<T> {
@@ -9,26 +6,31 @@ pub struct FormData<T> {
     errors: FieldErrors,
 }
 
-impl<T: WithCsrfToken> FormData<T> {
-    pub fn new(csrf_token: &TokenValue) -> Self {
+impl<T: Default> FormData<T> {
+    pub fn new() -> Self {
         Self {
-            data: T::default().with_csrf_token(csrf_token.clone()),
+            data: T::default(),
+            errors: Vec::new(),
+        }
+    }
+}
+
+impl<T: Default> Default for FormData<T> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
+impl<T> FormData<T> {
+    pub fn new_with_data(data: T) -> Self {
+        Self {
+            data,
             errors: Vec::new(),
         }
     }
 
-    pub fn new_with_data(data: T, csrf_token: &TokenValue) -> Self {
-        Self {
-            data: data.with_csrf_token(csrf_token.clone()),
-            errors: Vec::new(),
-        }
-    }
-
-    pub fn new_with_errors(data: T, csrf_token: &TokenValue, errors: FieldErrors) -> Self {
-        Self {
-            data: data.with_csrf_token(csrf_token.clone()),
-            errors,
-        }
+    pub fn new_with_errors(data: T, errors: FieldErrors) -> Self {
+        Self { data, errors }
     }
 
     pub fn errors(self) -> FieldErrors {
@@ -52,17 +54,10 @@ mod tests {
     #[derive(Default)]
     struct DummyForm;
 
-    impl WithCsrfToken for DummyForm {
-        fn with_csrf_token(self, _csrf_token: TokenValue) -> Self {
-            self
-        }
-    }
-
     #[test]
     fn collects_errors_for_named_field() {
         let form: FormData<DummyForm> = FormData::new_with_errors(
             Default::default(),
-            &TokenValue::default(),
             vec![
                 ("name".to_string(), ValidationError::ValueShouldNotBeEmpty),
                 ("other".to_string(), ValidationError::InvalidValue),

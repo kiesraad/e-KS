@@ -4,6 +4,7 @@
   <div class="overlay-backdrop">
     <form method="post"
           class="overlay {% if "overlay_referrer"|value_true %}no-animation{% else %}animation{% endif %}">
+      <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}" />
       <header>
         <h2>
           {% block overlay_title %}{% endblock %}

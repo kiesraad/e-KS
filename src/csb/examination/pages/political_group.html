@@ -18,6 +18,7 @@
       </p>
       <form method="post"
             action="{{ political_group.examination_toggle_finish_path() }}">
+        <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
         <label class="switch">
           <input type="submit">
           <span class="slider"></span>

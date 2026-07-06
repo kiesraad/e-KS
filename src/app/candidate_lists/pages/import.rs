@@ -14,7 +14,7 @@ use crate::{
     },
     core::Csv,
     filters,
-    form::{EmptyForm, FileForm, FormData},
+    form::FileForm,
     redirect_success, trans,
 };
 
@@ -26,7 +26,6 @@ const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
 struct ImportExportTemplate {
     list: CandidateList,
     import_errors: Vec<String>,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -39,7 +38,6 @@ fn render_import_export(
         ImportExportTemplate {
             list,
             import_errors,
-            form: FormData::new(&context.session.csrf_token),
             overlay: Overlay::default(),
         },
         context,
@@ -75,17 +73,6 @@ pub async fn import_candidate_list(
         },
     };
 
-    let csrf_form = EmptyForm {
-        csrf_token: import_data.csrf_token,
-    };
-
-    if csrf_form
-        .validate_create(&context.session.csrf_token)
-        .is_err()
-    {
-        return Err(AppError::CsrfTokenInvalid);
-    }
-
     if let Some(name) = &import_data.file_name
         && !has_csv_extension(name)
     {
@@ -116,7 +103,6 @@ pub async fn import_candidate_list(
         &mut list,
         &store,
         &csv_data,
-        &context.session.csrf_token,
         context.session.locale,
         import_data.file_name.unwrap_or_default(),
         file_size,
@@ -280,14 +266,12 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
             context,
             store.clone(),
             Ok(FileForm {
-                csrf_token,
                 file_name: Some("invalid.csv".to_string()),
                 file_data: Some(Bytes::from(invalid_csv())),
             }),
@@ -312,14 +296,12 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
             context,
             store,
             Ok(FileForm {
-                csrf_token,
                 file_name: Some("validation-errors.csv".to_string()),
                 file_data: Some(Bytes::from(csv_with_multiple_validation_errors())),
             }),
@@ -353,7 +335,6 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let mut csv = format!("{}\r\n", csv_headers());
         for index in 0..(MAX_CANDIDATES + 5) {
@@ -367,7 +348,6 @@ mod tests {
             context,
             store,
             Ok(FileForm {
-                csrf_token,
                 file_name: Some("candidates.csv".to_string()),
                 file_data: Some(Bytes::from(csv)),
             }),
@@ -445,14 +425,12 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = import_candidate_list(
             CandidateListImportPath { list_id: list.id },
             context,
             store,
             Ok(FileForm {
-                csrf_token,
                 file_name: Some("payload.exe".to_string()),
                 file_data: Some(Bytes::from("anything")),
             }),

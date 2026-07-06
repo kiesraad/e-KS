@@ -30,10 +30,7 @@ pub async fn update_person_address(
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
-            form: FormData::new_with_data(
-                AddressForm::from(person.clone()),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(AddressForm::from(person.clone())),
             overlay: Overlay::new(&query),
             person,
         },
@@ -49,7 +46,7 @@ pub async fn update_person_address_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<AddressForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&person, &context.session.csrf_token) {
+    match form.validate_update(&person) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 person,
@@ -121,8 +118,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_address_form(&csrf_token);
+        let form = sample_address_form();
         let expected_path = person.highlight_success_path().to_string();
 
         let response = update_person_address_submit(
@@ -164,8 +160,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_address_form(&csrf_token);
+        let mut form = sample_address_form();
         form.address.postal_code = "a".to_string();
 
         let response = update_person_address_submit(
@@ -212,7 +207,6 @@ mod tests {
                     house_number_addition: "A".to_string(),
                     street_name: "Stationsstraat".to_string(),
                 },
-                csrf_token: context.session.csrf_token.clone(),
             }),
         )
         .await

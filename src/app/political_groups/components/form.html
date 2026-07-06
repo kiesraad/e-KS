@@ -1,5 +1,5 @@
 <div>
-  <input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">
+  <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
   {% if steps.is_blank() %}
     <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
   {% endif %}

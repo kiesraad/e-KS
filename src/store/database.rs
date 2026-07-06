@@ -129,7 +129,6 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           stream_id UUID,
           current_election JSONB,
           locale TEXT NOT NULL,
-          csrf_token TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
           saml_name_id TEXT,
           scope TEXT NOT NULL DEFAULT 'political_group',
@@ -144,6 +143,16 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx
            ON sessions(last_activity)"#,
+    )
+    .execute(&mut *conn)
+    .await?;
+
+    // Only the CSRF token's hash is stored; the raw token lives in a cookie.
+    sqlx::query(r#"ALTER TABLE sessions DROP COLUMN IF EXISTS csrf_token"#)
+        .execute(&mut *conn)
+        .await?;
+    sqlx::query(
+        r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS csrf_token_hash TEXT NOT NULL DEFAULT ''"#,
     )
     .execute(&mut *conn)
     .await?;

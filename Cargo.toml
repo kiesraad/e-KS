@@ -23,7 +23,7 @@ axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 rustls = "0.23.40"
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
 tokio = { version = "1.52.1", features = ["full"] }
-tower-http = { version = "0.7.0", features = ["set-header", "trace"] }
+tower-http = { version = "0.7.0", features = ["csrf", "set-header", "trace"] }
 tracing = "0.1.44"
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 bytes = "1.11.1"
@@ -45,6 +45,7 @@ chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
 parking_lot = "0.12.5"
 rand = "0.10.1"
 sha2 = "0.11.0"
+subtle = "2.6.1"
 sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-rustls-aws-lc-rs"] }
 uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
 url = "2.5.8"
@@ -156,6 +157,7 @@ serde_json = { workspace = true }
 serde_urlencoded = { workspace = true }
 sha2 = { workspace = true }
 sqlx = { workspace = true, optional = true }
+subtle = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }

@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, CsbMainEvent, ElectionConfig, Locale, Scope,
     Session, StreamId,
-    auth::session_extractor::{build_session_cookie, user_agent_hash},
+    auth::session_extractor::{build_csrf_cookie, build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
     political_groups::PoliticalGroup,
@@ -122,7 +122,8 @@ async fn perform_dev_login(
     state.sessions.insert(session.clone()).await;
 
     Ok((
-        jar.add(build_session_cookie(&session)),
+        jar.add(build_session_cookie(&session))
+            .add(build_csrf_cookie(session.csrf_token())),
         Redirect::to(&redirect_to),
     ))
 }

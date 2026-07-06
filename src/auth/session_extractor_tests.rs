@@ -51,8 +51,10 @@ async fn middleware_reuses_session_with_cookie() {
 
     let session = Session::new_test();
     let token = session.token_string();
+    let csrf = session.csrf_token().0;
     state.sessions.insert(session).await;
-    let cookie_value = format!("{SESSION_COOKIE_NAME}={token}");
+    // Present a valid CSRF cookie so the middleware reuses it without re-minting.
+    let cookie_value = format!("{SESSION_COOKIE_NAME}={token}; {CSRF_COOKIE_NAME}={csrf}");
 
     let response = app
         .oneshot(

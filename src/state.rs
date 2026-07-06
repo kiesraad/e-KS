@@ -15,7 +15,8 @@ use crate::{
     CsbStoreData, DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore,
     StreamId, TypstRenderer,
     auth::session_extractor::{
-        SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
+        SESSION_COOKIE_NAME, build_csrf_cookie, build_csrf_removal_cookie, build_removal_cookie,
+        build_session_cookie, user_agent_hash,
     },
     common::{IndexPath, SelectElectionPath},
     csb::CSB_MAIN_STREAM_ID,
@@ -185,6 +186,7 @@ impl AppState {
             self.sessions.remove(&token).await;
         }
         jar.remove(build_removal_cookie())
+            .remove(build_csrf_removal_cookie())
     }
 
     #[cfg(test)]
@@ -285,7 +287,8 @@ impl AuthState for AppState {
         self.sessions.insert(session.clone()).await;
 
         (
-            jar.add(build_session_cookie(&session)),
+            jar.add(build_session_cookie(&session))
+                .add(build_csrf_cookie(session.csrf_token())),
             Redirect::to(&redirect_to),
         )
             .into_response()
@@ -301,7 +304,11 @@ impl AuthState for AppState {
                 .and_then(|session| session.saml_name_id),
             None => None,
         };
-        (jar.remove(build_removal_cookie()), name_id)
+        (
+            jar.remove(build_removal_cookie())
+                .remove(build_csrf_removal_cookie()),
+            name_id,
+        )
     }
 
     async fn on_authentication_failed(

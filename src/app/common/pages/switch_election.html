@@ -21,7 +21,7 @@
                 {% if *e != current_election %}
                   <form method="post"
                         action="{{ crate::common::SwitchElectionPath.to_string() }}">
-                    <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                    <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
                     <input type="hidden" name="election" value="{{ e.code() }}">
                     {% match e.election_type() %}
                     {% when crate::ElectionType::Ps %}
@@ -49,7 +49,7 @@
 <form method="post"
       action="{{ crate::common::SwitchElectionPath.to_string() }}"
       class="form election-switch mt-xl">
-  <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+  <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
   <fieldset>
     <p class="form-field form-field-lg">
       <label for="election">{{ "common.switch_election.label"|trans }}</label>

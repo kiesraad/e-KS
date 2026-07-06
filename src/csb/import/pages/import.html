@@ -9,7 +9,7 @@
 {% endblock %}
 {% block content %}
   <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
-    <input type="hidden" name="csrf_token" value="{{ csrf_token }}" />
+    <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}" />
     <fieldset>
       <div class="form-field form-field-lg {% if error.is_some() %}error{% endif %}">
         <label for="hash">{{ "csb.form.hash"|trans }}</label>

@@ -32,10 +32,9 @@ pub async fn update_representative(
     candidate: Candidate,
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
-    let form = FormData::new_with_data(
-        RepresentativeForm::from(candidate.person.clone().representative.unwrap_or_default()),
-        &context.session.csrf_token,
-    );
+    let form = FormData::new_with_data(RepresentativeForm::from(
+        candidate.person.clone().representative.unwrap_or_default(),
+    ));
 
     Ok(HtmlTemplate(
         UpdateRepresentativeTemplate {
@@ -59,7 +58,7 @@ pub async fn update_representative_submit(
     Form(form): Form<RepresentativeForm>,
 ) -> Result<Response, AppError> {
     let representative = candidate.person.clone().representative.unwrap_or_default();
-    match form.validate_update(&representative, &context.session.csrf_token) {
+    match form.validate_update(&representative) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
@@ -158,7 +157,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let expected_csrf = context.session.csrf_token.clone();
+        let expected_csrf = context.session.csrf_token();
 
         let response = update_representative(
             UpdateRepresentativePath {
@@ -200,8 +199,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_representative_form(&csrf_token);
+        let mut form = sample_representative_form();
         form.name.last_name = "Smit".to_string();
 
         let expected_path = full_list
@@ -259,8 +257,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_representative_form(&csrf_token);
+        let mut form = sample_representative_form();
         form.address.postal_code = "a".to_string();
 
         let response = update_representative_submit(

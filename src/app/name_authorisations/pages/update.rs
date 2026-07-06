@@ -30,10 +30,7 @@ pub async fn update_name_authorisation(
 ) -> Result<Response, AppError> {
     Ok(HtmlTemplate(
         NameAuthorisationUpdateTemplate {
-            form: FormData::new_with_data(
-                name_authorisation.clone().into(),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(name_authorisation.clone().into()),
             name_authorisation,
             overlay: Overlay::new(&query),
         },
@@ -50,7 +47,7 @@ pub async fn update_name_authorisation_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<NameAuthorisationForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update(&name_authorisation, &context.session.csrf_token) {
+    match form.validate_update(&name_authorisation) {
         Err(form_data) => Ok(HtmlTemplate(
             NameAuthorisationUpdateTemplate {
                 name_authorisation,
@@ -120,8 +117,7 @@ mod tests {
         name_authorisation.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_name_authorisation_form(&csrf_token);
+        let mut form = sample_name_authorisation_form();
         form.name.last_name = "Updated".to_string();
 
         let response = update_name_authorisation_submit(
@@ -164,8 +160,7 @@ mod tests {
         name_authorisation.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_name_authorisation_form(&csrf_token);
+        let mut form = sample_name_authorisation_form();
         form.name.last_name = " ".to_string();
 
         let response = update_name_authorisation_submit(

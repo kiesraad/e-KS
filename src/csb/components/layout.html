@@ -36,6 +36,7 @@
             <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
                   method="post"
                   class="language-switch">
+              <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
               <button class="button sm {% if locale == crate::Locale::Nl %}active{% endif %}"
                       type="submit"
                       name="lang"

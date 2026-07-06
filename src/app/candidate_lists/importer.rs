@@ -1,5 +1,5 @@
 use crate::{
-    AppError, AppEvent, AppStore, Locale, MAX_CANDIDATES, TokenValue,
+    AppError, AppEvent, AppStore, Locale, MAX_CANDIDATES,
     candidate_lists::{
         CandidateList,
         structs::{CSV_HEADERS, CandidateRecord, CandidateRecordCsv},
@@ -33,14 +33,13 @@ pub(crate) async fn import_candidate_list_csv(
     list: &mut CandidateList,
     store: &AppStore,
     csv_data: &[u8],
-    csrf_token: &TokenValue,
     locale: Locale,
     file_name: String,
     file_size: usize,
 ) -> Result<ImportOutcome, ImportCandidateListError> {
     ensure_expected_headers(csv_data, locale)?;
     let records = parse_records(csv_data, locale)?;
-    let persons = collect_persons(records, store.get_persons(), csrf_token, locale)?;
+    let persons = collect_persons(records, store.get_persons(), locale)?;
     emit_import_event(list, store, persons, file_name, file_size).await
 }
 
@@ -90,7 +89,6 @@ fn csv_error_messages(errors: Vec<CsvError>, locale: Locale) -> Vec<String> {
 fn collect_persons(
     records: Vec<CandidateRecord>,
     existing_persons: Vec<Person>,
-    csrf_token: &TokenValue,
     locale: Locale,
 ) -> Result<Vec<PreparedPerson>, ImportCandidateListError> {
     let mut prepared_people = Vec::new();
@@ -98,7 +96,7 @@ fn collect_persons(
 
     for (index, record) in records.into_iter().enumerate() {
         let candidate_number = index + 1;
-        match validate_record(record, candidate_number, csrf_token, locale) {
+        match validate_record(record, candidate_number, locale) {
             Ok(person) => upsert_person(person, &mut prepared_people, &existing_persons),
             Err(ImportCandidateListError::Messages(messages)) => errors.extend(messages),
             Err(error) => return Err(error),
@@ -115,10 +113,9 @@ fn collect_persons(
 fn validate_record(
     record: CandidateRecord,
     candidate_number: usize,
-    csrf_token: &TokenValue,
     locale: Locale,
 ) -> Result<Person, ImportCandidateListError> {
-    record.validate_create(csrf_token).map_err(|error| {
+    record.validate_create().map_err(|error| {
         ImportCandidateListError::Messages(field_error_messages(
             candidate_number,
             error.errors(),
@@ -278,7 +275,6 @@ mod tests {
             &mut list,
             &store,
             valid_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -320,7 +316,6 @@ mod tests {
             &mut list,
             &store,
             no_bsn_csv_with_different_first_name().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -354,7 +349,6 @@ mod tests {
             &mut list,
             &store,
             no_bsn_csv_with_different_first_name().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -389,7 +383,6 @@ mod tests {
             &mut list,
             &store,
             mixed_bsn_duplicate_name_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -415,7 +408,6 @@ mod tests {
             &mut list,
             &store,
             duplicate_no_bsn_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -452,7 +444,6 @@ mod tests {
             &mut list,
             &store,
             duplicate_bsn_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -490,7 +481,6 @@ mod tests {
             &mut list,
             &store,
             mixed_bsn_duplicate_name_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -523,7 +513,6 @@ mod tests {
             &mut list,
             &store,
             csv.as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,
@@ -551,7 +540,6 @@ mod tests {
             &mut list,
             &store,
             multiple_invalid_rows_csv().as_bytes(),
-            &crate::form::generate_csrf_token(),
             Locale::En,
             "test.csv".to_string(),
             0,

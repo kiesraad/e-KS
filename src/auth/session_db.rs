@@ -10,7 +10,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, Session, StreamId, TokenValue,
+    AppError, ElectionConfig, Locale, Scope, Session, StreamId,
     auth::session::{session_absolute_timeout, session_idle_timeout},
 };
 
@@ -21,12 +21,12 @@ struct SessionRow {
     stream_id: Option<uuid::Uuid>,
     current_election: Option<serde_json::Value>,
     locale: String,
-    csrf_token: String,
     last_activity: DateTime<Utc>,
     saml_name_id: Option<String>,
     scope: String,
     created_at: DateTime<Utc>,
     user_agent_hash: Option<String>,
+    csrf_token_hash: String,
 }
 
 /// Insert or update a session row (`token` column holds the hash). `created_at`
@@ -41,7 +41,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     sqlx::query(
         r#"
         INSERT INTO sessions
-            (token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope, created_at, user_agent_hash)
+            (token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token_hash)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (token) DO UPDATE SET
             stream_id = EXCLUDED.stream_id,
@@ -49,19 +49,20 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
             locale = EXCLUDED.locale,
             last_activity = EXCLUDED.last_activity,
             saml_name_id = EXCLUDED.saml_name_id,
-            scope = EXCLUDED.scope
+            scope = EXCLUDED.scope,
+            csrf_token_hash = EXCLUDED.csrf_token_hash
         "#,
     )
     .bind(session.token_hash())
     .bind(session.stream_id.map(|s| s.uuid()))
     .bind(current_election_json)
     .bind(session.locale.as_str())
-    .bind(&session.csrf_token.0)
     .bind(session.last_activity)
     .bind(&session.saml_name_id)
     .bind(session.scope.as_str())
     .bind(session.created_at)
     .bind(&session.user_agent_hash)
+    .bind(&session.csrf_token_hash)
     .execute(pool)
     .await?;
 
@@ -71,7 +72,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
 /// Fetch a single session by its token hash.
 pub async fn load(pool: &sqlx::PgPool, token_hash: &str) -> Result<Option<Session>, AppError> {
     let row: Option<SessionRow> = sqlx::query_as(
-        r#"SELECT token, stream_id, current_election, locale, csrf_token, last_activity, saml_name_id, scope, created_at, user_agent_hash
+        r#"SELECT token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token_hash
            FROM sessions WHERE token = $1"#,
     )
     .bind(token_hash)
@@ -90,6 +91,8 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
     Ok(Session {
         token_hash: row.token,
         raw_token: None, // never carried by a reloaded session
+        csrf_token_hash: row.csrf_token_hash,
+        csrf_raw: None, // repopulated from the CSRF cookie
         created_at: row.created_at,
         last_activity: row.last_activity,
         user_agent_hash: row.user_agent_hash,
@@ -97,7 +100,6 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
         scope: Scope::from_str(&row.scope).unwrap_or_default(),
         current_election,
         locale: Locale::from_str(&row.locale).unwrap_or_default(),
-        csrf_token: TokenValue(row.csrf_token),
         saml_name_id: row.saml_name_id,
     })
 }
@@ -135,12 +137,12 @@ mod tests {
             stream_id: None,
             current_election: None,
             locale: Locale::default().as_str().to_string(),
-            csrf_token: "csrf-xyz".to_string(),
             last_activity: Utc::now(),
             saml_name_id,
             scope: Scope::default().as_str().to_string(),
             created_at: Utc::now(),
             user_agent_hash: Some("ua-hash".to_string()),
+            csrf_token_hash: "csrf-hash-abc".to_string(),
         }
     }
 

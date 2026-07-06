@@ -1,7 +1,7 @@
 {% macro delete_modal(delete_action, delete_title, delete_warning_text = "") %}
   <dialog class="modal">
     <form method="post" action="{{ delete_action }}" class="form">
-      {% if form is defined %}<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}">{% endif %}
+      <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
       <button class="close-modal" aria-label="{{ "action.close"|trans }}">
         <span>{{ "action.close"|trans }}</span>
       </button>

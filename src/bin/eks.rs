@@ -109,10 +109,13 @@ mod tests {
         let url = format!("{base}/dev/login?bsn=999999990&fixtures=false");
         let resp = client.get(&url).send().await.unwrap();
         assert_eq!(resp.status(), StatusCode::SEE_OTHER);
+        // Login sets a session and a CSRF cookie; pick the session one.
         resp.headers()
-            .get("set-cookie")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(';').next())
+            .get_all("set-cookie")
+            .iter()
+            .filter_map(|v| v.to_str().ok())
+            .filter_map(|v| v.split(';').next())
+            .find(|pair| pair.starts_with(eks::SESSION_COOKIE_NAME))
             .expect("session cookie")
             .to_string()
     }

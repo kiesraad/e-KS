@@ -44,7 +44,7 @@ pub async fn select_election(
         return Ok(Redirect::to(&IndexPath.to_string()).into_response());
     }
 
-    let csrf_token = session.csrf_token.clone();
+    let csrf_token = session.csrf_token();
     state.sessions.insert(session.clone()).await;
 
     let template = SelectElectionTemplate {
@@ -75,8 +75,6 @@ pub async fn select_election_submit(
     mut session: Session,
     axum::Form(form): axum::Form<SelectElectionForm>,
 ) -> Result<Response, AppError> {
-    session.consume_csrf(&form.csrf_token)?;
-
     // Committee sessions use CSB stores, not app stores; never create an
     // `AppStore` in their `(stream_id, election)` partition.
     if session.scope == Scope::CentralElectoralCommittee {
@@ -209,7 +207,7 @@ mod tests {
             .await
             .expect("load session")
             .expect("session");
-        let csrf = session.csrf_token.clone();
+        let csrf = session.csrf_token();
 
         let body = format!("csrf_token={csrf}&election=EK27");
         let response = app

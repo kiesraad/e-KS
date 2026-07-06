@@ -3,13 +3,12 @@ use axum::{
     extract::{FromRequest, Multipart, Request},
 };
 
-use crate::{AppError, TokenValue};
+use crate::AppError;
 
 const MAX_FILE_NAME_LEN: usize = 255;
 
 #[derive(Debug, Default)]
 pub struct FileForm {
-    pub csrf_token: TokenValue,
     pub file_name: Option<String>,
     pub file_data: Option<Bytes>,
 }
@@ -25,23 +24,17 @@ where
         let mut form = FileForm::default();
 
         while let Some(field) = multipart.next_field().await? {
-            match field.name() {
-                Some("csrf_token") => {
-                    form.csrf_token = TokenValue(field.text().await?);
-                }
-                Some("file_data") => {
-                    let content_type = field.content_type().map(|s| s.to_string());
-                    form.file_name = sanitize_file_name(field.file_name());
-                    let bytes = field.bytes().await?;
-                    tracing::info!(
-                        file_name = form.file_name.as_deref().unwrap_or(""),
-                        content_type = content_type.as_deref().unwrap_or(""),
-                        size_bytes = bytes.len(),
-                        "file upload received",
-                    );
-                    form.file_data = Some(bytes);
-                }
-                _ => {}
+            if field.name() == Some("file_data") {
+                let content_type = field.content_type().map(|s| s.to_string());
+                form.file_name = sanitize_file_name(field.file_name());
+                let bytes = field.bytes().await?;
+                tracing::info!(
+                    file_name = form.file_name.as_deref().unwrap_or(""),
+                    content_type = content_type.as_deref().unwrap_or(""),
+                    size_bytes = bytes.len(),
+                    "file upload received",
+                );
+                form.file_data = Some(bytes);
             }
         }
 
@@ -83,7 +76,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn extracts_uploaded_file_and_csrf_token() -> Result<(), AppError> {
+    async fn extracts_uploaded_file() -> Result<(), AppError> {
         let request = multipart_request(
             "/candidate-lists/import",
             "csrf-token",
@@ -93,7 +86,6 @@ mod tests {
 
         let form = FileForm::from_request(request, &()).await?;
 
-        assert_eq!(form.csrf_token.0, "csrf-token");
         assert_eq!(form.file_name.as_deref(), Some("candidates.csv"));
         assert_eq!(
             form.file_data.as_deref(),

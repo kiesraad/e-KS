@@ -2,7 +2,7 @@ use serde::Deserialize;
 use validate::Validate;
 
 use crate::{
-    OptionStringExt, TokenValue,
+    OptionStringExt,
     common::{DisplayName, PreviousElectionResults},
     political_groups::PoliticalGroup,
 };
@@ -15,8 +15,6 @@ pub struct PoliticalGroupForm {
     pub previous_election_results: String,
     #[validate(parse = "DisplayName", optional)]
     pub display_name: String,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
 }
 
 impl From<PoliticalGroup> for PoliticalGroupForm {
@@ -27,7 +25,6 @@ impl From<PoliticalGroup> for PoliticalGroupForm {
                 .map(|r| r.to_string())
                 .unwrap_or_default(),
             display_name: value.display_name.to_string_or_default(),
-            csrf_token: Default::default(),
         }
     }
 }
