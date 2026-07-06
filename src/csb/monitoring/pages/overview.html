@@ -1,0 +1,59 @@
+{% extends "csb/components/layout.html" %}
+{% block page_title %}{{ "csb.monitoring.title"|trans }}{% endblock %}
+{% block content %}
+  {% if monitor.rows.is_empty() %}
+    <p>{{ "csb.monitoring.no_streams"|trans }}</p>
+  {% else %}
+    <table class="monitoring-table mb-xl mt-md">
+      <thead>
+        <tr>
+          <th>{{ "csb.monitoring.stream_id"|trans }}</th>
+          <th>{{ "common.political_group"|trans }}</th>
+          <th>{{ "csb.monitoring.election"|trans }}</th>
+          <th>{{ "csb.monitoring.created_at"|trans }}</th>
+          <th>{{ "csb.monitoring.last_event"|trans }}</th>
+          <th>{{ "csb.monitoring.event_count"|trans }}</th>
+          {% if monitor.database_enabled %}
+            <th>
+              {{ "csb.monitoring.cache"|trans }}
+              {% if let Some(server) = "server_name"|optional_str_value %}· <strong>{{ server }}</strong>{% endif %}
+            </th>
+          {% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for row in monitor.rows %}
+          <tr>
+            <td class="font-number">{{ row.short_id() }}</td>
+            <td>{{ row.political_group_name.as_deref().unwrap_or("-") }}</td>
+            <td class="font-number">{{ row.meta.election.stable_id() }}</td>
+            <td>
+              {% if let Some(created) = row.meta.created_at %}
+                {{ created|datetime }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td>
+              {% if let Some(last) = row.meta.last_event_at %}
+                {{ last|datetime }}
+              {% else %}
+                -
+              {% endif %}
+            </td>
+            <td class="font-number">{{ row.meta.event_count }}</td>
+            {% if monitor.database_enabled %}
+              <td>
+                {% if let Some(until) = row.cache_until_event %}
+                  {{ until }}
+                {% else %}
+                  {{ "csb.monitoring.not_cached"|trans }}
+                {% endif %}
+              </td>
+            {% endif %}
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  {% endif %}
+{% endblock %}

@@ -4,8 +4,11 @@ use axum::response::IntoResponse;
 use super::IndexPath;
 
 use crate::{
-    AppResponse, AppStore, Context, HtmlTemplate, candidate_lists::CandidateListSummary,
-    common::Severity, filters, finalise::AllProblems,
+    AppResponse, AppStore, Context, HtmlTemplate,
+    candidate_lists::CandidateListSummary,
+    common::{PotentialProblems, Severity},
+    filters,
+    finalise::AllProblems,
 };
 
 #[derive(Template)]
@@ -42,8 +45,13 @@ pub async fn index(
         (problems.len() + general_infos.len(), severity_class)
     };
     // no infos, these are also not shown on the candidate list overview page
-    let (list_problems, _) =
+    let (mut list_problems, _) =
         AllProblems::find_list_problems(&CandidateListSummary::list(&store), &store)?;
+
+    // Don't show NoCandidateList problem on the home page, only on the finalise page
+    list_problems
+        .general
+        .retain(|problem| *problem != PotentialProblems::NoCandidateList);
 
     let (problematic_lists, general_list_problems, problematic_lists_severity) =
         if list_problems.is_empty() {
@@ -55,7 +63,6 @@ pub async fn index(
                 .highest_severity()
                 .map(|s| s.class())
                 .unwrap_or_default();
-
             (list_count, general_count, severity_class)
         };
 

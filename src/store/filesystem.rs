@@ -23,7 +23,9 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
+use super::{
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
+};
 use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 const FRAME_HEADER_LEN: usize = 4;
@@ -277,7 +279,7 @@ pub async fn find_event_by_hash_prefix(
     let mut matches = Vec::new();
     for (stream_id, election) in streams {
         let path = stream_path(dir, stream_id, election);
-        for (event_id, hash) in scan_frame_hashes(&path).await? {
+        for (event_id, _, hash) in scan_frames(&path).await? {
             if hash.starts_with(hash_prefix) {
                 matches.push((stream_id, election, event_id));
                 if matches.len() > 1 {
@@ -290,9 +292,41 @@ pub async fn find_event_by_hash_prefix(
     Ok(matches.into_iter().next())
 }
 
-/// Read each frame's `(event_id, chain hash)` from a stream file without
-/// decrypting payloads. Returns an empty vector if the file does not exist.
-async fn scan_frame_hashes(path: &Path) -> Result<Vec<(usize, [u8; 32])>, AppError> {
+/// List [`StreamMeta`] for every non-empty stream with the given scope. All
+/// on-disk streams are [`Scope::PoliticalGroup`], so other scopes yield nothing.
+pub async fn stream_metadata_by_scope(
+    dir: &Path,
+    scope: Scope,
+) -> Result<Vec<StreamMeta>, AppError> {
+    if scope != Scope::PoliticalGroup {
+        return Ok(Vec::new());
+    }
+
+    let mut streams = Vec::new();
+    visit_non_empty_stream_files(dir, |stream_id, election| {
+        streams.push((stream_id, election));
+    })
+    .await;
+
+    let mut result = Vec::with_capacity(streams.len());
+    for (stream_id, election) in streams {
+        let path = stream_path(dir, stream_id, election);
+        let frames = scan_frames(&path).await?;
+        result.push(StreamMeta {
+            stream_id,
+            election,
+            event_count: frames.iter().map(|(id, ..)| *id).max().unwrap_or(0),
+            created_at: frames.first().map(|(_, at, _)| *at),
+            last_event_at: frames.last().map(|(_, at, _)| *at),
+        });
+    }
+
+    Ok(result)
+}
+
+/// Read each frame's `(event_id, created_at, chain hash)` from a stream file
+/// without decrypting payloads. Empty vector if the file does not exist.
+async fn scan_frames(path: &Path) -> Result<Vec<(usize, DateTime<Utc>, [u8; 32])>, AppError> {
     let mut file = match File::open(path).await {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -314,10 +348,16 @@ async fn scan_frame_hashes(path: &Path) -> Result<Vec<(usize, [u8; 32])>, AppErr
             .await
             .map_err(AppError::ServerError)?;
 
-        let Frame::V1 { event_id, hash, .. } = postcard::from_bytes::<Frame>(&body)
+        let Frame::V1 {
+            event_id,
+            created_at_micros,
+            hash,
+            ..
+        } = postcard::from_bytes::<Frame>(&body)
             .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
 
-        result.push((event_id as usize, hash));
+        let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
+        result.push((event_id as usize, created_at, hash));
     }
 
     Ok(result)

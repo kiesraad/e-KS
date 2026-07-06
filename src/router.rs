@@ -43,6 +43,7 @@ pub fn create(state: AppState) -> Router<AppState> {
         .merge(csb::audit_log::router())
         .merge(csb::examination::router())
         .merge(csb::import::router())
+        .merge(csb::monitoring::router())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             csb_store_middleware,
