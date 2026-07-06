@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "persons/pages/delete.html")]
+#[template(path = "app/persons/pages/delete.html")]
 struct DeletePersonTemplate {
     person: Person,
     form: FormData<EmptyForm>,

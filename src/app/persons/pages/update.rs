@@ -13,7 +13,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "persons/pages/update.html")]
+#[template(path = "app/persons/pages/update.html")]
 struct PersonUpdateTemplate {
     person: Person,
     form: FormData<PersonalDataForm>,

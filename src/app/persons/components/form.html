@@ -1,4 +1,4 @@
-{% include "common/components/name_fields.html" %}
+{% include "app/common/components/name_fields.html" %}
 {% let election = "election"|election_value %}
 <div class="form-row">
   <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}error{% endif %}">
@@ -19,7 +19,7 @@
   <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">
     <label for="country">{{ "person.fields.country"|trans }}</label>
     {% let country_value = form.data.personal_data.country %}
-    {% include "common/components/country_input.html" %}
+    {% include "app/common/components/country_input.html" %}
     {% for error in form|error("personal_data.country") %}
       <span class="error">{{ error }}</span>
     {% else %}

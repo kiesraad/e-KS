@@ -4,17 +4,18 @@
 //! electoral council side of the workflow. For now it carries a single
 //! placeholder `import` page plus its own request context, event, and
 //! event-sourced store projection (see [`CsbStoreData`]).
+pub mod audit_log;
 pub mod examination;
 pub mod import;
 pub mod index;
 pub mod monitoring;
 
 mod context;
-mod event;
 mod omission;
-mod store;
+mod store_csb;
+mod store_main;
 
 pub use context::CsbContext;
-pub use event::CsbEvent;
 pub use omission::{Omission, OmissionId};
-pub use store::{CSB_MAIN_STREAM_ID, CsbMainEvent, CsbMainStoreData, CsbStoreData};
+pub use store_csb::{CsbEvent, CsbStoreData};
+pub use store_main::{CSB_MAIN_STREAM_ID, CsbMainEvent, CsbMainStoreData};

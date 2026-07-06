@@ -1,4 +1,4 @@
-{% extends "components/layout.html" %}
+{% extends "csb/components/layout.html" %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}

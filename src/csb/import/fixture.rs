@@ -1,7 +1,7 @@
 use crate::{AppError, AppState, AppStoreData, CsbEvent, ElectionConfig, StreamId};
 
 /// Marks CSB imports that were created from fixtures
-pub const FIXTURE_IMPORT_HASH: &str = "fixtures";
+pub const FIXTURE_IMPORT_HASH: [u8; 32] = [0; 32];
 
 /// Create a political group stream with fixtures and import it as a CSB stream
 /// if it doesn't exist already
@@ -12,7 +12,7 @@ pub async fn import_csb_fixture(
     // Skip if a fixture import already exists in any committee-scoped stream.
     for store in state.csb_store_registry.stores_by_scope().await? {
         let comes_from_fixtures = store.data.read().events.first().is_some_and(
-            |e| matches!(&e.payload, CsbEvent::Import { hash, .. } if hash == FIXTURE_IMPORT_HASH),
+            |e| matches!(&e.payload, CsbEvent::Import { hash, .. } if *hash == FIXTURE_IMPORT_HASH),
         );
         if comes_from_fixtures {
             return Ok(());
@@ -28,7 +28,7 @@ pub async fn import_csb_fixture(
         .csb_store_for_stream(StreamId::new(), election)
         .await?
         .update(CsbEvent::Import {
-            hash: FIXTURE_IMPORT_HASH.to_string(),
+            hash: FIXTURE_IMPORT_HASH,
             source_stream_id: pg_stream_id,
             snapshot: Box::new(snapshot),
         })

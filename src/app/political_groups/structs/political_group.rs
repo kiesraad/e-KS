@@ -44,8 +44,8 @@ impl PoliticalGroup {
     pub fn csb_display_name(&self) -> String {
         self.display_name
             .as_deref()
-            .unwrap_or(&"?".to_string())
-            .clone()
+            .cloned()
+            .unwrap_or("?".to_string())
     }
 
     pub fn get_max_candidates(&self) -> usize {

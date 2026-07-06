@@ -1,8 +1,11 @@
-{% extends "common/components/layout.html" %}
+{% extends "app/common/components/layout.html" %}
 {% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
 {% block content %}
+  {% set audit_log_path = AuditLogPath.to_string() %}
   <section>
-    <form method="get" action="/audit-log" class="form audit-log-filters">
+    <form method="get"
+          action="{{ audit_log_path }}"
+          class="form audit-log-filters">
       <fieldset role="group">
         <input type="text"
                name="search"
@@ -10,25 +13,10 @@
                value="{{ filter.search.as_deref().unwrap_or_default() }}"
                class="form-control"
                aria-label="{{ "audit_log.filter.search"|trans }}" />
-        <label for="event_type" class="visually-hidden">{{ "audit_log.filter.event_type"|trans }}</label>
-        <select name="event_type" id="event_type" class="form-control">
-          <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
-          {% for group in event_types_by_category %}
-            {% let category_key = format!("audit_log.filter.category.{}", group.key) %}
-            <optgroup label="{{ category_key.as_str() |trans }}">
-              {% for event_key in group.event_types.iter() %}
-                {% let event_label_key = format!("audit_log.event.{}", event_key) %}
-                <option value="{{ event_key }}"
-                        {% if filter.event_type.as_deref() == Some(event_key.as_ref()) %}selected{% endif %}>
-                  {{ event_label_key.as_str() |trans }}
-                </option>
-              {% endfor %}
-            </optgroup>
-          {% endfor %}
-        </select>
+        {% include "app/common/components/audit_log_event_type_filter.html" %}
         <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
         {% if filter.is_active() %}
-          <a href="/audit-log" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
+          <a href="{{ audit_log_path }}" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
         {% endif %}
       </fieldset>
     </form>
@@ -58,7 +46,7 @@
               <td>{{ entry.description }}</td>
               <td>{{ entry.details }}</td>
               <td class="subject-id">
-                <a href="/audit-log?search={{ entry.subject_id_full }}">
+                <a href="{{ audit_log_path }}?search={{ entry.subject_id_full }}">
                   <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id_full|abbreviate_str }}</abbr>
                 </a>
               </td>
@@ -73,35 +61,8 @@
       </table>
     </section>
     {% if pagination.total_pages > 1 %}
-      <nav aria-label="Pagination" class="pagination">
-        {% let suffix = filter.as_query_suffix() %}
-        {% if pagination.has_prev %}
-          <a href="{{ pagination.prev() }}{{ suffix }}"
-             rel="prev"
-             class="button secondary">&lt;</a>
-        {% else %}
-          <a class="button disabled" disabled aria-disabled="true">&lt;</a>
-        {% endif %}
-        {% for link in pagination.links %}
-          {% if let Some(number) = link.number %}
-            {% if link.current %}
-              <a class="button disabled" disabled aria-current="page">{{ number }}</a>
-            {% else %}
-              <a href="{{ pagination.goto(number) }}{{ suffix }}"
-                 class="button secondary">{{ number }}</a>
-            {% endif %}
-          {% else %}
-            <span aria-hidden="true">...</span>
-          {% endif %}
-        {% endfor %}
-        {% if pagination.has_next %}
-          <a href="{{ pagination.next() }}{{ suffix }}"
-             rel="next"
-             class="button secondary">&gt;</a>
-        {% else %}
-          <a class="button disabled" disabled aria-disabled="true">&gt;</a>
-        {% endif %}
-      </nav>
+      {% set suffix = filter.as_query_suffix() %}
+      {% include "app/common/components/pagination.html" %}
     {% endif %}
   {% endif %}
 {% endblock %}

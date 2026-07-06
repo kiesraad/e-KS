@@ -14,7 +14,7 @@ use crate::{
 use super::CsbImportPath;
 
 #[derive(Template)]
-#[template(path = "import/pages/import.html")]
+#[template(path = "csb/import/pages/import.html")]
 struct CsbImportTemplate {
     csrf_token: String,
     hash: String,
@@ -110,7 +110,14 @@ async fn do_import(
         .store_for_stream(source_stream_id, source_election, false)
         .await?;
     source_store.load().await?;
-    let snapshot = AppStoreData::snapshot_until(&source_store.get_events(), event_id);
+
+    let events = source_store.get_events();
+    let full_hash = events
+        .iter()
+        .find(|e| e.event_id == event_id)
+        .map(|e| e.hash)
+        .ok_or(AppError::GenericNotFound)?;
+    let snapshot = AppStoreData::snapshot_until(&events, event_id);
 
     // Persist the import under a fresh CSB stream.
     let csb_store = state
@@ -118,7 +125,7 @@ async fn do_import(
         .await?;
     csb_store
         .update(CsbEvent::Import {
-            hash: form.hash,
+            hash: full_hash,
             source_stream_id,
             snapshot: Box::new(snapshot),
         })

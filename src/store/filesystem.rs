@@ -429,7 +429,10 @@ fn stream_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> Pat
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::store::{GENESIS_HASH, encryption::EventEncryption};
+    use crate::{
+        Event,
+        store::{GENESIS_HASH, encryption::EventEncryption},
+    };
     use parking_lot::RwLock;
     use secrecy::SecretString;
     use serde::{Deserialize, Serialize};
@@ -438,6 +441,24 @@ mod tests {
     #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
     struct TestEvent {
         label: String,
+    }
+
+    impl Event for TestEvent {
+        fn category(&self) -> &'static str {
+            "test_event"
+        }
+
+        fn key(&self) -> &'static str {
+            "test_event"
+        }
+
+        fn description(&self, _locale: crate::Locale) -> String {
+            self.label.to_string()
+        }
+
+        fn details(&self) -> String {
+            self.label.to_string()
+        }
     }
 
     #[derive(Default)]
@@ -459,6 +480,17 @@ mod tests {
         fn scope() -> Scope {
             Scope::PoliticalGroup
         }
+    }
+
+    #[test]
+    fn test_event_trait_impl() {
+        let event = TestEvent {
+            label: "hello".to_string(),
+        };
+        assert_eq!(event.category(), "test_event");
+        assert_eq!(event.key(), "test_event");
+        assert_eq!(event.description(crate::Locale::En), "hello");
+        assert_eq!(event.details(), "hello");
     }
 
     fn test_encryption() -> EventEncryption {

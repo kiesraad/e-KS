@@ -1,14 +1,14 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% set close_action = NameAuthorisation::list_path() %}
 {% block overlay_title %}{{ "political_group.add_legal_name"|trans }}{% endblock %}
 {% block overlay_steps %}
-  {% include "name_authorisations/components/create_steps.html" %}
+  {% include "app/name_authorisations/components/create_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   {% set should_warn = false %}
   <fieldset>
-    {% include "name_authorisations/components/legal_name_field.html" %}
+    {% include "app/name_authorisations/components/legal_name_field.html" %}
     <h3>{{ "political_group.authorised_agent_data"|trans }}</h3>
-    {% include "common/components/name_fields.html" %}
+    {% include "app/common/components/name_fields.html" %}
   </fieldset>
 {% endblock %}

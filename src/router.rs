@@ -40,6 +40,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     // also gates them to committee-scoped sessions. They must NOT get the app
     // `store_middleware`, so they are merged here rather than above.
     let csb_router = csb::index::router()
+        .merge(csb::audit_log::router())
         .merge(csb::examination::router())
         .merge(csb::import::router())
         .merge(csb::monitoring::router())

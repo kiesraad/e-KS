@@ -1,4 +1,4 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% set close_action = Person::list_path() %}
 {% block overlay_title %}{{ "person.form.create.title"|trans }}{% endblock %}
 {% block overlay_steps %}
@@ -23,10 +23,10 @@
     </legend>
     {% let should_warn = false %}
     {% let show_last_name_info = true %}
-    {% include "persons/components/form.html" %}
+    {% include "app/persons/components/form.html" %}
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "common/components/submit.html" %}
+  {% include "app/common/components/submit.html" %}
 {% endblock %}

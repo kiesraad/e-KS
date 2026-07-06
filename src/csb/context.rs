@@ -18,6 +18,8 @@ pub struct CsbContext {
     pub server_name: Option<&'static str>,
     /// Whether to show the success alert based on the request query.
     pub show_success_alert: bool,
+    /// Whether the page was loaded as an overlay referrer (suppresses animation).
+    pub overlay_referrer: bool,
 }
 
 impl CsbContext {
@@ -26,6 +28,7 @@ impl CsbContext {
             session,
             server_name: None,
             show_success_alert: false,
+            overlay_referrer: false,
         }
     }
 
@@ -45,6 +48,7 @@ impl askama::Values for CsbContext {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
+            "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -63,6 +67,12 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbContext {
             .uri
             .query()
             .is_some_and(|q| q.contains("success=true"));
+
+        context.overlay_referrer = parts
+            .headers
+            .get(axum::http::header::REFERER)
+            .and_then(|value| value.to_str().ok())
+            .is_some_and(|url| url.contains("overlay=true"));
 
         Ok(context)
     }

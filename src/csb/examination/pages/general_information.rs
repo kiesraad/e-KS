@@ -11,7 +11,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "examination/pages/general_information.html")]
+#[template(path = "csb/examination/pages/general_information.html")]
 struct CsbGeneralInformationTemplate {
     political_group: CsbPoliticalGroup,
     name_authorisations: Vec<NameAuthorisation>,
