@@ -1,8 +1,11 @@
 {% extends "csb/components/layout.html" %}
 {% block page_title %}{{ "audit_log.title"|trans }}{% endblock %}
 {% block content %}
+  {% set audit_log_path = crate::csb::audit_log::CsbAuditLogPath{}.to_string() %}
   <section>
-    <form method="get" action="/csb/audit-log" class="form audit-log-filters">
+    <form method="get"
+          action="{{ audit_log_path }}"
+          class="form audit-log-filters">
       <fieldset role="group">
         <input type="text"
                name="search"
@@ -13,7 +16,7 @@
         <label for="stream" class="visually-hidden">{{ "audit_log.filter.stream"|trans }}</label>
         <select name="stream" id="stream" class="form-control">
           <option value=""
-                  {% if filter.stream.as_deref() == Some("main") %}selected{% endif %}>
+                  {% if filter.stream.as_deref().unwrap_or_default().is_empty() %}selected{% endif %}>
             {{ "audit_log.filter.csb_main_stream"|trans }}
           </option>
           {% for (stream_id, label) in import_streams %}
@@ -42,7 +45,7 @@
         </select>
         <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
         {% if filter.is_active() %}
-          <a href="/csb/audit-log" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
+          <a href="{{ audit_log_path }}" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
         {% endif %}
       </fieldset>
     </form>
@@ -71,7 +74,7 @@
               <td>{{ entry.stream_label }}</td>
               <td>{{ entry.description }}</td>
               <td>
-                <a href="{{ entry.detail_path() }}">
+                <a href="{{ entry.detail_path_with_return(return_url.as_str() ) }}">
                   <span>{{ "audit_log.fields.details"|trans }}</span>
                 </a>
               </td>

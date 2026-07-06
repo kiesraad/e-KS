@@ -86,6 +86,7 @@ filter:
     omission: Omission
     person: Person
     political_group: Political group
+    set_finished: Finished state
     substitute_submitter: Substitute submitter
     system: System
   csb_main_stream: Main CSB stream

@@ -1,6 +1,8 @@
 use chrono::{DateTime, Utc};
 
-use crate::{CsbEvent, CsbMainEvent, Event, Locale, StreamId, store::StoreEvent, trans};
+use crate::{
+    Event, Locale, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath, store::StoreEvent,
+};
 
 /// A single row in the CSB audit log, covering events from both the global
 /// main stream and per-import political-group streams.
@@ -16,24 +18,9 @@ pub struct CsbAuditLogEntry {
 }
 
 impl CsbAuditLogEntry {
-    pub fn from_main_event(
-        event: StoreEvent<CsbMainEvent>,
-        stream_id: StreamId,
-        locale: Locale,
-    ) -> Self {
-        Self {
-            event_id: event.event_id,
-            stream_id,
-            stream_label: trans!("audit_log.filter.csb_main_stream", locale),
-            event_category: event.payload.category(),
-            event_key: event.payload.key(),
-            description: event.payload.description(locale),
-            created_at: event.created_at,
-        }
-    }
-
-    pub fn from_event(
-        event: StoreEvent<CsbEvent>,
+    /// Build a row from any stored event and a pre-computed stream label.
+    pub fn from_event<E: Event>(
+        event: &StoreEvent<E>,
         stream_id: StreamId,
         stream_label: String,
         locale: Locale,
@@ -56,7 +43,21 @@ impl CsbAuditLogEntry {
     }
 
     pub fn detail_path(&self) -> String {
-        format!("/csb/audit-log/{}/{}", self.stream_id, self.event_id)
+        CsbAuditLogDetailPath {
+            stream_id: self.stream_id,
+            event_id: self.event_id,
+        }
+        .to_string()
+    }
+
+    /// Detail path carrying `return_to` as a `redirect_to` query param, so
+    /// closing the detail overlay returns to the same filtered list page.
+    pub fn detail_path_with_return(&self, return_to: &str) -> String {
+        format!(
+            "{}?redirect_to={}",
+            self.detail_path(),
+            urlencoding::encode(return_to)
+        )
     }
 }
 
@@ -76,7 +77,7 @@ mod tests {
         let sid = stream_id();
         let event = StoreEvent::new(1, CsbMainEvent::DeveloperLogin { stream_id: sid });
 
-        let entry = CsbAuditLogEntry::from_main_event(event, sid, EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "Main CSB stream".to_string(), EN);
 
         assert_eq!(entry.event_id, 1);
         assert_eq!(entry.stream_id, sid);
@@ -96,7 +97,7 @@ mod tests {
             timestamp,
         );
 
-        let entry = CsbAuditLogEntry::from_main_event(event, sid, EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "Main CSB stream".to_string(), EN);
 
         assert_eq!(entry.created_at, timestamp);
     }
@@ -114,7 +115,7 @@ mod tests {
             },
         );
 
-        let entry = CsbAuditLogEntry::from_event(event, sid, label.clone(), EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, label.clone(), EN);
 
         assert_eq!(entry.event_id, 3);
         assert_eq!(entry.stream_id, sid);
@@ -130,7 +131,7 @@ mod tests {
         let timestamp = chrono::DateTime::from_timestamp(1_700_000_000, 0).unwrap();
         let event = StoreEvent::new_at(6, CsbEvent::SetFinished(false), timestamp);
 
-        let entry = CsbAuditLogEntry::from_event(event, sid, "Stream".to_string(), EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "Stream".to_string(), EN);
 
         assert_eq!(entry.created_at, timestamp);
     }
@@ -147,7 +148,7 @@ mod tests {
             },
         );
 
-        let entry = CsbAuditLogEntry::from_event(event, sid, "Stream".to_string(), Locale::Nl);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "Stream".to_string(), Locale::Nl);
 
         assert_eq!(entry.description, "Politieke groepering geïmporteerd");
     }
@@ -156,7 +157,7 @@ mod tests {
     fn matches_search_by_description() {
         let sid = stream_id();
         let event = StoreEvent::new(1, CsbEvent::SetFinished(true));
-        let entry = CsbAuditLogEntry::from_event(event, sid, "Stream".to_string(), EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "Stream".to_string(), EN);
 
         assert!(entry.matches_search("finished"));
         assert!(entry.matches_search("FINISHED"));
@@ -167,7 +168,7 @@ mod tests {
     fn matches_search_by_stream_label() {
         let sid = stream_id();
         let event = StoreEvent::new(1, CsbEvent::SetFinished(true));
-        let entry = CsbAuditLogEntry::from_event(event, sid, "PG Kiesraad".to_string(), EN);
+        let entry = CsbAuditLogEntry::from_event(&event, sid, "PG Kiesraad".to_string(), EN);
 
         assert!(entry.matches_search("Kiesraad"));
         assert!(entry.matches_search("kiesraad"));

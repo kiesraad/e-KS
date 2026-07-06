@@ -57,7 +57,7 @@ event:
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd
-  set_finished: Afronden ingesteld
+  set_finished: Afgerond gezet
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
   update_list_submitter: Lijstinleveraar bijgewerkt
@@ -86,6 +86,7 @@ filter:
     omission: Verzuim
     person: Persoon
     political_group: Politieke groepering
+    set_finished: Afgerond
     substitute_submitter: Vervanger herstel verzuim
     system: Systeem
   csb_main_stream: Main CSB stream

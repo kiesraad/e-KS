@@ -9,6 +9,7 @@ use crate::{
     csb::audit_log::{pages::CsbAuditLogPath, structs::CsbAuditLogEntry},
     filters,
     pagination::Pagination,
+    trans,
 };
 
 const PER_PAGE: usize = 20;
@@ -23,12 +24,17 @@ pub struct EventTypeCategory {
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)
+/// trans!("audit_log.filter.category.set_finished", _)
 /// trans!("audit_log.filter.category.omission", _)
 /// trans!("audit_log.filter.category.system", _)
 pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     EventTypeCategory {
         key: "import",
         event_types: &["import"],
+    },
+    EventTypeCategory {
+        key: "set_finished",
+        event_types: &["set_finished"],
     },
     EventTypeCategory {
         key: "omission",
@@ -84,6 +90,9 @@ struct CsbAuditLogTemplate {
     /// Import streams available for filtering: (stream_id, label).
     import_streams: Vec<(StreamId, String)>,
     event_types_by_category: &'static [EventTypeCategory],
+    /// Current list URL (page + filters), used so the detail overlay can
+    /// return to the same view when closed.
+    return_url: String,
 }
 
 pub async fn csb_audit_log(
@@ -123,7 +132,7 @@ pub async fn csb_audit_log(
 
         for event in store.data.read().events.iter() {
             all_entries.push(CsbAuditLogEntry::from_event(
-                event.clone(),
+                event,
                 store.stream_id,
                 label.clone(),
                 locale,
@@ -131,10 +140,12 @@ pub async fn csb_audit_log(
         }
     } else {
         // Add main stream events
+        let label = trans!("audit_log.filter.csb_main_stream", locale);
         for event in main_store.data.read().events.iter() {
-            all_entries.push(CsbAuditLogEntry::from_main_event(
-                event.clone(),
+            all_entries.push(CsbAuditLogEntry::from_event(
+                event,
                 main_store.stream_id,
+                label.clone(),
                 locale,
             ));
         }
@@ -150,8 +161,13 @@ pub async fn csb_audit_log(
         all_entries.retain(|e| e.matches_search(q));
     }
 
-    // Newest first.
-    all_entries.sort_by_key(|b| std::cmp::Reverse(b.created_at));
+    // Newest first, with equal timestamps kept newest-first (later event_id wins).
+    all_entries.sort_by_key(|b| {
+        (
+            std::cmp::Reverse(b.created_at),
+            std::cmp::Reverse(b.event_id),
+        )
+    });
 
     let total = all_entries.len();
     let pagination = Pagination {
@@ -166,6 +182,13 @@ pub async fn csb_audit_log(
         .take(pagination.limit())
         .collect();
 
+    let return_url = format!(
+        "{}{}{}",
+        CsbAuditLogPath,
+        pagination.url(pagination.page, pagination.per_page),
+        filter.as_query_suffix()
+    );
+
     Ok(HtmlTemplate(
         CsbAuditLogTemplate {
             entries,
@@ -173,6 +196,7 @@ pub async fn csb_audit_log(
             filter,
             import_streams: import_stream_labels,
             event_types_by_category: EVENT_TYPES_BY_CATEGORY,
+            return_url,
         },
         context,
     ))
@@ -493,6 +517,38 @@ mod tests {
         .await?;
         let body = response_body_string(response).await;
         assert!(body.contains("/csb/audit-log\" class=\"button secondary\">"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn detail_links_preserve_filter_as_redirect() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let response = call(
+            main_store,
+            AppState::new_for_tests().await,
+            Query(CsbAuditLogFilter {
+                event_type: Some("developer_login".to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        // The detail link carries a redirect_to pointing back at the current,
+        // filtered list view so closing the overlay restores it.
+        assert!(body.contains("redirect_to="));
+        let encoded = urlencoding::encode("/csb/audit-log?per_page=20&event_type=developer_login");
+        assert!(
+            body.contains(encoded.as_ref()),
+            "expected detail link to encode the filtered return URL"
+        );
 
         Ok(())
     }
