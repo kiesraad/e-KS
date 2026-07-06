@@ -8,6 +8,7 @@ use crate::{
     persons::{Person, PersonalData},
 };
 
+#[derive(Clone)]
 pub struct BrpClient {
     http_client: Client,
     base_url: String,

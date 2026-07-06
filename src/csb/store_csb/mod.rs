@@ -31,6 +31,7 @@ pub struct CsbStoreData {
     pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
     pub(crate) csb_corrected_display_name: Option<DisplayName>,
     pub(crate) brp_validations: HashMap<PersonId, bool>,
+    pub(crate) brp_verification_in_progress: bool,
 }
 
 impl StoreData for CsbStoreData {

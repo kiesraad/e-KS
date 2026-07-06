@@ -1,3 +1,5 @@
+use std::time::Duration;
+
 use askama::Template;
 use axum::{
     extract::State,
@@ -5,6 +7,7 @@ use axum::{
 };
 use serde::Deserialize;
 
+use crate::structs::csb::{Omission, OmissionCategory};
 use crate::{
     AppError, AppState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate, Locale,
     PgStoreData, StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success,
@@ -12,6 +15,8 @@ use crate::{
 };
 
 use super::CsbImportPath;
+
+const BRP_COURTESY_TIMEOUT: Duration = Duration::from_secs(1);
 
 #[derive(Template)]
 #[template(path = "csb/import/pages/import.html")]
@@ -119,23 +124,51 @@ async fn do_import(
         })
         .await?;
 
-    do_brp_verification(&csb_store).await?;
+    // TODO: get from env at higher level probably
+    let brp_client = BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+    do_brp_verification(&csb_store, &brp_client).await?;
 
     Ok(redirect_success(CsbExaminationOverviewPath {}))
 }
 
-pub async fn do_brp_verification(store: &Store<CsbStoreData>) -> Result<(), AppError> {
-    // TODO: get from env probably
-    let brp_client = BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+pub async fn do_brp_verification(
+    store: &Store<CsbStoreData>,
+    brp_client: &BrpClient,
+) -> Result<(), AppError> {
+    let store = store.clone();
+    let brp_client = brp_client.clone();
 
-    for person in store.get_persons() {
-        let event = CsbEvent::BrpValidation {
-            person: person.id,
-            valid: brp_client.verify(&person).await?,
-        };
+    tokio::task::spawn(async move {
+        store.data.write().brp_verification_in_progress = true;
 
-        store.update(event).await?;
-    }
+        let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
+        for person in store.get_persons() {
+            ticker.tick().await;
+
+            match brp_client.verify(&person).await {
+                Ok(true) => {}
+                Ok(false) => {
+                    let omission = Omission::new(
+                        OmissionCategory::Candidate {
+                            person: person.id,
+                            lists: Vec::with_capacity(0),
+                        },
+                        "dummy".to_string(),
+                        "dummy".to_string(),
+                        "dummy".to_string(),
+                    );
+                    if let Err(err) = omission.create(&store).await {
+                        tracing::error!("failed to record BRP omission for {}: {err}", person.id);
+                    }
+                }
+                Err(err) => {
+                    tracing::error!("BRP verification failed for {}: {err}", person.id);
+                }
+            }
+        }
+
+        store.data.write().brp_verification_in_progress = false;
+    });
 
     Ok(())
 }

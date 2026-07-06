@@ -10,6 +10,7 @@ use crate::{
     persons::Person,
 };
 
+#[derive(Clone)]
 pub struct BrpClient {
     http_client: Client,
     base_url: String,
