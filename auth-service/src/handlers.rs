@@ -49,9 +49,7 @@ where
     S: AuthState,
     AuthServiceState: FromRef<S>,
 {
-    let Some((_name_id, cleared_jar)) = state.logout_session(jar).await else {
-        return Redirect::to("/").into_response();
-    };
+    let (cleared_jar, _name_id) = state.logout_session(jar).await;
     (cleared_jar, Redirect::to("/")).into_response()
 }
 

@@ -220,4 +220,27 @@ mod tests {
 
         assert!(store.get_candidate_omissions(PersonId::new()).is_empty());
     }
+
+    #[test]
+    fn get_substitute_submitters_marks_each_as_substitute() {
+        let store = CsbStore::new_for_test();
+        store
+            .data
+            .write()
+            .imported_data
+            .substitute_submitters
+            .push(ListSubmitter::default());
+
+        let result = store.get_substitute_submitters();
+
+        assert_eq!(result.len(), 1);
+        assert!(result[0].is_substitute);
+    }
+
+    #[test]
+    fn get_substitute_submitters_returns_empty_when_none() {
+        let store = CsbStore::new_for_test();
+
+        assert!(store.get_substitute_submitters().is_empty());
+    }
 }

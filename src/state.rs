@@ -7,14 +7,16 @@ use axum::{
     http::HeaderMap,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::{CookieJar, cookie::Cookie};
+use axum_extra::extract::CookieJar;
 use secrecy::ExposeSecret;
 
 use crate::{
     AppError, AppStore, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore,
     CsbStoreData, DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore,
     StreamId, TypstRenderer,
-    auth::session_extractor::{SESSION_COOKIE_NAME, build_session_cookie},
+    auth::session_extractor::{
+        SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
+    },
     common::{IndexPath, SelectElectionPath},
     csb::CSB_MAIN_STREAM_ID,
     store::{EventEncryption, StoreRegistry},
@@ -182,10 +184,7 @@ impl AppState {
         if let Some(token) = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
             self.sessions.remove(&token).await;
         }
-        // Match name + path so the client reliably drops the cookie.
-        let mut clear = Cookie::from(SESSION_COOKIE_NAME);
-        clear.set_path("/");
-        jar.remove(clear)
+        jar.remove(build_removal_cookie())
     }
 
     #[cfg(test)]
@@ -262,11 +261,18 @@ impl AuthState for AppState {
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> Response {
+        // Drop any session the browser already holds, so a pre-login session
+        // can't linger server-side (session-fixation defense).
+        if let Some(old_token) = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
+            self.sessions.remove(&old_token).await;
+        }
+
         let id_code = subject_id.value;
         let stream_id = self.id_deriver.derive_stream_id(&id_code);
 
         let mut session = Session::new_with_locale(request_locale(headers));
         session.set_stream_id(stream_id);
+        session.set_user_agent_hash(user_agent_hash(headers));
         session.saml_name_id = name_id;
 
         let redirect_to = match self.attach_existing_election(&mut session, stream_id).await {
@@ -285,15 +291,17 @@ impl AuthState for AppState {
             .into_response()
     }
 
-    async fn logout_session(&self, jar: CookieJar) -> Option<(String, CookieJar)> {
-        let token = jar.get(SESSION_COOKIE_NAME)?.value().to_string();
-        let session = self.sessions.remove(&token).await?;
-        let name_id = session.saml_name_id?;
-        // Build an expired cookie with the same attributes to reliably clear
-        // it on the client (CookieJar::remove matches on name + path).
-        let mut clear = Cookie::from(SESSION_COOKIE_NAME);
-        clear.set_path("/");
-        Some((name_id, jar.remove(clear)))
+    async fn logout_session(&self, jar: CookieJar) -> (CookieJar, Option<String>) {
+        // Drop the session (if any) and always clear the cookie.
+        let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
+            Some(token) => self
+                .sessions
+                .remove(&token)
+                .await
+                .and_then(|session| session.saml_name_id),
+            None => None,
+        };
+        (jar.remove(build_removal_cookie()), name_id)
     }
 
     async fn on_authentication_failed(
@@ -325,7 +333,30 @@ mod tests {
     use crate::Locale;
     use auth_service::SubjectId;
     use axum::http::header;
+    use axum_extra::extract::cookie::Cookie;
     use secrecy::SecretString;
+
+    /// True when the jar emits an expiring `Set-Cookie` for the session cookie.
+    fn clears_session_cookie(jar: CookieJar) -> bool {
+        let response = (jar, axum::http::StatusCode::OK).into_response();
+        response
+            .headers()
+            .get_all(header::SET_COOKIE)
+            .iter()
+            .filter_map(|value| value.to_str().ok())
+            .any(|cookie| cookie.starts_with(SESSION_COOKIE_NAME) && cookie.contains("Max-Age=0"))
+    }
+
+    /// Jar with the session cookie as an *original* request cookie: `remove`
+    /// only emits a removal `Set-Cookie` for cookies present on the request.
+    fn jar_with_session_cookie(token: &str) -> CookieJar {
+        let mut headers = HeaderMap::new();
+        headers.insert(
+            header::COOKIE,
+            format!("{SESSION_COOKIE_NAME}={token}").parse().unwrap(),
+        );
+        CookieJar::from_headers(&headers)
+    }
 
     #[tokio::test]
     async fn new_for_tests_sets_config_and_tokens() -> Result<(), AppError> {
@@ -430,16 +461,20 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_session_returns_none_without_cookie() {
+    async fn logout_session_without_cookie_has_no_name_id() {
+        // Nothing to clear when the request carried no session cookie.
         let state = AppState::new_for_tests().await;
-        assert!(state.logout_session(CookieJar::new()).await.is_none());
+        let (_jar, name_id) = state.logout_session(CookieJar::new()).await;
+        assert!(name_id.is_none());
     }
 
     #[tokio::test]
-    async fn logout_session_returns_none_when_session_unknown() {
+    async fn logout_session_unknown_session_clears_and_has_no_name_id() {
         let state = AppState::new_for_tests().await;
-        let jar = CookieJar::new().add(Cookie::new(SESSION_COOKIE_NAME, "no-such-token"));
-        assert!(state.logout_session(jar).await.is_none());
+        let jar = jar_with_session_cookie("no-such-token");
+        let (jar, name_id) = state.logout_session(jar).await;
+        assert!(name_id.is_none());
+        assert!(clears_session_cookie(jar));
     }
 
     #[tokio::test]
@@ -447,23 +482,71 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let mut session = Session::new();
         session.saml_name_id = Some("name-id-xyz".to_string());
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
-        let jar = CookieJar::new().add(Cookie::new(SESSION_COOKIE_NAME, token));
-        let (name_id, _jar) = state.logout_session(jar).await.expect("logout result");
-        assert_eq!(name_id, "name-id-xyz");
+        let jar = jar_with_session_cookie(&token);
+        let (jar, name_id) = state.logout_session(jar).await;
+        assert_eq!(name_id.as_deref(), Some("name-id-xyz"));
+        assert!(clears_session_cookie(jar));
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
     }
 
     #[tokio::test]
-    async fn logout_session_returns_none_when_name_id_missing() {
+    async fn logout_session_missing_name_id_still_clears_and_ends_session() {
+        // Regression: a NameID-less session used to return early, clearing nothing.
         let state = AppState::new_for_tests().await;
         let session = Session::new(); // saml_name_id stays None
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
-        let jar = CookieJar::new().add(Cookie::new(SESSION_COOKIE_NAME, token));
-        assert!(state.logout_session(jar).await.is_none());
+        let jar = jar_with_session_cookie(&token);
+        let (jar, name_id) = state.logout_session(jar).await;
+        assert!(name_id.is_none());
+        assert!(clears_session_cookie(jar));
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
+    }
+
+    #[tokio::test]
+    async fn on_authenticated_invalidates_prior_session() {
+        // A fresh login must not leave the pre-login session alive server-side.
+        let state = AppState::new_for_tests().await;
+        let old = Session::new();
+        let old_token = old.token_string();
+        state.sessions.insert(old).await;
+
+        let jar = CookieJar::new().add(Cookie::new(SESSION_COOKIE_NAME, old_token.clone()));
+        let _ = state
+            .on_authenticated(
+                subject("999999990"),
+                Some("name-id-xyz".to_string()),
+                jar,
+                &HeaderMap::new(),
+            )
+            .await;
+
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&old_token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
     }
 
     #[tokio::test]
@@ -471,7 +554,7 @@ mod tests {
         // TVS L10: a failed authentication must end any existing local session.
         let state = AppState::new_for_tests().await;
         let session = Session::new();
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
         let jar = CookieJar::new().add(Cookie::new(SESSION_COOKIE_NAME, token.clone()));

@@ -21,9 +21,9 @@
 {% macro columns_head(label) %}
   <thead>
     <tr>
-      <th>{{ label }}</th>
-      <th>{{ "csb_general_information.columns.status"|trans }}</th>
-      <th></th>
+      <th scope="col">{{ label }}</th>
+      <th scope="col">{{ "csb_general_information.columns.status"|trans }}</th>
+      <th scope="col"></th>
     </tr>
   </thead>
 {% endmacro %}

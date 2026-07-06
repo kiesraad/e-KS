@@ -27,7 +27,7 @@ async fn setup() -> (Router, AppStore, String) {
     let mut session = Session::new_test_with_locale(Locale::En);
     session.set_stream_id(stream_id);
     session.set_current_election(ElectionConfig::EK27);
-    let token = session.token().to_exposed_string();
+    let token = session.token_string();
     state.sessions.insert(session).await;
 
     (app, store, token)
