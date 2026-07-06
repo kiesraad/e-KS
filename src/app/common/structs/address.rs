@@ -255,6 +255,34 @@ impl Address {
         }
     }
 
+    pub fn street_name(&self) -> Option<String> {
+        match self {
+            Address::Dutch(address) => address.street_name.as_ref().map(ToString::to_string),
+            Address::International(address) => {
+                address.street_name.as_ref().map(ToString::to_string)
+            }
+        }
+    }
+
+    /// The house number with its addition appended, e.g. "5A".
+    pub fn house_number(&self) -> Option<String> {
+        let (house_number, addition) = match self {
+            Address::Dutch(address) => (
+                address.house_number.as_ref(),
+                address.house_number_addition.as_ref(),
+            ),
+            Address::International(address) => (
+                address.house_number.as_ref(),
+                address.house_number_addition.as_ref(),
+            ),
+        };
+
+        house_number.map(|house_number| match addition {
+            Some(addition) => format!("{house_number}{addition}"),
+            None => house_number.to_string(),
+        })
+    }
+
     /// The street name, house number, and house number addition, e.g. "Main Street 10A".
     ///
     /// Returns `None` if the street name or house number are `None`.

@@ -2,6 +2,8 @@ use crate::{
     AppError, CsbStore,
     candidate_lists::CandidateList,
     csb::{Omission, OmissionId, omission::OmissionCategory},
+    list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     persons::PersonId,
     political_groups::PoliticalGroup,
 };
@@ -73,6 +75,41 @@ impl CsbStore {
 
         data.imported_data
             .candidate_lists
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    /// The list submitter ("lijstinleveraar") imported for this political group.
+    pub fn get_list_submitter(&self) -> ListSubmitter {
+        let data = self.data.read();
+
+        data.imported_data.list_submitter.clone()
+    }
+
+    /// The substitutes for the restoration of omissions ("vervangers voor het
+    /// herstel van verzuimen") that were imported for this political group.
+    pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
+        let data = self.data.read();
+
+        data.imported_data
+            .substitute_submitters
+            .iter()
+            .cloned()
+            .map(|mut submitter| {
+                submitter.is_substitute = true;
+                submitter
+            })
+            .collect()
+    }
+
+    /// The authorised names ("statutaire namen") imported for this political
+    /// group.
+    pub fn get_name_authorisations(&self) -> Vec<NameAuthorisation> {
+        let data = self.data.read();
+
+        data.imported_data
+            .name_authorisations
             .values()
             .cloned()
             .collect()
