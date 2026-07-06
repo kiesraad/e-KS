@@ -1,6 +1,6 @@
 //! Persistence backends for the event store.
 
-use chrono::Utc;
+use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
 use url::Url;
@@ -16,6 +16,19 @@ use super::{
 
 #[cfg(feature = "database")]
 use super::database::{self, load_from_database, update_in_database};
+
+/// Decryption-free metadata about a persisted stream, read from the backend's
+/// index without replaying (or warming) it. The political group name is absent:
+/// it lives in the encrypted payloads.
+#[derive(Clone, Debug)]
+pub struct StreamMeta {
+    pub stream_id: StreamId,
+    pub election: ElectionConfig,
+    /// Number of events, i.e. the last event id (events are appended `1..=n`).
+    pub event_count: usize,
+    pub created_at: Option<DateTime<Utc>>,
+    pub last_event_at: Option<DateTime<Utc>>,
+}
 
 /// Persistence backend selection for a store.
 #[derive(Clone, Debug)]
@@ -134,6 +147,22 @@ impl StorePersistence {
             }
             StorePersistence::Local(dir) => Ok(filesystem::streams_by_scope(dir, scope).await),
             StorePersistence::Memory(store) => Ok(memory::streams_by_scope(store, scope)),
+        }
+    }
+
+    /// List [`StreamMeta`] for every stream with the given scope, reading only
+    /// each backend's index. The in-memory backend keeps no timestamps.
+    pub async fn stream_metadata_by_scope(
+        &self,
+        scope: Scope,
+    ) -> Result<Vec<StreamMeta>, AppError> {
+        match self {
+            #[cfg(feature = "database")]
+            StorePersistence::Database(pool) => {
+                super::database::stream_metadata_by_scope(pool, scope).await
+            }
+            StorePersistence::Local(dir) => filesystem::stream_metadata_by_scope(dir, scope).await,
+            StorePersistence::Memory(store) => Ok(memory::stream_metadata_by_scope(store, scope)),
         }
     }
 
@@ -475,6 +504,44 @@ mod tests {
         let data = fresh.data.read();
         assert_eq!(data.last_event_id(), 2);
         assert_eq!(data.applied, vec![10, 20]);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn stream_metadata_by_scope_reports_counts_and_timestamps() -> Result<(), AppError> {
+        let dir = temp_dir();
+        let encryption = test_encryption();
+        let persistence = StorePersistence::Local(dir.clone());
+        let stream_id = StreamId::new();
+
+        let store = Store::<TestData>::new_for_stream_with_persistence(
+            persistence.clone(),
+            stream_id,
+            TEST_ELECTION,
+            &encryption,
+        )
+        .await?;
+        store.update(10).await?;
+        store.update(20).await?;
+
+        let meta = persistence
+            .stream_metadata_by_scope(Scope::PoliticalGroup)
+            .await?;
+        assert_eq!(meta.len(), 1);
+        let entry = &meta[0];
+        assert_eq!(entry.stream_id, stream_id);
+        assert_eq!(entry.event_count, 2);
+        let created = entry.created_at.expect("created timestamp");
+        let last = entry.last_event_at.expect("last timestamp");
+        assert!(created <= last);
+
+        assert!(
+            persistence
+                .stream_metadata_by_scope(Scope::CentralElectoralCommittee)
+                .await?
+                .is_empty()
+        );
 
         Ok(())
     }
