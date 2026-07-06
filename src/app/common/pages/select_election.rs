@@ -148,7 +148,7 @@ mod tests {
         let mut session = Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
         let response = app
@@ -183,7 +183,7 @@ mod tests {
 
         let mut session = Session::new_test();
         session.set_stream_id(crate::StreamId::new());
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
         // Fetch page to receive a CSRF token

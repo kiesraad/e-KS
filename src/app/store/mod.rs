@@ -4,7 +4,7 @@ mod extractor;
 mod getters;
 
 pub use event::AppEvent;
-pub(crate) use extractor::request_extractor;
+pub(crate) use extractor::{extension_extractor, request_extractor};
 
 #[cfg(test)]
 mod tests;

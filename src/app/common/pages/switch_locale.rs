@@ -48,7 +48,7 @@ mod tests {
             .with_state(state.clone());
 
         let session = crate::Session::new_test();
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
         let request = Request::builder()

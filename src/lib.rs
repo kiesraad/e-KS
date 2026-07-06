@@ -94,7 +94,7 @@ pub use auth::{
     session_extractor::{
         SESSION_COOKIE_NAME, csb_store_middleware, session_middleware, store_middleware,
     },
-    session_store::SessionStore,
+    session_store::{SessionStore, run_session_sweeper},
 };
 pub use core::{
     AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,

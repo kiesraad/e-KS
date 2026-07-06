@@ -3,7 +3,7 @@
 
 use axum::{
     Router,
-    http::{HeaderValue, header},
+    http::{HeaderName, HeaderValue, header},
     middleware,
     routing::get,
 };
@@ -111,26 +111,41 @@ fn app_feature_router() -> Router<AppState> {
         .merge(substitute_list_submitters::router())
 }
 
-/// Apply the static security response headers (CSP, framing, MIME sniffing,
-/// referrer) that every response shares.
-fn apply_security_headers(router: Router<AppState>) -> Router<AppState> {
-    router
-        .layer(SetResponseHeaderLayer::if_not_present(
+/// Static security response headers shared by every response. HSTS is added
+/// separately on the TLS listener (see `core::server`), only over https.
+fn apply_security_headers(mut router: Router<AppState>) -> Router<AppState> {
+    // Deny all powerful browser features by default; the app uses none.
+    const PERMISSIONS_POLICY: &str = "accelerometer=(), autoplay=(), camera=(), display-capture=(), encrypted-media=(), fullscreen=(), geolocation=(), gyroscope=(), magnetometer=(), microphone=(), midi=(), payment=(), picture-in-picture=(), publickey-credentials-get=(), screen-wake-lock=(), sync-xhr=(), usb=(), xr-spatial-tracking=()";
+
+    let headers: [(HeaderName, &'static str); 7] = [
+        (
             header::CONTENT_SECURITY_POLICY,
-            HeaderValue::from_static("default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::X_FRAME_OPTIONS,
-            HeaderValue::from_static("DENY"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::X_CONTENT_TYPE_OPTIONS,
-            HeaderValue::from_static("nosniff"),
-        ))
-        .layer(SetResponseHeaderLayer::if_not_present(
-            header::REFERRER_POLICY,
-            HeaderValue::from_static("same-origin"),
-        ))
+            "default-src 'none'; base-uri 'none'; connect-src 'self'; form-action 'self'; script-src 'self'; style-src 'self'; font-src 'self'; img-src 'self'; frame-ancestors 'none';",
+        ),
+        (header::X_FRAME_OPTIONS, "DENY"),
+        (header::X_CONTENT_TYPE_OPTIONS, "nosniff"),
+        (header::REFERRER_POLICY, "same-origin"),
+        (
+            HeaderName::from_static("cross-origin-opener-policy"),
+            "same-origin",
+        ),
+        (
+            HeaderName::from_static("cross-origin-resource-policy"),
+            "same-origin",
+        ),
+        (
+            HeaderName::from_static("permissions-policy"),
+            PERMISSIONS_POLICY,
+        ),
+    ];
+
+    for (name, value) in headers {
+        router = router.layer(SetResponseHeaderLayer::if_not_present(
+            name,
+            HeaderValue::from_static(value),
+        ));
+    }
+    router
 }
 
 /// Mount the cache-busted `/static` asset routes: served from the embedded
@@ -185,7 +200,7 @@ mod tests {
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(crate::ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
@@ -249,7 +264,7 @@ mod tests {
         let mut session = crate::Session::new_test();
         session.set_stream_id(crate::StreamId::new());
         session.set_current_election(crate::ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
         let store = crate::AppStore::new_for_test();
         request.headers_mut().insert(
