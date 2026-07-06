@@ -7,6 +7,7 @@
 pub mod examination;
 pub mod import;
 pub mod index;
+pub mod monitoring;
 
 mod context;
 mod event;

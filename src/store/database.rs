@@ -3,7 +3,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
+use super::{
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
+};
 use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 #[cfg(feature = "database")]
@@ -229,6 +231,50 @@ pub async fn streams_by_scope(
     Ok(rows
         .into_iter()
         .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (StreamId(id), election)))
+        .collect())
+}
+
+/// List [`StreamMeta`] for every stream with the given scope in one aggregate
+/// query. `event_count` is `streams.last_event_id`; the timestamps are
+/// `MIN`/`MAX` over the events' plain `created_at`. Empty placeholders
+/// (`last_event_id = 0`) are excluded, mirroring [`streams_by_scope`].
+pub async fn stream_metadata_by_scope(
+    pool: &sqlx::PgPool,
+    scope: Scope,
+) -> Result<Vec<StreamMeta>, AppError> {
+    /// `(stream_id, election, last_event_id, first created_at, last created_at)`.
+    type MetaRow = (
+        uuid::Uuid,
+        String,
+        i64,
+        Option<DateTime<Utc>>,
+        Option<DateTime<Utc>>,
+    );
+
+    let rows: Vec<MetaRow> = sqlx::query_as(
+        r#"SELECT s.stream_id, s.election, s.last_event_id,
+                      MIN(e.created_at) AS created_at, MAX(e.created_at) AS last_event_at
+               FROM streams s
+               LEFT JOIN events e
+                 ON e.stream_id = s.stream_id AND e.election = s.election
+               WHERE s.scope = $1 AND s.last_event_id > 0
+               GROUP BY s.stream_id, s.election, s.last_event_id"#,
+    )
+    .bind(scope.as_str())
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(id, code, last_id, created_at, last_event_at)| {
+            parse_stable_id(&code).map(|election| StreamMeta {
+                stream_id: StreamId(id),
+                election,
+                event_count: last_id as usize,
+                created_at,
+                last_event_at,
+            })
+        })
         .collect())
 }
 
