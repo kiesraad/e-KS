@@ -7,6 +7,7 @@ use crate::{
         Bsn, BsnOrNoneConfirmed,
         structs::brp::{BrpField, BrpPerson},
     },
+    csb::{Omission, OmissionCategory},
     persons::Person,
 };
 
@@ -44,7 +45,7 @@ impl BrpClient {
         }
     }
 
-    pub async fn verify(&self, person: &Person) -> Result<bool, AppError> {
+    pub async fn verify(&self, person: &Person) -> Result<Vec<Omission>, AppError> {
         let query = match person.personal_data.bsn {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
                 bsn: vec![bsn.clone()],
@@ -66,46 +67,133 @@ impl BrpClient {
                 unimplemented!("BRP search with address? Or manual verification")
             }
             None => {
-                unimplemented!(
-                    "Return error, because this person should have a BSN (or none confirmed)?"
-                )
+                // TODO: This needs to be implemented
+                tracing::warn!(
+                    "Person {} currently does not have a BSN filled in (or none confirmed)\n{:?}",
+                    person.id,
+                    person
+                );
+                return Err(AppError::GenericNotFound);
             }
+        };
+
+        let mut omissions = vec![];
+        let mut add_omission = |description: &str, help_text: &str| {
+            omissions.push(Omission::new(
+                OmissionCategory::Candidate {
+                    person: person.id,
+                    list: None,
+                },
+                // TODO: These should likely be user configurable and translatable
+                description.to_string(),
+                help_text.to_string(),
+            ));
         };
 
         let brp_persons = self.get_persons(&query).await?;
         let brp_person = match brp_persons.as_slice() {
-            [] => todo!("Handle person not found"),
+            [] => {
+                add_omission(
+                    "Er is geen persoon gevonden met dit burgerservicenummer",
+                    "Controleer of er een fout is gemaakt bij het invoeren",
+                );
+                return Ok(omissions);
+            }
             [brp_person] => brp_person,
-            [..] => todo!("Handle person not unique"),
+            [..] => {
+                add_omission(
+                    "Er zijn meerder personen gevonden met dit burgerservicenummer",
+                    "Controleer of er een fout is gemaakt bij het invoeren",
+                );
+                return Ok(omissions);
+            }
         };
 
-        let address_is_valid = match &brp_person.address {
+        match &brp_person.address {
             Some(address) => {
                 // Check all, except `known_in_bag`
-                person.address.street_name == address.street_name
-                    && person.address.house_number == address.house_number
-                    && person.address.house_number_addition == address.house_number_addition
-                    && person.address.locality == address.locality
-                    && person.address.postal_code == address.postal_code
+                if person.address.street_name != address.street_name {
+                    add_omission(
+                        "De straatnaam komt niet overeen met de BRP",
+                        "Controleer de straatnaam",
+                    );
+                }
+                if person.address.house_number != address.house_number {
+                    add_omission(
+                        "Het huisnummer komt niet overeen met de BRP",
+                        "Controleer het huisnummer",
+                    );
+                }
+                if person.address.house_number_addition != address.house_number_addition {
+                    add_omission(
+                        "De huisnummertoevoeging komt niet overeen met de BRP",
+                        "Controleer de huisnummertoevoeging",
+                    );
+                }
+                if person.address.locality != address.locality {
+                    add_omission(
+                        "De woonplaats komt niet overeen met de BRP",
+                        "Controleer de woonplaats",
+                    );
+                }
+                if person.address.postal_code != address.postal_code {
+                    add_omission(
+                        "De postcode komt niet overeen met de BRP",
+                        "Controleer de postcode",
+                    );
+                }
             }
             None => {
-                eprintln!(
+                tracing::warn!(
                     "Not a Dutch Address or no address at all (because the field 'verblijfplaats' was not included)"
                 );
-                true
             }
         };
 
-        Ok(address_is_valid &&
-            // Don't check First name (roepnaam)
-            person.name.last_name == brp_person.name.last_name &&
-            person.name.last_name_prefix == brp_person.name.last_name_prefix &&
-            person.name.initials == brp_person.name.initials &&
-            // Check all fields of personal_data except country, check gender only when filled in
-            brp_person.personal_data.bsn == person.personal_data.bsn &&
-            brp_person.personal_data.date_of_birth  == person.personal_data.date_of_birth &&
-            // Gender field is optional, but if it is filled in, we check it
-            (brp_person.personal_data.gender == person.personal_data.gender || person.personal_data.gender.is_none()))
+        // Don't check first name (roepnaam)
+        if person.name.last_name != brp_person.name.last_name {
+            add_omission(
+                "De achternaam komt niet overeen met de BRP",
+                "Controleer de achternaam",
+            );
+        }
+        if person.name.last_name_prefix != brp_person.name.last_name_prefix {
+            add_omission(
+                "Het voorvoegsel komt niet overeen met de BRP",
+                "Controleer het voorvoegsel",
+            );
+        }
+        if person.name.initials != brp_person.name.initials {
+            add_omission(
+                "De voorletters komen niet overeen met de BRP",
+                "Controleer de voorletters",
+            );
+        }
+
+        // Check all fields of personal_data except country, check gender only when filled in
+        if brp_person.personal_data.bsn != person.personal_data.bsn {
+            add_omission(
+                "Het burgerservicenummer komt niet overeen met de BRP",
+                "Controleer het burgerservicenummer",
+            );
+        }
+        if brp_person.personal_data.date_of_birth != person.personal_data.date_of_birth {
+            add_omission(
+                "De geboortedatum komt niet overeen met de BRP",
+                "Controleer de geboortedatum",
+            );
+        }
+        // Gender field is optional, but if it is filled in, we check it
+        if person.personal_data.gender.is_some()
+            && brp_person.personal_data.gender != person.personal_data.gender
+        {
+            add_omission(
+                "Het geslacht komt niet overeen met de BRP",
+                "Controleer het geslacht",
+            );
+        }
+
+        Ok(omissions)
     }
 }
 
@@ -132,7 +220,10 @@ pub enum BrpResponse {
 
 #[cfg(test)]
 mod tests {
-    use crate::test_utils::sample_person_from_brp;
+    use crate::{
+        persons::PersonId,
+        test_utils::{sample_person, sample_person_from_brp},
+    };
 
     use super::*;
 
@@ -159,11 +250,68 @@ mod tests {
 
         match brp_client.verify(&person).await {
             Err(e) => panic!("brp verification error: {e}"),
-            Ok(false) => panic!(
-                "person could not be verified: {}",
+            Ok(omissions) if !omissions.is_empty() => panic!(
+                "person could not be verified, omissions: {omissions:?}\nperson: {}",
                 serde_json::to_string_pretty(&person).unwrap()
             ),
             _ => {}
+        }
+    }
+
+    #[tokio::test]
+    async fn brp_verify_returns_omissions() {
+        let brp_client =
+            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+
+        let mut person = sample_person(PersonId::new());
+        // Dit bsn voldoet aan de 11-proef maar staat niet in de mock brp
+        person.personal_data.bsn = Some("123456782".parse().unwrap());
+        match brp_client.verify(&person).await {
+            Ok(ommissions) => {
+                assert_eq!(ommissions.len(), 1);
+                let ommission = &ommissions[0];
+                assert!(matches!(
+                    ommission.category,
+                    OmissionCategory::Candidate { .. }
+                ));
+                assert_eq!(
+                    ommission.description,
+                    "Er is geen persoon gevonden met dit burgerservicenummer",
+                )
+            }
+            Err(e) => panic!("{e}"),
+        }
+
+        let mut person = sample_person_from_brp();
+        person.address.house_number_addition = Some("nope".parse().unwrap());
+        match brp_client.verify(&person).await {
+            Ok(ommissions) => {
+                assert_eq!(ommissions.len(), 1);
+                let ommission = &ommissions[0];
+                assert!(matches!(
+                    ommission.category,
+                    OmissionCategory::Candidate { .. }
+                ));
+                assert_eq!(
+                    ommission.description,
+                    "De huisnummertoevoeging komt niet overeen met de BRP",
+                )
+            }
+            Err(e) => panic!("{e}"),
+        }
+
+        let mut person = sample_person(PersonId::new());
+        // De gegevens in de brp voor dit bsn komen in zijn geheel niet overeen. Dit zou kunnen voorkomen
+        // als het verkeerde bsn is ingevuld.
+        person.personal_data.bsn = Some("999992806".parse().unwrap());
+
+        dbg!(&person);
+        match brp_client.verify(&person).await {
+            Ok(ommissions) => {
+                dbg!(&ommissions);
+                assert_eq!(ommissions.len(), 8);
+            }
+            Err(e) => panic!("{e}"),
         }
     }
 }

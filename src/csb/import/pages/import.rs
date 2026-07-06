@@ -7,7 +7,6 @@ use axum::{
 };
 use serde::Deserialize;
 
-use crate::structs::csb::{Omission, OmissionCategory};
 use crate::{
     AppError, AppState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate, Locale,
     PgStoreData, StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success,
@@ -146,19 +145,14 @@ pub async fn do_brp_verification(
             ticker.tick().await;
 
             match brp_client.verify(&person).await {
-                Ok(true) => {}
-                Ok(false) => {
-                    let omission = Omission::new(
-                        OmissionCategory::Candidate {
-                            person: person.id,
-                            lists: Vec::with_capacity(0),
-                        },
-                        "dummy".to_string(),
-                        "dummy".to_string(),
-                        "dummy".to_string(),
-                    );
-                    if let Err(err) = omission.create(&store).await {
-                        tracing::error!("failed to record BRP omission for {}: {err}", person.id);
+                Ok(omissions) => {
+                    for omission in omissions {
+                        if let Err(err) = omission.create(&store).await {
+                            tracing::error!(
+                                "failed to record BRP omission for {}: {err}",
+                                person.id
+                            );
+                        }
                     }
                 }
                 Err(err) => {
