@@ -13,8 +13,6 @@ use crate::{
 
 const PER_PAGE: usize = 20;
 
-const MAIN_STREAM_VALUE: &str = "main";
-
 pub struct EventTypeCategory {
     pub key: &'static str,
     pub event_types: &'static [&'static str],
@@ -46,9 +44,8 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 pub struct CsbAuditLogFilter {
     /// The stream can be:
-    /// - [`MAIN_STREAM_VALUE`] to show only the global stream
-    /// - a UUID string to show only that import stream
-    /// - `None` to show all streams combined
+    /// - `None` to show the CSB main stream
+    /// - a UUID string to show that import stream
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
     pub stream: Option<String>,
@@ -115,43 +112,31 @@ pub async fn csb_audit_log(
 
     let mut all_entries: Vec<CsbAuditLogEntry> = Vec::new();
 
-    // Add main stream events
-    if active_stream.is_none() || active_stream == Some(MAIN_STREAM_VALUE) {
-        let main_stream_id = main_store.stream_id;
-        for event in main_store.data.read().events.iter() {
-            all_entries.push(CsbAuditLogEntry::from_main_event(
+    if let Some(stream_id) = active_stream {
+        // Add import stream events
+        let store = import_stores
+            .iter()
+            .find(|s| s.stream_id.to_string() == stream_id)
+            .ok_or(AppError::GenericNotFound)?;
+
+        let label = store.get_political_group().csb_display_name();
+
+        for event in store.data.read().events.iter() {
+            all_entries.push(CsbAuditLogEntry::from_event(
                 event.clone(),
-                main_stream_id,
+                store.stream_id,
+                label.clone(),
                 locale,
             ));
         }
-    }
-
-    // Add import stream events
-    if active_stream.is_none() || active_stream.is_some_and(|s| s != MAIN_STREAM_VALUE) {
-        for store in &import_stores {
-            let stream_id_str = store.stream_id.to_string();
-            if let Some(s) = active_stream
-                && s != MAIN_STREAM_VALUE
-                && s != stream_id_str.as_str()
-            {
-                continue;
-            }
-
-            let label = import_stream_labels
-                .iter()
-                .find(|(id, _)| *id == store.stream_id)
-                .map(|(_, l)| l.clone())
-                .unwrap_or_default();
-
-            for event in store.data.read().events.iter() {
-                all_entries.push(CsbAuditLogEntry::from_event(
-                    event.clone(),
-                    store.stream_id,
-                    label.clone(),
-                    locale,
-                ));
-            }
+    } else {
+        // Add main stream events
+        for event in main_store.data.read().events.iter() {
+            all_entries.push(CsbAuditLogEntry::from_main_event(
+                event.clone(),
+                main_store.stream_id,
+                locale,
+            ));
         }
     }
 
@@ -205,7 +190,10 @@ mod tests {
     use crate::{
         AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
         StreamId,
-        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogPath},
+        csb::{
+            CSB_MAIN_STREAM_ID, Omission, audit_log::pages::CsbAuditLogPath,
+            omission::OmissionCategory,
+        },
         pagination::Pagination,
         test_utils::response_body_string,
     };
@@ -272,12 +260,21 @@ mod tests {
     #[tokio::test]
     async fn renders_import_stream_events() -> Result<(), AppError> {
         let state = AppState::new_for_tests().await;
+        let import_stream_id = StreamId::new();
         let csb_store = state
-            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
         csb_store.update(CsbEvent::SetFinished(true)).await?;
 
-        let response = call(CsbMainStore::new_for_test(), state, no_filter()).await?;
+        let response = call(
+            CsbMainStore::new_for_test(),
+            state,
+            Query(CsbAuditLogFilter {
+                stream: Some(import_stream_id.to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
 
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Set finished state</td>"));
@@ -287,29 +284,40 @@ mod tests {
 
     #[tokio::test]
     async fn shows_events_newest_first() -> Result<(), AppError> {
-        let main_store = CsbMainStore::new_for_test();
-        main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
-            .await?;
-
         let state = AppState::new_for_tests().await;
+        let import_stream_id = StreamId::new();
         let csb_store = state
-            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
         csb_store.update(CsbEvent::SetFinished(true)).await?;
+        csb_store
+            .update(CsbEvent::CreateOmission(Omission::new(
+                OmissionCategory::General,
+                "test".to_string(),
+                "test".to_string(),
+            )))
+            .await?;
 
-        let response = call(main_store, state, no_filter()).await?;
+        let response = call(
+            CsbMainStore::new_for_test(),
+            state,
+            Query(CsbAuditLogFilter {
+                stream: Some(import_stream_id.to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
 
         let body = response_body_string(response).await;
-        let login_pos = body.find("<td>Developer login</td>").expect("login event");
         let finished_pos = body
             .find("<td>Set finished state</td>")
             .expect("set finished event");
+        let omission_pos = body
+            .find("<td>Created omission</td>")
+            .expect("create omission event");
         assert!(
-            finished_pos < login_pos,
-            "newer event (set finished) should appear before older event (developer login)"
+            omission_pos < finished_pos,
+            "newer event (create omission) should appear before older event (set finished)"
         );
 
         Ok(())
@@ -351,15 +359,7 @@ mod tests {
             .await?;
         csb_store.update(CsbEvent::SetFinished(true)).await?;
 
-        let response = call(
-            main_store,
-            state,
-            Query(CsbAuditLogFilter {
-                stream: Some("main".to_string()),
-                ..Default::default()
-            }),
-        )
-        .await?;
+        let response = call(main_store, state, no_filter()).await?;
 
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Developer login</td>"));
@@ -411,8 +411,9 @@ mod tests {
             .await?;
 
         let state = AppState::new_for_tests().await;
+        let import_stream_id = StreamId::new();
         let csb_store = state
-            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
             .await?;
         csb_store.update(CsbEvent::SetFinished(true)).await?;
 
@@ -420,6 +421,7 @@ mod tests {
             main_store,
             state,
             Query(CsbAuditLogFilter {
+                stream: Some(import_stream_id.to_string()),
                 event_type: Some("set_finished".to_string()),
                 ..Default::default()
             }),

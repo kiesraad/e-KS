@@ -12,8 +12,7 @@
                aria-label="{{ "audit_log.filter.search"|trans }}" />
         <label for="stream" class="visually-hidden">{{ "audit_log.filter.stream"|trans }}</label>
         <select name="stream" id="stream" class="form-control">
-          <option value="">{{ "audit_log.filter.all_streams"|trans }}</option>
-          <option value="main"
+          <option value=""
                   {% if filter.stream.as_deref() == Some("main") %}selected{% endif %}>
             {{ "audit_log.filter.csb_main_stream"|trans }}
           </option>

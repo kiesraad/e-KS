@@ -77,7 +77,6 @@ fields:
   timestamp: Timestamp
 filter:
   all_events: All events
-  all_streams: All streams
   apply: Filter
   category:
     candidate_list: Candidate list
