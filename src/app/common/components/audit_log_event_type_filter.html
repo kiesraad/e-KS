@@ -1,0 +1,16 @@
+<label for="event_type" class="visually-hidden">{{ "audit_log.filter.event_type"|trans }}</label>
+<select name="event_type" id="event_type" class="form-control">
+  <option value="">{{ "audit_log.filter.all_events"|trans }}</option>
+  {% for group in event_types_by_category %}
+    {% let category_key = format!("audit_log.filter.category.{}", group.key) %}
+    <optgroup label="{{ category_key.as_str() |trans }}">
+      {% for event_key in group.event_types.iter() %}
+        {% let event_label_key = format!("audit_log.event.{}", event_key) %}
+        <option value="{{ event_key }}"
+                {% if filter.event_type.as_deref() == Some(event_key.as_ref()) %}selected{% endif %}>
+          {{ event_label_key.as_str() |trans }}
+        </option>
+      {% endfor %}
+    </optgroup>
+  {% endfor %}
+</select>
