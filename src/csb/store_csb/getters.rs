@@ -1,10 +1,10 @@
 use crate::{
     AppError, CsbStore,
-    candidate_lists::CandidateList,
+    candidate_lists::{CandidateList, CandidateListId},
     csb::{Omission, OmissionId, omission::OmissionCategory},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
-    persons::PersonId,
+    persons::{Person, PersonId},
     political_groups::PoliticalGroup,
 };
 
@@ -16,6 +16,12 @@ impl CsbStore {
             .get(&omission_id)
             .cloned()
             .ok_or(AppError::GenericNotFound)
+    }
+
+    pub fn get_omission_count(&self) -> usize {
+        let data = self.data.read();
+
+        data.omissions.len()
     }
 
     pub fn get_general_omissions(&self) -> Vec<Omission> {
@@ -58,6 +64,19 @@ impl CsbStore {
             .collect()
     }
 
+    /// Return the single stored omission. Test-only helper for asserting on
+    /// omissions whose category has no dedicated getter (e.g. candidate lists).
+    #[cfg(test)]
+    pub fn get_omission_for_test(&self) -> Omission {
+        self.data
+            .read()
+            .omissions
+            .values()
+            .next()
+            .cloned()
+            .expect("expected exactly one stored omission")
+    }
+
     pub fn is_examination_finished(&self) -> bool {
         let data = self.data.read();
 
@@ -78,6 +97,41 @@ impl CsbStore {
             .values()
             .cloned()
             .collect()
+    }
+
+    /// The imported candidate list with this id, if any.
+    pub fn get_candidate_list(&self, list_id: CandidateListId) -> Option<CandidateList> {
+        self.data
+            .read()
+            .imported_data
+            .candidate_lists
+            .get(&list_id)
+            .cloned()
+    }
+
+    /// The imported person (candidate) with this id, if any.
+    pub fn get_person(&self, person_id: PersonId) -> Option<Person> {
+        self.data
+            .read()
+            .imported_data
+            .persons
+            .get(&person_id)
+            .cloned()
+    }
+
+    /// The 1-based position of a candidate on the first list that contains them.
+    pub fn candidate_position(&self, person_id: PersonId) -> Option<usize> {
+        let data = self.data.read();
+
+        data.imported_data
+            .candidate_lists
+            .values()
+            .find_map(|list| {
+                list.candidates
+                    .iter()
+                    .position(|candidate| *candidate == person_id)
+                    .map(|index| index + 1)
+            })
     }
 
     /// The list submitter ("lijstinleveraar") imported for this political group.

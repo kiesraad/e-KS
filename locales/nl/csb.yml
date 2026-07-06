@@ -35,6 +35,19 @@ monitoring:
 no_finished_political_group: Er zijn geen afgeronde onderzoeken naar politieke groeperingen.
 no_political_groups_added: Er zijn geen onderzoeken voor politieke groeperingen toegevoegd.
 no_unfinished_political_groups: Er zijn geen onafgeronde onderzoeken naar politieke groeperingen.
+omission:
+  action:
+    add: Verzuim toevoegen
+  count:
+    plural: "{} verzuimen"
+    singular: 1 verzuim
+  form:
+    description_label: I1 verzuim toevoegen
+    help_text_label: Verzuim briefnotitie toevoegen
+    presets_heading: Voeg één van deze verzuimen toe
+    submit: Toevoegen en sluiten
+    title: Verzuimen toevoegen
+    title_label: Titel verzuim
 progress: Voortgang
 status:
   approved: Goedgekeurd

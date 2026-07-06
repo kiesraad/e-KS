@@ -1,11 +1,134 @@
+use std::{collections::HashMap, str::FromStr, sync::LazyLock};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
     AppError, CsbEvent, CsbStore, ElectoralDistrict, candidate_lists::CandidateListId,
-    common::UtcDateTime, id_newtype, name_authorisations::NameAuthorisationId, persons::PersonId,
+    common::UtcDateTime, form::ValidationError, id_newtype,
+    name_authorisations::NameAuthorisationId, persons::PersonId,
 };
 
 id_newtype!(pub struct OmissionId);
+
+/// A predefined omission ("verzuim") offered as a quick-fill suggestion in the
+/// add-omission dialog, split into the model I 1 [`Self::description`] and the
+/// [`Self::help_text`] telling the political group how to restore it.
+#[derive(Debug, Clone, Deserialize)]
+pub struct PresetOmission {
+    /// Short title shown in the quick-fill pill.
+    pub title: String,
+    pub description: String,
+    pub help_text: String,
+}
+
+/// Values used to interpolate the `{token}` placeholders in an omission
+/// description with the correct data for the referenced item.
+///
+/// Any field left `None` leaves its token in place so the committee can fill it
+/// in manually. Some placeholders are always manual (there is no field for them
+/// because they cannot be derived): `{district}` (which single electoral
+/// district) and `{designation}` (the disputed name/predicate).
+#[derive(Debug, Default, Clone)]
+pub struct OmissionPlaceholders {
+    /// `{candidate_number}` — the candidate's position on the list.
+    pub candidate_number: Option<String>,
+    /// `{candidate_name}` — the candidate's initials and last name.
+    pub candidate_name: Option<String>,
+    /// `{districts}` — the electoral districts a candidate list was submitted for.
+    pub districts: Option<String>,
+}
+
+impl OmissionPlaceholders {
+    /// Replace every placeholder we have a value for, leaving the rest in place
+    /// (as `{token}`) for the committee to fill in.
+    pub fn interpolate(&self, template: &str) -> String {
+        let mut result = template.to_string();
+        for (token, value) in [
+            ("{candidate_number}", &self.candidate_number),
+            ("{candidate_name}", &self.candidate_name),
+            ("{districts}", &self.districts),
+        ] {
+            if let Some(value) = value {
+                result = result.replace(token, value);
+            }
+        }
+        result
+    }
+}
+
+/// The standard omissions per omission type, loaded from `omissions.json`.
+static PRESET_OMISSIONS: LazyLock<HashMap<String, Vec<PresetOmission>>> = LazyLock::new(|| {
+    serde_json::from_str(include_str!("omissions.json")).expect("omissions.json should be valid")
+});
+
+/// The kind of item an omission is added to, carried as a path parameter so a
+/// single "add omission" dialog can serve political groups, candidate lists and
+/// candidates. Maps to a concrete [`OmissionCategory`] together with a
+/// referenced item id (see [`OmissionCategory::from_type_and_reference`]).
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum OmissionType {
+    PoliticalGroup,
+    CandidateList,
+    Candidate,
+}
+
+impl OmissionType {
+    fn as_str(self) -> &'static str {
+        match self {
+            OmissionType::PoliticalGroup => "political-group",
+            OmissionType::CandidateList => "candidate-list",
+            OmissionType::Candidate => "candidate",
+        }
+    }
+
+    /// Key under which this type's presets are grouped in `omissions.json`.
+    fn preset_key(self) -> &'static str {
+        match self {
+            OmissionType::PoliticalGroup => "political_group",
+            OmissionType::CandidateList => "candidate_list",
+            OmissionType::Candidate => "candidate",
+        }
+    }
+
+    /// The predefined omissions offered as quick-fill suggestions for this type.
+    pub fn presets(self) -> &'static [PresetOmission] {
+        PRESET_OMISSIONS
+            .get(self.preset_key())
+            .map(Vec::as_slice)
+            .unwrap_or(&[])
+    }
+}
+
+impl FromStr for OmissionType {
+    type Err = ValidationError;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "political-group" => Ok(OmissionType::PoliticalGroup),
+            "candidate-list" => Ok(OmissionType::CandidateList),
+            "candidate" => Ok(OmissionType::Candidate),
+            _ => Err(ValidationError::InvalidValue),
+        }
+    }
+}
+
+impl std::fmt::Display for OmissionType {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str(self.as_str())
+    }
+}
+
+// Deserialize from a plain string so it works with the axum path deserializer
+// (which drives every field through `deserialize_str`), mirroring `id_newtype`.
+impl<'de> Deserialize<'de> for OmissionType {
+    fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
+}
 
 #[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub enum OmissionCategory {
@@ -27,11 +150,30 @@ pub enum OmissionCategory {
     },
 }
 
+impl OmissionCategory {
+    /// Build the category for a newly added omission from the path parameters of
+    /// the "add omission" dialog: the [`OmissionType`] and the id of the item the
+    /// omission is added to. For a political group the reference is unused (the
+    /// stream already identifies the group), so it maps to [`Self::General`].
+    pub fn from_type_and_reference(omission_type: OmissionType, reference: uuid::Uuid) -> Self {
+        match omission_type {
+            OmissionType::PoliticalGroup => OmissionCategory::General,
+            OmissionType::CandidateList => OmissionCategory::CandidateList(reference.into()),
+            OmissionType::Candidate => OmissionCategory::Candidate {
+                person: reference.into(),
+                list: None,
+            },
+        }
+    }
+}
+
 /// An omission ("verzuim") signifies something was wrong with the submitted data
 #[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub struct Omission {
     pub id: OmissionId,
     pub category: OmissionCategory,
+    /// Short title shown in the pill/badge layout
+    pub title: String,
     /// The description for on the model I 1
     pub description: String,
     /// Help text for political groups explaining how to resolve the omission ("Dit verzuim is te herstellen door ...")
@@ -40,9 +182,15 @@ pub struct Omission {
 }
 
 impl Omission {
-    pub fn new(category: OmissionCategory, description: String, help_text: String) -> Self {
+    pub fn new(
+        category: OmissionCategory,
+        title: String,
+        description: String,
+        help_text: String,
+    ) -> Self {
         Omission {
             category,
+            title,
             description,
             help_text,
             ..Default::default()
@@ -74,9 +222,58 @@ pub mod tests {
     pub fn sample_omission(category: OmissionCategory) -> Omission {
         Omission::new(
             category,
+            "test title".to_string(),
             "test description".to_string(),
             "test help text".to_string(),
         )
+    }
+
+    #[test]
+    fn presets_are_loaded_from_json_per_type() {
+        assert_eq!(OmissionType::PoliticalGroup.presets().len(), 6);
+        assert_eq!(OmissionType::CandidateList.presets().len(), 4);
+        assert_eq!(OmissionType::Candidate.presets().len(), 12);
+
+        // Every preset carries a title and description; irreparable defects have
+        // no help text.
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets()
+                .iter()
+                .all(|p| !p.title.is_empty() && !p.description.is_empty())
+        );
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets()
+                .iter()
+                .any(|p| p.help_text.is_empty())
+        );
+    }
+
+    #[test]
+    fn interpolate_fills_known_tokens_and_keeps_the_rest() {
+        let placeholders = OmissionPlaceholders {
+            candidate_number: Some("3".to_string()),
+            candidate_name: Some("A.B. de Vries".to_string()),
+            districts: None,
+        };
+
+        let result = placeholders
+            .interpolate("Kandidaat nr. {candidate_number}, {candidate_name} ... {designation}");
+
+        assert_eq!(
+            result,
+            // The known tokens are filled; the manual one is left in place.
+            "Kandidaat nr. 3, A.B. de Vries ... {designation}"
+        );
+    }
+
+    #[test]
+    fn interpolate_leaves_all_tokens_without_values() {
+        let result =
+            OmissionPlaceholders::default().interpolate("nr. {candidate_number} {candidate_name}");
+
+        assert_eq!(result, "nr. {candidate_number} {candidate_name}");
     }
 
     #[tokio::test]

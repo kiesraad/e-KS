@@ -16,6 +16,8 @@ mod store_csb;
 mod store_main;
 
 pub use context::CsbContext;
-pub use omission::{Omission, OmissionId};
+pub use omission::{
+    Omission, OmissionCategory, OmissionId, OmissionPlaceholders, OmissionType, PresetOmission,
+};
 pub use store_csb::{CsbEvent, CsbStoreData};
 pub use store_main::{CSB_MAIN_STREAM_ID, CsbMainEvent, CsbMainStoreData};
