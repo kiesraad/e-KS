@@ -15,7 +15,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "examination/pages/political_group.html")]
+#[template(path = "csb/examination/pages/political_group.html")]
 struct CsbPoliticalGroupTemplate {
     // TODO make election part of CsbContext?
     election: ElectionConfig,
@@ -62,7 +62,8 @@ pub async fn toggle_examination_finish(
     _: CsbPoliticalGroupToggleFinishPath,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    store.update(CsbEvent::ToggleFinish).await?;
+    let finished = store.is_examination_finished();
+    store.update(CsbEvent::SetFinished(!finished)).await?;
     Ok(Redirect::to(
         &CsbPoliticalGroup::new_from_csb_store(&store)
             .after_toggle_finish_examination_path()

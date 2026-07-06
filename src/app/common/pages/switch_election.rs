@@ -12,7 +12,7 @@ use crate::{
 use super::{IndexPath, SwitchElectionPath};
 
 #[derive(Template)]
-#[template(path = "common/pages/switch_election.html")]
+#[template(path = "app/common/pages/switch_election.html")]
 struct SwitchElectionTemplate {
     elections: Vec<ElectionConfig>,
     existing_elections: Vec<ElectionConfig>,

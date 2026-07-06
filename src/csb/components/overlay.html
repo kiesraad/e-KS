@@ -1,0 +1,24 @@
+{% extends "csb/components/layout.html" %}
+{% block body_class %}overlay-open{% endblock %}
+{% block overlay %}
+  <div class="overlay-backdrop">
+    <form method="post"
+          class="overlay {% if "overlay_referrer"|value_true %}no-animation{% else %}animation{% endif %}">
+      <header>
+        <h2>
+          {% block overlay_title %}{% endblock %}
+        </h2>
+        <a href="{{ overlay.close_url(close_action) }}"
+           class="close-overlay"
+           aria-label="{{ "action.close"|trans }}">
+          <span>{{ "action.close"|trans }}</span>
+        </a>
+      </header>
+      {% block overlay_content %}
+        <div class="overlay-content">
+          {% block overlay_form %}{% endblock %}
+        </div>
+      {% endblock %}
+    </form>
+  </div>
+{% endblock %}

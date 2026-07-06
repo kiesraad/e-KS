@@ -84,6 +84,10 @@
       font-weight: normal;
     }
 
+    .info {
+      color: var(--blue-600);
+    }
+
     .warning {
       color: var(--color-warning-darker);
     }

@@ -6,7 +6,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "index/pages/index.html")]
+#[template(path = "csb/index/pages/index.html")]
 struct CsbIndexTemplate;
 
 pub async fn index(_: CsbIndexPath, context: CsbContext) -> Result<Response, AppError> {

@@ -14,7 +14,7 @@ use crate::{
 use super::FinalisePath;
 
 #[derive(Template)]
-#[template(path = "finalise/pages/index.html")]
+#[template(path = "app/finalise/pages/index.html")]
 pub struct IndexTemplate {
     problems: AllProblems,
     download_path_nl: String,

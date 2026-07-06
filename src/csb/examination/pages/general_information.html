@@ -1,0 +1,186 @@
+{% extends "csb/components/layout.html" %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+  {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.general_information_path() , "common.general_information") }}
+{% endblock %}
+{% block page_title %}
+  {{ "common.general_information"|trans }}
+{% endblock %}
+{% block header_action %}
+  <a class="button secondary icon-restoration">
+    {{ "csb_political_group.all_restorations"|trans }}
+    <span class="restoration_count">{{ restoration_count }}</span>
+  </a>
+{% endblock %}
+{% macro edit_action() %}
+  <td class="actions">
+    <a href="#" aria-label="{{ "action.edit"|trans }}"></a>
+  </td>
+{% endmacro %}
+{% macro columns_head(label) %}
+  <thead>
+    <tr>
+      <th scope="col">{{ label }}</th>
+      <th scope="col">{{ "csb_general_information.columns.status"|trans }}</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+{% endmacro %}
+{% macro data_row(label, value) %}
+  <tr class="clickable">
+    <td>{{ label }}: <strong>{{ value }}</strong></td>
+    <td></td>
+    {{ edit_action() }}
+  </tr>
+{% endmacro %}
+{% macro submitter_tables(submitter) %}
+  <table class="general-information-table">
+    {{ columns_head("csb_general_information.columns.personalia"|trans) }}
+    <tbody>
+      {{ data_row("person.fields.initials"|trans, submitter.name.initials) }}
+      {{ data_row("person.fields.last_name"|trans, submitter.name.last_name_with_prefix() ) }}
+    </tbody>
+  </table>
+  <table class="general-information-table">
+    {{ columns_head("person.correspondence_address"|trans) }}
+    <tbody>
+      <tr class="clickable">
+        <td>
+          {{ "person.fields.postal_code"|trans }}: <strong>{{ submitter.address.postal_code().unwrap_or_default() }}</strong>
+        </td>
+        <td>
+          <ul class="tags-list">
+            {# TODO: add badges #}
+          </ul>
+        </td>
+        {{ edit_action() }}
+      </tr>
+      {{ data_row("person.fields.house_number"|trans, submitter.address.house_number().unwrap_or_default()) }}
+      <tr class="clickable">
+        <td>
+          {{ "person.fields.street_name"|trans }}: <strong>{{ submitter.address.street_name().unwrap_or_default() }}</strong>
+        </td>
+        <td>
+          <ul class="tags-list">
+            {# TODO: add badges #}
+          </ul>
+        </td>
+        {{ edit_action() }}
+      </tr>
+      <tr class="clickable">
+        <td>
+          {{ "person.fields.locality"|trans }}: <strong>{{ submitter.address.locality().unwrap_or_default() }}</strong>
+        </td>
+        <td>
+          <ul class="tags-list">
+            {# TODO: add badges #}
+          </ul>
+        </td>
+        {{ edit_action() }}
+      </tr>
+    </tbody>
+  </table>
+{% endmacro %}
+{% block content %}
+  <section class="general-information">
+    <a class="card restoration-card" data-href="#">
+      <div class="card-header">
+        <div>
+          <h3 class="h4">{{ "csb_general_information.restoration_card.title"|trans }}</h3>
+        </div>
+        <span class="icon-edit" aria-hidden="true"></span>
+      </div>
+      <div class="card-content">
+        <p>{{ "csb_general_information.restoration_card.description"|trans }}</p>
+      </div>
+    </a>
+    <h2>{{ "csb_general_information.section.political_group"|trans }}</h2>
+    <table class="general-information-table">
+      {{ columns_head("common.general_information"|trans) }}
+      <tbody>
+        <tr class="clickable">
+          <td>
+            {{ "political_group.display_name"|trans }}: <strong>{{ political_group.political_group.csb_display_name() }}</strong>
+          </td>
+          <td>
+            <ul class="tags-list">
+              {# TODO: add badges #}
+            </ul>
+          </td>
+          {{ edit_action() }}
+        </tr>
+        <tr class="clickable">
+          <td>
+            {{ "political_group.list_type"|trans }}: <strong>
+            {% match political_group.political_group.list_designation %}
+            {% when Some with (list_designation) %}
+            {% match list_designation %}
+            {% when crate::list_designation::ListDesignation::Standalone %}
+            {{ "political_group.type.registered_name"|trans }}
+            {% when crate::list_designation::ListDesignation::Combined %}
+            {{ "political_group.type.name_combination"|trans }}
+            {% when crate::list_designation::ListDesignation::Blank %}
+            {{ "political_group.type.blank_name"|trans }}
+          {% endmatch %}
+          {% when None %}
+          -
+        {% endmatch %}
+      </strong>
+    </td>
+    <td></td>
+    {{ edit_action() }}
+  </tr>
+  <tr class="clickable">
+    <td>
+      {{ "problems.no_previous_election_results"|trans }}: <strong>
+      {% match political_group.political_group.previous_election_results %}
+      {% when Some with (previous_election_results) %}
+      {% match previous_election_results %}
+      {% when crate::common::PreviousElectionResults::ZeroSeats %}
+      {{ "political_group.type.zero_seats"|trans }}
+      {% when crate::common::PreviousElectionResults::OneToFifteenSeats %}
+      {{ "political_group.type.one_to_fifteen_seats"|trans }}
+      {% when crate::common::PreviousElectionResults::SixteenOrMoreSeats %}
+      {{ "political_group.type.sixteen_or_more_seats"|trans }}
+    {% endmatch %}
+    {% when None %}
+    -
+  {% endmatch %}
+</strong>
+</td>
+<td></td>
+{{ edit_action() }}
+</tr>
+</tbody>
+</table>
+{% if name_authorisations.is_empty() %}
+  <p class="font-italic">{{ "political_group.no_legal_names"|trans }}</p>
+{% else %}
+  {% for name_authorisation in name_authorisations %}
+    <table class="general-information-table">
+      {{ columns_head(name_authorisation.legal_name) }}
+      <tbody>
+        {{ data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
+        {{ data_row("political_group.authorised_agent"|trans, name_authorisation.name.display() ) }}
+      </tbody>
+    </table>
+  {% endfor %}
+{% endif %}
+<h2>{{ "political_group.list_submitter_data"|trans }}</h2>
+{% if list_submitter.is_empty() %}
+  <p class="font-italic">{{ "political_group.no_list_submitter"|trans }}</p>
+{% else %}
+  {{ submitter_tables(list_submitter) }}
+{% endif %}
+<h2>{{ "political_group.substitute_submitters_data"|trans }}</h2>
+{% if substitute_submitters.is_empty() %}
+  <p class="font-italic">{{ "political_group.no_substitute_submitters"|trans }}</p>
+{% else %}
+  {% for submitter in substitute_submitters %}
+    <h3 class="mt-md">{{ submitter.name.display() }}</h3>
+    {{ submitter_tables(submitter) }}
+  {% endfor %}
+{% endif %}
+</section>
+{% endblock %}

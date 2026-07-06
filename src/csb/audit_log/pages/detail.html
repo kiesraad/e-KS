@@ -1,0 +1,27 @@
+{% extends "csb/components/overlay.html" %}
+{% set close_action = crate::csb::audit_log::CsbAuditLogPath{}.to_string() %}
+{% block overlay_title %}{{ detail.description }}{% endblock %}
+{% block overlay_content %}
+  <div class="overlay-content">
+    <dl class="event-meta">
+      <dt>{{ "audit_log.fields.event_id"|trans }}</dt>
+      <dd>
+        {{ detail.event_id }}
+      </dd>
+      <dt>{{ "audit_log.fields.timestamp"|trans }}</dt>
+      <dd>
+        {{ detail.created_at|datetime_seconds }}
+      </dd>
+      <dt>{{ "audit_log.fields.stream"|trans }}</dt>
+      <dd>
+        {{ detail.stream_label }}
+      </dd>
+      {% if !detail.details.is_empty() %}
+        <dt>{{ "audit_log.fields.details"|trans }}</dt>
+        <dd>
+          <pre>{{ detail.details }}</pre>
+        </dd>
+      {% endif %}
+    </dl>
+  </div>
+{% endblock %}

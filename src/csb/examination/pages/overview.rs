@@ -14,7 +14,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "examination/pages/overview.html")]
+#[template(path = "csb/examination/pages/overview.html")]
 struct CsbExaminationOverviewTemplate {
     unfinished_political_groups: Vec<CsbPoliticalGroup>,
     finished_political_groups: Vec<CsbPoliticalGroup>,

@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "audit_log/pages/detail.html")]
+#[template(path = "app/audit_log/pages/detail.html")]
 struct AuditLogDetailTemplate {
     detail: AuditLogDetail,
     download_path_nl: String,

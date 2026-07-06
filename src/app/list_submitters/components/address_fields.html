@@ -1,6 +1,6 @@
 <h3>{{ "person.correspondence_address"|trans }}</h3>
 <span class="alert alert-info">{{ "political_group.list_submitter_address_info"|trans }}</span>
-{% include "common/components/address_fields.html" %}
+{% include "app/common/components/address_fields.html" %}
 <div class="form-row">
   <div class="form-field hide-nl">
     <label for="state_or_province">{{ "person.fields.state_or_province"|trans }}</label>
@@ -13,7 +13,7 @@
   <div class="form-field">
     <label for="country">{{ "person.fields.country"|trans }}</label>
     {% let country_value = form.data.address.country %}
-    {% include "common/components/country_input.html" %}
+    {% include "app/common/components/country_input.html" %}
     {% for error in form|error("address.country") %}<span class="error">{{ error }}</span>{% endfor %}
   </div>
 </div>

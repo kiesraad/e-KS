@@ -1,4 +1,4 @@
-{% extends "common/components/base.html" %}
+{% extends "app/common/components/base.html" %}
 {% macro breadcrumb(href, name, is_translatable=true) %}
   <li class="breadcrumb">
     <a href="{{ href }}">
@@ -25,6 +25,9 @@
           {% block breadcrumbs %}{% endblock %}
         </ul>
         <ul>
+          <li>
+            <a href="{{ crate::csb::audit_log::CsbAuditLogPath{}.to_string() }}">{{ "audit_log.title"|trans }}</a>
+          </li>
           <li>
             <a href="/logout" class="logout">{{ "action.signout"|trans }}</a>
           </li>

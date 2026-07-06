@@ -1,4 +1,4 @@
-{% extends "components/layout.html" %}
+{% extends "csb/components/layout.html" %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
@@ -59,7 +59,8 @@
       </div>
     </div>
     <div class="cards cards-candidate-lists">
-      <div class="card card-candidate-list" data-href="#">
+      <div class="card card-candidate-list"
+           data-href="{{ political_group.general_information_path() }}">
         <div class="card-header">
           <div class="badge badge-data"></div>
           <div>
@@ -83,7 +84,8 @@
             <li>{{ "csb_political_group.general_instruction_list_submitter"|trans }}</li>
           </ul>
         </div>
-        <a class="card-footer" href="#">{{ "csb_political_group.actions.examine_general"|trans }}</a>
+        <a class="card-footer"
+           href="{{ political_group.general_information_path() }}">{{ "csb_political_group.actions.examine_general"|trans }}</a>
       </div>
       {% for candidate_list in candidate_lists %}
         <div class="card card-candidate-list" data-href="#">

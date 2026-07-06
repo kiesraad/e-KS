@@ -1,5 +1,5 @@
-{% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% block overlay_title %}
   <span class="person-badge"></span>
   {{ person.name.display() }}
@@ -7,7 +7,7 @@
 {% set close_action = person.highlight_path() %}
 {% block overlay_steps %}
   {% set conditional_next_step = true %}
-  {% include "persons/components/update_steps.html" %}
+  {% include "app/persons/components/update_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   {% let should_warn = true %}
@@ -16,12 +16,12 @@
     <legend>
       <h3>{{ "person.personal_details"|trans }}</h3>
     </legend>
-    {% include "persons/components/form.html" %}
+    {% include "app/persons/components/form.html" %}
   </fieldset>
 {% endblock %}
 {% block overlay_actions %}
   {% set submit_label = "action.next"|trans %}
-  {% include "common/components/submit.html" %}
+  {% include "app/common/components/submit.html" %}
 {% endblock %}
 {% block overlay_end %}
 {% endblock %}

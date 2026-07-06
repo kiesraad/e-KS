@@ -6,6 +6,7 @@ use crate::{
     AppError, AppState, QueryParamState, StreamId, csb::examination::extractors::CsbPoliticalGroup,
 };
 
+mod general_information;
 mod overview;
 mod political_group;
 
@@ -25,6 +26,15 @@ pub struct CsbPoliticalGroupToggleFinishPath {
     pub stream_id: StreamId,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/general-information",
+    rejection(AppError)
+)]
+pub struct CsbGeneralInformationPath {
+    pub stream_id: StreamId,
+}
+
 impl CsbPoliticalGroup {
     pub fn examination_path(&self) -> impl TypedPath {
         CsbPoliticalGroupPath {
@@ -34,6 +44,12 @@ impl CsbPoliticalGroup {
 
     pub fn examination_toggle_finish_path(&self) -> impl TypedPath {
         CsbPoliticalGroupToggleFinishPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    pub fn general_information_path(&self) -> impl TypedPath {
+        CsbGeneralInformationPath {
             stream_id: self.stream_id,
         }
     }
@@ -51,4 +67,5 @@ pub fn router() -> Router<AppState> {
         .typed_get(overview::overview)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
+        .typed_get(general_information::overview)
 }

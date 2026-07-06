@@ -1,4 +1,5 @@
 //! Utilities and small helpers shared across the application.
+mod abbreviate_str;
 mod bsn;
 mod format_hash;
 mod option_string_ext;
@@ -22,6 +23,7 @@ pub mod embed_typst;
 #[cfg(test)]
 pub mod test_utils;
 
+pub use abbreviate_str::abbreviate_str;
 pub use bsn::random_bsn;
 pub use format_hash::{format_hash, parse_hash_prefix};
 pub use no_cache_headers::generate_attachment_headers;

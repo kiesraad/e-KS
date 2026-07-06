@@ -9,7 +9,7 @@ use crate::{
 };
 
 #[derive(Template)]
-#[template(path = "persons/pages/list.html")]
+#[template(path = "app/persons/pages/list.html")]
 struct PersonListTemplate {
     person_pagination: PersonPagination,
 }

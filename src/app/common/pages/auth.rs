@@ -13,23 +13,23 @@ use axum_extra::extract::CookieJar;
 use crate::{AppState, Context, HtmlTemplate, Locale, SESSION_COOKIE_NAME, filters};
 
 #[derive(Template)]
-#[template(path = "common/pages/login_start.html")]
+#[template(path = "app/common/pages/login_start.html")]
 struct LoginStartTemplate;
 
 #[derive(Template)]
-#[template(path = "common/pages/logged_out.html")]
+#[template(path = "app/common/pages/logged_out.html")]
 struct LoggedOutTemplate;
 
 #[derive(Template)]
-#[template(path = "common/pages/auth_error.html")]
+#[template(path = "app/common/pages/auth_error.html")]
 struct AuthErrorTemplate;
 
 #[derive(Template)]
-#[template(path = "common/pages/auth_cancelled.html")]
+#[template(path = "app/common/pages/auth_cancelled.html")]
 struct AuthCancelledTemplate;
 
 #[derive(Template)]
-#[template(path = "common/pages/auth_unavailable.html")]
+#[template(path = "app/common/pages/auth_unavailable.html")]
 struct AuthUnavailableTemplate;
 
 /// Template values for pre-session pages: only locale is known (no session/election yet).
