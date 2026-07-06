@@ -207,6 +207,15 @@ mod tests {
     }
 
     #[test]
+    fn usize_event_trait_impl() {
+        let v: usize = 37;
+        assert_eq!(v.category(), "number");
+        assert_eq!(v.key(), "");
+        assert_eq!(v.description(crate::Locale::En), "a number");
+        assert_eq!(v.details(), "37");
+    }
+
+    #[test]
     fn apply_event_updates_projection_and_last_event_id() {
         let store = test_store();
 

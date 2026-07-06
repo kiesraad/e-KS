@@ -145,7 +145,7 @@ pub async fn csb_audit_log(
                 .unwrap_or_default();
 
             for event in store.data.read().events.iter() {
-                all_entries.push(CsbAuditLogEntry::from_import_event(
+                all_entries.push(CsbAuditLogEntry::from_event(
                     event.clone(),
                     store.stream_id,
                     label.clone(),
@@ -191,4 +191,307 @@ pub async fn csb_audit_log(
         },
         context,
     ))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{
+        extract::{Query, State},
+        http::StatusCode,
+        response::IntoResponse,
+    };
+
+    use crate::{
+        AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
+        StreamId,
+        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogPath},
+        pagination::Pagination,
+        test_utils::response_body_string,
+    };
+
+    fn no_filter() -> Query<CsbAuditLogFilter> {
+        Query(CsbAuditLogFilter::default())
+    }
+
+    async fn call(
+        main_store: CsbMainStore,
+        state: AppState,
+        filter: Query<CsbAuditLogFilter>,
+    ) -> Result<axum::response::Response, AppError> {
+        Ok(csb_audit_log(
+            CsbAuditLogPath,
+            CsbContext::new_test(),
+            main_store,
+            State(state),
+            Pagination::default(),
+            filter,
+        )
+        .await?
+        .into_response())
+    }
+
+    #[tokio::test]
+    async fn renders_empty_audit_log() -> Result<(), AppError> {
+        let response = call(
+            CsbMainStore::new_for_test(),
+            AppState::new_for_tests().await,
+            no_filter(),
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Audit log"));
+        // Should show empty message, not a table
+        assert!(!body.contains("<table"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn renders_main_stream_events() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let response = call(main_store, AppState::new_for_tests().await, no_filter()).await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("<table"));
+        assert!(body.contains("<td>Developer login</td>"));
+        assert!(body.contains("<td>Main CSB stream</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn renders_import_stream_events() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(CsbMainStore::new_for_test(), state, no_filter()).await?;
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Set finished state</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn shows_events_newest_first() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(main_store, state, no_filter()).await?;
+
+        let body = response_body_string(response).await;
+        let login_pos = body.find("<td>Developer login</td>").expect("login event");
+        let finished_pos = body
+            .find("<td>Set finished state</td>")
+            .expect("set finished event");
+        assert!(
+            finished_pos < login_pos,
+            "newer event (set finished) should appear before older event (developer login)"
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn paginates_results() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        for _ in 0..PER_PAGE + 5 {
+            main_store
+                .update(CsbMainEvent::DeveloperLogin {
+                    stream_id: CSB_MAIN_STREAM_ID,
+                })
+                .await?;
+        }
+
+        let response = call(main_store, AppState::new_for_tests().await, no_filter()).await?;
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("Pagination"));
+        let row_count = body.matches("<td>Developer login</td>").count();
+        assert_eq!(row_count, PER_PAGE);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn filters_by_main_stream() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(
+            main_store,
+            state,
+            Query(CsbAuditLogFilter {
+                stream: Some("main".to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Developer login</td>"));
+        assert!(!body.contains("<td>Set finished state</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn filters_by_import_stream() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+        let import_stream_id = StreamId::new();
+        let csb_store = state
+            .csb_store_for_stream(import_stream_id, ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(
+            main_store,
+            state,
+            Query(CsbAuditLogFilter {
+                stream: Some(import_stream_id.to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        assert!(!body.contains("<td>Developer login</td>"));
+        assert!(body.contains("<td>Set finished state</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn filters_by_event_type() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(
+            main_store,
+            state,
+            Query(CsbAuditLogFilter {
+                event_type: Some("set_finished".to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Set finished state</td>"));
+        assert!(!body.contains("<td>Developer login</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn searches_by_description() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = call(
+            main_store,
+            state,
+            Query(CsbAuditLogFilter {
+                search: Some("Developer".to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Developer login</td>"));
+        assert!(!body.contains("<td>Set finished state</td>"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn reset_button_only_shown_when_filter_active() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+
+        let response = call(main_store.clone(), state.clone(), no_filter()).await?;
+        let body = response_body_string(response).await;
+        assert!(!body.contains("/csb/audit-log\" class=\"button secondary\">"));
+
+        let response = call(
+            main_store,
+            state,
+            Query(CsbAuditLogFilter {
+                event_type: Some("system".to_string()),
+                ..Default::default()
+            }),
+        )
+        .await?;
+        let body = response_body_string(response).await;
+        assert!(body.contains("/csb/audit-log\" class=\"button secondary\">"));
+
+        Ok(())
+    }
 }

@@ -77,3 +77,96 @@ pub async fn csb_audit_log_detail(
         context,
     ))
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use axum::{extract::State, http::StatusCode, response::IntoResponse};
+
+    use crate::{
+        AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
+        StreamId,
+        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogDetailPath},
+        test_utils::response_body_string,
+    };
+
+    #[tokio::test]
+    async fn renders_detail_for_main_stream_event() -> Result<(), AppError> {
+        let main_store = CsbMainStore::new_for_test();
+        main_store
+            .update(CsbMainEvent::DeveloperLogin {
+                stream_id: CSB_MAIN_STREAM_ID,
+            })
+            .await?;
+
+        let state = AppState::new_for_tests().await;
+
+        let response = csb_audit_log_detail(
+            CsbAuditLogDetailPath {
+                stream_id: CSB_MAIN_STREAM_ID,
+                event_id: 1,
+            },
+            CsbContext::new_test(),
+            main_store,
+            State(state),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Developer login"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn renders_detail_for_import_stream_event() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let stream_id = StreamId::new();
+        let csb_store = state
+            .csb_store_for_stream(stream_id, ElectionConfig::EK27)
+            .await?;
+        csb_store.update(CsbEvent::SetFinished(true)).await?;
+
+        let response = csb_audit_log_detail(
+            CsbAuditLogDetailPath {
+                stream_id,
+                event_id: 1,
+            },
+            CsbContext::new_test(),
+            CsbMainStore::new_for_test(),
+            State(state),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Set finished state"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn returns_not_found_for_unknown_event() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+
+        let result = csb_audit_log_detail(
+            CsbAuditLogDetailPath {
+                stream_id: CSB_MAIN_STREAM_ID,
+                event_id: 999,
+            },
+            CsbContext::new_test(),
+            CsbMainStore::new_for_test(),
+            State(state),
+        )
+        .await;
+
+        assert!(result.is_err());
+
+        Ok(())
+    }
+}

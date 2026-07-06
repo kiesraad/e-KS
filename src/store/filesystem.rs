@@ -482,6 +482,17 @@ mod tests {
         }
     }
 
+    #[test]
+    fn test_event_trait_impl() {
+        let event = TestEvent {
+            label: "hello".to_string(),
+        };
+        assert_eq!(event.category(), "test_event");
+        assert_eq!(event.key(), "test_event");
+        assert_eq!(event.description(crate::Locale::En), "hello");
+        assert_eq!(event.details(), "hello");
+    }
+
     fn test_encryption() -> EventEncryption {
         EventEncryption::new(&SecretString::from("test-secret"))
     }
