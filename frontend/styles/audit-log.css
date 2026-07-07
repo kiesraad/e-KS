@@ -47,7 +47,7 @@ table.diff-table {
   th:first-child,
   td:first-child {
     width: 40%;
-    word-break: break-word;
+    overflow-wrap: break-word;
   }
 
   tr:nth-child(even) {

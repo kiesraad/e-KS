@@ -5,6 +5,7 @@ import setupClickRow from "../../../frontend/scripts/table-interaction/click-row
 declare global {
   interface Window {
     recordClick: () => void;
+    linkClicked?: boolean;
   }
 }
 
@@ -43,11 +44,6 @@ test.describe("click-row", () => {
   });
 
   test("clicking a drag handle does not trigger the link", async ({ page }) => {
-    let clicked = false;
-    await page.exposeFunction("recordClick", () => {
-      clicked = true;
-    });
-
     await page.setContent(`
       <table>
         <tr class="clickable">
@@ -64,7 +60,7 @@ test.describe("click-row", () => {
       }
       link.addEventListener("click", (event) => {
         event.preventDefault();
-        window.recordClick();
+        window.linkClicked = true;
       });
     });
 
@@ -72,7 +68,7 @@ test.describe("click-row", () => {
 
     await page.click("#drag-handle");
 
-    await page.waitForTimeout(50);
-    expect(clicked).toBe(false);
+    const linkClicked = await page.evaluate(() => window.linkClicked ?? false);
+    expect(linkClicked).toBe(false);
   });
 });

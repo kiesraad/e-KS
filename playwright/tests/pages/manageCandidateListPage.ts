@@ -49,10 +49,10 @@ export class ManageCandidateListPage {
       name: "Geboortedatum",
     });
     this.textfieldBirthMonth = this.page.getByRole("textbox", {
-      name: "mm",
+      name: "Maand",
       exact: true,
     });
-    this.textfieldBirthYear = this.page.getByRole("textbox", { name: "jjjj" });
+    this.textfieldBirthYear = this.page.getByRole("textbox", { name: "Jaar" });
     this.dropdownGender = this.page.getByLabel("Geslacht");
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
     this.textfieldPostalCode = this.page.getByLabel("Postcode");
