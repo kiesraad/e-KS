@@ -1,7 +1,11 @@
 use crate::{
     AppError, CsbStore,
+    candidate_lists::CandidateList,
     csb::{Omission, OmissionId, omission::OmissionCategory},
+    list_submitters::ListSubmitter,
+    name_authorisations::NameAuthorisation,
     persons::PersonId,
+    political_groups::PoliticalGroup,
 };
 
 impl CsbStore {
@@ -50,6 +54,63 @@ impl CsbStore {
         data.omissions
             .values()
             .filter(|o| matches!(&o.category, OmissionCategory::Candidate { person, .. } if *person == person_id))
+            .cloned()
+            .collect()
+    }
+
+    pub fn is_examination_finished(&self) -> bool {
+        let data = self.data.read();
+
+        data.is_examination_finished
+    }
+
+    pub fn get_political_group(&self) -> PoliticalGroup {
+        let data = self.data.read();
+
+        data.imported_data.political_group.clone()
+    }
+
+    pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
+        let data = self.data.read();
+
+        data.imported_data
+            .candidate_lists
+            .values()
+            .cloned()
+            .collect()
+    }
+
+    /// The list submitter ("lijstinleveraar") imported for this political group.
+    pub fn get_list_submitter(&self) -> ListSubmitter {
+        let data = self.data.read();
+
+        data.imported_data.list_submitter.clone()
+    }
+
+    /// The substitutes for the restoration of omissions ("vervangers voor het
+    /// herstel van verzuimen") that were imported for this political group.
+    pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
+        let data = self.data.read();
+
+        data.imported_data
+            .substitute_submitters
+            .iter()
+            .cloned()
+            .map(|mut submitter| {
+                submitter.is_substitute = true;
+                submitter
+            })
+            .collect()
+    }
+
+    /// The authorised names ("statutaire namen") imported for this political
+    /// group.
+    pub fn get_name_authorisations(&self) -> Vec<NameAuthorisation> {
+        let data = self.data.read();
+
+        data.imported_data
+            .name_authorisations
+            .values()
             .cloned()
             .collect()
     }
@@ -158,5 +219,28 @@ mod tests {
         );
 
         assert!(store.get_candidate_omissions(PersonId::new()).is_empty());
+    }
+
+    #[test]
+    fn get_substitute_submitters_marks_each_as_substitute() {
+        let store = CsbStore::new_for_test();
+        store
+            .data
+            .write()
+            .imported_data
+            .substitute_submitters
+            .push(ListSubmitter::default());
+
+        let result = store.get_substitute_submitters();
+
+        assert_eq!(result.len(), 1);
+        assert!(result[0].is_substitute);
+    }
+
+    #[test]
+    fn get_substitute_submitters_returns_empty_when_none() {
+        let store = CsbStore::new_for_test();
+
+        assert!(store.get_substitute_submitters().is_empty());
     }
 }

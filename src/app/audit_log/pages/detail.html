@@ -1,6 +1,7 @@
-{% extends "common/components/overlay.html" %}
-{% import "common/components/macros.html" as macros %}
-{% set close_action = AuditLogPath.to_string() %}
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
+{% set audit_log_path = AuditLogPath.to_string() %}
+{% set close_action = audit_log_path.clone() %}
 {% block overlay_title %}{{ detail.description }}{% endblock %}
 {% block overlay_steps %}<div class="steps-nav"></div>{% endblock %}
 {% block overlay_content %}
@@ -55,7 +56,7 @@
               <td>
                 {% for entity_ref in old_refs %}
                   <div class="entity-ref">
-                    <a href="/audit-log?search={{ entity_ref.id_full }}">
+                    <a href="{{ audit_log_path }}?search={{ entity_ref.id_full }}">
                       <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
                     </a>
                     {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}
@@ -65,7 +66,7 @@
               <td>
                 {% for entity_ref in new_refs %}
                   <div class="entity-ref">
-                    <a href="/audit-log?search={{ entity_ref.id_full }}">
+                    <a href="{{ audit_log_path }}?search={{ entity_ref.id_full }}">
                       <abbr title="{{ entity_ref.id_full }}">{{ entity_ref.id_full|abbreviate_str }}</abbr>
                     </a>
                     {% if !entity_ref.description.is_empty() %}<span>{{ entity_ref.description }}</span>{% endif %}

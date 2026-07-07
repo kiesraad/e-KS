@@ -1,0 +1,8 @@
+columns:
+  personalia: Personalia
+  status: Status
+restoration_card:
+  description: Voeg hier algemene herstelacties toe voor basisgegevens
+  title: Herstelacties basisgegevens
+section:
+  political_group: Gegevens Politieke groepering

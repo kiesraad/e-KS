@@ -1,9 +1,7 @@
 use axum_extra::routing::TypedPath;
 use chrono::{DateTime, Utc};
 
-use crate::{AppEvent, Locale, audit_log::AuditLogDetailPath, store::StoreEvent};
-
-use super::event_info::{event_description, event_details, subject_id_full, subject_path};
+use crate::{AppEvent, Event, Locale, audit_log::AuditLogDetailPath, store::StoreEvent};
 
 /// A single entry in the audit log, representing one application event.
 pub struct AuditLogEntry {
@@ -18,14 +16,14 @@ pub struct AuditLogEntry {
 
 impl AuditLogEntry {
     pub fn new(event: StoreEvent<AppEvent>, locale: Locale) -> Self {
-        let full_id = subject_id_full(&event.payload);
+        let full_id = event.payload.subject_id_full();
         Self {
             event_id: event.event_id,
-            event_type: event.payload.event_category(),
-            description: event_description(&event.payload, locale),
-            details: event_details(&event.payload),
+            event_type: event.payload.category(),
+            description: event.payload.description(locale),
+            details: event.payload.details(),
             subject_id_full: full_id,
-            subject_path: subject_path(&event.payload),
+            subject_path: event.payload.subject_path(),
             created_at: event.created_at,
         }
     }
@@ -48,10 +46,9 @@ impl AuditLogEntry {
 
 #[cfg(test)]
 mod tests {
-    use super::{super::event_info::DEFAULT_DETAILS, *};
+    use super::*;
     use crate::{
         Locale, StreamId,
-        audit_log::abbreviate_str,
         candidate_lists::CandidateListId,
         list_submitters::ListSubmitterId,
         name_authorisations::NameAuthorisationId,
@@ -98,7 +95,7 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Deleted person");
-        assert_eq!(entry.details, DEFAULT_DETAILS);
+        assert_eq!(entry.details, AppEvent::DEFAULT_DETAILS);
     }
 
     #[test]
@@ -167,7 +164,7 @@ mod tests {
         let entry = AuditLogEntry::new(event, EN);
 
         assert_eq!(entry.description, "Developer login");
-        assert_eq!(entry.details, DEFAULT_DETAILS);
+        assert_eq!(entry.details, AppEvent::DEFAULT_DETAILS);
     }
 
     #[test]
@@ -229,7 +226,7 @@ mod tests {
         let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
         let entry = AuditLogEntry::new(event, EN);
 
-        assert!(entry.matches_search(&abbreviate_str(&entry.subject_id_full)));
+        assert!(entry.matches_search(&crate::abbreviate_str(&entry.subject_id_full)));
         assert!(entry.matches_search(&entry.subject_id_full));
     }
 

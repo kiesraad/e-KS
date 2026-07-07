@@ -1,6 +1,8 @@
 <nav aria-label="Pagination" class="pagination">
   {% if pagination.has_prev %}
-    <a href="{{ pagination.prev() }}" rel="prev" class="button secondary">&lt;</a>
+    <a href="{{ pagination.prev() }}{{ suffix }}"
+       rel="prev"
+       class="button secondary">&lt;</a>
   {% else %}
     <a class="button disabled" disabled aria-disabled="true">&lt;</a>
   {% endif %}
@@ -9,14 +11,17 @@
       {% if link.current %}
         <a class="button disabled" disabled aria-current="page">{{ number }}</a>
       {% else %}
-        <a href="{{ pagination.goto(number) }}" class="button secondary">{{ number }}</a>
+        <a href="{{ pagination.goto(number) }}{{ suffix }}"
+           class="button secondary">{{ number }}</a>
       {% endif %}
     {% else %}
       <span aria-hidden="true">...</span>
     {% endif %}
   {% endfor %}
   {% if pagination.has_next %}
-    <a href="{{ pagination.next() }}" rel="next" class="button secondary">&gt;</a>
+    <a href="{{ pagination.next() }}{{ suffix }}"
+       rel="next"
+       class="button secondary">&gt;</a>
   {% else %}
     <a class="button disabled" disabled aria-disabled="true">&gt;</a>
   {% endif %}

@@ -1,0 +1,17 @@
+actions:
+  examine_all_brp_errors: Examine all BRP errors
+  examine_general: Examine general information
+  examine_list: Examine candidate list
+all_brp_errors: All BRP errors
+all_brp_errors_note: All BRP errors are collectively listed here
+all_restorations: All restorations
+brp_errors:
+  none: No BRP errors
+  plural: "{} BRP errors"
+  singular: 1 BRP error
+candidate_count: "<strong>{}</strong> candidates"
+examination_finished: Examination finished
+examination_unfinished: Finish examination
+general_instruction_list_submitter: Examine information about the list submitter(s)
+general_instruction_political_group: Examine information about the political group
+toggle_examination: Finish or reopen examination

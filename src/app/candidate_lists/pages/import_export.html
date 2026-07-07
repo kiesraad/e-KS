@@ -1,4 +1,4 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% set close_action = list.view_path() %}
 {% block overlay_title %}{{ "candidate_list.actions.import_export"|trans }}{% endblock %}
 {% block overlay_content %}
@@ -10,6 +10,7 @@
                name="file_data"
                id="import_file"
                accept=".csv,text/csv"
+               aria-label="{{ "candidate_list.actions.import_csv"|trans }}"
                required />
       </p>
       {% if !import_errors.is_empty() %}

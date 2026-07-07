@@ -3,6 +3,7 @@
 use chrono::{DateTime, Duration, Utc};
 use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
+use sha2::{Digest, Sha256};
 
 use crate::{
     AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue, form::generate_csrf_token,
@@ -11,9 +12,27 @@ use crate::{
 /// Idle timeout (in seconds) after which a session is considered expired.
 const SESSION_IDLE_TIMEOUT_SECS: i64 = 10 * 60; // 10 minutes, per TVS "Checklist Testen" v2.1 T8: max 15 minutes inactivity.
 
+/// Absolute cap on total session lifetime, regardless of activity (defense in
+/// depth; TVS mandates only the idle ceiling). Covers one working day.
+const SESSION_ABSOLUTE_TIMEOUT_SECS: i64 = 8 * 60 * 60; // 8 hours
+
 /// Idle timeout after which a session is considered expired.
 pub fn session_idle_timeout() -> Duration {
     Duration::seconds(SESSION_IDLE_TIMEOUT_SECS)
+}
+
+/// Absolute lifetime cap, checked regardless of activity.
+pub fn session_absolute_timeout() -> Duration {
+    Duration::seconds(SESSION_ABSOLUTE_TIMEOUT_SECS)
+}
+
+/// SHA-256 (hex) of a raw token: the value stored at rest and used as the lookup
+/// key, so the bearer token itself is never persisted.
+pub(crate) fn hash_token(raw: &str) -> String {
+    Sha256::digest(raw.as_bytes())
+        .iter()
+        .map(|b| format!("{b:02x}"))
+        .collect()
 }
 
 /// Opaque session token kept secret until explicitly exposed.
@@ -40,20 +59,6 @@ impl std::fmt::Debug for SessionToken {
     }
 }
 
-impl PartialEq for SessionToken {
-    fn eq(&self, other: &Self) -> bool {
-        self.expose() == other.expose()
-    }
-}
-
-impl Eq for SessionToken {}
-
-impl std::hash::Hash for SessionToken {
-    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
-        self.expose().hash(state);
-    }
-}
-
 /// Server-side session data.
 ///
 /// Persisted either in memory or the database depending on `STORAGE_URL`.
@@ -61,10 +66,18 @@ impl std::hash::Hash for SessionToken {
 /// and the election is tracked on the session directly.
 #[derive(Clone)]
 pub struct Session {
-    /// Opaque, random token that identifies the session.
-    pub(crate) token: SessionToken,
+    /// SHA-256 (hex) of the token: the storage key and only token material at rest.
+    pub(crate) token_hash: String,
+    /// Raw token, held only until the `Set-Cookie` is emitted; `None` once loaded
+    /// from storage, so a reloaded session can't re-expose it.
+    pub(crate) raw_token: Option<SessionToken>,
+    /// Creation time, for the absolute-lifetime cap.
+    pub created_at: DateTime<Utc>,
     /// Timestamp of the last activity for idle-timeout validation.
     pub last_activity: DateTime<Utc>,
+    /// Truncated SHA-256 of the creating `User-Agent`; when set, the middleware
+    /// rejects requests whose UA differs. `None` leaves the session unpinned.
+    pub user_agent_hash: Option<String>,
     /// Stream belonging to the user (set on login).
     pub stream_id: Option<StreamId>,
     /// Authorization scope of the session, set on login. Governs which streams
@@ -86,6 +99,7 @@ impl std::fmt::Debug for Session {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("Session")
             .field("token", &"***")
+            .field("created_at", &self.created_at)
             .field("last_activity", &self.last_activity)
             .field("stream_id", &self.stream_id)
             .field("scope", &self.scope)
@@ -97,7 +111,7 @@ impl std::fmt::Debug for Session {
 
 impl PartialEq for Session {
     fn eq(&self, other: &Self) -> bool {
-        self.token == other.token
+        self.token_hash == other.token_hash
     }
 }
 
@@ -121,9 +135,14 @@ impl Session {
 
     /// Creates a new session using the provided locale.
     pub fn new_with_locale(locale: Locale) -> Self {
+        let raw_token = generate_session_token();
+        let now = Utc::now();
         Self {
-            token: generate_session_token(),
-            last_activity: Utc::now(),
+            token_hash: hash_token(raw_token.expose()),
+            raw_token: Some(raw_token),
+            created_at: now,
+            last_activity: now,
+            user_agent_hash: None,
             stream_id: None,
             scope: Scope::default(),
             current_election: None,
@@ -148,14 +167,34 @@ impl Session {
         self.current_election = Some(election);
     }
 
-    /// Returns the session token (kept secret until explicitly exposed).
-    pub(crate) fn token(&self) -> &SessionToken {
-        &self.token
+    /// Pins the session to the hash of the client's `User-Agent`.
+    pub fn set_user_agent_hash(&mut self, user_agent_hash: String) {
+        self.user_agent_hash = Some(user_agent_hash);
     }
 
-    /// Returns true when the session has been idle past the configured timeout.
+    /// Returns the SHA-256 (hex) storage key for this session.
+    pub(crate) fn token_hash(&self) -> &str {
+        &self.token_hash
+    }
+
+    /// Raw token if still in memory (only between creation and cookie-minting).
+    pub(crate) fn reveal_token(&self) -> Option<&SessionToken> {
+        self.raw_token.as_ref()
+    }
+
+    /// Test helper: raw token of a fresh session (panics on a reloaded one).
+    #[cfg(test)]
+    pub fn token_string(&self) -> String {
+        self.reveal_token()
+            .expect("fresh session retains its raw token")
+            .to_exposed_string()
+    }
+
+    /// True once past the idle timeout or the absolute lifetime cap.
     pub fn is_expired(&self) -> bool {
-        Utc::now() - self.last_activity >= session_idle_timeout()
+        let now = Utc::now();
+        now - self.last_activity >= session_idle_timeout()
+            || now - self.created_at >= session_absolute_timeout()
     }
 
     /// Verify a submitted CSRF token against the session's token, returning
@@ -195,15 +234,21 @@ mod tests {
     #[test]
     fn new_generates_base62_token() {
         let session = Session::new_test();
+        let token = session.token_string();
 
-        assert_eq!(session.token().expose().len(), 42);
-        assert!(
-            session
-                .token()
-                .expose()
-                .chars()
-                .all(|c| c.is_ascii_alphanumeric())
-        );
+        assert_eq!(token.len(), 42);
+        assert!(token.chars().all(|c| c.is_ascii_alphanumeric()));
+    }
+
+    /// Stored key is the token's hash, not the token itself.
+    #[test]
+    fn token_hash_is_sha256_of_raw_token() {
+        let session = Session::new_test();
+        let raw = session.token_string();
+
+        assert_eq!(session.token_hash(), hash_token(&raw));
+        assert_eq!(session.token_hash().len(), 64); // 32 bytes hex-encoded
+        assert_ne!(session.token_hash(), raw);
     }
 
     /// Confirms idle timeout invalidates stale sessions.
@@ -211,6 +256,16 @@ mod tests {
     fn session_expires_after_idle_timeout() {
         let mut session = Session::new_test();
         session.last_activity = Utc::now() - session_idle_timeout() - Duration::seconds(1);
+
+        assert!(session.is_expired());
+    }
+
+    /// A refreshed-but-old session still expires at the absolute cap.
+    #[test]
+    fn session_expires_after_absolute_timeout() {
+        let mut session = Session::new_test();
+        session.last_activity = Utc::now(); // not idle
+        session.created_at = Utc::now() - session_absolute_timeout() - Duration::seconds(1);
 
         assert!(session.is_expired());
     }

@@ -3,8 +3,28 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StoreEvent, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use super::{
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
+};
+use crate::{AppError, ElectionConfig, Event, Scope, StreamId};
+
+impl Event for Vec<u8> {
+    fn category(&self) -> &'static str {
+        "encrypted_blob"
+    }
+
+    fn key(&self) -> &'static str {
+        "encrypted_blob"
+    }
+
+    fn description(&self, _locale: crate::Locale) -> String {
+        "encrypted blob".to_string()
+    }
+
+    fn details(&self) -> String {
+        "encrypted blob".to_string()
+    }
+}
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -101,6 +121,7 @@ async fn create_events_table(conn: &mut sqlx::PgConnection) -> Result<(), AppErr
 
 #[cfg(feature = "migrations")]
 async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppError> {
+    // `token` holds the token's SHA-256 hash, not the token itself.
     sqlx::query(
         r#"
         CREATE TABLE IF NOT EXISTS sessions (
@@ -111,24 +132,11 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           csrf_token TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
           saml_name_id TEXT,
-          scope TEXT NOT NULL DEFAULT 'political_group'
+          scope TEXT NOT NULL DEFAULT 'political_group',
+          created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
+          user_agent_hash TEXT
         )
         "#,
-    )
-    .execute(&mut *conn)
-    .await?;
-
-    // Additive column for tables created before SP-initiated logout needed the
-    // SAML NameID persisted (eID §7.7.1); idempotent so existing deployments
-    // pick it up without a versioned migration.
-    sqlx::query(r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS saml_name_id TEXT"#)
-        .execute(&mut *conn)
-        .await?;
-
-    // Additive column for tables created before sessions carried an
-    // authorization scope; idempotent for the same reason as `saml_name_id`.
-    sqlx::query(
-        r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS scope TEXT NOT NULL DEFAULT 'political_group'"#,
     )
     .execute(&mut *conn)
     .await?;
@@ -229,6 +237,50 @@ pub async fn streams_by_scope(
     Ok(rows
         .into_iter()
         .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (StreamId(id), election)))
+        .collect())
+}
+
+/// List [`StreamMeta`] for every stream with the given scope in one aggregate
+/// query. `event_count` is `streams.last_event_id`; the timestamps are
+/// `MIN`/`MAX` over the events' plain `created_at`. Empty placeholders
+/// (`last_event_id = 0`) are excluded, mirroring [`streams_by_scope`].
+pub async fn stream_metadata_by_scope(
+    pool: &sqlx::PgPool,
+    scope: Scope,
+) -> Result<Vec<StreamMeta>, AppError> {
+    /// `(stream_id, election, last_event_id, first created_at, last created_at)`.
+    type MetaRow = (
+        uuid::Uuid,
+        String,
+        i64,
+        Option<DateTime<Utc>>,
+        Option<DateTime<Utc>>,
+    );
+
+    let rows: Vec<MetaRow> = sqlx::query_as(
+        r#"SELECT s.stream_id, s.election, s.last_event_id,
+                      MIN(e.created_at) AS created_at, MAX(e.created_at) AS last_event_at
+               FROM streams s
+               LEFT JOIN events e
+                 ON e.stream_id = s.stream_id AND e.election = s.election
+               WHERE s.scope = $1 AND s.last_event_id > 0
+               GROUP BY s.stream_id, s.election, s.last_event_id"#,
+    )
+    .bind(scope.as_str())
+    .fetch_all(pool)
+    .await?;
+
+    Ok(rows
+        .into_iter()
+        .filter_map(|(id, code, last_id, created_at, last_event_at)| {
+            parse_stable_id(&code).map(|election| StreamMeta {
+                stream_id: StreamId(id),
+                election,
+                event_count: last_id as usize,
+                created_at,
+                last_event_at,
+            })
+        })
         .collect())
 }
 

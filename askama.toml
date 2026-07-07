@@ -1,2 +1,2 @@
 [general]
-dirs = ["src/app", "src/csb"]
+dirs = ["src"]

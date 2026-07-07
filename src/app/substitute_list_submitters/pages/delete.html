@@ -1,8 +1,8 @@
-{% extends "common/components/overlay.html" %}
+{% extends "app/common/components/overlay.html" %}
 {% block overlay_title %}{{ "political_group.edit_substitute_submitter"|trans }}{% endblock %}
 {% set close_action = ListSubmitter::view_path() %}
 {% block overlay_steps %}
-  {% include "substitute_list_submitters/components/update_steps.html" %}
+  {% include "app/substitute_list_submitters/components/update_steps.html" %}
 {% endblock %}
 {% block overlay_form %}
   <fieldset>

@@ -43,7 +43,8 @@
     --badge-brightness: 92%;
   }
 
-  &:is(.card-persons) {
+  &:is(.card-persons),
+  &:is(.card-brp-errors) {
     --card-padding: var(--space-6);
     --card-gap: var(--space-6);
   }
@@ -81,6 +82,10 @@
     p {
       font-size: var(--font-size-sm);
       font-weight: normal;
+    }
+
+    .info {
+      color: var(--blue-600);
     }
 
     .warning {

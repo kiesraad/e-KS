@@ -51,7 +51,7 @@ mod tests {
         let mut session = crate::Session::new();
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
-        let token = session.token().to_exposed_string();
+        let token = session.token_string();
         state.sessions.insert(session).await;
 
         // after download, the warning should show

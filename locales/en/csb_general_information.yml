@@ -1,0 +1,8 @@
+columns:
+  personalia: Personal details
+  status: Status
+restoration_card:
+  description: Add general restorations for the general information here
+  title: General information restorations
+section:
+  political_group: Political group information

@@ -12,7 +12,7 @@ use std::{
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StorePersistence, encryption::EventEncryption};
+use super::{Store, StoreData, StorePersistence, StreamMeta, encryption::EventEncryption};
 use crate::{AppError, ElectionConfig, StreamId};
 
 type StoreKey = (StreamId, ElectionConfig);
@@ -174,6 +174,18 @@ where
     /// of the related data type of the store.
     pub async fn streams_by_scope(&self) -> Result<Vec<(StreamId, ElectionConfig)>, AppError> {
         self.persistence.streams_by_scope(D::scope()).await
+    }
+
+    /// List [`StreamMeta`] for every stream matching this registry's scope,
+    /// without decrypting or warming any projection.
+    pub async fn stream_metadata_by_scope(&self) -> Result<Vec<StreamMeta>, AppError> {
+        self.persistence.stream_metadata_by_scope(D::scope()).await
+    }
+
+    /// Return the store for `(stream_id, election)` only if it is already warm in
+    /// the cache; never consults persistence and never loads.
+    pub fn get_cached(&self, stream_id: StreamId, election: ElectionConfig) -> Option<Store<D>> {
+        self.inner.read().get(&(stream_id, election)).cloned()
     }
 
     /// Fetch (or create and load) every store matching the [crate::Scope]

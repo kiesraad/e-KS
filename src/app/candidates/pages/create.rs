@@ -11,7 +11,7 @@ use crate::{
 
 use super::CreateCandidatePath;
 #[derive(Template)]
-#[template(path = "candidates/pages/create.html")]
+#[template(path = "app/candidates/pages/create.html")]
 struct PersonCreateTemplate {
     full_list: FullCandidateList,
     form: FormData<PersonalDataForm>,

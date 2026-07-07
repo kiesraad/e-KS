@@ -50,7 +50,7 @@ pub struct ErrorResponse {
 }
 
 #[derive(Template, Clone)]
-#[template(path = "common/pages/error.html")]
+#[template(path = "app/common/pages/error.html")]
 pub struct ErrorTemplate {
     pub status_code: StatusCode,
     pub title: String,

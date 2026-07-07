@@ -15,7 +15,7 @@ use crate::{
 use super::NameAuthorisationDeletePath;
 
 #[derive(Template)]
-#[template(path = "name_authorisations/pages/delete.html")]
+#[template(path = "app/name_authorisations/pages/delete.html")]
 struct DeleteNameAuthorisationTemplate {
     name_authorisation: NameAuthorisation,
     form: FormData<EmptyForm>,

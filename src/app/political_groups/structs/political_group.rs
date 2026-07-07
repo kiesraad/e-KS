@@ -26,7 +26,8 @@ impl Problematic<()> for PoliticalGroup {
 }
 
 impl PoliticalGroup {
-    pub fn effective_display_name(&self) -> Result<String, AppError> {
+    /// display name to use in exported documents such as EMLs or H-models
+    pub fn display_name_for_exports(&self) -> Result<String, AppError> {
         if self.list_designation == Some(ListDesignation::Blank) {
             return Ok(String::new());
         }
@@ -36,6 +37,15 @@ impl PoliticalGroup {
             .unwrap_or(Err(AppError::IncompleteData(
                 "Missing registered designation",
             )))
+    }
+
+    /// display name to use in the UI of the CSB module.
+    /// TODO: figure out what to do with blanco lijsten, see #870
+    pub fn csb_display_name(&self) -> String {
+        self.display_name
+            .as_deref()
+            .cloned()
+            .unwrap_or("?".to_string())
     }
 
     pub fn get_max_candidates(&self) -> usize {
@@ -168,13 +178,13 @@ mod tests {
             list_designation: Some(ListDesignation::Standalone),
             display_name: DisplayName::from_str("test").ok(),
         };
-        assert_eq!(group.effective_display_name().unwrap(), "test");
+        assert_eq!(group.display_name_for_exports().unwrap(), "test");
         assert_eq!(group.get_max_candidates(), 80);
         assert!(group.was_previously_seated());
 
         // the set values should be ignored when switching to a blank list
         group.list_designation = Some(ListDesignation::Blank);
-        assert_eq!(group.effective_display_name().unwrap(), "");
+        assert_eq!(group.display_name_for_exports().unwrap(), "");
         assert_eq!(group.get_max_candidates(), 50);
         assert!(!group.was_previously_seated());
     }

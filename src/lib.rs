@@ -94,7 +94,7 @@ pub use auth::{
     session_extractor::{
         SESSION_COOKIE_NAME, csb_store_middleware, session_middleware, store_middleware,
     },
-    session_store::SessionStore,
+    session_store::{SessionStore, run_session_sweeper},
 };
 pub use core::{
     AnyLocale, Config, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale,
@@ -106,10 +106,10 @@ pub use csb::{CsbContext, CsbEvent, CsbMainEvent, CsbMainStoreData, CsbStoreData
 pub use error::{AppError, AppResponse};
 pub use form::{Form, TokenValue};
 pub use state::{AppRequestState, AppState};
-pub use store::{DbHealth, HealthState, run_db_prober};
+pub use store::{DbHealth, Event, HealthState, run_db_prober};
 pub use utils::{
-    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, id_newtype, redirect_success,
-    transparent_string,
+    OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
+    redirect_success, transparent_string,
 };
 
 #[cfg(test)]

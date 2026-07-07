@@ -1,14 +1,33 @@
-{% extends "common/components/base.html" %}
+{% extends "app/common/components/base.html" %}
+{% macro breadcrumb(href, name, is_translatable=true) %}
+  <li class="breadcrumb">
+    <a href="{{ href }}">
+      {% if is_translatable %}
+        {{ name|trans }}
+      {% else %}
+        {{ name }}
+      {% endif %}
+    </a>
+  </li>
+{% endmacro breadcrumb %}
 {% block body %}
   <header>
     <nav>
       <div>
-        <ul>
+        <ul class="breadcrumbs">
           <li>
-            <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}">{{ "csb.examination"|trans }}</a>
+            <a href="{{ crate::csb::index::pages::CsbIndexPath }}"
+               class="home"
+               aria-label="{{ "common.home"|trans }}">
+              <span>{{ "common.home"|trans }}</span>
+            </a>
           </li>
+          {% block breadcrumbs %}{% endblock %}
         </ul>
         <ul>
+          <li>
+            <a href="{{ crate::csb::audit_log::CsbAuditLogPath{}.to_string() }}">{{ "audit_log.title"|trans }}</a>
+          </li>
           <li>
             <a href="/logout" class="logout">{{ "action.signout"|trans }}</a>
           </li>

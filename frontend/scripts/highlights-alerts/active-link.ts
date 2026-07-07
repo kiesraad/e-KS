@@ -1,6 +1,9 @@
 // Highlight active navigation links based on the current URL.
 export default function highlightActiveLinks() {
-  document.querySelectorAll("a").forEach((link) => {
+  document.querySelectorAll<HTMLAnchorElement>("a").forEach((link) => {
+    // csb uses breadcrumbs, these don't need highlighting
+    if (link.closest(".breadcrumbs")) return;
+
     const current = globalThis.location.pathname;
     const isMain = Boolean(link.closest("header"));
 

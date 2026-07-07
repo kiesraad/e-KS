@@ -58,7 +58,7 @@ mod tests {
             .unwrap();
         store
             .update(CsbEvent::Import {
-                hash: "AAAA BBBB".to_string(),
+                hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
                 snapshot: Box::new(AppStoreData::default()),
             })
