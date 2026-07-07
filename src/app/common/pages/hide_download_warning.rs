@@ -52,6 +52,7 @@ mod tests {
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
         let token = session.token_string();
+        let csrf = session.csrf_token().clone();
         state.sessions.insert(session).await;
 
         // after download, the warning should show
@@ -73,7 +74,7 @@ mod tests {
                 header::COOKIE,
                 format!("{}={}", crate::SESSION_COOKIE_NAME, token),
             )
-            .body(Body::empty())
+            .body(Body::from(format!("csrf_token={csrf}")))
             .unwrap();
 
         let response = app.oneshot(request).await.expect("response");

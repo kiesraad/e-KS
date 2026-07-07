@@ -34,7 +34,7 @@ fn dev_login_request(query: &str) -> Request<Body> {
         .unwrap()
 }
 
-/// The session cookie's `name=value` pair (login also sets a CSRF cookie).
+/// The session cookie's `name=value` pair.
 fn cookie_value(response: &Response) -> &str {
     response
         .headers()

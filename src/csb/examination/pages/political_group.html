@@ -1,4 +1,5 @@
 {% extends "csb/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
@@ -18,8 +19,9 @@
       </p>
       <form method="post"
             action="{{ political_group.examination_toggle_finish_path() }}">
-        <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
-        <label class="switch">
+        {{ macros::csrf_field() }}
+        <label class="switch"
+               aria-label="{{ "csb_political_group.toggle_examination"|trans }}">
           <input type="submit">
           <span class="slider"></span>
         </label>

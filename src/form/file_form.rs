@@ -62,7 +62,7 @@ mod tests {
     use super::*;
     use axum::{body::Body, extract::FromRequest, http::Request};
 
-    fn multipart_request(path: &str, csrf_token: &str, csv: &str, boundary: &str) -> Request<Body> {
+    fn multipart_request(path: &str, csv: &str, boundary: &str) -> Request<Body> {
         Request::builder()
             .uri(path)
             .header(
@@ -70,7 +70,7 @@ mod tests {
                 format!("multipart/form-data; boundary={boundary}"),
             )
             .body(Body::from(format!(
-                "--{boundary}\r\nContent-Disposition: form-data; name=\"csrf_token\"\r\n\r\n{csrf_token}\r\n--{boundary}\r\nContent-Disposition: form-data; name=\"file_data\"; filename=\"candidates.csv\"\r\nContent-Type: text/csv\r\n\r\n{csv}\r\n--{boundary}--\r\n"
+                "--{boundary}\r\nContent-Disposition: form-data; name=\"file_data\"; filename=\"candidates.csv\"\r\nContent-Type: text/csv\r\n\r\n{csv}\r\n--{boundary}--\r\n"
             )))
             .unwrap()
     }
@@ -79,7 +79,6 @@ mod tests {
     async fn extracts_uploaded_file() -> Result<(), AppError> {
         let request = multipart_request(
             "/candidate-lists/import",
-            "csrf-token",
             "voorletters,achternaam\r\nJ.,Berg",
             "----eks-boundary",
         );

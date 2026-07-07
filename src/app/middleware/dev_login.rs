@@ -9,7 +9,7 @@ use serde::Deserialize;
 use crate::{
     AppError, AppEvent, AppState, AppStoreData, CsbMainEvent, ElectionConfig, Locale, Scope,
     Session, StreamId,
-    auth::session_extractor::{build_csrf_cookie, build_session_cookie, user_agent_hash},
+    auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
     political_groups::PoliticalGroup,
@@ -18,6 +18,9 @@ use crate::{
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
+
+/// Placeholder `NameID` for dev-login sessions, which skip the SAML flow.
+const DEV_LOGIN_NAME_ID: &str = "dev-login-placeholder-name-id";
 
 #[derive(Debug, Deserialize)]
 pub struct DevLoginQuery {
@@ -78,6 +81,7 @@ async fn perform_dev_login(
     session.set_stream_id(stream_id);
     session.set_scope(scope);
     session.set_user_agent_hash(user_agent_hash(&headers));
+    session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
 
     let load_fixtures = query.fixtures.unwrap_or(false);
 
@@ -122,8 +126,7 @@ async fn perform_dev_login(
     state.sessions.insert(session.clone()).await;
 
     Ok((
-        jar.add(build_session_cookie(&session))
-            .add(build_csrf_cookie(session.csrf_token())),
+        jar.add(build_session_cookie(&session)),
         Redirect::to(&redirect_to),
     ))
 }

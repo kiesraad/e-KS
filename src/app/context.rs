@@ -26,8 +26,6 @@ pub struct Context {
     pub overlay_referrer: bool,
     /// Session data for locale and CSRF.
     pub session: Session,
-    /// The session's CSRF token, held here so `Values` can lend it by reference.
-    csrf_token: crate::TokenValue,
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer when set.
     pub server_name: Option<&'static str>,
@@ -52,7 +50,6 @@ impl Context {
             show_success_alert: false,
             show_download_warning: false,
             overlay_referrer: false,
-            csrf_token: session.csrf_token(),
             session,
             server_name: None,
             general_information_path,
@@ -79,7 +76,7 @@ impl askama::Values for Context {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
-            "csrf_token" => Some(&self.csrf_token.0 as &dyn std::any::Any),
+            "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),

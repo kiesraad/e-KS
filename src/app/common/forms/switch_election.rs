@@ -39,13 +39,13 @@ mod tests {
 
     #[test]
     fn deserializes_with_optional_region_fields_absent() {
-        let form = parse("csrf_token=abc&election=EK27");
+        let form = parse("election=EK27");
         assert_eq!(form.into_election_config(), Some(ElectionConfig::EK27));
     }
 
     #[test]
     fn ps27_uses_region_province() {
-        let form = parse("csrf_token=t&election=PS27&region_province=GR");
+        let form = parse("election=PS27&region_province=GR");
         assert_eq!(
             form.into_election_config(),
             Some(ElectionConfig::PS27(Province::GR))
@@ -54,7 +54,7 @@ mod tests {
 
     #[test]
     fn ws27_uses_region_water_council() {
-        let form = parse("csrf_token=t&election=WS27&region_water_council=WS-FRY");
+        let form = parse("election=WS27&region_water_council=WS-FRY");
         assert_eq!(
             form.into_election_config(),
             Some(ElectionConfig::WS27(WaterCouncil::Fryslan))
@@ -65,8 +65,7 @@ mod tests {
     fn ek27_ignores_submitted_region_fields() {
         // When JS is disabled, every region picker submits a value. The form
         // should still resolve to EK27 because EK27 has no region.
-        let form =
-            parse("csrf_token=t&election=EK27&region_province=GR&region_water_council=WS-FRY");
+        let form = parse("election=EK27&region_province=GR&region_water_council=WS-FRY");
         assert_eq!(form.into_election_config(), Some(ElectionConfig::EK27));
     }
 
@@ -74,31 +73,31 @@ mod tests {
     fn ps27_ignores_unrelated_water_council_field() {
         // The province field is empty (placeholder option) but the water
         // council field is filled — it must not satisfy a PS27 election.
-        let form = parse("csrf_token=t&election=PS27&region_province=&region_water_council=WS-FRY");
+        let form = parse("election=PS27&region_province=&region_water_council=WS-FRY");
         assert_eq!(form.into_election_config(), None);
     }
 
     #[test]
     fn ps27_with_empty_region_returns_none() {
-        let form = parse("csrf_token=t&election=PS27&region_province=");
+        let form = parse("election=PS27&region_province=");
         assert_eq!(form.into_election_config(), None);
     }
 
     #[test]
     fn ps27_with_invalid_region_returns_none() {
-        let form = parse("csrf_token=t&election=PS27&region_province=XX");
+        let form = parse("election=PS27&region_province=XX");
         assert_eq!(form.into_election_config(), None);
     }
 
     #[test]
     fn ps27_without_region_returns_none() {
-        let form = parse("csrf_token=t&election=PS27");
+        let form = parse("election=PS27");
         assert_eq!(form.into_election_config(), None);
     }
 
     #[test]
     fn unknown_election_code_returns_none() {
-        let form = parse("csrf_token=t&election=ZZ99&region_province=GR");
+        let form = parse("election=ZZ99&region_province=GR");
         assert_eq!(form.into_election_config(), None);
     }
 }

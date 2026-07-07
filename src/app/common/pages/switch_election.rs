@@ -110,7 +110,6 @@ mod tests {
                 state.clone(),
                 store_middleware,
             ))
-            .layer(middleware::from_fn(crate::csrf_middleware))
             .layer(middleware::from_fn_with_state(
                 state.clone(),
                 session_middleware,
@@ -128,7 +127,7 @@ mod tests {
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
         let token_value = session.token_string();
-        let csrf_token = session.csrf_token();
+        let csrf_token = session.csrf_token().clone();
         state.sessions.insert(session).await;
 
         let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);

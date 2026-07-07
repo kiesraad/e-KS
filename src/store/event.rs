@@ -32,7 +32,7 @@ pub trait Event {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct StoreEvent<E: Event> {
+pub struct StoreEvent<E> {
     /// Monotonic event identifier within a stream.
     pub event_id: usize,
     /// Domain-specific event payload.

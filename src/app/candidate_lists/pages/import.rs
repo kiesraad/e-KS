@@ -18,6 +18,7 @@ use crate::{
     redirect_success, trans,
 };
 
+/// Upload (CSV import) body limit, applied via `DefaultBodyLimit` on the route.
 pub(crate) const MAX_IMPORT_SIZE_BYTES: usize = 5 * 1024 * 1024;
 const MAX_IMPORT_SIZE_MB: usize = MAX_IMPORT_SIZE_BYTES / (1024 * 1024);
 
@@ -238,22 +239,23 @@ mod tests {
         let list = sample_candidate_list(CandidateListId::new());
         list.create(&store).await?;
 
-        let response = import_export(
-            CandidateListImportPath { list_id: list.id },
-            Context::new_test_without_db(),
-            store,
-        )
-        .await?;
+        let context = Context::new_test_without_db();
+        let csrf_token = context.session.csrf_token().0.clone();
+
+        let response =
+            import_export(CandidateListImportPath { list_id: list.id }, context, store).await?;
 
         assert_eq!(response.status(), StatusCode::OK);
 
         let body = response_body_string(response).await;
         assert!(body.contains("type=\"file\""));
         assert!(body.contains("name=\"file_data\""));
-        assert!(body.contains("name=\"csrf_token\""));
         assert!(body.contains("data-import-file-field"));
         assert!(body.contains("data-import-file-trigger"));
         assert!(body.contains("formenctype=\"multipart/form-data\""));
+        // The CSRF guard reads the token for multipart POSTs from the form's
+        // action query string, not the body.
+        assert!(body.contains(&format!("?csrf_token={csrf_token}\"")));
         assert!(!body.contains("one-click-upload"));
 
         Ok(())

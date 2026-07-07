@@ -6,8 +6,9 @@ use axum::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppState, Context, Locale, Province, Scope, Session, WaterCouncil,
-    common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath, filters,
+    AnyLocale, AppError, AppState, Context, Province, Scope, Session, SessionPageValues,
+    WaterCouncil, common::SelectElectionForm, csb::examination::CsbExaminationOverviewPath,
+    filters,
 };
 
 use super::{IndexPath, SelectElectionPath};
@@ -19,20 +20,6 @@ struct SelectElectionTemplate {
     title_locale: AnyLocale,
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
-    csrf_token: crate::TokenValue,
-}
-
-struct LocaleValues {
-    locale: Locale,
-}
-
-impl askama::Values for LocaleValues {
-    fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
-        match key {
-            "locale" => Some(&self.locale as &dyn std::any::Any),
-            _ => None,
-        }
-    }
 }
 
 pub async fn select_election(
@@ -44,7 +31,6 @@ pub async fn select_election(
         return Ok(Redirect::to(&IndexPath.to_string()).into_response());
     }
 
-    let csrf_token = session.csrf_token();
     state.sessions.insert(session.clone()).await;
 
     let template = SelectElectionTemplate {
@@ -52,11 +38,11 @@ pub async fn select_election(
         title_locale: AnyLocale::from(session.locale),
         provinces: Province::ALL,
         water_councils: WaterCouncil::ALL,
-        csrf_token,
     };
 
-    let values = LocaleValues {
+    let values = SessionPageValues {
         locale: session.locale,
+        csrf_token: session.csrf_token().0.clone(),
     };
     let html = template
         .render_with_values(&values)

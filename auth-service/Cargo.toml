@@ -13,7 +13,7 @@ tvs-mock = []
 
 [dependencies]
 axum = { workspace = true }
-axum-extra = { workspace = true }
+axum-extra = { workspace = true, features = ["typed-routing"] }
 rand = { workspace = true }
 secrecy = { workspace = true }
 thiserror = { workspace = true }

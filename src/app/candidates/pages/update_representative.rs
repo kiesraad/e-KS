@@ -157,7 +157,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let expected_csrf = context.session.csrf_token();
+        let expected_csrf = context.session.csrf_token().clone();
 
         let response = update_representative(
             UpdateRepresentativePath {

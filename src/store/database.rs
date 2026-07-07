@@ -6,25 +6,7 @@ use serde::{Serialize, de::DeserializeOwned};
 use super::{
     Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
 };
-use crate::{AppError, ElectionConfig, Event, Scope, StreamId};
-
-impl Event for Vec<u8> {
-    fn category(&self) -> &'static str {
-        "encrypted_blob"
-    }
-
-    fn key(&self) -> &'static str {
-        "encrypted_blob"
-    }
-
-    fn description(&self, _locale: crate::Locale) -> String {
-        "encrypted blob".to_string()
-    }
-
-    fn details(&self) -> String {
-        "encrypted blob".to_string()
-    }
-}
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -130,10 +112,11 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
           current_election JSONB,
           locale TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
-          saml_name_id TEXT,
+          saml_name_id TEXT NOT NULL DEFAULT '',
           scope TEXT NOT NULL DEFAULT 'political_group',
           created_at TIMESTAMPTZ NOT NULL DEFAULT now(),
-          user_agent_hash TEXT
+          user_agent_hash TEXT,
+          csrf_token TEXT NOT NULL
         )
         "#,
     )
@@ -143,16 +126,6 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx
            ON sessions(last_activity)"#,
-    )
-    .execute(&mut *conn)
-    .await?;
-
-    // Only the CSRF token's hash is stored; the raw token lives in a cookie.
-    sqlx::query(r#"ALTER TABLE sessions DROP COLUMN IF EXISTS csrf_token"#)
-        .execute(&mut *conn)
-        .await?;
-    sqlx::query(
-        r#"ALTER TABLE sessions ADD COLUMN IF NOT EXISTS csrf_token_hash TEXT NOT NULL DEFAULT ''"#,
     )
     .execute(&mut *conn)
     .await?;

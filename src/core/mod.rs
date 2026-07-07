@@ -27,6 +27,6 @@ pub use locale::Locale;
 pub use model_locale::{AnyLocale, ModelLocale};
 pub use pdf::Pdf;
 pub use scope::Scope;
-pub use templates::HtmlTemplate;
+pub use templates::{HtmlTemplate, LocaleValues, SessionPageValues};
 pub use typst_renderer::TypstRenderer;
 pub use zip::ZipResponseWriter;

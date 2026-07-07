@@ -5,6 +5,8 @@
    (POST /login) with no intermediate redirects (T4/L11): GET /login renders this
    start page, the POST begins the flow. Do not change the label — the style
    guide requires this exact text. #}
-<form method="post" action="/login" class="digid-login-form">
+<form method="post"
+      action="{{ crate::common::LoginStartPath }}"
+      class="digid-login-form">
   <button type="submit" class="digid-login">{{ "auth.button.digid"|trans }}</button>
 </form>

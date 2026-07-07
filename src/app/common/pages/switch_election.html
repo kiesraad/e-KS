@@ -1,4 +1,5 @@
 {% extends "app/common/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% block page_title %}{{ "common.switch_election.label"|trans }}{% endblock %}
 {% block content %}
   {% if !existing_elections.is_empty() %}
@@ -21,7 +22,7 @@
                 {% if *e != current_election %}
                   <form method="post"
                         action="{{ crate::common::SwitchElectionPath.to_string() }}">
-                    <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
+                    {{ macros::csrf_field() }}
                     <input type="hidden" name="election" value="{{ e.code() }}">
                     {% match e.election_type() %}
                     {% when crate::ElectionType::Ps %}
@@ -49,7 +50,7 @@
 <form method="post"
       action="{{ crate::common::SwitchElectionPath.to_string() }}"
       class="form election-switch mt-xl">
-  <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}">
+  {{ macros::csrf_field() }}
   <fieldset>
     <p class="form-field form-field-lg">
       <label for="election">{{ "common.switch_election.label"|trans }}</label>

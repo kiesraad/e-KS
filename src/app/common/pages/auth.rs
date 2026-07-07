@@ -2,7 +2,7 @@
 //! (TVS T7), and cancelled/failed authentication (T3/L10).
 
 use askama::Template;
-use auth_service::{AuthFailure, AuthServiceState, handle_logout};
+use auth_service::{AuthFailure, handle_logout};
 use axum::{
     extract::State,
     http::HeaderMap,
@@ -10,7 +10,10 @@ use axum::{
 };
 use axum_extra::extract::CookieJar;
 
-use crate::{AppState, Context, HtmlTemplate, Locale, SESSION_COOKIE_NAME, filters};
+use super::{LoggedOutPath, LogoutPath};
+use crate::{
+    AppState, Context, HtmlTemplate, Locale, LocaleValues, Session, SessionPageValues, filters,
+};
 
 #[derive(Template)]
 #[template(path = "app/common/pages/login_start.html")]
@@ -19,6 +22,10 @@ struct LoginStartTemplate;
 #[derive(Template)]
 #[template(path = "app/common/pages/logged_out.html")]
 struct LoggedOutTemplate;
+
+#[derive(Template)]
+#[template(path = "app/common/pages/logout_confirm.html")]
+struct LogoutConfirmTemplate;
 
 #[derive(Template)]
 #[template(path = "app/common/pages/auth_error.html")]
@@ -31,20 +38,6 @@ struct AuthCancelledTemplate;
 #[derive(Template)]
 #[template(path = "app/common/pages/auth_unavailable.html")]
 struct AuthUnavailableTemplate;
-
-/// Template values for pre-session pages: only locale is known (no session/election yet).
-struct PublicPageValues {
-    locale: Locale,
-}
-
-impl askama::Values for PublicPageValues {
-    fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
-        match key {
-            "locale" => Some(&self.locale as &dyn std::any::Any),
-            _ => None,
-        }
-    }
-}
 
 /// Resolve locale from `Accept-Language`, falling back to the application default.
 fn request_locale(headers: &HeaderMap) -> Locale {
@@ -59,40 +52,42 @@ fn request_locale(headers: &HeaderMap) -> Locale {
 pub async fn login_start(headers: HeaderMap) -> impl IntoResponse {
     HtmlTemplate(
         LoginStartTemplate,
-        PublicPageValues {
+        LocaleValues {
             locale: request_locale(&headers),
         },
     )
 }
 
-/// GET `/logout`: starts SP-initiated logout (eID §7.7.1) when a session is
-/// active, or renders the post-logout confirmation (TVS T7) when there isn't one.
-/// The SLO round-trip lands back here after the session is cleared.
-pub async fn logout(
-    State(state): State<AppState>,
-    State(auth_state): State<AuthServiceState>,
-    jar: CookieJar,
-    headers: HeaderMap,
-) -> Response {
-    let token = jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string());
-    // On a storage error we can't confirm a session, so fall through to the
-    // post-logout page rather than failing the logout.
-    if matches!(
-        state.sessions.get_existing(token.as_deref()).await,
-        Ok(Some(_))
-    ) {
-        handle_logout(State(state), State(auth_state), jar).await
-    } else {
-        logged_out_page(&headers)
-    }
+/// GET `/logout`: the logout prompt; runs behind the session middleware, which
+/// supplies the session and CSRF-checks the prompt's POST.
+pub async fn logout(_: LogoutPath, session: Session) -> Response {
+    HtmlTemplate(
+        LogoutConfirmTemplate,
+        SessionPageValues {
+            locale: session.locale,
+            csrf_token: session.csrf_token().0.clone(),
+        },
+    )
+    .into_response()
 }
 
-/// Post-logout confirmation page (TVS T7).
-fn logged_out_page(headers: &HeaderMap) -> Response {
+/// POST `/logout`: starts SP-initiated logout (eID §7.7.1); the session
+/// middleware has already verified the CSRF token.
+pub async fn logout_submit(
+    _: LogoutPath,
+    State(state): State<AppState>,
+    jar: CookieJar,
+) -> Response {
+    handle_logout(&state, jar, &LoggedOutPath.to_string()).await
+}
+
+/// GET `/logged-out`: post-logout confirmation page (TVS T7, also the SLO
+/// landing). Public: by definition there is no session left to show it with.
+pub async fn logged_out(_: LoggedOutPath, headers: HeaderMap) -> Response {
     HtmlTemplate(
         LoggedOutTemplate,
-        PublicPageValues {
-            locale: request_locale(headers),
+        LocaleValues {
+            locale: request_locale(&headers),
         },
     )
     .into_response()
@@ -100,7 +95,7 @@ fn logged_out_page(headers: &HeaderMap) -> Response {
 
 /// Response page for a cancelled (T3), failed (L10), or unavailable auth attempt.
 pub fn auth_failure_response(failure: AuthFailure, locale: Locale) -> Response {
-    let values = PublicPageValues { locale };
+    let values = LocaleValues { locale };
     match failure {
         AuthFailure::Cancelled => HtmlTemplate(AuthCancelledTemplate, values).into_response(),
         AuthFailure::Error => HtmlTemplate(AuthErrorTemplate, values).into_response(),
@@ -111,6 +106,12 @@ pub fn auth_failure_response(failure: AuthFailure, locale: Locale) -> Response {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    use axum::{
+        body::Body,
+        http::{Request, StatusCode, header},
+    };
+    use tower::ServiceExt;
 
     use crate::test_utils::response_body_string;
 
@@ -127,25 +128,75 @@ mod tests {
 
     #[tokio::test]
     async fn logged_out_page_confirms_and_offers_login() {
-        let response = logged_out_page(&HeaderMap::new());
+        let response = logged_out(LoggedOutPath, HeaderMap::new()).await;
+        assert!(response.status().is_success());
         let body = response_body_string(response).await;
         assert!(body.contains("U bent uitgelogd"));
         assert!(body.contains("Inloggen"));
     }
 
+    /// Without a session the middleware redirects /logout to the login page.
     #[tokio::test]
-    async fn logout_without_session_renders_confirmation() {
+    async fn logout_without_session_redirects_to_login() {
         let state = crate::AppState::new_for_tests().await;
-        let response = logout(
-            axum::extract::State(state.clone()),
-            axum::extract::State(state.auth_service_state.clone()),
-            CookieJar::new(),
-            HeaderMap::new(),
-        )
-        .await;
-        assert!(response.status().is_success());
+        let app = crate::router::create(state.clone()).with_state(state);
+
+        let request = Request::builder()
+            .uri("/logout")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/login");
+    }
+
+    /// The full logout flow behind the session middleware: the prompt renders
+    /// with the session's token, and the CSRF-checked POST removes the session
+    /// and lands on the /logged-out confirmation.
+    #[tokio::test]
+    async fn logout_flow_prompts_then_removes_session() {
+        let state = crate::AppState::new_for_tests().await;
+        let app = crate::router::create(state.clone()).with_state(state.clone());
+
+        let session = Session::new_test();
+        let token = session.token_string();
+        let csrf = session.csrf_token().0.clone();
+        state.sessions.insert(session).await;
+        let cookie = format!("{}={token}", crate::SESSION_COOKIE_NAME);
+
+        let request = Request::builder()
+            .uri("/logout")
+            .header(header::COOKIE, &cookie)
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.expect("response");
+        assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(body.contains("U bent uitgelogd"));
+        assert!(body.contains(&csrf));
+
+        let request = Request::builder()
+            .method("POST")
+            .uri("/logout")
+            .header(header::COOKIE, &cookie)
+            .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+            .body(Body::from(format!("csrf_token={csrf}")))
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert_eq!(
+            response.headers().get(header::LOCATION).unwrap(),
+            &LoggedOutPath.to_string()
+        );
+        assert!(
+            state
+                .sessions
+                .get_existing(Some(&token))
+                .await
+                .expect("load session")
+                .is_none()
+        );
     }
 
     #[tokio::test]

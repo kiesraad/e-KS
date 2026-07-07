@@ -1,4 +1,5 @@
 {% extends "csb/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(crate::csb::import::CsbImportPath, "csb.form.import_political_group") }}
@@ -9,7 +10,7 @@
 {% endblock %}
 {% block content %}
   <form action="{{ CsbImportPath{}.to_string() }}" method="post" class="form">
-    <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}" />
+    {{ macros::csrf_field() }}
     <fieldset>
       <div class="form-field form-field-lg {% if error.is_some() %}error{% endif %}">
         <label for="hash">{{ "csb.form.hash"|trans }}</label>

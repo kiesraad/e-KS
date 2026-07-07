@@ -1,10 +1,11 @@
 {% extends "app/common/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
 {% block body_class %}overlay-open{% endblock %}
 {% block overlay %}
   <div class="overlay-backdrop">
     <form method="post"
           class="overlay {% if "overlay_referrer"|value_true %}no-animation{% else %}animation{% endif %}">
-      <input type="hidden" name="csrf_token" value="{{ "csrf_token"|str_value }}" />
+      {{ macros::csrf_field() }}
       <header>
         <h2>
           {% block overlay_title %}{% endblock %}

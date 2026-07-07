@@ -10,7 +10,7 @@ use std::str::FromStr;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, ElectionConfig, Locale, Scope, Session, StreamId,
+    AppError, ElectionConfig, Locale, Scope, Session, StreamId, TokenValue,
     auth::session::{session_absolute_timeout, session_idle_timeout},
 };
 
@@ -22,11 +22,11 @@ struct SessionRow {
     current_election: Option<serde_json::Value>,
     locale: String,
     last_activity: DateTime<Utc>,
-    saml_name_id: Option<String>,
+    saml_name_id: String,
     scope: String,
     created_at: DateTime<Utc>,
     user_agent_hash: Option<String>,
-    csrf_token_hash: String,
+    csrf_token: String,
 }
 
 /// Insert or update a session row (`token` column holds the hash). `created_at`
@@ -41,7 +41,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     sqlx::query(
         r#"
         INSERT INTO sessions
-            (token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token_hash)
+            (token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token)
         VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
         ON CONFLICT (token) DO UPDATE SET
             stream_id = EXCLUDED.stream_id,
@@ -50,7 +50,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
             last_activity = EXCLUDED.last_activity,
             saml_name_id = EXCLUDED.saml_name_id,
             scope = EXCLUDED.scope,
-            csrf_token_hash = EXCLUDED.csrf_token_hash
+            csrf_token = EXCLUDED.csrf_token
         "#,
     )
     .bind(session.token_hash())
@@ -62,7 +62,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     .bind(session.scope.as_str())
     .bind(session.created_at)
     .bind(&session.user_agent_hash)
-    .bind(&session.csrf_token_hash)
+    .bind(&session.csrf_token().0)
     .execute(pool)
     .await?;
 
@@ -72,7 +72,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
 /// Fetch a single session by its token hash.
 pub async fn load(pool: &sqlx::PgPool, token_hash: &str) -> Result<Option<Session>, AppError> {
     let row: Option<SessionRow> = sqlx::query_as(
-        r#"SELECT token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token_hash
+        r#"SELECT token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token
            FROM sessions WHERE token = $1"#,
     )
     .bind(token_hash)
@@ -91,8 +91,7 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
     Ok(Session {
         token_hash: row.token,
         raw_token: None, // never carried by a reloaded session
-        csrf_token_hash: row.csrf_token_hash,
-        csrf_raw: None, // repopulated from the CSRF cookie
+        csrf_token: TokenValue(row.csrf_token),
         created_at: row.created_at,
         last_activity: row.last_activity,
         user_agent_hash: row.user_agent_hash,
@@ -131,7 +130,7 @@ pub async fn cleanup_expired(pool: &sqlx::PgPool) -> Result<(), AppError> {
 mod tests {
     use super::*;
 
-    fn sample_row(saml_name_id: Option<String>) -> SessionRow {
+    fn sample_row(saml_name_id: String) -> SessionRow {
         SessionRow {
             token: "token-hash-abc".to_string(),
             stream_id: None,
@@ -142,7 +141,7 @@ mod tests {
             scope: Scope::default().as_str().to_string(),
             created_at: Utc::now(),
             user_agent_hash: Some("ua-hash".to_string()),
-            csrf_token_hash: "csrf-hash-abc".to_string(),
+            csrf_token: "csrf-token-abc".to_string(),
         }
     }
 
@@ -150,15 +149,14 @@ mod tests {
     /// logout (eID §7.7.1) still works for database-backed sessions.
     #[test]
     fn session_from_row_preserves_saml_name_id() {
-        let session =
-            session_from_row(sample_row(Some("name-id-xyz".to_string()))).expect("maps row");
-        assert_eq!(session.saml_name_id.as_deref(), Some("name-id-xyz"));
+        let session = session_from_row(sample_row("name-id-xyz".to_string())).expect("maps row");
+        assert_eq!(session.saml_name_id, "name-id-xyz");
     }
 
-    /// A NULL `saml_name_id` column maps back to `None`.
+    /// An empty NameID (dev-login/pre-auth) maps through unchanged.
     #[test]
-    fn session_from_row_handles_missing_saml_name_id() {
-        let session = session_from_row(sample_row(None)).expect("maps row");
-        assert!(session.saml_name_id.is_none());
+    fn session_from_row_maps_empty_saml_name_id() {
+        let session = session_from_row(sample_row(String::new())).expect("maps row");
+        assert!(session.saml_name_id.is_empty());
     }
 }

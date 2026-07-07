@@ -30,7 +30,6 @@ bytes = "1.11.1"
 tokio-util = { version = "0.7", features = ["io"] }
 
 # rust-lang
-futures-core = "0.3.32"
 regex = "1.12.3"
 
 # blessed.rs / dtolnay
@@ -140,8 +139,8 @@ chrono = { workspace = true }
 chrono-tz = { workspace = true }
 csv = { workspace = true }
 eml-nl = { workspace = true }
-futures-core = { workspace = true }
 hkdf = { workspace = true }
+http-body-util = { workspace = true }
 hyper-util = { workspace = true }
 memory-serve = { workspace = true, optional = true }
 parking_lot = { workspace = true }

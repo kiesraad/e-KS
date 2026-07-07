@@ -13,8 +13,6 @@ use crate::Locale;
 pub struct CsbContext {
     /// Session data for locale and CSRF.
     pub session: Session,
-    /// The session's CSRF token, held here so `Values` can lend it by reference.
-    csrf_token: crate::TokenValue,
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer when set.
     pub server_name: Option<&'static str>,
@@ -27,7 +25,6 @@ pub struct CsbContext {
 impl CsbContext {
     pub fn new(session: Session) -> Self {
         Self {
-            csrf_token: session.csrf_token(),
             session,
             server_name: None,
             show_success_alert: false,
@@ -45,7 +42,7 @@ impl askama::Values for CsbContext {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
-            "csrf_token" => Some(&self.csrf_token.0 as &dyn std::any::Any),
+            "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),

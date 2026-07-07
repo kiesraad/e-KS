@@ -109,7 +109,6 @@ mod tests {
         let url = format!("{base}/dev/login?bsn=999999990&fixtures=false");
         let resp = client.get(&url).send().await.unwrap();
         assert_eq!(resp.status(), StatusCode::SEE_OTHER);
-        // Login sets a session and a CSRF cookie; pick the session one.
         resp.headers()
             .get_all("set-cookie")
             .iter()

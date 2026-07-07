@@ -1,12 +1,14 @@
 //! Builds the application Axum router and wires feature routes.
 //! Used by the server startup to assemble all routes.
 
+use auth_service::SamlLogoutPath;
 use axum::{
     Router,
     http::{HeaderName, HeaderValue, header},
     middleware,
     routing::get,
 };
+use axum_extra::routing::TypedPath;
 use tower_http::{csrf::CsrfLayer, set_header::SetResponseHeaderLayer};
 
 use crate::{
@@ -52,12 +54,11 @@ pub fn create(state: AppState) -> Router<AppState> {
     // These routes need a session but NOT store middleware: select-election runs
     // before a stream_id is chosen, and /language must stay reachable for CSB
     // (committee) sessions that store_middleware redirects off app routes.
-    // CSRF token verification for every mutating request, directly inside the
-    // session middleware so no handler can forget it.
+    // The session middleware also verifies the CSRF token of every mutating
+    // request (see `auth::csrf_guard`), so no handler can forget the check.
     let app_router = app_router
         .merge(common::session_only_router())
         .merge(csb_router)
-        .layer(middleware::from_fn(crate::csrf_middleware))
         .layer(middleware::from_fn_with_state(
             state.clone(),
             session_middleware,
@@ -98,11 +99,12 @@ pub fn create(state: AppState) -> Router<AppState> {
         ))
 }
 
-/// Global fetch-metadata CSRF protection (`Sec-Fetch-Site`/`Origin` checks),
-/// backstopping the per-session token middleware. `/saml/sp/logout` is exempt:
-/// it receives cross-site IdP POSTs by design and validates SAML signatures.
+/// Global fetch-metadata CSRF protection, backstopping the session
+/// middleware's token check. SAML single logout is exempt (cross-site IdP
+/// POSTs, signature-validated); the typed path is shared with the route
+/// registration in `auth_service::router`, so route and bypass cannot drift.
 fn csrf_layer() -> CsrfLayer {
-    CsrfLayer::new().with_insecure_bypass(|_, uri| uri.path() == "/saml/sp/logout")
+    CsrfLayer::new().with_insecure_bypass(|_, uri| uri.path() == SamlLogoutPath::PATH)
 }
 
 /// The application's feature routes (everything that sits behind the session
@@ -310,7 +312,7 @@ mod tests {
 
         let request = Request::builder()
             .method("POST")
-            .uri("/saml/sp/logout")
+            .uri(SamlLogoutPath::PATH)
             .header("sec-fetch-site", "cross-site")
             .body(Body::empty())
             .unwrap();
