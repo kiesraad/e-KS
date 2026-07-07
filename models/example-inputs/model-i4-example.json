@@ -6,11 +6,13 @@
   "session": {
     "location": "'s-Gravenhage",
     "date": "3 mei 2027",
-    "time": "17:00 uur"
+    "time": "17:00 uur",
+    "chair": "M.C. Voorzitter",
+    "members": ["A. Lid", "B. Lid", "C. Lid", "D. Lid", "E. Lid", "F. Lid"]
   },
   "found_omissions": [
     {
-      "appellation": "De Geconstateerde Partij",
+      "designation": "De Geconstateerde Partij",
       "electoral_district": "kieskring 20 (Bonaire)",
       "omission_descriptions": [
         "Ten aanzien van kandidaat nr. 3 J. Altena ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst.",
@@ -18,7 +20,7 @@
       ]
     },
     {
-      "appellation": "Kiesraad Demo 3",
+      "designation": "Kiesraad Demo 3",
       "electoral_district": "alle kieskringen",
       "omission_descriptions": [
         "Ten aanzien van kandidaat nr. 3 J. Altena ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst."
@@ -27,7 +29,7 @@
   ],
   "recovered_omissions": [
     {
-      "appellation": "De Herstelde Partij",
+      "designation": "De Herstelde Partij",
       "electoral_district": "kieskring 20 (Bonaire)",
       "omission_descriptions": [
         "Ten aanzien van kandidaat nr. 3 J. Altena ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst.",
@@ -35,7 +37,7 @@
       ]
     },
     {
-      "appellation": "Kiesraad Demo 4",
+      "designation": "Kiesraad Demo 4",
       "electoral_district": "alle kieskringen",
       "omission_descriptions": [
         "Ten aanzien van kandidaat nr. 3 J. Altena ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst."
@@ -44,14 +46,14 @@
   ],
   "invalid_lists": [
     {
-      "appellation": "De Ongeldige Partij",
+      "designation": "De Ongeldige Partij",
       "electoral_district": "kieskring 20 (Bonaire)",
       "omission_descriptions": [
         "Bij de lijst zijn niet voldoende geldige verklaringen van ondersteuning ingeleverd voor de kieskring Bonaire."
       ]
     },
     {
-      "appellation": "Kiesraad Demo 5",
+      "designation": "Kiesraad Demo 5",
       "electoral_district": "alle kieskringen",
       "omission_descriptions": [
         "Bij de lijst zijn niet voldoende geldige verklaringen van ondersteuning ingeleverd voor alle kieskringen.",
@@ -61,7 +63,7 @@
   ],
   "removed_candidates": [
     {
-      "appellation": "De Geschrapte Kandidaten Partij",
+      "designation": "De Geschrapte Kandidaten Partij",
       "electoral_district": "kieskring 20 (Bonaire)",
       "candidates": [
         {
@@ -71,7 +73,7 @@
       ]
     },
     {
-      "appellation": "Kiesraad Demo 6",
+      "designation": "Kiesraad Demo 6",
       "electoral_district": "alle kieskringen",
       "candidates": [
         {
@@ -85,26 +87,26 @@
       ]
     }
   ],
-  "removed_appellations": [
+  "removed_designations": [
     {
-      "appellation": "De Geschrapte Aanduiding Partij",
+      "designation": "De Geschrapte Aanduiding Partij",
       "electoral_district": "kieskring 20 (Bonaire)",
       "first_candidate_name": "Nagelhout, H. (Hubertus) (m)",
       "reason": "Tijdens het onderzoek heeft het CSB per ongeluk koffie gemorst over de H 1 voor de Bonaire (sorry)."
     },
     {
-      "appellation": "Kiesraad Demo 7",
+      "designation": "Kiesraad Demo 7",
       "electoral_district": "alle kieskringen",
       "first_candidate_name": "Meerman, K.S. (Kevin) (m)",
       "reason": "De hond van het CSB heeft alle document opgevreten (sorry)."
     }
   ],
-  "corrected_appellations": [
+  "corrected_designations": [
     {
       "first_candidate_name": "Nagelhout, H. (Hubertus) (m)",
       "electoral_district": "alle kieskringen",
-      "submitted_appellation": "AAP",
-      "edited_appellation": "De Aangepaste Aanduiding Partij (AAP)"
+      "submitted_designation": "AAP",
+      "edited_designation": "De Aangepaste Aanduiding Partij (AAP)"
     }
   ],
   "valid_lists": [
@@ -112,7 +114,7 @@
       "electoral_district": "Lelystad",
       "lists": [
         {
-          "appellation": "De Correcte Partij",
+          "designation": "De Correcte Partij",
           "candidates": [
             {
               "last_name": "Akwasi",
@@ -135,7 +137,7 @@
           ]
         },
         {
-          "appellation": "Kiesraad Demo",
+          "designation": "Kiesraad Demo",
           "candidates": [
             {
               "last_name": "Nagelhout",
@@ -159,11 +161,11 @@
         }
       ]
     },
-     {
+    {
       "electoral_district": "Amsterdam",
       "lists": [
         {
-          "appellation": "De Correcte Partij",
+          "designation": "De Correcte Partij",
           "candidates": [
             {
               "last_name": "Akwasi",
@@ -186,7 +188,7 @@
           ]
         },
         {
-          "appellation": "Kiesraad Demo",
+          "designation": "Kiesraad Demo",
           "candidates": [
             {
               "last_name": "Nagelhout",
@@ -210,5 +212,30 @@
         }
       ]
     }
-  ]
+  ],
+  "numbered_based_on_votes": [
+    {
+      "position": 1,
+      "designation": "Kiesraad Demo",
+      "previous_votes": 37092
+    },
+    {
+      "position": 2,
+      "designation": "De Herstelde Partij",
+      "previous_votes": 1621
+    }
+  ],
+  "numbered_based_on_districts": [
+    {
+      "position": 3,
+      "designation": "De Correcte Partij",
+      "districts": 2
+    }
+  ],
+  "objections": [
+    "Namens De Ongeldige Partij is bezwaar gemaakt tegen het proces van het verkrijgen van ondersteuningsverklaringen. De partij stelt vele belemmeringen te hebben ervaren bij gemeenten en te weinig mogelijkheden te hebben ervaren bij verzuimherstel. Gesteld wordt dat dit in strijd is met de algemene beginselen van behoorlijk bestuur, zoals het beginsel van opgewekt vertrouwen en fair play. Partijen moet een redelijke kans geboden worden op herstel van verzuimen. De bezwaarmaker verzet zich tegen het strikt toepassen van termijnen voor kiezers die de partij wilden ondersteunen en verzoekt alsnog extra tijd voor herstel van verzuimen.",
+    "Een bezwaarmaker namens de partij Kiesraad Demo 5 sluit zich aan bij het voorgaande bezwaar voor wat betreft het ondervinden van belemmeringen bij de ondersteuningsverklaringen.",
+    "Namens De Herstelde Partij wordt de Kiesraad bedankt voor al het werk en de hulp bij het proces. De partij heeft dat als zeer prettig ervaren, maar het zou fijn zijn als het systeem wordt aangepast"
+  ],
+  "response_objections": "Wat betreft de opmerkingen die door een aantal bezwaarmakers zijn gemaakt over het proces van het verkrijgen van ondersteuningsverklaringen stelt de Kiesraad dit ook heel vervelend te vinden. Het gaat hier over een proces onder de verantwoordelijkheid van de gemeenten. De Kiesraad geeft gemeenten informatie en instrueert hen."
 }

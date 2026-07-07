@@ -80,7 +80,6 @@
   "Ondertekening door de gemachtigden",
   "Undertekening troch de lêsthawwer",
 )
-#set heading(numbering: none)
 #for (i, name_authorisation) in input.name_authorisations.enumerate() [
   == #trans("Gemachtigde van politieke groepering", "Lêsthawwer fan politike groepearring") #(i + 1)
   #label_table(values: (

@@ -16,6 +16,7 @@
     size: 9pt,
   )
 
+  // make all paragraphs sticky to prevent unnecessary page breaks within sections
   #show par: it => block(sticky: true, it)
 
   #let footer = grid(
@@ -48,7 +49,14 @@
   )
 
   #set heading(numbering: "1.", supplement: none)
+  #show heading.where(level: 1): it => {
+    // prevent stickiness from sticking to level 1 headers (because all paragraphs are sticky)
+    block(sticky: false, spacing: 0pt)[#box(width: 0pt, height: 0pt)[]]
+    it
+  }
   #show heading.where(level: 1): set block(above: 2em, below: 0.75em)
+  #show heading.where(level: 2): set heading(numbering: none)
+  #show heading.where(level: 3): set heading(numbering: none)
 
   #set table(stroke: none, inset: 0.75em, align: horizon)
 
@@ -61,7 +69,7 @@
       name
     }),
     text(explanation),
-    if (warning != none) {
+    if warning != none {
       block(fill: highlight_colour, inset: 1em, width: 100%, warning)
     }
   )
@@ -69,7 +77,7 @@
   #doc
 ]
 
-#let column_table(columns: (), headers: (), values: ()) = {
+#let column_table(columns: (), headers: (), values: (), align: horizon) = {
   assert.eq(
     columns.len(),
     headers.len(),
@@ -83,6 +91,7 @@
 
   block(breakable: values.len() > 10, table(
     columns: columns,
+    align: align,
     rows: 1.5em,
     fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_colour },
     table.header(..headers.map(value => { text(style: "italic", value) })),
