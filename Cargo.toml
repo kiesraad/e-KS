@@ -181,6 +181,12 @@ reqwest = { workspace = true, features = ["rustls"] }
 [lints.rust]
 unsafe_code = "forbid"
 
+[lints.rustdoc]
+# Most items are deliberately crate-private (the public API is only what the
+# binary needs), while docs are built with `--document-private-items`, so
+# doc links from public docs to internal items resolve fine.
+private_intra_doc_links = "allow"
+
 # https://askama.readthedocs.io/en/stable/performance.html#slow-debug-recompilations
 [profile.dev.package.askama_derive]
 opt-level = 3

@@ -4,9 +4,7 @@
 use axum::{extract::FromRequestParts, http::request::Parts};
 use axum_extra::routing::TypedPath;
 
-use crate::{
-    AppError, AppRequestState, AppStore, ElectionConfig, Session, political_groups::PoliticalGroup,
-};
+use crate::{AppError, AppRequestState, AppStore, ElectionConfig, Session};
 
 #[cfg(test)]
 use crate::Locale;
@@ -16,8 +14,6 @@ use crate::Locale;
 pub struct Context {
     /// Election configuration for this stream.
     pub election: ElectionConfig,
-    /// Political group tied to the session / request.
-    pub political_group: PoliticalGroup,
     /// Maximum number of candidates allowed for this political group.
     pub max_candidates: usize,
     /// Multiple candidate lists present
@@ -49,7 +45,6 @@ impl Context {
 
         Self {
             election,
-            political_group,
             max_candidates,
             multiple_candidate_lists,
             show_success_alert: false,

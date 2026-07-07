@@ -7,9 +7,19 @@
 pub mod eks_key;
 pub mod health;
 pub mod maintenance;
+pub mod session;
 
-#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
+#[cfg(not(feature = "memory-serve"))]
 pub mod proxy;
+
+#[cfg(feature = "dev-features")]
+pub mod dev_login;
 
 #[cfg(test)]
 mod health_tests;
+
+#[cfg(test)]
+mod session_tests;
+
+#[cfg(all(feature = "dev-features", test))]
+mod dev_login_tests;

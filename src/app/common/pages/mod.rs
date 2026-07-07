@@ -20,10 +20,6 @@ pub use not_found::not_found;
 pub struct LoginStartPath;
 
 #[derive(TypedPath)]
-#[typed_path("/logout", rejection(AppError))]
-pub struct LogoutPath;
-
-#[derive(TypedPath)]
 #[typed_path("/", rejection(AppError))]
 pub struct IndexPath;
 

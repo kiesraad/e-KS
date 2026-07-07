@@ -36,10 +36,6 @@ impl CsbContext {
     pub fn new_test() -> Self {
         Self::new(Session::new_test_with_locale(Locale::En))
     }
-
-    pub fn livereload_enabled() -> bool {
-        cfg!(feature = "livereload")
-    }
 }
 
 impl askama::Values for CsbContext {
@@ -86,13 +82,5 @@ mod tests {
     fn new_context_carries_session_locale() {
         let context = CsbContext::new_test();
         assert_eq!(context.session.locale, Locale::En);
-    }
-
-    #[test]
-    fn livereload_flag_matches_feature() {
-        assert_eq!(
-            CsbContext::livereload_enabled(),
-            cfg!(feature = "livereload")
-        );
     }
 }

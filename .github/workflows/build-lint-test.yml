@@ -138,7 +138,7 @@ jobs:
         run: cargo --locked test --features embed-typst -- --nocapture
 
       - name: Build docs
-        run: cargo doc --workspace --no-deps --all-features
+        run: cargo doc --workspace --no-deps --all-features --document-private-items
 
   pdf-diff:
     name: PDF diff

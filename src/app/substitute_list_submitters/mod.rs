@@ -2,4 +2,4 @@
 mod extractors;
 mod pages;
 
-pub use pages::{SubstituteSubmitterUpdatePath, router};
+pub use pages::router;

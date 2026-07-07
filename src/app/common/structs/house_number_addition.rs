@@ -3,7 +3,7 @@ use std::str::FromStr;
 use crate::{form::ValidationError, transparent_string};
 
 /// Max characters according to the BAG specification
-/// See https://catalogus.kadaster.nl/bag/nl/page/Huisnummertoevoeging
+/// See <https://catalogus.kadaster.nl/bag/nl/page/Huisnummertoevoeging>
 const MAX_HOUSE_NUMBER_ADDITION_LENGTH: usize = 4;
 
 transparent_string! {
