@@ -25,17 +25,13 @@
     context grid(
       columns: (1fr, auto),
       [
-        #if "event_id" in input {
-          [
-            #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
-            #h(1em)
-          ]
-        }
-        #if "sha_hash" in input {
-          [
-            #muted[Hash:] #mono(input.sha_hash)
-          ]
-        }
+        #if "event_id" in input [
+          #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
+          #h(1em)
+        ]
+        #if "sha_hash" in input [
+          #muted[Hash:] #mono(input.sha_hash)
+        ]
       ],
       counter(page).display((n, m) => trans([Pagina #n van #m], [Side #n fan #m]), both: true),
     ),
