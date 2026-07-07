@@ -320,19 +320,21 @@ mod tests {
     }
 
     #[test]
-    fn event_category_is_set_correctly() {
+    fn event_category_and_key_are_set_correctly() {
         let person = sample_person(PersonId::new());
-        assert_eq!(AppEvent::CreatePerson(person).category(), "person");
+        let event = AppEvent::CreatePerson(person);
+        assert_eq!(event.category(), "person");
+        assert_eq!(event.key(), "create_person");
 
         let pg = sample_political_group();
-        assert_eq!(
-            AppEvent::UpdatePoliticalGroup(pg).category(),
-            "political_group"
-        );
+        let event = AppEvent::UpdatePoliticalGroup(pg);
+        assert_eq!(event.category(), "political_group");
+        assert_eq!(event.key(), "update_political_group");
 
         let event = AppEvent::DeveloperLogin {
             stream_id: StreamId::new(),
         };
         assert_eq!(event.category(), "system");
+        assert_eq!(event.key(), "developer_login");
     }
 }

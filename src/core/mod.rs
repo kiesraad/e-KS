@@ -4,7 +4,6 @@ pub mod election;
 mod locale;
 mod model_locale;
 mod pdf;
-/// Authorization scope for sessions and streams.
 mod scope;
 mod templates;
 mod typst_renderer;

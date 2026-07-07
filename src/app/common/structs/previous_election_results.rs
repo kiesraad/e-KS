@@ -6,8 +6,6 @@ use crate::{
     list_designation::ListDesignation,
 };
 
-// The shared `Seats` postfix is intentional: the snake_case variant names are
-// the persisted event wire format, so renaming them would break stored events.
 #[expect(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]

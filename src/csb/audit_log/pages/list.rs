@@ -105,8 +105,10 @@ fn filter_events<'a, E: Event + 'a>(
     search: Option<&'a str>,
 ) -> impl Iterator<Item = CsbAuditLogEntry> + 'a {
     iter.rev()
+        .filter(move |event| {
+            event_type.is_none_or(|et| event.payload.category() == et || event.payload.key() == et)
+        })
         .map(move |event| CsbAuditLogEntry::from_event(event, stream_id, label.clone(), locale))
-        .filter(move |e| event_type.is_none_or(|et| e.event_category == et || e.event_key == et))
         .filter(move |e| search.is_none_or(|q| e.matches_search(q)))
 }
 

@@ -11,8 +11,6 @@ pub struct CsbAuditLogEntry {
     pub stream_id: StreamId,
     /// Human-readable label for the source stream
     pub stream_label: String,
-    pub event_category: &'static str,
-    pub event_key: &'static str,
     pub description: String,
     pub created_at: DateTime<Utc>,
 }
@@ -29,8 +27,6 @@ impl CsbAuditLogEntry {
             event_id: event.event_id,
             stream_id,
             stream_label,
-            event_category: event.payload.category(),
-            event_key: event.payload.key(),
             description: event.payload.description(locale),
             created_at: event.created_at,
         }
@@ -82,8 +78,6 @@ mod tests {
         assert_eq!(entry.event_id, 1);
         assert_eq!(entry.stream_id, sid);
         assert_eq!(entry.stream_label, "Main CSB stream");
-        assert_eq!(entry.event_category, "system");
-        assert_eq!(entry.event_key, "developer_login");
         assert_eq!(entry.description, "Developer login");
     }
 
@@ -120,8 +114,6 @@ mod tests {
         assert_eq!(entry.event_id, 3);
         assert_eq!(entry.stream_id, sid);
         assert_eq!(entry.stream_label, label);
-        assert_eq!(entry.event_category, "import");
-        assert_eq!(entry.event_key, "import");
         assert_eq!(entry.description, "Imported political group");
     }
 
@@ -172,5 +164,21 @@ mod tests {
 
         assert!(entry.matches_search("Kiesraad"));
         assert!(entry.matches_search("kiesraad"));
+    }
+
+    #[test]
+    fn event_category_and_key_are_set_correctly() {
+        let sid = stream_id();
+        let event = CsbMainEvent::DeveloperLogin { stream_id: sid };
+        assert_eq!(event.category(), "system");
+        assert_eq!(event.key(), "developer_login");
+
+        let event = CsbEvent::Import {
+            hash: [0u8; 32],
+            source_stream_id: StreamId::new(),
+            snapshot: Box::new(AppStoreData::default()),
+        };
+        assert_eq!(event.category(), "import");
+        assert_eq!(event.key(), "import");
     }
 }
