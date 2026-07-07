@@ -1,5 +1,6 @@
 action:
   add_political_group: Add political group
+  examine: Examine
   finish: Finish
 added: Added
 brp:

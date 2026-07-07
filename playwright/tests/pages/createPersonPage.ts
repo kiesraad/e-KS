@@ -28,11 +28,11 @@ export class CreatePersonPage {
       name: "Geboortedatum",
     });
     this.textfieldMonthOfBirth = this.page.getByRole("textbox", {
-      name: "mm",
+      name: "Maand",
       exact: true,
     });
     this.textfieldYearOfBirth = this.page.getByRole("textbox", {
-      name: "jjjj",
+      name: "Jaar",
     });
     this.checkboxNoBSN = this.page.getByRole("checkbox", {
       name: "Ik bevestig dat deze persoon geen BSN heeft.",
