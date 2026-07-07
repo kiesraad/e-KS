@@ -11,17 +11,20 @@ pub use forms::{
     DutchAddressForm, FullNameForm, InternationalAddressForm, MinimalNameForm, SelectElectionForm,
     SwitchElectionForm,
 };
+
+#[cfg(test)]
+pub use structs::EmptyAddressProblems;
 pub use structs::{
     Address, BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed, COUNTRY_CODES, CountryCode,
-    DateOfBirth, DisplayName, DutchAddress, EmptyAddressProblems, FirstName, FormAction, FullName,
-    Gender, HasSeverity, HouseNumber, HouseNumberAddition, InfoProblems, Initials,
-    InternationalAddress, InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality,
-    PlaceOfResidence, PostalCode, PotentialProblems, PreviousElectionResults, Problematic,
-    Problems, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
+    DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HasSeverity,
+    HouseNumber, HouseNumberAddition, InfoProblems, Initials, InternationalAddress,
+    InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence,
+    PostalCode, PotentialProblems, PreviousElectionResults, Problematic, Problems, Severity,
+    StateOrProvince, StreetName, UtcDateTime, WithProblems,
 };
 
 pub use pages::{
-    HideDownloadWarningPath, IndexPath, LoginStartPath, LogoutPath, SelectElectionPath,
-    SwitchElectionPath, SwitchLanguagePath, auth_failure_response, not_found, public_router,
-    router, session_only_router, wellknown_router,
+    HideDownloadWarningPath, IndexPath, LoginStartPath, SelectElectionPath, SwitchElectionPath,
+    SwitchLanguagePath, auth_failure_response, not_found, public_router, router,
+    session_only_router, wellknown_router,
 };

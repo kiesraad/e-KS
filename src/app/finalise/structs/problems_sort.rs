@@ -70,8 +70,10 @@ mod tests {
             PotentialProblems,
         },
         finalise::{
-            EntityProblems, GeneralProblems, ListProblems, PersonProblems,
-            structs::problems::EntityInfoProblems,
+            EntityProblems,
+            structs::problems::{
+                EntityInfoProblems, GeneralProblems, ListProblems, PersonProblems,
+            },
         },
         list_submitters::ListSubmitterId,
         name_authorisations::NameAuthorisationId,

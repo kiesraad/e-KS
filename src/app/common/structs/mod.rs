@@ -40,8 +40,8 @@ pub use name::FullName;
 pub use place_of_residence::PlaceOfResidence;
 pub use postal_code::{InternationalPostalCode, PostalCode};
 pub use previous_election_results::PreviousElectionResults;
-pub use problematic::{
-    EmptyAddressProblems, InfoProblems, PotentialProblems, Problematic, Problems, WithProblems,
-};
+#[cfg(test)]
+pub use problematic::EmptyAddressProblems;
+pub use problematic::{InfoProblems, PotentialProblems, Problematic, Problems, WithProblems};
 pub use severity::{HasSeverity, Severity};
 pub use utc_date_time::UtcDateTime;

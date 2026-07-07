@@ -148,10 +148,7 @@ impl AllProblems {
             all_list_submitter_problems
                 .info_problems
                 .into_iter()
-                .map(|problem| EntityInfoProblems::Submitter {
-                    submitter: list_submitter.clone(),
-                    problem,
-                })
+                .map(|problem| EntityInfoProblems::Submitter { problem })
                 .collect::<Vec<_>>(),
         );
 
@@ -416,7 +413,6 @@ pub enum EntityInfoProblems {
         problem: InfoProblems,
     },
     Submitter {
-        submitter: ListSubmitter,
         problem: InfoProblems,
     },
     SubstituteSubmitter {
