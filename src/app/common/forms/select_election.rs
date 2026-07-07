@@ -11,11 +11,12 @@ pub struct SelectElectionForm {
     region_province: Option<String>,
     region_water_council: Option<String>,
     load_fixtures: Option<String>,
+    #[cfg(feature = "fixtures")]
     login_as_csb: Option<String>,
 }
 
 impl SelectElectionForm {
-    pub fn into_election_config(&self) -> Option<ElectionConfig> {
+    pub fn election_config(&self) -> Option<ElectionConfig> {
         [
             self.region_province.as_deref(),
             self.region_water_council.as_deref(),
@@ -31,6 +32,7 @@ impl SelectElectionForm {
         self.load_fixtures.is_some()
     }
 
+    #[cfg(feature = "fixtures")]
     pub fn login_as_csb(&self) -> bool {
         self.login_as_csb.is_some()
     }
@@ -48,7 +50,7 @@ mod tests {
     #[test]
     fn deserializes_without_load_fixtures() {
         let form = parse("csrf_token=abc&election=EK27");
-        assert_eq!(form.into_election_config(), Some(ElectionConfig::EK27));
+        assert_eq!(form.election_config(), Some(ElectionConfig::EK27));
         assert!(!form.load_fixtures());
     }
 
@@ -62,7 +64,7 @@ mod tests {
     fn ps27_uses_region_province() {
         let form = parse("csrf_token=t&election=PS27&region_province=GR");
         assert_eq!(
-            form.into_election_config(),
+            form.election_config(),
             Some(ElectionConfig::PS27(Province::GR))
         );
     }

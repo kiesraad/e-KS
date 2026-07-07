@@ -423,7 +423,7 @@ mod tests {
         let eml = Eml210::new(
             &store,
             &context.election,
-            &context.political_group,
+            &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
@@ -453,7 +453,7 @@ mod tests {
         let eml = Eml210::new(
             &store,
             &context.election,
-            &context.political_group,
+            &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
@@ -484,7 +484,7 @@ mod tests {
         let eml = Eml210::new(
             &store,
             &context.election,
-            &context.political_group,
+            &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
@@ -514,7 +514,7 @@ mod tests {
         let eml = Eml210::new(
             &store,
             &context.election,
-            &context.political_group,
+            &store.get_political_group(),
             list.id(),
             ModelLocale::Fry,
         )

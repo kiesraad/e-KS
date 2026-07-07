@@ -1,4 +1,8 @@
-use super::{session::hash_token, session_extractor::*};
+use super::session::*;
+use crate::auth::{
+    session::hash_token,
+    session_extractor::{CSRF_COOKIE_NAME, user_agent_hash},
+};
 use axum::{
     Router,
     body::Body,
@@ -8,7 +12,7 @@ use axum::{
 };
 use tower::ServiceExt;
 
-use crate::{AppState, Session, test_utils::response_body_string};
+use crate::{AppState, SESSION_COOKIE_NAME, Session, test_utils::response_body_string};
 
 /// Redirects to the login start page when no session cookie is present.
 #[tokio::test]

@@ -6,6 +6,7 @@ use crate::{
     list_designation::ListDesignation,
 };
 
+#[expect(clippy::enum_variant_names)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "snake_case")]
 pub enum PreviousElectionResults {

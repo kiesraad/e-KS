@@ -16,17 +16,21 @@ mod middleware;
 mod store;
 
 pub use context::Context;
-pub use error_response::{ErrorResponse, render_error_pages};
+pub use error_response::render_error_pages;
 pub use middleware::{
     eks_key::eks_key_middleware,
     health::health_router,
-    maintenance::{db_gate_middleware, handle_db_error},
+    maintenance::db_gate_middleware,
+    session::{csb_store_middleware, session_middleware, store_middleware},
 };
 pub use store::{AppEvent, AppStoreData};
 
-pub(crate) use store::{extension_extractor, request_extractor};
+#[cfg(feature = "dev-features")]
+pub use middleware::dev_login;
 
-#[cfg(any(feature = "dev-features", not(feature = "memory-serve")))]
+pub(crate) use store::request_extractor;
+
+#[cfg(not(feature = "memory-serve"))]
 pub use middleware::proxy::proxy_handler;
 
 #[cfg(test)]

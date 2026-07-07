@@ -142,7 +142,7 @@ modules:
 | `src/state.rs` | `AppState`: the shared application state (config, store registry, sessions). |
 | `src/filters.rs` | Askama template filters (display formatting, translation, validation errors). |
 | `src/app/` | Application **domain** modules (see below). |
-| `src/auth/` | Authentication: sessions, session storage/middleware, id derivation, development login endpoint. |
+| `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/app/middleware/`. |
 | `src/core/` | Cross-cutting infrastructure: `Config`, server startup, logging/tracing, election configuration, Askama/Typst rendering, PDF, CSV, ZIP, locales. |
 | `src/store/` | The generic event store: persistence backends (memory/file/Postgres), at-rest encryption, the event hash chain, and the per-stream `StoreRegistry`. |
 | `src/error/` | `AppError` and the rendering of error responses/pages. |

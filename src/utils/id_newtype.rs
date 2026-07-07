@@ -15,7 +15,7 @@ macro_rules! id_newtype {
             serde::Serialize, serde::Deserialize,
         )]
         #[serde(transparent)]
-        $vis struct $name(uuid::Uuid);
+        $vis struct $name($vis uuid::Uuid);
 
         impl Default for $name {
             fn default() -> Self {

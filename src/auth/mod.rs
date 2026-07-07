@@ -3,9 +3,6 @@
 /// BSN-based identifier derivation using HKDF-SHA256.
 pub mod derive_id;
 
-/// Authorization scope for sessions and streams.
-pub mod scope;
-
 /// Session model and token utilities.
 pub mod session;
 
@@ -26,14 +23,5 @@ mod pending_request_db;
 /// CSRF token verification middleware for mutating requests.
 pub mod csrf_middleware;
 
-/// Session middleware and request extraction.
+/// Session cookie helpers and request extraction.
 pub mod session_extractor;
-
-#[cfg(test)]
-mod session_extractor_tests;
-
-#[cfg(feature = "dev-features")]
-pub mod dev_login;
-
-#[cfg(all(feature = "dev-features", test))]
-mod dev_login_tests;

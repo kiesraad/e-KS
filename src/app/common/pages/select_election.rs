@@ -81,7 +81,7 @@ pub async fn select_election_submit(
         return Ok(Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response());
     }
 
-    let Some(election) = form.into_election_config() else {
+    let Some(election) = form.election_config() else {
         return Ok(Redirect::to(&SelectElectionPath.to_string()).into_response());
     };
 
