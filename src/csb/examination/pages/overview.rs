@@ -61,6 +61,7 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            omission_count: 0,
         }]);
 
         let response = overview(
@@ -76,6 +77,30 @@ mod tests {
         // The seeded group's display name is rendered in the "added" table.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
+    }
+
+    #[tokio::test]
+    async fn overview_renders_omission_count_badge() {
+        let groups = CsbPoliticalGroups(vec![CsbPoliticalGroup {
+            political_group: sample_political_group(),
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            omission_count: 3,
+        }]);
+
+        let response = overview(
+            CsbExaminationOverviewPath {},
+            CsbContext::new_test(),
+            groups,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("omission-badge"));
+        assert!(body.contains("3 omissions"));
     }
 
     #[tokio::test]

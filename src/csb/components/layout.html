@@ -14,6 +14,19 @@
     </a>
   </li>
 {% endmacro breadcrumb %}
+{% macro omission_count_badge(count) %}
+  {% if count > 0 %}
+    <ul class="omission-badges">
+      <li class="omission-badge">
+        {% if count == 1 %}
+          {{ "csb.omission.count.singular"|trans }}
+        {% else %}
+          {{ "csb.omission.count.plural"|trans(&count.to_string() ) }}
+        {% endif %}
+      </li>
+    </ul>
+  {% endif %}
+{% endmacro omission_count_badge %}
 {% block body %}
   <header>
     <nav>

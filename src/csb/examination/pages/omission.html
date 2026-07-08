@@ -1,0 +1,52 @@
+{% extends "csb/components/overlay.html" %}
+{% set submit_label = "csb.omission.form.submit"|trans %}
+{% block overlay_title %}{{ "csb.omission.form.title"|trans }}{% endblock %}
+{% block overlay_form %}
+  <fieldset class="omission-form">
+    {% if !presets.is_empty() %}
+      <p class="form-field">
+        <span class="label">{{ "csb.omission.form.presets_heading"|trans }}</span>
+        <ul class="omission-presets">
+          {% for preset in presets %}
+            <li>
+              <button type="button"
+                      class="omission-preset"
+                      data-omission-preset
+                      data-title="{{ preset.title }}"
+                      data-description="{{ preset.description }}"
+                      data-help-text="{{ preset.help_text }}">{{ preset.title }}</button>
+            </li>
+          {% endfor %}
+        </ul>
+      </p>
+    {% endif %}
+    <div class="form-row">
+      <p class="form-field form-field-xl">
+        <label for="title">{{ "csb.omission.form.title_label"|trans }}</label>
+        <input type="text"
+               name="title"
+               id="title"
+               value="{{ form.data.title }}"
+               data-omission-title />
+        {% for error in form|error("title") %}<span class="error">{{ error }}</span>{% endfor %}
+      </p>
+    </div>
+    <div class="form-row">
+      <p class="form-field form-field-xl">
+        <label for="description">{{ "csb.omission.form.description_label"|trans }}</label>
+        <textarea name="description"
+                  id="description"
+                  rows="5"
+                  data-omission-description>{{ form.data.description }}</textarea>
+        {% for error in form|error("description") %}<span class="error">{{ error }}</span>{% endfor %}
+      </p>
+    </div>
+    <div class="form-row">
+      <p class="form-field form-field-xl">
+        <label for="help_text">{{ "csb.omission.form.help_text_label"|trans }}</label>
+        <textarea name="help_text" id="help_text" rows="5" data-omission-help-text>{{ form.data.help_text }}</textarea>
+        {% for error in form|error("help_text") %}<span class="error">{{ error }}</span>{% endfor %}
+      </p>
+    </div>
+  </fieldset>
+{% endblock %}

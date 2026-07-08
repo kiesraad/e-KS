@@ -4,7 +4,10 @@ use rand::{RngExt, rng};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, HtmlTemplate,
-    csb::examination::{extractors::CsbPoliticalGroup, pages::CsbGeneralInformationPath},
+    csb::{
+        Omission,
+        examination::{extractors::CsbPoliticalGroup, pages::CsbGeneralInformationPath},
+    },
     filters,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
@@ -17,6 +20,8 @@ struct CsbGeneralInformationTemplate {
     name_authorisations: Vec<NameAuthorisation>,
     list_submitter: ListSubmitter,
     substitute_submitters: Vec<ListSubmitter>,
+    /// Omissions added at the political group's general information level.
+    general_omissions: Vec<Omission>,
     restoration_count: usize,
 }
 
@@ -31,6 +36,7 @@ pub async fn overview(
     let name_authorisations = store.get_name_authorisations();
     let list_submitter = store.get_list_submitter();
     let substitute_submitters = store.get_substitute_submitters();
+    let general_omissions = store.get_general_omissions();
 
     Ok(HtmlTemplate(
         CsbGeneralInformationTemplate {
@@ -38,6 +44,7 @@ pub async fn overview(
             name_authorisations,
             list_submitter,
             substitute_submitters,
+            general_omissions,
             restoration_count: rng().random_range(0..=20),
         },
         context,
@@ -95,5 +102,38 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("General Information"));
+    }
+
+    #[tokio::test]
+    async fn renders_added_general_omissions_as_badges() {
+        use crate::csb::OmissionCategory;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        Omission::new(
+            OmissionCategory::General,
+            "Deposit missing".to_string(),
+            "The deposit has not been paid.".to_string(),
+            String::new(),
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = overview(
+            CsbGeneralInformationPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("omission-badge"));
+        // The badge shows the short title, not the long description.
+        assert!(body.contains("Deposit missing"));
+        assert!(!body.contains("The deposit has not been paid."));
     }
 }

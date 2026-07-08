@@ -12,6 +12,7 @@ pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
     pub is_examination_finished: bool,
+    pub omission_count: usize,
 }
 
 impl CsbPoliticalGroup {
@@ -20,6 +21,7 @@ impl CsbPoliticalGroup {
             political_group: store.get_political_group(),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
+            omission_count: store.get_omission_count(),
         }
     }
 }

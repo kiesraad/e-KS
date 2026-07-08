@@ -20,6 +20,7 @@
 @import "header.css" layer(components);
 @import "layout.css" layer(components);
 @import "modal.css" layer(components);
+@import "omission.css" layer(components);
 @import "overlay.css" layer(components);
 @import "person-block.css" layer(components);
 @import "position-preview.css" layer(components);

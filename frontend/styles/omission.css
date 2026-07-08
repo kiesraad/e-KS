@@ -1,0 +1,34 @@
+.omission-presets,
+.omission-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  list-style: none;
+  padding: 0;
+  margin: var(--space-4) 0;
+}
+
+.omission-preset,
+.omission-badge {
+  background: none;
+  border: 1px solid var(--orange-600);
+  border-radius: var(--rounded-md);
+  color: var(--orange-700);
+  font-size: var(--font-size-sm);
+  line-height: var(--leading-sm);
+  padding: var(--space-1) var(--space-2);
+  text-align: left;
+}
+
+.omission-preset {
+  cursor: pointer;
+}
+
+.omission-preset::before {
+  content: "+ ";
+}
+
+.omission-preset:hover {
+  background-color: var(--orange-100);
+  border-color: var(--orange-700);
+}
