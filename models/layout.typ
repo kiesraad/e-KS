@@ -88,8 +88,8 @@
   block(breakable: values.len() > 10, table(
     columns: columns,
     align: align,
-    rows: 1.5em,
-    fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_colour },
+    rows: 1.45em,
+    fill: (_, y) => if calc.odd(y) { highlight_colour },
     table.header(..headers.map(value => { text(style: "italic", value) })),
     ..values.flatten(),
   ))
@@ -99,6 +99,8 @@
   block(breakable: values.len() > 10, table(
     columns: columns,
     align: top,
+    gutter: 1em,
+    inset: 0em,
     table.header(..headers.map(value => { text(style: "italic", size: .9em, value) })),
     ..values.flatten(),
   ))
@@ -115,7 +117,8 @@
 #let label_table(values: ()) = block(breakable: false, table(
   columns: (1fr, 2fr),
   ..values.flatten(),
-  inset: (left: 0pt)
+  gutter: 1em,
+  inset: 0em
 ))
 
 /// Line with space to fill in later

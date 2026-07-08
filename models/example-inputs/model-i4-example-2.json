@@ -3,7 +3,7 @@
     "name": "de Eerste Kamer der Staten-Generaal",
     "date": "24 mei 2027"
   },
-  "session": {
+  "public_session": {
     "location": "'s-Gravenhage",
     "date": "3 mei 2027",
     "time": "17:00 uur",
@@ -239,20 +239,16 @@
   ],
   "numbered_based_on_districts": [
     {
-      "position": 3,
+      "position": null,
       "designation": "De Correcte Partij",
       "districts": 2
     },
     {
-      "position": 4,
+      "position": null,
       "designation": "Blanco (Nagelhout, H.)",
-      "districts": 1
+      "districts": 2
     }
   ],
-  "objections": [
-    "Namens De Ongeldige Partij is bezwaar gemaakt tegen het proces van het verkrijgen van ondersteuningsverklaringen. De partij stelt vele belemmeringen te hebben ervaren bij gemeenten en te weinig mogelijkheden te hebben ervaren bij verzuimherstel. Gesteld wordt dat dit in strijd is met de algemene beginselen van behoorlijk bestuur, zoals het beginsel van opgewekt vertrouwen en fair play. Partijen moet een redelijke kans geboden worden op herstel van verzuimen. De bezwaarmaker verzet zich tegen het strikt toepassen van termijnen voor kiezers die de partij wilden ondersteunen en verzoekt alsnog extra tijd voor herstel van verzuimen.",
-    "Een bezwaarmaker namens de partij Kiesraad Demo 5 sluit zich aan bij het voorgaande bezwaar voor wat betreft het ondervinden van belemmeringen bij de ondersteuningsverklaringen.",
-    "Namens De Herstelde Partij wordt de Kiesraad bedankt voor al het werk en de hulp bij het proces. De partij heeft dat als zeer prettig ervaren, maar het zou fijn zijn als het systeem wordt aangepast."
-  ],
-  "response_objections": "Reactie van de Kiesraad op de bezwaren:\nWat betreft de opmerkingen die door een aantal bezwaarmakers zijn gemaakt over het proces van het verkrijgen van ondersteuningsverklaringen stelt de Kiesraad dit ook heel vervelend te vinden. Het gaat hier over een proces onder de verantwoordelijkheid van de gemeenten. De Kiesraad geeft gemeenten informatie en instrueert hen."
+  "objections": null,
+  "response_objections": null
 }
