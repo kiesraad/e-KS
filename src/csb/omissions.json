@@ -1,5 +1,5 @@
 {
-  "political_group": [
+  "political-group": [
     {
       "title": "De machtiging aanduiding ontbreekt",
       "description": "De machtiging om de aanduiding van de politieke groepering boven de lijst te plaatsen ontbreekt.",
@@ -31,7 +31,7 @@
       "help_text": ""
     }
   ],
-  "candidate_list": [
+  "candidate-list": [
     {
       "title": "Voor één kieskring ontbreken één of meerdere ondersteuningsverklaringen",
       "description": "Bij de lijst zijn niet voldoende geldige verklaringen van ondersteuning ingeleverd voor de kieskring {district}.",

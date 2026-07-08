@@ -30,11 +30,11 @@ pub struct PresetOmission {
 /// district) and `{designation}` (the disputed name/predicate).
 #[derive(Debug, Default, Clone)]
 pub struct OmissionPlaceholders {
-    /// `{candidate_number}` — the candidate's position on the list.
+    /// `{candidate_number}`: the candidate's position on the list.
     pub candidate_number: Option<String>,
-    /// `{candidate_name}` — the candidate's initials and last name.
+    /// `{candidate_name}`: the candidate's initials and last name.
     pub candidate_name: Option<String>,
-    /// `{districts}` — the electoral districts a candidate list was submitted for.
+    /// `{districts}`: the electoral districts a candidate list was submitted for.
     pub districts: Option<String>,
 }
 
@@ -81,19 +81,10 @@ impl OmissionType {
         }
     }
 
-    /// Key under which this type's presets are grouped in `omissions.json`.
-    fn preset_key(self) -> &'static str {
-        match self {
-            OmissionType::PoliticalGroup => "political_group",
-            OmissionType::CandidateList => "candidate_list",
-            OmissionType::Candidate => "candidate",
-        }
-    }
-
     /// The predefined omissions offered as quick-fill suggestions for this type.
     pub fn presets(self) -> &'static [PresetOmission] {
         PRESET_OMISSIONS
-            .get(self.preset_key())
+            .get(self.as_str())
             .map(Vec::as_slice)
             .unwrap_or(&[])
     }
@@ -151,17 +142,22 @@ pub enum OmissionCategory {
 }
 
 impl OmissionCategory {
-    /// Build the category for a newly added omission from the path parameters of
-    /// the "add omission" dialog: the [`OmissionType`] and the id of the item the
-    /// omission is added to. For a political group the reference is unused (the
-    /// stream already identifies the group), so it maps to [`Self::General`].
-    pub fn from_type_and_reference(omission_type: OmissionType, reference: uuid::Uuid) -> Self {
+    /// Build the category for a newly added omission from the parameters of the
+    /// "add omission" dialog: the [`OmissionType`], the id of the item the
+    /// omission is added to, and (for candidates) the list the candidate is on.
+    /// For a political group the reference is unused (the stream already
+    /// identifies the group), so it maps to [`Self::General`].
+    pub fn from_type_and_reference(
+        omission_type: OmissionType,
+        reference: uuid::Uuid,
+        list: Option<CandidateListId>,
+    ) -> Self {
         match omission_type {
             OmissionType::PoliticalGroup => OmissionCategory::General,
             OmissionType::CandidateList => OmissionCategory::CandidateList(reference.into()),
             OmissionType::Candidate => OmissionCategory::Candidate {
                 person: reference.into(),
-                list: None,
+                list,
             },
         }
     }

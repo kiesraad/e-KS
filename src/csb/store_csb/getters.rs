@@ -119,19 +119,20 @@ impl CsbStore {
             .cloned()
     }
 
-    /// The 1-based position of a candidate on the first list that contains them.
-    pub fn candidate_position(&self, person_id: PersonId) -> Option<usize> {
+    pub fn candidate_position(
+        &self,
+        list_id: CandidateListId,
+        person_id: PersonId,
+    ) -> Option<usize> {
         let data = self.data.read();
 
         data.imported_data
             .candidate_lists
-            .values()
-            .find_map(|list| {
-                list.candidates
-                    .iter()
-                    .position(|candidate| *candidate == person_id)
-                    .map(|index| index + 1)
-            })
+            .get(&list_id)?
+            .candidates
+            .iter()
+            .position(|candidate| *candidate == person_id)
+            .map(|index| index + 1)
     }
 
     /// The list submitter ("lijstinleveraar") imported for this political group.

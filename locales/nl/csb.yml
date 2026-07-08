@@ -43,7 +43,7 @@ omission:
     singular: 1 verzuim
   form:
     description_label: I1 verzuim toevoegen
-    help_text_label: Verzuim briefnotitie toevoegen
+    help_text_label: Verzuimbriefnotitie toevoegen
     presets_heading: Voeg één van deze verzuimen toe
     submit: Toevoegen en sluiten
     title: Verzuimen toevoegen

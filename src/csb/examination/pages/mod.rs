@@ -39,9 +39,6 @@ pub struct CsbGeneralInformationPath {
     pub stream_id: StreamId,
 }
 
-/// The "add omission" dialog. Renders (GET) and handles (POST) the overlay form
-/// that adds an omission to the item identified by `omission_type` + `reference`
-/// within the political group's examination stream (`stream_id`).
 #[derive(TypedPath, Deserialize)]
 #[typed_path(
     "/csb/examination/{stream_id}/omission/{omission_type}/{reference}",
@@ -51,6 +48,11 @@ pub struct CsbAddOmissionPath {
     pub stream_id: StreamId,
     pub omission_type: OmissionType,
     pub reference: Uuid,
+}
+
+#[derive(Debug, Default, Clone, Copy, Deserialize)]
+pub struct OmissionListQuery {
+    pub list: Option<CandidateListId>,
 }
 
 impl CsbPoliticalGroup {

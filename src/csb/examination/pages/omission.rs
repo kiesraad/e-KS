@@ -11,7 +11,11 @@ use crate::{
     candidate_lists::CandidateListId,
     csb::{
         OmissionCategory, OmissionPlaceholders, OmissionType,
-        examination::{OmissionForm, extractors::CsbPoliticalGroup, pages::CsbAddOmissionPath},
+        examination::{
+            OmissionForm,
+            extractors::CsbPoliticalGroup,
+            pages::{CsbAddOmissionPath, OmissionListQuery},
+        },
     },
     filters,
     form::FormData,
@@ -41,6 +45,7 @@ struct PresetView {
 fn placeholders_for(
     omission_type: OmissionType,
     reference: Uuid,
+    list: Option<CandidateListId>,
     store: &CsbStore,
     locale: Locale,
 ) -> OmissionPlaceholders {
@@ -49,7 +54,11 @@ fn placeholders_for(
             let person = PersonId::from(reference);
             OmissionPlaceholders {
                 candidate_name: store.get_person(person).map(|person| person.name.display()),
-                candidate_number: store.candidate_position(person).map(|nr| nr.to_string()),
+                // A candidate's position differs per list, so it can only be
+                // resolved when the dialog was opened for a specific list.
+                candidate_number: list
+                    .and_then(|list| store.candidate_position(list, person))
+                    .map(|nr| nr.to_string()),
                 districts: None,
             }
         }
@@ -67,10 +76,11 @@ fn placeholders_for(
 fn preset_views(
     omission_type: OmissionType,
     reference: Uuid,
+    list: Option<CandidateListId>,
     store: &CsbStore,
     locale: Locale,
 ) -> Vec<PresetView> {
-    let placeholders = placeholders_for(omission_type, reference, store, locale);
+    let placeholders = placeholders_for(omission_type, reference, list, store, locale);
 
     omission_type
         .presets()
@@ -102,9 +112,16 @@ pub async fn add_omission(
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
+    Query(OmissionListQuery { list }): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let presets = preset_views(omission_type, reference, &store, context.session.locale);
+    let presets = preset_views(
+        omission_type,
+        reference,
+        list,
+        &store,
+        context.session.locale,
+    );
 
     Ok(HtmlTemplate(
         CsbAddOmissionTemplate {
@@ -129,10 +146,17 @@ pub async fn add_omission_submit(
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
+    Query(OmissionListQuery { list }): Query<OmissionListQuery>,
     Form(form): Form<OmissionForm>,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let presets = preset_views(omission_type, reference, &store, context.session.locale);
+    let presets = preset_views(
+        omission_type,
+        reference,
+        list,
+        &store,
+        context.session.locale,
+    );
 
     match form.validate_create(&context.session.csrf_token) {
         Err(form_data) => Ok(HtmlTemplate(
@@ -146,7 +170,8 @@ pub async fn add_omission_submit(
         )
         .into_response()),
         Ok(mut omission) => {
-            omission.category = OmissionCategory::from_type_and_reference(omission_type, reference);
+            omission.category =
+                OmissionCategory::from_type_and_reference(omission_type, reference, list);
             omission.create(&store).await?;
 
             Ok(query.redirect_or(return_path(omission_type, &political_group)))
@@ -184,6 +209,7 @@ mod tests {
             CsbContext::new_test(),
             store,
             Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
         )
         .await
         .unwrap()
@@ -226,6 +252,7 @@ mod tests {
             context,
             store.clone(),
             Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
             Form(form),
         )
         .await
@@ -259,6 +286,7 @@ mod tests {
             context,
             store.clone(),
             Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
             Form(form),
         )
         .await
@@ -285,6 +313,7 @@ mod tests {
             context,
             store.clone(),
             Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
             Form(form),
         )
         .await
@@ -305,7 +334,8 @@ mod tests {
         // Seed a candidate at position 1 of a list.
         let person = sample_person(PersonId::new());
         let person_id = person.id;
-        let mut list = sample_candidate_list(CandidateListId::new());
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
         store.set_person(person);
         store.set_candidate_list(list);
@@ -319,6 +349,9 @@ mod tests {
             CsbContext::new_test(),
             store,
             Query(QueryParamState::default()),
+            Query(OmissionListQuery {
+                list: Some(list_id),
+            }),
         )
         .await
         .unwrap()
@@ -331,5 +364,96 @@ mod tests {
         // The unresolved token is left for the committee to fill in manually.
         assert!(body.contains("{designation}"));
         assert!(!body.contains("{candidate_name}"));
+    }
+
+    #[tokio::test]
+    async fn candidate_position_is_scoped_to_the_referenced_list() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        // The same candidate sits at different positions on two lists.
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.set_person(person);
+
+        let first_list_id = CandidateListId::new();
+        let mut first_list = sample_candidate_list(first_list_id);
+        first_list.candidates = vec![person_id];
+        store.set_candidate_list(first_list);
+
+        let second_list_id = CandidateListId::new();
+        let mut second_list = sample_candidate_list(second_list_id);
+        second_list.candidates = vec![PersonId::new(), person_id];
+        store.set_candidate_list(second_list);
+
+        // Opening the dialog for the second list resolves position 2, not 1.
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery {
+                list: Some(second_list_id),
+            }),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("Kandidaat nr. 2, Jansen, H.A.H.A. (Henk)"));
+        assert!(!body.contains("Kandidaat nr. 1, Jansen"));
+    }
+
+    #[tokio::test]
+    async fn add_candidate_omission_persists_the_list() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let context = CsbContext::new_test();
+        let form = sample_form(&context.session.csrf_token);
+
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.set_person(person);
+        store.set_candidate_list(list);
+
+        let response = add_omission_submit(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            context,
+            store.clone(),
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery {
+                list: Some(list_id),
+            }),
+            Form(form),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        let omission = store.get_omission_for_test();
+        assert!(matches!(
+            omission.category,
+            OmissionCategory::Candidate { person, list }
+                if person == person_id && list == Some(list_id)
+        ));
     }
 }
