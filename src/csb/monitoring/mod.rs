@@ -4,4 +4,4 @@
 mod extractors;
 mod pages;
 
-pub use pages::{CsbMonitoringOverviewPath, router};
+pub use pages::router;

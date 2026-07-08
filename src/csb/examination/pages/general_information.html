@@ -84,7 +84,8 @@
 {% endmacro %}
 {% block content %}
   <section class="general-information">
-    <a class="card restoration-card" data-href="#">
+    <a class="card restoration-card"
+       href="{{ political_group.add_political_group_omission_path() }}">
       <div class="card-header">
         <div>
           <h3 class="h4">{{ "csb_general_information.restoration_card.title"|trans }}</h3>
@@ -95,6 +96,13 @@
         <p>{{ "csb_general_information.restoration_card.description"|trans }}</p>
       </div>
     </a>
+    {% if !general_omissions.is_empty() %}
+      <ul class="omission-badges">
+        {% for omission in general_omissions %}
+          <li class="omission-badge">{{ omission.title }}</li>
+        {% endfor %}
+      </ul>
+    {% endif %}
     <h2>{{ "csb_general_information.section.political_group"|trans }}</h2>
     <table class="general-information-table">
       {{ columns_head("common.general_information"|trans) }}

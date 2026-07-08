@@ -31,7 +31,7 @@ pub struct Pagination<S: Default + PartialEq> {
     #[serde(default = "default_page")]
     #[serde(skip_serializing_if = "is_default_page")]
     pub page: usize,
-    /// Requested page size. Defaults to [`Pagination::default_per_page`].
+    /// Requested page size. Defaults to [`default_per_page`].
     #[serde(default = "default_per_page")]
     #[serde(skip_serializing_if = "is_default_per_page")]
     pub per_page: usize,

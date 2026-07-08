@@ -22,7 +22,7 @@ struct CsbPoliticalGroupTemplate {
     political_group: CsbPoliticalGroup,
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
-    general_brp_error_count: usize,
+    general_omission_count: usize,
     restoration_count: usize,
 }
 
@@ -33,7 +33,6 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let general_brp_error_count = rng().random_range(0..=2);
     let candidate_lists = store
         .get_candidate_lists()
         .into_iter()
@@ -42,15 +41,16 @@ pub async fn overview(
     let all_brp_error_count = candidate_lists
         .iter()
         .map(|cl| cl.brp_error_count)
-        .sum::<usize>()
-        + general_brp_error_count;
+        .sum::<usize>();
+    let general_omission_count = store.get_general_omissions().len();
+
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
             election: store.election,
             political_group,
             all_brp_error_count,
-            general_brp_error_count,
             candidate_lists,
+            general_omission_count,
             restoration_count: rng().random_range(0..=20),
         },
         context,
@@ -118,6 +118,37 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("?"));
+    }
+
+    #[tokio::test]
+    async fn renders_general_omission_count_badge() {
+        use crate::csb::{Omission, OmissionCategory};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        Omission::new(
+            OmissionCategory::General,
+            "Deposit missing".to_string(),
+            "The deposit has not been paid.".to_string(),
+            String::new(),
+        )
+        .create(&store)
+        .await
+        .unwrap();
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("omission-badge"));
+        assert!(body.contains("1 omission"));
     }
 
     #[tokio::test]

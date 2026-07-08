@@ -6,7 +6,6 @@ use crate::{AppEvent, Event, Locale, audit_log::AuditLogDetailPath, store::Store
 /// A single entry in the audit log, representing one application event.
 pub struct AuditLogEntry {
     pub event_id: usize,
-    pub event_type: &'static str,
     pub description: String,
     pub details: String,
     pub subject_id_full: String,
@@ -19,7 +18,6 @@ impl AuditLogEntry {
         let full_id = event.payload.subject_id_full();
         Self {
             event_id: event.event_id,
-            event_type: event.payload.category(),
             description: event.payload.description(locale),
             details: event.payload.details(),
             subject_id_full: full_id,
@@ -322,24 +320,21 @@ mod tests {
     }
 
     #[test]
-    fn event_type_is_set_correctly() {
+    fn event_category_and_key_are_set_correctly() {
         let person = sample_person(PersonId::new());
-        let event = StoreEvent::new(1, AppEvent::CreatePerson(person));
-        let entry = AuditLogEntry::new(event, EN);
-        assert_eq!(entry.event_type, "person");
+        let event = AppEvent::CreatePerson(person);
+        assert_eq!(event.category(), "person");
+        assert_eq!(event.key(), "create_person");
 
         let pg = sample_political_group();
-        let event = StoreEvent::new(2, AppEvent::UpdatePoliticalGroup(pg));
-        let entry = AuditLogEntry::new(event, EN);
-        assert_eq!(entry.event_type, "political_group");
+        let event = AppEvent::UpdatePoliticalGroup(pg);
+        assert_eq!(event.category(), "political_group");
+        assert_eq!(event.key(), "update_political_group");
 
-        let event = StoreEvent::new(
-            3,
-            AppEvent::DeveloperLogin {
-                stream_id: StreamId::new(),
-            },
-        );
-        let entry = AuditLogEntry::new(event, EN);
-        assert_eq!(entry.event_type, "system");
+        let event = AppEvent::DeveloperLogin {
+            stream_id: StreamId::new(),
+        };
+        assert_eq!(event.category(), "system");
+        assert_eq!(event.key(), "developer_login");
     }
 }

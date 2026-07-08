@@ -104,7 +104,7 @@ impl AppState {
         })
     }
 
-    pub async fn store_for_stream(
+    pub(crate) async fn store_for_stream(
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
@@ -130,7 +130,7 @@ impl AppState {
     }
 
     /// Fetch (or create and load) the CSB store for a (stream, election).
-    pub async fn csb_store_for_stream(
+    pub(crate) async fn csb_store_for_stream(
         &self,
         stream_id: StreamId,
         election: ElectionConfig,
@@ -142,14 +142,17 @@ impl AppState {
 
     /// Fetch (or create) the global CSB main store for the given election.
     /// All committee members share a single stream [`CSB_MAIN_STREAM_ID`].
-    pub async fn csb_main_store(&self, election: ElectionConfig) -> Result<CsbMainStore, AppError> {
+    pub(crate) async fn csb_main_store(
+        &self,
+        election: ElectionConfig,
+    ) -> Result<CsbMainStore, AppError> {
         self.csb_main_store_registry
             .get_or_create(CSB_MAIN_STREAM_ID, election)
             .await
     }
 
     /// List which elections already have persisted data under the user's stream.
-    pub async fn existing_elections_for_stream(
+    pub(crate) async fn existing_elections_for_stream(
         &self,
         stream_id: StreamId,
     ) -> Result<Vec<ElectionConfig>, AppError> {

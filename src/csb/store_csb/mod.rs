@@ -82,4 +82,20 @@ impl crate::CsbStore {
     pub fn set_political_group(&self, political_group: PoliticalGroup) {
         self.data.write().imported_data.political_group = political_group;
     }
+
+    pub fn set_candidate_list(&self, list: crate::candidate_lists::CandidateList) {
+        self.data
+            .write()
+            .imported_data
+            .candidate_lists
+            .insert(list.id, list);
+    }
+
+    pub fn set_person(&self, person: crate::persons::Person) {
+        self.data
+            .write()
+            .imported_data
+            .persons
+            .insert(person.id, person);
+    }
 }

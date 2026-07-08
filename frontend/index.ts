@@ -8,6 +8,7 @@ import hashInput from "./scripts/form-inputs/hash-input";
 import initialsInput from "./scripts/form-inputs/initials-input";
 import localitySuggestions from "./scripts/form-inputs/locality-suggestions";
 import addressLookup from "./scripts/form-inputs/lookup";
+import omissionPreset from "./scripts/form-inputs/omission-preset";
 import setupPositionPreview from "./scripts/form-inputs/position-preview";
 import setupSelectAllCheckbox from "./scripts/form-inputs/select-all-checkbox";
 import setupModal from "./scripts/generic-ui/modal";
@@ -48,6 +49,7 @@ setupPositionPreview();
 setupSelectAllCheckbox();
 electionRegion();
 listDesignation();
+omissionPreset();
 
 // generic UI
 setupStickyNav();

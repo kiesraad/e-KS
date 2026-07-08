@@ -21,7 +21,7 @@ pub struct EventTypeCategory {
 }
 
 /// Event type categories grouped with their specific event keys, used by the
-/// filter dropdown to render <optgroup>s with fine-grained <option>s.
+/// filter dropdown to render `<optgroup>`s with fine-grained `<option>`s.
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)
@@ -105,8 +105,10 @@ fn filter_events<'a, E: Event + 'a>(
     search: Option<&'a str>,
 ) -> impl Iterator<Item = CsbAuditLogEntry> + 'a {
     iter.rev()
+        .filter(move |event| {
+            event_type.is_none_or(|et| event.payload.category() == et || event.payload.key() == et)
+        })
         .map(move |event| CsbAuditLogEntry::from_event(event, stream_id, label.clone(), locale))
-        .filter(move |e| event_type.is_none_or(|et| e.event_category == et || e.event_key == et))
         .filter(move |e| search.is_none_or(|q| e.matches_search(q)))
 }
 
@@ -311,6 +313,7 @@ mod tests {
         csb_store
             .update(CsbEvent::CreateOmission(Omission::new(
                 OmissionCategory::General,
+                "test".to_string(),
                 "test".to_string(),
                 "test".to_string(),
             )))

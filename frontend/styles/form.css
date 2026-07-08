@@ -68,10 +68,20 @@
       max-width: 30rem;
     }
 
+    &.form-field-xl {
+      max-width: 40rem;
+
+      input,
+      textarea {
+        max-width: none;
+      }
+    }
+
     &.form-field-full {
       max-width: 100%;
 
-      input {
+      input,
+      textarea {
         max-width: 100%;
       }
     }
@@ -284,6 +294,7 @@
   font-size: var(--font-size-md);
   line-height: var(--leading-md);
   font-weight: var(--font-weight-regular);
+  font-family: var(--font-family-sans);
 }
 
 .form input[type="text"],

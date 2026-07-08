@@ -83,31 +83,43 @@
 .political-group-table {
   table-layout: fixed;
 
-  th:nth-child(1) {
-    width: 25rem;
-  }
+  thead {
+    tr {
+      background-color: var(--gray-25);
+    }
 
-  th:nth-child(2) {
-    width: 15rem;
-  }
+    th {
+      font-weight: var(--font-weight-bold);
+    }
 
-  th:nth-child(3) {
-    width: 10rem;
-  }
+    th:nth-child(2) {
+      width: 20rem;
+    }
 
-  th:nth-child(4) {
-    width: 2rem;
-  }
+    th:nth-child(3) {
+      width: 10rem;
+    }
 
-  th {
-    font-weight: var(--font-weight-bold);
+    th:nth-child(4) {
+      width: 2rem;
+    }
   }
 
   td:first-child {
     font-weight: var(--font-weight-bold);
   }
 
+  td:nth-child(2) {
+    padding: var(--space-2) var(--space-4);
+
+    .omission-badges {
+      margin: 0;
+      display: inline-block;
+    }
+  }
+
   .status {
+    display: inline-block;
     border-radius: var(--rounded-xl);
     border: 1px solid;
     width: fit-content;

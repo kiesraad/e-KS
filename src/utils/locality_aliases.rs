@@ -1,6 +1,6 @@
 //! Known non-official locality names and their official counterparts.
 
-/// The Dutch aliases of officially Frisian place names are based on https://cuatro.sim-cdn.nl/fryslan/uploads/list_plaknammen_yn_fryslan.pdf?cb=RAqKiBSg
+/// The Dutch aliases of officially Frisian place names are based on <https://cuatro.sim-cdn.nl/fryslan/uploads/list_plaknammen_yn_fryslan.pdf?cb=RAqKiBSg>
 const LOCALITY_ALIASES: &[(&str, &str)] = &[
     ("Den Haag", "'s-Gravenhage"),
     ("Den Bosch", "'s-Hertogenbosch"),

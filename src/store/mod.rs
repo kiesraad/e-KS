@@ -13,7 +13,7 @@ mod store_handle;
 
 pub use encryption::EventEncryption;
 pub use event::{Event, GENESIS_HASH, StoreEvent};
-pub use health::{DbHealth, HealthState, run_db_prober};
+pub use health::{DbHealth, run_db_prober};
 pub use persistence::{StorePersistence, StreamMeta};
 pub use registry::StoreRegistry;
 pub use store_handle::Store;
