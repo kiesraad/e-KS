@@ -159,6 +159,17 @@
               "position": 3
             }
           ]
+        },
+        {
+          "designation": "Blanco (Nagelhout, H.)",
+          "candidates": [
+            {
+              "last_name": "Nagelhout",
+              "initials": "H. (v)",
+              "locality": "Ede",
+              "position": 1
+            }
+          ]
         }
       ]
     },
@@ -231,6 +242,11 @@
       "position": 3,
       "designation": "De Correcte Partij",
       "districts": 2
+    },
+    {
+      "position": 4,
+      "designation": "Blanco (Nagelhout, H.)",
+      "districts": 1
     }
   ],
   "objections": [
