@@ -68,17 +68,7 @@
           </div>
         </div>
         <div class="card-content">
-          <ul class="tags-list">
-            <li class="tag link">
-              {% if general_brp_error_count == 0 %}
-                <a class="ok" href="#">{{ "csb_political_group.brp_errors.none"|trans }}</a>
-              {% else if general_brp_error_count == 1 %}
-                <a class="error" href="#">{{ "csb_political_group.brp_errors.singular"|trans }}</a>
-              {% else %}
-                <a class="error" href="#">{{ "csb_political_group.brp_errors.plural"|trans(&general_brp_error_count.to_string() ) }}</a>
-              {% endif %}
-            </li>
-          </ul>
+          {{ omission_count_badge(general_omission_count) }}
           <ul class="card-instruction">
             <li>{{ "csb_political_group.general_instruction_political_group"|trans }}</li>
             <li>{{ "csb_political_group.general_instruction_list_submitter"|trans }}</li>
@@ -124,6 +114,8 @@
                 {% endif %}
               </div>
             {% endif %}
+            <a class="add-omission-link"
+               href="{{ political_group.add_candidate_list_omission_path(candidate_list.list.id) }}">{{ "csb.omission.action.add"|trans }}</a>
           </div>
           <a class="card-footer" href="#">{{ "csb_political_group.actions.examine_list"|trans }}</a>
         </div>

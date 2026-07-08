@@ -4,6 +4,7 @@
   <div class="overlay-backdrop">
     <form method="post"
           class="overlay {% if "overlay_referrer"|value_true %}no-animation{% else %}animation{% endif %}">
+      {% if form is defined %}<input type="hidden" name="csrf_token" value="{{ form.data.csrf_token }}" />{% endif %}
       <header>
         <h2>
           {% block overlay_title %}{% endblock %}
@@ -15,10 +16,17 @@
         </a>
       </header>
       {% block overlay_content %}
-        <div class="overlay-content">
-          {% block overlay_form %}{% endblock %}
+        <div class="overlay-content steps">
+          {% block overlay_steps %}{% endblock %}
+          <div class="form">
+            {% block overlay_form %}{% endblock %}
+            {% block overlay_actions %}
+              {% include "app/common/components/submit.html" %}
+            {% endblock %}
+          </div>
         </div>
       {% endblock %}
     </form>
   </div>
+  {% block overlay_end %}{% endblock %}
 {% endblock %}

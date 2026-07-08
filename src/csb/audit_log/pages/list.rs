@@ -315,6 +315,7 @@ mod tests {
                 OmissionCategory::General,
                 "test".to_string(),
                 "test".to_string(),
+                "test".to_string(),
             )))
             .await?;
 
