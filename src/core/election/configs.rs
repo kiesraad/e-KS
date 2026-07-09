@@ -1,10 +1,10 @@
-use chrono::{Datelike, NaiveDate};
+use chrono::{Datelike, NaiveDate, NaiveDateTime, NaiveTime};
 
 use crate::{
     ElectoralDistrict,
     core::{
         AnyLocale, ElectionType, ModelLocale,
-        election::{Province, WaterCouncil},
+        election::{Province, PublicSession, WaterCouncil},
     },
 };
 
@@ -24,7 +24,15 @@ super::define_elections! {
         // Estimated from EK 2023 planning (official 2027 planning not yet published)
         document_review_date: NaiveDate::from_ymd_opt(2027, 4, 25).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 4, 29).unwrap(),
-        public_session_date: NaiveDate::from_ymd_opt(2027, 5, 3).unwrap(),
+        public_session: PublicSession {
+            location: "'s-Gravenhage",
+            datetime: NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2027, 5, 3).unwrap(),
+                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
+            ),
+            chair: "",
+            members: &[""],
+        },
         election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap()
     },
 
@@ -55,7 +63,15 @@ super::define_elections! {
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
         document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
-        public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+        public_session: PublicSession {
+            location: "'s-Gravenhage",
+            datetime: NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
+            ),
+            chair: "",
+            members: &[""],
+        },
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     },
 
@@ -95,7 +111,15 @@ super::define_elections! {
         nomination_day_date: NaiveDate::from_ymd_opt(2027, 2, 1).unwrap(),
         document_review_date: NaiveDate::from_ymd_opt(2027, 2, 2).unwrap(),
         omission_period_end_date: NaiveDate::from_ymd_opt(2027, 2, 4).unwrap(),
-        public_session_date: NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+        public_session: PublicSession {
+            location: "'s-Gravenhage",
+            datetime: NaiveDateTime::new(
+                NaiveDate::from_ymd_opt(2027, 2, 5).unwrap(),
+                NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
+            ),
+            chair: "",
+            members: &[""],
+        },
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     }
 }

@@ -8,4 +8,4 @@ pub use h1::H1;
 pub use h3::H3;
 pub use h4::H4;
 pub use h9::H9;
-pub use i4::{I4, PublicSession};
+pub use i4::I4;

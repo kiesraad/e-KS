@@ -1,15 +1,6 @@
 use serde::Serialize;
 
-use crate::core::Pdf;
-
-#[derive(Debug, Default, Serialize)]
-pub struct PublicSession {
-    pub location: String,
-    pub date: String,
-    pub time: String,
-    pub chair: String,
-    pub members: Vec<String>,
-}
+use crate::core::{Pdf, election::PublicSession};
 
 #[derive(Debug, Default, Serialize)]
 pub struct I4 {

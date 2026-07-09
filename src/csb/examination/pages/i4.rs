@@ -5,7 +5,6 @@ use crate::{
     core::{ModelLocale, Pdf, constants::DEFAULT_DATE_FORMAT},
     csb::examination::pages::CsbI4DownloadPath,
     structs::typst::I4,
-    typst::PublicSession,
     utils::no_cache_headers,
 };
 
@@ -23,16 +22,7 @@ pub async fn gen_i4(
             .election_date()
             .format(DEFAULT_DATE_FORMAT)
             .to_string(),
-        public_session: PublicSession {
-            location: "'s-Gravenhage".to_string(),
-            date: election
-                .public_session_date()
-                .format(DEFAULT_DATE_FORMAT)
-                .to_string(),
-            time: "17:00".to_string(),
-            chair: "M.C. Voorzitter".to_string(),
-            members: vec![],
-        },
+        public_session: election.public_session(),
         ..I4::default()
     };
     let filename = model.filename();
@@ -46,6 +36,7 @@ pub async fn gen_i4(
     Ok((headers, bytes).into_response())
 }
 
+#[cfg(feature = "embed-typst")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -54,7 +45,6 @@ mod tests {
         response::IntoResponse,
     };
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_i4_returns_pdf_response() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
