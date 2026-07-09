@@ -9,6 +9,9 @@ export default function omissionPreset() {
   const helpText = document.querySelector<HTMLTextAreaElement>(
     "[data-omission-help-text]",
   );
+  const recoverable = document.querySelector<HTMLInputElement>(
+    "[data-omission-recoverable]",
+  );
 
   if (!description) {
     return;
@@ -24,6 +27,9 @@ export default function omissionPreset() {
         description.value = button.dataset.description ?? "";
         if (helpText) {
           helpText.value = button.dataset.helpText ?? "";
+        }
+        if (recoverable) {
+          recoverable.checked = button.dataset.recoverable !== "false";
         }
         description.focus();
       });

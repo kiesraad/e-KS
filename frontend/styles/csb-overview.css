@@ -153,11 +153,11 @@
   border-radius: var(--rounded-lg);
   border: 1px solid var(--card-border-color, var(--gray-200));
   padding: var(--space-2);
+  gap: var(--space-2);
 
   .switch-group {
     display: flex;
     align-items: center;
-    margin: 0 var(--space-4) 0 var(--space-2);
 
     p {
       min-width: 10rem;
@@ -237,6 +237,19 @@
 
   h2 {
     margin-top: var(--space-6);
+  }
+
+  .restoration-cards {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: var(--space-4);
+
+    .restoration-card {
+      flex: 1 1 16rem;
+      width: auto;
+      margin-bottom: 0;
+    }
   }
 
   .restoration-card {

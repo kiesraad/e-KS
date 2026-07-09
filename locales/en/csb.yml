@@ -3,9 +3,17 @@ action:
   examine: Examine
   finish: Finish
 added: Added
+all_restorations: All restorations
 brp:
   correct: Correct
   errors: Errors
+candidate:
+  personal_details: Personal details
+  restore_person_text: Add restorations for this person on all their lists here
+  restore_person_title: Person restorations
+  restore_text: Add restorations for this candidate on this list here
+  restore_title: Candidate restorations
+  status: Status
 examination: Examination
 finish_examination: Finish examination
 finish_instruction:
@@ -16,12 +24,38 @@ form:
   hash: Enter the beginning of the hash code (at least 8 characters)
   import: Import
   import_political_group: Import political group
+general:
+  group_info: Political group information
+  personalia: Personal details
+  restore_text: Add general restorations for the general information here
+  restore_title: General information restorations
+  status: Status
+group:
+  all_brp_errors: All BRP errors
+  all_brp_errors_note: All BRP errors are collectively listed here
+  brp_errors:
+    none: No BRP errors
+    plural: "{} BRP errors"
+    singular: 1 BRP error
+  candidate_count: "<strong>{}</strong> candidates"
+  examine_all: Examine all BRP errors
+  examine_general: Examine general information
+  examine_list: Examine candidate list
+  finished: Examination finished
+  instruction_group: Examine information about the political group
+  instruction_submitter: Examine information about the list submitter(s)
+  toggle: Finish or reopen examination
+  unfinished: Finish examination
 import:
   error:
     already_imported: This political group has already been imported.
     ambiguous_hash: The entered hash code matches more than one data set; enter more characters.
     invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
     not_found: No data was found for the entered hash code.
+list:
+  brp_errors: BRP errors
+  restore_text: Add restorations for this candidate list here
+  restore_title: Candidate list restorations
 monitoring:
   cache: Local cache
   created_at: Created
@@ -45,6 +79,7 @@ omission:
     description_label: Add I 1 omission
     help_text_label: Add omission letter note
     presets_heading: Add one of these omissions
+    recoverable_label: Recoverable omission
     submit: Add and close
     title: Add omissions
     title_label: Omission title

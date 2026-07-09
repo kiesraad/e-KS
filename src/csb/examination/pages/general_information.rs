@@ -135,5 +135,36 @@ mod tests {
         // The badge shows the short title, not the long description.
         assert!(body.contains("Deposit missing"));
         assert!(!body.contains("The deposit has not been paid."));
+        // A recoverable omission is not highlighted as an error.
+        assert!(!body.contains("omission-badge--error"));
+    }
+
+    #[tokio::test]
+    async fn renders_non_recoverable_omission_as_error() {
+        use crate::csb::OmissionCategory;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let mut omission = Omission::new(
+            OmissionCategory::General,
+            "Unregistered designation".to_string(),
+            "The designation is not registered.".to_string(),
+            String::new(),
+        );
+        omission.recoverable = false;
+        omission.create(&store).await.unwrap();
+
+        let response = overview(
+            CsbGeneralInformationPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("omission-badge--error"));
     }
 }

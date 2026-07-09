@@ -32,3 +32,15 @@
   background-color: var(--orange-100);
   border-color: var(--orange-700);
 }
+
+/* Non-recoverable ("onherstelbaar") omissions are highlighted as errors. */
+.omission-preset--error,
+.omission-badge--error {
+  border-color: var(--red-600);
+  color: var(--red-700);
+}
+
+.omission-preset--error:hover {
+  background-color: var(--red-100);
+  border-color: var(--red-700);
+}
