@@ -80,6 +80,13 @@ table.diff-table {
   }
 }
 
+.audit-log-hash-search {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: baseline;
+}
+
 .form.audit-log-filters {
   fieldset {
     display: flex;

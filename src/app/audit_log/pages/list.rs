@@ -6,6 +6,7 @@ use crate::{
     audit_log::{AuditLogEntry, pages::AuditLogPath},
     filters,
     pagination::Pagination,
+    utils::format_hash,
 };
 
 const PER_PAGE: usize = 20;
@@ -116,6 +117,7 @@ struct AuditLogTemplate {
     pagination: crate::pagination::PaginationInfo<NoSort>,
     filter: AuditLogFilter,
     event_types_by_category: &'static [EventTypeCategory],
+    current_hash: String,
 }
 
 #[derive(Debug, Default, Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
@@ -129,6 +131,8 @@ pub async fn audit_log(
     Query(filter): Query<AuditLogFilter>,
 ) -> Result<impl IntoResponse, AppError> {
     let locale = context.session.locale;
+
+    let current_hash = format_hash(&store.current_event_hash(), true);
 
     let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
     let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
@@ -171,6 +175,7 @@ pub async fn audit_log(
             pagination,
             filter,
             event_types_by_category: EVENT_TYPES_BY_CATEGORY,
+            current_hash,
         },
         context,
     ))

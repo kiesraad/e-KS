@@ -3,10 +3,12 @@
 {% block content %}
   {% set audit_log_path = AuditLogPath.to_string() %}
   <section>
+    <div class="audit-log-hash-search">
+    <p><strong>Huidige hashcode:</strong> {{current_hash}}</p>
     <form method="get"
           action="{{ audit_log_path }}"
           class="form audit-log-filters">
-      <fieldset role="group">
+        <fieldset role="group">
         <input type="text"
                name="search"
                placeholder="{{ "audit_log.filter.search_placeholder"|trans }}"
@@ -20,6 +22,7 @@
         {% endif %}
       </fieldset>
     </form>
+    </div>
   </section>
   {% if entries.is_empty() %}
     <section>
