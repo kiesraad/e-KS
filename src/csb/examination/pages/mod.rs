@@ -10,6 +10,7 @@ use crate::{
 };
 
 mod general_information;
+mod i4;
 mod omission;
 mod overview;
 mod political_group;
@@ -17,6 +18,10 @@ mod political_group;
 #[derive(TypedPath)]
 #[typed_path("/csb/examination", rejection(AppError))]
 pub struct CsbExaminationOverviewPath;
+
+#[derive(TypedPath)]
+#[typed_path("/csb/examination/i4.pdf", rejection(AppError))]
+pub struct CsbI4DownloadPath;
 
 #[derive(TypedPath, Deserialize)]
 #[typed_path("/csb/examination/{stream_id}", rejection(AppError))]
@@ -103,6 +108,7 @@ impl CsbPoliticalGroup {
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(overview::overview)
+        .typed_get(i4::gen_i4)
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
         .typed_get(general_information::overview)

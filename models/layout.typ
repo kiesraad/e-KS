@@ -79,11 +79,13 @@
     headers.len(),
     message: "the number of headers does not match the number of columns",
   )
-  assert.eq(
-    columns.len(),
-    values.at(0).len(),
-    message: "the first row of values does not match the number of columns",
-  )
+  if values.len() > 0 {
+    assert.eq(
+      columns.len(),
+      values.at(0).len(),
+      message: "the first row of values does not match the number of columns",
+    )
+  }
 
   block(breakable: values.len() > 10, table(
     columns: columns,
