@@ -18,9 +18,9 @@
 
 
 = Verkiezing
-Het gaat om de verkiezing van *#input.election.name*
+Het gaat om de verkiezing van *#input.election_name*
 
-Dag van stemming *#input.election.date*
+Dag van stemming *#input.election_date*
 
 
 = Zitting

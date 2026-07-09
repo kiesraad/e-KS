@@ -1,8 +1,6 @@
 {
-  "election": {
-    "name": "de Eerste Kamer der Staten-Generaal",
-    "date": "24 mei 2027"
-  },
+  "election_name": "de Eerste Kamer der Staten-Generaal",
+  "election_date": "24 mei 2027",
   "public_session": {
     "location": "'s-Gravenhage",
     "date": "3 mei 2027",
