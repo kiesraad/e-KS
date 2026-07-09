@@ -31,6 +31,10 @@
           <a href="{{ detail.subject_path }}">{{ detail.subject_path }}</a>
         </dd>
       {% endif %}
+      <dt>{{ "audit_log.event.hash"|trans }}</dt>
+      <dd>
+        <code>{{ hash }}</code>
+      </dd>
     </dl>
     {% if detail.changes.is_empty() %}
       <p class="mb-md">{{ "audit_log.detail.no_changes"|trans }}</p>

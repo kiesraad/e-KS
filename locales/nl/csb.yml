@@ -19,9 +19,9 @@ form:
 import:
   error:
     already_imported: Deze politieke groepering is al geïmporteerd.
-    ambiguous_hash: De ingevoerde hash komt overeen met meer dan één dataset; voer meer tekens in.
-    invalid_hash: "Voer een geldige hash in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
-    not_found: Er is geen data gevonden voor de ingevoerde hash.
+    ambiguous_hash: De ingevoerde hash code komt overeen met meer dan één dataset; voer meer tekens in.
+    invalid_hash: "Voer een geldige hash code in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
+    not_found: Er is geen data gevonden voor de ingevoerde hash code.
 monitoring:
   cache: Lokale cache
   created_at: Aangemaakt
