@@ -2,12 +2,12 @@
 
 #let muted(content) = text(fill: rgb("888888"), content)
 
-#let highlight_color = rgb("F6F6F6")
+#let highlight_colour = rgb("F6F6F6")
 
-#let translator(locale) = (dutch, frisian) => if locale == "nl" { dutch } else { frisian }
+#let translator(locale) = (dutch, frisian) => if locale == "fry" { frisian } else { dutch }
 
 #let conf(doc, model, name, explanation, warning: none, input) = [
-  #let trans = translator(input.locale)
+  #let trans = if "locale" in input { translator(input.locale) } else { translator("nl") }
 
   #set text(
     lang: "nl",
@@ -16,6 +16,7 @@
     size: 9pt,
   )
 
+  // make all paragraphs sticky to prevent unnecessary page breaks within sections
   #show par: it => block(sticky: true, it)
 
   #let footer = grid(
@@ -24,9 +25,13 @@
     context grid(
       columns: (1fr, auto),
       [
-        #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
-        #h(1em)
-        #muted[Hash:] #mono(input.sha_hash)
+        #if "event_id" in input [
+          #muted(trans[Versie:][Ferzje:]) #mono[#input.event_id]
+          #h(1em)
+        ]
+        #if "sha_hash" in input [
+          #muted[Hash:] #mono(input.sha_hash)
+        ]
       ],
       counter(page).display((n, m) => trans([Pagina #n van #m], [Side #n fan #m]), both: true),
     ),
@@ -40,7 +45,14 @@
   )
 
   #set heading(numbering: "1.", supplement: none)
+  #show heading.where(level: 1): it => {
+    // prevent stickiness from sticking to level 1 headers (because all paragraphs are sticky)
+    block(sticky: false, spacing: 0pt)[#box(width: 0pt, height: 0pt)[]]
+    it
+  }
   #show heading.where(level: 1): set block(above: 2em, below: 0.75em)
+  #show heading.where(level: 2): set heading(numbering: none)
+  #show heading.where(level: 3): set heading(numbering: none)
 
   #set table(stroke: none, inset: 0.75em, align: horizon)
 
@@ -53,15 +65,15 @@
       name
     }),
     text(explanation),
-    if (warning != none) {
-      block(fill: highlight_color, inset: 1em, width: 100%, warning)
+    if warning != none {
+      block(fill: highlight_colour, inset: 1em, width: 100%, warning)
     }
   )
 
   #doc
 ]
 
-#let column_table(columns: (), headers: (), values: ()) = {
+#let column_table(columns: (), headers: (), values: (), align: horizon) = {
   assert.eq(
     columns.len(),
     headers.len(),
@@ -75,9 +87,21 @@
 
   block(breakable: values.len() > 10, table(
     columns: columns,
-    rows: 1.5em,
-    fill: (_, y) => if values.len() > 1 and calc.odd(y) { highlight_color },
+    align: align,
+    rows: 1.45em,
+    fill: (_, y) => if calc.odd(y) { highlight_colour },
     table.header(..headers.map(value => { text(style: "italic", value) })),
+    ..values.flatten(),
+  ))
+}
+/// Table without alternating row colors and row height that fits content
+#let plain_table(columns: (), headers: (), values: ()) = {
+  block(breakable: values.len() > 10, table(
+    columns: columns,
+    align: top,
+    gutter: 1em,
+    inset: 0em,
+    table.header(..headers.map(value => { text(style: "italic", size: .9em, value) })),
     ..values.flatten(),
   ))
 }
@@ -93,7 +117,8 @@
 #let label_table(values: ()) = block(breakable: false, table(
   columns: (1fr, 2fr),
   ..values.flatten(),
-  inset: (left: 0pt)
+  gutter: 1em,
+  inset: 0em
 ))
 
 /// Line with space to fill in later

@@ -76,7 +76,7 @@
 #if input.election_type != "EK" {
   [
     = #trans[
-      Verklaring van de #is_municipality("burgermeester", "gezaghebber")
+      Verklaring van de #is_municipality("burgemeester", "gezaghebber")
     ][
       Ferklearring fan de #is_municipality("boargemaster", "gesachhawwer")
     ]
