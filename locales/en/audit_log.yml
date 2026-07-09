@@ -96,3 +96,4 @@ filter:
   search_placeholder: "Search by name, ID..."
   stream: Filter by stream
 title: Audit log
+current_hash: "Current hash code:"

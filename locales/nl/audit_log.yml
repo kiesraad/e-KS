@@ -96,3 +96,4 @@ filter:
   search_placeholder: "Zoek op naam, ID..."
   stream: Stream filteren
 title: Logboek
+current_hash: "Huidige hash code:"
