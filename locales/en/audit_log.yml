@@ -53,6 +53,7 @@ event:
   developer_login: Developer login
   download_file: Downloaded file
   export_csv: Exported CSV
+  hash: Event hash
   hide_download_warning: Dismissed download warning
   import: Imported political group
   import_csv: Imported CSV
@@ -96,4 +97,3 @@ filter:
   search_placeholder: "Search by name, ID..."
   stream: Filter by stream
 title: Audit log
-current_hash: "Current hash code:"
