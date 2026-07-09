@@ -53,6 +53,7 @@ event:
   developer_login: Ontwikkelaar ingelogd
   download_file: Bestand gedownload
   export_csv: CSV geëxporteerd
+  hash: Event hash
   hide_download_warning: Downloadwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd

@@ -125,7 +125,7 @@ impl Person {
     pub fn initials_as_printed_on_list(&self, locale: AnyLocale) -> String {
         let mut initials = self.name.initials_with_first_name();
         if let Some(gender) = &self.personal_data.gender {
-            initials.push_str(&format!(" ({})", &gender.abbreviation(locale)));
+            initials.push_str(&format!(" ({})", gender.abbreviation(locale)));
         }
         initials
     }
