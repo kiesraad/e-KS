@@ -6,6 +6,7 @@ use crate::{
     AppError,
     common::{Bsn, BsnOrNoneConfirmed, DateOfBirth, DutchAddress, FullName},
     persons::{Person, PersonalData},
+    structs::csb::{Omission, OmissionCategory},
 };
 
 #[derive(Clone)]
@@ -42,7 +43,7 @@ impl BrpClient {
         }
     }
 
-    pub async fn verify(&self, person: &Person) -> Result<bool, AppError> {
+    pub async fn verify(&self, person: &Person) -> Result<Vec<Omission>, AppError> {
         let query = match person.personal_data.bsn {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
                 bsn: vec![bsn.clone()],
@@ -64,46 +65,147 @@ impl BrpClient {
                 unimplemented!("BRP search with address? Or manual verification")
             }
             None => {
-                unimplemented!(
-                    "Return error, because this person should have a BSN (or none confirmed)?"
-                )
+                // TODO: This needs to be implemented
+                tracing::warn!(
+                    "Person {} currently does not have a BSN filled in (or none confirmed)\n{:?}",
+                    person.id,
+                    person
+                );
+                return Err(AppError::GenericNotFound);
             }
+        };
+
+        let mut omissions = vec![];
+        let mut add_omission = |title: &str, description: &str, help_text: &str| {
+            omissions.push(Omission::new(
+                OmissionCategory::Candidate {
+                    person: person.id,
+                    lists: Vec::new(),
+                },
+                // TODO: These should likely be user configurable and translatable
+                title.to_string(),
+                description.to_string(),
+                help_text.to_string(),
+            ));
         };
 
         let brp_persons = self.get_persons(&query).await?;
         let brp_person = match brp_persons.as_slice() {
-            [] => todo!("Handle person not found"),
+            [] => {
+                add_omission(
+                    "Burgerservicenummer onbekend",
+                    "Er is geen persoon gevonden met dit burgerservicenummer",
+                    "Controleer of er een fout is gemaakt bij het invoeren",
+                );
+                return Ok(omissions);
+            }
             [brp_person] => brp_person,
-            [..] => todo!("Handle person not unique"),
+            [..] => {
+                add_omission(
+                    "Burgerservicenummer niet uniek",
+                    "Er zijn meerder personen gevonden met dit burgerservicenummer",
+                    "Controleer of er een fout is gemaakt bij het invoeren",
+                );
+                return Ok(omissions);
+            }
         };
 
-        let address_is_valid = match &brp_person.address {
+        match &brp_person.address {
             Some(address) => {
                 // Check all, except `known_in_bag`
-                person.address.street_name == address.street_name
-                    && person.address.house_number == address.house_number
-                    && person.address.house_number_addition == address.house_number_addition
-                    && person.address.locality == address.locality
-                    && person.address.postal_code == address.postal_code
+                if person.address.street_name != address.street_name {
+                    add_omission(
+                        "Onjuiste straatnaam",
+                        "De straatnaam komt niet overeen met de BRP",
+                        "Controleer de straatnaam",
+                    );
+                }
+                if person.address.house_number != address.house_number {
+                    add_omission(
+                        "Onjuist huisnummer",
+                        "Het huisnummer komt niet overeen met de BRP",
+                        "Controleer het huisnummer",
+                    );
+                }
+                if person.address.house_number_addition != address.house_number_addition {
+                    add_omission(
+                        "Onjuiste huisnummertoevoeging",
+                        "De huisnummertoevoeging komt niet overeen met de BRP",
+                        "Controleer de huisnummertoevoeging",
+                    );
+                }
+                if person.address.locality != address.locality {
+                    add_omission(
+                        "Onjuiste woonplaats",
+                        "De woonplaats komt niet overeen met de BRP",
+                        "Controleer de woonplaats",
+                    );
+                }
+                if person.address.postal_code != address.postal_code {
+                    add_omission(
+                        "Onjuiste postcode",
+                        "De postcode komt niet overeen met de BRP",
+                        "Controleer de postcode",
+                    );
+                }
             }
             None => {
-                eprintln!(
+                tracing::warn!(
                     "Not a Dutch Address or no address at all (because the field 'verblijfplaats' was not included)"
                 );
-                true
             }
         };
 
-        Ok(address_is_valid &&
-            // Don't check First name (roepnaam)
-            person.name.last_name == brp_person.name.last_name &&
-            person.name.last_name_prefix == brp_person.name.last_name_prefix &&
-            person.name.initials == brp_person.name.initials &&
-            // Check all fields of personal_data except country, check gender only when filled in
-            brp_person.personal_data.bsn == person.personal_data.bsn &&
-            brp_person.personal_data.date_of_birth  == person.personal_data.date_of_birth &&
-            // Gender field is optional, but if it is filled in, we check it
-            (brp_person.personal_data.gender == person.personal_data.gender || person.personal_data.gender.is_none()))
+        // Don't check first name (roepnaam)
+        if person.name.last_name != brp_person.name.last_name {
+            add_omission(
+                "Onjuiste achternaam",
+                "De achternaam komt niet overeen met de BRP",
+                "Controleer de achternaam",
+            );
+        }
+        if person.name.last_name_prefix != brp_person.name.last_name_prefix {
+            add_omission(
+                "Onjuist voorvoegsel",
+                "Het voorvoegsel komt niet overeen met de BRP",
+                "Controleer het voorvoegsel",
+            );
+        }
+        if person.name.initials != brp_person.name.initials {
+            add_omission(
+                "Onjuiste voorletters",
+                "De voorletters komen niet overeen met de BRP",
+                "Controleer de voorletters",
+            );
+        }
+
+        // Check all fields of personal_data except country, check gender only when filled in
+        if brp_person.personal_data.bsn != person.personal_data.bsn {
+            add_omission(
+                "Onjuist burgerservicenummer",
+                "Het burgerservicenummer komt niet overeen met de BRP",
+                "Controleer het burgerservicenummer",
+            );
+        }
+        if brp_person.personal_data.date_of_birth != person.personal_data.date_of_birth {
+            add_omission(
+                "Onjuiste geboortedatum",
+                "De geboortedatum komt niet overeen met de BRP",
+                "Controleer de geboortedatum",
+            );
+        }
+        // Gender field is optional, but if it is filled in, we check it
+        if person.personal_data.gender.is_some()
+            && brp_person.personal_data.gender != person.personal_data.gender
+        {
+            add_omission(
+                "Onjuist geslacht",
+                "Het geslacht komt niet overeen met de BRP",
+                "Controleer het geslacht",
+            );
+        }
+
+        Ok(omissions)
     }
 }
 
