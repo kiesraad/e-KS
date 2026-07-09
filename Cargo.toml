@@ -55,17 +55,17 @@ askama = "0.16.0" # 38M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 5M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 125M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 203M downloads (Andrew Gallant)
-phf = { version = "0.13.1", default-features = false } # 411M downloads (Steven Fackler)
-phf_codegen = "0.13.1"
-aes-gcm = "0.10.3" # 118M downloads (RustCrypto)
+phf = { version = "0.14.0", default-features = false } # 411M downloads (Steven Fackler)
+phf_codegen = "0.14.0"
+aes-gcm = "0.11.0" # 118M downloads (RustCrypto)
 hkdf = "0.13.0" # 198M downloads (RustCrypto)
 postcard = { version = "1.1.3", features = ["alloc"] } # 42M downloads (James Munns)
 secrecy = "0.10.3" # 126M downloads (Tony Arcieri)
 urlencoding = "2.1.3" # 213M downloads (Kornel)
 
 # yaml (development tooling)
-saphyr = "0.0.6"
-serde-saphyr = "0.0.13"
+saphyr = "0.0.9"
+serde-saphyr = "0.0.29"
 
 # tweedegolf
 memory-serve = "2.1.0"
