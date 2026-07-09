@@ -17,6 +17,10 @@ export default function addressLookup() {
     "country",
   ) as HTMLInputElement | null;
 
+  const addressWarning = document.getElementById(
+    "unknown-address",
+  ) as HTMLElement | null;
+
   // only run if all form fields are found
   if (
     !postalCodeInput ||
@@ -84,6 +88,10 @@ export default function addressLookup() {
 
       // highlight the address fields to indicate they were auto-filled
       setHighlight(allInputs, "success", true);
+
+      if (addressWarning) {
+        addressWarning.style.display = "none";
+      }
     } else {
       // No usable match — flag the inputs that drive the lookup so the user
       // knows the combination is unrecognised.

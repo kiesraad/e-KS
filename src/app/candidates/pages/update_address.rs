@@ -19,6 +19,7 @@ use super::CandidateListUpdateAddressPath;
 #[template(path = "app/candidates/pages/update_address.html")]
 struct PersonAddressUpdateTemplate {
     should_warn: bool,
+    address_unknown: bool,
     candidate: Candidate,
     form: FormData<AddressForm>,
     full_list: FullCandidateList,
@@ -37,6 +38,7 @@ pub async fn update_person_address(
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
+            address_unknown: candidate.person.address.is_unknown(),
             form,
             overlay: Overlay::new(&query),
             candidate: candidate.clone(),
@@ -59,6 +61,7 @@ pub async fn update_person_address_submit(
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
                 should_warn: query.should_warn(),
+                address_unknown: candidate.person.address.is_unknown(),
                 candidate,
                 form: form_data,
                 full_list,
