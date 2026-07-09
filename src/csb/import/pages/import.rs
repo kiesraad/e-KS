@@ -142,6 +142,7 @@ pub async fn do_brp_verification(
 
         let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
         for person in store.get_persons() {
+            tracing::info!("Checking person {} against the brp", person.id);
             ticker.tick().await;
 
             match brp_client.verify(&person).await {
@@ -161,6 +162,10 @@ pub async fn do_brp_verification(
             }
         }
 
+        tracing::info!(
+            "Finished checking candidates on list {:?}",
+            store.data.read().imported_data.political_group
+        );
         store.data.write().brp_verification_in_progress = false;
     });
 
