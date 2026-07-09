@@ -1,6 +1,7 @@
 use crate::{
     core::ModelLocale,
     finalise::{AllProblems, DocumentData},
+    utils::format_hash,
 };
 use askama::Template;
 use axum::{extract::State, response::IntoResponse};
@@ -24,6 +25,7 @@ struct AuditLogDetailTemplate {
     is_downloadable_state: bool,
     frisian_export_allowed: bool,
     overlay: Overlay,
+    hash: String,
 }
 
 pub async fn audit_log_detail(
@@ -39,6 +41,13 @@ pub async fn audit_log_detail(
 
     let temp_store = create_temp_store(&store, event_id);
     let is_downloadable_state = AllProblems::find_all(&temp_store)?.models_downloadable();
+
+    let hash = store
+        .get_events()
+        .iter()
+        .find(|e| e.event_id == event_id)
+        .ok_or(AppError::GenericNotFound)?
+        .hash;
 
     Ok(HtmlTemplate(
         AuditLogDetailTemplate {
@@ -56,6 +65,7 @@ pub async fn audit_log_detail(
             is_downloadable_state,
             frisian_export_allowed: context.election.frisian_export_allowed(),
             overlay: Overlay::default(),
+            hash: format_hash(&hash, true),
         },
         context,
     ))
