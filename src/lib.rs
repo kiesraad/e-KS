@@ -72,6 +72,7 @@ mod middleware;
 mod pagination;
 mod state;
 mod store;
+mod structs;
 mod utils;
 
 pub mod router;
@@ -121,6 +122,7 @@ pub(crate) use error::AppResponse;
 pub(crate) use form::{Form, TokenValue};
 pub(crate) use state::AppRequestState;
 pub(crate) use store::{DbHealth, Event};
+pub(crate) use structs::typst;
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
     redirect_success, transparent_string,

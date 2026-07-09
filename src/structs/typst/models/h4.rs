@@ -2,13 +2,14 @@ use serde::Serialize;
 
 use crate::{
     core::{ModelLocale, Pdf},
-    finalise::{DocumentData, structs::typst_model_data::TypstModelData},
+    finalise::DocumentData,
+    typst::TypstPgModelData,
 };
 
 #[derive(Debug, Serialize)]
 pub struct H4<'a> {
     #[serde(flatten)]
-    common: &'a TypstModelData,
+    common: &'a TypstPgModelData,
 }
 
 impl Pdf for H4<'_> {
