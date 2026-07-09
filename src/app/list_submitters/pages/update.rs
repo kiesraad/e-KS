@@ -30,7 +30,7 @@ pub async fn update_list_submitter(
     let should_warn = !list_submitter.is_empty();
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
-            form: FormData::new_with_data(list_submitter.into(), &context.session.csrf_token),
+            form: FormData::new_with_data(list_submitter.into()),
             should_warn,
             overlay: Overlay::new(&query),
         },
@@ -47,10 +47,7 @@ pub async fn update_list_submitter_submit(
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
-    match form.validate_update_with_checks(
-        &ListSubmitterData::from(list_submitter.clone()),
-        &context.session.csrf_token,
-    ) {
+    match form.validate_update_with_checks(&ListSubmitterData::from(list_submitter.clone())) {
         Err(form_data) => Ok(HtmlTemplate(
             ListSubmitterUpdateTemplate {
                 form: *form_data,
@@ -118,8 +115,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         form.name.last_name = "Updated".to_string();
 
         let response = update_list_submitter_submit(
@@ -157,8 +153,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         // a Dutch address (no country) that does not exist in the BAG
         form.address.street_name = "Nepstraat".to_string();
         form.address.house_number = "1".to_string();
@@ -198,8 +193,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         form.name.last_name = " ".to_string();
 
         let response = update_list_submitter_submit(

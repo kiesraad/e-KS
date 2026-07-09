@@ -10,7 +10,10 @@ use axum_extra::extract::CookieJar;
 use rand::RngExt;
 use secrecy::SecretString;
 
-use crate::state::{AuthServiceState, AuthState, SubjectId};
+use crate::{
+    SamlAcsPath, SamlLogoutPath, SamlMetadataPath,
+    state::{AuthServiceState, AuthState, SubjectId},
+};
 
 const PLACEHOLDER_MSG: &str = "auth-service placeholder: SAML SP not available in this build";
 
@@ -32,39 +35,34 @@ where
         value: random_bsn(),
         name_qualifier: PLACEHOLDER_NAME_QUALIFIER.to_string(),
     };
-    let name_id = Some(random_name_id());
+    let name_id = random_name_id();
     state
         .on_authenticated(subject_id, name_id, jar, &headers)
         .await
 }
 
 /// Placeholder SLO entry point (eID §7.7.1). Tears down the local session and
-/// redirects home without sending a LogoutRequest to the IdP.
-pub async fn handle_logout<S>(
-    State(state): State<S>,
-    State(_auth_state): State<AuthServiceState>,
-    jar: CookieJar,
-) -> Response
+/// redirects to `post_logout_redirect` without sending a LogoutRequest to the IdP.
+pub async fn handle_logout<S>(state: &S, jar: CookieJar, post_logout_redirect: &str) -> Response
 where
     S: AuthState,
-    AuthServiceState: FromRef<S>,
 {
     let (cleared_jar, _name_id) = state.logout_session(jar).await;
-    (cleared_jar, Redirect::to("/")).into_response()
+    (cleared_jar, Redirect::to(post_logout_redirect)).into_response()
 }
 
 /// `GET /saml/sp/metadata` signed SP metadata placeholder
-pub async fn handle_metadata() -> Response {
+pub async fn handle_metadata(_: SamlMetadataPath) -> Response {
     (StatusCode::NOT_IMPLEMENTED, PLACEHOLDER_MSG).into_response()
 }
 
 /// `GET /saml/sp/acs` Assertion Consumer Service placeholder
-pub async fn handle_acs() -> Response {
+pub async fn handle_acs(_: SamlAcsPath) -> Response {
     (StatusCode::NOT_IMPLEMENTED, PLACEHOLDER_MSG).into_response()
 }
 
 /// `POST /saml/sp/logout` placeholder
-pub async fn handle_sls() -> Response {
+pub async fn handle_sls(_: SamlLogoutPath) -> Response {
     (StatusCode::NOT_IMPLEMENTED, PLACEHOLDER_MSG).into_response()
 }
 

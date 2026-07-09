@@ -110,9 +110,11 @@ mod tests {
         let resp = client.get(&url).send().await.unwrap();
         assert_eq!(resp.status(), StatusCode::SEE_OTHER);
         resp.headers()
-            .get("set-cookie")
-            .and_then(|v| v.to_str().ok())
-            .and_then(|v| v.split(';').next())
+            .get_all("set-cookie")
+            .iter()
+            .filter_map(|v| v.to_str().ok())
+            .filter_map(|v| v.split(';').next())
+            .find(|pair| pair.starts_with(eks::SESSION_COOKIE_NAME))
             .expect("session cookie")
             .to_string()
     }

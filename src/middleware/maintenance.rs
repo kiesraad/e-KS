@@ -2,7 +2,7 @@
 //!
 //! When the database is unavailable (see [`crate::DbHealth`]), every
 //! DB-dependent route is short-circuited to a static 503 maintenance page
-use crate::{AppError, AppState, Context, DbHealth, HtmlTemplate, Locale, filters};
+use crate::{AppError, AppState, Context, DbHealth, HtmlTemplate, Locale, LocaleValues, filters};
 use askama::Template;
 use axum::{
     extract::{Request, State},
@@ -15,19 +15,6 @@ use axum::{
 #[template(path = "app/common/pages/maintenance.html")]
 struct MaintenanceTemplate {
     retry_path: String,
-}
-
-struct MaintenanceValues {
-    locale: Locale,
-}
-
-impl askama::Values for MaintenanceValues {
-    fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
-        match key {
-            "locale" => Some(&self.locale as &dyn std::any::Any),
-            _ => None,
-        }
-    }
 }
 
 /// Paths that must keep working while the database is unavailable: the health
@@ -83,11 +70,8 @@ fn maintenance_response(request: &Request) -> Response {
         .map(|pq| pq.as_str().to_string())
         .unwrap_or_else(|| "/".to_string());
 
-    let mut response = HtmlTemplate(
-        MaintenanceTemplate { retry_path },
-        MaintenanceValues { locale },
-    )
-    .into_response();
+    let mut response =
+        HtmlTemplate(MaintenanceTemplate { retry_path }, LocaleValues { locale }).into_response();
 
     *response.status_mut() = StatusCode::SERVICE_UNAVAILABLE;
     response

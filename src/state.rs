@@ -260,7 +260,7 @@ impl AuthState for AppState {
     async fn on_authenticated(
         &self,
         subject_id: SubjectId,
-        name_id: Option<String>,
+        name_id: String,
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> Response {
@@ -295,13 +295,14 @@ impl AuthState for AppState {
     }
 
     async fn logout_session(&self, jar: CookieJar) -> (CookieJar, Option<String>) {
-        // Drop the session (if any) and always clear the cookie.
+        // Drop the session (if any) and always clear the cookie; `Some` means
+        // a session was active.
         let name_id = match jar.get(SESSION_COOKIE_NAME).map(|c| c.value().to_string()) {
             Some(token) => self
                 .sessions
                 .remove(&token)
                 .await
-                .and_then(|session| session.saml_name_id),
+                .map(|session| session.saml_name_id),
             None => None,
         };
         (jar.remove(build_removal_cookie()), name_id)
@@ -417,7 +418,7 @@ mod tests {
         let response = state
             .on_authenticated(
                 subject("999999990"),
-                Some("name-id-xyz".to_string()),
+                "name-id-xyz".to_string(),
                 CookieJar::new(),
                 &HeaderMap::new(),
             )
@@ -448,7 +449,7 @@ mod tests {
         let response = state
             .on_authenticated(
                 subject("999999990"),
-                Some("name-id-xyz".to_string()),
+                "name-id-xyz".to_string(),
                 CookieJar::new(),
                 &HeaderMap::new(),
             )
@@ -484,7 +485,7 @@ mod tests {
     async fn logout_session_returns_name_id_and_clears_cookie() {
         let state = AppState::new_for_tests().await;
         let mut session = Session::new();
-        session.saml_name_id = Some("name-id-xyz".to_string());
+        session.saml_name_id = "name-id-xyz".to_string();
         let token = session.token_string();
         state.sessions.insert(session).await;
 
@@ -503,16 +504,16 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn logout_session_missing_name_id_still_clears_and_ends_session() {
-        // Regression: a NameID-less session used to return early, clearing nothing.
+    async fn logout_session_with_empty_name_id_still_clears_and_ends_session() {
+        // An empty NameID must still clear the cookie and end the session.
         let state = AppState::new_for_tests().await;
-        let session = Session::new(); // saml_name_id stays None
+        let session = Session::new(); // saml_name_id defaults to ""
         let token = session.token_string();
         state.sessions.insert(session).await;
 
         let jar = jar_with_session_cookie(&token);
         let (jar, name_id) = state.logout_session(jar).await;
-        assert!(name_id.is_none());
+        assert_eq!(name_id.as_deref(), Some(""));
         assert!(clears_session_cookie(jar));
         assert!(
             state
@@ -536,7 +537,7 @@ mod tests {
         let _ = state
             .on_authenticated(
                 subject("999999990"),
-                Some("name-id-xyz".to_string()),
+                "name-id-xyz".to_string(),
                 jar,
                 &HeaderMap::new(),
             )

@@ -7,7 +7,6 @@ use crate::ElectionConfig;
 /// has an effect when the `dev-features` / `fixtures` features are compiled in.
 #[derive(Deserialize)]
 pub struct SelectElectionForm {
-    pub csrf_token: String,
     election: String,
     region_province: Option<String>,
     region_water_council: Option<String>,
@@ -50,21 +49,20 @@ mod tests {
 
     #[test]
     fn deserializes_without_load_fixtures() {
-        let form = parse("csrf_token=abc&election=EK27");
-        assert_eq!(form.csrf_token, "abc");
+        let form = parse("election=EK27");
         assert_eq!(form.election_config(), Some(ElectionConfig::EK27));
         assert!(!form.load_fixtures());
     }
 
     #[test]
     fn load_fixtures_checkbox_present_is_true() {
-        let form = parse("csrf_token=t&election=EK27&load_fixtures=true");
+        let form = parse("election=EK27&load_fixtures=true");
         assert!(form.load_fixtures());
     }
 
     #[test]
     fn ps27_uses_region_province() {
-        let form = parse("csrf_token=t&election=PS27&region_province=GR");
+        let form = parse("election=PS27&region_province=GR");
         assert_eq!(
             form.election_config(),
             Some(ElectionConfig::PS27(Province::GR))

@@ -25,7 +25,7 @@ pub async fn create_name_authorisation(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         NameAuthorisationCreateTemplate {
-            form: FormData::new(&context.session.csrf_token),
+            form: FormData::new(),
             overlay: Overlay::new(&query),
         },
         context,
@@ -39,7 +39,7 @@ pub async fn create_name_authorisation_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<NameAuthorisationForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
+    match form.validate_create() {
         Err(form_data) => Ok(HtmlTemplate(
             NameAuthorisationCreateTemplate {
                 form: form_data,
@@ -93,8 +93,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_name_authorisation_form(&csrf_token);
+        let form = sample_name_authorisation_form();
 
         let response = create_name_authorisation_submit(
             NameAuthorisationCreatePath {},
@@ -130,8 +129,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_name_authorisation_form(&csrf_token);
+        let mut form = sample_name_authorisation_form();
         form.name.last_name = " ".to_string();
 
         let response = create_name_authorisation_submit(

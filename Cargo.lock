@@ -1107,7 +1107,6 @@ dependencies = [
  "chrono-tz",
  "csv",
  "eml-nl",
- "futures-core",
  "hkdf",
  "http-body-util",
  "hyper-util",
@@ -1126,6 +1125,7 @@ dependencies = [
  "serde_urlencoded",
  "sha2 0.11.0",
  "sqlx",
+ "subtle",
  "tokio",
  "tokio-util",
  "tower",
@@ -1142,7 +1142,7 @@ dependencies = [
 
 [[package]]
 name = "eks-development"
-version = "0.4.13"
+version = "0.4.14"
 dependencies = [
  "anyhow",
  "regex",

@@ -5,12 +5,11 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, Overlay, QueryParamState,
     candidate_lists::{CandidateList, FullCandidateList},
     candidates::Candidate,
     common::{HasSeverity, Problematic},
     filters,
-    form::{EmptyForm, FormData},
 };
 
 use super::CandidateListDeletePersonPath;
@@ -21,7 +20,6 @@ struct DeleteCandidateTemplate {
     candidate: Candidate,
     full_list: FullCandidateList,
     on_candidate_lists: usize,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -36,7 +34,6 @@ pub async fn delete_person_confirm(
     Ok(HtmlTemplate(
         DeleteCandidateTemplate {
             on_candidate_lists: store.count_candidate_lists(candidate.person.id),
-            form: FormData::new(&context.session.csrf_token),
             candidate,
             full_list,
             overlay: Overlay::new(&query),
@@ -49,19 +46,13 @@ pub async fn delete_person(
     _: CandidateListDeletePersonPath,
     candidate: Candidate,
     candidate_list: CandidateList,
-    context: Context,
+    _context: Context,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
-        Err(_) => Err(AppError::CsrfTokenInvalid),
-        Ok(_) => {
-            candidate.person.delete(&store).await?;
+    candidate.person.delete(&store).await?;
 
-            Ok(query.redirect_or(candidate_list.view_path()))
-        }
-    }
+    Ok(query.redirect_or(candidate_list.view_path()))
 }
 
 #[cfg(test)]
@@ -70,7 +61,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppStore, Form, QueryParamState,
+        AppStore, QueryParamState,
         candidate_lists::{CandidateListId, FullCandidateList},
         persons::PersonId,
         test_utils::{
@@ -148,7 +139,6 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_person(
             CandidateListDeletePersonPath {
@@ -160,7 +150,6 @@ mod tests {
             context,
             store.clone(),
             Query(QueryParamState::default()),
-            Form(EmptyForm::new(csrf_token)),
         )
         .await?;
 

@@ -19,7 +19,6 @@ pub enum AppError {
     InternalServerError,
     #[default]
     GenericNotFound,
-    CsrfTokenInvalid,
     NotFound(String),
     UserError(String),
     #[cfg(feature = "database")]
@@ -68,7 +67,6 @@ impl Display for AppError {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
             AppError::ConfigLoadError(err) => write!(f, "Configuration load error: {err}"),
-            AppError::CsrfTokenInvalid => write!(f, "CSRF token is invalid"),
             #[cfg(feature = "database")]
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
             #[cfg(feature = "embed-typst")]

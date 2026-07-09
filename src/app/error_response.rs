@@ -8,7 +8,10 @@ use axum::{
 use serde::Serialize;
 use tracing::{error, warn};
 
-use crate::{AppError, Context, HtmlTemplate, filters};
+use crate::{
+    AppError, Context, HtmlTemplate, Locale, LocaleValues, auth::csrf_guard::CsrfRejection,
+    filters, trans,
+};
 
 /// Variants of error responses that can be sent to the client
 #[derive(Serialize)]
@@ -73,6 +76,44 @@ impl IntoResponse for ErrorResponse {
         response.extensions_mut().insert(error_template);
         response
     }
+}
+
+#[derive(Template)]
+#[template(path = "app/common/pages/request_error.html")]
+struct RequestErrorTemplate {
+    title: String,
+    message: String,
+}
+
+/// Styled CSRF rejection page, rendered directly with the session locale
+/// (the rejection short-circuits above `render_error_pages`).
+pub(crate) fn csrf_rejection_response(rejection: CsrfRejection, locale: Locale) -> Response {
+    let (status_code, title, message) = match rejection {
+        CsrfRejection::InvalidToken => (
+            StatusCode::BAD_REQUEST,
+            trans!("common.request_error.csrf_title", locale),
+            trans!("common.request_error.csrf_message", locale),
+        ),
+        CsrfRejection::BodyTooLarge => (
+            StatusCode::PAYLOAD_TOO_LARGE,
+            trans!("common.request_error.too_large_title", locale),
+            trans!("common.request_error.too_large_message", locale),
+        ),
+        CsrfRejection::UnreadableBody => (
+            StatusCode::BAD_REQUEST,
+            trans!("common.request_error.unreadable_title", locale),
+            trans!("common.request_error.unreadable_message", locale),
+        ),
+    };
+    warn!(?rejection, "mutating request rejected by CSRF enforcement");
+
+    let mut response = HtmlTemplate(
+        RequestErrorTemplate { title, message },
+        LocaleValues { locale },
+    )
+    .into_response();
+    *response.status_mut() = status_code;
+    response
 }
 
 /// Middleware to render error pages based on ErrorTemplate in response extensions
@@ -140,7 +181,6 @@ impl ErrorResponse {
         let (error, message) = match err {
             AppError::NotFound(msg) => (NotFound, msg.to_string()),
             AppError::GenericNotFound => (NotFound, "Page not found".to_string()),
-            AppError::CsrfTokenInvalid => (BadRequest, "Invalid CSRF token".to_string()),
             AppError::Unauthorised => (
                 Unauthorised,
                 "You are not authorised to perform this action.".to_string(),
@@ -211,7 +251,6 @@ fn message_is_safe_to_log(err: &AppError) -> bool {
         err,
         AppError::Unauthorised
             | AppError::GenericNotFound
-            | AppError::CsrfTokenInvalid
             | AppError::UserError(_)
             | AppError::NotFound(_)
             | AppError::IncompleteData(_)

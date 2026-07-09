@@ -138,12 +138,7 @@ pub async fn add_existing_person(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
-        AddExistingPersonTemplate::from(
-            list_id,
-            None,
-            &store,
-            FormData::new(&context.session.csrf_token),
-        )?,
+        AddExistingPersonTemplate::from(list_id, None, &store, FormData::new())?,
         context,
     ))
 }
@@ -157,7 +152,7 @@ pub async fn add_person_to_candidate_list(
 ) -> Result<Response, AppError> {
     context.show_success_alert = true;
 
-    match form.validate_create(&context.session.csrf_token) {
+    match form.validate_create() {
         Err(form_data) => Ok(HtmlTemplate(
             AddExistingPersonTemplate::from(
                 full_list.list.id,
@@ -185,7 +180,7 @@ pub async fn add_person_to_candidate_list(
                     full_list.list.id,
                     add_person.added_position,
                     &store,
-                    FormData::new_with_data(add_person.into(), &context.session.csrf_token),
+                    FormData::new_with_data(add_person.into()),
                 )?,
                 context,
             )
@@ -198,7 +193,7 @@ pub async fn add_person_to_candidate_list(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, TokenValue,
+        AppStore, Context, Form,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -244,11 +239,9 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: person.id.to_string(),
             added_position: String::new(),
-            csrf_token,
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -289,11 +282,9 @@ mod tests {
         new_person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: new_person.id.to_string(),
             added_position: String::new(),
-            csrf_token,
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -337,11 +328,9 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: AddPersonAction::AddAll.to_string(),
             added_position: String::new(),
-            csrf_token,
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -387,7 +376,6 @@ mod tests {
         let form = AddPersonForm {
             action: AddPersonAction::AddAll.to_string(),
             added_position: String::new(),
-            csrf_token: context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -433,7 +421,6 @@ mod tests {
         let form = AddPersonForm {
             action: overflow.id.to_string(),
             added_position: String::new(),
-            csrf_token: context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -483,7 +470,6 @@ mod tests {
         let add_all_form = AddPersonForm {
             action: AddPersonAction::AddAll.to_string(),
             added_position: String::new(),
-            csrf_token: add_all_context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -503,7 +489,6 @@ mod tests {
         let remove_all_form = AddPersonForm {
             action: AddPersonAction::RemoveAll.to_string(),
             added_position: "2".into(),
-            csrf_token: remove_all_context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -541,7 +526,6 @@ mod tests {
         let form = AddPersonForm {
             action: person.id.to_string(),
             added_position: String::new(),
-            csrf_token: context.session.csrf_token.clone(),
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
@@ -565,42 +549,6 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_person_to_candidate_list_invalid_csrf_does_not_add() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-        let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
-        let person = sample_person_with_last_name(PersonId::new(), "Bakker");
-
-        list.create(&store).await?;
-        person.create(&store).await?;
-
-        let context = Context::new_test_without_db();
-        let form = AddPersonForm {
-            action: person.id.to_string(),
-            added_position: String::new(),
-            csrf_token: TokenValue("invalid".to_string()),
-        };
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-
-        let response = add_person_to_candidate_list(
-            AddCandidatePath { list_id },
-            full_list,
-            store.clone(),
-            context,
-            Form(form),
-        )
-        .await?;
-
-        assert_eq!(response.status(), StatusCode::OK);
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        assert!(full_list.candidates.is_empty());
-
-        Ok(())
-    }
-
-    #[tokio::test]
     async fn add_person_to_candidate_list_removes_candidate() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let list_id = CandidateListId::new();
@@ -614,11 +562,9 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let form = AddPersonForm {
             action: remove_person.id.to_string(),
             added_position: String::new(),
-            csrf_token,
         };
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");

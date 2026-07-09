@@ -7,6 +7,7 @@ mod option_string_ext;
 mod overlay;
 mod query_param_state;
 mod redirect;
+mod sha256_hex;
 mod slugify_teletex;
 
 pub mod bag;
@@ -32,4 +33,5 @@ pub use option_string_ext::{OptionAsStrExt, OptionStringExt};
 pub use overlay::Overlay;
 pub use query_param_state::QueryParamState;
 pub use redirect::redirect_success;
+pub use sha256_hex::sha256_hex;
 pub use slugify_teletex::slugify_teletex;

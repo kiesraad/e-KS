@@ -15,9 +15,10 @@ export class CsvImportExportPage {
     this.buttonDownload = this.page.getByRole("link", {
       name: "Download CSV bestand",
     });
-    this.buttonUpload = this.page.getByRole("button", {
-      name: "Upload CSV bestand",
-    });
+    // The file input's aria-label also has button role, so match the <button>.
+    this.buttonUpload = this.page
+      .getByRole("button", { name: "Upload CSV bestand" })
+      .and(this.page.locator("button"));
     this.buttonDownloadTemplate = this.page.getByRole("button", {
       name: "Download CSV sjabloon",
     });

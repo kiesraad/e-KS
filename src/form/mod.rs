@@ -1,12 +1,10 @@
 mod csrf;
-mod empty_form;
 mod file_form;
 mod form_data;
 mod string_validators;
 mod validation_error;
 
-pub use csrf::{TokenValue, WithCsrfToken, generate_csrf_token};
-pub use empty_form::EmptyForm;
+pub use csrf::{TokenValue, csrf_token_matches, generate_csrf_token};
 pub use file_form::FileForm;
 pub use form_data::FormData;
 pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};

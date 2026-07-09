@@ -16,21 +16,12 @@ use super::CsbImportPath;
 #[derive(Template)]
 #[template(path = "csb/import/pages/import.html")]
 struct CsbImportTemplate {
-    csrf_token: String,
     hash: String,
     error: Option<String>,
 }
 
 fn render_import(context: CsbContext, hash: String, error: Option<String>) -> Response {
-    HtmlTemplate(
-        CsbImportTemplate {
-            csrf_token: context.session.csrf_token.to_string(),
-            hash,
-            error,
-        },
-        context,
-    )
-    .into_response()
+    HtmlTemplate(CsbImportTemplate { hash, error }, context).into_response()
 }
 
 /// Render the placeholder import page.
@@ -41,7 +32,6 @@ pub async fn import(_: CsbImportPath, context: CsbContext) -> Result<Response, A
 /// Form payload for the import page: the chain hash of the package to import.
 #[derive(Debug, Deserialize)]
 pub struct ImportForm {
-    pub csrf_token: String,
     pub hash: String,
 }
 
@@ -52,8 +42,6 @@ pub async fn import_submit(
     context: CsbContext,
     Form(form): Form<ImportForm>,
 ) -> Result<Response, AppError> {
-    context.session.consume_csrf(&form.csrf_token)?;
-
     let hash = form.hash.clone();
     let locale = context.session.locale;
     match do_import(&state, form, locale).await {
@@ -172,35 +160,15 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn import_submit_rejects_invalid_csrf() {
-        let state = AppState::new_for_tests().await;
-
-        let result = import_submit(
-            CsbImportPath {},
-            State(state),
-            CsbContext::new_test(),
-            Form(ImportForm {
-                csrf_token: "wrong".to_string(),
-                hash: "F381 3DE7".to_string(),
-            }),
-        )
-        .await;
-
-        assert!(matches!(result, Err(AppError::CsrfTokenInvalid)));
-    }
-
-    #[tokio::test]
     async fn import_submit_rejects_unparseable_hash() {
         let state = AppState::new_for_tests().await;
         let context = CsbContext::new_test();
-        let csrf_token = context.session.csrf_token.to_string();
 
         let response = import_submit(
             CsbImportPath {},
             State(state),
             context,
             Form(ImportForm {
-                csrf_token,
                 hash: "not-a-hash".to_string(),
             }),
         )
@@ -217,14 +185,12 @@ mod tests {
         // well-formed hash resolves to no package.
         let state = AppState::new_for_tests().await;
         let context = CsbContext::new_test();
-        let csrf_token = context.session.csrf_token.to_string();
 
         let response = import_submit(
             CsbImportPath {},
             State(state),
             context,
             Form(ImportForm {
-                csrf_token,
                 hash: "F381 3DE7 96D3 8033".to_string(),
             }),
         )
@@ -241,13 +207,12 @@ mod tests {
         let (source_stream, hash) = seed_source_event(&state).await?;
 
         let context = CsbContext::new_test();
-        let csrf_token = context.session.csrf_token.to_string();
 
         let response = import_submit(
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm { csrf_token, hash }),
+            Form(ImportForm { hash }),
         )
         .await?
         .into_response();
@@ -273,15 +238,11 @@ mod tests {
 
         // First import succeeds.
         let context = CsbContext::new_test();
-        let csrf_token = context.session.csrf_token.to_string();
         let response = import_submit(
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm {
-                csrf_token,
-                hash: hash.clone(),
-            }),
+            Form(ImportForm { hash: hash.clone() }),
         )
         .await?
         .into_response();
@@ -291,12 +252,11 @@ mod tests {
         // store (the in-memory backend persists nothing, so the duplicate check
         // must consult the live registry).
         let context = CsbContext::new_test();
-        let csrf_token = context.session.csrf_token.to_string();
         let response = import_submit(
             CsbImportPath {},
             State(state.clone()),
             context,
-            Form(ImportForm { csrf_token, hash }),
+            Form(ImportForm { hash }),
         )
         .await?
         .into_response();

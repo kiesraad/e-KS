@@ -1,5 +1,4 @@
 <fieldset>
-  {% for error in form|error("csrf_token") %}<span class="error">{{ error }}</span>{% endfor %}
   <p class="form-field form-field-sm">
     <label for="position">{{ "candidate_list.fields.position"|trans }}</label>
     <input type="number"

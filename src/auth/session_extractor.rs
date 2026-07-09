@@ -5,9 +5,8 @@ use axum::{
     http::{HeaderMap, header::USER_AGENT, request::Parts},
 };
 use axum_extra::extract::cookie::{Cookie, SameSite};
-use sha2::{Digest, Sha256};
 
-use crate::{AppError, Session};
+use crate::{AppError, Session, utils::sha256_hex};
 
 /// Name of the session cookie. The `__Host-` prefix (production only) forbids a
 /// `Domain` and requires `Secure` + `Path=/`, blocking sibling-subdomain
@@ -17,23 +16,33 @@ pub const SESSION_COOKIE_NAME: &str = "EKS_SESSION_ID";
 #[cfg(not(feature = "dev-features"))]
 pub const SESSION_COOKIE_NAME: &str = "__Host-EKS_SESSION_ID";
 
+/// Cookie with the shared session cookie attributes applied.
+fn build_cookie(name: &'static str, value: String) -> Cookie<'static> {
+    let mut cookie = Cookie::new(name, value);
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
+/// Expired twin of a cookie for clearing it. Attributes must match the set
+/// cookie (esp. `Secure` + `Path=/` for the `__Host-` prefix) or it lingers.
+fn build_expired_cookie(name: &'static str) -> Cookie<'static> {
+    let mut cookie = Cookie::from(name);
+    apply_session_cookie_attributes(&mut cookie);
+    cookie
+}
+
 /// Builds the session cookie. Only valid right after creation, while the raw
 /// token is still in memory.
 pub(crate) fn build_session_cookie(session: &Session) -> Cookie<'static> {
     let token = session
         .reveal_token()
         .expect("build_session_cookie requires a freshly created session with its raw token");
-    let mut cookie = Cookie::new(SESSION_COOKIE_NAME, token.to_exposed_string());
-    apply_session_cookie_attributes(&mut cookie);
-    cookie
+    build_cookie(SESSION_COOKIE_NAME, token.to_exposed_string())
 }
 
-/// Expired twin of the session cookie for clearing it. Attributes must match the
-/// set cookie (esp. `Secure` + `Path=/` for the `__Host-` prefix) or it lingers.
+/// Expired twin of the session cookie for clearing it.
 pub(crate) fn build_removal_cookie() -> Cookie<'static> {
-    let mut cookie = Cookie::from(SESSION_COOKIE_NAME);
-    apply_session_cookie_attributes(&mut cookie);
-    cookie
+    build_expired_cookie(SESSION_COOKIE_NAME)
 }
 
 fn apply_session_cookie_attributes(cookie: &mut Cookie<'static>) {
@@ -53,11 +62,9 @@ pub(crate) fn user_agent_hash(headers: &HeaderMap) -> String {
         .get(USER_AGENT)
         .and_then(|value| value.to_str().ok())
         .unwrap_or_default();
-    Sha256::digest(ua.as_bytes())
-        .iter()
-        .take(8)
-        .map(|b| format!("{b:02x}"))
-        .collect()
+    let mut hex = sha256_hex(ua.as_bytes());
+    hex.truncate(16); // first 8 bytes of the digest
+    hex
 }
 
 /// Extracts the current session from request extensions.

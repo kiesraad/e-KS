@@ -10,7 +10,6 @@ pub enum ValidationError {
     InvalidEmail,
     ValueShouldNotBeEmpty,
     ChooseAtLeastOneOption,
-    InvalidCsrfToken,
     ValueTooLong(ActualLength, MaxLength),
     ValueTooShort(ActualLength, MinLength),
     InvalidChecksum,
@@ -45,7 +44,6 @@ impl ValidationError {
             ValidationError::ValueTooShort(actual, min) => {
                 trans!("validation.value_too_short", locale, actual, min)
             }
-            ValidationError::InvalidCsrfToken => trans!("validation.invalid_csrf_token", locale),
             ValidationError::InvalidChecksum => trans!("validation.invalid_bsn", locale),
             ValidationError::InvalidPlaceOfResidence => {
                 trans!("validation.invalid_place_of_residence", locale)
@@ -72,10 +70,6 @@ mod tests {
 
     #[test]
     fn formats_messages_in_english() {
-        assert_eq!(
-            ValidationError::InvalidCsrfToken.message(Locale::En),
-            "The CSRF token is invalid."
-        );
         assert_eq!(
             ValidationError::InvalidValue.message(Locale::En),
             "The provided value is not valid."

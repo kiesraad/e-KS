@@ -42,6 +42,7 @@ impl askama::Values for CsbContext {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
+            "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
             "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),

@@ -6,7 +6,7 @@ use crate::{
     ElectionConfig, ElectoralDistrict, Locale,
     constants::{DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIMEZONE},
     core::AnyLocale,
-    form::{FormData, WithCsrfToken},
+    form::FormData,
     persons::Person,
 };
 
@@ -194,7 +194,7 @@ pub fn trans(
 }
 
 #[askama::filter_fn]
-pub fn error<T: WithCsrfToken>(
+pub fn error<T>(
     form: &FormData<T>,
     values: &dyn askama::Values,
     name: &str,

@@ -20,5 +20,9 @@ pub mod pending_request_store;
 #[cfg(feature = "database")]
 mod pending_request_db;
 
+/// CSRF token verification for mutating requests, driven by the session
+/// middleware.
+pub mod csrf_guard;
+
 /// Session cookie helpers and request extraction.
 pub mod session_extractor;

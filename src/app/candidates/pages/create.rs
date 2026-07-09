@@ -26,7 +26,7 @@ pub async fn create_person_candidate_list(
     Ok(HtmlTemplate(
         PersonCreateTemplate {
             full_list,
-            form: FormData::new(&context.session.csrf_token),
+            form: FormData::new(),
             overlay: Overlay::default(),
         },
         context,
@@ -41,7 +41,7 @@ pub async fn create_person_candidate_list_submit(
     store: AppStore,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_token, &store) {
+    match form.validate_create_with_checks(&store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonCreateTemplate {
                 full_list,
@@ -123,8 +123,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_person_form(&csrf_token);
+        let form = sample_person_form();
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
@@ -169,8 +168,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_person_form(&csrf_token);
+        let form = sample_person_form();
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
 
@@ -209,8 +207,7 @@ mod tests {
         list.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.name.last_name = " ".to_string();
 
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");

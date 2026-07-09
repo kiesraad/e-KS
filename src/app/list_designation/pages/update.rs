@@ -34,10 +34,7 @@ pub async fn update_list_designation(
     Ok(HtmlTemplate(
         ListDesignationUpdateTemplate {
             steps,
-            form: FormData::new_with_data(
-                political_group.list_designation.into(),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(political_group.list_designation.into()),
         },
         context,
     )
@@ -54,10 +51,7 @@ pub async fn update_list_designation_submit(
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
 
-    match form.validate_update(
-        &political_group.list_designation.into(),
-        &context.session.csrf_token,
-    ) {
+    match form.validate_update(&political_group.list_designation.into()) {
         Err(form_data) => Ok(HtmlTemplate(
             ListDesignationUpdateTemplate {
                 form: form_data,
@@ -124,7 +118,6 @@ mod tests {
         let context = Context::new_test_without_db();
         let form = ListDesignationForm {
             list_designation_type: "standalone".to_string(),
-            csrf_token: context.session.csrf_token.clone(),
         };
 
         let response = update_list_designation_submit(
@@ -167,7 +160,6 @@ mod tests {
         let context = Context::new_test_without_db();
         let form = ListDesignationForm {
             list_designation_type: "blank".to_string(),
-            csrf_token: context.session.csrf_token.clone(),
         };
 
         let response = update_list_designation_submit(

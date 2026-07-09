@@ -9,7 +9,6 @@ use syn::{Data, DeriveInput, Fields, LitStr, Type, parse_macro_input};
 /// - `#[validate(parse = "Type")]` to parse via `Type::from_str`.
 /// - `#[validate(optional)]` to treat empty strings as `None`.
 /// - `#[validate(not_empty)]` to reject empty values via `is_empty`.
-/// - `#[validate(csrf)]` to validate CSRF tokens.
 /// - `#[validate(ignore)]` to skip validation and mapping for a field.
 /// - `#[validate(flatten)]` to validate a nested form and prefix its errors with `field.child`.
 #[proc_macro_derive(Validate, attributes(validate))]
@@ -24,7 +23,6 @@ pub fn derive_validate(input: TokenStream) -> TokenStream {
 #[derive(Default)]
 struct FieldOptions {
     optional: bool,
-    csrf: bool,
     ignore: bool,
     parse_ty: Option<Type>,
     flatten: bool,
@@ -50,7 +48,6 @@ struct FieldBlocks {
     field_inits: Vec<proc_macro2::TokenStream>,
     field_blocks_create: Vec<proc_macro2::TokenStream>,
     field_blocks_update: Vec<proc_macro2::TokenStream>,
-    has_csrf: bool,
 }
 
 fn collect_named_fields(input: &DeriveInput) -> syn::Result<Vec<&syn::Field>> {
@@ -73,7 +70,6 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
     let mut field_inits = Vec::new();
     let mut field_blocks_create = Vec::new();
     let mut field_blocks_update = Vec::new();
-    let mut has_csrf = false;
 
     for field in fields {
         let ident = field
@@ -83,20 +79,6 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         let field_name = ident.to_string();
         let opts = parse_field_options(field)?;
 
-        if opts.csrf {
-            has_csrf = true;
-            let block = quote! {
-                if self.#ident != *csrf_token {
-                    errors.push((
-                        #field_name.to_string(),
-                        crate::form::ValidationError::InvalidCsrfToken,
-                    ));
-                }
-            };
-            field_blocks_create.push(block.clone());
-            field_blocks_update.push(block);
-            continue;
-        }
         if opts.ignore {
             continue;
         }
@@ -135,7 +117,6 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
         field_inits,
         field_blocks_create,
         field_blocks_update,
-        has_csrf,
     })
 }
 
@@ -150,62 +131,27 @@ fn is_type_named(ty: &Type, name: &str) -> bool {
         .is_some_and(|segment| segment.ident == name)
 }
 
-fn build_with_csrf_impl(struct_name: &syn::Ident, has_csrf: bool) -> proc_macro2::TokenStream {
-    if has_csrf {
-        quote! {
-            impl crate::form::WithCsrfToken for #struct_name {
-                fn with_csrf_token(self, csrf_token: crate::form::TokenValue) -> Self {
-                    #[allow(clippy::needless_update)]
-                    #struct_name {
-                        csrf_token,
-                        ..self
-                    }
-                }
-            }
-        }
-    } else {
-        quote! {
-            impl crate::form::WithCsrfToken for #struct_name {
-                fn with_csrf_token(self, _csrf_token: crate::form::TokenValue) -> Self {
-                    self
-                }
-            }
-        }
-    }
-}
-
 fn build_validate_impl(
     struct_name: &syn::Ident,
     target: &Type,
     field_blocks: &FieldBlocks,
 ) -> proc_macro2::TokenStream {
-    let with_csrf_impl = build_with_csrf_impl(struct_name, field_blocks.has_csrf);
     let FieldBlocks {
         field_inits,
         field_blocks_create,
         field_blocks_update,
-        ..
     } = field_blocks;
 
     quote! {
-        #with_csrf_impl
-
         impl #struct_name {
-            pub fn validate_create(
-                self,
-                csrf_token: &crate::form::TokenValue,
-            ) -> Result<#target, crate::form::FormData<Self>> {
+            pub fn validate_create(self) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
 
                 #(#field_blocks_create)*
 
                 if !errors.is_empty() {
                     tracing::debug!("Validation errors: {errors:?}");
-                    return Err(crate::form::FormData::new_with_errors(
-                        self,
-                        csrf_token,
-                        errors,
-                    ));
+                    return Err(crate::form::FormData::new_with_errors(self, errors));
                 }
 
                 #[allow(clippy::needless_update)]
@@ -218,7 +164,6 @@ fn build_validate_impl(
             pub fn validate_update(
                 self,
                 current: &#target,
-                csrf_token: &crate::form::TokenValue,
             ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
 
@@ -226,11 +171,7 @@ fn build_validate_impl(
 
                 if !errors.is_empty() {
                     tracing::debug!("Validation errors: {errors:?}");
-                    return Err(crate::form::FormData::new_with_errors(
-                        self,
-                        csrf_token,
-                        errors,
-                    ));
+                    return Err(crate::form::FormData::new_with_errors(self, errors));
                 }
 
                 #[allow(clippy::needless_update)]
@@ -296,9 +237,6 @@ fn apply_field_option(
     if meta.path.is_ident("not_empty") {
         return set_not_empty(opts, &meta);
     }
-    if meta.path.is_ident("csrf") {
-        return set_csrf(opts, &meta);
-    }
     if meta.path.is_ident("ignore") {
         return set_ignore(opts, &meta);
     }
@@ -324,18 +262,10 @@ fn set_not_empty(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> 
     if opts.not_empty {
         return Err(meta.error("not_empty can only be set once"));
     }
-    if opts.flatten || opts.ignore || opts.csrf {
-        return Err(meta.error("not_empty cannot be combined with flatten, ignore, or csrf"));
+    if opts.flatten || opts.ignore {
+        return Err(meta.error("not_empty cannot be combined with flatten or ignore"));
     }
     opts.not_empty = true;
-    Ok(())
-}
-
-fn set_csrf(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.flatten || opts.ignore || opts.not_empty {
-        return Err(meta.error("csrf cannot be combined with flatten, ignore, or not_empty"));
-    }
-    opts.csrf = true;
     Ok(())
 }
 
@@ -343,7 +273,7 @@ fn set_ignore(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn
     if opts.ignore {
         return Err(meta.error("ignore can only be set once"));
     }
-    if opts.optional || opts.csrf || opts.parse_ty.is_some() || opts.flatten || opts.not_empty {
+    if opts.optional || opts.parse_ty.is_some() || opts.flatten || opts.not_empty {
         return Err(meta.error("ignore cannot be combined with other validation options"));
     }
     opts.ignore = true;
@@ -354,7 +284,7 @@ fn set_flatten(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> sy
     if opts.flatten {
         return Err(meta.error("flatten can only be set once"));
     }
-    if opts.optional || opts.csrf || opts.parse_ty.is_some() || opts.ignore || opts.not_empty {
+    if opts.optional || opts.parse_ty.is_some() || opts.ignore || opts.not_empty {
         return Err(meta.error("flatten cannot be combined with other validation options"));
     }
     opts.flatten = true;
@@ -423,13 +353,13 @@ fn build_flatten_validation(
         }));
     };
     let create_expr = quote!({
-        match self.#ident.clone().validate_create(csrf_token) {
+        match self.#ident.clone().validate_create() {
             Ok(value) => Some(value),
             Err(form_data) => { #extend_errors None }
         }
     });
     let update_expr = quote!({
-        match self.#ident.clone().validate_update(&current.#ident, csrf_token) {
+        match self.#ident.clone().validate_update(&current.#ident) {
             Ok(value) => Some(value),
             Err(form_data) => { #extend_errors None }
         }
@@ -449,7 +379,7 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
     };
     let create_expr = quote!({
         match self.#ident.clone() {
-            Some(value) => match value.validate_create(csrf_token) {
+            Some(value) => match value.validate_create() {
                 Ok(value) => Some(Some(value)),
                 Err(form_data) => { #extend_errors None }
             },
@@ -459,11 +389,11 @@ fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> Fi
     let update_expr = quote!({
         match self.#ident.clone() {
             Some(value) => match current.#ident.as_ref() {
-                Some(current_value) => match value.validate_update(current_value, csrf_token) {
+                Some(current_value) => match value.validate_update(current_value) {
                     Ok(value) => Some(Some(value)),
                     Err(form_data) => { #extend_errors None }
                 },
-                None => match value.validate_create(csrf_token) {
+                None => match value.validate_create() {
                     Ok(value) => Some(Some(value)),
                     Err(form_data) => { #extend_errors None }
                 },

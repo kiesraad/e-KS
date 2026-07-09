@@ -34,13 +34,16 @@ fn dev_login_request(query: &str) -> Request<Body> {
         .unwrap()
 }
 
+/// The session cookie's `name=value` pair.
 fn cookie_value(response: &Response) -> &str {
     response
         .headers()
-        .get(header::SET_COOKIE)
-        .and_then(|value| value.to_str().ok())
-        .and_then(|value| value.split(';').next())
-        .expect("cookie value")
+        .get_all(header::SET_COOKIE)
+        .iter()
+        .filter_map(|value| value.to_str().ok())
+        .filter_map(|value| value.split(';').next())
+        .find(|pair| pair.starts_with(crate::SESSION_COOKIE_NAME))
+        .expect("session cookie value")
 }
 
 /// Resolve the session that a dev-login response established.

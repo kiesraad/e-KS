@@ -45,7 +45,7 @@ pub async fn create_candidate_list(
     let has_previous_list = !store.get_candidate_lists().is_empty();
     Ok(HtmlTemplate(
         CandidateListCreateTemplate {
-            form: FormData::new(&context.session.csrf_token),
+            form: FormData::new(),
             available_districts,
             duplicate_districts: vec![],
             has_previous_list,
@@ -72,7 +72,7 @@ pub async fn create_candidate_list_submit(
     form.electoral_districts
         .retain(|district| context.election.electoral_districts().contains(district));
 
-    match form.validate_create(&context.session.csrf_token) {
+    match form.validate_create() {
         Err(form_data) => Ok(HtmlTemplate(
             CandidateListCreateTemplate {
                 form: form_data,
@@ -112,7 +112,7 @@ mod test {
 
     use crate::{
         AppStore, Context, ElectionConfig, ElectoralDistrict, Locale, Province, Session,
-        TokenValue, WaterCouncil,
+        WaterCouncil,
         candidate_lists::{CandidateListId, CandidateListSummary},
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
@@ -140,11 +140,9 @@ mod test {
     async fn create_candidate_list_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::UT],
             copy_candidates: false,
-            csrf_token,
         };
 
         let response = create_candidate_list_submit(
@@ -176,9 +174,8 @@ mod test {
     async fn create_candidate_list_invalid_form_renders_template() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let form = CandidateListCreateForm {
-            electoral_districts: vec![ElectoralDistrict::UT],
+            electoral_districts: vec![],
             copy_candidates: false,
-            csrf_token: TokenValue("invalid".to_string()),
         };
 
         let response = create_candidate_list_submit(
@@ -200,7 +197,6 @@ mod test {
     async fn create_candidate_list_copies_previous_candidates() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         let person_a = sample_person(PersonId::new());
@@ -214,7 +210,6 @@ mod test {
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::DR],
             copy_candidates: true,
-            csrf_token,
         };
 
         create_candidate_list_submit(
@@ -307,11 +302,9 @@ mod test {
     async fn create_candidate_list_with_provincial_election_persists() -> Result<(), AppError> {
         let store = AppStore::new_for_test_with_election(ElectionConfig::PS27(Province::GE));
         let context = Context::new(&store, Session::new_test_with_locale(Locale::En));
-        let csrf_token = context.session.csrf_token.clone();
         let form = CandidateListCreateForm {
             electoral_districts: vec![ElectoralDistrict::PsNijmegen],
             copy_candidates: false,
-            csrf_token,
         };
 
         let response = create_candidate_list_submit(
@@ -403,7 +396,6 @@ mod test {
         let store = AppStore::new_for_test_with_election(ElectionConfig::EK27);
         let mut context = Context::new(&store, Session::new_with_locale(Locale::En));
         context.election = ElectionConfig::EK27;
-        let csrf_token = context.session.csrf_token.clone();
 
         // test
         let response = create_candidate_list_submit(
@@ -413,7 +405,6 @@ mod test {
             Form(CandidateListCreateForm {
                 electoral_districts: vec![ElectoralDistrict::WsFryslan, ElectoralDistrict::UT],
                 copy_candidates: false,
-                csrf_token,
             }),
         )
         .await?;

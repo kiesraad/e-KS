@@ -5,10 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, Overlay, QueryParamState,
     common::{HasSeverity, Problematic},
     filters,
-    form::{EmptyForm, FormData},
     name_authorisations::NameAuthorisation,
 };
 
@@ -18,7 +17,6 @@ use super::NameAuthorisationDeletePath;
 #[template(path = "app/name_authorisations/pages/delete.html")]
 struct DeleteNameAuthorisationTemplate {
     name_authorisation: NameAuthorisation,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -30,7 +28,6 @@ pub async fn delete_name_authorisation_confirm(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteNameAuthorisationTemplate {
-            form: FormData::new(&context.session.csrf_token),
             name_authorisation,
             overlay: Overlay::new(&query),
         },
@@ -41,19 +38,13 @@ pub async fn delete_name_authorisation_confirm(
 pub async fn delete_name_authorisation(
     _: NameAuthorisationDeletePath,
     name_authorisation: NameAuthorisation,
-    context: Context,
+    _context: Context,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
-        Err(_) => Err(AppError::CsrfTokenInvalid),
-        Ok(_) => {
-            name_authorisation.delete(&store).await?;
+    name_authorisation.delete(&store).await?;
 
-            Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
-        }
-    }
+    Ok(query.redirect_or_preserving_initial(NameAuthorisation::list_path()))
 }
 
 #[cfg(test)]
@@ -63,7 +54,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState, TokenValue,
+        AppError, AppStore, Context, QueryParamState,
         name_authorisations::NameAuthorisationId,
         test_utils::{response_body_string, sample_name_authorisation},
     };
@@ -98,7 +89,6 @@ mod tests {
         name_authorisation.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_name_authorisation(
             NameAuthorisationDeletePath { authorisation_id },
@@ -106,7 +96,6 @@ mod tests {
             context,
             store.clone(),
             Query(QueryParamState::default()),
-            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();
@@ -127,35 +116,6 @@ mod tests {
 
         let name_authorisations = store.get_name_authorisations();
         assert!(name_authorisations.is_empty());
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn delete_name_authorisation_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-
-        let authorisation_id = NameAuthorisationId::new();
-        let name_authorisation = sample_name_authorisation(authorisation_id);
-        name_authorisation.create(&store).await?;
-
-        let context = Context::new_test_without_db();
-
-        let response = delete_name_authorisation(
-            NameAuthorisationDeletePath { authorisation_id },
-            name_authorisation.clone(),
-            context,
-            store.clone(),
-            Query(QueryParamState::default()),
-            Form(EmptyForm::new(TokenValue("invalid".to_string()))),
-        )
-        .await
-        .unwrap_err();
-
-        assert!(matches!(response, AppError::CsrfTokenInvalid));
-
-        let name_authorisations = store.get_name_authorisations();
-        assert_eq!(name_authorisations.len(), 1);
 
         Ok(())
     }

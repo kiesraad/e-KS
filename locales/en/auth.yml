@@ -3,11 +3,16 @@ button:
 cancelled:
   message: You cancelled the login. You are not logged in to Candidate Nomination of the Kiesraad. Log in again to continue.
   title: Login cancelled
+confirm_logout:
+  cancel: Back
+  message: Do you want to log out?
+  submit: Log out
+  title: Log out
 error:
   message: Logging in to this organisation did not succeed. Please try again later. Still not working? Log in to Mijn DigiD to check that your DigiD works correctly. There may be a malfunction at the organisation you are logging in to.
   title: Login failed
 signed_out:
-  message: "You have been logged out of Candidate Nomination of the Kiesraad. Close your browser to end the session completely, or log in again."
+  message: "You have been logged out. Close your browser to end the session completely, or log in again."
   title: You have been logged out
 start:
   intro: You log in first. After that you have access to the Candidate Nomination application of the Kiesraad. Click the button below to log in; you will be guided through the login process step by step.

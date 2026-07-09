@@ -644,9 +644,17 @@ export class SortableTable {
 
 // Helper function to send the new order to the server after a drag-and-drop interaction.
 export function reorderList(updateUrl: string, person_ids: string[]) {
+  // CSRF token from the layout's meta tag; the CSRF guard requires it.
+  const csrfToken =
+    document
+      .querySelector('meta[name="csrf-token"]')
+      ?.getAttribute("content") ?? "";
   fetch(updateUrl, {
     method: "POST",
-    headers: { "Content-Type": "application/json" },
+    headers: {
+      "Content-Type": "application/json",
+      "X-CSRF-Token": csrfToken,
+    },
     body: JSON.stringify({ person_ids }),
   })
     .then((response) => {

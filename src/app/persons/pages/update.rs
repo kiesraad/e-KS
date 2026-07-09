@@ -28,10 +28,7 @@ pub async fn update_person(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         PersonUpdateTemplate {
-            form: FormData::new_with_data(
-                PersonalDataForm::from(person.clone()),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(PersonalDataForm::from(person.clone())),
             overlay: Overlay::new(&query),
             person,
         },
@@ -47,7 +44,7 @@ pub async fn update_person_submit(
     Query(query): Query<QueryParamState>,
     Form(form): Form<PersonalDataForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_update_with_checks(&person, &context.session.csrf_token, &store) {
+    match form.validate_update_with_checks(&person, &store) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonUpdateTemplate {
                 person,
@@ -117,8 +114,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.name.last_name = "Updated".to_string();
         let expected_path = format!("{}?&success=true", person.after_update_path());
 
@@ -157,8 +153,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.name.last_name = " ".to_string();
 
         let response = update_person_submit(
@@ -188,8 +183,7 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_person_form(&csrf_token);
+        let mut form = sample_person_form();
         form.personal_data.date_of_birth =
             DateOfBirth::from(context.election.eligible_date_of_birth() + Duration::days(1))
                 .format(crate::core::constants::DEFAULT_DATE_FORMAT)

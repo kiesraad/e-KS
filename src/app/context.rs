@@ -76,6 +76,7 @@ impl askama::Values for Context {
     fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
         match key {
             "locale" => Some(&self.session.locale as &dyn std::any::Any),
+            "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "election" => Some(&self.election as &dyn std::any::Any),
             "max_candidates" => Some(&self.max_candidates as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),

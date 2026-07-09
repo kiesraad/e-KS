@@ -13,9 +13,10 @@ use serde::{Serialize, de::DeserializeOwned};
 use super::maintenance::handle_db_error;
 use crate::{
     AppError, AppState, SESSION_COOKIE_NAME, Scope, Session,
-    auth::session_extractor::user_agent_hash,
+    auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
+    csrf_rejection_response,
     store::{Store, StoreData},
 };
 
@@ -23,7 +24,7 @@ use crate::{
 pub async fn session_middleware(
     State(state): State<AppState>,
     jar: CookieJar,
-    mut request: Request,
+    request: Request,
     next: Next,
 ) -> Response {
     #[cfg(feature = "dev-features")]
@@ -48,6 +49,11 @@ pub async fn session_middleware(
     {
         return rejection;
     }
+
+    let mut request = match enforce_csrf(request, &session).await {
+        Ok(request) => request,
+        Err(rejection) => return csrf_rejection_response(rejection, session.locale),
+    };
 
     session.last_activity = Utc::now();
     state.sessions.insert(session.clone()).await;

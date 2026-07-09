@@ -1,7 +1,6 @@
 use std::str::FromStr;
 
 use crate::{
-    TokenValue,
     common::{CountryCode, InternationalAddressForm, MinimalNameForm, PostalCode},
     form::{FieldErrors, FormData},
     list_submitters::{ListSubmitter, ListSubmitterData},
@@ -19,8 +18,6 @@ pub struct ListSubmitterForm {
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: InternationalAddressForm,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
 }
 
 impl From<ListSubmitter> for ListSubmitterForm {
@@ -30,7 +27,6 @@ impl From<ListSubmitter> for ListSubmitterForm {
         ListSubmitterForm {
             name: MinimalNameForm::from(value.name),
             address: InternationalAddressForm::from(value.address),
-            csrf_token: Default::default(),
         }
     }
 }
@@ -38,13 +34,10 @@ impl From<ListSubmitter> for ListSubmitterForm {
 impl ListSubmitterForm {
     /// Also checks:
     /// if country code is NL -> postal code is a valid NL postal code
-    pub fn validate_create_with_checks(
-        self,
-        csrf_token: &TokenValue,
-    ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
-        let submitter_result = self.clone().validate_create(csrf_token);
+    pub fn validate_create_with_checks(self) -> Result<ListSubmitterData, Box<FormData<Self>>> {
+        let submitter_result = self.clone().validate_create();
         let postal_code_errors = self.validate_postal_code();
-        self.merge_validation_results(submitter_result, postal_code_errors, csrf_token)
+        self.merge_validation_results(submitter_result, postal_code_errors)
     }
 
     /// Also checks:
@@ -52,11 +45,10 @@ impl ListSubmitterForm {
     pub fn validate_update_with_checks(
         self,
         current: &ListSubmitterData,
-        csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
-        let submitter = self.clone().validate_update(current, csrf_token);
+        let submitter = self.clone().validate_update(current);
         let postal_code_errors = self.validate_postal_code();
-        self.merge_validation_results(submitter, postal_code_errors, csrf_token)
+        self.merge_validation_results(submitter, postal_code_errors)
     }
 
     fn validate_postal_code(&self) -> FieldErrors {
@@ -75,7 +67,6 @@ impl ListSubmitterForm {
         self,
         submitter_result: Result<ListSubmitterData, FormData<Self>>,
         postal_code_errors: FieldErrors,
-        csrf_token: &TokenValue,
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         if postal_code_errors.is_empty() {
             return Ok(submitter_result?);
@@ -84,15 +75,12 @@ impl ListSubmitterForm {
         match submitter_result {
             Ok(_) => Err(Box::new(FormData::new_with_errors(
                 self,
-                csrf_token,
                 postal_code_errors,
             ))),
             Err(form_data) => {
                 let mut errors = form_data.errors();
                 errors.extend(postal_code_errors);
-                Err(Box::new(FormData::new_with_errors(
-                    self, csrf_token, errors,
-                )))
+                Err(Box::new(FormData::new_with_errors(self, errors)))
             }
         }
     }
@@ -108,7 +96,6 @@ mod tests {
 
     #[test]
     fn validate_create_uses_dutch_address_when_country_is_empty() {
-        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
             name: MinimalNameForm {
                 last_name: "Bos".to_string(),
@@ -124,11 +111,10 @@ mod tests {
                 house_number_addition: "B".to_string(),
                 street_name: "Coolsingel".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
         let submitter: ListSubmitter = form
-            .validate_create_with_checks(&csrf_token)
+            .validate_create_with_checks()
             .expect("submitter")
             .into();
 
@@ -137,7 +123,6 @@ mod tests {
 
     #[test]
     fn validate_create_uses_international_address_when_country_is_foreign() {
-        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
             name: MinimalNameForm {
                 last_name: "Bos".to_string(),
@@ -153,11 +138,10 @@ mod tests {
                 house_number_addition: String::new(),
                 street_name: "Wetstraat".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
         let submitter: ListSubmitter = form
-            .validate_create_with_checks(&csrf_token)
+            .validate_create_with_checks()
             .expect("submitter")
             .into();
 
@@ -181,7 +165,6 @@ mod tests {
 
     #[test]
     fn validate_create_with_checks_validates_dutch_postal_code() {
-        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
             name: MinimalNameForm {
                 last_name: "Bos".to_string(),
@@ -197,11 +180,10 @@ mod tests {
                 house_number_addition: String::new(),
                 street_name: "Sample Street".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
         let form_data = form
-            .validate_create_with_checks(&csrf_token)
+            .validate_create_with_checks()
             .expect_err("Form shouldn't validate");
 
         let errors = form_data.errors();
@@ -215,7 +197,6 @@ mod tests {
 
     #[test]
     fn validate_create_with_checks_combines_errors() {
-        let csrf_token = crate::form::generate_csrf_token();
         let form = ListSubmitterForm {
             name: MinimalNameForm {
                 last_name: "Bos".to_string(),
@@ -231,11 +212,10 @@ mod tests {
                 house_number_addition: String::new(),
                 street_name: "Sample Street".to_string(),
             },
-            csrf_token: csrf_token.clone(),
         };
 
         let form_data = form
-            .validate_create_with_checks(&csrf_token)
+            .validate_create_with_checks()
             .expect_err("Form shouldn't validate");
 
         let errors = form_data.errors();

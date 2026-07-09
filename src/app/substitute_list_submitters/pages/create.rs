@@ -26,7 +26,7 @@ pub async fn create_substitute_submitter(
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
         SubstituteSubmitterCreateTemplate {
-            form: FormData::new(&context.session.csrf_token),
+            form: FormData::new(),
             overlay: Overlay::new(&query),
         },
         context,
@@ -39,7 +39,7 @@ pub async fn create_substitute_submitter_submit(
     store: AppStore,
     Form(form): Form<ListSubmitterForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create_with_checks(&context.session.csrf_token) {
+    match form.validate_create_with_checks() {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterCreateTemplate {
                 form: *form_data,
@@ -95,8 +95,7 @@ mod tests {
     async fn create_substitute_submitter_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_list_submitter_form(&csrf_token);
+        let form = sample_list_submitter_form();
 
         let response = create_substitute_submitter_submit(
             SubstituteSubmitterCreatePath {},
@@ -131,8 +130,7 @@ mod tests {
         let store = AppStore::new_for_test();
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_list_submitter_form(&csrf_token);
+        let mut form = sample_list_submitter_form();
         form.name.last_name = " ".to_string();
 
         let response = create_substitute_submitter_submit(

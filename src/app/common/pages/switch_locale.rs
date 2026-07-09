@@ -49,6 +49,7 @@ mod tests {
 
         let session = crate::Session::new_test();
         let token = session.token_string();
+        let csrf = session.csrf_token().clone();
         state.sessions.insert(session).await;
 
         let request = Request::builder()
@@ -60,7 +61,7 @@ mod tests {
                 header::COOKIE,
                 format!("{}={}", crate::SESSION_COOKIE_NAME, token),
             )
-            .body(Body::from("lang=en"))
+            .body(Body::from(format!("csrf_token={csrf}&lang=en")))
             .unwrap();
 
         let response = app.oneshot(request).await.expect("response");

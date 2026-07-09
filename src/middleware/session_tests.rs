@@ -152,3 +152,62 @@ async fn middleware_accepts_matching_user_agent() {
     assert_eq!(response.status(), StatusCode::OK);
     assert_eq!(response_body_string(response).await, hash_token(&token));
 }
+
+/// Builds an app with a POST route behind the session middleware, plus a
+/// session; returns the app, its cookie header value, and the raw CSRF token.
+async fn post_app_with_session(state: &AppState) -> (Router, String, String) {
+    let app = Router::new()
+        .route("/", axum::routing::post(|| async { "ok" }))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
+        ))
+        .with_state(state.clone());
+
+    let session = Session::new_test();
+    let token = session.token_string();
+    let csrf = session.csrf_token().0.clone();
+    state.sessions.insert(session).await;
+
+    (app, format!("{SESSION_COOKIE_NAME}={token}"), csrf)
+}
+
+fn urlencoded_post(cookie: &str, body: String) -> HttpRequest<Body> {
+    HttpRequest::builder()
+        .method("POST")
+        .uri("/")
+        .header(header::COOKIE, cookie)
+        .header(header::CONTENT_TYPE, "application/x-www-form-urlencoded")
+        .body(Body::from(body))
+        .unwrap()
+}
+
+/// A POST without a CSRF token gets the styled rejection page.
+#[tokio::test]
+async fn middleware_rejects_post_without_csrf_token() {
+    let state = AppState::new_for_tests().await;
+    let (app, cookie, _csrf) = post_app_with_session(&state).await;
+
+    let response = app
+        .oneshot(urlencoded_post(&cookie, "a=b".into()))
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::BAD_REQUEST);
+    let body = response_body_string(response).await;
+    assert!(body.contains("Formulier verlopen"));
+}
+
+/// A POST with the session's token reaches the handler.
+#[tokio::test]
+async fn middleware_accepts_post_with_valid_csrf_token() {
+    let state = AppState::new_for_tests().await;
+    let (app, cookie, csrf) = post_app_with_session(&state).await;
+
+    let response = app
+        .oneshot(urlencoded_post(&cookie, format!("csrf_token={csrf}")))
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+}

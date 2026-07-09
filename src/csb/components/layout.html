@@ -1,4 +1,8 @@
 {% extends "app/common/components/base.html" %}
+{% import "app/common/components/macros.html" as macros %}
+{% block head_extra %}
+  <meta name="csrf-token" content="{{ "csrf_token"|str_value }}">
+{% endblock %}
 {% macro breadcrumb(href, name, is_translatable=true) %}
   <li class="breadcrumb">
     <a href="{{ href }}">
@@ -42,13 +46,19 @@
             <a href="{{ crate::csb::audit_log::CsbAuditLogPath{}.to_string() }}">{{ "audit_log.title"|trans }}</a>
           </li>
           <li>
-            <a href="/logout" class="logout">{{ "action.signout"|trans }}</a>
+            <form method="post"
+                  action="{{ crate::common::LogoutPath }}"
+                  class="logout-form">
+              {{ macros::csrf_field() }}
+              <button type="submit" class="logout">{{ "action.signout"|trans }}</button>
+            </form>
           </li>
           {% let locale = "locale"|locale_value %}
           <li>
             <form action="{{ crate::common::SwitchLanguagePath{}.to_string() }}"
                   method="post"
                   class="language-switch">
+              {{ macros::csrf_field() }}
               <button class="button sm {% if locale == crate::Locale::Nl %}active{% endif %}"
                       type="submit"
                       name="lang"

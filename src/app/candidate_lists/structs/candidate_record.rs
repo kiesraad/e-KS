@@ -217,10 +217,7 @@ fn bsn_from_csv(value: &str) -> String {
 
 #[cfg(test)]
 mod tests {
-    use crate::{
-        common::{DutchAddress, Gender},
-        form::generate_csrf_token,
-    };
+    use crate::common::{DutchAddress, Gender};
 
     use super::*;
 
@@ -244,7 +241,7 @@ mod tests {
             ..Default::default()
         });
 
-        let person = record.validate_create(&generate_csrf_token()).unwrap();
+        let person = record.validate_create().unwrap();
 
         assert_eq!(person.name.initials.to_string(), "J.");
         assert_eq!(person.name.first_name.unwrap().to_string(), "Jan");
@@ -325,7 +322,7 @@ mod tests {
             ..Default::default()
         });
 
-        let person = record.validate_create(&generate_csrf_token()).unwrap();
+        let person = record.validate_create().unwrap();
 
         assert_eq!(person.personal_data.gender, Some(Gender::Female));
         assert_eq!(

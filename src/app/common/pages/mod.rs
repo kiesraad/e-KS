@@ -39,6 +39,14 @@ pub struct SelectElectionPath;
 #[typed_path("/hide-download-warning", rejection(AppError))]
 pub struct HideDownloadWarningPath;
 
+#[derive(TypedPath)]
+#[typed_path("/logout", rejection(AppError))]
+pub struct LogoutPath;
+
+#[derive(TypedPath)]
+#[typed_path("/logged-out", rejection(AppError))]
+pub struct LoggedOutPath;
+
 pub fn router() -> Router<AppState> {
     Router::new()
         .typed_get(index::index)
@@ -50,15 +58,17 @@ pub fn router() -> Router<AppState> {
 /// Routes that need a session but NOT the store middleware.
 ///
 /// `/select-election` must be reachable before a stream is chosen, and
-/// `/language` must be reachable by every session, including committee (CSB)
-/// sessions, which `store_middleware` redirects away from app routes. Switching
-/// the locale only touches the session, so it belongs here rather than behind
-/// the store.
+/// `/language` and `/logout` must be reachable by every session, including
+/// committee (CSB) sessions, which `store_middleware` redirects away from app
+/// routes. Living behind the session middleware gives the logout POST the
+/// same CSRF and user-agent checks as every other mutating route.
 pub fn session_only_router() -> Router<AppState> {
     Router::new()
         .typed_post(switch_locale::switch_language)
         .typed_get(select_election::select_election)
         .typed_post(select_election::select_election_submit)
+        .typed_get(auth::logout)
+        .typed_post(auth::logout_submit)
 }
 
 /// Routes for paths under .well-known
@@ -67,13 +77,15 @@ pub fn wellknown_router() -> Router<AppState> {
 }
 
 /// Routes mounted outside the session middleware (no session required):
-/// - `/login`: GET shows the DigiD start page, POST starts SAML SSO
-/// - `/logout`: GET initiates logout or shows the post-logout confirmation page (TVS T7)
+/// - `/login`: GET shows the DigiD start page, POST starts SAML SSO. No CSRF
+///   token pre-session; the fetch-metadata layer blocks cross-site POSTs.
+/// - `/logged-out`: the post-logout confirmation (TVS T7, also the SLO
+///   landing), reached once the session is gone.
 pub fn public_router() -> Router<AppState> {
     Router::new()
         .route(
-            "/login",
+            LoginStartPath::PATH,
             get(auth::login_start).post(auth_service::handle_login::<AppState>),
         )
-        .route("/logout", get(auth::logout))
+        .typed_get(auth::logged_out)
 }

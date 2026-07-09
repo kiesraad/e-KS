@@ -7,7 +7,38 @@ use axum::{
     response::{Html, IntoResponse, Response},
 };
 
-use crate::AppError;
+use crate::{AppError, Locale};
+
+/// Values for pages rendered with only a locale (no `Context`).
+pub struct LocaleValues {
+    pub locale: Locale,
+}
+
+impl askama::Values for LocaleValues {
+    fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
+        match key {
+            "locale" => Some(&self.locale as &dyn std::any::Any),
+            _ => None,
+        }
+    }
+}
+
+/// Values for session-backed pages rendered without a store `Context`:
+/// locale plus the token the `csrf_field` macro reads.
+pub struct SessionPageValues {
+    pub locale: Locale,
+    pub csrf_token: String,
+}
+
+impl askama::Values for SessionPageValues {
+    fn get_value<'a>(&'a self, key: &str) -> Option<&'a dyn std::any::Any> {
+        match key {
+            "locale" => Some(&self.locale as &dyn std::any::Any),
+            "csrf_token" => Some(&self.csrf_token as &dyn std::any::Any),
+            _ => None,
+        }
+    }
+}
 
 /// Askama template wrapper that renders template `T` with a values object `V`
 /// (typically the request `Context`), which must implement [`askama::Values`].

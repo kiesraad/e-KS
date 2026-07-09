@@ -5,10 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, Overlay, QueryParamState,
     common::{HasSeverity, Problematic},
     filters,
-    form::{EmptyForm, FormData},
     list_submitters::ListSubmitter,
 };
 
@@ -18,7 +17,6 @@ use super::SubstituteSubmitterDeletePath;
 #[template(path = "app/substitute_list_submitters/pages/delete.html")]
 struct DeleteSubstituteSubmitterTemplate {
     substitute_submitter: ListSubmitter,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -30,7 +28,6 @@ pub async fn delete_substitute_submitter_confirm(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeleteSubstituteSubmitterTemplate {
-            form: FormData::new(&context.session.csrf_token),
             substitute_submitter,
             overlay: Overlay::new(&query),
         },
@@ -40,20 +37,14 @@ pub async fn delete_substitute_submitter_confirm(
 
 pub async fn delete_substitute_submitter(
     _: SubstituteSubmitterDeletePath,
-    context: Context,
+    _context: Context,
     substitute_submitter: ListSubmitter,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
-        Err(_) => Err(AppError::CsrfTokenInvalid),
-        Ok(_) => {
-            substitute_submitter.delete_substitute(&store).await?;
+    substitute_submitter.delete_substitute(&store).await?;
 
-            Ok(query.redirect_or(ListSubmitter::view_path()))
-        }
-    }
+    Ok(query.redirect_or(ListSubmitter::view_path()))
 }
 
 #[cfg(test)]
@@ -65,7 +56,7 @@ mod tests {
     use crate::QueryParamState;
 
     use crate::{
-        AppError, AppStore, Context, TokenValue,
+        AppError, AppStore, Context,
         list_submitters::ListSubmitterId,
         test_utils::{response_body_string, sample_list_submitter},
     };
@@ -100,7 +91,6 @@ mod tests {
         substitute_submitter.create_substitute(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_substitute_submitter(
             SubstituteSubmitterDeletePath { sub_submitter_id },
@@ -108,7 +98,6 @@ mod tests {
             substitute_submitter.clone(),
             store.clone(),
             Query(QueryParamState::default()),
-            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();
@@ -129,35 +118,6 @@ mod tests {
 
         let submitters = store.get_substitute_submitters();
         assert!(submitters.is_empty());
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn delete_substitute_submitter_invalid_csrf_error_page() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-
-        let sub_submitter_id = ListSubmitterId::new();
-        let substitute_submitter = sample_list_submitter(sub_submitter_id);
-        substitute_submitter.create_substitute(&store).await?;
-
-        let context = Context::new_test_without_db();
-
-        let response = delete_substitute_submitter(
-            SubstituteSubmitterDeletePath { sub_submitter_id },
-            context,
-            substitute_submitter.clone(),
-            store.clone(),
-            Query(QueryParamState::default()),
-            Form(EmptyForm::new(TokenValue("invalid".to_string()))),
-        )
-        .await
-        .unwrap_err();
-
-        assert!(matches!(response, AppError::CsrfTokenInvalid));
-
-        let submitters = store.get_substitute_submitters();
-        assert_eq!(submitters.len(), 1);
 
         Ok(())
     }

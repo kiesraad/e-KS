@@ -2,7 +2,6 @@ use serde::{Deserialize, Serialize};
 use validate::Validate;
 
 use crate::{
-    TokenValue,
     common::{DutchAddressForm, FullNameForm},
     persons::Representative,
 };
@@ -35,8 +34,6 @@ pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: DutchAddressForm,
-    #[validate(csrf)]
-    pub csrf_token: TokenValue,
 }
 
 impl From<Representative> for RepresentativeForm {
@@ -44,7 +41,6 @@ impl From<Representative> for RepresentativeForm {
         Self {
             name: FullNameForm::from(representative.name),
             address: DutchAddressForm::from(representative.address),
-            csrf_token: TokenValue::default(),
         }
     }
 }

@@ -5,10 +5,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppResponse, AppStore, Context, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, AppResponse, AppStore, Context, HtmlTemplate, Overlay, QueryParamState,
     common::{HasSeverity, Problematic},
     filters,
-    form::{EmptyForm, FormData},
     persons::{Person, pages::DeletePersonPath},
 };
 
@@ -16,7 +15,6 @@ use crate::{
 #[template(path = "app/persons/pages/delete.html")]
 struct DeletePersonTemplate {
     person: Person,
-    form: FormData<EmptyForm>,
     overlay: Overlay,
 }
 
@@ -28,7 +26,6 @@ pub async fn delete_person_confirm(
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
         DeletePersonTemplate {
-            form: FormData::new(&context.session.csrf_token),
             person,
             overlay: Overlay::new(&query),
         },
@@ -38,20 +35,14 @@ pub async fn delete_person_confirm(
 
 pub async fn delete_person(
     _: DeletePersonPath,
-    context: Context,
+    _context: Context,
     person: Person,
     store: AppStore,
     Query(query): Query<QueryParamState>,
-    Form(form): Form<EmptyForm>,
 ) -> Result<Response, AppError> {
-    match form.validate_create(&context.session.csrf_token) {
-        Err(_) => Err(AppError::CsrfTokenInvalid),
-        Ok(_) => {
-            person.delete(&store).await?;
+    person.delete(&store).await?;
 
-            Ok(query.redirect_or(Person::list_path()))
-        }
-    }
+    Ok(query.redirect_or(Person::list_path()))
 }
 
 #[cfg(test)]
@@ -61,7 +52,7 @@ mod tests {
 
     use super::*;
     use crate::{
-        AppError, AppStore, Context, Form, QueryParamState,
+        AppError, AppStore, Context, QueryParamState,
         persons::PersonId,
         test_utils::{response_body_string, sample_person},
     };
@@ -96,7 +87,6 @@ mod tests {
         person.create(&store).await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
 
         let response = delete_person(
             DeletePersonPath { person_id },
@@ -104,7 +94,6 @@ mod tests {
             person,
             store.clone(),
             Query(QueryParamState::default()),
-            Form(EmptyForm::new(csrf_token)),
         )
         .await
         .unwrap();

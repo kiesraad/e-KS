@@ -6,17 +6,29 @@ pub mod state;
 
 mod handlers;
 
-use axum::{
-    Router,
-    extract::FromRef,
-    routing::{get, post},
-};
+use axum::{Router, extract::FromRef};
+use axum_extra::routing::{RouterExt, TypedPath};
 
 pub use crate::{
     handlers::{handle_login, handle_logout},
     pending::{PENDING_REQUEST_TTL, PendingRequests},
     state::{AuthFailure, AuthServiceState, AuthState, SubjectId},
 };
+
+/// SP metadata endpoint.
+#[derive(TypedPath)]
+#[typed_path("/saml/sp/metadata")]
+pub struct SamlMetadataPath;
+
+/// Assertion Consumer Service endpoint.
+#[derive(TypedPath)]
+#[typed_path("/saml/sp/acs")]
+pub struct SamlAcsPath;
+
+/// Single-logout (SLS) endpoint.
+#[derive(TypedPath)]
+#[typed_path("/saml/sp/logout")]
+pub struct SamlLogoutPath;
 
 /// Build the SAML SP router for the protocol endpoints (metadata, ACS, SLS).
 pub fn router<S>() -> Router<S>
@@ -25,7 +37,7 @@ where
     AuthServiceState: FromRef<S>,
 {
     Router::new()
-        .route("/saml/sp/metadata", get(handlers::handle_metadata))
-        .route("/saml/sp/acs", get(handlers::handle_acs))
-        .route("/saml/sp/logout", post(handlers::handle_sls))
+        .typed_get(handlers::handle_metadata)
+        .typed_get(handlers::handle_acs)
+        .typed_post(handlers::handle_sls)
 }

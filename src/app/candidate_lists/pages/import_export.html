@@ -25,6 +25,7 @@
           </noscript>
           <button class="button icon-upload open-modal"
                   type="submit"
+                  formaction="{{ list.import_path() }}?csrf_token={{ "csrf_token"|str_value }}"
                   formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
           <dialog class="modal">
             <button class="close-modal" aria-label="{{ "action.close"|trans }}">
@@ -35,6 +36,7 @@
             <button type="submit"
                     class="button primary"
                     data-import-file-trigger
+                    formaction="{{ list.import_path() }}?csrf_token={{ "csrf_token"|str_value }}"
                     formenctype="multipart/form-data">{{ "action.continue"|trans }}</button>
             <button type="button" class="button secondary close">{{ "action.cancel"|trans }}</button>
           </dialog>
@@ -43,6 +45,7 @@
           <button class="button icon-upload"
                   data-import-file-trigger
                   type="submit"
+                  formaction="{{ list.import_path() }}?csrf_token={{ "csrf_token"|str_value }}"
                   formenctype="multipart/form-data">{{ "candidate_list.actions.import_csv"|trans }}</button>
         {% endif %}
         <div class="alert alert-info flow-root mt-xl">

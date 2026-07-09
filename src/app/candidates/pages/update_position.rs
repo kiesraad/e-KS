@@ -34,10 +34,7 @@ pub async fn update_candidate_position(
         action: FormAction::Save,
     };
 
-    let form = FormData::new_with_data(
-        CandidatePositionForm::from(candidate_position.clone()),
-        &context.session.csrf_token,
-    );
+    let form = FormData::new_with_data(CandidatePositionForm::from(candidate_position.clone()));
 
     Ok(HtmlTemplate(
         UpdateCandidatePositionTemplate {
@@ -64,7 +61,7 @@ pub async fn update_candidate_position_submit(
         action: FormAction::Save,
     };
 
-    match form.validate_update(&candidate_position, &context.session.csrf_token) {
+    match form.validate_update(&candidate_position) {
         Err(form_data) => Ok(HtmlTemplate(
             UpdateCandidatePositionTemplate {
                 candidate,
@@ -97,7 +94,7 @@ pub async fn update_candidate_position_submit(
 mod tests {
     use super::*;
     use crate::{
-        AppStore, Context, Form, QueryParamState, TokenValue,
+        AppStore, Context, Form, QueryParamState,
         candidate_lists::CandidateListId,
         persons::PersonId,
         test_utils::{
@@ -107,15 +104,10 @@ mod tests {
     };
     use axum::{extract::Query, http::StatusCode, response::IntoResponse};
 
-    fn sample_position_form(
-        csrf_token: &TokenValue,
-        position: usize,
-        action: &str,
-    ) -> CandidatePositionForm {
+    fn sample_position_form(position: usize, action: &str) -> CandidatePositionForm {
         CandidatePositionForm {
             position: position.to_string(),
             action: action.to_string(),
-            csrf_token: csrf_token.clone(),
         }
     }
 
@@ -176,8 +168,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_position_form(&csrf_token, 2, "save");
+        let form = sample_position_form(2, "save");
 
         let response = update_candidate_position_submit(
             UpdateCandidatePositionPath {
@@ -226,8 +217,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let form = sample_position_form(&csrf_token, 1, "remove");
+        let form = sample_position_form(1, "remove");
 
         let response = update_candidate_position_submit(
             UpdateCandidatePositionPath {
@@ -249,58 +239,6 @@ mod tests {
         let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
         assert_eq!(full_list.candidates.len(), 1);
         assert_eq!(full_list.candidates[0].data.person.id, person_b.id);
-
-        Ok(())
-    }
-
-    #[tokio::test]
-    async fn update_candidate_position_invalid_csrf_renders_template() -> Result<(), AppError> {
-        let store = AppStore::new_for_test();
-        let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
-        let person_a = sample_person_with_last_name(PersonId::new(), "Jansen");
-        let person_b = sample_person_with_last_name(PersonId::new(), "Bakker");
-
-        list.create(&store).await?;
-        person_a.create(&store).await?;
-        person_b.create(&store).await?;
-        list.clone()
-            .update_order(&store, &[person_a.id, person_b.id])
-            .await?;
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        let candidate = store
-            .get_candidate_list(list_id)?
-            .get_candidate(&store, person_a.id)
-            .await?;
-
-        let context = Context::new_test_without_db();
-        let csrf_token = TokenValue("invalid".to_string());
-        let form = sample_position_form(&csrf_token, 2, "save");
-
-        let response = update_candidate_position_submit(
-            UpdateCandidatePositionPath {
-                list_id,
-                person_id: person_a.id,
-            },
-            context,
-            full_list,
-            candidate,
-            store.clone(),
-            Query(QueryParamState::default()),
-            Form(form),
-        )
-        .await?
-        .into_response();
-
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        assert!(body.contains("The CSRF token is invalid."));
-
-        let full_list = FullCandidateList::get(&store, list_id).expect("candidate list");
-        assert_eq!(full_list.candidates.len(), 2);
-        assert_eq!(full_list.candidates[0].data.person.id, person_a.id);
-        assert_eq!(full_list.candidates[1].data.person.id, person_b.id);
 
         Ok(())
     }

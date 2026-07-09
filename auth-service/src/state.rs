@@ -31,7 +31,7 @@ pub trait AuthState: Clone + Send + Sync + 'static {
     fn on_authenticated(
         &self,
         subject_id: SubjectId,
-        name_id: Option<String>,
+        name_id: String,
         jar: CookieJar,
         headers: &HeaderMap,
     ) -> impl std::future::Future<Output = Response> + Send;

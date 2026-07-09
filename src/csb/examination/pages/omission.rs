@@ -125,7 +125,7 @@ pub async fn add_omission(
 
     Ok(HtmlTemplate(
         CsbAddOmissionTemplate {
-            form: FormData::new(&context.session.csrf_token),
+            form: FormData::new(),
             overlay: Overlay::new(&query),
             close_action: return_path(omission_type, &political_group),
             presets,
@@ -158,7 +158,7 @@ pub async fn add_omission_submit(
         context.session.locale,
     );
 
-    match form.validate_create(&context.session.csrf_token) {
+    match form.validate_create() {
         Err(form_data) => Ok(HtmlTemplate(
             CsbAddOmissionTemplate {
                 form: form_data,
@@ -184,14 +184,13 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::{TokenValue, candidate_lists::CandidateListId, test_utils::response_body_string};
+    use crate::{candidate_lists::CandidateListId, test_utils::response_body_string};
 
-    fn sample_form(csrf_token: &TokenValue) -> OmissionForm {
+    fn sample_form() -> OmissionForm {
         OmissionForm {
             title: "Waarborgsom ontbreekt".to_string(),
             description: "De waarborgsom ontbreekt.".to_string(),
             help_text: "Please pay the deposit.".to_string(),
-            csrf_token: csrf_token.clone(),
         }
     }
 
@@ -241,7 +240,7 @@ mod tests {
         let stream_id = store.stream_id;
         let list = CandidateListId::new();
         let context = CsbContext::new_test();
-        let form = sample_form(&context.session.csrf_token);
+        let form = sample_form();
 
         let response = add_omission_submit(
             CsbAddOmissionPath {
@@ -275,7 +274,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let context = CsbContext::new_test();
-        let form = sample_form(&context.session.csrf_token);
+        let form = sample_form();
 
         add_omission_submit(
             CsbAddOmissionPath {
@@ -300,7 +299,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let context = CsbContext::new_test();
-        let mut form = sample_form(&context.session.csrf_token);
+        let mut form = sample_form();
         // An empty description is invalid.
         form.description = String::new();
 
@@ -419,7 +418,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let context = CsbContext::new_test();
-        let form = sample_form(&context.session.csrf_token);
+        let form = sample_form();
 
         let person = sample_person(PersonId::new());
         let person_id = person.id;

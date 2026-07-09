@@ -11,6 +11,7 @@
           href="/static/{{ filters::cache_buster() }}-index.css" />
     {% if Context::livereload_enabled() %}<script src="/livereload/poll.js"></script>{% endif %}
     <script src="/static/{{ filters::cache_buster() }}-index.js" defer></script>
+    {% block head_extra %}{% endblock %}
   </head>
   <body class="{% block body_class %}{% endblock %}">
     {% block body %}{% endblock %}

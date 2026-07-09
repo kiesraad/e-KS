@@ -33,10 +33,7 @@ pub async fn update_political_group(
 
     Ok(HtmlTemplate(
         PoliticalGroupUpdateTemplate {
-            form: FormData::new_with_data(
-                political_group.clone().into(),
-                &context.session.csrf_token,
-            ),
+            form: FormData::new_with_data(political_group.clone().into()),
             steps,
         },
         context,
@@ -54,7 +51,7 @@ pub async fn update_political_group_submit(
 ) -> Result<Response, AppError> {
     let steps = PoliticalGroupSteps::new(&store, query.is_initial())?;
 
-    match form.validate_update(&political_group, &context.session.csrf_token) {
+    match form.validate_update(&political_group) {
         Err(form_data) => Ok(HtmlTemplate(
             PoliticalGroupUpdateTemplate {
                 form: form_data,
@@ -122,8 +119,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_political_group_form(&csrf_token);
+        let mut form = sample_political_group_form();
         form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT); // max length
 
         let response = update_political_group_submit(
@@ -173,8 +169,7 @@ mod tests {
             .await?;
 
         let context = Context::new_test_without_db();
-        let csrf_token = context.session.csrf_token.clone();
-        let mut form = sample_political_group_form(&csrf_token);
+        let mut form = sample_political_group_form();
 
         form.display_name = "a".repeat(DisplayName::MAX_CHAR_COUNT + 1); // Invalid value (too long)
 

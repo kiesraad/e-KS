@@ -6,7 +6,7 @@ use axum::{
 
 use crate::{
     AnyLocale, AppError, AppState, Context, ElectionConfig, HtmlTemplate, Province, Session,
-    TokenValue, WaterCouncil, common::SwitchElectionForm, filters,
+    WaterCouncil, common::SwitchElectionForm, filters,
 };
 
 use super::{IndexPath, SwitchElectionPath};
@@ -22,7 +22,6 @@ struct SwitchElectionTemplate {
     selected_region: Option<&'static str>,
     provinces: &'static [Province],
     water_councils: &'static [WaterCouncil],
-    csrf_token: TokenValue,
 }
 
 pub async fn switch_election(
@@ -31,7 +30,6 @@ pub async fn switch_election(
     context: Context,
 ) -> Result<Response, AppError> {
     let existing_elections = existing_elections_for(&state, &context.session).await?;
-    let csrf_token = context.session.csrf_token.clone();
 
     Ok(HtmlTemplate(
         SwitchElectionTemplate {
@@ -43,7 +41,6 @@ pub async fn switch_election(
             water_councils: WaterCouncil::ALL,
             elections: ElectionConfig::type_options(),
             existing_elections,
-            csrf_token,
         },
         context,
     )
@@ -66,8 +63,6 @@ pub async fn switch_election_submit(
     mut session: Session,
     axum::Form(form): axum::Form<SwitchElectionForm>,
 ) -> Result<Response, AppError> {
-    session.consume_csrf(&form.csrf_token)?;
-
     let Some(election) = form.into_election_config() else {
         return Ok(Redirect::to(&SwitchElectionPath.to_string()).into_response());
     };
@@ -132,7 +127,7 @@ mod tests {
         session.set_stream_id(stream_id);
         session.set_current_election(ElectionConfig::EK27);
         let token_value = session.token_string();
-        let csrf_token = session.csrf_token.clone();
+        let csrf_token = session.csrf_token().clone();
         state.sessions.insert(session).await;
 
         let cookie = format!("{}={}", crate::SESSION_COOKIE_NAME, token_value);

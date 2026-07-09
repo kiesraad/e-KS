@@ -34,6 +34,13 @@ maintenance:
 political_group: Politieke groepering
 possible_problems: "{} mogelijke problemen"
 possible_problems_one: 1 mogelijk probleem
+request_error:
+  csrf_message: "Het verzonden formulier kon niet worden gecontroleerd omdat het ongeldig of verlopen was. Ga terug, ververs de pagina en probeer het opnieuw."
+  csrf_title: Formulier verlopen
+  too_large_message: Het verzonden bestand is groter dan toegestaan.
+  too_large_title: Upload te groot
+  unreadable_message: Het verzoek is niet volledig ontvangen. Probeer het opnieuw.
+  unreadable_title: Verzoek niet verwerkt
 save_success: Opgeslagen
 select_election:
   description: Kies de verkiezing waar je mee wilt werken om verder te gaan.

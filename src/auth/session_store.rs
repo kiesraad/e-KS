@@ -289,7 +289,7 @@ mod tests {
         let store = SessionStore::Database(pool);
 
         let mut session = Session::new_test();
-        session.saml_name_id = Some("nid-1".to_string());
+        session.saml_name_id = "nid-1".to_string();
         session.set_user_agent_hash("ua-hash-xyz".to_string());
         let token = session.token_string();
         let created_at = session.created_at;
@@ -297,7 +297,7 @@ mod tests {
 
         // Look up by the raw cookie token (hashed internally).
         let loaded = store.get(&token).await?.expect("session present");
-        assert_eq!(loaded.saml_name_id.as_deref(), Some("nid-1"));
+        assert_eq!(loaded.saml_name_id, "nid-1");
         assert_eq!(loaded.user_agent_hash.as_deref(), Some("ua-hash-xyz"));
         assert_eq!(loaded.token_hash(), hash_token(&token));
         assert!(

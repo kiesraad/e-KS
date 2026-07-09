@@ -24,7 +24,20 @@ header {
       li {
         display: flex;
 
-        a {
+        /* The logout form's button renders as a regular nav item. */
+        .logout-form {
+          display: flex;
+
+          button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font: inherit;
+          }
+        }
+
+        a,
+        .logout-form button {
           align-items: center;
           border-inline-end: 1px solid var(--blue-1000);
           color: var(--header-item-color, inherit);
