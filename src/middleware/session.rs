@@ -13,10 +13,10 @@ use serde::{Serialize, de::DeserializeOwned};
 use super::maintenance::handle_db_error;
 use crate::{
     AppError, AppState, SESSION_COOKIE_NAME, Scope, Session,
-    app::error_response::csrf_rejection_response,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{LoginStartPath, SelectElectionPath},
     csb::examination::CsbExaminationOverviewPath,
+    csrf_rejection_response,
     store::{Store, StoreData},
 };
 

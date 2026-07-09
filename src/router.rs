@@ -23,8 +23,8 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     #[cfg(feature = "dev-features")]
     let dev_router = Router::new().route(
-        crate::app::dev_login::DEV_LOGIN_PATH,
-        get(crate::app::dev_login::dev_login),
+        crate::middleware::dev_login::DEV_LOGIN_PATH,
+        get(crate::middleware::dev_login::dev_login),
     );
 
     let app_router = app_router

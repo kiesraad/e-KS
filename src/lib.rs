@@ -39,9 +39,10 @@
 //!
 //! **Directory layout (high level)**
 //! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc),
-//!   plus the per-stream [`AppStoreData`] projection (`app/store/`), shared HTTP
-//!   infrastructure that needs [`AppState`] (`app/middleware/`: session/store
-//!   middleware, health, proxy, eks_key, dev login), and the HTML error-page renderer.
+//!   plus the per-stream [`AppStoreData`] projection (`app/store/`) and the HTML
+//!   error-page renderer.
+//! - `src/middleware/`: shared HTTP infrastructure that needs [`AppState`]
+//!   (session/store middleware, health, proxy, eks_key, dev login).
 //! - `src/auth/`: authentication, the session model, and session storage (see [`Session`], [`SessionStore`]).
 //! - `src/core/`: shared configuration, logging, server setup, and core helpers (see [`Config`], [`logging`], [`server`]).
 //! - `src/store/`: generic event store, persistence, and registry logic (see [`AppStore`]).
@@ -67,6 +68,7 @@ mod csb;
 mod error;
 mod filters;
 mod form;
+mod middleware;
 mod pagination;
 mod state;
 mod store;
@@ -88,13 +90,16 @@ pub use store::run_db_prober;
 
 pub(crate) use app::{
     AppEvent, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
-    csb_store_middleware, db_gate_middleware, eks_key_middleware, finalise, health_router,
-    list_designation, list_submitters, name_authorisations, persons, political_groups,
-    render_error_pages, session_middleware, store_middleware, substitute_list_submitters,
+    csrf_rejection_response, finalise, list_designation, list_submitters, name_authorisations,
+    persons, political_groups, render_error_pages, substitute_list_submitters,
+};
+pub(crate) use middleware::{
+    csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router,
+    session_middleware, store_middleware,
 };
 
 #[cfg(not(feature = "memory-serve"))]
-pub(crate) use app::proxy_handler;
+pub(crate) use middleware::proxy_handler;
 // `pub` because the `eks` binary's tests reference `eks::SESSION_COOKIE_NAME`.
 pub use auth::session_extractor::SESSION_COOKIE_NAME;
 pub(crate) use auth::{
