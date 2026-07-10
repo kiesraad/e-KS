@@ -1,6 +1,6 @@
 # Centraal Stembureau
 
-## Centraal stembureau ontvangt de stukken van de partij
+## Centraal stembureau ontvangt de stukken schriftelijk van de partij (Art. H 1 en Art. H 3)
 
 __Niveau:__ Hoog-over, wolk, ☁️
 
@@ -9,13 +9,21 @@ __Niveau:__ Hoog-over, wolk, ☁️
 __Hoofdscenario:__
 
 1. Politieke Partij levert de stukken (op papier) in bij het Centraal Stembureau
-2. Centraal Stembureau neemt de stukken in ontvangst
-3. Centraal Stembureau vult de hashcode in in e-KS
-4. e-KS constateert dat er geen fouten zijn in BRP
-5. [Centraal Stembureau stelt vast dat alle benodigde stukken voor de zittende partij ingeleverd en correct zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-alle-benodigde-stukken-voor-de-zittende-partij-ingeleverd-en-correct-zijn-art-i-2)
+2. Centraal Stembureau bevestigd dat de lijstinleveraar kiesgerechtigd is in de BRP (Art. I 2 lid 1g) 
+3. Centraal Stembureau neemt de stukken in ontvangst
+4. Centraal Stembureau vult de hashcode in in e-KS
+5. e-KS constateert dat er geen fouten zijn in BRP
+6. [Centraal Stembureau stelt vast dat alle benodigde stukken voor de zittende partij ingeleverd en correct zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-alle-benodigde-stukken-voor-de-zittende-partij-ingeleverd-en-correct-zijn-art-i-2)
 
 __Uitbreidingen__:
 
+2a. lijstinleveraar is niet kiesgerechtigd  
+&emsp; 2a1.  [Centraal Stembureau stelt vast dat er verzuimen zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-er-verzuimen-zijn)   
+
+5a. e-KS constateert dat er BRP fouten zijn  
+&emsp;  5a1. Centraal Stembureau bevestigt de BRP fouten  
+&emsp;  5a2. Centraal Stembureau corrigeert de BRP ambsthalve in het systeem  
+&emsp; &emsp;  5a2a. [Centraal Stembureau stelt vast dat er verzuimen zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-er-verzuimen-zijn)  
 
 ## Centraal Stembureau stelt vast dat alle benodigde stukken voor de zittende partij ingeleverd en correct zijn (Art. I 2)
 
@@ -34,8 +42,6 @@ __Hoofdscenario:__
 7. Centraal Stembureau stelt vast dat de instemmingsverklaringen (model H9) correct zijn.
 8. Centraal Stembureau stelt vast dat er geen fouten zijn
 9. Centraal Stembureau maakt een proces-verbaal van het onderzoek naar de kandidatenlijsten (model I1) aan zonder verzuimen
-10. Centraal Stembureau houdt een openbare zitting waarbij de nummers op de lijst worden verloot 
-11. Centraal Stembureau stelt de definitieve kandidatatenlijsten vast in model I4 (ook in de openbare zitting)
 
 
 __Uitbreidingen__:
@@ -52,7 +58,7 @@ __Uitbreidingen__:
 &emsp;  8a2. Centraal Stembureau herstelt fout met ambthalve correctie  
 &emsp;  &emsp;  8a1a. [Centraal Stembureau stelt vast dat er verzuimen zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-er-verzuimen-zijn)  
 
-## Centraal Stembureau stelt vast dat er verzuimen zijn 
+## Centraal Stembureau stelt vast dat er verzuimen zijn  (art. I 2)
 
 __Niveau:__ Hoog-over (vlieger) 🪁
 
@@ -64,7 +70,7 @@ __Hoofdscenario:__
 2. Centraal Stembureau maakt een proces-verbaal van het onderzoek naar de kandidatenlijsten aan (model I1)
 3. Centraal Stembureau maakt een verzuimbrief per partij aan
 4. Centraal Stembureau bezorgt de verzuimbrieven met een koerier naar de partijen
-5. Centraal Stembureau ontvangt de ontbrekende stukken van de partij
+5. Centraal Stembureau ontvangt de ontbrekende stukken van de partij (art. I 2 lid 2)
 6. Centraal Stembureau stelt vast dat de verzuimen zijn hersteld
 7. Centraal Stembureau zet in het systeem dat de verzuimen zijn hersteld
 8. Centraal Stembureau houdt een openbare zitting waarbij de nummers op de lijst worden verloot 
@@ -72,7 +78,24 @@ __Hoofdscenario:__
 
 __Uitbreidingen__:
 
-6a. De verzuimen zijn niet hersteld  
-&emsp;  6a1. Centraal Stembureau zet in het systeem dat verzuimen niet zijn hersteld  
-&emsp;  6a2. Centraal Stembureau schrapt de kandidaat of de lijst (afhankelijk van het verzuim)
+6a. De verzuimen zijn niet hersteld  (Art. I 5 en Art. I 6)  
+&emsp;  6a1. Centraal Stembureau zet in het systeem dat verzuimen niet zijn hersteld    
+&emsp;  6a2. Centraal Stembureau schrapt de kandidaat of de lijst (afhankelijk van het verzuim)  
 
+## Centraal Stembureau stelt de lijsten vast in een openbare zitting (art. I 4)
+
+__Niveau:__ Hoog-over (vlieger) 🪁
+
+### Hoofdscenario en uitbreidingen
+
+__Hoofdscenario:__
+
+1. Centraal Stembureau maakt een concept proces-verbaal model I4 aan in e-KS
+2. Centraal Stembureau houdt een openbare zitting waarbij de nummers op de lijst worden verloot
+3. Centraal Stembureau beantwoord de bezwaren
+4. Centraal Stembureau stelt de definitieve kandidatatenlijsten vast in de openbare zitting, de Kiesraad leden tekenen het proces verbaal
+5. Centraal Stembureau vult de uitslag van de loting in in e-KS
+6. Centraal Stembureau download de EML en verstuurd deze naar de leveranciers
+7. Centraal Stembureau verwerkt de bezwaren in e-KS
+8. Centraal Stemburau maakt het definitieve proces verbaal model I4 aan in e-KS
+9. De Kiesraad leden tekenen opnieuw het proces verbaal
