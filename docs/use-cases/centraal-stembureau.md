@@ -1,5 +1,22 @@
 # Centraal Stembureau
 
+## Centraal stembureau ontvangt de stukken van de partij
+
+__Niveau:__ Hoog-over, wolk, ☁️
+
+### Hoofdscenario en uitbreidingen
+
+__Hoofdscenario:__
+
+1. Politieke Partij levert de stukken (op papier) in bij het Centraal Stembureau
+2. Centraal Stembureau neemt de stukken in ontvangst
+3. Centraal Stembureau vult de hashcode in in e-KS
+4. e-KS constateert dat er geen fouten zijn in BRP
+5. [Centraal Stembureau stelt vast dat alle benodigde stukken voor de zittende partij ingeleverd en correct zijn](./centraal-stembureau.md#centraal-stembureau-stelt-vast-dat-alle-benodigde-stukken-voor-de-zittende-partij-ingeleverd-en-correct-zijn-art-i-2)
+
+__Uitbreidingen__:
+
+
 ## Centraal Stembureau stelt vast dat alle benodigde stukken voor de zittende partij ingeleverd en correct zijn (Art. I 2)
 
 __Niveau:__ Hoog-over, wolk, ☁️
