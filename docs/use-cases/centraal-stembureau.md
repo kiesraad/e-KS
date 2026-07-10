@@ -66,21 +66,25 @@ __Niveau:__ Hoog-over (vlieger) 🪁
 
 __Hoofdscenario:__
 
-1. Centraal Stembureau zet de verzuimen in het systeem
-2. Centraal Stembureau maakt een proces-verbaal van het onderzoek naar de kandidatenlijsten aan (model I1)
-3. Centraal Stembureau maakt een verzuimbrief per partij aan
-4. Centraal Stembureau bezorgt de verzuimbrieven met een koerier naar de partijen
-5. Centraal Stembureau ontvangt de ontbrekende stukken van de partij (art. I 2 lid 2)
-6. Centraal Stembureau stelt vast dat de verzuimen zijn hersteld
-7. Centraal Stembureau zet in het systeem dat de verzuimen zijn hersteld
-8. Centraal Stembureau houdt een openbare zitting waarbij de nummers op de lijst worden verloot 
-9. Centraal Stembureau stelt de definitieve kandidatatenlijsten vast in een proces-verbaal over geldigheid en nummering kandidatenlijsten (model I4) 
+1. Centraal Stembureau bevestigt dat het de dag van kandidaatstelling is.
+2. Centraal Stembureau zet de verzuimen in het systeem
+3. Centraal Stembureau maakt een proces-verbaal van het onderzoek naar de kandidatenlijsten aan (model I1)
+4. Centraal Stembureau maakt een verzuimbrief per partij aan
+5. Centraal Stembureau bezorgt de verzuimbrieven met een koerier naar de partijen
+6. Centraal Stembureau ontvangt de ontbrekende stukken van de partij (art. I 2 lid 2)
+7. Centraal Stembureau stelt vast dat de verzuimen zijn hersteld
+8. Centraal Stembureau zet in het systeem dat de verzuimen zijn hersteld
+9. Centraal Stembureau houdt een openbare zitting waarbij de nummers op de lijst worden verloot 
+10. Centraal Stembureau stelt de definitieve kandidatatenlijsten vast in een proces-verbaal over geldigheid en nummering kandidatenlijsten (model I4) 
 
 __Uitbreidingen__:
 
-6a. De verzuimen zijn niet hersteld  (Art. I 5 en Art. I 6)  
-&emsp;  6a1. Centraal Stembureau zet in het systeem dat verzuimen niet zijn hersteld    
-&emsp;  6a2. Centraal Stembureau schrapt de kandidaat of de lijst (afhankelijk van het verzuim)  
+1a. Het is de voorinlevering
+&emsp;  1a1. Centraal Stembureau koppelt aan de partij terug wat de fouten zijn zodat ze dit nog kunnen verbeteren voor de dag van KS
+
+7a. De verzuimen zijn niet hersteld  (Art. I 5 en Art. I 6)  
+&emsp;  7a1. Centraal Stembureau zet in het systeem dat verzuimen niet zijn hersteld    
+&emsp;  7a2. Centraal Stembureau schrapt de kandidaat of de lijst (afhankelijk van het verzuim)  
 
 ## Centraal Stembureau stelt de lijsten vast in een openbare zitting (art. I 4)
 
