@@ -74,6 +74,9 @@ mod state;
 mod store;
 mod utils;
 
+// `pub` because the `pdf_diff` development tool renders the PDF models (from
+// the JSON example inputs) through this module.
+pub mod models;
 pub mod router;
 
 #[cfg(feature = "fixtures")]
@@ -110,7 +113,7 @@ pub(crate) use auth::{
 pub(crate) use core::TlsConfig;
 pub(crate) use core::{
     AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale, LocaleValues,
-    Province, Scope, SessionPageValues, TypstRenderer, WaterCouncil,
+    Province, Scope, SessionPageValues, WaterCouncil,
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };

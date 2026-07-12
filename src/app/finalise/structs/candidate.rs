@@ -1,22 +1,24 @@
-use serde::Serialize;
+use chrono::Datelike;
 use tracing::error;
 
 use crate::{
-    AppError, candidates::Candidate, core::ModelLocale,
-    finalise::structs::typst_datetime::TypstDate,
+    AppError,
+    candidates::Candidate,
+    core::ModelLocale,
+    models::inputs::{Candidate as ModelCandidate, Date},
 };
 
-#[derive(Debug, Serialize)]
-pub struct TypstCandidate {
-    pub last_name: String,
-    /// Initials as printed on the model, e.g., optionally including the gender and first name
-    pub initials: String,
-    pub date_of_birth: TypstDate,
-    pub locality: String,
-    pub position: usize,
+impl From<crate::common::DateOfBirth> for Date {
+    fn from(date: crate::common::DateOfBirth) -> Self {
+        Self {
+            year: date.year(),
+            month: date.month(),
+            day: date.day(),
+        }
+    }
 }
 
-impl TypstCandidate {
+impl ModelCandidate {
     pub fn try_from(candidate: &Candidate, locale: ModelLocale) -> Result<Self, AppError> {
         Ok(Self {
             last_name: candidate.person.name.last_name_with_prefix(),
@@ -43,7 +45,7 @@ impl TypstCandidate {
 pub fn ordered_candidates(
     candidates: &mut [crate::candidates::Candidate],
     locale: ModelLocale,
-) -> Result<Vec<TypstCandidate>, AppError> {
+) -> Result<Vec<ModelCandidate>, AppError> {
     candidates.sort_by_key(|c| c.position);
 
     for (i, candidate) in candidates.iter().enumerate() {
@@ -60,7 +62,7 @@ pub fn ordered_candidates(
 
     candidates
         .iter()
-        .map(|c| TypstCandidate::try_from(c, locale))
+        .map(|c| ModelCandidate::try_from(c, locale))
         .collect::<Result<Vec<_>, _>>()
 }
 
@@ -135,7 +137,7 @@ mod tests {
         };
         candidate.person.personal_data.date_of_birth = None;
 
-        let err = TypstCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
+        let err = ModelCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing birth date for candidate")
@@ -152,10 +154,20 @@ mod tests {
         };
         candidate.person.personal_data.place_of_residence = None;
 
-        let err = TypstCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
+        let err = ModelCandidate::try_from(&candidate, ModelLocale::Nl).unwrap_err();
         assert!(matches!(
             err,
             AppError::IncompleteData("Missing locality for candidate")
         ));
+    }
+
+    #[test]
+    fn date_from_common_date_copies_components() {
+        let input: crate::common::DateOfBirth = "15-03-2001".parse().expect("date");
+        let date = Date::from(input);
+
+        assert_eq!(date.year, 2001);
+        assert_eq!(date.month, 3);
+        assert_eq!(date.day, 15);
     }
 }

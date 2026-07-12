@@ -1,44 +1,14 @@
-use crate::{
-    core::{ModelLocale, Pdf},
-    finalise::{
-        DocumentData,
-        structs::{TypstPerson, typst_model_data::TypstModelData},
-    },
-    list_designation::ListDesignation,
-};
-use serde::Serialize;
+use crate::{finalise::DocumentData, models::h1::H1};
 
-#[derive(Debug, Serialize)]
-pub struct H1<'a> {
-    #[serde(flatten)]
-    common: &'a TypstModelData,
-    previously_seated: bool,
-    list_designation: ListDesignation,
-    list_submitter: &'a TypstPerson,
-    substitute_submitters: &'a Vec<TypstPerson>,
-}
-
-impl Pdf for H1<'_> {
-    fn typst_template_name(&self) -> &'static str {
-        "model-h1.typ"
-    }
-
-    fn filename(&self) -> String {
-        match self.common.locale {
-            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
-            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
-        }
-    }
-}
-
-impl<'a> From<&'a DocumentData> for H1<'a> {
-    fn from(data: &'a DocumentData) -> Self {
+impl From<&DocumentData> for H1 {
+    fn from(data: &DocumentData) -> Self {
         Self {
-            common: &data.model_data,
+            common: data.model_data.clone(),
+            electoral_districts: data.electoral_districts.clone(),
             previously_seated: data.previously_seated,
             list_designation: data.list_designation,
-            list_submitter: &data.list_submitter,
-            substitute_submitters: &data.substitute_submitters,
+            list_submitter: data.list_submitter.clone(),
+            substitute_submitters: data.substitute_submitters.clone(),
         }
     }
 }

@@ -18,10 +18,6 @@ children:
     command: ./bin/bag-service
     args:
       - 127.0.0.1:8090
-  - name: typst-webservice
-    command: ./bin/typst-webservice
-    args:
-      - models
   - name: docker logs
     command: docker
     args:

@@ -13,7 +13,7 @@ use secrecy::ExposeSecret;
 use crate::{
     AppError, AppStore, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore,
     CsbStoreData, DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore,
-    StreamId, TypstRenderer,
+    StreamId,
     auth::session_extractor::{
         SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
     },
@@ -39,7 +39,6 @@ pub struct AppState {
     pub pending_requests: PendingRequestStore,
     pub id_deriver: IdDeriver,
     pub auth_service_state: AuthServiceState,
-    pub typst_renderer: TypstRenderer,
     pub db_health: DbHealth,
 }
 
@@ -82,7 +81,6 @@ impl AppState {
         let pending_requests =
             PendingRequestStore::from_storage_url(config.storage_url.expose_secret())?;
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
-        let typst_renderer = build_typst_renderer(&config);
 
         let auth_service_state = if config.disable_auth_service {
             AuthServiceState::new_empty()
@@ -99,7 +97,6 @@ impl AppState {
             pending_requests,
             id_deriver,
             auth_service_state,
-            typst_renderer,
             db_health: DbHealth::default(),
         })
     }
@@ -207,7 +204,6 @@ impl AppState {
         let pending_requests =
             PendingRequestStore::from_storage_url(config.storage_url.expose_secret())
                 .expect("test PendingRequestStore must initialize");
-        let typst_renderer = build_typst_renderer(&config);
         let auth_service_state = AuthServiceState::new_empty();
 
         let store_registry = StoreRegistry::new(
@@ -232,20 +228,9 @@ impl AppState {
             pending_requests,
             id_deriver,
             auth_service_state,
-            typst_renderer,
             db_health: DbHealth::default(),
         }
     }
-}
-
-#[cfg(feature = "embed-typst")]
-fn build_typst_renderer(_config: &Config) -> TypstRenderer {
-    TypstRenderer::embedded(crate::utils::embed_typst::pdf_context())
-}
-
-#[cfg(not(feature = "embed-typst"))]
-fn build_typst_renderer(config: &Config) -> TypstRenderer {
-    TypstRenderer::http(config.typst_url.clone())
 }
 
 fn request_locale(headers: &HeaderMap) -> crate::Locale {

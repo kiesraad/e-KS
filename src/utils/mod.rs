@@ -19,9 +19,6 @@ pub mod transparent_string;
 #[cfg(feature = "livereload")]
 pub mod livereload;
 
-#[cfg(feature = "embed-typst")]
-pub mod embed_typst;
-
 #[cfg(test)]
 pub mod test_utils;
 

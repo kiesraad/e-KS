@@ -4,10 +4,10 @@ use crate::{
     utils::format_hash,
 };
 use askama::Template;
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, HtmlTemplate, Overlay, TypstRenderer,
+    AppError, AppStore, Context, HtmlTemplate, Overlay,
     audit_log::{
         AuditLogDetail, AuditLogPath,
         pages::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
@@ -74,7 +74,6 @@ pub async fn audit_log_detail(
 pub async fn audit_log_gen_documents(
     path @ AuditLogDownloadDocumentsPath { event_id, locale }: AuditLogDownloadDocumentsPath,
     context: Context,
-    State(renderer): State<TypstRenderer>,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     let temp_store = create_temp_store(&store, event_id);
@@ -87,15 +86,7 @@ pub async fn audit_log_gen_documents(
 
     let (bundles, filename) = DocumentData::from_store_and_context(&temp_store, &context, locale)?;
 
-    DocumentData::serve_download(
-        bundles,
-        filename,
-        path.to_string(),
-        &store,
-        &temp_store,
-        renderer,
-    )
-    .await
+    DocumentData::serve_download(bundles, filename, path.to_string(), &store, &temp_store).await
 }
 
 /// Replay the event stream up to and including `event_id` into a throwaway
@@ -212,7 +203,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn audit_log_gen_documents_returns_zip_response() -> Result<(), AppError> {
         use axum::{
@@ -243,9 +233,6 @@ mod tests {
                 event_id: current_event_id - 1,
             },
             context.clone(),
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             store.clone(),
         )
         .await?
@@ -257,9 +244,6 @@ mod tests {
                 event_id: current_event_id - 2,
             },
             context,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             store.clone(),
         )
         .await?

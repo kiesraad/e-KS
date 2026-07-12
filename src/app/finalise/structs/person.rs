@@ -1,23 +1,13 @@
-use serde::Serialize;
-
 use crate::{
-    AppError, common::Address, finalise::structs::typst_postal_address::TypstPostalAddress,
-    list_submitters::ListSubmitter, persons::Representative,
+    AppError, common::Address, list_submitters::ListSubmitter, models::inputs::Person,
+    persons::Representative,
 };
 
-#[derive(Debug, Serialize)]
-pub struct TypstPerson {
-    pub last_name: String,
-    /// Initials as printed on the model, e.g., optionally including the first name
-    pub initials: String,
-    pub postal_address: TypstPostalAddress,
-}
-
-impl TryFrom<ListSubmitter> for TypstPerson {
+impl TryFrom<ListSubmitter> for Person {
     type Error = AppError;
 
     fn try_from(submitter: ListSubmitter) -> Result<Self, Self::Error> {
-        Ok(TypstPerson {
+        Ok(Person {
             last_name: submitter.name.last_name_with_prefix(),
             initials: submitter.name.initials_with_first_name(),
             postal_address: (&submitter.address).into(),
@@ -25,9 +15,9 @@ impl TryFrom<ListSubmitter> for TypstPerson {
     }
 }
 
-impl From<&Representative> for TypstPerson {
+impl From<&Representative> for Person {
     fn from(representative: &Representative) -> Self {
-        TypstPerson {
+        Person {
             last_name: representative.name.last_name_with_prefix(),
             initials: representative.name.initials_with_first_name(),
             postal_address: (&Address::Dutch(representative.address.clone())).into(),
@@ -41,9 +31,9 @@ mod tests {
     use crate::{list_submitters::ListSubmitterId, test_utils::sample_list_submitter};
 
     #[test]
-    fn typst_person_from_list_submitter_maps_fields() -> Result<(), AppError> {
+    fn person_from_list_submitter_maps_fields() -> Result<(), AppError> {
         let submitter = sample_list_submitter(ListSubmitterId::new());
-        let person = TypstPerson::try_from(submitter)?;
+        let person = Person::try_from(submitter)?;
 
         assert_eq!(person.last_name, "Bos");
         assert_eq!(person.initials, "E.F.");

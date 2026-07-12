@@ -1,15 +1,18 @@
 use crate::{
-    AppError, AppStore, Context, ElectionConfig, TypstRenderer,
+    AppError, AppStore, Context, ElectionConfig,
     candidate_lists::{CandidateListId, FullCandidateList},
     common::{HasSeverity, Problematic, Severity},
-    core::{ModelLocale, Pdf, ZipResponseWriter},
-    finalise::structs::{
-        eml210::Eml210, h1::H1, h3::H3, h4::H4, h9::H9, typst_candidate::ordered_candidates,
-        typst_datetime::TypstDatetime, typst_detailed_candidate::TypstDetailedCandidate,
-        typst_electoral_districts::TypstElectoralDistricts, typst_model_data::TypstModelData,
-        typst_name_authorisation::TypstNameAuthorisation, typst_person::TypstPerson,
-    },
+    core::{ModelLocale, ZipResponseWriter},
+    finalise::structs::{eml210::Eml210, ordered_candidates},
     list_designation::ListDesignation,
+    models::{
+        Pdf,
+        h1::H1,
+        h3::H3,
+        h4::H4,
+        h9::H9,
+        inputs::{DetailedCandidate, ElectoralDistricts, ModelData, NameAuthorisation, Person},
+    },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{
@@ -27,13 +30,14 @@ pub struct DocumentData {
     pub list_id: CandidateListId,
     pub folder_name: Option<String>,
     pub election: ElectionConfig,
-    pub model_data: TypstModelData,
-    pub detailed_candidates: Vec<TypstDetailedCandidate>,
+    pub model_data: ModelData,
+    pub electoral_districts: ElectoralDistricts,
+    pub detailed_candidates: Vec<DetailedCandidate>,
     pub previously_seated: bool,
     pub list_designation: ListDesignation,
-    pub list_submitter: TypstPerson,
-    pub substitute_submitters: Vec<TypstPerson>,
-    pub name_authorisations: Vec<TypstNameAuthorisation>,
+    pub list_submitter: Person,
+    pub substitute_submitters: Vec<Person>,
+    pub name_authorisations: Vec<NameAuthorisation>,
     nomination: Eml210,
 }
 
@@ -58,7 +62,7 @@ impl DocumentData {
         }
     }
 
-    /// Get a list of `TypstNameAuthorisation` with the right number of authorisations based on
+    /// Get a list of `NameAuthorisation` with the right number of authorisations based on
     /// the type of list designation:
     ///
     /// - Blank lists always have 0 name authorisations -> No H3-1 or H3-2
@@ -69,17 +73,17 @@ impl DocumentData {
     /// empty spaces on the models.
     fn name_authorisations_with_fill_ins(
         store: &AppStore,
-    ) -> Result<Vec<TypstNameAuthorisation>, AppError> {
+    ) -> Result<Vec<NameAuthorisation>, AppError> {
         let name_authorisations = store.get_name_authorisations();
 
         match store.get_political_group().list_designation {
             Some(ListDesignation::Blank) => Ok(Vec::new()),
             Some(ListDesignation::Combined) => {
-                let mut auths: Vec<TypstNameAuthorisation> =
+                let mut auths: Vec<NameAuthorisation> =
                     name_authorisations.iter().map(Into::into).collect();
 
                 while auths.len() < 2 {
-                    auths.push(TypstNameAuthorisation::default());
+                    auths.push(NameAuthorisation::default());
                 }
 
                 Ok(auths)
@@ -127,10 +131,10 @@ impl DocumentData {
         let ordered_candidates = ordered_candidates(&mut candidates, locale)?;
         let detailed_candidates = candidates
             .iter()
-            .map(|c| TypstDetailedCandidate::try_from(c, locale))
+            .map(|c| DetailedCandidate::try_from(c, locale))
             .collect::<Result<Vec<_>, _>>()?;
 
-        let electoral_districts = TypstElectoralDistricts::from(&list, &context.election, locale);
+        let electoral_districts = ElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
         let designation = group.display_name_for_exports()?;
@@ -148,7 +152,7 @@ impl DocumentData {
         let substitute_submitters = store
             .get_substitute_submitters()
             .into_iter()
-            .map(TypstPerson::try_from)
+            .map(Person::try_from)
             .collect::<Result<Vec<_>, _>>()?;
 
         let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
@@ -165,17 +169,16 @@ impl DocumentData {
             list_id,
             folder_name: Some(folder_name),
             election,
-            model_data: TypstModelData {
+            model_data: ModelData {
                 election_name: election.formal_title(locale),
-                election_type: election.election_type(),
-                electoral_districts,
+                election_type: election.election_type().into(),
                 designation,
                 candidates: ordered_candidates,
-                timestamp: TypstDatetime::now(),
                 locale,
                 event_id,
                 sha_hash: format_hash(&event_hash, true),
             },
+            electoral_districts,
             detailed_candidates,
             previously_seated: group.was_previously_seated(),
             list_designation: group.list_designation.unwrap_or_default(),
@@ -233,7 +236,6 @@ impl DocumentData {
         download_path: String,
         event_store: &AppStore,
         document_store: &AppStore,
-        renderer: TypstRenderer,
     ) -> Result<Response, AppError> {
         tracing::info!(
             filename,
@@ -249,13 +251,12 @@ impl DocumentData {
             })
             .await?;
 
-        Self::to_zip_response(bundles, filename, renderer).map(IntoResponse::into_response)
+        Self::to_zip_response(bundles, filename).map(IntoResponse::into_response)
     }
 
     pub fn to_zip_response(
         bundles: Vec<Self>,
         filename: String,
-        renderer: TypstRenderer,
     ) -> Result<impl IntoResponse, AppError> {
         let headers = no_cache_headers::generate_attachment_headers(
             &filename,
@@ -270,7 +271,7 @@ impl DocumentData {
 
             for bundle in bundles {
                 let list_id = bundle.list_id;
-                if let Err(err) = bundle.write_zip(&renderer, &mut zipper).await {
+                if let Err(err) = bundle.write_zip(&mut zipper).await {
                     error!(
                         error = ?err,
                         list_id = %list_id,
@@ -290,20 +291,19 @@ impl DocumentData {
 
     async fn write_zip(
         self,
-        renderer: &TypstRenderer,
         writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,
     ) -> Result<(), AppError> {
         let h1 = H1::from(&self);
         let h1_path = self.zip_path(h1.filename());
         writer
-            .add_file(&h1_path, &h1.generate_bytes(renderer).await?)
+            .add_file(&h1_path, &h1.generate_bytes().await?)
             .await?;
 
         if self.list_designation != ListDesignation::Blank {
             let h3 = H3::from(&self);
             let h3_path = self.zip_path(h3.filename());
             writer
-                .add_file(&h3_path, &h3.generate_bytes(renderer).await?)
+                .add_file(&h3_path, &h3.generate_bytes().await?)
                 .await?;
         }
 
@@ -311,7 +311,7 @@ impl DocumentData {
             let h4 = H4::from(&self);
             let h4_path = self.zip_path(h4.filename());
             writer
-                .add_file(&h4_path, &h4.generate_bytes(renderer).await?)
+                .add_file(&h4_path, &h4.generate_bytes().await?)
                 .await?;
         }
 
@@ -326,7 +326,7 @@ impl DocumentData {
                 h9.filename()
             ));
             writer
-                .add_file(&filename, &h9.generate_bytes(renderer).await?)
+                .add_file(&filename, &h9.generate_bytes().await?)
                 .await?;
         }
 

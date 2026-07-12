@@ -11,7 +11,7 @@ pub enum ElectionType {
     Ps,
     Ws,
     Ep,
-    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported
+    Kc, // The PDF models additionally use KCNI for "Kiescollege Niet-Ingezetenen"; see `models::inputs::ModelElectionType`
     Er,
 }
 

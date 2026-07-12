@@ -15,7 +15,7 @@ export MEMORY_SERVE_QUIET=1
 
 cargo build \
     --no-default-features \
-    --features memory-serve,fixtures,dev-features,embed-typst,tvs-mock \
+    --features memory-serve,fixtures,dev-features,tvs-mock \
     --release \
     --bin eks
 

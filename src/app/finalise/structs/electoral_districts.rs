@@ -1,27 +1,20 @@
-use serde::Serialize;
+use crate::{
+    ElectionConfig, candidate_lists::CandidateList, core::ModelLocale,
+    models::inputs::ElectoralDistricts,
+};
 
-use crate::{ElectionConfig, candidate_lists::CandidateList, core::ModelLocale};
-
-#[derive(Debug, Serialize, PartialEq, Eq)]
-#[serde(tag = "tag", content = "districts")]
-pub enum TypstElectoralDistricts {
-    All,
-    Some(Vec<String>),
-    OnlyOne,
-}
-
-impl TypstElectoralDistricts {
+impl ElectoralDistricts {
     pub fn from(
         list: &CandidateList,
         election_config: &ElectionConfig,
         locale: ModelLocale,
     ) -> Self {
         if election_config.has_only_one_district() {
-            TypstElectoralDistricts::OnlyOne
+            ElectoralDistricts::OnlyOne
         } else if list.contains_all_districts(election_config) {
-            TypstElectoralDistricts::All
+            ElectoralDistricts::All
         } else {
-            TypstElectoralDistricts::Some(
+            ElectoralDistricts::Some(
                 list.electoral_districts
                     .iter()
                     .map(|d| d.title(locale.into()).to_string())
@@ -45,8 +38,8 @@ mod tests {
         };
 
         assert_eq!(
-            TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry),
-            TypstElectoralDistricts::All
+            ElectoralDistricts::from(&list, &election, ModelLocale::Fry),
+            ElectoralDistricts::All
         );
     }
 
@@ -58,8 +51,8 @@ mod tests {
             ..Default::default()
         };
 
-        match TypstElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
-            TypstElectoralDistricts::Some(districts) => {
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Nl) {
+            ElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utrecht".to_string(), "Noord-Holland".to_string()]
@@ -67,8 +60,8 @@ mod tests {
             }
             _ => panic!("expected Some districts"),
         }
-        match TypstElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
-            TypstElectoralDistricts::Some(districts) => {
+        match ElectoralDistricts::from(&list, &election, ModelLocale::Fry) {
+            ElectoralDistricts::Some(districts) => {
                 assert_eq!(
                     districts,
                     vec!["Utert".to_string(), "Noard-Hollân".to_string()]
@@ -85,8 +78,8 @@ mod tests {
             ..Default::default()
         };
 
-        let district = TypstElectoralDistricts::from(&list, &election, ModelLocale::Nl);
+        let district = ElectoralDistricts::from(&list, &election, ModelLocale::Nl);
 
-        assert_eq!(district, TypstElectoralDistricts::OnlyOne);
+        assert_eq!(district, ElectoralDistricts::OnlyOne);
     }
 }

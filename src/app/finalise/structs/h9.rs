@@ -1,42 +1,14 @@
-use serde::Serialize;
-
 use crate::{
-    core::Pdf,
-    finalise::{
-        DocumentData,
-        structs::{
-            typst_detailed_candidate::TypstDetailedCandidate, typst_model_data::TypstModelData,
-        },
-    },
-    utils::slugify_teletex,
+    finalise::DocumentData,
+    models::{h9::H9, inputs::DetailedCandidate},
 };
 
-#[derive(Debug, Serialize)]
-pub struct H9<'a> {
-    #[serde(flatten)]
-    common: &'a TypstModelData,
-    detailed_candidate: &'a TypstDetailedCandidate,
-}
-
-impl Pdf for H9<'_> {
-    fn typst_template_name(&self) -> &'static str {
-        "model-h9.typ"
-    }
-
-    fn filename(&self) -> String {
-        format!(
-            "h9-{}-{}.pdf",
-            slugify_teletex(&self.detailed_candidate.candidate.last_name, true),
-            self.detailed_candidate.candidate.position
-        )
-    }
-}
-
-impl<'a> From<(&'a DocumentData, &'a TypstDetailedCandidate)> for H9<'a> {
-    fn from((data, candidate): (&'a DocumentData, &'a TypstDetailedCandidate)) -> Self {
+impl From<(&DocumentData, &DetailedCandidate)> for H9 {
+    fn from((data, candidate): (&DocumentData, &DetailedCandidate)) -> Self {
         Self {
-            common: &data.model_data,
-            detailed_candidate: candidate,
+            common: data.model_data.clone(),
+            electoral_districts: data.electoral_districts.clone(),
+            detailed_candidate: candidate.clone(),
         }
     }
 }
