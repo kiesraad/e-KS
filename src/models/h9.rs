@@ -3,13 +3,16 @@
 use serde::Deserialize;
 use textris_pdf::{
     build::{Textris, cell, fill_in, italic, mono, text},
-    theme::ColumnWidth::{Auto, Fraction},
+    theme::ColumnWidth::Fraction,
 };
 
 use super::{
     Pdf,
     inputs::{DetailedCandidate, ElectoralDistricts, ModelData, ModelElectionType},
-    layout::{column_table, signature_line, start_document, translator, warning},
+    layout::{
+        candidates_section, column_table, election_section, signature_line, start_versioned,
+        translator, warning_let_op,
+    },
 };
 use crate::utils::slugify_teletex;
 
@@ -32,32 +35,28 @@ impl Pdf for H9 {
 
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_document(
+        let mut doc = start_versioned(
             "Model H 9",
             trans("Instemmingsverklaring", "Ynstimmingsferklearring"),
-            self.common.locale,
-            Some((self.common.event_id, &self.common.sha_hash)),
+            &self.common,
         );
         doc.paragraph(trans(
             "Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.",
             "Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.",
         ));
-        warning(
+        warning_let_op(
             &mut doc,
-            trans("Let op!", "Tink der om!"),
-            trans(
-                "Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.",
-                "Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.",
-            ),
+            self.common.locale,
+            "Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.",
+            "Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.",
         );
 
-        doc.h3_numbered(trans("Verkiezing", "Ferkiezing"));
-        doc.paragraph(
-            text(trans(
-                "Het gaat om de verkiezing van ",
-                "It giet om de ferkiezing fan ",
-            ))
-            .bold(&self.common.election_name),
+        election_section(
+            &mut doc,
+            self.common.locale,
+            "Het gaat om de verkiezing van ",
+            "It giet om de ferkiezing fan ",
+            &self.common.election_name,
         );
 
         if self.electoral_districts != ElectoralDistricts::OnlyOne {
@@ -89,24 +88,7 @@ impl Pdf for H9 {
             .bold(&self.common.designation),
         );
 
-        doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
-        doc.table_styled(
-            &column_table([Auto, Fraction(1), Fraction(1), Fraction(1)]),
-            [
-                "",
-                trans("naam", "namme"),
-                trans("voorletters", "foarletters"),
-                trans("woonplaats", "wenplak"),
-            ],
-            self.common.candidates.iter().map(|c| {
-                [
-                    text(c.position.to_string()),
-                    text(&c.last_name),
-                    text(&c.initials),
-                    text(&c.locality),
-                ]
-            }),
-        );
+        candidates_section(&mut doc, self.common.locale, &self.common.candidates);
 
         let candidate = &self.detailed_candidate;
 

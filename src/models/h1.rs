@@ -9,7 +9,7 @@ use textris_pdf::{
 use super::{
     Pdf,
     inputs::{ElectoralDistricts, ModelData, ModelElectionType, Person},
-    layout::{column_table, date, signature_line, start_document, translator},
+    layout::{column_table, date, election_section, signature_line, start_versioned, translator},
 };
 use crate::{core::ModelLocale, list_designation::ListDesignation};
 
@@ -34,24 +34,22 @@ impl Pdf for H1 {
 
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_document(
+        let mut doc = start_versioned(
             "Model H 1",
             trans("Kandidatenlijst", "Kandidatelist"),
-            self.common.locale,
-            Some((self.common.event_id, &self.common.sha_hash)),
+            &self.common,
         );
         doc.paragraph(trans(
             "Met dit formulier stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.",
             "Mei dit formulier stelle jo, as dejinge dy’t de kandidatelist ynleveret, kandidaten ferkiesber foar in ferkiezing.",
         ));
 
-        doc.h3_numbered(trans("Verkiezing", "Ferkiezing"));
-        doc.paragraph(
-            text(trans(
-                "Het gaat om de verkiezing van ",
-                "It giet om de ferkiezing fan ",
-            ))
-            .bold(&self.common.election_name),
+        election_section(
+            &mut doc,
+            self.common.locale,
+            "Het gaat om de verkiezing van ",
+            "It giet om de ferkiezing fan ",
+            &self.common.election_name,
         );
 
         if self.electoral_districts != ElectoralDistricts::OnlyOne {

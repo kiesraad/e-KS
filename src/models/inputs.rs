@@ -146,3 +146,39 @@ pub struct DetailedCandidate {
     pub representative: Option<Person>,
     pub postal_address: Option<PostalAddress>,
 }
+
+#[cfg(test)]
+mod tests {
+    use serde_json::json;
+
+    use super::*;
+
+    #[test]
+    fn every_election_type_maps_to_a_model_election_type() {
+        use ElectionType::*;
+        // KCNI has no `ElectionType`; every other model type is reachable.
+        let mapped: Vec<ModelElectionType> = [Tk, Ek, Gr, Ps, Ws, Ep, Kc, Er]
+            .into_iter()
+            .map(ModelElectionType::from)
+            .collect();
+        assert_eq!(mapped.first(), Some(&ModelElectionType::Tk));
+        assert_eq!(mapped.last(), Some(&ModelElectionType::Er));
+        assert!(!mapped.contains(&ModelElectionType::Kcni));
+    }
+
+    #[test]
+    fn date_parses_from_parts_and_iso_string() {
+        let parts: Date = serde_json::from_value(json!({"year": 2027, "month": 3, "day": 18}))
+            .expect("parts date");
+        assert_eq!((parts.year, parts.month, parts.day), (2027, 3, 18));
+
+        let iso: Date = serde_json::from_value(json!("2027-03-18")).expect("iso date");
+        assert_eq!((iso.year, iso.month, iso.day), (2027, 3, 18));
+    }
+
+    #[test]
+    fn date_rejects_a_malformed_iso_string() {
+        let error = serde_json::from_value::<Date>(json!("2027-03")).unwrap_err();
+        assert!(error.to_string().contains("invalid date"));
+    }
+}

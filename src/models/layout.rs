@@ -8,7 +8,7 @@ use textris_pdf::{
     theme::{Align, BoxStyle, ColumnWidth, ColumnWidths, TableStyle, Theme, em},
 };
 
-use super::inputs::Date;
+use super::inputs::{Candidate, Date, ModelData};
 use crate::core::ModelLocale;
 
 /// Background colour for warning boxes and zebra-striped table rows.
@@ -80,6 +80,61 @@ pub(super) fn start_document(
     doc
 }
 
+/// Start a model document that carries the event version and hash in its
+/// footer. All H-models are versioned this way (I 4 is not).
+pub(super) fn start_versioned(model: &str, name: &str, common: &ModelData) -> Textris {
+    start_document(
+        model,
+        name,
+        common.locale,
+        Some((common.event_id, &common.sha_hash)),
+    )
+}
+
+/// The numbered "Verkiezing" section: the heading and an intro line ending in
+/// the bold election name. Shared by H 1, H 3, H 4 and H 9.
+pub(super) fn election_section(
+    doc: &mut Textris,
+    locale: ModelLocale,
+    intro_nl: &'static str,
+    intro_fry: &'static str,
+    election_name: &str,
+) {
+    let trans = translator(locale);
+    doc.h3_numbered(trans("Verkiezing", "Ferkiezing"));
+    doc.paragraph(text(trans(intro_nl, intro_fry)).bold(election_name));
+}
+
+/// The numbered "Kandidaten op de lijst" section: the heading and the standard
+/// four-column table (nummer, naam, voorletters, woonplaats). Shared by H 3,
+/// H 4 and H 9.
+pub(super) fn candidates_section(doc: &mut Textris, locale: ModelLocale, candidates: &[Candidate]) {
+    let trans = translator(locale);
+    doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
+    doc.table_styled(
+        &column_table([
+            ColumnWidth::Auto,
+            ColumnWidth::Fraction(1),
+            ColumnWidth::Fraction(1),
+            ColumnWidth::Fraction(1),
+        ]),
+        [
+            "",
+            trans("naam", "namme"),
+            trans("voorletters", "foarletters"),
+            trans("woonplaats", "wenplak"),
+        ],
+        candidates.iter().map(|c| {
+            [
+                text(c.position.to_string()),
+                text(&c.last_name),
+                text(&c.initials),
+                text(&c.locality),
+            ]
+        }),
+    );
+}
+
 /// A highlighted warning box below the title block, with a bold first line.
 pub(super) fn warning(doc: &mut Textris, title: &str, body: &str) {
     let style = BoxStyle {
@@ -89,6 +144,22 @@ pub(super) fn warning(doc: &mut Textris, title: &str, body: &str) {
     doc.boxed_styled(&style, |boxed| {
         boxed.paragraph(Text::new().bold(title).line_break().normal(body));
     });
+}
+
+/// A standard "Let op!" warning callout with the given body. Shared by H 4 and
+/// H 9.
+pub(super) fn warning_let_op(
+    doc: &mut Textris,
+    locale: ModelLocale,
+    body_nl: &'static str,
+    body_fry: &'static str,
+) {
+    let trans = translator(locale);
+    warning(
+        doc,
+        trans("Let op!", "Tink der om!"),
+        trans(body_nl, body_fry),
+    );
 }
 
 /// `column_table` from `layout.typ`: striped rows and an italic header.

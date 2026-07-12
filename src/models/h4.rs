@@ -1,15 +1,15 @@
 //! Model H 4: Ondersteuningsverklaring / Stipeferklearring.
 
 use serde::Deserialize;
-use textris_pdf::{
-    build::{Textris, cell, fill_in, text},
-    theme::ColumnWidth::{Auto, Fraction},
-};
+use textris_pdf::build::{Textris, cell, fill_in, text};
 
 use super::{
     Pdf,
     inputs::{ModelData, ModelElectionType},
-    layout::{column_table, signature_line, start_document, translator, warning},
+    layout::{
+        candidates_section, election_section, signature_line, start_versioned, translator,
+        warning_let_op,
+    },
 };
 use crate::core::ModelLocale;
 
@@ -29,32 +29,28 @@ impl Pdf for H4 {
 
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_document(
+        let mut doc = start_versioned(
             "Model H 4",
             trans("Ondersteuningsverklaring", "Stipeferklearring"),
-            self.common.locale,
-            Some((self.common.event_id, &self.common.sha_hash)),
+            &self.common,
         );
         doc.paragraph(trans(
             "Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.",
             "Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.",
         ));
-        warning(
+        warning_let_op(
             &mut doc,
-            trans("Let op!", "Tink der om!"),
-            trans(
-                "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
-                "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
-            ),
+            self.common.locale,
+            "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
+            "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
         );
 
-        doc.h3_numbered(trans("Verkiezing", "Ferkiezing"));
-        doc.paragraph(
-            text(trans(
-                "Het gaat om de verkiezing van: ",
-                "It giet om de ferkiezing fan: ",
-            ))
-            .bold(&self.common.election_name),
+        election_section(
+            &mut doc,
+            self.common.locale,
+            "Het gaat om de verkiezing van: ",
+            "It giet om de ferkiezing fan: ",
+            &self.common.election_name,
         );
 
         doc.h3_numbered(trans(
@@ -69,24 +65,7 @@ impl Pdf for H4 {
             .bold(&self.common.designation),
         );
 
-        doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
-        doc.table_styled(
-            &column_table([Auto, Fraction(1), Fraction(1), Fraction(1)]),
-            [
-                "",
-                trans("naam", "namme"),
-                trans("voorletters", "foarletters"),
-                trans("woonplaats", "wenplak"),
-            ],
-            self.common.candidates.iter().map(|c| {
-                [
-                    text(c.position.to_string()),
-                    text(&c.last_name),
-                    text(&c.initials),
-                    text(&c.locality),
-                ]
-            }),
-        );
+        candidates_section(&mut doc, self.common.locale, &self.common.candidates);
 
         doc.h3_numbered(trans(
             "Ondertekening door de kiezer",

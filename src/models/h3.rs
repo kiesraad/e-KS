@@ -1,23 +1,20 @@
 //! Model H 3: authorisation to place a designation above a candidate list.
 //! Depending on the list designation this renders as H 3-1 (a single
-//! registered designation, [`super::h3_1`]) or H 3-2 (a combined designation,
-//! [`super::h3_2`]). The shared sections live here.
+//! registered designation) or H 3-2 (a combined designation). The two variants
+//! share their structure; only the wording and the signing block differ.
 
 use serde::Deserialize;
-use textris_pdf::{
-    build::{Textris, cell, fill_in, text},
-    theme::ColumnWidth::{Auto, Fraction},
-};
+use textris_pdf::build::{Textris, cell, fill_in, text};
 
 use super::{
-    Pdf, h3_1, h3_2,
+    Pdf,
     inputs::{ElectoralDistricts, ModelData, NameAuthorisation, Person},
-    layout::{column_table, signature_line, translator},
+    layout::{candidates_section, election_section, signature_line, start_versioned, translator},
 };
 use crate::{core::ModelLocale, list_designation::ListDesignation};
 
 /// Anchor of the designation section, referenced from the permission text.
-pub(super) const DESIGNATION_SECTION: &str = "aanduiding";
+const DESIGNATION_SECTION: &str = "aanduiding";
 
 #[derive(Debug, Deserialize)]
 pub struct H3 {
@@ -40,30 +37,119 @@ impl Pdf for H3 {
         .to_string()
     }
 
+    /// H 3-1 (registered designation) and H 3-2 (combined designation) share
+    /// their layout; `combined` selects the H 3-2 wording and its
+    /// per-representative signing block.
     fn document(&self) -> Textris {
-        if self.list_designation == ListDesignation::Combined {
-            h3_2::document(self)
+        let trans = translator(self.common.locale);
+        let combined = self.list_designation == ListDesignation::Combined;
+
+        let mut doc = start_versioned(
+            if combined {
+                "Model H 3-2"
+            } else {
+                "Model H 3-1"
+            },
+            if combined {
+                trans(
+                    "Machtiging om samengevoegde aanduiding boven kandidatenlijst te plaatsen",
+                    "Machtiging om gearfoege oantsjutting boppe kandidatelist te pleatsen",
+                )
+            } else {
+                trans(
+                    "Machtiging om aanduiding boven kandidatenlijst te plaatsen",
+                    "Machtiging om oantsjutting boppe kandidatelist te pleatsen",
+                )
+            },
+            &self.common,
+        );
+        doc.paragraph(if combined {
+            trans(
+                "Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om een aanduiding boven de kandidatenlijst te plaatsen, die is gevormd door samenvoeging van de aanduidingen van politieke groeperingen of afkortingen daarvan.",
+                "Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om in oantsjutting boppe de kandidatelist te pleatsen, dy’t foarme is troch gearfoeging fan de oantsjuttings fan politike groepearrings of ôfkoartings dêrfan.",
+            )
         } else {
-            h3_1::document(self)
+            trans(
+                "Met dit formulier geeft u de inleveraar van de kandidatenlijst toestemming om de aanduiding die door uw politieke groepering is geregistreerd boven de kandidatenlijst te plaatsen.",
+                "Mei dit formulier jouwe jo dejinge dy’t de kandidatelist ynleveret tastimming om de oantsjutting dy’t troch jo politike groepearring registrearre is boppe de kandidatelist te pleatsen.",
+            )
+        });
+        doc.paragraph(trans(
+            "U kunt alleen toestemming geven als u hiertoe gemachtigd bent door uw politieke groepering.",
+            "Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.",
+        ));
+
+        election_section(
+            &mut doc,
+            self.common.locale,
+            "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
+            "It giet om de kandidatelist foar de ferkiezing fan: ",
+            &self.common.election_name,
+        );
+        districts_section(&mut doc, self);
+
+        doc.h3_numbered(if combined {
+            trans(
+                "Aanduiding van de politieke groeperingen",
+                "Oantsjutting fan de politike groepearrings",
+            )
+        } else {
+            trans(
+                "Aanduiding van de politieke groepering",
+                "Oantsjutting fan de politike groepearring",
+            )
+        })
+        .anchor(DESIGNATION_SECTION);
+        doc.paragraph(
+            text(if combined {
+                trans(
+                    "De samengevoegde aanduiding van de politieke groeperingen: ",
+                    "De gearfoege oantsjutting fan de politike groepearrings: ",
+                )
+            } else {
+                trans(
+                    "De geregistreerde aanduiding van de politieke groepering: ",
+                    "De registrearre oantsjutting fan de politike groepearring: ",
+                )
+            })
+            .bold(&self.common.designation),
+        );
+
+        permission_section(&mut doc, self, combined);
+        candidates_section(&mut doc, self.common.locale, &self.common.candidates);
+
+        if combined {
+            doc.h3_numbered(trans(
+                "Ondertekening door de gemachtigden",
+                "Undertekening troch de lêsthawwer",
+            ));
+            for (index, authorisation) in self.name_authorisations.iter().enumerate() {
+                doc.h4(format!(
+                    "{} {}",
+                    trans(
+                        "Gemachtigde van politieke groepering",
+                        "Lêsthawwer fan politike groepearring",
+                    ),
+                    index + 1
+                ));
+                authorisation_signature(&mut doc, self.common.locale, authorisation);
+            }
+        } else {
+            doc.h3_numbered(trans(
+                "Ondertekening door de gemachtigde van de politieke groepering",
+                "Undertekening troch de lêsthawwer fan de politike groepearring",
+            ));
+            if let Some(authorisation) = self.name_authorisations.first() {
+                authorisation_signature(&mut doc, self.common.locale, authorisation);
+            }
         }
+
+        doc
     }
 }
 
-/// The numbered "Verkiezing" section.
-pub(super) fn election_section(doc: &mut Textris, input: &H3) {
-    let trans = translator(input.common.locale);
-    doc.h3_numbered(trans("Verkiezing", "Ferkiezing"));
-    doc.paragraph(
-        text(trans(
-            "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
-            "It giet om de kandidatelist foar de ferkiezing fan: ",
-        ))
-        .bold(&input.common.election_name),
-    );
-}
-
 /// The numbered "Kieskringen" section, omitted for single-district elections.
-pub(super) fn districts_section(doc: &mut Textris, input: &H3) {
+fn districts_section(doc: &mut Textris, input: &H3) {
     let trans = translator(input.common.locale);
     if input.electoral_districts == ElectoralDistricts::OnlyOne {
         return;
@@ -91,7 +177,7 @@ pub(super) fn districts_section(doc: &mut Textris, input: &H3) {
 /// The numbered "Toestemming aan de inleveraar" section. `we` selects the
 /// plural wording of H 3-2. The running text refers back to the designation
 /// section by its number.
-pub(super) fn permission_section(doc: &mut Textris, input: &H3, we: bool) {
+fn permission_section(doc: &mut Textris, input: &H3, we: bool) {
     let trans = translator(input.common.locale);
     doc.h3_numbered(trans(
         "Toestemming aan de inleveraar",
@@ -115,31 +201,8 @@ pub(super) fn permission_section(doc: &mut Textris, input: &H3, we: bool) {
     );
 }
 
-/// The numbered "Kandidaten op de lijst" section.
-pub(super) fn candidates_section(doc: &mut Textris, input: &H3) {
-    let trans = translator(input.common.locale);
-    doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
-    doc.table_styled(
-        &column_table([Auto, Fraction(1), Fraction(1), Fraction(1)]),
-        [
-            "",
-            trans("naam", "namme"),
-            trans("voorletters", "foarletters"),
-            trans("woonplaats", "wenplak"),
-        ],
-        input.common.candidates.iter().map(|c| {
-            [
-                text(c.position.to_string()),
-                text(&c.last_name),
-                text(&c.initials),
-                text(&c.locality),
-            ]
-        }),
-    );
-}
-
 /// The label rows and signature line for one authorised representative.
-pub(super) fn authorisation_signature(
+fn authorisation_signature(
     doc: &mut Textris,
     locale: ModelLocale,
     authorisation: &NameAuthorisation,
