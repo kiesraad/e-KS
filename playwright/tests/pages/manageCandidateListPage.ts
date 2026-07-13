@@ -15,6 +15,7 @@ export class ManageCandidateListPage {
   readonly textfieldBirthYear: Locator;
   readonly dropdownGender: Locator;
   readonly buttonNext: Locator;
+  readonly buttonSave: Locator;
   readonly textfieldPostalCode: Locator;
   readonly textfieldHouseNumber: Locator;
   readonly textfieldHouseNumberAddition: Locator;
@@ -55,6 +56,7 @@ export class ManageCandidateListPage {
     this.textfieldBirthYear = this.page.getByRole("textbox", { name: "Jaar" });
     this.dropdownGender = this.page.getByLabel("Geslacht");
     this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
+    this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
     this.textfieldPostalCode = this.page.getByLabel("Postcode");
     this.textfieldHouseNumber = this.page.getByLabel("Huisnummer", {
       exact: true,
@@ -151,7 +153,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.buttonNext.click();
+    await this.buttonSave.click();
     await this.headingCandidateList.waitFor();
   }
 
@@ -160,7 +162,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
-    await this.buttonNext.click();
+    await this.buttonSave.click();
     await this.headingCandidateList.waitFor();
   }
 
@@ -169,7 +171,7 @@ export class ManageCandidateListPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.buttonNext.click();
+    await this.buttonSave.click();
     await this.headingCandidateList.waitFor();
   }
 
