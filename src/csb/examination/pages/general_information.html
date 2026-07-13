@@ -88,25 +88,45 @@
 {% endmacro %}
 {% block content %}
   <section class="general-information">
-    <a class="card restoration-card"
-       href="{{ political_group.add_political_group_omission_path() }}">
-      <div class="card-header">
-        <div>
-          <h3 class="h4">{{ "csb.general.restore_title"|trans }}</h3>
+    <div class="omission-cards">
+      <h3>
+        <span class="omission-icon" aria-hidden="true"></span>
+        {{ "csb.omission.title"|trans }}
+      </h3>
+      <div class="cards">
+        <div class="card omission-card"
+             data-href="{{ political_group.add_political_group_omission_path() }}">
+          <div class="card-header">
+            <div>
+              <h3 class="h4">{{ "csb.omission.add.title"|trans }}</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ "csb.general.add_text"|trans }}</p>
+          </div>
+          <a class="card-footer"
+             href="{{ political_group.add_political_group_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
         </div>
-        <span class="icon-edit" aria-hidden="true"></span>
+        <div class="card omission-card">
+          <div class="card-header">
+            <div>
+              <h3 class="h4">{{ "csb.omission.overview.title"|trans }}</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ "csb.general.overview_text"|trans }}</p>
+            {% if !general_omissions.is_empty() %}
+              <ul class="omission-badges">
+                {% for omission in general_omissions %}
+                  <li class="omission-badge{% if !omission.recoverable %} omission-badge--error{% endif %}">{{ omission.title }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+          <a class="card-footer" href="#">{{ "csb.omission.action.manage"|trans }}</a>
+        </div>
       </div>
-      <div class="card-content">
-        <p>{{ "csb.general.restore_text"|trans }}</p>
-      </div>
-    </a>
-    {% if !general_omissions.is_empty() %}
-      <ul class="omission-badges">
-        {% for omission in general_omissions %}
-          <li class="omission-badge{% if !omission.recoverable %} omission-badge--error{% endif %}">{{ omission.title }}</li>
-        {% endfor %}
-      </ul>
-    {% endif %}
+    </div>
     <h2>{{ "csb.general.group_info"|trans }}</h2>
     <table class="general-information-table">
       {{ columns_head("common.general_information"|trans) }}

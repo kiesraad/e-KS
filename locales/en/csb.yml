@@ -8,11 +8,12 @@ brp:
   correct: Correct
   errors: Errors
 candidate:
+  add_candidate_text: Add omissions for this candidate on this list
+  add_candidate_title: Candidate
+  add_person_text: Add omissions for this person on all their lists
+  add_person_title: Person
+  overview_text: Added omissions for this candidate
   personal_details: Personal details
-  restore_person_text: Add restorations for this person on all their lists here
-  restore_person_title: Person restorations
-  restore_text: Add restorations for this candidate on this list here
-  restore_title: Candidate restorations
   status: Status
 examination: Examination
 finish_examination: Finish examination
@@ -25,10 +26,10 @@ form:
   import: Import
   import_political_group: Import political group
 general:
+  add_text: Add omissions for the general information
   group_info: Political group information
+  overview_text: Added omissions for the general information
   personalia: Personal details
-  restore_text: Add general restorations for the general information here
-  restore_title: General information restorations
   status: Status
 group:
   all_brp_errors: All BRP errors
@@ -53,9 +54,9 @@ import:
     invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
     not_found: No data was found for the entered hash code.
 list:
+  add_text: Add omissions for this candidate list
   brp_errors: BRP errors
-  restore_text: Add restorations for this candidate list here
-  restore_title: Candidate list restorations
+  overview_text: Added omissions for this candidate list
 monitoring:
   cache: Local cache
   created_at: Created
@@ -72,6 +73,9 @@ no_unfinished_political_groups: There are no unfinished examinations of any poli
 omission:
   action:
     add: Add omission
+    manage: Manage omissions
+  add:
+    title: Add
   count:
     plural: "{} omissions"
     singular: 1 omission
@@ -83,6 +87,9 @@ omission:
     submit: Add and close
     title: Add omissions
     title_label: Omission title
+  overview:
+    title: Overview
+  title: Omissions
 progress: Progress
 status:
   approved: Approved

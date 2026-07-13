@@ -238,55 +238,59 @@
   h2 {
     margin-top: var(--space-6);
   }
+}
 
-  .restoration-cards {
+.omission-cards {
+  background-color: var(--base-white);
+  padding: var(--space-6);
+
+  & > h3 {
+    align-items: center;
     display: flex;
-    flex-wrap: wrap;
-    align-items: flex-start;
-    gap: var(--space-4);
+    gap: var(--space-3);
+    margin-top: 0;
+    margin-bottom: var(--space-4);
 
-    .restoration-card {
-      flex: 1 1 16rem;
-      width: auto;
-      margin-bottom: 0;
+    .omission-icon {
+      background-color: var(--orange-200);
+      background-image: url("../icons/omission.svg");
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: var(--rounded-lg);
+      flex-shrink: 0;
+      height: var(--space-11);
+      width: var(--space-11);
     }
   }
 
-  .restoration-card {
+  .cards {
     --card-gap: var(--space-3);
     --card-padding: var(--space-6);
-    align-self: flex-start;
-    max-width: 24rem;
-    width: 100%;
-    margin-bottom: var(--space-4);
-    cursor: pointer;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
 
-    &:hover {
-      --card-bg: var(--gray-25);
-      --badge-brightness: 92%;
-    }
+  .card-content {
+    color: var(--gray-500);
+  }
 
-    .card-header {
-      justify-content: space-between;
-      font-size: var(--font-size-lg);
+  /* Added omissions are grouped in a highlighted box inside the overview. */
+  .omission-badges {
+    background-color: var(--orange-50);
+    border-radius: var(--rounded-md);
+    margin: 0;
+    padding: var(--space-3);
+  }
+}
 
-      .icon-edit {
-        flex-shrink: 0;
-        width: var(--space-6);
-        height: var(--space-6);
+/* Candidate detail has two add cards (person, candidate) side by side, with
+   the overview spanning the full width below them. */
+.omission-cards--split {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
 
-        &::after {
-          background-color: var(--gray-600);
-          content: "";
-          display: block;
-          height: var(--space-6);
-          width: var(--space-6);
-          mask-image: url("../icons/edit.svg");
-          mask-repeat: no-repeat;
-          mask-size: contain;
-        }
-      }
-    }
+  .omission-card--overview {
+    grid-column: 1 / -1;
   }
 }
 

@@ -8,11 +8,12 @@ brp:
   correct: Correct
   errors: Fouten
 candidate:
+  add_candidate_text: Voeg verzuimen toe voor deze kandidaat op deze lijst
+  add_candidate_title: Kandidaat
+  add_person_text: Voeg verzuimen toe voor deze persoon op al hun lijsten
+  add_person_title: Persoon
+  overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
-  restore_person_text: Voeg hier herstelacties toe voor deze persoon op al hun lijsten
-  restore_person_title: Herstelacties persoon
-  restore_text: Voeg hier herstelacties toe voor deze kandidaat op deze lijst
-  restore_title: Herstelacties kandidaat
   status: Status
 examination: Onderzoek
 finish_examination: Afronden onderzoek
@@ -25,10 +26,10 @@ form:
   import: Importeer
   import_political_group: Politieke groepering importeren
 general:
+  add_text: Voeg verzuimen toe voor basisgegevens
   group_info: Gegevens Politieke groepering
+  overview_text: Toegevoegde verzuimen basisgegevens
   personalia: Personalia
-  restore_text: Voeg hier algemene herstelacties toe voor basisgegevens
-  restore_title: Herstelacties basisgegevens
   status: Status
 group:
   all_brp_errors: Alle BRP fouten
@@ -53,9 +54,9 @@ import:
     invalid_hash: "Voer een geldige hash code in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
     not_found: Er is geen data gevonden voor de ingevoerde hash code.
 list:
+  add_text: Voeg verzuimen toe voor deze kandidatenlijst
   brp_errors: BRP fouten
-  restore_text: Voeg hier herstelacties toe voor deze kandidatenlijst
-  restore_title: Herstelacties kandidatenlijst
+  overview_text: Toegevoegde verzuimen kandidatenlijst
 monitoring:
   cache: Lokale cache
   created_at: Aangemaakt
@@ -72,6 +73,9 @@ no_unfinished_political_groups: Er zijn geen onafgeronde onderzoeken naar politi
 omission:
   action:
     add: Verzuim toevoegen
+    manage: Verzuimen beheren
+  add:
+    title: Toevoegen
   count:
     plural: "{} verzuimen"
     singular: 1 verzuim
@@ -83,6 +87,9 @@ omission:
     submit: Toevoegen en sluiten
     title: Verzuimen toevoegen
     title_label: Titel verzuim
+  overview:
+    title: Overzicht
+  title: Verzuimen
 progress: Voortgang
 status:
   approved: Goedgekeurd
