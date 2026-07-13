@@ -134,7 +134,9 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
+        // When the address is not in the BAG the warning is shown (not hidden).
         assert!(body.contains("Address not found in the BAG"));
+        assert!(!body.contains("class=\"warning hidden\""));
 
         Ok(())
     }
@@ -160,7 +162,8 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
-        assert!(!body.contains("Address not found in the BAG"));
+        // The warning is always in the DOM; when the address is known it is hidden.
+        assert!(body.contains("class=\"warning hidden\""));
 
         Ok(())
     }

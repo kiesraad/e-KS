@@ -55,10 +55,8 @@ export default function addressLookup() {
     setHighlight(allInputs, "success", false);
     setHighlight(allInputs, "warning", false);
 
-    // Any correction (re-lookup, or editing locality/street) hides the warning
-    // again; the success/failure branches re-show it if still relevant.
     if (addressWarning) {
-      addressWarning.style.display = "none";
+      addressWarning.classList.add("hidden");
     }
   }
 
@@ -101,7 +99,7 @@ export default function addressLookup() {
       setHighlight(lookupInputs, "warning", true);
 
       if (addressWarning) {
-        addressWarning.style.display = "";
+        addressWarning.classList.remove("hidden");
       }
     }
   };

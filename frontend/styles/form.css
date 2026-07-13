@@ -179,7 +179,7 @@
   span.hint,
   details.hint,
   span.error,
-  span.warning {
+  span.warning:not(.hidden) {
     display: inline-block;
     font-size: var(--font-size-md);
     line-height: var(--leading-md);
@@ -269,7 +269,7 @@
     margin-top: 0.5rem;
   }
 
-  span.warning {
+  span.warning:not(.hidden) {
     color: var(--color-warning-darker);
     font-weight: normal;
     margin-top: 0.5rem;
