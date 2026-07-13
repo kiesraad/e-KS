@@ -37,6 +37,7 @@
   </div>
 {% endblock %}
 {% block content %}
+  {% let election = "election"|election_value %}
   <section class="candidate-lists {% if political_group.is_examination_finished %} disabled {% endif %}">
     <div class="candidates">
       <div data-href="#" class="card card-brp-errors">

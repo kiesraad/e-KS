@@ -1,6 +1,11 @@
 {% extends "csb/components/overlay.html" %}
 {% set submit_label = "csb.omission.form.submit"|trans %}
+{% block overlay_class %}omission-overlay{% endblock %}
 {% block overlay_title %}{{ "csb.omission.form.title"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% set is_overview = false %}
+  {% include "csb/examination/pages/omission_steps.html" %}
+{% endblock %}
 {% block overlay_form %}
   <fieldset class="omission-form">
     {% if !presets.is_empty() %}
@@ -10,7 +15,7 @@
           {% for preset in presets %}
             <li>
               <button type="button"
-                      class="omission-preset{% if !preset.recoverable %} omission-preset--error{% endif %}"
+                      class="omission-preset{% if !preset.recoverable %} omission-preset-unrecoverable{% endif %}"
                       data-omission-preset
                       data-title="{{ preset.title }}"
                       data-description="{{ preset.description }}"

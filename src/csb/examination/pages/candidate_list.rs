@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, ElectionConfig, ElectoralDistrict, HtmlTemplate,
+    AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
     candidate_lists::CandidateListId,
     csb::{
         Omission,
@@ -16,7 +16,6 @@ use crate::{
 #[derive(Template)]
 #[template(path = "csb/examination/pages/candidate_list.html")]
 struct CsbCandidateListTemplate {
-    election: ElectionConfig,
     political_group: CsbPoliticalGroup,
     list_id: CandidateListId,
     electoral_districts: Vec<ElectoralDistrict>,
@@ -49,7 +48,6 @@ pub async fn overview(
 
     Ok(HtmlTemplate(
         CsbCandidateListTemplate {
-            election: store.election,
             political_group,
             list_id,
             electoral_districts: list.electoral_districts,

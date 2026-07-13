@@ -1,136 +1,36 @@
-use askama::Template;
 use axum::{
     extract::Query,
     response::{IntoResponse, Response},
 };
 
-use uuid::Uuid;
-
 use crate::{
-    AppError, Context, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState,
-    candidate_lists::CandidateListId,
+    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState,
     csb::{
-        OmissionCategory, OmissionPlaceholders, OmissionType,
+        OmissionCategory,
         examination::{
             OmissionForm,
             extractors::CsbPoliticalGroup,
-            pages::{CsbAddOmissionPath, OmissionListQuery},
+            pages::{
+                CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath,
+                OmissionListQuery,
+            },
         },
     },
-    filters,
     form::FormData,
-    persons::PersonId,
 };
 
-#[derive(Template)]
-#[template(path = "csb/examination/pages/omission.html")]
-struct CsbAddOmissionTemplate {
-    form: FormData<OmissionForm>,
-    overlay: Overlay,
-    /// Where the close button and the post-save redirect return to.
-    close_action: String,
-    /// Quick-fill suggestions for this type, with placeholders interpolated.
-    presets: Vec<PresetView>,
-}
+mod urls;
+mod views;
 
-/// A preset shown in the dialog, with `{token}` placeholders in its description
-/// already filled from the referenced item (the rest left for manual entry).
-struct PresetView {
-    title: String,
-    description: String,
-    help_text: String,
-    /// Whether this preset describes a recoverable omission ("herstelbaar").
-    recoverable: bool,
-}
-
-/// Resolve the placeholder values that can be derived from the referenced item.
-fn placeholders_for(
-    omission_type: OmissionType,
-    reference: Uuid,
-    list: Option<CandidateListId>,
-    store: &CsbStore,
-    locale: Locale,
-) -> OmissionPlaceholders {
-    match omission_type {
-        OmissionType::Candidate => {
-            let person = PersonId::from(reference);
-            OmissionPlaceholders {
-                candidate_name: store.get_person(person).map(|person| person.name.display()),
-                // A candidate's position differs per list, so it can only be
-                // resolved when the dialog was opened for a specific list.
-                candidate_number: list
-                    .and_then(|list| store.candidate_position(list, person))
-                    .map(|nr| nr.to_string()),
-                districts: None,
-            }
-        }
-        OmissionType::CandidateList => OmissionPlaceholders {
-            districts: store
-                .get_candidate_list(CandidateListId::from(reference))
-                .map(|list| list.districts_name(locale.into())),
-            ..Default::default()
-        },
-        OmissionType::PoliticalGroup => OmissionPlaceholders::default(),
-    }
-}
-
-/// The presets for this type with their descriptions interpolated. A `general`
-/// candidate omission (applying to the person on every list) offers a different
-/// set than one scoped to the candidate on a specific list.
-fn preset_views(
-    omission_type: OmissionType,
-    reference: Uuid,
-    list: Option<CandidateListId>,
-    general: bool,
-    store: &CsbStore,
-    locale: Locale,
-) -> Vec<PresetView> {
-    let placeholders = placeholders_for(omission_type, reference, list, store, locale);
-
-    omission_type
-        .presets(general)
-        .iter()
-        .map(|preset| PresetView {
-            title: preset.title.clone(),
-            description: placeholders.interpolate(&preset.description),
-            help_text: preset.help_text.clone(),
-            recoverable: preset.recoverable,
-        })
-        .collect()
-}
-
-/// The page the dialog returns to: the general information page for political
-/// group omissions, the candidate list page for candidate list omissions, the
-/// candidate detail page for candidate omissions opened from a specific list,
-/// otherwise the political group examination overview.
-fn return_path(
-    omission_type: OmissionType,
-    reference: Uuid,
-    list: Option<CandidateListId>,
-    political_group: &CsbPoliticalGroup,
-) -> String {
-    match omission_type {
-        OmissionType::PoliticalGroup => political_group.general_information_path().to_string(),
-        OmissionType::CandidateList => political_group
-            .candidate_list_path(&CandidateListId::from(reference))
-            .to_string(),
-        // The candidate detail page is scoped to a list, so it can only be the
-        // return target when the dialog was opened for a specific list.
-        OmissionType::Candidate => match list {
-            Some(list) => political_group
-                .candidate_path(&list, &PersonId::from(reference))
-                .to_string(),
-            None => political_group.examination_path().to_string(),
-        },
-    }
-}
+use urls::{add_url, overview_url, overview_url_for, return_path};
+use views::{CsbAddOmissionTemplate, CsbOmissionOverviewTemplate, omission_views, preset_views};
 
 /// Render the "add omission" overlay dialog.
 pub async fn add_omission(
     CsbAddOmissionPath {
+        stream_id,
         omission_type,
         reference,
-        ..
     }: CsbAddOmissionPath,
     context: CsbContext,
     store: CsbStore,
@@ -146,13 +46,50 @@ pub async fn add_omission(
         &store,
         context.session.locale,
     );
-
     Ok(HtmlTemplate(
         CsbAddOmissionTemplate {
             form: FormData::new(),
             overlay: Overlay::new(&query),
             close_action: return_path(omission_type, reference, list, &political_group),
             presets,
+            add_tab_url: add_url(stream_id, omission_type, reference, list, general),
+            overview_tab_url: overview_url(stream_id, omission_type, reference, list, general),
+        },
+        context,
+    )
+    .into_response())
+}
+
+/// Render the omissions overview page for an entity: the list of omissions
+/// already added, shown in the same dialog as the add-omission form but on its
+/// own tab (and its own route).
+pub async fn overview(
+    CsbOmissionOverviewPath {
+        stream_id,
+        omission_type,
+        reference,
+    }: CsbOmissionOverviewPath,
+    context: CsbContext,
+    store: CsbStore,
+    Query(query): Query<QueryParamState>,
+    Query(OmissionListQuery { list, general }): Query<OmissionListQuery>,
+) -> Result<Response, AppError> {
+    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    let overview_tab_url = overview_url(stream_id, omission_type, reference, list, general);
+
+    Ok(HtmlTemplate(
+        CsbOmissionOverviewTemplate {
+            overlay: Overlay::new(&query),
+            close_action: return_path(omission_type, reference, list, &political_group),
+            omissions: omission_views(
+                stream_id,
+                omission_type,
+                reference,
+                &store,
+                &overview_tab_url,
+            ),
+            add_tab_url: add_url(stream_id, omission_type, reference, list, general),
+            overview_tab_url,
         },
         context,
     )
@@ -163,9 +100,9 @@ pub async fn add_omission(
 /// derived from the path parameters, persist, and redirect back.
 pub async fn add_omission_submit(
     CsbAddOmissionPath {
+        stream_id,
         omission_type,
         reference,
-        ..
     }: CsbAddOmissionPath,
     context: CsbContext,
     store: CsbStore,
@@ -190,6 +127,8 @@ pub async fn add_omission_submit(
                 overlay: Overlay::new(&query),
                 close_action: return_path(omission_type, reference, list, &political_group),
                 presets,
+                add_tab_url: add_url(stream_id, omission_type, reference, list, general),
+                overview_tab_url: overview_url(stream_id, omission_type, reference, list, general),
             },
             context,
         )
@@ -213,12 +152,36 @@ pub async fn add_omission_submit(
     }
 }
 
+/// Remove a single omission and return to the overview it was removed from (the
+/// `redirect_to` carried by the button, falling back to the overview derived
+/// from the omission's category).
+pub async fn delete_omission(
+    CsbDeleteOmissionPath {
+        stream_id,
+        omission_id,
+    }: CsbDeleteOmissionPath,
+    _context: CsbContext,
+    store: CsbStore,
+    Query(query): Query<QueryParamState>,
+) -> Result<Response, AppError> {
+    let omission = store.get_omission(omission_id)?;
+    let fallback = overview_url_for(&omission.category, stream_id);
+    omission.delete(&store).await?;
+
+    Ok(query.redirect_or(fallback))
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::{candidate_lists::CandidateListId, test_utils::response_body_string};
+    use crate::{
+        candidate_lists::CandidateListId,
+        csb::{Omission, OmissionType},
+        persons::PersonId,
+        test_utils::response_body_string,
+    };
 
     fn sample_form() -> OmissionForm {
         OmissionForm {
@@ -272,10 +235,189 @@ mod tests {
         // An irreparable preset ("onherstelbaar verzuim") is highlighted as an
         // error and carries `data-recoverable="false"`.
         assert!(body.contains("De aanduiding is niet geregistreerd"));
-        assert!(body.contains("omission-preset--error"));
+        assert!(body.contains("omission-preset-unrecoverable"));
         assert!(body.contains("data-recoverable=\"false\""));
         // No unresolved translation keys leaked through.
         assert!(!body.contains("[csb.omission"));
+        // The dialog carries a two-step sidebar linking to both tabs, with the
+        // add-omission form active by default and the overview on its own route.
+        assert!(body.contains("steps-nav"));
+        assert!(body.contains(&format!(
+            "/csb/examination/{stream_id}/omission/political-group/{stream_id}/overview"
+        )));
+        assert!(body.contains(">Overview</a>"));
+    }
+
+    #[tokio::test]
+    async fn overview_tab_lists_added_omissions_with_details() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list = CandidateListId::new();
+
+        // A recoverable and an irreparable omission on the same candidate list.
+        Omission::new(
+            OmissionCategory::CandidateList(list),
+            "Waarborgsom ontbreekt".to_string(),
+            "De waarborgsom ontbreekt.".to_string(),
+            "Betaal de waarborgsom.".to_string(),
+        )
+        .create(&store)
+        .await
+        .unwrap();
+        let mut irreparable = Omission::new(
+            OmissionCategory::CandidateList(list),
+            "Aanduiding niet geregistreerd".to_string(),
+            "De aanduiding is niet geregistreerd.".to_string(),
+            String::new(),
+        );
+        irreparable.recoverable = false;
+        irreparable.create(&store).await.unwrap();
+
+        let response = overview(
+            CsbOmissionOverviewPath {
+                stream_id,
+                omission_type: OmissionType::CandidateList,
+                reference: list.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The overview shows each omission's title, description and help text.
+        assert!(body.contains("Waarborgsom ontbreekt"));
+        assert!(body.contains("De waarborgsom ontbreekt."));
+        assert!(body.contains("Betaal de waarborgsom."));
+        // The recoverable flag is surfaced per omission.
+        assert!(body.contains(">Recoverable</span>"));
+        assert!(body.contains(">Not recoverable</span>"));
+        assert!(body.contains("omission-item-unrecoverable"));
+        // The overview drops the add-omission form (no description field, no
+        // submit/save button).
+        assert!(!body.contains("data-omission-description"));
+        assert!(!body.contains("value=\"save\""));
+        // The sidebar still links back to the add-omission form.
+        assert!(body.contains("steps-nav"));
+        assert!(body.contains(&format!(
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}\""
+        )));
+        // Each omission carries a remove button targeting its delete action.
+        assert!(body.contains(&format!("/csb/examination/{stream_id}/delete-omission/")));
+        assert!(body.contains(">Remove</button>"));
+    }
+
+    #[tokio::test]
+    async fn delete_omission_removes_it_and_redirects_to_the_overview() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list = CandidateListId::new();
+
+        let omission = Omission::new(
+            OmissionCategory::CandidateList(list),
+            "Waarborgsom ontbreekt".to_string(),
+            "De waarborgsom ontbreekt.".to_string(),
+            String::new(),
+        );
+        omission.create(&store).await.unwrap();
+        let omission_id = omission.id;
+        assert_eq!(store.get_candidate_list_omissions(list).len(), 1);
+
+        let response = delete_omission(
+            CsbDeleteOmissionPath {
+                stream_id,
+                omission_id,
+            },
+            CsbContext::new_test(),
+            store.clone(),
+            Query(QueryParamState::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        // The omission is gone...
+        assert!(store.get_candidate_list_omissions(list).is_empty());
+        // ...and without an explicit redirect we fall back to the candidate list
+        // overview it belonged to.
+        let location = response
+            .headers()
+            .get("Location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.contains(&format!(
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}/overview"
+        )));
+    }
+
+    #[tokio::test]
+    async fn delete_omission_honours_the_redirect_to() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let omission = Omission::new(
+            OmissionCategory::General,
+            "Deposit missing".to_string(),
+            "The deposit is missing.".to_string(),
+            String::new(),
+        );
+        omission.create(&store).await.unwrap();
+        let omission_id = omission.id;
+
+        let response = delete_omission(
+            CsbDeleteOmissionPath {
+                stream_id,
+                omission_id,
+            },
+            CsbContext::new_test(),
+            store.clone(),
+            Query(QueryParamState::redirect_to("/back/here".to_string())),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        assert!(store.get_general_omissions().is_empty());
+        let location = response
+            .headers()
+            .get("Location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.starts_with("/back/here"));
+    }
+
+    #[tokio::test]
+    async fn overview_shows_empty_state_without_omissions() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let response = overview(
+            CsbOmissionOverviewPath {
+                stream_id,
+                omission_type: OmissionType::PoliticalGroup,
+                reference: stream_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("No omissions have been added yet."));
     }
 
     #[tokio::test]

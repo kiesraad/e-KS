@@ -107,7 +107,8 @@
           <a class="card-footer"
              href="{{ political_group.add_political_group_omission_path() }}">{{ "csb.omission.action.add"|trans }}</a>
         </div>
-        <div class="card omission-card">
+        <div class="card omission-card"
+             data-href="{{ political_group.manage_political_group_omissions_path() }}">
           <div class="card-header">
             <div>
               <h3 class="h4">{{ "csb.omission.overview.title"|trans }}</h3>
@@ -118,12 +119,13 @@
             {% if !general_omissions.is_empty() %}
               <ul class="omission-badges">
                 {% for omission in general_omissions %}
-                  <li class="omission-badge{% if !omission.recoverable %} omission-badge--error{% endif %}">{{ omission.title }}</li>
+                  <li class="omission-badge{% if !omission.recoverable %} omission-badge-unrecoverable{% endif %}">{{ omission.title }}</li>
                 {% endfor %}
               </ul>
             {% endif %}
           </div>
-          <a class="card-footer" href="#">{{ "csb.omission.action.manage"|trans }}</a>
+          <a class="card-footer"
+             href="{{ political_group.manage_political_group_omissions_path() }}">{{ "csb.omission.action.manage"|trans }}</a>
         </div>
       </div>
     </div>

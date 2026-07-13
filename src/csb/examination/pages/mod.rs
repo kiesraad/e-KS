@@ -6,7 +6,7 @@ use uuid::Uuid;
 use crate::{
     AppError, AppState, QueryParamState, StreamId,
     candidate_lists::CandidateListId,
-    csb::{OmissionType, examination::extractors::CsbPoliticalGroup},
+    csb::{OmissionId, OmissionType, examination::extractors::CsbPoliticalGroup},
     persons::PersonId,
 };
 
@@ -71,11 +71,32 @@ pub struct CsbAddOmissionPath {
     pub reference: Uuid,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/omission/{omission_type}/{reference}/overview",
+    rejection(AppError)
+)]
+pub struct CsbOmissionOverviewPath {
+    pub stream_id: StreamId,
+    pub omission_type: OmissionType,
+    pub reference: Uuid,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/delete-omission/{omission_id}",
+    rejection(AppError)
+)]
+pub struct CsbDeleteOmissionPath {
+    pub stream_id: StreamId,
+    pub omission_id: OmissionId,
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub struct OmissionListQuery {
-    /// The candidate list the "add omission" dialog was opened from. Used to
-    /// resolve the candidate's position for the preset placeholders and to
-    /// return to the candidate detail page, which is always scoped to a list.
+    /// The candidate list the omission dialog was opened from. Used to resolve
+    /// the candidate's position for the preset placeholders and to return to the
+    /// candidate detail page, which is always scoped to a list.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub list: Option<CandidateListId>,
     /// When set, the omission applies to the person on every list rather than to
@@ -112,9 +133,29 @@ impl CsbPoliticalGroup {
         }
     }
 
+    /// Path to the overview page listing the general (political group level)
+    /// omissions already added.
+    pub fn manage_political_group_omissions_path(&self) -> impl TypedPath {
+        CsbOmissionOverviewPath {
+            stream_id: self.stream_id,
+            omission_type: OmissionType::PoliticalGroup,
+            reference: self.stream_id.into(),
+        }
+    }
+
     /// Path to the dialog that adds an omission to a specific candidate list.
     pub fn add_candidate_list_omission_path(&self, list: &CandidateListId) -> impl TypedPath {
         CsbAddOmissionPath {
+            stream_id: self.stream_id,
+            omission_type: OmissionType::CandidateList,
+            reference: (*list).into(),
+        }
+    }
+
+    /// Path to the overview page listing the omissions already added to this
+    /// candidate list.
+    pub fn manage_candidate_list_omissions_path(&self, list: &CandidateListId) -> impl TypedPath {
+        CsbOmissionOverviewPath {
             stream_id: self.stream_id,
             omission_type: OmissionType::CandidateList,
             reference: (*list).into(),
@@ -176,6 +217,25 @@ impl CsbPoliticalGroup {
         })
     }
 
+    /// Path to the overview page listing the omissions already added for this
+    /// candidate (both list-scoped and general). The `list` is carried so the
+    /// overview can link back to the add form and return page for the list.
+    pub fn manage_candidate_omissions_path(
+        &self,
+        person: &PersonId,
+        list: &CandidateListId,
+    ) -> impl TypedPath {
+        CsbOmissionOverviewPath {
+            stream_id: self.stream_id,
+            omission_type: OmissionType::Candidate,
+            reference: (*person).into(),
+        }
+        .with_query_params(OmissionListQuery {
+            list: Some(*list),
+            general: false,
+        })
+    }
+
     pub fn after_toggle_finish_examination_path(&self) -> impl TypedPath {
         CsbPoliticalGroupPath {
             stream_id: self.stream_id,
@@ -194,4 +254,6 @@ pub fn router() -> Router<AppState> {
         .typed_get(candidate::overview)
         .typed_get(omission::add_omission)
         .typed_post(omission::add_omission_submit)
+        .typed_get(omission::overview)
+        .typed_post(omission::delete_omission)
 }

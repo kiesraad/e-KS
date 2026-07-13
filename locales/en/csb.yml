@@ -88,6 +88,11 @@ omission:
     title: Add omissions
     title_label: Omission title
   overview:
+    description: Description
+    empty: No omissions have been added yet.
+    help_text: Note in omission letter
+    not_recoverable: Not recoverable
+    recoverable: Recoverable
     title: Overview
   title: Omissions
 progress: Progress

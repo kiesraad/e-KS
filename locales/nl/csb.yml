@@ -8,7 +8,7 @@ brp:
   correct: Correct
   errors: Fouten
 candidate:
-  add_candidate_text: Voeg verzuimen toe voor deze kandidaat op deze lijst
+  add_candidate_text: Voeg verzuimen toe voor deze kandidaat specifiek voor deze lijst
   add_candidate_title: Kandidaat
   add_person_text: Voeg verzuimen toe voor deze persoon op al hun lijsten
   add_person_title: Persoon
@@ -88,6 +88,11 @@ omission:
     title: Verzuimen toevoegen
     title_label: Titel verzuim
   overview:
+    description: Omschrijving
+    empty: Er zijn nog geen verzuimen toegevoegd.
+    help_text: Verzuimbriefnotitie
+    not_recoverable: Onherstelbaar
+    recoverable: Herstelbaar
     title: Overzicht
   title: Verzuimen
 progress: Voortgang

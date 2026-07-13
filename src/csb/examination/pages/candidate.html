@@ -12,6 +12,7 @@
   {{ candidate.name.display() }}
 {% endblock %}
 {% block page_sub_title %}
+  {% let election = "election"|election_value %}
   <div class="tags">
     <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
     {% if electoral_districts.len() == election.electoral_districts().len() %}
@@ -86,7 +87,8 @@
           <a class="card-footer"
              href="{{ political_group.add_candidate_omission_path(candidate.id, list_id) }}">{{ "csb.omission.action.add"|trans }}</a>
         </div>
-        <div class="card omission-card omission-card--overview">
+        <div class="card omission-card omission-card--overview"
+             data-href="{{ political_group.manage_candidate_omissions_path(candidate.id, list_id) }}">
           <div class="card-header">
             <div>
               <h3 class="h4">{{ "csb.omission.overview.title"|trans }}</h3>
@@ -97,12 +99,13 @@
             {% if !candidate_omissions.is_empty() %}
               <ul class="omission-badges">
                 {% for omission in candidate_omissions %}
-                  <li class="omission-badge{% if !omission.recoverable %} omission-badge--error{% endif %}">{{ omission.title }}</li>
+                  <li class="omission-badge{% if !omission.recoverable %} omission-badge-unrecoverable{% endif %}">{{ omission.title }}</li>
                 {% endfor %}
               </ul>
             {% endif %}
           </div>
-          <a class="card-footer" href="#">{{ "csb.omission.action.manage"|trans }}</a>
+          <a class="card-footer"
+             href="{{ political_group.manage_candidate_omissions_path(candidate.id, list_id) }}">{{ "csb.omission.action.manage"|trans }}</a>
         </div>
       </div>
     </div>

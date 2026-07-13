@@ -273,17 +273,11 @@
     color: var(--gray-500);
   }
 
-  /* Added omissions are grouped in a highlighted box inside the overview. */
   .omission-badges {
-    background-color: var(--orange-50);
-    border-radius: var(--rounded-md);
     margin: 0;
-    padding: var(--space-3);
   }
 }
 
-/* Candidate detail has two add cards (person, candidate) side by side, with
-   the overview spanning the full width below them. */
 .omission-cards--split {
   .cards {
     grid-template-columns: 1fr 1fr;
@@ -291,6 +285,100 @@
 
   .omission-card--overview {
     grid-column: 1 / -1;
+  }
+}
+
+.overlay.omission-overlay {
+  background-color: var(--orange-50);
+
+  .steps-nav ul li a.active {
+    background-color: var(--orange-200);
+    background-image: url("../icons/arrowNarrowRight-orange.svg");
+    color: var(--orange-900);
+  }
+}
+
+.omission-overview {
+  h3 {
+    margin-top: 0;
+  }
+
+  .omission-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .omission-item {
+    background-color: var(--base-white);
+    border: 1px solid var(--orange-200);
+    border-radius: var(--rounded-lg);
+    padding: var(--space-3) var(--space-4);
+
+    .row {
+      display: flex;
+      gap: var(--space-6);
+      align-items: flex-end;
+
+      .button {
+        flex-shrink: 0;
+      }
+    }
+
+    &.omission-item-unrecoverable {
+      border-color: var(--red-200);
+    }
+  }
+
+  .omission-item-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .omission-item-header {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
+    justify-content: space-between;
+
+    h4 {
+      font-size: var(--font-size-md);
+      margin: 0;
+    }
+  }
+
+  .omission-recoverable {
+    border-radius: var(--rounded-xl);
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-3);
+    white-space: nowrap;
+
+    &.recoverable {
+      background-color: var(--orange-100);
+      color: var(--orange-700);
+    }
+
+    &.not-recoverable {
+      background-color: var(--red-100);
+      color: var(--red-700);
+    }
+  }
+
+  h5 {
+    color: var(--gray-500);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    margin: var(--space-2) 0 0;
+  }
+
+  p {
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-sm);
+    margin: 0;
+    white-space: pre-line;
   }
 }
 

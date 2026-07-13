@@ -2,7 +2,7 @@ use askama::Template;
 use axum::response::{IntoResponse, Response};
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, ElectionConfig, ElectoralDistrict, HtmlTemplate,
+    AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
     candidate_lists::CandidateListId,
     csb::{
         Omission,
@@ -15,7 +15,6 @@ use crate::{
 #[derive(Template)]
 #[template(path = "csb/examination/pages/candidate.html")]
 struct CsbCandidateTemplate {
-    election: ElectionConfig,
     political_group: CsbPoliticalGroup,
     list_id: CandidateListId,
     electoral_districts: Vec<ElectoralDistrict>,
@@ -39,12 +38,11 @@ pub async fn overview(
     let electoral_districts = store
         .get_candidate_list(list_id)
         .map(|list| list.electoral_districts)
-        .unwrap_or_default();
+        .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);
 
     Ok(HtmlTemplate(
         CsbCandidateTemplate {
-            election: store.election,
             political_group,
             list_id,
             electoral_districts,
@@ -169,6 +167,31 @@ mod tests {
                 stream_id,
                 list_id: CandidateListId::new(),
                 person_id: PersonId::new(),
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await;
+
+        assert!(matches!(result, Err(AppError::GenericNotFound)));
+    }
+
+    #[tokio::test]
+    async fn returns_not_found_for_unknown_list() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        // A known candidate but an unknown list: the person lookup succeeds,
+        // so the handler fails when resolving the list's electoral districts.
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.set_person(person);
+
+        let result = overview(
+            CsbCandidatePath {
+                stream_id,
+                list_id: CandidateListId::new(),
+                person_id,
             },
             CsbContext::new_test(),
             store,

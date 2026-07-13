@@ -5,7 +5,7 @@ use rand::{RngExt, rng};
 use crate::{
     AppError, Context, CsbContext,
     CsbEvent::{self},
-    CsbStore, ElectionConfig, HtmlTemplate,
+    CsbStore, HtmlTemplate,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
@@ -17,8 +17,6 @@ use crate::{
 #[derive(Template)]
 #[template(path = "csb/examination/pages/political_group.html")]
 struct CsbPoliticalGroupTemplate {
-    // TODO make election part of CsbContext?
-    election: ElectionConfig,
     political_group: CsbPoliticalGroup,
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
@@ -46,7 +44,6 @@ pub async fn overview(
 
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
-            election: store.election,
             political_group,
             all_brp_error_count,
             candidate_lists,
