@@ -54,6 +54,12 @@ export default function addressLookup() {
   function resetHighlights() {
     setHighlight(allInputs, "success", false);
     setHighlight(allInputs, "warning", false);
+
+    // Any correction (re-lookup, or editing locality/street) hides the warning
+    // again; the success/failure branches re-show it if still relevant.
+    if (addressWarning) {
+      addressWarning.style.display = "none";
+    }
   }
 
   const lookup = async () => {
@@ -87,15 +93,16 @@ export default function addressLookup() {
       streetNameInput.value = data.pr;
 
       // highlight the address fields to indicate they were auto-filled
+      // (the warning was already hidden by resetHighlights above)
       setHighlight(allInputs, "success", true);
-
-      if (addressWarning) {
-        addressWarning.style.display = "none";
-      }
     } else {
       // No usable match — flag the inputs that drive the lookup so the user
-      // knows the combination is unrecognised.
+      // knows the combination is unrecognised, and surface the warning message.
       setHighlight(lookupInputs, "warning", true);
+
+      if (addressWarning) {
+        addressWarning.style.display = "";
+      }
     }
   };
 

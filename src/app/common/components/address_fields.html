@@ -7,9 +7,9 @@
            id="postal_code"
            value="{{ form.data.address.postal_code }}" />
     {% for error in form|error("address.postal_code") %}<span class="error">{{ error }}</span>{% endfor %}
-    {% if address_unknown|default(false) %}
-      <span class="warning" id="unknown-address">{{ "problems.unknown_address"|trans }}</span>
-    {% endif %}
+    <span class="warning"
+          id="unknown-address"
+          {% if address_unknown|default(false) %}{% else %}style="display: none"{% endif %}>{{ "problems.unknown_address"|trans }}</span>
   </p>
   <p class="form-field form-field-sm {% if (form.data.address.house_number.is_empty() && should_warn|default(false)) || address_unknown|default(false) %}warning{% endif %}">
     <label for="house_number">{{ "person.fields.house_number"|trans }}</label>
