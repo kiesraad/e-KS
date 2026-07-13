@@ -187,15 +187,7 @@ impl CsbPoliticalGroup {
         person: &PersonId,
         list: &CandidateListId,
     ) -> impl TypedPath {
-        CsbAddOmissionPath {
-            stream_id: self.stream_id,
-            omission_type: OmissionType::Candidate,
-            reference: (*person).into(),
-        }
-        .with_query_params(OmissionListQuery {
-            list: Some(*list),
-            general: false,
-        })
+        self.add_candidate_omission_path_for(person, list, false)
     }
 
     /// Path to the dialog that adds an omission covering the person on every
@@ -206,6 +198,18 @@ impl CsbPoliticalGroup {
         person: &PersonId,
         list: &CandidateListId,
     ) -> impl TypedPath {
+        self.add_candidate_omission_path_for(person, list, true)
+    }
+
+    /// The add-omission dialog for a candidate, keeping the `list` context. A
+    /// `general` omission covers the person on every list; otherwise it is
+    /// scoped to the candidate on this list.
+    fn add_candidate_omission_path_for(
+        &self,
+        person: &PersonId,
+        list: &CandidateListId,
+        general: bool,
+    ) -> impl TypedPath {
         CsbAddOmissionPath {
             stream_id: self.stream_id,
             omission_type: OmissionType::Candidate,
@@ -213,7 +217,7 @@ impl CsbPoliticalGroup {
         }
         .with_query_params(OmissionListQuery {
             list: Some(*list),
-            general: true,
+            general,
         })
     }
 

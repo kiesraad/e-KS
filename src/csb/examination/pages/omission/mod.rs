@@ -2,11 +2,13 @@ use axum::{
     extract::Query,
     response::{IntoResponse, Response},
 };
+use uuid::Uuid;
 
 use crate::{
-    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState,
+    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState, StreamId,
+    candidate_lists::CandidateListId,
     csb::{
-        OmissionCategory,
+        OmissionCategory, OmissionType,
         examination::{
             OmissionForm,
             extractors::CsbPoliticalGroup,
@@ -25,70 +27,97 @@ mod views;
 use urls::{add_url, overview_url, overview_url_for, return_path};
 use views::{CsbAddOmissionTemplate, CsbOmissionOverviewTemplate, omission_views, preset_views};
 
+/// The entity an omission dialog operates on, together with the list/general
+/// context carried through its URLs and presets. Bundled so the handlers and the
+/// URL/preset helpers pass one value around instead of repeating the same set of
+/// fields in every signature.
+#[derive(Clone, Copy)]
+pub(super) struct OmissionTarget {
+    pub(super) stream_id: StreamId,
+    pub(super) omission_type: OmissionType,
+    pub(super) reference: Uuid,
+    pub(super) list: Option<CandidateListId>,
+    pub(super) general: bool,
+}
+
+impl OmissionTarget {
+    fn from_add_path(path: CsbAddOmissionPath, query: OmissionListQuery) -> Self {
+        Self {
+            stream_id: path.stream_id,
+            omission_type: path.omission_type,
+            reference: path.reference,
+            list: query.list,
+            general: query.general,
+        }
+    }
+
+    fn from_overview_path(path: CsbOmissionOverviewPath, query: OmissionListQuery) -> Self {
+        Self {
+            stream_id: path.stream_id,
+            omission_type: path.omission_type,
+            reference: path.reference,
+            list: query.list,
+            general: query.general,
+        }
+    }
+
+    /// Render the add-omission form tab. Shared by the initial GET and the
+    /// re-render after an invalid submit; only the form data differs.
+    fn render_add_form(
+        &self,
+        form: FormData<OmissionForm>,
+        query: &QueryParamState,
+        context: CsbContext,
+        store: &CsbStore,
+    ) -> Response {
+        let political_group = CsbPoliticalGroup::new_from_csb_store(store);
+        HtmlTemplate(
+            CsbAddOmissionTemplate {
+                form,
+                overlay: Overlay::new(query),
+                close_action: return_path(self, &political_group),
+                presets: preset_views(self, store, context.session.locale),
+                add_tab_url: add_url(self),
+                overview_tab_url: overview_url(self),
+            },
+            context,
+        )
+        .into_response()
+    }
+}
+
 /// Render the "add omission" overlay dialog.
 pub async fn add_omission(
-    CsbAddOmissionPath {
-        stream_id,
-        omission_type,
-        reference,
-    }: CsbAddOmissionPath,
+    path: CsbAddOmissionPath,
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
-    Query(OmissionListQuery { list, general }): Query<OmissionListQuery>,
+    Query(list_query): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let presets = preset_views(
-        omission_type,
-        reference,
-        list,
-        general,
-        &store,
-        context.session.locale,
-    );
-    Ok(HtmlTemplate(
-        CsbAddOmissionTemplate {
-            form: FormData::new(),
-            overlay: Overlay::new(&query),
-            close_action: return_path(omission_type, reference, list, &political_group),
-            presets,
-            add_tab_url: add_url(stream_id, omission_type, reference, list, general),
-            overview_tab_url: overview_url(stream_id, omission_type, reference, list, general),
-        },
-        context,
-    )
-    .into_response())
+    let target = OmissionTarget::from_add_path(path, list_query);
+    Ok(target.render_add_form(FormData::new(), &query, context, &store))
 }
 
 /// Render the omissions overview page for an entity: the list of omissions
 /// already added, shown in the same dialog as the add-omission form but on its
 /// own tab (and its own route).
 pub async fn overview(
-    CsbOmissionOverviewPath {
-        stream_id,
-        omission_type,
-        reference,
-    }: CsbOmissionOverviewPath,
+    path: CsbOmissionOverviewPath,
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
-    Query(OmissionListQuery { list, general }): Query<OmissionListQuery>,
+    Query(list_query): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
+    let target = OmissionTarget::from_overview_path(path, list_query);
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let overview_tab_url = overview_url(stream_id, omission_type, reference, list, general);
+    let overview_tab_url = overview_url(&target);
 
     Ok(HtmlTemplate(
         CsbOmissionOverviewTemplate {
             overlay: Overlay::new(&query),
-            close_action: return_path(omission_type, reference, list, &political_group),
-            omissions: omission_views(
-                stream_id,
-                omission_type,
-                reference,
-                &store,
-                &overview_tab_url,
-            ),
-            add_tab_url: add_url(stream_id, omission_type, reference, list, general),
+            close_action: return_path(&target, &political_group),
+            omissions: omission_views(&target, &store, &overview_tab_url),
+            add_tab_url: add_url(&target),
             overview_tab_url,
         },
         context,
@@ -99,55 +128,31 @@ pub async fn overview(
 /// Handle the submitted "add omission" form: validate, attach the category
 /// derived from the path parameters, persist, and redirect back.
 pub async fn add_omission_submit(
-    CsbAddOmissionPath {
-        stream_id,
-        omission_type,
-        reference,
-    }: CsbAddOmissionPath,
+    path: CsbAddOmissionPath,
     context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
-    Query(OmissionListQuery { list, general }): Query<OmissionListQuery>,
+    Query(list_query): Query<OmissionListQuery>,
     Form(form): Form<OmissionForm>,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let presets = preset_views(
-        omission_type,
-        reference,
-        list,
-        general,
-        &store,
-        context.session.locale,
-    );
+    let target = OmissionTarget::from_add_path(path, list_query);
 
     match form.validate_create() {
-        Err(form_data) => Ok(HtmlTemplate(
-            CsbAddOmissionTemplate {
-                form: form_data,
-                overlay: Overlay::new(&query),
-                close_action: return_path(omission_type, reference, list, &political_group),
-                presets,
-                add_tab_url: add_url(stream_id, omission_type, reference, list, general),
-                overview_tab_url: overview_url(stream_id, omission_type, reference, list, general),
-            },
-            context,
-        )
-        .into_response()),
+        Err(form_data) => Ok(target.render_add_form(form_data, &query, context, &store)),
         Ok(mut omission) => {
             // A general candidate omission applies to the person on every list,
             // so the list context is dropped from the persisted category even
             // though it still drives the return path below.
-            let category_list = if general { None } else { list };
-            omission.category =
-                OmissionCategory::from_type_and_reference(omission_type, reference, category_list);
+            let category_list = if target.general { None } else { target.list };
+            omission.category = OmissionCategory::from_type_and_reference(
+                target.omission_type,
+                target.reference,
+                category_list,
+            );
             omission.create(&store).await?;
 
-            Ok(query.redirect_or(return_path(
-                omission_type,
-                reference,
-                list,
-                &political_group,
-            )))
+            let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+            Ok(query.redirect_or(return_path(&target, &political_group)))
         }
     }
 }
@@ -156,14 +161,15 @@ pub async fn add_omission_submit(
 /// `redirect_to` carried by the button, falling back to the overview derived
 /// from the omission's category).
 pub async fn delete_omission(
-    CsbDeleteOmissionPath {
-        stream_id,
-        omission_id,
-    }: CsbDeleteOmissionPath,
+    path: CsbDeleteOmissionPath,
     _context: CsbContext,
     store: CsbStore,
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
+    let CsbDeleteOmissionPath {
+        stream_id,
+        omission_id,
+    } = path;
     let omission = store.get_omission(omission_id)?;
     let fallback = overview_url_for(&omission.category, stream_id);
     omission.delete(&store).await?;

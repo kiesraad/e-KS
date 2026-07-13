@@ -8,7 +8,7 @@ brp:
   correct: Correct
   errors: Errors
 candidate:
-  add_candidate_text: Add omissions for this candidate on this list
+  add_candidate_text: Add omissions for this candidate on this list only
   add_candidate_title: Candidate
   add_person_text: Add omissions for this person on all their lists
   add_person_title: Person

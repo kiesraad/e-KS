@@ -1,8 +1,8 @@
 use askama::Template;
-use uuid::Uuid;
+use axum_extra::routing::TypedPath;
 
 use crate::{
-    Context, CsbStore, Locale, Overlay, StreamId,
+    Context, CsbStore, Locale, Overlay, QueryParamState,
     candidate_lists::CandidateListId,
     csb::{
         Omission, OmissionPlaceholders, OmissionType,
@@ -12,6 +12,8 @@ use crate::{
     form::FormData,
     persons::PersonId,
 };
+
+use super::OmissionTarget;
 
 /// The add-omission form tab of the dialog.
 #[derive(Template)]
@@ -61,20 +63,19 @@ pub(super) struct PresetView {
 
 /// Resolve the placeholder values that can be derived from the referenced item.
 fn placeholders_for(
-    omission_type: OmissionType,
-    reference: Uuid,
-    list: Option<CandidateListId>,
+    target: &OmissionTarget,
     store: &CsbStore,
     locale: Locale,
 ) -> OmissionPlaceholders {
-    match omission_type {
+    match target.omission_type {
         OmissionType::Candidate => {
-            let person = PersonId::from(reference);
+            let person = PersonId::from(target.reference);
             OmissionPlaceholders {
                 candidate_name: store.get_person(person).map(|person| person.name.display()),
                 // A candidate's position differs per list, so it can only be
                 // resolved when the dialog was opened for a specific list.
-                candidate_number: list
+                candidate_number: target
+                    .list
                     .and_then(|list| store.candidate_position(list, person))
                     .map(|nr| nr.to_string()),
                 districts: None,
@@ -82,7 +83,7 @@ fn placeholders_for(
         }
         OmissionType::CandidateList => OmissionPlaceholders {
             districts: store
-                .get_candidate_list(CandidateListId::from(reference))
+                .get_candidate_list(CandidateListId::from(target.reference))
                 .map(|list| list.districts_name(locale.into())),
             ..Default::default()
         },
@@ -94,17 +95,15 @@ fn placeholders_for(
 /// candidate omission (applying to the person on every list) offers a different
 /// set than one scoped to the candidate on a specific list.
 pub(super) fn preset_views(
-    omission_type: OmissionType,
-    reference: Uuid,
-    list: Option<CandidateListId>,
-    general: bool,
+    target: &OmissionTarget,
     store: &CsbStore,
     locale: Locale,
 ) -> Vec<PresetView> {
-    let placeholders = placeholders_for(omission_type, reference, list, store, locale);
+    let placeholders = placeholders_for(target, store, locale);
 
-    omission_type
-        .presets(general)
+    target
+        .omission_type
+        .presets(target.general)
         .iter()
         .map(|preset| PresetView {
             title: preset.title.clone(),
@@ -120,31 +119,27 @@ pub(super) fn preset_views(
 /// list-scoped and general. Each is paired with a remove action that returns to
 /// `overview_url` afterwards.
 pub(super) fn omission_views(
-    stream_id: StreamId,
-    omission_type: OmissionType,
-    reference: Uuid,
+    target: &OmissionTarget,
     store: &CsbStore,
     overview_url: &str,
 ) -> Vec<OmissionView> {
-    let omissions = match omission_type {
+    let omissions = match target.omission_type {
         OmissionType::PoliticalGroup => store.get_general_omissions(),
         OmissionType::CandidateList => {
-            store.get_candidate_list_omissions(CandidateListId::from(reference))
+            store.get_candidate_list_omissions(CandidateListId::from(target.reference))
         }
-        OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(reference)),
+        OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(target.reference)),
     };
 
     omissions
         .into_iter()
         .map(|omission| OmissionView {
-            remove_url: format!(
-                "{}?redirect_to={}",
-                CsbDeleteOmissionPath {
-                    stream_id,
-                    omission_id: omission.id,
-                },
-                urlencoding::encode(overview_url),
-            ),
+            remove_url: CsbDeleteOmissionPath {
+                stream_id: target.stream_id,
+                omission_id: omission.id,
+            }
+            .with_query_params(QueryParamState::redirect_to(overview_url.to_string()))
+            .to_string(),
             omission,
         })
         .collect()
