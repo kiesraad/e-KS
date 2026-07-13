@@ -72,6 +72,12 @@ impl DutchAddress {
             }
         }
     }
+
+    /// Returns `true` when the address has been checked against the BAG and was
+    /// not found. A `None` (unchecked) address is not considered unknown.
+    pub fn is_unknown(&self) -> bool {
+        self.known_in_bag == Some(false)
+    }
 }
 
 impl Problematic<Severity> for DutchAddress {
@@ -206,6 +212,16 @@ impl Address {
     pub fn update_is_known_in_bag(&mut self) {
         if let Address::Dutch(address) = self {
             address.update_is_known_in_bag();
+        }
+    }
+
+    /// Returns `true` for a Dutch address that was checked against the BAG and
+    /// not found. International addresses have no BAG equivalent and are never
+    /// considered unknown.
+    pub fn is_unknown(&self) -> bool {
+        match self {
+            Address::Dutch(address) => address.is_unknown(),
+            Address::International(_) => false,
         }
     }
 

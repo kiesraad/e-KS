@@ -1,5 +1,5 @@
 <div class="form-row">
-  <p class="form-field form-field-sm {% if form.data.address.postal_code.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if (form.data.address.postal_code.is_empty() && should_warn|default(false)) || address_unknown|default(false) %}warning{% endif %}">
     <label for="postal_code">{{ "person.fields.postal_code"|trans }}</label>
     <input type="text"
            placeholder=" "
@@ -7,8 +7,10 @@
            id="postal_code"
            value="{{ form.data.address.postal_code }}" />
     {% for error in form|error("address.postal_code") %}<span class="error">{{ error }}</span>{% endfor %}
+    <span class="warning{% if address_unknown|default(false) %}{% else %} hidden{% endif %}"
+          id="unknown-address">{{ "problems.unknown_address"|trans }}</span>
   </p>
-  <p class="form-field form-field-sm {% if form.data.address.house_number.is_empty() && should_warn|default(false) %}warning{% endif %}">
+  <p class="form-field form-field-sm {% if (form.data.address.house_number.is_empty() && should_warn|default(false)) || address_unknown|default(false) %}warning{% endif %}">
     <label for="house_number">{{ "person.fields.house_number"|trans }}</label>
     <input type="text"
            placeholder=" "

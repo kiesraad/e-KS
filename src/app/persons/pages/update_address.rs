@@ -16,6 +16,7 @@ use crate::{
 #[template(path = "app/persons/pages/update_address.html")]
 struct PersonAddressUpdateTemplate {
     should_warn: bool,
+    address_unknown: bool,
     person: Person,
     form: FormData<AddressForm>,
     overlay: Overlay,
@@ -30,6 +31,7 @@ pub async fn update_person_address(
     Ok(HtmlTemplate(
         PersonAddressUpdateTemplate {
             should_warn: query.should_warn(),
+            address_unknown: person.address.is_unknown(),
             form: FormData::new_with_data(AddressForm::from(person.clone())),
             overlay: Overlay::new(&query),
             person,
@@ -49,8 +51,9 @@ pub async fn update_person_address_submit(
     match form.validate_update(&person) {
         Err(form_data) => Ok(HtmlTemplate(
             PersonAddressUpdateTemplate {
-                person,
                 should_warn: query.should_warn(),
+                address_unknown: person.address.is_unknown(),
+                person,
                 form: form_data,
                 overlay: Overlay::new(&query),
             },
@@ -105,6 +108,62 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Juinen"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_address_warns_when_not_in_bag() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let person_id = PersonId::new();
+        let mut person = sample_person(person_id);
+        // The address was checked against the BAG and not found.
+        person.address.known_in_bag = Some(false);
+
+        person.create(&store).await?;
+
+        let response = update_person_address(
+            UpdatePersonAddressPath { person_id },
+            Context::new_test_without_db(),
+            person,
+            Query(QueryParamState::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // When the address is not in the BAG the warning is shown (not hidden).
+        assert!(body.contains("Address not found in the BAG"));
+        assert!(!body.contains("class=\"warning hidden\""));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn update_person_address_no_bag_warning_when_known() -> Result<(), AppError> {
+        let store = AppStore::new_for_test();
+        let person_id = PersonId::new();
+        // `sample_person` has an address that is known in the BAG.
+        let person = sample_person(person_id);
+
+        person.create(&store).await?;
+
+        let response = update_person_address(
+            UpdatePersonAddressPath { person_id },
+            Context::new_test_without_db(),
+            person,
+            Query(QueryParamState::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The warning is always in the DOM; when the address is known it is hidden.
+        assert!(body.contains("class=\"warning hidden\""));
 
         Ok(())
     }

@@ -33,7 +33,7 @@ impl Problematic<ElectionConfig> for PersonalData {
             Some(p) if p.as_str().is_empty() => {
                 potential_problems.push(PotentialProblems::NoPlaceOfResidence)
             }
-            Some(PlaceOfResidence::Unknown(_)) => {
+            Some(PlaceOfResidence::Unknown(_)) if self.lives_in_nl() => {
                 potential_problems.push(PotentialProblems::UnknownPlaceOfResidence)
             }
             _ => {}
@@ -63,6 +63,10 @@ impl Problematic<ElectionConfig> for PersonalData {
 }
 
 impl PersonalData {
+    pub fn lives_in_nl(&self) -> bool {
+        self.country.as_ref().is_none_or(|country| country.is_nl())
+    }
+
     pub fn locality(&self) -> Option<String> {
         match (&self.place_of_residence, &self.country) {
             (Some(place), Some(country)) if !country.is_nl() => {
@@ -163,6 +167,31 @@ mod tests {
             data.get_problems(ElectionConfig::EK27)
                 .potential_problems
                 .contains(&PotentialProblems::NoPlaceOfResidence)
+        );
+    }
+
+    #[test]
+    fn unknown_place_of_residence_in_nl_produces_warning() {
+        let mut data = complete_personal_data();
+        data.place_of_residence = Some(PlaceOfResidence::Unknown("Faketown".to_string()));
+        data.country = Some("NL".parse().unwrap());
+        assert!(
+            data.get_problems(ElectionConfig::EK27)
+                .potential_problems
+                .contains(&PotentialProblems::UnknownPlaceOfResidence)
+        );
+    }
+
+    #[test]
+    fn unknown_place_of_residence_outside_nl_does_not_warn() {
+        let mut data = complete_personal_data();
+        data.place_of_residence = Some(PlaceOfResidence::Unknown("Faketown".to_string()));
+        data.country = Some("DE".parse().unwrap());
+        assert!(
+            !data
+                .get_problems(ElectionConfig::EK27)
+                .potential_problems
+                .contains(&PotentialProblems::UnknownPlaceOfResidence)
         );
     }
 

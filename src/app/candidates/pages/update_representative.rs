@@ -19,6 +19,7 @@ use super::UpdateRepresentativePath;
 #[template(path = "app/candidates/pages/update_representative.html")]
 struct UpdateRepresentativeTemplate {
     should_warn: bool,
+    address_unknown: bool,
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<RepresentativeForm>,
@@ -39,6 +40,11 @@ pub async fn update_representative(
     Ok(HtmlTemplate(
         UpdateRepresentativeTemplate {
             should_warn: query.should_warn(),
+            address_unknown: candidate
+                .person
+                .representative
+                .as_ref()
+                .is_some_and(|representative| representative.address.is_unknown()),
             candidate: candidate.clone(),
             full_list,
             form,
@@ -62,6 +68,11 @@ pub async fn update_representative_submit(
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
+                address_unknown: candidate
+                    .person
+                    .representative
+                    .as_ref()
+                    .is_some_and(|representative| representative.address.is_unknown()),
                 candidate,
                 full_list,
                 form: form_data,
