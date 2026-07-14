@@ -53,6 +53,26 @@ import:
     ambiguous_hash: De ingevoerde hash code komt overeen met meer dan één dataset; voer meer tekens in.
     invalid_hash: "Voer een geldige hash code in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
     not_found: Er is geen data gevonden voor de ingevoerde hash code.
+index:
+  closes_on: Sluit op
+  feature:
+    add_omissions: Verzuimen en correcties toevoegen
+    create_i1_letters: I 1 en verzuimbrieven aanmaken
+    create_i4: I 4 aanmaken
+    report_errors: Fouten doorgeven
+    view_candidate_lists: Inzage kandidatenlijsten
+  go_to_examination: Ga naar onderzoek
+  phase: "Fase {}"
+  phase_1:
+    title: Vooronderzoek
+  phase_2:
+    title: Onderzoek
+  phase_3:
+    title: Herstelde lijsten
+  phase_4:
+    title: Lijstnummering
+  phase_5:
+    title: Vaststellen kandidatenlijsten
 list:
   add_text: Voeg verzuimen toe voor deze kandidatenlijst
   brp_errors: BRP fouten
