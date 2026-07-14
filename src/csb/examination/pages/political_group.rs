@@ -1,5 +1,6 @@
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
+use axum_extra::{TypedHeader, headers};
 use rand::{RngExt, rng};
 
 use crate::{
@@ -57,22 +58,19 @@ pub async fn overview(
 
 pub async fn toggle_examination_finish(
     _: CsbPoliticalGroupToggleFinishPath,
+    TypedHeader(referer): TypedHeader<headers::Referer>,
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let finished = store.is_examination_finished();
     store.update(CsbEvent::SetFinished(!finished)).await?;
-    Ok(Redirect::to(
-        &CsbPoliticalGroup::new_from_csb_store(&store)
-            .after_toggle_finish_examination_path()
-            .to_string(),
-    )
-    .into_response())
+    Ok(Redirect::to(&referer.to_string()).into_response())
 }
 
 #[cfg(test)]
 mod tests {
     use super::*;
     use axum::http::StatusCode;
+    use axum_extra::headers::Referer;
 
     use crate::test_utils::{response_body_string, sample_political_group};
 
@@ -158,6 +156,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            TypedHeader(Referer::from_static("test_referer")),
             store.clone(),
         )
         .await
@@ -168,6 +167,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            TypedHeader(Referer::from_static("test_referer")),
             store.clone(),
         )
         .await
@@ -178,16 +178,19 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn toggle_examination_finish_redirects() {
+    async fn toggle_examination_finish_redirects_to_referer_header() {
         let store = CsbStore::new_for_test();
-
+        let example_url = "http://example.com";
         let stream_id = store.stream_id;
 
-        let response =
-            toggle_examination_finish(CsbPoliticalGroupToggleFinishPath { stream_id }, store)
-                .await
-                .unwrap()
-                .into_response();
+        let response = toggle_examination_finish(
+            CsbPoliticalGroupToggleFinishPath { stream_id },
+            TypedHeader(Referer::from_static(example_url)),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         let location = response
@@ -196,6 +199,6 @@ mod tests {
             .unwrap()
             .to_str()
             .unwrap();
-        assert!(location.contains(&format!("csb/examination/{stream_id}")));
+        assert_eq!(location, "http://example.com");
     }
 }

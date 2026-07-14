@@ -8,33 +8,8 @@
   {{ political_group.political_group.csb_display_name() }}
 {% endblock %}
 {% block header_action %}
-  <div class="header-buttons">
-    <div class="header-controls">
-      <div class="switch-group {% if political_group.is_examination_finished %} finished {% else %} unfinished {% endif %}">
-        <p>
-          {% if political_group.is_examination_finished %}
-            {{ "csb.group.finished"|trans }}
-          {% else %}
-            {{ "csb.group.unfinished"|trans }}
-          {% endif %}
-        </p>
-        <form method="post"
-              action="{{ political_group.examination_toggle_finish_path() }}">
-          {{ macros::csrf_field() }}
-          <label class="switch" aria-label="{{ "csb.group.toggle"|trans }}">
-            <input type="submit">
-            <span class="slider"></span>
-          </label>
-        </form>
-      </div>
-      <a class="button secondary icon-restoration">
-        {{ "csb.all_restorations"|trans }}
-        <span class="restoration_count">{{ restoration_count }}</span>
-      </a>
-      <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}"
-         class="button secondary">{{ "action.back"|trans }}</a>
-    </div>
-  </div>
+  {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}
+  {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
   {% let election = "election"|election_value %}

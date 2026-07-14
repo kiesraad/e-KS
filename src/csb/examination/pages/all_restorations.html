@@ -1,0 +1,19 @@
+{% extends "csb/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+  {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.all_restorations_path() , "csb.all_restorations") }}
+{% endblock %}
+{% block page_title %}
+  {{ "csb.all_restorations"|trans }}
+{% endblock %}
+{% block header_action %}
+  {% set back_url = political_group.examination_path() %}
+  {% include "csb/components/header_examination_actions.html" %}
+{% endblock %}
+{% block content %}
+  <div class="content-header">
+    <p>Bekijk hier alle verzuimen en correcties voordat je het onderzoek afrond.</p>
+  </div>
+{% endblock %}

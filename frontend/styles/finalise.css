@@ -5,17 +5,6 @@
   gap: var(--space-16);
 }
 
-.finalise-header {
-  display: flex;
-  flex-direction: column;
-  font-size: var(--font-size-xl);
-  font-weight: 500;
-  gap: 1lh;
-  line-height: var(--leading-xl);
-  max-width: 704px;
-  text-wrap: balance;
-}
-
 .step {
   display: grid;
   gap: var(--space-8);

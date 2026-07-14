@@ -10,6 +10,7 @@ use crate::{
     persons::PersonId,
 };
 
+mod all_restorations;
 mod candidate;
 mod candidate_list;
 mod general_information;
@@ -90,6 +91,12 @@ pub struct CsbOmissionOverviewPath {
 pub struct CsbDeleteOmissionPath {
     pub stream_id: StreamId,
     pub omission_id: OmissionId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/omissions", rejection(AppError))]
+pub struct CsbAllRestorationsPath {
+    pub stream_id: StreamId,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -246,6 +253,12 @@ impl CsbPoliticalGroup {
         }
         .with_query_params(QueryParamState::success())
     }
+
+    pub fn all_restorations_path(&self) -> impl TypedPath {
+        CsbAllRestorationsPath {
+            stream_id: self.stream_id,
+        }
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -260,4 +273,5 @@ pub fn router() -> Router<AppState> {
         .typed_post(omission::add_omission_submit)
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
+        .typed_get(all_restorations::all_restorations)
 }
