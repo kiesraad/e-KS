@@ -1,6 +1,5 @@
 //! Model H 9: Instemmingsverklaring / Ynstimmingsferklearring.
 
-use serde::Deserialize;
 use textris_pdf::{
     build::{Textris, cell, fill_in, italic, mono, text},
     theme::ColumnWidth::Fraction,
@@ -16,9 +15,8 @@ use super::{
 };
 use crate::utils::slugify_teletex;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct H9 {
-    #[serde(flatten)]
     pub common: ModelData,
     pub electoral_districts: ElectoralDistricts,
     pub detailed_candidate: DetailedCandidate,

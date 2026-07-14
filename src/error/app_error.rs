@@ -23,8 +23,8 @@ pub enum AppError {
     UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
-    /// PDF serialization failed (most commonly PDF/A-2b validation, e.g. a
-    /// character without a glyph in the embedded fonts).
+    /// PDF serialization failed (most commonly PDF/A-2A or PDF/UA-1 validation,
+    /// e.g. a character without a glyph in the embedded fonts).
     PdfError(textris_pdf::render::RenderError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),

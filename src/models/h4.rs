@@ -1,6 +1,5 @@
 //! Model H 4: Ondersteuningsverklaring / Stipeferklearring.
 
-use serde::Deserialize;
 use textris_pdf::build::{Textris, cell, fill_in, text};
 
 use super::{
@@ -13,9 +12,8 @@ use super::{
 };
 use crate::core::ModelLocale;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct H4 {
-    #[serde(flatten)]
     pub common: ModelData,
 }
 

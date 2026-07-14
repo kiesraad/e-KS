@@ -52,6 +52,15 @@ pub(super) fn start_document(
     let mut doc = Textris::with_theme(theme());
     let trans = translator(locale);
 
+    // Metadata for the accessible (PDF/UA) output: a document title and its
+    // primary language as a BCP 47 tag (Dutch, or West Frisian for the Frisian
+    // variants).
+    doc.title(format!("{model} - {name}"));
+    doc.language(match locale {
+        ModelLocale::Nl => "nl",
+        ModelLocale::Fry => "fy",
+    });
+
     doc.header_right(format!("{model} - {name}"));
 
     if let Some((event_id, sha_hash)) = version {

@@ -1,15 +1,13 @@
 //! Input data types shared by the PDF models.
 //!
-//! Field names follow the JSON example inputs in `models/example-inputs`;
-//! conversions from application/store types live in
-//! `src/app/finalise/structs/`.
-
-use serde::Deserialize;
+//! Conversions from application/store types live in
+//! `src/app/finalise/structs/`; type-checked example values live in
+//! `super::examples`.
 
 use crate::core::{ElectionType, ModelLocale};
 
 /// Input data shared by the H models.
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct ModelData {
     pub election_name: String,
     pub election_type: ModelElectionType,
@@ -22,8 +20,7 @@ pub struct ModelData {
 
 /// The election type as used by the models. Unlike [`ElectionType`] this
 /// distinguishes the electoral college for non-residents (`KCNI`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Deserialize)]
-#[serde(rename_all = "UPPERCASE")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum ModelElectionType {
     Tk,
     Ek,
@@ -52,8 +49,7 @@ impl From<ElectionType> for ModelElectionType {
 }
 
 /// The electoral districts a candidate list applies to.
-#[derive(Debug, Clone, PartialEq, Eq, Deserialize)]
-#[serde(tag = "tag", content = "districts")]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub enum ElectoralDistricts {
     All,
     Some(Vec<String>),
@@ -61,7 +57,7 @@ pub enum ElectoralDistricts {
     OnlyOne,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Candidate {
     pub last_name: String,
     /// Initials as printed on the model, e.g., optionally including the gender
@@ -72,65 +68,32 @@ pub struct Candidate {
     pub position: usize,
 }
 
-/// A date, deserializable from `{year, month, day}` or an ISO `yyyy-mm-dd`
-/// string (both occur in the example inputs).
-#[derive(Debug, Clone, Deserialize)]
-#[serde(try_from = "DateRepr")]
+/// A date, as year/month/day components.
+#[derive(Debug, Clone)]
 pub struct Date {
     pub year: i32,
     pub month: u32,
     pub day: u32,
 }
 
-#[derive(Deserialize)]
-#[serde(untagged)]
-enum DateRepr {
-    Parts { year: i32, month: u32, day: u32 },
-    Iso(String),
-}
-
-impl TryFrom<DateRepr> for Date {
-    type Error = String;
-
-    fn try_from(repr: DateRepr) -> Result<Self, Self::Error> {
-        match repr {
-            DateRepr::Parts { year, month, day } => Ok(Date { year, month, day }),
-            DateRepr::Iso(iso) => {
-                let mut parts = iso.split('-');
-                let mut next = |name: &str| -> Result<u32, String> {
-                    parts
-                        .next()
-                        .and_then(|part| part.parse().ok())
-                        .ok_or_else(|| format!("invalid date `{iso}`: bad {name}"))
-                };
-                Ok(Date {
-                    year: next("year")? as i32,
-                    month: next("month")?,
-                    day: next("day")?,
-                })
-            }
-        }
-    }
-}
-
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct Person {
     pub last_name: String,
     /// Initials as printed on the model, e.g., optionally including the first name
     pub initials: String,
-    /// Optional in the inputs: H 3 only prints the submitter's name.
-    #[serde(default)]
+    /// Optional in the inputs: H 3 only prints the submitter's name, so this is
+    /// left at its default there.
     pub postal_address: PostalAddress,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct PostalAddress {
     pub street_address: String,
     pub postal_code: String,
     pub locality: String,
 }
 
-#[derive(Debug, Clone, Default, Deserialize)]
+#[derive(Debug, Clone, Default)]
 pub struct NameAuthorisation {
     pub last_name: String,
     /// Initials as printed on the model, e.g., optionally including the first name
@@ -138,7 +101,7 @@ pub struct NameAuthorisation {
     pub legal_name: String,
 }
 
-#[derive(Debug, Clone, Deserialize)]
+#[derive(Debug, Clone)]
 pub struct DetailedCandidate {
     pub candidate: Candidate,
     pub initials_no_gender: String,
@@ -149,8 +112,6 @@ pub struct DetailedCandidate {
 
 #[cfg(test)]
 mod tests {
-    use serde_json::json;
-
     use super::*;
 
     #[test]
@@ -164,21 +125,5 @@ mod tests {
         assert_eq!(mapped.first(), Some(&ModelElectionType::Tk));
         assert_eq!(mapped.last(), Some(&ModelElectionType::Er));
         assert!(!mapped.contains(&ModelElectionType::Kcni));
-    }
-
-    #[test]
-    fn date_parses_from_parts_and_iso_string() {
-        let parts: Date = serde_json::from_value(json!({"year": 2027, "month": 3, "day": 18}))
-            .expect("parts date");
-        assert_eq!((parts.year, parts.month, parts.day), (2027, 3, 18));
-
-        let iso: Date = serde_json::from_value(json!("2027-03-18")).expect("iso date");
-        assert_eq!((iso.year, iso.month, iso.day), (2027, 3, 18));
-    }
-
-    #[test]
-    fn date_rejects_a_malformed_iso_string() {
-        let error = serde_json::from_value::<Date>(json!("2027-03")).unwrap_err();
-        assert!(error.to_string().contains("invalid date"));
     }
 }

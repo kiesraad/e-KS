@@ -1,7 +1,6 @@
 //! Model I 4: Proces-verbaal over geldigheid en nummering kandidatenlijsten.
 //! This model is Dutch-only.
 
-use serde::Deserialize;
 use textris_pdf::{
     build::{Textris, blank, cell, fill_in, text},
     model::ListMarker,
@@ -18,7 +17,7 @@ use super::{
 };
 use crate::core::ModelLocale;
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct I4 {
     pub election_name: String,
     pub election_date: String,
@@ -37,7 +36,7 @@ pub struct I4 {
     pub response_objections: Option<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct PublicSession {
     pub location: String,
     pub date: String,
@@ -47,27 +46,27 @@ pub struct PublicSession {
 }
 
 /// Omissions for one list, identified by its designation and district(s).
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct OmissionGroup {
     pub designation: String,
     pub electoral_district: String,
     pub omission_descriptions: Vec<String>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct RemovedCandidates {
     pub designation: String,
     pub electoral_district: String,
     pub candidates: Vec<RemovedCandidate>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct RemovedCandidate {
     pub name: String,
     pub reason: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct RemovedDesignation {
     pub designation: String,
     pub electoral_district: String,
@@ -75,7 +74,7 @@ pub struct RemovedDesignation {
     pub reason: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct CorrectedDesignation {
     pub first_candidate_name: String,
     pub electoral_district: String,
@@ -83,19 +82,19 @@ pub struct CorrectedDesignation {
     pub edited_designation: String,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct DistrictLists {
     pub electoral_district: String,
     pub lists: Vec<ValidList>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct ValidList {
     pub designation: String,
     pub candidates: Vec<ValidListCandidate>,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct ValidListCandidate {
     pub last_name: String,
     pub initials: String,
@@ -103,7 +102,7 @@ pub struct ValidListCandidate {
     pub position: usize,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct NumberedOnVotes {
     /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,
@@ -111,7 +110,7 @@ pub struct NumberedOnVotes {
     pub previous_votes: u64,
 }
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct NumberedOnDistricts {
     /// `None` when the number is still to be determined (rendered blank).
     pub position: Option<usize>,

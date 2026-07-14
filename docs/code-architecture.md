@@ -327,10 +327,10 @@ without a glyph in the embedded fonts) surfaces as `AppError::PdfError`.
 `finalise/pages/documents.rs` renders multiple documents and streams them to
 the client as a single ZIP download.
 
-The model inputs are also deserializable from the JSON examples in
-`src/models/example-inputs/`; the `pdf_diff` tool renders every example and
-visually diffs the output against a saved baseline (`tmp/main-pdfs/`, created
-with `cargo run --bin pdf_diff -- --save-baseline`).
+Type-checked example inputs live in `src/models/examples.rs`; the `pdf_diff`
+tool renders every example and visually diffs the output against a saved
+baseline (`tmp/main-pdfs/`, created with
+`cargo run --bin pdf_diff -- --save-baseline`).
 
 ### [`bag_address_lookup`](https://github.com/tweedegolf/bag-address-lookup): Dutch address lookup
 

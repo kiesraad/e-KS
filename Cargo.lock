@@ -3144,8 +3144,8 @@ dependencies = [
 
 [[package]]
 name = "textris-pdf"
-version = "0.3.0"
-source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=471d28b1c43321a69a85a09f5796b7d38c56dd0c#471d28b1c43321a69a85a09f5796b7d38c56dd0c"
+version = "0.6.0"
+source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=874f5430298f1900fcb952d9c7616e22431fb237#874f5430298f1900fcb952d9c7616e22431fb237"
 dependencies = [
  "harfrust",
  "krilla",

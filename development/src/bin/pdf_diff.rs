@@ -1,5 +1,5 @@
-//! Render every PDF model for every JSON example input
-//! (`src/models/example-inputs/`) and compare the output against the models
+//! Render every PDF model for every example input
+//! (`eks::models::examples()`) and compare the output against the models
 //! as they are on `origin/main`.
 //!
 //! The models are Rust code compiled into the `eks` crate, so the `main`
@@ -27,7 +27,6 @@ use anyhow::{Context, Result};
 use tracing::info;
 use tracing_subscriber::{Layer, layer::SubscriberExt, util::SubscriberInitExt};
 
-const EXAMPLE_INPUTS_DIR: &str = "src/models/example-inputs";
 const DIFF_PDF_BINARY: &str = "diff-pdf";
 const TMP_DIR_NAME: &str = "tmp";
 const CURRENT_PDFS_DIR_NAME: &str = "current-pdfs";
@@ -62,60 +61,26 @@ fn ensure_diff_pdf_is_installed() -> Result<()> {
     Ok(())
 }
 
-/// The template name for an example input file, e.g.
-/// `model-h3-1-example-2.json` → `model-h3-1`.
-fn template_name(input: &Path) -> Option<String> {
-    let stem = input.file_stem()?.to_str()?;
-    let (template, _) = stem.split_once("-example-")?;
-    Some(template.to_string())
-}
-
-/// Collect the example input files, sorted by name.
-fn example_inputs(project_dir: &Path) -> Result<Vec<PathBuf>> {
-    let dir = project_dir.join(EXAMPLE_INPUTS_DIR);
-    let mut inputs = Vec::new();
-    for entry in fs::read_dir(&dir).with_context(|| format!("Failed to read {}", dir.display()))? {
-        let path = entry?.path();
-        if path.extension().and_then(|ext| ext.to_str()) == Some("json") {
-            inputs.push(path);
-        }
-    }
-    inputs.sort_unstable();
-    Ok(inputs)
-}
-
 /// Render every example input into `output_root` and return the written PDF
 /// file names.
-fn render_all(project_dir: &Path, output_root: &Path) -> Result<Vec<String>> {
+fn render_all(output_root: &Path) -> Result<Vec<String>> {
     fs::create_dir_all(output_root)
         .with_context(|| format!("Failed to create {}", output_root.display()))?;
 
     let mut rendered = Vec::new();
-    for input_path in example_inputs(project_dir)? {
-        let Some(template) = template_name(&input_path) else {
-            continue;
-        };
-        let json = fs::read_to_string(&input_path)
-            .with_context(|| format!("Failed to read {}", input_path.display()))?;
-        let input: serde_json::Value = serde_json::from_str(&json)
-            .with_context(|| format!("Failed to parse {}", input_path.display()))?;
-
-        let bytes = eks::models::render_example(&template, input)
+    for example in eks::models::examples() {
+        let name = example.name;
+        let pdf_name = format!("{name}.pdf");
+        let bytes = example
+            .render()
             .map_err(|err| anyhow::anyhow!("{err}"))
-            .with_context(|| format!("Failed to render {}", input_path.display()))?;
+            .with_context(|| format!("Failed to render {name}"))?;
 
-        let pdf_name = format!(
-            "{}.pdf",
-            input_path
-                .file_stem()
-                .and_then(|stem| stem.to_str())
-                .context("input file name")?
-        );
         let output = output_root.join(&pdf_name);
         fs::write(&output, &bytes)
             .with_context(|| format!("Failed to write {}", output.display()))?;
         info!(
-            template,
+            name,
             output = %output.display(),
             pdf_size_bytes = bytes.len(),
             "Rendered PDF"
@@ -327,7 +292,7 @@ fn run() -> Result<()> {
 
     if save_baseline {
         let main_root = tmp_dir.join(MAIN_PDFS_DIR_NAME);
-        let rendered = render_all(&project_dir, &main_root)?;
+        let rendered = render_all(&main_root)?;
         info!(
             "Saved {} baseline PDFs to {}",
             rendered.len(),
@@ -343,7 +308,7 @@ fn run() -> Result<()> {
     }
 
     let current_root = tmp_dir.join(CURRENT_PDFS_DIR_NAME);
-    let rendered = render_all(&project_dir, &current_root)?;
+    let rendered = render_all(&current_root)?;
     info!(
         "Rendered {} PDFs to {}",
         rendered.len(),

@@ -1,6 +1,5 @@
 //! Model H 1: Kandidatenlijst / Kandidatelist.
 
-use serde::Deserialize;
 use textris_pdf::{
     build::{Text, Textris, cell, fill_in, italic, mono, text},
     theme::ColumnWidth::{Auto, Fraction},
@@ -13,9 +12,8 @@ use super::{
 };
 use crate::{core::ModelLocale, list_designation::ListDesignation};
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct H1 {
-    #[serde(flatten)]
     pub common: ModelData,
     pub electoral_districts: ElectoralDistricts,
     pub previously_seated: bool,

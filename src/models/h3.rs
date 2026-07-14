@@ -3,7 +3,6 @@
 //! registered designation) or H 3-2 (a combined designation). The two variants
 //! share their structure; only the wording and the signing block differ.
 
-use serde::Deserialize;
 use textris_pdf::build::{Textris, cell, fill_in, text};
 
 use super::{
@@ -16,9 +15,8 @@ use crate::{core::ModelLocale, list_designation::ListDesignation};
 /// Anchor of the designation section, referenced from the permission text.
 const DESIGNATION_SECTION: &str = "aanduiding";
 
-#[derive(Debug, Deserialize)]
+#[derive(Debug)]
 pub struct H3 {
-    #[serde(flatten)]
     pub common: ModelData,
     pub electoral_districts: ElectoralDistricts,
     pub list_designation: ListDesignation,
