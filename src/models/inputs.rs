@@ -4,48 +4,20 @@
 //! `src/app/finalise/structs/`; type-checked example values live in
 //! `super::examples`.
 
+use chrono::NaiveDate;
+
 use crate::core::{ElectionType, ModelLocale};
 
 /// Input data shared by the H models.
 #[derive(Debug, Clone)]
 pub struct ModelData {
     pub election_name: String,
-    pub election_type: ModelElectionType,
+    pub election_type: ElectionType,
     pub designation: String,
     pub candidates: Vec<Candidate>,
     pub locale: ModelLocale,
     pub event_id: usize,
     pub sha_hash: String,
-}
-
-/// The election type as used by the models. Unlike [`ElectionType`] this
-/// distinguishes the electoral college for non-residents (`KCNI`).
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum ModelElectionType {
-    Tk,
-    Ek,
-    Gr,
-    Ps,
-    Ws,
-    Ep,
-    Kc,
-    Kcni,
-    Er,
-}
-
-impl From<ElectionType> for ModelElectionType {
-    fn from(election_type: ElectionType) -> Self {
-        match election_type {
-            ElectionType::Tk => Self::Tk,
-            ElectionType::Ek => Self::Ek,
-            ElectionType::Gr => Self::Gr,
-            ElectionType::Ps => Self::Ps,
-            ElectionType::Ws => Self::Ws,
-            ElectionType::Ep => Self::Ep,
-            ElectionType::Kc => Self::Kc,
-            ElectionType::Er => Self::Er,
-        }
-    }
 }
 
 /// The electoral districts a candidate list applies to.
@@ -63,17 +35,9 @@ pub struct Candidate {
     /// Initials as printed on the model, e.g., optionally including the gender
     /// and first name
     pub initials: String,
-    pub date_of_birth: Date,
+    pub date_of_birth: NaiveDate,
     pub locality: String,
     pub position: usize,
-}
-
-/// A date, as year/month/day components.
-#[derive(Debug, Clone)]
-pub struct Date {
-    pub year: i32,
-    pub month: u32,
-    pub day: u32,
 }
 
 #[derive(Debug, Clone)]
@@ -108,22 +72,4 @@ pub struct DetailedCandidate {
     pub bsn: Option<String>,
     pub representative: Option<Person>,
     pub postal_address: Option<PostalAddress>,
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn every_election_type_maps_to_a_model_election_type() {
-        use ElectionType::*;
-        // KCNI has no `ElectionType`; every other model type is reachable.
-        let mapped: Vec<ModelElectionType> = [Tk, Ek, Gr, Ps, Ws, Ep, Kc, Er]
-            .into_iter()
-            .map(ModelElectionType::from)
-            .collect();
-        assert_eq!(mapped.first(), Some(&ModelElectionType::Tk));
-        assert_eq!(mapped.last(), Some(&ModelElectionType::Er));
-        assert!(!mapped.contains(&ModelElectionType::Kcni));
-    }
 }

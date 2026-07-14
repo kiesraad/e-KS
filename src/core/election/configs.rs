@@ -185,6 +185,7 @@ impl ElectionConfig {
             (ElectionType::Ep, ModelLocale::Fry) => "het Europees Parlement".to_string(),
 
             (ElectionType::Kc, _) => todo!("Support electoral college regions"),
+            (ElectionType::Kcni, _) => todo!("Support non-resident electoral college regions"),
             (ElectionType::Er, _) => todo!("Support island regions"),
         }
     }

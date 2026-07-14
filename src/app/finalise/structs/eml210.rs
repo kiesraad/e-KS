@@ -38,7 +38,9 @@ impl From<ElectionType> for eml_nl::utils::ElectionCategory {
             ElectionType::Ps => eml_nl::utils::ElectionCategory::PS,
             ElectionType::Ws => eml_nl::utils::ElectionCategory::AB,
             ElectionType::Ep => eml_nl::utils::ElectionCategory::EP,
-            ElectionType::Kc => todo!("Kiescolleges don't have an official code yet in EML-NL"),
+            ElectionType::Kc | ElectionType::Kcni => {
+                todo!("Kiescolleges don't have an official code yet in EML-NL")
+            }
             ElectionType::Er => eml_nl::utils::ElectionCategory::ER,
         }
     }
@@ -71,7 +73,9 @@ impl From<&ElectionConfig> for eml_nl::utils::ElectionSubcategory {
                 }
             }
             ElectionType::Ep => eml_nl::utils::ElectionSubcategory::EP,
-            ElectionType::Kc => todo!("Kiescolleges don't have an official code yet in EML-NL"),
+            ElectionType::Kc | ElectionType::Kcni => {
+                todo!("Kiescolleges don't have an official code yet in EML-NL")
+            }
             ElectionType::Er => eml_nl::utils::ElectionSubcategory::ER1,
         }
     }

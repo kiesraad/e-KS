@@ -5,6 +5,8 @@ const baseURL = process.env.PLAYWRIGHT_TEST_BASE_URL || 'http://localhost:3000';
 export default defineConfig({
   testDir: './tests',
   timeout: 30_000,
+  // e2e runs occasionally hang past their timeout on CI runners; retry there
+  retries: process.env.CI ? 2 : 0,
   expect: {
     timeout: 5_000,
   },

@@ -7,10 +7,16 @@ use textris_pdf::{
 
 use super::{
     Pdf,
-    inputs::{ElectoralDistricts, ModelData, ModelElectionType, Person},
-    layout::{column_table, date, election_section, signature_line, start_versioned, translator},
+    inputs::{ElectoralDistricts, ModelData, Person},
+    layout::{
+        bold_value_section, column_table, districts_section, signature_line, start_h_document,
+        translator,
+    },
 };
-use crate::{core::ModelLocale, list_designation::ListDesignation};
+use crate::{
+    core::{ElectionType, ModelLocale, constants::DEFAULT_DATE_FORMAT},
+    list_designation::ListDesignation,
+};
 
 #[derive(Debug)]
 pub struct H1 {
@@ -23,64 +29,49 @@ pub struct H1 {
 }
 
 impl Pdf for H1 {
-    fn filename(&self) -> String {
-        match self.common.locale {
-            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
-            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
-        }
-    }
-
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_versioned(
+        let mut doc = start_h_document(
+            &self.common,
             "Model H 1",
             trans("Kandidatenlijst", "Kandidatelist"),
-            &self.common,
+            trans(
+                "Met dit formulier stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.",
+                "Mei dit formulier stelle jo, as dejinge dy’t de kandidatelist ynleveret, kandidaten ferkiesber foar in ferkiezing.",
+            ),
+            None,
+            trans(
+                "Het gaat om de verkiezing van ",
+                "It giet om de ferkiezing fan ",
+            ),
         );
-        doc.paragraph(trans(
-            "Met dit formulier stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.",
-            "Mei dit formulier stelle jo, as dejinge dy’t de kandidatelist ynleveret, kandidaten ferkiesber foar in ferkiezing.",
-        ));
 
-        election_section(
+        districts_section(
             &mut doc,
             self.common.locale,
-            "Het gaat om de verkiezing van ",
-            "It giet om de ferkiezing fan ",
-            &self.common.election_name,
-        );
-
-        if self.electoral_districts != ElectoralDistricts::OnlyOne {
-            doc.h3_numbered(trans("Kieskringen", "Kiesrûnten"));
-            let intro = text(trans(
+            &self.electoral_districts,
+            trans(
                 "De kandidatenlijst wordt ingeleverd voor ",
                 "De kandidatelist wurdt ynlevere foar ",
-            ));
-            match &self.electoral_districts {
-                ElectoralDistricts::All => {
-                    doc.paragraph(intro.bold(trans("alle kieskringen.", "alle kiesrûnten.")));
-                }
-                ElectoralDistricts::Some(districts) => {
-                    doc.paragraph(intro.bold(trans(
-                        "de volgende kieskring(en):",
-                        "de neikommende kiesrûnte(n):",
-                    )));
-                    doc.paragraph(districts.join(", "));
-                }
-                ElectoralDistricts::OnlyOne => {}
-            }
-        }
+            ),
+            trans("alle kieskringen.", "alle kiesrûnten."),
+            Some(trans(
+                "de volgende kieskring(en):",
+                "de neikommende kiesrûnte(n):",
+            )),
+        );
 
-        doc.h3_numbered(trans(
-            "Aanduiding van de politieke groepering",
-            "De politike groepearring",
-        ));
-        doc.paragraph(
-            text(trans(
+        bold_value_section(
+            &mut doc,
+            trans(
+                "Aanduiding van de politieke groepering",
+                "De politike groepearring",
+            ),
+            trans(
                 "Aanduiding boven de kandidatenlijst: ",
                 "De politike groepearring dêr’t jo de kandidatelist fan stypje: ",
-            ))
-            .bold(&self.common.designation),
+            ),
+            &self.common.designation,
         );
 
         doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
@@ -98,7 +89,7 @@ impl Pdf for H1 {
                     text(c.position.to_string()),
                     text(&c.last_name),
                     text(&c.initials),
-                    date(&c.date_of_birth),
+                    mono(c.date_of_birth.format(DEFAULT_DATE_FORMAT).to_string()),
                     text(&c.locality),
                 ]
             }),
@@ -178,6 +169,13 @@ impl Pdf for H1 {
 
         doc
     }
+
+    fn filename(&self) -> String {
+        match self.common.locale {
+            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
+            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
+        }
+    }
 }
 
 impl H1 {
@@ -194,7 +192,7 @@ impl H1 {
             )));
         }
         if !self.previously_seated {
-            let form = if election_type == ModelElectionType::Kcni {
+            let form = if election_type == ElectionType::Kcni {
                 "model Pa 11"
             } else {
                 "model H 4"
@@ -223,24 +221,24 @@ impl H1 {
         }
         if matches!(
             election_type,
-            ModelElectionType::Ps
-                | ModelElectionType::Ws
-                | ModelElectionType::Gr
-                | ModelElectionType::Er
-                | ModelElectionType::Kc
+            ElectionType::Ps
+                | ElectionType::Ws
+                | ElectionType::Gr
+                | ElectionType::Er
+                | ElectionType::Kc
         ) {
             items.push(text(trans(
                 "Een verklaring van voorgenomen vestiging van iedere op de lijst voorkomende kandidaat die niet woonachtig is in het gebied waarop de verkiezing betrekking heeft (alleen bij een verkiezing van provinciale staten, het algemeen bestuur van een waterschap, een gemeenteraad, de eilandsraden van de openbare lichamen Bonaire, Saba of Sint Eustatius en de kiescolleges van de openbare lichamen).",
                 "In ferklearring fan foarnommen fêstiging foar alle op de list foarkommende kandidaten dy’t net wenjend binne yn it gebiet dêr’t de ferkiezing op slacht (allinnich by in ferkiezing fan provinsjale steaten, it algemien bestjoer fan in wetterskip, in gemeenteried, de eilânrieden fan it iepenbiere lichem Bonêre, Saba of Sint Eustaasjus en de kieskolleezjes fan it iepenbiere lichem).",
             )));
         }
-        if election_type == ModelElectionType::Kcni {
+        if election_type == ElectionType::Kcni {
             items.push(text(trans(
                 "Een verklaring van voorgenomen vestiging buiten Nederland van iedere op de lijst voorkomende kandidaat die woonachtig is in Nederland (alleen bij een verkiezing van het kiescollege voor niet-ingezetenen).",
                 "In ferklearring fan foarnommen fêstiging bûten Nederlân fan elke op de list foarkommende kandidaat dy’t yn Nederlân wennet (allinnich by in ferkiezing fan it kieskolleezje foar net-ynwenners).",
             )));
         }
-        if election_type == ModelElectionType::Ep {
+        if election_type == ElectionType::Ep {
             items.push(text(trans(
                 "Een verklaring van iedere op de lijst voorkomende kandidaat dat hij niet in een andere lidstaat kandidaat zal zijn voor het Europees Parlement (model Y 13).",
                 "In ferklearring fan alle op de list foarkommende kandidaten dat se foar it Europeeske Parlemint net yn in oare lidsteat kandidaat wêze sille (model Y 13).",

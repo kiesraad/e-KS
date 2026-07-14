@@ -8,7 +8,10 @@ use textris_pdf::build::{Textris, cell, fill_in, text};
 use super::{
     Pdf,
     inputs::{ElectoralDistricts, ModelData, NameAuthorisation, Person},
-    layout::{candidates_section, election_section, signature_line, start_versioned, translator},
+    layout::{
+        bold_value_section, candidates_section, districts_section, signature_line, start_document,
+        translator,
+    },
 };
 use crate::{core::ModelLocale, list_designation::ListDesignation};
 
@@ -25,16 +28,6 @@ pub struct H3 {
 }
 
 impl Pdf for H3 {
-    fn filename(&self) -> String {
-        match (self.common.locale, self.list_designation) {
-            (ModelLocale::Nl, ListDesignation::Combined) => "h3-2-samengevoegde-aanduiding.pdf",
-            (ModelLocale::Fry, ListDesignation::Combined) => "h3-2-gearfoege-oantsjutting.pdf",
-            (ModelLocale::Nl, _) => "h3-1-aanduiding.pdf",
-            (ModelLocale::Fry, _) => "h3-1-oantsjutting.pdf",
-        }
-        .to_string()
-    }
-
     /// H 3-1 (registered designation) and H 3-2 (combined designation) share
     /// their layout; `combined` selects the H 3-2 wording and its
     /// per-representative signing block.
@@ -42,7 +35,7 @@ impl Pdf for H3 {
         let trans = translator(self.common.locale);
         let combined = self.list_designation == ListDesignation::Combined;
 
-        let mut doc = start_versioned(
+        let mut doc = start_document(
             if combined {
                 "Model H 3-2"
             } else {
@@ -59,7 +52,8 @@ impl Pdf for H3 {
                     "Machtiging om oantsjutting boppe kandidatelist te pleatsen",
                 )
             },
-            &self.common,
+            self.common.locale,
+            Some((self.common.event_id, &self.common.sha_hash)),
         );
         doc.paragraph(if combined {
             trans(
@@ -77,14 +71,30 @@ impl Pdf for H3 {
             "Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.",
         ));
 
-        election_section(
+        bold_value_section(
             &mut doc,
-            self.common.locale,
-            "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
-            "It giet om de kandidatelist foar de ferkiezing fan: ",
+            trans("Verkiezing", "Ferkiezing"),
+            trans(
+                "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
+                "It giet om de kandidatelist foar de ferkiezing fan: ",
+            ),
             &self.common.election_name,
         );
-        districts_section(&mut doc, self);
+
+        districts_section(
+            &mut doc,
+            self.common.locale,
+            &self.electoral_districts,
+            trans("De machtiging geldt ", "De machtiging jildt "),
+            trans(
+                "voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.",
+                "foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.",
+            ),
+            Some(trans(
+                "uitsluitend voor de volgende kieskring(en):",
+                "allinnich foar de neikommende kiesrûnte(n):",
+            )),
+        );
 
         doc.h3_numbered(if combined {
             trans(
@@ -144,31 +154,15 @@ impl Pdf for H3 {
 
         doc
     }
-}
 
-/// The numbered "Kieskringen" section, omitted for single-district elections.
-fn districts_section(doc: &mut Textris, input: &H3) {
-    let trans = translator(input.common.locale);
-    if input.electoral_districts == ElectoralDistricts::OnlyOne {
-        return;
-    }
-    doc.h3_numbered(trans("Kieskringen", "Kiesrûnten"));
-    let intro = text(trans("De machtiging geldt ", "De machtiging jildt "));
-    match &input.electoral_districts {
-        ElectoralDistricts::All => {
-            doc.paragraph(intro.bold(trans(
-                "voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.",
-                "foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.",
-            )));
+    fn filename(&self) -> String {
+        match (self.common.locale, self.list_designation) {
+            (ModelLocale::Nl, ListDesignation::Combined) => "h3-2-samengevoegde-aanduiding.pdf",
+            (ModelLocale::Fry, ListDesignation::Combined) => "h3-2-gearfoege-oantsjutting.pdf",
+            (ModelLocale::Nl, _) => "h3-1-aanduiding.pdf",
+            (ModelLocale::Fry, _) => "h3-1-oantsjutting.pdf",
         }
-        ElectoralDistricts::Some(districts) => {
-            doc.paragraph(intro.bold(trans(
-                "uitsluitend voor de volgende kieskring(en):",
-                "allinnich foar de neikommende kiesrûnte(n):",
-            )));
-            doc.paragraph(districts.join(", "));
-        }
-        ElectoralDistricts::OnlyOne => {}
+        .to_string()
     }
 }
 

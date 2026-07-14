@@ -8,6 +8,7 @@ services:
       - ../frontend:/frontend:ro
     environment:
       PLAYWRIGHT_TEST_BASE_URL: http://application:3000
+      CI: ${CI:-}
     depends_on:
       - application
     networks: [pw_network]

@@ -4,7 +4,7 @@
 //! Each model lives in its own file (`h1`, `h3`, `h4`, `h9`, `i4`); H 3 covers
 //! both the H 3-1 and H 3-2 variants. [`layout`] holds the shared page
 //! set-up and table styles, and [`inputs`] the shared input data types.
-//! [`examples`] defines type-checked example inputs, rendered by the round-trip
+//! [`mod@examples`] defines type-checked example inputs, rendered by the round-trip
 //! test and the `pdf_diff` development tool.
 
 pub mod examples;
@@ -49,8 +49,8 @@ pub trait Pdf: Sized {
 
 #[cfg(test)]
 mod tests {
-    use super::{examples::*, inputs::ModelElectionType, *};
-    use crate::core::ModelLocale;
+    use super::{examples::*, *};
+    use crate::core::{ElectionType, ModelLocale};
 
     #[track_caller]
     fn assert_pdf(bytes: &[u8], ctx: &str) {
@@ -85,7 +85,7 @@ mod tests {
     /// every branch (including EP and the non-resident electoral college) runs.
     #[test]
     fn h1_attachments_cover_every_election_type() {
-        use ModelElectionType::*;
+        use ElectionType::*;
         for election_type in [Tk, Ek, Gr, Ps, Ws, Ep, Kc, Kcni, Er] {
             let mut input = h1_example_2();
             input.common.election_type = election_type;
@@ -97,7 +97,7 @@ mod tests {
     /// senate (EK), with wording that depends on who keeps the voter register.
     #[test]
     fn h4_mayor_section_per_election_type() {
-        use ModelElectionType::*;
+        use ElectionType::*;
         for election_type in [Ek, Tk, Gr, Er] {
             let mut input = h4_example_1();
             input.common.election_type = election_type;
@@ -117,7 +117,7 @@ mod tests {
 
         // Non-resident electoral college: digital-notification consent.
         let mut input = h9_example_1();
-        input.common.election_type = ModelElectionType::Kcni;
+        input.common.election_type = ElectionType::Kcni;
         assert_pdf(&render(input), "h9 KCNI");
     }
 

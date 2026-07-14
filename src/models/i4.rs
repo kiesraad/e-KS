@@ -5,7 +5,7 @@ use textris_pdf::{
     build::{Text, Textris, blank, cell, fill_in, text},
     model::ListMarker,
     theme::{
-        Align,
+        Align, ColumnWidth,
         ColumnWidth::{Auto, Fraction},
         ColumnWidths, TableStyle, em,
     },
@@ -13,9 +13,17 @@ use textris_pdf::{
 
 use super::{
     Pdf,
-    layout::{column_table, column_table_aligned, plain_table, start_document},
+    layout::{column_table, start_document},
 };
 use crate::core::ModelLocale;
+
+/// The unstriped three-column table used by the omission and decision sections.
+fn plain_table(widths: impl IntoIterator<Item = ColumnWidth>) -> TableStyle {
+    TableStyle {
+        striped: false,
+        ..column_table(widths)
+    }
+}
 
 #[derive(Debug)]
 pub struct I4 {
@@ -175,115 +183,75 @@ impl Pdf for I4 {
         );
 
         doc.h3_numbered("Geschrapte kandidaten");
-        if self.removed_candidates.is_empty() {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat geen kandidaat van een lijst is geschrapt.",
-            );
-        } else {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat de volgende kandidaten van een lijst zijn geschrapt:",
-            );
-            doc.table_styled(
-                &plain_table([Fraction(1), Fraction(1), Fraction(2)]),
-                ["Aanduiding in de kieskring(en)", "naam kandidaat", "reden"],
-                self.removed_candidates.iter().flat_map(|group| {
-                    group.candidates.iter().enumerate().map(|(i, candidate)| {
-                        [
-                            text(group_label(
-                                i,
-                                &group.designation,
-                                &group.electoral_district,
-                            )),
-                            text(&candidate.name),
-                            text(&candidate.reason),
-                        ]
-                    })
-                }),
-            );
-        }
+        optional_table(
+            &mut doc,
+            self.removed_candidates.is_empty(),
+            "Het centraal stembureau besluit dat geen kandidaat van een lijst is geschrapt.",
+            "Het centraal stembureau besluit dat de volgende kandidaten van een lijst zijn geschrapt:",
+            ["Aanduiding in de kieskring(en)", "naam kandidaat", "reden"],
+            self.removed_candidates.iter().flat_map(|group| {
+                group.candidates.iter().enumerate().map(|(i, candidate)| {
+                    [
+                        text(group_label(
+                            i,
+                            &group.designation,
+                            &group.electoral_district,
+                        )),
+                        text(&candidate.name),
+                        text(&candidate.reason),
+                    ]
+                })
+            }),
+        );
 
         doc.h3_numbered("Geschrapte aanduidingen");
-        if self.removed_designations.is_empty() {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat geen aanduiding boven een lijst is geschrapt.",
-            );
-        } else {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst zijn geschrapt:",
-            );
-            doc.table_styled(
-                &plain_table([Fraction(1), Fraction(1), Fraction(2)]),
+        optional_table(
+            &mut doc,
+            self.removed_designations.is_empty(),
+            "Het centraal stembureau besluit dat geen aanduiding boven een lijst is geschrapt.",
+            "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst zijn geschrapt:",
+            [
+                "Aanduiding in de kieskring(en)",
+                "naam eerste kandidaat op de lijst",
+                "reden",
+            ],
+            self.removed_designations.iter().map(|removed| {
                 [
-                    "Aanduiding in de kieskring(en)",
-                    "naam eerste kandidaat op de lijst",
-                    "reden",
-                ],
-                self.removed_designations.iter().map(|removed| {
-                    [
-                        text(format!(
-                            "{} in {}",
-                            removed.designation, removed.electoral_district
-                        )),
-                        text(&removed.first_candidate_name),
-                        text(&removed.reason),
-                    ]
-                }),
-            );
-        }
+                    text(format!(
+                        "{} in {}",
+                        removed.designation, removed.electoral_district
+                    )),
+                    text(&removed.first_candidate_name),
+                    text(&removed.reason),
+                ]
+            }),
+        );
 
         doc.h3_numbered("Gecorrigeerde aanduiding");
-        if self.corrected_designations.is_empty() {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat geen aanduiding boven een lijst ambtshalve is aangepast.",
-            );
-        } else {
-            doc.paragraph(
-                "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst ambtshalve zijn aangepast:",
-            );
-            doc.table_styled(
-                &plain_table([Fraction(1), Fraction(1), Fraction(2)]),
+        optional_table(
+            &mut doc,
+            self.corrected_designations.is_empty(),
+            "Het centraal stembureau besluit dat geen aanduiding boven een lijst ambtshalve is aangepast.",
+            "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst ambtshalve zijn aangepast:",
+            [
+                "Naam eerste kandidaat in de kieskring(en)",
+                "vermelde aanduiding bij inlevering",
+                "aangepaste aanduiding",
+            ],
+            self.corrected_designations.iter().map(|corrected| {
                 [
-                    "Naam eerste kandidaat in de kieskring(en)",
-                    "vermelde aanduiding bij inlevering",
-                    "aangepaste aanduiding",
-                ],
-                self.corrected_designations.iter().map(|corrected| {
-                    [
-                        text(format!(
-                            "{} in {}",
-                            corrected.first_candidate_name, corrected.electoral_district
-                        )),
-                        text(&corrected.submitted_designation),
-                        text(&corrected.edited_designation),
-                    ]
-                }),
-            );
-        }
+                    text(format!(
+                        "{} in {}",
+                        corrected.first_candidate_name, corrected.electoral_district
+                    )),
+                    text(&corrected.submitted_designation),
+                    text(&corrected.edited_designation),
+                ]
+            }),
+        );
 
         doc.h3_numbered("Geldige lijsten");
-        doc.paragraph(
-            "Het centraal stembureau besluit dat de volgende lijsten geldig zijn verklaard:",
-        );
-        doc.page_break();
-        for district in &self.valid_lists {
-            doc.h4(format!("Kieskring {}", district.electoral_district));
-            for (index, list) in district.lists.iter().enumerate() {
-                doc.h5(format!("{}. {}", upper_alpha(index + 1), list.designation));
-                doc.table_styled(
-                    &column_table([Auto, Fraction(1), Fraction(1), Fraction(1)]),
-                    ["", "naam kandidaat", "voorletters", "woonplaats"],
-                    list.candidates.iter().map(|c| {
-                        [
-                            text(c.position.to_string()),
-                            text(&c.last_name),
-                            text(&c.initials),
-                            text(&c.locality),
-                        ]
-                    }),
-                );
-                doc.page_break();
-            }
-        }
+        valid_lists_section(&mut doc, &self.valid_lists);
 
         doc.h3_numbered("Nummering van de kandidatenlijsten");
         doc.h4(
@@ -292,22 +260,19 @@ impl Pdf for I4 {
         doc.paragraph(
             "Eerst zijn de kandidatenlijsten genummerd van de politieke groeperingen die een of meer zetels hebben behaald bij de laatstgehouden verkiezing, in de volgorde van de bij die verkiezing op de desbetreffende lijsten uitgebrachte aantallen stemmen. Voor zover nodig is rekening gehouden met samengevoegde aanduidingen. Bij een gelijk aantal stemmen is er genummerd via loting.",
         );
-        doc.table_styled(
-            &column_table_aligned(
-                [Auto, Fraction(1), Auto],
-                [Align::Left, Align::Left, Align::Right],
-            ),
+        numbering_table(
+            &mut doc,
             [
                 "nummer",
                 "aanduiding politieke groepering",
                 "aantal stemmen bij laatste verkiezing",
             ],
             self.numbered_based_on_votes.iter().map(|entry| {
-                [
-                    text(position_label(entry.position)),
-                    text(&entry.designation),
-                    text(entry.previous_votes.to_string()),
-                ]
+                (
+                    entry.position,
+                    entry.designation.as_str(),
+                    entry.previous_votes,
+                )
             }),
         );
 
@@ -315,97 +280,173 @@ impl Pdf for I4 {
         doc.paragraph(
             "Vervolgens zijn de overige kandidatenlijsten genummerd in de volgorde van het aantal kieskringen waarvoor de lijst is ingeleverd. Bij een gelijk aantal kieskringen is er genummerd via loting.",
         );
-        doc.table_styled(
-            &column_table_aligned(
-                [Auto, Fraction(1), Auto],
-                [Align::Left, Align::Left, Align::Right],
-            ),
+        numbering_table(
+            &mut doc,
             [
                 "nummer",
                 "aanduiding politieke groepering of naam eerste kandidaat",
                 "aantal kieskringen waarvoor lijst geldt",
             ],
-            self.numbered_based_on_districts.iter().map(|entry| {
-                [
-                    text(position_label(entry.position)),
-                    text(&entry.designation),
-                    text(entry.districts.to_string()),
-                ]
-            }),
+            self.numbered_based_on_districts
+                .iter()
+                .map(|entry| (entry.position, entry.designation.as_str(), entry.districts)),
         );
 
         doc.h3_numbered("Bezwaren van de aanwezige kiezers");
-        match &self.objections {
-            None => {
-                doc.paragraph("Tijdens de zitting zijn");
-                doc.task_list([
-                    (false, "geen bezwaren ingebracht."),
-                    (false, "de volgende bezwaren ingebracht:"),
-                ]);
-                // room for writing during the session
-                doc.spacer(em(30.0));
-            }
-            Some(objections) if objections.is_empty() => {
-                doc.paragraph("Tijdens de zitting zijn geen bezwaren ingebracht.");
-            }
-            Some(objections) => {
-                doc.paragraph("Tijdens de zitting zijn de volgende bezwaren ingebracht:");
-                doc.ordered_list_with(
-                    ListMarker::LowerAlpha,
-                    objections.iter().map(String::as_str),
-                );
-            }
-        }
-        if let Some(response) = &self.response_objections {
-            doc.paragraph(response.as_str());
-        }
+        objections_section(&mut doc, &self.objections, &self.response_objections);
 
         doc.h3_numbered("Ondertekening");
-        let signing = TableStyle {
-            header: false,
-            striped: false,
-            flush_first_column: true,
-            columns: ColumnWidths::custom([Fraction(5), Fraction(4), Fraction(6)]),
-            ..TableStyle::data()
-        };
-        doc.table_styled(
-            &signing,
-            [blank(), blank(), blank()],
-            [[cell("Datum"), cell(&*self.public_session.date), blank()]],
-        );
-        let signing_tall = TableStyle {
-            row_min_height: Some(em(3.5)),
-            ..signing
-        };
-        let chair_row = [
-            cell("Naam en handtekening voorzitter"),
-            cell(&*self.public_session.chair),
-            fill_in(),
-        ];
-        let member_rows = self
-            .public_session
-            .members
-            .iter()
-            .enumerate()
-            .map(|(index, member)| {
-                [
-                    if index == 0 {
-                        cell("Naam en handtekening leden")
-                    } else {
-                        blank()
-                    },
-                    cell(&**member),
-                    fill_in(),
-                ]
-            });
-        doc.table_styled(
-            &signing_tall,
-            [blank(), blank(), blank()],
-            std::iter::once(chair_row).chain(member_rows),
-        );
+        signing_section(&mut doc, &self.public_session);
 
         doc
     }
+}
+
+/// A section that is either a single "none" paragraph, or an intro line plus
+/// the standard three-column table. Shared by the "geschrapte kandidaten",
+/// "geschrapte aanduidingen" and "gecorrigeerde aanduiding" sections.
+fn optional_table(
+    doc: &mut Textris,
+    is_empty: bool,
+    none_text: &str,
+    intro: &str,
+    header: [&str; 3],
+    rows: impl IntoIterator<Item = [Text; 3]>,
+) {
+    if is_empty {
+        doc.paragraph(none_text);
+        return;
+    }
+    doc.paragraph(intro);
+    doc.table_styled(
+        &plain_table([Fraction(1), Fraction(1), Fraction(2)]),
+        header,
+        rows,
+    );
+}
+
+/// One of the two "Nummering" tables: number, designation and a right-aligned
+/// count. `entries` yields `(position, designation, count)` per row.
+fn numbering_table<'a>(
+    doc: &mut Textris,
+    header: [&str; 3],
+    entries: impl IntoIterator<Item = (Option<usize>, &'a str, u64)>,
+) {
+    doc.table_styled(
+        &TableStyle {
+            align: vec![Align::Left, Align::Left, Align::Right],
+            ..column_table([Auto, Fraction(1), Auto])
+        },
+        header,
+        entries.into_iter().map(|(position, designation, count)| {
+            [
+                text(position_label(position)),
+                text(designation),
+                text(count.to_string()),
+            ]
+        }),
+    );
+}
+
+/// The "Geldige lijsten" body: each district on its own, with a candidate table
+/// per valid list and a page break between lists.
+fn valid_lists_section(doc: &mut Textris, districts: &[DistrictLists]) {
+    doc.paragraph("Het centraal stembureau besluit dat de volgende lijsten geldig zijn verklaard:");
+    doc.page_break();
+    for district in districts {
+        doc.h4(format!("Kieskring {}", district.electoral_district));
+        for (index, list) in district.lists.iter().enumerate() {
+            doc.h5(format!("{}. {}", upper_alpha(index + 1), list.designation));
+            doc.table_styled(
+                &column_table([Auto, Fraction(1), Fraction(1), Fraction(1)]),
+                ["", "naam kandidaat", "voorletters", "woonplaats"],
+                list.candidates.iter().map(|c| {
+                    [
+                        text(c.position.to_string()),
+                        text(&c.last_name),
+                        text(&c.initials),
+                        text(&c.locality),
+                    ]
+                }),
+            );
+            doc.page_break();
+        }
+    }
+}
+
+/// The "Bezwaren" body: the objections raised (or write-in space when the
+/// session is still open) and any recorded response.
+fn objections_section(
+    doc: &mut Textris,
+    objections: &Option<Vec<String>>,
+    response: &Option<String>,
+) {
+    match objections {
+        None => {
+            doc.paragraph("Tijdens de zitting zijn");
+            doc.task_list([
+                (false, "geen bezwaren ingebracht."),
+                (false, "de volgende bezwaren ingebracht:"),
+            ]);
+            // room for writing during the session
+            doc.spacer(em(30.0));
+        }
+        Some(objections) if objections.is_empty() => {
+            doc.paragraph("Tijdens de zitting zijn geen bezwaren ingebracht.");
+        }
+        Some(objections) => {
+            doc.paragraph("Tijdens de zitting zijn de volgende bezwaren ingebracht:");
+            doc.ordered_list_with(
+                ListMarker::LowerAlpha,
+                objections.iter().map(String::as_str),
+            );
+        }
+    }
+    if let Some(response) = response {
+        doc.paragraph(response.as_str());
+    }
+}
+
+/// The "Ondertekening" body: the date row and the tall signature rows for the
+/// chair and the members.
+fn signing_section(doc: &mut Textris, session: &PublicSession) {
+    let signing = TableStyle {
+        header: false,
+        striped: false,
+        flush_first_column: true,
+        columns: ColumnWidths::custom([Fraction(5), Fraction(4), Fraction(6)]),
+        ..TableStyle::data()
+    };
+    doc.table_styled(
+        &signing,
+        [blank(), blank(), blank()],
+        [[cell("Datum"), cell(&*session.date), blank()]],
+    );
+    let signing_tall = TableStyle {
+        row_min_height: Some(em(3.5)),
+        ..signing
+    };
+    let chair_row = [
+        cell("Naam en handtekening voorzitter"),
+        cell(&*session.chair),
+        fill_in(),
+    ];
+    let member_rows = session.members.iter().enumerate().map(|(index, member)| {
+        [
+            if index == 0 {
+                cell("Naam en handtekening leden")
+            } else {
+                blank()
+            },
+            cell(&**member),
+            fill_in(),
+        ]
+    });
+    doc.table_styled(
+        &signing_tall,
+        [blank(), blank(), blank()],
+        std::iter::once(chair_row).chain(member_rows),
+    );
 }
 
 /// A section listing omission groups: a paragraph when empty, otherwise an

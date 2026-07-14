@@ -17,11 +17,15 @@ use super::{
         ValidList, ValidListCandidate,
     },
     inputs::{
-        Candidate, Date, DetailedCandidate, ElectoralDistricts, ModelData, ModelElectionType,
-        NameAuthorisation, Person, PostalAddress,
+        Candidate, DetailedCandidate, ElectoralDistricts, ModelData, NameAuthorisation, Person,
+        PostalAddress,
     },
 };
-use crate::{AppError, core::ModelLocale, list_designation::ListDesignation};
+use crate::{
+    AppError,
+    core::{ElectionType, ModelLocale},
+    list_designation::ListDesignation,
+};
 
 /// A named example input, renderable to a PDF. `name` matches the former JSON
 /// file stem (e.g. `model-h1-example-1`) so the `pdf_diff` baseline lines up.
@@ -74,14 +78,14 @@ pub fn examples() -> Vec<Example> {
 const SHA_HASH: &str = "F381 3DE7 96D3 8033 FAF5 8D2C E694 61F0";
 const EVENT_ID: usize = 42;
 
-fn date(year: i32, month: u32, day: u32) -> Date {
-    Date { year, month, day }
+fn date(year: i32, month: u32, day: u32) -> chrono::NaiveDate {
+    chrono::NaiveDate::from_ymd_opt(year, month, day).expect("valid example date")
 }
 
 fn candidate(
     last_name: &str,
     initials: &str,
-    dob: Date,
+    dob: chrono::NaiveDate,
     locality: &str,
     position: usize,
 ) -> Candidate {
@@ -204,7 +208,7 @@ pub fn h1_example_1() -> H1 {
     H1 {
         common: ModelData {
             election_name: "de Eerste Kamer der Staten-Generaal".to_string(),
-            election_type: ModelElectionType::Ek,
+            election_type: ElectionType::Ek,
             designation: "Test Partij (TP)".to_string(),
             candidates: full_candidates(),
             locale: ModelLocale::Nl,
@@ -234,7 +238,7 @@ pub fn h1_example_2() -> H1 {
     H1 {
         common: ModelData {
             election_name: "de Tweede Kamer der Staten-Generaal".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "EAP/Test Partij (EAP/TP)".to_string(),
             candidates: full_candidates_short(),
             locale: ModelLocale::Fry,
@@ -257,7 +261,7 @@ pub fn h1_example_3() -> H1 {
     H1 {
         common: ModelData {
             election_name: "het algemeen bestuur van het waterschap Rijn en IJssel".to_string(),
-            election_type: ModelElectionType::Ws,
+            election_type: ElectionType::Ws,
             designation: String::new(),
             candidates: full_candidates_short(),
             locale: ModelLocale::Nl,
@@ -282,7 +286,7 @@ pub fn h3_1_example_1() -> H3 {
     H3 {
         common: ModelData {
             election_name: "Tweede Kamer der Staten-Generaal 2027".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "Een Andere Partij (EAP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,
@@ -300,7 +304,7 @@ pub fn h3_1_example_2() -> H3 {
     H3 {
         common: ModelData {
             election_name: "Earste Keamerferkiezings fan de Steaten-Generaal 2027".to_string(),
-            election_type: ModelElectionType::Ek,
+            election_type: ElectionType::Ek,
             designation: "Test Partij (TP)".to_string(),
             candidates: brief_candidates("Berlin"),
             locale: ModelLocale::Fry,
@@ -318,7 +322,7 @@ pub fn h3_1_example_3() -> H3 {
     H3 {
         common: ModelData {
             election_name: "het algemeen bestuur van het waterschap Rijn en IJssel".to_string(),
-            election_type: ModelElectionType::Ws,
+            election_type: ElectionType::Ws,
             designation: "Een Andere Partij (EAP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,
@@ -336,7 +340,7 @@ pub fn h3_2_example_1() -> H3 {
     H3 {
         common: ModelData {
             election_name: "Tweede Kamer der Staten-Generaal 2027".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "EAP/Test Partij (EAP/TP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,
@@ -357,7 +361,7 @@ pub fn h3_2_example_2() -> H3 {
     H3 {
         common: ModelData {
             election_name: "Earste Keamerferkiezings fan de Steaten-Generaal 2027".to_string(),
-            election_type: ModelElectionType::Ek,
+            election_type: ElectionType::Ek,
             designation: "EAP/Test Partij (EAP/TP)".to_string(),
             candidates: brief_candidates("Berlin"),
             locale: ModelLocale::Fry,
@@ -378,7 +382,7 @@ pub fn h3_2_example_3() -> H3 {
     H3 {
         common: ModelData {
             election_name: "het algemeen bestuur van het waterschap Rijn en IJssel".to_string(),
-            election_type: ModelElectionType::Ws,
+            election_type: ElectionType::Ws,
             designation: "EAP/Test Partij (EAP/TP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,
@@ -401,7 +405,7 @@ pub fn h4_example_1() -> H4 {
     H4 {
         common: ModelData {
             election_name: "de Eerste Kamer der Staten-Generaal".to_string(),
-            election_type: ModelElectionType::Ek,
+            election_type: ElectionType::Ek,
             designation: "Test Partij (TP)".to_string(),
             candidates: full_candidates(),
             locale: ModelLocale::Nl,
@@ -415,7 +419,7 @@ pub fn h4_example_2() -> H4 {
     H4 {
         common: ModelData {
             election_name: "de gemeenteraad van Amsterdam".to_string(),
-            election_type: ModelElectionType::Gr,
+            election_type: ElectionType::Gr,
             designation: "Test Partij (TP)".to_string(),
             candidates: full_candidates(),
             locale: ModelLocale::Nl,
@@ -429,7 +433,7 @@ pub fn h4_example_3() -> H4 {
     H4 {
         common: ModelData {
             election_name: "de Twadde Keamer fan de Steaten-Generaal".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "Test Partij (TP)".to_string(),
             candidates: full_candidates(),
             locale: ModelLocale::Fry,
@@ -445,7 +449,7 @@ pub fn h9_example_1() -> H9 {
     H9 {
         common: ModelData {
             election_name: "de Tweede Kamer der Staten-Generaal".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "Een Andere Partij (EAP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,
@@ -467,7 +471,7 @@ pub fn h9_example_2() -> H9 {
     H9 {
         common: ModelData {
             election_name: "de Tweede Kamer der Staten-Generaal".to_string(),
-            election_type: ModelElectionType::Tk,
+            election_type: ElectionType::Tk,
             designation: "Een Andere Partij (EAP)".to_string(),
             candidates: brief_candidates("Berlin"),
             locale: ModelLocale::Fry,
@@ -493,7 +497,7 @@ pub fn h9_example_3() -> H9 {
     H9 {
         common: ModelData {
             election_name: "het algemeen bestuur van het waterschap Rijn en IJssel".to_string(),
-            election_type: ModelElectionType::Ws,
+            election_type: ElectionType::Ws,
             designation: "Een Andere Partij (EAP)".to_string(),
             candidates: brief_candidates("Ede"),
             locale: ModelLocale::Nl,

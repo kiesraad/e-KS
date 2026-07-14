@@ -1,22 +1,8 @@
-use chrono::Datelike;
 use tracing::error;
 
 use crate::{
-    AppError,
-    candidates::Candidate,
-    core::ModelLocale,
-    models::inputs::{Candidate as ModelCandidate, Date},
+    AppError, candidates::Candidate, core::ModelLocale, models::inputs::Candidate as ModelCandidate,
 };
-
-impl From<crate::common::DateOfBirth> for Date {
-    fn from(date: crate::common::DateOfBirth) -> Self {
-        Self {
-            year: date.year(),
-            month: date.month(),
-            day: date.day(),
-        }
-    }
-}
 
 impl ModelCandidate {
     pub fn try_from(candidate: &Candidate, locale: ModelLocale) -> Result<Self, AppError> {
@@ -99,9 +85,10 @@ mod tests {
         assert_eq!(ordered.len(), 2);
         assert_eq!(ordered[0].last_name, "Beta");
         assert_eq!(ordered[1].last_name, "Alpha");
-        assert_eq!(ordered[0].date_of_birth.year, 1990);
-        assert_eq!(ordered[0].date_of_birth.month, 2);
-        assert_eq!(ordered[0].date_of_birth.day, 1);
+        assert_eq!(
+            ordered[0].date_of_birth,
+            chrono::NaiveDate::from_ymd_opt(1990, 2, 1).unwrap()
+        );
         assert_eq!(ordered[0].locality, "Juinen");
 
         Ok(())
@@ -159,15 +146,5 @@ mod tests {
             err,
             AppError::IncompleteData("Missing locality for candidate")
         ));
-    }
-
-    #[test]
-    fn date_from_common_date_copies_components() {
-        let input: crate::common::DateOfBirth = "15-03-2001".parse().expect("date");
-        let date = Date::from(input);
-
-        assert_eq!(date.year, 2001);
-        assert_eq!(date.month, 3);
-        assert_eq!(date.day, 15);
     }
 }

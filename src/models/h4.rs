@@ -4,13 +4,12 @@ use textris_pdf::build::{Textris, cell, fill_in, text};
 
 use super::{
     Pdf,
-    inputs::{ModelData, ModelElectionType},
+    inputs::ModelData,
     layout::{
-        candidates_section, election_section, signature_line, start_versioned, translator,
-        warning_let_op,
+        bold_value_section, candidates_section, signature_line, start_h_document, translator,
     },
 };
-use crate::core::ModelLocale;
+use crate::core::{ElectionType, ModelLocale};
 
 #[derive(Debug)]
 pub struct H4 {
@@ -18,49 +17,40 @@ pub struct H4 {
 }
 
 impl Pdf for H4 {
-    fn filename(&self) -> String {
-        match self.common.locale {
-            ModelLocale::Nl => "h4-ondersteuningsverklaring.pdf".to_string(),
-            ModelLocale::Fry => "h4-stipeferklearring.pdf".to_string(),
-        }
-    }
-
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_versioned(
+        let mut doc = start_h_document(
+            &self.common,
             "Model H 4",
             trans("Ondersteuningsverklaring", "Stipeferklearring"),
-            &self.common,
-        );
-        doc.paragraph(trans(
-            "Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.",
-            "Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.",
-        ));
-        warning_let_op(
-            &mut doc,
-            self.common.locale,
-            "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
-            "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
-        );
-
-        election_section(
-            &mut doc,
-            self.common.locale,
-            "Het gaat om de verkiezing van: ",
-            "It giet om de ferkiezing fan: ",
-            &self.common.election_name,
+            trans(
+                "Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.",
+                "Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.",
+            ),
+            Some((
+                trans("Let op!", "Tink der om!"),
+                trans(
+                    "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
+                    "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
+                ),
+            )),
+            trans(
+                "Het gaat om de verkiezing van: ",
+                "It giet om de ferkiezing fan: ",
+            ),
         );
 
-        doc.h3_numbered(trans(
-            "Aanduiding van de politieke groepering",
-            "Oantsjutting fan de politike groepearring",
-        ));
-        doc.paragraph(
-            text(trans(
+        bold_value_section(
+            &mut doc,
+            trans(
+                "Aanduiding van de politieke groepering",
+                "Oantsjutting fan de politike groepearring",
+            ),
+            trans(
                 "De aanduiding van de politieke groepering waarvan u de kandidatenlijst ondersteunt: ",
                 "De oantsjutting fan de politike groepearring dêr't jo de kandidatelist fan stypje: ",
-            ))
-            .bold(&self.common.designation),
+            ),
+            &self.common.designation,
         );
 
         candidates_section(&mut doc, self.common.locale, &self.common.candidates);
@@ -79,11 +69,18 @@ impl Pdf for H4 {
         ]);
         signature_line(&mut doc, trans("Handtekening", "Hantekening"));
 
-        if self.common.election_type != ModelElectionType::Ek {
+        if self.common.election_type != ElectionType::Ek {
             self.mayor_section(&mut doc);
         }
 
         doc
+    }
+
+    fn filename(&self) -> String {
+        match self.common.locale {
+            ModelLocale::Nl => "h4-ondersteuningsverklaring.pdf".to_string(),
+            ModelLocale::Fry => "h4-stipeferklearring.pdf".to_string(),
+        }
     }
 }
 
@@ -93,8 +90,8 @@ impl H4 {
     /// in the Typst template.
     fn municipality<'a>(&self, gr: &'a str, non_gr: &'a str) -> String {
         match self.common.election_type {
-            ModelElectionType::Er => non_gr.to_string(),
-            ModelElectionType::Tk => format!("{gr} / {non_gr}"),
+            ElectionType::Er => non_gr.to_string(),
+            ElectionType::Tk => format!("{gr} / {non_gr}"),
             _ => gr.to_string(),
         }
     }

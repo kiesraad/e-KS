@@ -171,7 +171,7 @@ impl DocumentData {
             election,
             model_data: ModelData {
                 election_name: election.formal_title(locale),
-                election_type: election.election_type().into(),
+                election_type: election.election_type(),
                 designation,
                 candidates: ordered_candidates,
                 locale,

@@ -7,13 +7,13 @@ use textris_pdf::{
 
 use super::{
     Pdf,
-    inputs::{DetailedCandidate, ElectoralDistricts, ModelData, ModelElectionType},
+    inputs::{DetailedCandidate, ElectoralDistricts, ModelData},
     layout::{
-        candidates_section, column_table, election_section, signature_line, start_versioned,
-        translator, warning_let_op,
+        bold_value_section, candidates_section, column_table, districts_section, signature_line,
+        start_h_document, translator,
     },
 };
-use crate::utils::slugify_teletex;
+use crate::{core::ElectionType, utils::slugify_teletex};
 
 #[derive(Debug)]
 pub struct H9 {
@@ -23,67 +23,51 @@ pub struct H9 {
 }
 
 impl Pdf for H9 {
-    fn filename(&self) -> String {
-        format!(
-            "h9-{}-{}.pdf",
-            slugify_teletex(&self.detailed_candidate.candidate.last_name, true),
-            self.detailed_candidate.candidate.position
-        )
-    }
-
     fn document(&self) -> Textris {
         let trans = translator(self.common.locale);
-        let mut doc = start_versioned(
+        let mut doc = start_h_document(
+            &self.common,
             "Model H 9",
             trans("Instemmingsverklaring", "Ynstimmingsferklearring"),
-            &self.common,
-        );
-        doc.paragraph(trans(
-            "Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.",
-            "Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.",
-        ));
-        warning_let_op(
-            &mut doc,
-            self.common.locale,
-            "Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.",
-            "Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.",
-        );
-
-        election_section(
-            &mut doc,
-            self.common.locale,
-            "Het gaat om de verkiezing van ",
-            "It giet om de ferkiezing fan ",
-            &self.common.election_name,
+            trans(
+                "Met dit formulier stemt u ermee in dat u op onderstaande kandidatenlijst staat, en u stemt in met uw positie op die lijst.",
+                "Mei dit formulier stimme jo dermei yn dat jo op ûndersteande kandidatelist steane en jo ynstimme mei jo posysje op dy list.",
+            ),
+            Some((
+                trans("Let op!", "Tink der om!"),
+                trans(
+                    "Bent u nog geen lid van het vertegenwoordigend orgaan? Voeg dan een kopie van een geldig identiteitsbewijs bij.",
+                    "Binne jo noch gjin lid fan it fertsjintwurdigjend orgaan? Foegje dan in kopy fan in jildich identiteitsbewiis ta.",
+                ),
+            )),
+            trans(
+                "Het gaat om de verkiezing van ",
+                "It giet om de ferkiezing fan ",
+            ),
         );
 
-        if self.electoral_districts != ElectoralDistricts::OnlyOne {
-            doc.h3_numbered(trans("Kieskringen", "Kiesrûnten"));
-            // NOTE: This text slightly differs from the reference H9 but is
-            // confirmed to be legal
-            let intro = text(trans(
+        // NOTE: This text slightly differs from the reference H9 but is
+        // confirmed to be legal. Single-district elections omit the section.
+        districts_section(
+            &mut doc,
+            self.common.locale,
+            &self.electoral_districts,
+            trans(
                 "Mijn instemming geldt voor: ",
                 "Myn ynstimming jildt foar: ",
-            ));
-            match &self.electoral_districts {
-                ElectoralDistricts::All => {
-                    doc.paragraph(intro.bold(trans("alle kieskringen", "alle kiesrûnten")));
-                }
-                ElectoralDistricts::Some(districts) => {
-                    doc.paragraph(intro);
-                    doc.paragraph(districts.join(", "));
-                }
-                ElectoralDistricts::OnlyOne => {}
-            }
-        }
+            ),
+            trans("alle kieskringen", "alle kiesrûnten"),
+            None,
+        );
 
-        doc.h3_numbered(trans("Politieke groepering", "Politike groepearring"));
-        doc.paragraph(
-            text(trans(
+        bold_value_section(
+            &mut doc,
+            trans("Politieke groepering", "Politike groepearring"),
+            trans(
                 "De aanduiding van de politieke groepering waarvan de kandidatenlijst is: ",
                 "De oantsjutting fan de politike groepearring dêr’t de kandidatelist fan is: ",
-            ))
-            .bold(&self.common.designation),
+            ),
+            &self.common.designation,
         );
 
         candidates_section(&mut doc, self.common.locale, &self.common.candidates);
@@ -120,9 +104,7 @@ impl Pdf for H9 {
             );
         }
 
-        if self.common.election_type != ModelElectionType::Kcni
-            && candidate.representative.is_none()
-        {
+        if self.common.election_type != ElectionType::Kcni && candidate.representative.is_none() {
             doc.h3_numbered(trans(
                 "Adres voor de kennisgeving van mijn benoeming",
                 "Adres foar de meidieling fan myn beneaming",
@@ -151,9 +133,7 @@ impl Pdf for H9 {
             }
         }
 
-        if self.common.election_type == ModelElectionType::Kcni
-            && candidate.representative.is_none()
-        {
+        if self.common.election_type == ElectionType::Kcni && candidate.representative.is_none() {
             doc.h3_numbered(trans(
                 "Kennisgeving van mijn benoeming ontvangen langs digitale weg",
                 "Kennisjouwing fan myn beneaming fia digitale wei tasjoerd krije",
@@ -192,5 +172,13 @@ impl Pdf for H9 {
         signature_line(&mut doc, trans("Handtekening", "Hantekening"));
 
         doc
+    }
+
+    fn filename(&self) -> String {
+        format!(
+            "h9-{}-{}.pdf",
+            slugify_teletex(&self.detailed_candidate.candidate.last_name, true),
+            self.detailed_candidate.candidate.position
+        )
     }
 }
