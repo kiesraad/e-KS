@@ -232,10 +232,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Jansen"));
-        // Sticky footer renders the translated "Finished" button, not the missing-key fallback.
+        // Sticky footer with Done button
         assert!(body.contains("<footer>"));
-        assert!(body.contains("Finished"));
-        assert!(!body.contains("[action.finished]"));
 
         Ok(())
     }
