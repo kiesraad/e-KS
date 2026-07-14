@@ -2,7 +2,7 @@
 //! This model is Dutch-only.
 
 use textris_pdf::{
-    build::{Textris, blank, cell, fill_in, text},
+    build::{Text, Textris, blank, cell, fill_in, text},
     model::ListMarker,
     theme::{
         Align,
@@ -409,8 +409,8 @@ impl Pdf for I4 {
 }
 
 /// A section listing omission groups: a paragraph when empty, otherwise an
-/// intro and a two-column table with one row per omission, the first row of
-/// each group labelled with its designation and district.
+/// intro and a two-column table with one row per group, its designation and
+/// district next to all of the group's omissions stacked in one cell.
 fn omissions(doc: &mut Textris, groups: &[OmissionGroup], none_text: &str, intro: &str) {
     if groups.is_empty() {
         doc.paragraph(none_text);
@@ -420,27 +420,37 @@ fn omissions(doc: &mut Textris, groups: &[OmissionGroup], none_text: &str, intro
     doc.table_styled(
         &plain_table([Fraction(1), Fraction(2)]),
         ["Aanduiding in de kieskring(en)", "omschrijving verzuim"],
-        groups.iter().flat_map(|group| {
-            group
-                .omission_descriptions
-                .iter()
-                .enumerate()
-                .map(|(i, description)| {
-                    [
-                        text(group_label(
-                            i,
-                            &group.designation,
-                            &group.electoral_district,
-                        )),
-                        text(description),
-                    ]
-                })
+        groups.iter().map(|group| {
+            [
+                text(format!(
+                    "{} in {}",
+                    group.designation, group.electoral_district
+                )),
+                stacked(group.omission_descriptions.iter().map(String::as_str)),
+            ]
         }),
     );
 }
 
+/// Combine several values into one cell, each on its own line. Mirrors a Typst
+/// `table.cell(rowspan: …)` group (which textris-pdf cannot express): the label
+/// column names the group once next to its stacked entries. Used where a single
+/// data column accompanies the label; tables that pair multiple data columns
+/// per entry keep one row per entry (see [`group_label`]) so the columns stay
+/// aligned.
+fn stacked<'a>(lines: impl IntoIterator<Item = &'a str>) -> Text {
+    let mut cell = Text::new();
+    for (index, line) in lines.into_iter().enumerate() {
+        if index > 0 {
+            cell = cell.line_break();
+        }
+        cell = cell.normal(line);
+    }
+    cell
+}
+
 /// The first-column label for grouped table rows: only the first row of a
-/// group names the list.
+/// group names the list, mirroring a Typst `table.cell(rowspan: …)` label.
 fn group_label(index: usize, designation: &str, electoral_district: &str) -> String {
     if index == 0 {
         format!("{designation} in {electoral_district}")

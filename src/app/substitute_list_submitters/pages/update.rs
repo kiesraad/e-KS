@@ -19,6 +19,7 @@ use super::SubstituteSubmitterUpdatePath;
 struct SubstituteSubmitterUpdateTemplate {
     substitute_submitter: ListSubmitter,
     form: FormData<ListSubmitterForm>,
+    address_unknown: bool,
     overlay: Overlay,
 }
 
@@ -31,6 +32,7 @@ pub async fn update_substitute_submitter(
     Ok(HtmlTemplate(
         SubstituteSubmitterUpdateTemplate {
             form: FormData::new_with_data(substitute_submitter.clone().into()),
+            address_unknown: substitute_submitter.address.is_unknown(),
             substitute_submitter,
             overlay: Overlay::new(&query),
         },
@@ -50,6 +52,7 @@ pub async fn update_substitute_submitter_submit(
     match form.validate_update_with_checks(&ListSubmitterData::from(substitute_submitter.clone())) {
         Err(form_data) => Ok(HtmlTemplate(
             SubstituteSubmitterUpdateTemplate {
+                address_unknown: substitute_submitter.address.is_unknown(),
                 substitute_submitter,
                 form: *form_data,
                 overlay: Overlay::new(&query),

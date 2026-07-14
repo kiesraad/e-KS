@@ -24,6 +24,16 @@ impl CsbStore {
         data.omissions.len()
     }
 
+    pub fn get_recoverable_omissions(&self) -> Vec<Omission> {
+        let data = self.data.read();
+
+        data.omissions
+            .values()
+            .filter(|o| o.recoverable)
+            .cloned()
+            .collect()
+    }
+
     pub fn get_general_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -60,6 +70,18 @@ impl CsbStore {
         data.omissions
             .values()
             .filter(|o| matches!(&o.category, OmissionCategory::Candidate { person, .. } if *person == person_id))
+            .cloned()
+            .collect()
+    }
+
+    pub fn get_candidate_list_omissions(&self, list_id: CandidateListId) -> Vec<Omission> {
+        let data = self.data.read();
+
+        data.omissions
+            .values()
+            .filter(
+                |o| matches!(&o.category, OmissionCategory::CandidateList(id) if *id == list_id),
+            )
             .cloned()
             .collect()
     }
@@ -274,6 +296,36 @@ mod tests {
         );
 
         assert!(store.get_candidate_omissions(PersonId::new()).is_empty());
+    }
+
+    #[test]
+    fn get_candidate_list_omissions_returns_only_omissions_for_the_given_list() {
+        let list_a = CandidateListId::new();
+        let list_b = CandidateListId::new();
+        let store = CsbStore::new_for_test();
+        insert(&store, OmissionCategory::CandidateList(list_a));
+        insert(&store, OmissionCategory::CandidateList(list_b));
+        insert(&store, OmissionCategory::General);
+
+        let result = store.get_candidate_list_omissions(list_a);
+
+        assert_eq!(result.len(), 1);
+        assert!(matches!(result[0].category, OmissionCategory::CandidateList(id) if id == list_a));
+    }
+
+    #[test]
+    fn get_candidate_list_omissions_returns_empty_when_no_match() {
+        let store = CsbStore::new_for_test();
+        insert(
+            &store,
+            OmissionCategory::CandidateList(CandidateListId::new()),
+        );
+
+        assert!(
+            store
+                .get_candidate_list_omissions(CandidateListId::new())
+                .is_empty()
+        );
     }
 
     #[test]

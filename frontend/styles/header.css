@@ -142,6 +142,10 @@ header {
       margin-left: var(--space-md);
     }
 
+    h1 .candidate-number {
+      margin-right: var(--space-md);
+    }
+
     div:first-child {
       flex: 1;
     }
@@ -157,6 +161,12 @@ header {
 
     a {
       max-height: 3rem;
+    }
+
+    .header-buttons {
+      display: flex;
+      align-items: center;
+      gap: var(--space-md);
     }
   }
 }

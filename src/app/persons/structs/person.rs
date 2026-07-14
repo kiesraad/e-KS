@@ -131,10 +131,7 @@ impl Person {
     }
 
     pub fn lives_in_nl(&self) -> bool {
-        match &self.personal_data.country {
-            Some(country) => country.is_nl(),
-            None => true, // Assume Dutch if no country is set
-        }
+        self.personal_data.lives_in_nl()
     }
 
     pub fn gender_key(&self) -> &'static str {

@@ -16,6 +16,7 @@ use crate::{
 #[template(path = "app/persons/pages/update_representative.html")]
 struct RepresentativeUpdateTemplate {
     should_warn: bool,
+    address_unknown: bool,
     person: Person,
     form: FormData<RepresentativeForm>,
     overlay: Overlay,
@@ -30,6 +31,10 @@ pub async fn update_representative(
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
+            address_unknown: person
+                .representative
+                .as_ref()
+                .is_some_and(|representative| representative.address.is_unknown()),
             form: FormData::new_with_data(RepresentativeForm::from(
                 person.clone().representative.unwrap_or_default(),
             )),
@@ -53,6 +58,10 @@ pub async fn update_representative_submit(
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
+                address_unknown: person
+                    .representative
+                    .as_ref()
+                    .is_some_and(|representative| representative.address.is_unknown()),
                 person,
                 form: form_data,
                 overlay: Overlay::new(&query),

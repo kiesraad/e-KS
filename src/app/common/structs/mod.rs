@@ -25,7 +25,7 @@ pub use address::{Address, DutchAddress, InternationalAddress};
 pub use bsn::{BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed};
 pub use constrained_string::{FirstName, LegalName, StateOrProvince, StreetName};
 pub use countries::COUNTRY_CODES;
-pub use country_code::CountryCode;
+pub use country_code::{CountryCode, RVIG_COUNTRY_CODES_URL};
 pub use date::DateOfBirth;
 pub use display_name::DisplayName;
 pub use form_action::FormAction;

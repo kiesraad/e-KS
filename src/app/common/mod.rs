@@ -19,8 +19,8 @@ pub use structs::{
     DateOfBirth, DisplayName, DutchAddress, FirstName, FormAction, FullName, Gender, HasSeverity,
     HouseNumber, HouseNumberAddition, InfoProblems, Initials, InternationalAddress,
     InternationalPostalCode, LastName, LastNamePrefix, LegalName, Locality, PlaceOfResidence,
-    PostalCode, PotentialProblems, PreviousElectionResults, Problematic, Problems, Severity,
-    StateOrProvince, StreetName, UtcDateTime, WithProblems,
+    PostalCode, PotentialProblems, PreviousElectionResults, Problematic, Problems,
+    RVIG_COUNTRY_CODES_URL, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
 };
 
 pub use pages::{

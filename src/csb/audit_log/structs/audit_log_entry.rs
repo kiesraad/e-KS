@@ -1,7 +1,9 @@
+use axum_extra::routing::TypedPath;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    Event, Locale, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath, store::StoreEvent,
+    Event, Locale, QueryParamState, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath,
+    store::StoreEvent,
 };
 
 /// A single row in the CSB audit log, covering events from both the global
@@ -38,22 +40,15 @@ impl CsbAuditLogEntry {
             || self.stream_label.to_lowercase().contains(&query)
     }
 
-    pub fn detail_path(&self) -> String {
+    /// Detail path carrying `return_to` as a `redirect_to` query param, so
+    /// closing the detail overlay returns to the same filtered list page.
+    pub fn detail_path_with_return(&self, return_to: &str) -> String {
         CsbAuditLogDetailPath {
             stream_id: self.stream_id,
             event_id: self.event_id,
         }
+        .with_query_params(QueryParamState::redirect_to(return_to.to_string()))
         .to_string()
-    }
-
-    /// Detail path carrying `return_to` as a `redirect_to` query param, so
-    /// closing the detail overlay returns to the same filtered list page.
-    pub fn detail_path_with_return(&self, return_to: &str) -> String {
-        format!(
-            "{}?redirect_to={}",
-            self.detail_path(),
-            urlencoding::encode(return_to)
-        )
     }
 }
 

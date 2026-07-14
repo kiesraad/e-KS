@@ -8,56 +8,60 @@
   {{ political_group.political_group.csb_display_name() }}
 {% endblock %}
 {% block header_action %}
-  <div class="header-controls">
-    <div class="switch-group {% if political_group.is_examination_finished %} finished {% else %} unfinished {% endif %}">
-      <p>
-        {% if political_group.is_examination_finished %}
-          {{ "csb_political_group.examination_finished"|trans }}
-        {% else %}
-          {{ "csb_political_group.examination_unfinished"|trans }}
-        {% endif %}
-      </p>
-      <form method="post"
-            action="{{ political_group.examination_toggle_finish_path() }}">
-        {{ macros::csrf_field() }}
-        <label class="switch"
-               aria-label="{{ "csb_political_group.toggle_examination"|trans }}">
-          <input type="submit">
-          <span class="slider"></span>
-        </label>
-      </form>
+  <div class="header-buttons">
+    <div class="header-controls">
+      <div class="switch-group {% if political_group.is_examination_finished %} finished {% else %} unfinished {% endif %}">
+        <p>
+          {% if political_group.is_examination_finished %}
+            {{ "csb.group.finished"|trans }}
+          {% else %}
+            {{ "csb.group.unfinished"|trans }}
+          {% endif %}
+        </p>
+        <form method="post"
+              action="{{ political_group.examination_toggle_finish_path() }}">
+          {{ macros::csrf_field() }}
+          <label class="switch" aria-label="{{ "csb.group.toggle"|trans }}">
+            <input type="submit">
+            <span class="slider"></span>
+          </label>
+        </form>
+      </div>
+      <a class="button secondary icon-restoration">
+        {{ "csb.all_restorations"|trans }}
+        <span class="restoration_count">{{ restoration_count }}</span>
+      </a>
+      <a href="{{ crate::csb::examination::CsbExaminationOverviewPath }}"
+         class="button secondary">{{ "action.back"|trans }}</a>
     </div>
-    <a class="button secondary icon-restoration">
-      {{ "csb_political_group.all_restorations"|trans }}
-      <span class="restoration_count">{{ restoration_count }}</span>
-    </a>
   </div>
 {% endblock %}
 {% block content %}
+  {% let election = "election"|election_value %}
   <section class="candidate-lists {% if political_group.is_examination_finished %} disabled {% endif %}">
     <div class="candidates">
       <div data-href="#" class="card card-brp-errors">
         <div class="card-header">
           <div class="badge {% if all_brp_error_count > 0 %} error {% else %} success {% endif %}"></div>
           <div>
-            <h3 class="h4">{{ "csb_political_group.all_brp_errors"|trans }}</h3>
+            <h3 class="h4">{{ "csb.group.all_brp_errors"|trans }}</h3>
           </div>
         </div>
         <div class="card-content">
           <ul class="tags-list">
             <li class="tag link">
               {% if all_brp_error_count == 0 %}
-                <a class="ok" href="#">{{ "csb_political_group.brp_errors.none"|trans }}</a>
+                <a class="ok" href="#">{{ "csb.group.brp_errors.none"|trans }}</a>
               {% else if all_brp_error_count == 1 %}
-                <a class="error" href="#">{{ "csb_political_group.brp_errors.singular"|trans }}</a>
+                <a class="error" href="#">{{ "csb.group.brp_errors.singular"|trans }}</a>
               {% else %}
-                <a class="error" href="#">{{ "csb_political_group.brp_errors.plural"|trans(&all_brp_error_count.to_string() ) }}</a>
+                <a class="error" href="#">{{ "csb.group.brp_errors.plural"|trans(&all_brp_error_count.to_string() ) }}</a>
               {% endif %}
             </li>
           </ul>
-          <p>{{ "csb_political_group.all_brp_errors_note"|trans }}</p>
+          <p>{{ "csb.group.all_brp_errors_note"|trans }}</p>
         </div>
-        <a class="card-footer">{{ "csb_political_group.actions.examine_all_brp_errors"|trans }}</a>
+        <a class="card-footer">{{ "csb.group.examine_all"|trans }}</a>
       </div>
     </div>
     <div class="cards cards-candidate-lists">
@@ -72,15 +76,16 @@
         <div class="card-content">
           {{ omission_count_badge(general_omission_count) }}
           <ul class="card-instruction">
-            <li>{{ "csb_political_group.general_instruction_political_group"|trans }}</li>
-            <li>{{ "csb_political_group.general_instruction_list_submitter"|trans }}</li>
+            <li>{{ "csb.group.instruction_group"|trans }}</li>
+            <li>{{ "csb.group.instruction_submitter"|trans }}</li>
           </ul>
         </div>
         <a class="card-footer"
-           href="{{ political_group.general_information_path() }}">{{ "csb_political_group.actions.examine_general"|trans }}</a>
+           href="{{ political_group.general_information_path() }}">{{ "csb.group.examine_general"|trans }}</a>
       </div>
       {% for candidate_list in candidate_lists %}
-        <div class="card card-candidate-list" data-href="#">
+        <div class="card card-candidate-list"
+             data-href="{{ political_group.candidate_list_path(candidate_list.list.id) }}">
           <div class="card-header">
             <div class="badge badge-candidates-list"></div>
             <div>
@@ -91,15 +96,15 @@
             <ul class="tags-list">
               <li class="tag link">
                 {% if candidate_list.brp_error_count == 0 %}
-                  <a class="ok" href="#">{{ "csb_political_group.brp_errors.none"|trans }}</a>
+                  <a class="ok" href="#">{{ "csb.group.brp_errors.none"|trans }}</a>
                 {% else if candidate_list.brp_error_count == 1 %}
-                  <a class="error" href="#">{{ "csb_political_group.brp_errors.singular"|trans }}</a>
+                  <a class="error" href="#">{{ "csb.group.brp_errors.singular"|trans }}</a>
                 {% else %}
-                  <a class="error" href="#">{{ "csb_political_group.brp_errors.plural"|trans(&candidate_list.brp_error_count.to_string() ) }}</a>
+                  <a class="error" href="#">{{ "csb.group.brp_errors.plural"|trans(&candidate_list.brp_error_count.to_string() ) }}</a>
                 {% endif %}
               </li>
             </ul>
-            <p>{{ "csb_political_group.candidate_count"|trans(&candidate_list.list.candidates.len().to_string())|safe }}</p>
+            <p>{{ "csb.group.candidate_count"|trans(&candidate_list.list.candidates.len().to_string())|safe }}</p>
             {% if !election.has_only_one_district() %}
               <div class="tags">
                 <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
@@ -116,10 +121,9 @@
                 {% endif %}
               </div>
             {% endif %}
-            <a class="add-omission-link"
-               href="{{ political_group.add_candidate_list_omission_path(candidate_list.list.id) }}">{{ "csb.omission.action.add"|trans }}</a>
           </div>
-          <a class="card-footer" href="#">{{ "csb_political_group.actions.examine_list"|trans }}</a>
+          <a class="card-footer"
+             href="{{ political_group.candidate_list_path(candidate_list.list.id) }}">{{ "csb.group.examine_list"|trans }}</a>
         </div>
       {% endfor %}
     </div>

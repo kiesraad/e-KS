@@ -3,9 +3,13 @@ use std::{collections::HashMap, str::FromStr, sync::LazyLock};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppError, CsbEvent, CsbStore, ElectoralDistrict, candidate_lists::CandidateListId,
-    common::UtcDateTime, form::ValidationError, id_newtype,
-    name_authorisations::NameAuthorisationId, persons::PersonId,
+    AnyLocale, AppError, CsbEvent, CsbStore, ElectionConfig, ElectoralDistrict,
+    candidate_lists::{CandidateList, CandidateListId},
+    common::UtcDateTime,
+    form::ValidationError,
+    id_newtype,
+    name_authorisations::NameAuthorisationId,
+    persons::PersonId,
 };
 
 id_newtype!(pub struct OmissionId);
@@ -19,15 +23,16 @@ pub struct PresetOmission {
     pub title: String,
     pub description: String,
     pub help_text: String,
+    #[serde(default = "recoverable_by_default")]
+    pub recoverable: bool,
+}
+
+fn recoverable_by_default() -> bool {
+    true
 }
 
 /// Values used to interpolate the `{token}` placeholders in an omission
 /// description with the correct data for the referenced item.
-///
-/// Any field left `None` leaves its token in place so the committee can fill it
-/// in manually. Some placeholders are always manual (there is no field for them
-/// because they cannot be derived): `{district}` (which single electoral
-/// district) and `{designation}` (the disputed name/predicate).
 #[derive(Debug, Default, Clone)]
 pub struct OmissionPlaceholders {
     /// `{candidate_number}`: the candidate's position on the list.
@@ -82,11 +87,18 @@ impl OmissionType {
     }
 
     /// The predefined omissions offered as quick-fill suggestions for this type.
-    pub fn presets(self) -> &'static [PresetOmission] {
-        PRESET_OMISSIONS
-            .get(self.as_str())
-            .map(Vec::as_slice)
-            .unwrap_or(&[])
+    ///
+    /// A `general` candidate omission applies to the person on every list and
+    /// draws from a separate set (`person`) than one scoped to the candidate on
+    /// a specific list (`candidate`). `general` is meaningless for the other
+    /// types, which only have a single set.
+    pub fn presets(self, general: bool) -> &'static [PresetOmission] {
+        let key = match self {
+            OmissionType::Candidate if general => "person",
+            _ => self.as_str(),
+        };
+
+        PRESET_OMISSIONS.get(key).map(Vec::as_slice).unwrap_or(&[])
     }
 }
 
@@ -141,6 +153,8 @@ pub enum OmissionCategory {
     },
 }
 
+const ALL_DISTRICTS: &str = "alle kieskringen";
+
 impl OmissionCategory {
     /// Build the category for a newly added omission from the parameters of the
     /// "add omission" dialog: the [`OmissionType`], the id of the item the
@@ -161,6 +175,45 @@ impl OmissionCategory {
             },
         }
     }
+
+    /// Returns the electoral district string for use in model I 4.
+    pub fn electoral_district(
+        &self,
+        store: &CsbStore,
+        election: &ElectionConfig,
+    ) -> Result<String, AppError> {
+        match self {
+            OmissionCategory::General
+            | OmissionCategory::NameAuthorisation(_)
+            | OmissionCategory::Candidate { list: None, .. } => Ok(ALL_DISTRICTS.to_string()),
+            OmissionCategory::DeclarationOfSupport(districts) => Ok(format_districts(districts)),
+            OmissionCategory::CandidateList(id)
+            | OmissionCategory::Candidate { list: Some(id), .. } => store
+                .get_candidate_list(*id)
+                .as_ref()
+                .map(|list| format_districts_for_list(list, election))
+                .ok_or(AppError::GenericNotFound),
+        }
+    }
+}
+
+fn format_districts_for_list(list: &CandidateList, election: &ElectionConfig) -> String {
+    if list.contains_all_districts(election) {
+        ALL_DISTRICTS.to_string()
+    } else {
+        format_districts(&list.electoral_districts)
+    }
+}
+
+fn format_districts(districts: &[ElectoralDistrict]) -> String {
+    if districts.is_empty() {
+        return ALL_DISTRICTS.to_string();
+    }
+    let parts: Vec<String> = districts
+        .iter()
+        .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))
+        .collect();
+    format!("kieskring {}", parts.join(", "))
 }
 
 /// An omission ("verzuim") signifies something was wrong with the submitted data
@@ -174,6 +227,8 @@ pub struct Omission {
     pub description: String,
     /// Help text for political groups explaining how to resolve the omission ("Dit verzuim is te herstellen door ...")
     pub help_text: String,
+    #[serde(default = "recoverable_by_default")]
+    pub recoverable: bool,
     pub updated_at: UtcDateTime,
 }
 
@@ -189,6 +244,7 @@ impl Omission {
             title,
             description,
             help_text,
+            recoverable: true,
             ..Default::default()
         }
     }
@@ -226,24 +282,68 @@ pub mod tests {
 
     #[test]
     fn presets_are_loaded_from_json_per_type() {
-        assert_eq!(OmissionType::PoliticalGroup.presets().len(), 6);
-        assert_eq!(OmissionType::CandidateList.presets().len(), 4);
-        assert_eq!(OmissionType::Candidate.presets().len(), 12);
+        assert_eq!(OmissionType::PoliticalGroup.presets(false).len(), 6);
+        assert_eq!(OmissionType::CandidateList.presets(false).len(), 4);
+        // A candidate omission draws from a different set depending on whether it
+        // is scoped to the candidate on a specific list or general to the person.
+        assert_eq!(OmissionType::Candidate.presets(false).len(), 3);
+        assert_eq!(OmissionType::Candidate.presets(true).len(), 9);
 
         // Every preset carries a title and description; irreparable defects have
         // no help text.
         assert!(
             OmissionType::PoliticalGroup
-                .presets()
+                .presets(false)
                 .iter()
                 .all(|p| !p.title.is_empty() && !p.description.is_empty())
         );
         assert!(
             OmissionType::PoliticalGroup
-                .presets()
+                .presets(false)
                 .iter()
                 .any(|p| p.help_text.is_empty())
         );
+    }
+
+    #[test]
+    fn presets_carry_the_recoverable_flag() {
+        // Most omissions are recoverable ("herstelbaar").
+        assert!(
+            OmissionType::Candidate
+                .presets(false)
+                .iter()
+                .any(|p| p.recoverable)
+        );
+        // Irreparable defects ("onherstelbaar verzuim") have no help text and are
+        // flagged as non-recoverable.
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets(false)
+                .iter()
+                .any(|p| !p.recoverable)
+        );
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets(false)
+                .iter()
+                .all(|p| p.recoverable || p.help_text.is_empty())
+        );
+    }
+
+    #[test]
+    fn omission_recoverable_defaults_to_true_for_legacy_events() {
+        // Events persisted before the flag existed omit `recoverable`; they must
+        // deserialize as recoverable rather than as errors.
+        let json = r#"{
+            "id": "00000000-0000-0000-0000-000000000000",
+            "category": "General",
+            "title": "t",
+            "description": "d",
+            "help_text": "",
+            "updated_at": "2026-01-01T00:00:00Z"
+        }"#;
+        let omission: Omission = serde_json::from_str(json).unwrap();
+        assert!(omission.recoverable);
     }
 
     #[test]
@@ -314,5 +414,160 @@ pub mod tests {
         assert!(missing.is_err());
 
         Ok(())
+    }
+
+    mod electoral_district {
+        use super::*;
+        use crate::{ElectionConfig, ElectoralDistrict, candidate_lists::CandidateList};
+
+        const EK: ElectionConfig = ElectionConfig::EK27;
+
+        fn store_with_list(districts: Vec<ElectoralDistrict>) -> (CsbStore, CandidateListId) {
+            let store = CsbStore::new_for_test();
+            let list = CandidateList {
+                electoral_districts: districts,
+                ..Default::default()
+            };
+            let id = list.id;
+            store.set_candidate_list(list);
+            (store, id)
+        }
+
+        #[test]
+        fn general_maps_to_all_districts() {
+            let store = CsbStore::new_for_test();
+            assert_eq!(
+                OmissionCategory::General
+                    .electoral_district(&store, &EK)
+                    .unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn name_authorisation_maps_to_all_districts() {
+            let store = CsbStore::new_for_test();
+            assert_eq!(
+                OmissionCategory::NameAuthorisation(None)
+                    .electoral_district(&store, &EK)
+                    .unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn candidate_without_list_maps_to_all_districts() {
+            let store = CsbStore::new_for_test();
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                list: None,
+            };
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn declaration_of_support_single_district() {
+            let store = CsbStore::new_for_test();
+            let category = OmissionCategory::DeclarationOfSupport(vec![ElectoralDistrict::GR]);
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "kieskring 1 (Groningen)"
+            );
+        }
+
+        #[test]
+        fn declaration_of_support_multiple_districts() {
+            let store = CsbStore::new_for_test();
+            let category = OmissionCategory::DeclarationOfSupport(vec![
+                ElectoralDistrict::GR,
+                ElectoralDistrict::DR,
+            ]);
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "kieskring 1 (Groningen), 3 (Drenthe)"
+            );
+        }
+
+        #[test]
+        fn declaration_of_support_empty_maps_to_all_districts() {
+            let store = CsbStore::new_for_test();
+            let category = OmissionCategory::DeclarationOfSupport(vec![]);
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn candidate_list_with_all_districts_maps_to_all() {
+            let (store, id) = store_with_list(EK.electoral_districts().to_vec());
+            assert_eq!(
+                OmissionCategory::CandidateList(id)
+                    .electoral_district(&store, &EK)
+                    .unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn candidate_list_with_specific_district() {
+            let (store, id) = store_with_list(vec![ElectoralDistrict::BO]);
+            assert_eq!(
+                OmissionCategory::CandidateList(id)
+                    .electoral_district(&store, &EK)
+                    .unwrap(),
+                "kieskring 13 (Bonaire)"
+            );
+        }
+
+        #[test]
+        fn candidate_list_not_found_returns_error() {
+            let store = CsbStore::new_for_test();
+            let missing_id = CandidateListId::new();
+            assert!(
+                OmissionCategory::CandidateList(missing_id)
+                    .electoral_district(&store, &EK)
+                    .is_err()
+            );
+        }
+
+        #[test]
+        fn candidate_with_list_all_districts_maps_to_all() {
+            let (store, id) = store_with_list(EK.electoral_districts().to_vec());
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                list: Some(id),
+            };
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "alle kieskringen"
+            );
+        }
+
+        #[test]
+        fn candidate_with_list_specific_district() {
+            let (store, id) = store_with_list(vec![ElectoralDistrict::GR]);
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                list: Some(id),
+            };
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "kieskring 1 (Groningen)"
+            );
+        }
+
+        #[test]
+        fn candidate_with_missing_list_returns_error() {
+            let store = CsbStore::new_for_test();
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                list: Some(CandidateListId::new()),
+            };
+            assert!(category.electoral_district(&store, &EK).is_err());
+        }
     }
 }
