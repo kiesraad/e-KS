@@ -15,7 +15,7 @@ use crate::{
     AppError, AppState, SESSION_COOKIE_NAME, Scope, Session,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{LoginStartPath, SelectElectionPath},
-    csb::examination::CsbExaminationOverviewPath,
+    csb::index::pages::CsbIndexPath,
     csrf_rejection_response,
     store::{Store, StoreData},
 };
@@ -98,7 +98,7 @@ pub async fn store_middleware(
     // Keep CSB sessions off app routes so they can't create an `AppStore` in
     // their CSB stream partition. They belong on the CSB routes instead.
     if session.scope == Scope::CentralElectoralCommittee {
-        return Redirect::to(&CsbExaminationOverviewPath {}.to_string()).into_response();
+        return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
     }
 
     // Redirect to `/select-election` when the session has not yet picked an election
