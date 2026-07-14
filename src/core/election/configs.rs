@@ -31,7 +31,7 @@ super::define_elections! {
                 NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
             ),
             chair: "",
-            members: &[""],
+            members: &["", "", "", "", ""],
         },
         election_date: NaiveDate::from_ymd_opt(2027, 5, 24).unwrap()
     },
@@ -70,7 +70,7 @@ super::define_elections! {
                 NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
             ),
             chair: "",
-            members: &[""],
+            members: &["", "", "", "", ""],
         },
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     },
@@ -118,7 +118,7 @@ super::define_elections! {
                 NaiveTime::from_hms_opt(17, 0, 0).unwrap(),
             ),
             chair: "",
-            members: &[""],
+            members: &["", "", "", "", ""],
         },
         election_date: NaiveDate::from_ymd_opt(2027, 3, 17).unwrap()
     }

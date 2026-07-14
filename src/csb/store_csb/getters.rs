@@ -24,6 +24,16 @@ impl CsbStore {
         data.omissions.len()
     }
 
+    pub fn get_recoverable_omissions(&self) -> Vec<Omission> {
+        let data = self.data.read();
+
+        data.omissions
+            .values()
+            .filter(|o| o.recoverable)
+            .cloned()
+            .collect()
+    }
+
     pub fn get_general_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 

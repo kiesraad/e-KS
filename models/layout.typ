@@ -98,13 +98,14 @@
 }
 /// Table without alternating row colors and row height that fits content
 #let plain_table(columns: (), headers: (), values: ()) = {
+  let values = values.flatten()
   block(breakable: values.len() > 10, table(
     columns: columns,
     align: top,
     gutter: 1em,
     inset: 0em,
     table.header(..headers.map(value => { text(style: "italic", size: .9em, value) })),
-    ..values.flatten(),
+    ..values,
   ))
 }
 

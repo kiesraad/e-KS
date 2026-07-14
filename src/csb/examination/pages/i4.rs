@@ -1,10 +1,13 @@
+use std::collections::BTreeMap;
+
 use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 
 use crate::{
-    AppError, CsbMainStore, TypstRenderer,
+    AppError, CsbMainStore, CsbStoreData, TypstRenderer,
     core::{ModelLocale, Pdf, constants::DEFAULT_DATE_FORMAT},
     csb::examination::pages::CsbI4DownloadPath,
-    structs::typst::I4,
+    store::StoreRegistry,
+    structs::typst::{I4, TypstOmission},
     utils::no_cache_headers,
 };
 
@@ -13,9 +16,39 @@ const PDF_CONTENT_TYPE: &str = "application/pdf";
 pub async fn gen_i4(
     _: CsbI4DownloadPath,
     main_store: CsbMainStore,
+    State(csb_registry): State<StoreRegistry<CsbStoreData>>,
     State(renderer): State<TypstRenderer>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = main_store.election;
+
+    let mut found_omissions = Vec::new();
+    for store in csb_registry.stores_by_scope().await? {
+        let recoverable = store.get_recoverable_omissions();
+        if recoverable.is_empty() {
+            continue;
+        }
+
+        let political_group = store.get_political_group();
+        let designation = political_group.display_name_for_exports()?;
+
+        let mut by_district: BTreeMap<String, Vec<String>> = BTreeMap::new();
+        for omission in recoverable {
+            let district = omission.category.electoral_district(&store, &election)?;
+            by_district
+                .entry(district)
+                .or_default()
+                .push(omission.description);
+        }
+
+        for (district, descriptions) in by_district {
+            found_omissions.push(TypstOmission {
+                designation: designation.clone(),
+                electoral_district: district,
+                omission_descriptions: descriptions,
+            });
+        }
+    }
+
     let model = I4 {
         election_name: election.formal_title(ModelLocale::Nl),
         election_date: election
@@ -23,6 +56,7 @@ pub async fn gen_i4(
             .format(DEFAULT_DATE_FORMAT)
             .to_string(),
         public_session: election.public_session(),
+        found_omissions,
         ..I4::default()
     };
     let filename = model.filename();
@@ -41,17 +75,23 @@ pub async fn gen_i4(
 mod tests {
     use super::*;
     use axum::{
+        extract::FromRef,
         http::{StatusCode, header},
         response::IntoResponse,
     };
 
+    use crate::{AppState, store::StoreRegistry};
+
     #[tokio::test]
     async fn gen_i4_returns_pdf_response() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
+        let state = AppState::new_for_tests().await;
+        let csb_registry = StoreRegistry::<CsbStoreData>::from_ref(&state);
 
         let response = gen_i4(
             CsbI4DownloadPath,
             main_store,
+            State(csb_registry),
             State(TypstRenderer::embedded(
                 crate::utils::embed_typst::pdf_context(),
             )),

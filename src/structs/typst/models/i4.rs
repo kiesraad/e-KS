@@ -1,17 +1,20 @@
 use serde::Serialize;
 
-use crate::core::{Pdf, election::PublicSession};
+use crate::{
+    core::{Pdf, election::PublicSession},
+    structs::typst::omission::{TypstOmission, TypstRemovedCandidates, TypstRemovedDesignation},
+};
 
 #[derive(Debug, Default, Serialize)]
 pub struct I4 {
     pub election_name: String,
     pub election_date: String,
     pub public_session: PublicSession,
-    pub found_omissions: Vec<()>,
-    pub recovered_omissions: Vec<()>,
-    pub invalid_lists: Vec<()>,
-    pub removed_candidates: Vec<()>,
-    pub removed_designations: Vec<()>,
+    pub found_omissions: Vec<TypstOmission>,
+    pub recovered_omissions: Vec<TypstOmission>,
+    pub invalid_lists: Vec<TypstOmission>,
+    pub removed_candidates: Vec<TypstRemovedCandidates>,
+    pub removed_designations: Vec<TypstRemovedDesignation>,
     pub corrected_designations: Vec<()>,
     pub valid_lists: Vec<()>,
     pub numbered_based_on_votes: Vec<()>,

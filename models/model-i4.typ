@@ -43,10 +43,13 @@ Bij het onderzoek naar de kandidatenlijsten waren
     values: input.found_omissions.map(p => p
       .omission_descriptions
       .enumerate()
-      .map(((i, od)) => (
-        if i != 0 { "" } else { p.designation + " in " + p.electoral_district },
-        od,
-      ))),
+      .map(((i, od)) =>
+        if i == 0 {
+          (table.cell(rowspan: p.omission_descriptions.len())[#(p.designation + " in " + p.electoral_district)], od)
+        } else {
+          (od,)
+        }
+      )),
   )
 ]
 
@@ -62,10 +65,13 @@ Bij het onderzoek naar de kandidatenlijsten waren
     values: input.recovered_omissions.map(p => p
       .omission_descriptions
       .enumerate()
-      .map(((i, od)) => (
-        if i != 0 { "" } else { p.designation + " in " + p.electoral_district },
-        od,
-      ))),
+      .map(((i, od)) =>
+        if i == 0 {
+          (table.cell(rowspan: p.omission_descriptions.len())[#(p.designation + " in " + p.electoral_district)], od)
+        } else {
+          (od,)
+        }
+      )),
   )
 ]
 
@@ -82,10 +88,13 @@ Het centraal stembureau besluit dat
     values: input.invalid_lists.map(p => p
       .omission_descriptions
       .enumerate()
-      .map(((i, od)) => (
-        if i != 0 { "" } else { p.designation + " in " + p.electoral_district },
-        od,
-      ))),
+      .map(((i, od)) =>
+        if i == 0 {
+          (table.cell(rowspan: p.omission_descriptions.len())[#(p.designation + " in " + p.electoral_district)], od)
+        } else {
+          (od,)
+        }
+      )),
   )
 ]
 
@@ -102,11 +111,13 @@ Het centraal stembureau besluit dat
     values: input.removed_candidates.map(p => p
       .candidates
       .enumerate()
-      .map(((i, c)) => (
-        if i != 0 { "" } else { p.designation + " in " + p.electoral_district },
-        c.name,
-        c.reason,
-      ))),
+      .map(((i, c)) =>
+        if i == 0 {
+          (table.cell(rowspan: p.candidates.len())[#(p.designation + " in " + p.electoral_district)], c.name, c.reason)
+        } else {
+          (c.name, c.reason)
+        }
+      )),
   )
 ]
 
