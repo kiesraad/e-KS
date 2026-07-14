@@ -187,12 +187,8 @@ impl OmissionCategory {
             | OmissionCategory::NameAuthorisation(_)
             | OmissionCategory::Candidate { list: None, .. } => Ok(ALL_DISTRICTS.to_string()),
             OmissionCategory::DeclarationOfSupport(districts) => Ok(format_districts(districts)),
-            OmissionCategory::CandidateList(id) => store
-                .get_candidate_list(*id)
-                .as_ref()
-                .map(|list| format_districts_for_list(list, election))
-                .ok_or(AppError::GenericNotFound),
-            OmissionCategory::Candidate { list: Some(id), .. } => store
+            OmissionCategory::CandidateList(id)
+            | OmissionCategory::Candidate { list: Some(id), .. } => store
                 .get_candidate_list(*id)
                 .as_ref()
                 .map(|list| format_districts_for_list(list, election))
