@@ -1,0 +1,135 @@
+{% extends "csb/components/layout.html" %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+  {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.candidate_list_path(list_id) , "candidate_list.title_single") }}
+  {{ breadcrumb(political_group.candidate_path(list_id, candidate.id) , candidate.name.display() , is_translatable=false) }}
+{% endblock %}
+{% block page_title %}
+  {% if let Some(position) = position %}
+    <span class="badge position-badge candidate-number">{{ position }}</span>
+  {% endif %}
+  {{ candidate.name.display() }}
+{% endblock %}
+{% block page_sub_title %}
+  {% let election = "election"|election_value %}
+  <div class="tags">
+    <h5 class="tags-label">{{ "common.electoral_districts"|trans }}:</h5>
+    {% if electoral_districts.len() == election.electoral_districts().len() %}
+      <p>{{ "candidate_list.districts.all"|trans }}</p>
+    {% else %}
+      <ul class="tags-list">
+        {% for district in electoral_districts %}
+          <li class="tag">
+            <a class="unclickable">{{ district|district_name }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endblock %}
+{% block header_action %}
+  <a href="{{ political_group.candidate_list_path(list_id) }}"
+     class="button secondary">{{ "action.back"|trans }}</a>
+{% endblock %}
+{% macro edit_action() %}
+  <td class="actions">
+    <a href="#" aria-label="{{ "action.edit"|trans }}"></a>
+  </td>
+{% endmacro %}
+{% macro columns_head(label) %}
+  <thead>
+    <tr>
+      <th scope="col">{{ label }}</th>
+      <th scope="col">{{ "csb.candidate.status"|trans }}</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+{% endmacro %}
+{% macro data_row(label, value) %}
+  <tr class="clickable">
+    <td>{{ label }}: <strong>{{ value }}</strong></td>
+    <td></td>
+    {{ edit_action() }}
+  </tr>
+{% endmacro %}
+{% block content %}
+  <section class="general-information">
+    <div class="omission-cards omission-cards--split">
+      <h3>
+        <span class="omission-icon" aria-hidden="true"></span>
+        {{ "csb.omission.title"|trans }}
+      </h3>
+      <div class="cards">
+        <div class="card omission-card"
+             data-href="{{ political_group.add_person_omission_path(candidate.id, list_id) }}">
+          <div class="card-header">
+            <div>
+              <h3 class="h4">{{ "csb.candidate.add_person_title"|trans }}</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ "csb.candidate.add_person_text"|trans }}</p>
+          </div>
+          <a class="card-footer"
+             href="{{ political_group.add_person_omission_path(candidate.id, list_id) }}">{{ "csb.omission.action.add"|trans }}</a>
+        </div>
+        <div class="card omission-card"
+             data-href="{{ political_group.add_candidate_omission_path(candidate.id, list_id) }}">
+          <div class="card-header">
+            <div>
+              <h3 class="h4">{{ "csb.candidate.add_candidate_title"|trans }}</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ "csb.candidate.add_candidate_text"|trans }}</p>
+          </div>
+          <a class="card-footer"
+             href="{{ political_group.add_candidate_omission_path(candidate.id, list_id) }}">{{ "csb.omission.action.add"|trans }}</a>
+        </div>
+        <div class="card omission-card omission-card--overview"
+             data-href="{{ political_group.manage_candidate_omissions_path(candidate.id, list_id) }}">
+          <div class="card-header">
+            <div>
+              <h3 class="h4">{{ "csb.omission.overview.title"|trans }}</h3>
+            </div>
+          </div>
+          <div class="card-content">
+            <p>{{ "csb.candidate.overview_text"|trans }}</p>
+            {% if !candidate_omissions.is_empty() %}
+              <ul class="omission-badges">
+                {% for omission in candidate_omissions %}
+                  <li class="omission-badge{% if !omission.recoverable %} omission-badge-unrecoverable{% endif %}">{{ omission.title }}</li>
+                {% endfor %}
+              </ul>
+            {% endif %}
+          </div>
+          <a class="card-footer"
+             href="{{ political_group.manage_candidate_omissions_path(candidate.id, list_id) }}">{{ "csb.omission.action.manage"|trans }}</a>
+        </div>
+      </div>
+    </div>
+    <h2>{{ "csb.candidate.personal_details"|trans }}</h2>
+    <table class="general-information-table">
+      {{ columns_head("person.personal_details"|trans) }}
+      <tbody>
+        {{ data_row("person.fields.initials"|trans, candidate.name.initials) }}
+        {{ data_row("person.fields.first_name"|trans, candidate.name.first_name|display) }}
+        {{ data_row("person.fields.last_name"|trans, candidate.name.last_name_with_prefix() ) }}
+        {{ data_row("person.fields.gender"|trans, candidate.gender_key() |trans) }}
+        {{ data_row("person.fields.date_of_birth"|trans, candidate.personal_data.date_of_birth|display) }}
+        {{ data_row("person.fields.place_of_residence"|trans, candidate.personal_data.place_of_residence|display) }}
+      </tbody>
+    </table>
+    <table class="general-information-table">
+      {{ columns_head("person.correspondence_address"|trans) }}
+      <tbody>
+        {{ data_row("person.fields.street_name"|trans, candidate.address.street_name|display) }}
+        {{ data_row("person.fields.house_number"|trans, candidate.address.house_number|display) }}
+        {{ data_row("person.fields.postal_code"|trans, candidate.address.postal_code|display) }}
+        {{ data_row("person.fields.locality"|trans, candidate.address.locality|display) }}
+        {{ data_row("person.fields.country"|trans, candidate.personal_data.country|display) }}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

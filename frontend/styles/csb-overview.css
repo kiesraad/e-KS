@@ -153,11 +153,11 @@
   border-radius: var(--rounded-lg);
   border: 1px solid var(--card-border-color, var(--gray-200));
   padding: var(--space-2);
+  gap: var(--space-2);
 
   .switch-group {
     display: flex;
     align-items: center;
-    margin: 0 var(--space-4) 0 var(--space-2);
 
     p {
       min-width: 10rem;
@@ -238,42 +238,147 @@
   h2 {
     margin-top: var(--space-6);
   }
+}
 
-  .restoration-card {
+.omission-cards {
+  background-color: var(--base-white);
+  padding: var(--space-6);
+
+  & > h3 {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
+    margin-top: 0;
+    margin-bottom: var(--space-4);
+
+    .omission-icon {
+      background-color: var(--orange-200);
+      background-image: url("../icons/omission.svg");
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: var(--rounded-lg);
+      flex-shrink: 0;
+      height: var(--space-11);
+      width: var(--space-11);
+    }
+  }
+
+  .cards {
     --card-gap: var(--space-3);
     --card-padding: var(--space-6);
-    align-self: flex-start;
-    max-width: 24rem;
-    width: 100%;
-    margin-bottom: var(--space-4);
-    cursor: pointer;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 2fr);
+  }
 
-    &:hover {
-      --card-bg: var(--gray-25);
-      --badge-brightness: 92%;
-    }
+  .card-content {
+    color: var(--gray-500);
+  }
 
-    .card-header {
-      justify-content: space-between;
-      font-size: var(--font-size-lg);
+  .omission-badges {
+    margin: 0;
+  }
+}
 
-      .icon-edit {
+.omission-cards--split {
+  .cards {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .omission-card--overview {
+    grid-column: 1 / -1;
+  }
+}
+
+.overlay.omission-overlay {
+  background-color: var(--orange-50);
+
+  .steps-nav ul li a.active {
+    background-color: var(--orange-200);
+    background-image: url("../icons/arrowNarrowRight-orange.svg");
+    color: var(--orange-900);
+  }
+}
+
+.omission-overview {
+  h3 {
+    margin-top: 0;
+  }
+
+  .omission-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    list-style: none;
+    margin: 0;
+    padding: 0;
+  }
+
+  .omission-item {
+    background-color: var(--base-white);
+    border: 1px solid var(--orange-200);
+    border-radius: var(--rounded-lg);
+    padding: var(--space-3) var(--space-4);
+
+    .row {
+      display: flex;
+      gap: var(--space-6);
+      align-items: flex-end;
+
+      .button {
         flex-shrink: 0;
-        width: var(--space-6);
-        height: var(--space-6);
-
-        &::after {
-          background-color: var(--gray-600);
-          content: "";
-          display: block;
-          height: var(--space-6);
-          width: var(--space-6);
-          mask-image: url("../icons/edit.svg");
-          mask-repeat: no-repeat;
-          mask-size: contain;
-        }
       }
     }
+
+    &.omission-item-unrecoverable {
+      border-color: var(--red-200);
+    }
+  }
+
+  .omission-item-body {
+    flex: 1;
+    min-width: 0;
+  }
+
+  .omission-item-header {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
+    justify-content: space-between;
+
+    h4 {
+      font-size: var(--font-size-md);
+      margin: 0;
+    }
+  }
+
+  .omission-recoverable {
+    border-radius: var(--rounded-xl);
+    font-size: var(--font-size-xs);
+    padding: var(--space-1) var(--space-3);
+    white-space: nowrap;
+
+    &.recoverable {
+      background-color: var(--orange-100);
+      color: var(--orange-700);
+    }
+
+    &.not-recoverable {
+      background-color: var(--red-100);
+      color: var(--red-700);
+    }
+  }
+
+  h5 {
+    color: var(--gray-500);
+    font-size: var(--font-size-xs);
+    font-weight: var(--font-weight-bold);
+    margin: var(--space-2) 0 0;
+  }
+
+  p {
+    font-size: var(--font-size-sm);
+    line-height: var(--leading-sm);
+    margin: 0;
+    white-space: pre-line;
   }
 }
 
