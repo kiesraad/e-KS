@@ -1,7 +1,7 @@
 body.overlay-open {
   overflow-y: scroll;
 
-  footer {
+  > footer {
     display: none;
   }
 }
@@ -87,10 +87,8 @@ body.overlay-open {
   }
 
   footer {
-    position: fixed;
+    position: sticky;
     bottom: 0;
-    left: var(--space-lg);
-    width: calc(100% - 2 * var(--space-lg));
     border-top: 1px solid var(--border-color-default);
     display: flex;
     justify-content: flex-end;
