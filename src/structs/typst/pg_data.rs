@@ -1,12 +1,12 @@
 use crate::{
     core::{ElectionType, ModelLocale},
-    finalise::structs::{TypstCandidate, TypstDatetime, TypstElectoralDistricts},
+    typst::{TypstCandidate, TypstDatetime, TypstElectoralDistricts},
 };
 use serde::Serialize;
 
-/// Data for the Typst templates shared by all the models
+/// Data for the Typst templates shared by all the PG models (H1/3/4/9)
 #[derive(Debug, Serialize)]
-pub struct TypstModelData {
+pub struct TypstPgModelData {
     pub election_name: String,
     pub election_type: ElectionType,
     pub electoral_districts: TypstElectoralDistricts,

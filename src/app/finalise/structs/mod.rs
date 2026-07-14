@@ -1,21 +1,4 @@
 pub mod documents;
 mod eml210;
-mod h1;
-mod h3;
-mod h4;
-mod h9;
 pub mod problems;
 mod problems_sort;
-mod typst_candidate;
-mod typst_datetime;
-mod typst_detailed_candidate;
-mod typst_electoral_districts;
-mod typst_model_data;
-mod typst_name_authorisation;
-mod typst_person;
-mod typst_postal_address;
-
-use typst_candidate::TypstCandidate;
-use typst_datetime::TypstDatetime;
-use typst_electoral_districts::TypstElectoralDistricts;
-use typst_person::TypstPerson;

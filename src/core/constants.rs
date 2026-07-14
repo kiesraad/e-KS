@@ -5,6 +5,9 @@ use chrono_tz::{Europe, Tz};
 /// Default date format
 pub const DEFAULT_DATE_FORMAT: &str = "%d-%m-%Y";
 
+/// Default time format
+pub const DEFAULT_TIME_FORMAT: &str = "%H:%M";
+
 /// Default datetime format
 pub const DEFAULT_DATE_TIME_FORMAT: &str = "%d-%m-%Y %H:%M";
 

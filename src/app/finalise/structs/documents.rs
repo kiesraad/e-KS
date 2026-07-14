@@ -3,13 +3,12 @@ use crate::{
     candidate_lists::{CandidateListId, FullCandidateList},
     common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, Pdf, ZipResponseWriter},
-    finalise::structs::{
-        eml210::Eml210, h1::H1, h3::H3, h4::H4, h9::H9, typst_candidate::ordered_candidates,
-        typst_datetime::TypstDatetime, typst_detailed_candidate::TypstDetailedCandidate,
-        typst_electoral_districts::TypstElectoralDistricts, typst_model_data::TypstModelData,
-        typst_name_authorisation::TypstNameAuthorisation, typst_person::TypstPerson,
-    },
+    finalise::structs::eml210::Eml210,
     list_designation::ListDesignation,
+    typst::{
+        H1, H3, H4, H9, TypstCandidate, TypstDatetime, TypstDetailedCandidate,
+        TypstElectoralDistricts, TypstNameAuthorisation, TypstPerson, TypstPgModelData,
+    },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{
@@ -27,7 +26,7 @@ pub struct DocumentData {
     pub list_id: CandidateListId,
     pub folder_name: Option<String>,
     pub election: ElectionConfig,
-    pub model_data: TypstModelData,
+    pub model_data: TypstPgModelData,
     pub detailed_candidates: Vec<TypstDetailedCandidate>,
     pub previously_seated: bool,
     pub list_designation: ListDesignation,
@@ -124,7 +123,7 @@ impl DocumentData {
         let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
         let mut candidates = candidates.into_iter().map(|c| c.data).collect::<Vec<_>>();
 
-        let ordered_candidates = ordered_candidates(&mut candidates, locale)?;
+        let ordered_candidates = TypstCandidate::ordered(&mut candidates, locale)?;
         let detailed_candidates = candidates
             .iter()
             .map(|c| TypstDetailedCandidate::try_from(c, locale))
@@ -165,7 +164,7 @@ impl DocumentData {
             list_id,
             folder_name: Some(folder_name),
             election,
-            model_data: TypstModelData {
+            model_data: TypstPgModelData {
                 election_name: election.formal_title(locale),
                 election_type: election.election_type(),
                 electoral_districts,

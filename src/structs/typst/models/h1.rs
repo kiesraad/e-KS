@@ -1,17 +1,15 @@
 use crate::{
     core::{ModelLocale, Pdf},
-    finalise::{
-        DocumentData,
-        structs::{TypstPerson, typst_model_data::TypstModelData},
-    },
+    finalise::DocumentData,
     list_designation::ListDesignation,
+    typst::{TypstPerson, TypstPgModelData},
 };
 use serde::Serialize;
 
 #[derive(Debug, Serialize)]
 pub struct H1<'a> {
     #[serde(flatten)]
-    common: &'a TypstModelData,
+    common: &'a TypstPgModelData,
     previously_seated: bool,
     list_designation: ListDesignation,
     list_submitter: &'a TypstPerson,

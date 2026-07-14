@@ -6,7 +6,7 @@ use crate::{
     csb::{
         examination::{
             extractors::{CsbPoliticalGroup, CsbPoliticalGroups},
-            pages::CsbExaminationOverviewPath,
+            pages::{CsbExaminationOverviewPath, CsbI4DownloadPath},
         },
         import::CsbImportPath,
     },
