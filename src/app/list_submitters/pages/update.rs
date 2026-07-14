@@ -17,6 +17,7 @@ use super::ListSubmitterUpdatePath;
 struct ListSubmitterUpdateTemplate {
     form: FormData<ListSubmitterForm>,
     should_warn: bool,
+    address_unknown: bool,
     overlay: Overlay,
 }
 
@@ -28,10 +29,12 @@ pub async fn update_list_submitter(
 ) -> Result<Response, AppError> {
     let list_submitter = store.get_list_submitter();
     let should_warn = !list_submitter.is_empty();
+    let address_unknown = list_submitter.address.is_unknown();
     Ok(HtmlTemplate(
         ListSubmitterUpdateTemplate {
             form: FormData::new_with_data(list_submitter.into()),
             should_warn,
+            address_unknown,
             overlay: Overlay::new(&query),
         },
         context,
@@ -52,6 +55,7 @@ pub async fn update_list_submitter_submit(
             ListSubmitterUpdateTemplate {
                 form: *form_data,
                 should_warn: true,
+                address_unknown: list_submitter.address.is_unknown(),
                 overlay: Overlay::new(&query),
             },
             context,

@@ -30,11 +30,22 @@ export default function localitySuggestions() {
   // `frisian-aliases-allowed` to the suggestion element (Frisian export forms).
   const withAliases = suggestion.classList.contains("frisian-aliases-allowed");
 
+  const countryInput = document.getElementById(
+    "country",
+  ) as HTMLInputElement | null;
+  const isNl = () => countryInput == null || countryInput.value === "NL";
+
   // `warn` distinguishes "user is actively typing" (false) from "user has
   // committed by blurring, or the form just loaded with a prefilled value"
   // (true). While typing we never add a warning — only remove one if it
   // turns out the value is now valid — to avoid flashing red on every keystroke.
   const runUpdate = async (warn: boolean) => {
+    if (!isNl()) {
+      suggestion.classList.add("hidden");
+      field?.classList.remove("warning");
+      return;
+    }
+
     const q = input.value;
 
     // Below 3 characters the backend won't return useful results; treat
@@ -102,6 +113,7 @@ export default function localitySuggestions() {
 
   input.addEventListener("input", () => update(false));
   input.addEventListener("blur", () => update(true));
+  countryInput?.addEventListener("change", () => update(true));
 
   // Initial pass: validate any prefilled value (e.g. when the form is
   // re-rendered with server-side state) and surface a warning if invalid.

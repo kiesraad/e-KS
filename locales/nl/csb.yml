@@ -3,9 +3,18 @@ action:
   examine: Onderzoeken
   finish: Afronden
 added: Toegevoegd
+all_restorations: Alle herstelacties
 brp:
   correct: Correct
   errors: Fouten
+candidate:
+  add_candidate_text: Voeg verzuimen toe voor deze kandidaat op alleen deze lijst
+  add_candidate_title: Kandidaat
+  add_person_text: Voeg verzuimen toe voor deze persoon op al hun lijsten
+  add_person_title: Persoon
+  overview_text: Toegevoegde verzuimen kandidaat
+  personal_details: Persoonsgegevens
+  status: Status
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:
@@ -16,12 +25,38 @@ form:
   hash: Voer het begin van de hash code in (minimaal 8 tekens)
   import: Importeer
   import_political_group: Politieke groepering importeren
+general:
+  add_text: Voeg verzuimen toe voor basisgegevens
+  group_info: Gegevens Politieke groepering
+  overview_text: Toegevoegde verzuimen basisgegevens
+  personalia: Personalia
+  status: Status
+group:
+  all_brp_errors: Alle BRP fouten
+  all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
+  brp_errors:
+    none: Geen BRP fouten
+    plural: "{} BRP fouten"
+    singular: 1 BRP fout
+  candidate_count: "<strong>{}</strong> kandidaten"
+  examine_all: Alle BRP fouten controleren
+  examine_general: Basisgegevens controleren
+  examine_list: Kandidatenlijst controleren
+  finished: Onderzoek afgerond
+  instruction_group: Controleer de gegevens van de politieke groepering
+  instruction_submitter: Controleer de gegevens van de lijstinleveraar(s)
+  toggle: Onderzoek afronden of heropenen
+  unfinished: Onderzoek afronden
 import:
   error:
     already_imported: Deze politieke groepering is al geïmporteerd.
     ambiguous_hash: De ingevoerde hash code komt overeen met meer dan één dataset; voer meer tekens in.
     invalid_hash: "Voer een geldige hash code in (tenminste 4 paren van hexadecimale tekens, bijv. AB12 C3D4)."
     not_found: Er is geen data gevonden voor de ingevoerde hash code.
+list:
+  add_text: Voeg verzuimen toe voor deze kandidatenlijst
+  brp_errors: BRP fouten
+  overview_text: Toegevoegde verzuimen kandidatenlijst
 monitoring:
   cache: Lokale cache
   created_at: Aangemaakt
@@ -38,6 +73,9 @@ no_unfinished_political_groups: Er zijn geen onafgeronde onderzoeken naar politi
 omission:
   action:
     add: Verzuim toevoegen
+    manage: Verzuimen beheren
+  add:
+    title: Toevoegen
   count:
     plural: "{} verzuimen"
     singular: 1 verzuim
@@ -45,9 +83,18 @@ omission:
     description_label: I1 verzuim toevoegen
     help_text_label: Verzuimbriefnotitie toevoegen
     presets_heading: Voeg één van deze verzuimen toe
+    recoverable_label: Herstelbaar verzuim
     submit: Toevoegen en sluiten
     title: Verzuimen toevoegen
     title_label: Titel verzuim
+  overview:
+    description: Omschrijving
+    empty: Er zijn nog geen verzuimen toegevoegd.
+    help_text: Verzuimbriefnotitie
+    not_recoverable: Onherstelbaar
+    recoverable: Herstelbaar
+    title: Overzicht
+  title: Verzuimen
 progress: Voortgang
 status:
   approved: Goedgekeurd

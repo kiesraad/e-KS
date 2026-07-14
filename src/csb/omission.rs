@@ -19,15 +19,16 @@ pub struct PresetOmission {
     pub title: String,
     pub description: String,
     pub help_text: String,
+    #[serde(default = "recoverable_by_default")]
+    pub recoverable: bool,
+}
+
+fn recoverable_by_default() -> bool {
+    true
 }
 
 /// Values used to interpolate the `{token}` placeholders in an omission
 /// description with the correct data for the referenced item.
-///
-/// Any field left `None` leaves its token in place so the committee can fill it
-/// in manually. Some placeholders are always manual (there is no field for them
-/// because they cannot be derived): `{district}` (which single electoral
-/// district) and `{designation}` (the disputed name/predicate).
 #[derive(Debug, Default, Clone)]
 pub struct OmissionPlaceholders {
     /// `{candidate_number}`: the candidate's position on the list.
@@ -82,11 +83,18 @@ impl OmissionType {
     }
 
     /// The predefined omissions offered as quick-fill suggestions for this type.
-    pub fn presets(self) -> &'static [PresetOmission] {
-        PRESET_OMISSIONS
-            .get(self.as_str())
-            .map(Vec::as_slice)
-            .unwrap_or(&[])
+    ///
+    /// A `general` candidate omission applies to the person on every list and
+    /// draws from a separate set (`person`) than one scoped to the candidate on
+    /// a specific list (`candidate`). `general` is meaningless for the other
+    /// types, which only have a single set.
+    pub fn presets(self, general: bool) -> &'static [PresetOmission] {
+        let key = match self {
+            OmissionType::Candidate if general => "person",
+            _ => self.as_str(),
+        };
+
+        PRESET_OMISSIONS.get(key).map(Vec::as_slice).unwrap_or(&[])
     }
 }
 
@@ -174,6 +182,8 @@ pub struct Omission {
     pub description: String,
     /// Help text for political groups explaining how to resolve the omission ("Dit verzuim is te herstellen door ...")
     pub help_text: String,
+    #[serde(default = "recoverable_by_default")]
+    pub recoverable: bool,
     pub updated_at: UtcDateTime,
 }
 
@@ -189,6 +199,7 @@ impl Omission {
             title,
             description,
             help_text,
+            recoverable: true,
             ..Default::default()
         }
     }
@@ -226,24 +237,68 @@ pub mod tests {
 
     #[test]
     fn presets_are_loaded_from_json_per_type() {
-        assert_eq!(OmissionType::PoliticalGroup.presets().len(), 6);
-        assert_eq!(OmissionType::CandidateList.presets().len(), 4);
-        assert_eq!(OmissionType::Candidate.presets().len(), 12);
+        assert_eq!(OmissionType::PoliticalGroup.presets(false).len(), 6);
+        assert_eq!(OmissionType::CandidateList.presets(false).len(), 4);
+        // A candidate omission draws from a different set depending on whether it
+        // is scoped to the candidate on a specific list or general to the person.
+        assert_eq!(OmissionType::Candidate.presets(false).len(), 3);
+        assert_eq!(OmissionType::Candidate.presets(true).len(), 9);
 
         // Every preset carries a title and description; irreparable defects have
         // no help text.
         assert!(
             OmissionType::PoliticalGroup
-                .presets()
+                .presets(false)
                 .iter()
                 .all(|p| !p.title.is_empty() && !p.description.is_empty())
         );
         assert!(
             OmissionType::PoliticalGroup
-                .presets()
+                .presets(false)
                 .iter()
                 .any(|p| p.help_text.is_empty())
         );
+    }
+
+    #[test]
+    fn presets_carry_the_recoverable_flag() {
+        // Most omissions are recoverable ("herstelbaar").
+        assert!(
+            OmissionType::Candidate
+                .presets(false)
+                .iter()
+                .any(|p| p.recoverable)
+        );
+        // Irreparable defects ("onherstelbaar verzuim") have no help text and are
+        // flagged as non-recoverable.
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets(false)
+                .iter()
+                .any(|p| !p.recoverable)
+        );
+        assert!(
+            OmissionType::PoliticalGroup
+                .presets(false)
+                .iter()
+                .all(|p| p.recoverable || p.help_text.is_empty())
+        );
+    }
+
+    #[test]
+    fn omission_recoverable_defaults_to_true_for_legacy_events() {
+        // Events persisted before the flag existed omit `recoverable`; they must
+        // deserialize as recoverable rather than as errors.
+        let json = r#"{
+            "id": "00000000-0000-0000-0000-000000000000",
+            "category": "General",
+            "title": "t",
+            "description": "d",
+            "help_text": "",
+            "updated_at": "2026-01-01T00:00:00Z"
+        }"#;
+        let omission: Omission = serde_json::from_str(json).unwrap();
+        assert!(omission.recoverable);
     }
 
     #[test]

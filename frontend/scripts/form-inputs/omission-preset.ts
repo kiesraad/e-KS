@@ -1,3 +1,13 @@
+// Assign a dataset value to a field, tolerating a missing field or value.
+function setValue(
+  field: HTMLInputElement | HTMLTextAreaElement | null,
+  value: string | undefined,
+) {
+  if (field) {
+    field.value = value ?? "";
+  }
+}
+
 // Fill the omission description and help-text fields when a preset is clicked.
 export default function omissionPreset() {
   const title = document.querySelector<HTMLInputElement>(
@@ -9,6 +19,9 @@ export default function omissionPreset() {
   const helpText = document.querySelector<HTMLTextAreaElement>(
     "[data-omission-help-text]",
   );
+  const recoverable = document.querySelector<HTMLInputElement>(
+    "[data-omission-recoverable]",
+  );
 
   if (!description) {
     return;
@@ -18,12 +31,11 @@ export default function omissionPreset() {
     .querySelectorAll<HTMLButtonElement>("[data-omission-preset]")
     .forEach((button) => {
       button.addEventListener("click", () => {
-        if (title) {
-          title.value = button.dataset.title ?? "";
-        }
-        description.value = button.dataset.description ?? "";
-        if (helpText) {
-          helpText.value = button.dataset.helpText ?? "";
+        setValue(title, button.dataset.title);
+        setValue(description, button.dataset.description);
+        setValue(helpText, button.dataset.helpText);
+        if (recoverable) {
+          recoverable.checked = button.dataset.recoverable !== "false";
         }
         description.focus();
       });

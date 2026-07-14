@@ -80,7 +80,7 @@ pub struct ListSubmitter {
 impl Problematic<()> for ListSubmitter {
     fn get_problems(&self, _: ()) -> Problems {
         let severity = if self.is_substitute {
-            Severity::Info
+            Severity::Warn
         } else {
             Severity::Error
         };
@@ -154,7 +154,7 @@ fn try_into_dutch_address(address: &InternationalAddress) -> Option<crate::commo
 
 #[cfg(test)]
 mod tests {
-    use crate::common::{EmptyAddressProblems, InfoProblems, PotentialProblems};
+    use crate::common::{EmptyAddressProblems, PotentialProblems};
 
     use super::*;
 
@@ -222,17 +222,23 @@ mod tests {
     }
 
     #[test]
-    fn substitute_submitter_problems_use_info_severity() {
+    fn substitute_submitter_problems_use_warn_severity() {
         let problems = incomplete_submitter(true).get_problems(());
 
-        assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
-        assert!(problems.info_problems.contains(&InfoProblems::NoLastName));
-        assert!(problems.info_problems.iter().any(|pp| match pp {
-            InfoProblems::IncompleteAddress { problems } => {
+        assert!(
+            problems
+                .potential_problems
+                .contains(&PotentialProblems::NoLastName(Severity::Warn))
+        );
+        assert!(problems.potential_problems.iter().any(|pp| match pp {
+            PotentialProblems::IncompleteAddress {
+                severity: Severity::Warn,
+                problems,
+            } => {
                 problems.contains(&EmptyAddressProblems::StreetName)
             }
             _ => false,
         }));
-        assert!(problems.potential_problems.is_empty());
+        assert!(problems.info_problems.is_empty());
     }
 }

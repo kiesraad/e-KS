@@ -1,6 +1,16 @@
 {% include "app/common/components/name_fields.html" %}
 {% let election = "election"|election_value %}
 <div class="form-row">
+  <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">
+    <label for="country">{{ "person.fields.country"|trans }}</label>
+    {% let country_value = form.data.personal_data.country %}
+    {% include "app/common/components/country_input.html" %}
+    {% for error in form|error("personal_data.country") %}
+      <span class="error">{{ error }}</span>
+    {% else %}
+      <span class="hint hide-nl">{{ "person.hints.country"|trans }}</span>
+    {% endfor %}
+  </div>
   <p class="form-field {% if form.data.personal_data.place_of_residence.is_empty() && should_warn %}error{% endif %}">
     <label for="locality">{{ "person.fields.place_of_residence"|trans }}</label>
     <input type="text"
@@ -16,16 +26,6 @@
     </span>
     {% for error in form|error("personal_data.place_of_residence") %}<span class="error">{{ error }}</span>{% endfor %}
   </p>
-  <div class="form-field form-field-md {% if form.data.personal_data.country.is_empty() && should_warn %}warning{% endif %}">
-    <label for="country">{{ "person.fields.country"|trans }}</label>
-    {% let country_value = form.data.personal_data.country %}
-    {% include "app/common/components/country_input.html" %}
-    {% for error in form|error("personal_data.country") %}
-      <span class="error">{{ error }}</span>
-    {% else %}
-      <span class="hint hide-nl">{{ "person.hints.country"|trans }}</span>
-    {% endfor %}
-  </div>
 </div>
 <div class="form-row">
   <div class="form-field {% if form.data.personal_data.bsn.is_empty() && form.data.personal_data.bsn != crate::common::BSN_NONE_CONFIRMATION && should_warn %}warning{% endif %}">

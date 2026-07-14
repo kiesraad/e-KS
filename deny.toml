@@ -46,6 +46,7 @@ ignore = [
     { id = "RUSTSEC-2023-0071", reason = "rsa 0.9 pulled transitively by bergshamra-crypto; no patched release available upstream. Server-side use only, revisit when bergshamra publishes a release on a constant-time rsa." },
     { id = "RUSTSEC-2026-0194", reason = "quick-xml <0.41 DoS (quadratic duplicate-attribute check) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
     { id = "RUSTSEC-2026-0195", reason = "quick-xml <0.41 DoS (unbounded namespace-declaration allocation) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
+    { id = "RUSTSEC-2026-0206", reason = "rustybuzz is unmaintained (maintainer recommends harfrust); pulled transitively by Typst; no migration available upstream yet, see https://github.com/harfbuzz/rustybuzz/issues/166" },
 ]
 
 [sources]

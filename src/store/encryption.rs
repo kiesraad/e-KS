@@ -15,8 +15,8 @@
 //! and stored on a encrypted volume.
 
 use aes_gcm::{
-    AeadCore, AeadInPlace, Aes256Gcm, KeyInit,
-    aead::{Nonce, OsRng},
+    Aes256Gcm, KeyInit,
+    aead::{AeadInOut, Generate, Nonce},
 };
 use hkdf::Hkdf;
 use secrecy::{ExposeSecret, SecretString};
@@ -97,7 +97,7 @@ impl EventCipher {
     ///
     /// Returns `nonce || ciphertext || tag`.
     pub fn encrypt<E: Serialize>(&self, event: &E, aad: &[u8]) -> Result<Vec<u8>, AppError> {
-        let nonce = Aes256Gcm::generate_nonce(&mut OsRng);
+        let nonce = Nonce::<Aes256Gcm>::generate();
 
         let mut ciphertext = postcard::to_allocvec(event).map_err(|e| {
             AppError::ServerError(std::io::Error::new(std::io::ErrorKind::InvalidData, e))
@@ -136,7 +136,8 @@ impl EventCipher {
             ));
         }
 
-        let nonce = *Nonce::<Aes256Gcm>::from_slice(&data[..NONCE_LEN]);
+        let nonce = Nonce::<Aes256Gcm>::try_from(&data[..NONCE_LEN])
+            .expect("slice is exactly NONCE_LEN bytes");
 
         // Remove the nonce prefix so the Vec contains only ciphertext + tag,
         // then decrypt in place — this truncates the tag, leaving plaintext.

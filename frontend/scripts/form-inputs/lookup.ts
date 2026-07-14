@@ -17,6 +17,10 @@ export default function addressLookup() {
     "country",
   ) as HTMLInputElement | null;
 
+  const addressWarning = document.getElementById(
+    "unknown-address",
+  ) as HTMLElement | null;
+
   // only run if all form fields are found
   if (
     !postalCodeInput ||
@@ -50,6 +54,10 @@ export default function addressLookup() {
   function resetHighlights() {
     setHighlight(allInputs, "success", false);
     setHighlight(allInputs, "warning", false);
+
+    if (addressWarning) {
+      addressWarning.classList.add("hidden");
+    }
   }
 
   const lookup = async () => {
@@ -83,11 +91,16 @@ export default function addressLookup() {
       streetNameInput.value = data.pr;
 
       // highlight the address fields to indicate they were auto-filled
+      // (the warning was already hidden by resetHighlights above)
       setHighlight(allInputs, "success", true);
     } else {
       // No usable match — flag the inputs that drive the lookup so the user
-      // knows the combination is unrecognised.
+      // knows the combination is unrecognised, and surface the warning message.
       setHighlight(lookupInputs, "warning", true);
+
+      if (addressWarning) {
+        addressWarning.classList.remove("hidden");
+      }
     }
   };
 
