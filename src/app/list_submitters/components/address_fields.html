@@ -1,5 +1,5 @@
 <h3>{{ "person.correspondence_address"|trans }}</h3>
-<span class="alert alert-info">{{ "political_group.list_submitter_address_info"|trans }}</span>
+{% if show_list_submitter_address_info|default(false) %}<span class="alert alert-info">{{ "political_group.list_submitter_address_info"|trans }}</span>{% endif %}
 {% include "app/common/components/address_fields.html" %}
 <div class="form-row">
   <div class="form-field hide-nl">

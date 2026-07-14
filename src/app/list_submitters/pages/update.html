@@ -5,6 +5,7 @@
 {% block overlay_form %}
   <fieldset>
     {% include "app/common/components/name_fields.html" %}
+    {% set show_list_submitter_address_info = true %}
     {% include "app/list_submitters/components/address_fields.html" %}
   </fieldset>
 {% endblock %}

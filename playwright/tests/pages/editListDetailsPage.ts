@@ -1,13 +1,13 @@
 import type { Locator, Page } from "@playwright/test";
 
 export class EditListDetailsPage {
-  readonly buttonNext: Locator;
+  readonly buttonSave: Locator;
   readonly buttonClose: Locator;
   readonly buttonRemoveList: Locator;
   readonly buttonConfirmRemoveList: Locator;
 
   constructor(protected readonly page: Page) {
-    this.buttonNext = this.page.getByRole("button", { name: "Volgende" });
+    this.buttonSave = this.page.getByRole("button", { name: "Opslaan" });
     this.buttonClose = this.page.getByRole("link", { name: "Sluiten" }).first();
     this.buttonRemoveList = this.page.getByRole("button", {
       name: "Kandidatenlijst verwijderen",
@@ -22,14 +22,14 @@ export class EditListDetailsPage {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).check();
     }
-    await this.buttonNext.click();
+    await this.buttonSave.click();
   }
 
   async removeDistricts(districts: string[]) {
     for (const district of districts) {
       await this.page.getByRole("checkbox", { name: district }).uncheck();
     }
-    await this.buttonNext.click();
+    await this.buttonSave.click();
   }
 
   async removeList() {

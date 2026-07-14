@@ -46,7 +46,7 @@ not_found_in_candidate_list: Kandidaat niet gevonden in kandidatenlijst.
 personal_details: Persoonlijke gegevens
 representative: Gemachtigde van kandidaat
 representative_info: "Omdat de kandidaat in het buitenland woont, is een gemachtigde nodig. De gemachtigde zal de benoemingsbrief voor u ontvangen."
-title: Alle kandidaten
+title: Adresboek
 total: "<strong>{}</strong> kandidaten toegevoegd"
 view:
   empty: Geen kandidaten beschikbaar.
