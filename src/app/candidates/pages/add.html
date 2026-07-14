@@ -35,4 +35,8 @@
     {% endif %}
   </div>
 {% endblock %}
-{% block overlay_footer %}{% endblock %}
+{% block overlay_footer %}
+  <footer>
+    <a href="{{ overlay.close_url(close_action) }}" class="button lg">{{ "action.done"|trans }}</a>
+  </footer>
+{% endblock %}

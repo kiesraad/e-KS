@@ -10,6 +10,12 @@ export default function setupTextSearch() {
     return;
   }
 
+  search.addEventListener("keydown", (e) => {
+    if (e.key === "Enter") {
+      e.preventDefault();
+    }
+  });
+
   search.addEventListener("input", (e) => {
     const searchValue = (e.target as HTMLInputElement).value.toLowerCase();
     const rows = table.querySelectorAll("tbody tr");

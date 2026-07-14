@@ -1,4 +1,6 @@
-<table class="table mt-sm" id="add-candidate-table">
+<table class="table mt-sm"
+       id="add-candidate-table"
+       {% if let Some(id) = just_added %}data-highlight="{{ id }}"{% endif %}>
   <thead>
     <tr>
       <th scope="col"></th>
@@ -9,7 +11,8 @@
   </thead>
   <tbody>
     {% for person in persons %}
-      <tr class="clickable {% if added_candidates.contains_key(&person.id) %}remove-candidate{% else %}add-candidate{% endif %}">
+      <tr class="clickable {% if added_candidates.contains_key(&person.id) %}remove-candidate{% else %}add-candidate{% endif %}"
+          data-id="{{ person.id }}">
         <td>
           {% if let Some(position) = added_candidates.get(&person.id) %}
             <span class="badge position-badge">{{ position }}</span>

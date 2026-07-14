@@ -19,10 +19,17 @@ export default function setupOverlay() {
       }
     };
 
-    backdrop.addEventListener("click", (event: MouseEvent) => {
-      if (event.target === backdrop) {
+    let pressedOnBackdrop = false;
+
+    backdrop.addEventListener("pointerdown", (event: PointerEvent) => {
+      pressedOnBackdrop = event.target === backdrop;
+    });
+
+    backdrop.addEventListener("pointerup", (event: PointerEvent) => {
+      if (pressedOnBackdrop && event.target === backdrop) {
         close();
       }
+      pressedOnBackdrop = false;
     });
 
     globalThis.addEventListener("keydown", (event: KeyboardEvent) => {

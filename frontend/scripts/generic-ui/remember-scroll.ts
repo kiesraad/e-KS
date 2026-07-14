@@ -10,7 +10,12 @@ export default function setupRememberScroll() {
 
   // on page load, check if there is a stored scroll position for the current url and scroll to it
   const storedScrollY = localStorage.getItem(globalThis.location.pathname);
-  if (storedScrollY) {
+  if (candidateTable.dataset.highlight) {
+    localStorage.removeItem(globalThis.location.pathname);
+    search.focus({
+      preventScroll: true,
+    });
+  } else if (storedScrollY) {
     window.scrollTo(0, Number.parseInt(storedScrollY, 10));
     localStorage.removeItem(globalThis.location.pathname);
   } else {

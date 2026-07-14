@@ -23,6 +23,7 @@ struct AddExistingPersonTemplate {
     allow_add: bool,
     show_add_all: bool,
     show_remove_all: bool,
+    just_added: Option<PersonId>,
     overlay: Overlay,
 }
 
@@ -34,6 +35,7 @@ impl AddExistingPersonTemplate {
         added_position: Option<usize>,
         store: &AppStore,
         form: FormData<AddPersonForm>,
+        just_added: Option<PersonId>,
     ) -> Result<Self, AppError> {
         let full_list = FullCandidateList::get(store, list_id)?;
         let added_candidates = match added_position {
@@ -66,6 +68,7 @@ impl AddExistingPersonTemplate {
             show_remove_all: !show_add_all && !candidate_ids.is_empty(),
             persons,
             added_candidates,
+            just_added,
             form,
         })
     }
@@ -76,7 +79,7 @@ async fn handle_add_candidate_form(
     add_person: &mut AddPerson,
     full_list: &mut FullCandidateList,
     store: &AppStore,
-) -> Result<(), AppError> {
+) -> Result<Option<PersonId>, AppError> {
     match add_person.action {
         AddPersonAction::None => {
             // No action, do nothing.
@@ -125,11 +128,13 @@ async fn handle_add_candidate_form(
                 if add_person.added_position.is_none() {
                     add_person.added_position = Some(full_list.list.candidates.len());
                 }
+
+                return Ok(Some(person_id));
             }
         }
     }
 
-    Ok(())
+    Ok(None)
 }
 
 pub async fn add_existing_person(
@@ -138,7 +143,7 @@ pub async fn add_existing_person(
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
     Ok(HtmlTemplate(
-        AddExistingPersonTemplate::from(list_id, None, &store, FormData::new())?,
+        AddExistingPersonTemplate::from(list_id, None, &store, FormData::new(), None)?,
         context,
     ))
 }
@@ -159,21 +164,23 @@ pub async fn add_person_to_candidate_list(
                 form_data.data.added_position.parse().ok(),
                 &store,
                 form_data,
+                None,
             )?,
             context,
         )
         .into_response()),
         Ok(mut add_person) => {
-            match handle_add_candidate_form(&mut add_person, &mut full_list, &store).await {
-                Ok(()) => {}
-                Err(AppError::TooManyCandidates) => {
-                    return Ok(Redirect::to(
-                        &full_list.list.max_candidates_reached_path().to_string(),
-                    )
-                    .into_response());
-                }
-                Err(error) => return Err(error),
-            }
+            let just_added =
+                match handle_add_candidate_form(&mut add_person, &mut full_list, &store).await {
+                    Ok(just_added) => just_added,
+                    Err(AppError::TooManyCandidates) => {
+                        return Ok(Redirect::to(
+                            &full_list.list.max_candidates_reached_path().to_string(),
+                        )
+                        .into_response());
+                    }
+                    Err(error) => return Err(error),
+                };
 
             Ok(HtmlTemplate(
                 AddExistingPersonTemplate::from(
@@ -181,6 +188,7 @@ pub async fn add_person_to_candidate_list(
                     add_person.added_position,
                     &store,
                     FormData::new_with_data(add_person.into()),
+                    just_added,
                 )?,
                 context,
             )
@@ -224,6 +232,8 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Jansen"));
+        // Sticky footer with Done button
+        assert!(body.contains("<footer>"));
 
         Ok(())
     }
@@ -264,6 +274,8 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("highlight_last=1"));
         assert!(body.contains("success=true"));
+        // The just-added person is marked so the frontend can scroll to and highlight it.
+        assert!(body.contains(&format!("data-highlight=\"{}\"", person.id)));
 
         Ok(())
     }
@@ -355,6 +367,8 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("highlight_last=2"));
         assert!(body.contains("success=true"));
+        // Bulk add has no single target, so no row is singled out for highlighting.
+        assert!(!body.contains("data-highlight"));
 
         Ok(())
     }
