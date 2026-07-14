@@ -441,3 +441,102 @@
   height: 1em;
   padding: var(--space-2);
 }
+
+.cards-csb-phases {
+  --card-min-width: 20rem;
+  --card-min-height: 22rem;
+}
+
+.csb-phase-card {
+  .card-header {
+    .csb-phase-close-date {
+      margin-inline-start: auto;
+      align-self: flex-start;
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      font-size: var(--font-size-sm);
+      font-weight: normal;
+      line-height: var(--leading-sm);
+      color: var(--gray-500);
+      white-space: nowrap;
+
+      & > span:last-child {
+        font-weight: var(--font-weight-bold);
+      }
+    }
+  }
+
+  .card-content {
+    flex: 1;
+    flex-direction: row;
+    align-items: flex-start;
+    gap: var(--space-4);
+  }
+
+  .csb-phase-text {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+  }
+
+  .csb-phase-illustration {
+    background-size: contain;
+    background-repeat: no-repeat;
+    background-position: top center;
+    height: 4.5rem;
+    width: 5rem;
+  }
+
+  .card-instruction {
+    color: var(--gray-600);
+    font-size: var(--font-size-sm);
+    font-weight: 300;
+    line-height: var(--leading-sm);
+  }
+}
+
+.csb-phase-badge {
+  background-size: cover;
+  border-radius: var(--rounded-xs);
+  flex-shrink: 0;
+  height: 2.5rem;
+  width: 2.5rem;
+}
+
+.csb-phase-badge-check {
+  background-image: url("../icons/phase-check.svg");
+}
+
+.csb-phase-badge-unlocked {
+  background-image: url("../icons/phase-unlocked.svg");
+}
+
+.csb-phase-badge-lock {
+  background-image: url("../icons/phase-lock.svg");
+}
+
+.csb-phase-illustration-1 {
+  background-image: url("../icons/csb-phase-1.svg");
+}
+
+.csb-phase-illustration-2 {
+  background-image: url("../icons/csb-phase-2.svg");
+}
+
+.csb-phase-illustration-3 {
+  background-image: url("../icons/csb-phase-3.svg");
+}
+
+.csb-phase-illustration-4 {
+  background-image: url("../icons/csb-phase-4.svg");
+}
+
+.csb-phase-illustration-5 {
+  background-image: url("../icons/csb-phase-4.svg");
+}
+
+.csb-phase-locked > * {
+  opacity: 0.4;
+}

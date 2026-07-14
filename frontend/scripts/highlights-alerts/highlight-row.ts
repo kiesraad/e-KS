@@ -20,7 +20,9 @@ function getRows(personId: string | null, last: number): Element[] | null {
 // remove the param from the URL to avoid persistent state on refresh/share.
 export default function highlightRow() {
   const url = new URL(globalThis.location.href);
-  const personId = url.searchParams.get("highlight");
+  const addTable = document.getElementById("add-candidate-table");
+  const personId =
+    url.searchParams.get("highlight") ?? addTable?.dataset.highlight ?? null;
   const last = Number.parseInt(
     url.searchParams.get("highlight_last") ?? "",
     10,

@@ -53,6 +53,26 @@ import:
     ambiguous_hash: The entered hash code matches more than one data set; enter more characters.
     invalid_hash: "Enter a valid hash code (at least 4 pairs of hexadecimal characters, e.g. AB12 C3D4)."
     not_found: No data was found for the entered hash code.
+index:
+  closes_on: Closes on
+  feature:
+    add_omissions: Add omissions and corrections
+    create_i1_letters: Create I 1 and omission letters
+    create_i4: Create I 4
+    report_errors: Report errors
+    view_candidate_lists: View candidate lists
+  go_to_examination: Go to examination
+  phase: "Phase {}"
+  phase_1:
+    title: Pre-examination
+  phase_2:
+    title: Examination
+  phase_3:
+    title: Restored lists
+  phase_4:
+    title: List numbering
+  phase_5:
+    title: Finalise candidate lists
 list:
   add_text: Add omissions for this candidate list
   brp_errors: BRP errors
