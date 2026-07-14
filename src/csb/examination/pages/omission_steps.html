@@ -1,0 +1,12 @@
+<div class="steps-nav">
+  <ul>
+    <li>
+      <a href="{{ overview_tab_url }}"
+         class="{% if is_overview %}active{% endif %}">{{ "csb.omission.overview.title"|trans }}</a>
+    </li>
+    <li>
+      <a href="{{ add_tab_url }}"
+         class="{% if !is_overview %}active{% endif %}">{{ "csb.omission.form.title"|trans }}</a>
+    </li>
+  </ul>
+</div>

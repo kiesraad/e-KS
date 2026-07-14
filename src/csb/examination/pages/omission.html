@@ -1,6 +1,11 @@
 {% extends "csb/components/overlay.html" %}
 {% set submit_label = "csb.omission.form.submit"|trans %}
+{% block overlay_class %}omission-overlay{% endblock %}
 {% block overlay_title %}{{ "csb.omission.form.title"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% set is_overview = false %}
+  {% include "csb/examination/pages/omission_steps.html" %}
+{% endblock %}
 {% block overlay_form %}
   <fieldset class="omission-form">
     {% if !presets.is_empty() %}
@@ -10,11 +15,12 @@
           {% for preset in presets %}
             <li>
               <button type="button"
-                      class="omission-preset"
+                      class="omission-preset{% if !preset.recoverable %} omission-preset-unrecoverable{% endif %}"
                       data-omission-preset
                       data-title="{{ preset.title }}"
                       data-description="{{ preset.description }}"
-                      data-help-text="{{ preset.help_text }}">{{ preset.title }}</button>
+                      data-help-text="{{ preset.help_text }}"
+                      data-recoverable="{{ preset.recoverable }}">{{ preset.title }}</button>
             </li>
           {% endfor %}
         </ul>
@@ -47,6 +53,17 @@
         <textarea name="help_text" id="help_text" rows="5" data-omission-help-text>{{ form.data.help_text }}</textarea>
         {% for error in form|error("help_text") %}<span class="error">{{ error }}</span>{% endfor %}
       </p>
+    </div>
+    <div class="form-row">
+      <div class="checkbox">
+        <input type="checkbox"
+               name="recoverable"
+               id="recoverable"
+               value="true"
+               data-omission-recoverable
+               {% if form.data.recoverable %}checked{% endif %} />
+        <label for="recoverable">{{ "csb.omission.form.recoverable_label"|trans }}</label>
+      </div>
     </div>
   </fieldset>
 {% endblock %}

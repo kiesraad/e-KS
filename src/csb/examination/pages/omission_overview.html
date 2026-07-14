@@ -1,0 +1,44 @@
+{% extends "csb/components/overlay.html" %}
+{% block overlay_class %}omission-overlay{% endblock %}
+{% block overlay_title %}{{ "csb.omission.overview.title"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% set is_overview = true %}
+  {% include "csb/examination/pages/omission_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  <div class="omission-overview">
+    {% if omissions.is_empty() %}
+      <p class="font-italic">{{ "csb.omission.overview.empty"|trans }}</p>
+    {% else %}
+      <ul class="omission-list">
+        {% for view in omissions %}
+          <li class="omission-item{% if !view.omission.recoverable %} omission-item-unrecoverable{% endif %}">
+            <div class="omission-item-header">
+              <h4>{{ view.omission.title }}</h4>
+              {% if view.omission.recoverable %}
+                <span class="omission-recoverable recoverable">{{ "csb.omission.overview.recoverable"|trans }}</span>
+              {% else %}
+                <span class="omission-recoverable not-recoverable">{{ "csb.omission.overview.not_recoverable"|trans }}</span>
+              {% endif %}
+            </div>
+            <div class="row">
+              <div class="omission-item-body">
+                <h5>{{ "csb.omission.overview.description"|trans }}</h5>
+                <p>{{ view.omission.description }}</p>
+                {% if !view.omission.help_text.is_empty() %}
+                  <h5>{{ "csb.omission.overview.help_text"|trans }}</h5>
+                  <p>{{ view.omission.help_text }}</p>
+                {% endif %}
+              </div>
+              <button type="submit"
+                      class="button xs tertiary-destructive"
+                      formaction="{{ view.remove_url }}"
+                      formnovalidate>{{ "action.remove"|trans }}</button>
+            </div>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+{% endblock %}
+{% block overlay_actions %}{% endblock %}
