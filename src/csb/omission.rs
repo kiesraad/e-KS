@@ -8,7 +8,6 @@ use crate::{
     common::UtcDateTime,
     form::ValidationError,
     id_newtype,
-    name_authorisations::NameAuthorisationId,
     persons::PersonId,
 };
 
@@ -135,14 +134,11 @@ impl<'de> Deserialize<'de> for OmissionType {
 
 #[derive(Default, Debug, Serialize, Eq, PartialEq, Deserialize, Clone)]
 pub enum OmissionCategory {
-    /// E.g. missing deposit ("waarborgsom"), unidentified submitter
+    /// E.g. missing deposit ("waarborgsom"), unidentified submitter,
+    /// or problems with authorised agent and/or statutory name (H 3-1 / H 3-2)
     #[default]
     General,
-    /// Missing, invalid or unregistered authorised agent and/or statutory name (H 3-1 / H 3-2)
-    NameAuthorisation(Option<NameAuthorisationId>),
-    /// Missing or incorrect "ondersteuningsverklaringen" for some "kieskringen" (H 4)
-    DeclarationOfSupport(Vec<ElectoralDistrict>),
-    /// E.g. too many candidates on a list
+    /// E.g. too many candidates on a list (H 1), or missing or incorrect "ondersteuningsverklaringen" (H 4)
     CandidateList(CandidateListId),
     /// E.g. missing or invalid candidate data, missing or invalid "instemmingsverklaring" (H 9),
     /// missing copy of identity document
@@ -183,10 +179,9 @@ impl OmissionCategory {
         election: &ElectionConfig,
     ) -> Result<String, AppError> {
         match self {
-            OmissionCategory::General
-            | OmissionCategory::NameAuthorisation(_)
-            | OmissionCategory::Candidate { list: None, .. } => Ok(ALL_DISTRICTS.to_string()),
-            OmissionCategory::DeclarationOfSupport(districts) => Ok(format_districts(districts)),
+            OmissionCategory::General | OmissionCategory::Candidate { list: None, .. } => {
+                Ok(ALL_DISTRICTS.to_string())
+            }
             OmissionCategory::CandidateList(id)
             | OmissionCategory::Candidate { list: Some(id), .. } => store
                 .get_candidate_list(*id)
@@ -445,56 +440,12 @@ pub mod tests {
         }
 
         #[test]
-        fn name_authorisation_maps_to_all_districts() {
-            let store = CsbStore::new_for_test();
-            assert_eq!(
-                OmissionCategory::NameAuthorisation(None)
-                    .electoral_district(&store, &EK)
-                    .unwrap(),
-                "alle kieskringen"
-            );
-        }
-
-        #[test]
         fn candidate_without_list_maps_to_all_districts() {
             let store = CsbStore::new_for_test();
             let category = OmissionCategory::Candidate {
                 person: crate::persons::PersonId::new(),
                 list: None,
             };
-            assert_eq!(
-                category.electoral_district(&store, &EK).unwrap(),
-                "alle kieskringen"
-            );
-        }
-
-        #[test]
-        fn declaration_of_support_single_district() {
-            let store = CsbStore::new_for_test();
-            let category = OmissionCategory::DeclarationOfSupport(vec![ElectoralDistrict::GR]);
-            assert_eq!(
-                category.electoral_district(&store, &EK).unwrap(),
-                "kieskring 1 (Groningen)"
-            );
-        }
-
-        #[test]
-        fn declaration_of_support_multiple_districts() {
-            let store = CsbStore::new_for_test();
-            let category = OmissionCategory::DeclarationOfSupport(vec![
-                ElectoralDistrict::GR,
-                ElectoralDistrict::DR,
-            ]);
-            assert_eq!(
-                category.electoral_district(&store, &EK).unwrap(),
-                "kieskring 1 (Groningen), 3 (Drenthe)"
-            );
-        }
-
-        #[test]
-        fn declaration_of_support_empty_maps_to_all_districts() {
-            let store = CsbStore::new_for_test();
-            let category = OmissionCategory::DeclarationOfSupport(vec![]);
             assert_eq!(
                 category.electoral_district(&store, &EK).unwrap(),
                 "alle kieskringen"
@@ -513,13 +464,24 @@ pub mod tests {
         }
 
         #[test]
-        fn candidate_list_with_specific_district() {
+        fn candidate_list_with_one_district() {
             let (store, id) = store_with_list(vec![ElectoralDistrict::BO]);
             assert_eq!(
                 OmissionCategory::CandidateList(id)
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "kieskring 13 (Bonaire)"
+            );
+        }
+
+        #[test]
+        fn candidate_list_with_multiple_districts() {
+            let (store, id) = store_with_list(vec![ElectoralDistrict::GR, ElectoralDistrict::DR]);
+            assert_eq!(
+                OmissionCategory::CandidateList(id)
+                    .electoral_district(&store, &EK)
+                    .unwrap(),
+                "kieskring 1 (Groningen), 3 (Drenthe)"
             );
         }
 

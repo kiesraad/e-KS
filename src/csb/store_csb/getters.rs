@@ -44,26 +44,6 @@ impl CsbStore {
             .collect()
     }
 
-    pub fn get_name_authorisation_omissions(&self) -> Vec<Omission> {
-        let data = self.data.read();
-
-        data.omissions
-            .values()
-            .filter(|o| matches!(o.category, OmissionCategory::NameAuthorisation(_)))
-            .cloned()
-            .collect()
-    }
-
-    pub fn get_declaration_of_support_omissions(&self) -> Vec<Omission> {
-        let data = self.data.read();
-
-        data.omissions
-            .values()
-            .filter(|o| matches!(o.category, OmissionCategory::DeclarationOfSupport(_)))
-            .cloned()
-            .collect()
-    }
-
     pub fn get_candidate_omissions(&self, person_id: PersonId) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -231,7 +211,10 @@ mod tests {
     fn get_general_omissions_returns_only_general() {
         let store = CsbStore::new_for_test();
         insert(&store, OmissionCategory::General);
-        insert(&store, OmissionCategory::NameAuthorisation(None));
+        insert(
+            &store,
+            OmissionCategory::CandidateList(CandidateListId::new()),
+        );
 
         let result = store.get_general_omissions();
 
@@ -242,38 +225,12 @@ mod tests {
     #[test]
     fn get_general_omissions_returns_empty_when_none() {
         let store = CsbStore::new_for_test();
+        insert(
+            &store,
+            OmissionCategory::CandidateList(CandidateListId::new()),
+        );
 
         assert!(store.get_general_omissions().is_empty());
-    }
-
-    #[test]
-    fn get_name_authorisation_omissions_returns_only_name_authorisation() {
-        let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::NameAuthorisation(None));
-        insert(&store, OmissionCategory::General);
-
-        let result = store.get_name_authorisation_omissions();
-
-        assert_eq!(result.len(), 1);
-        assert!(matches!(
-            result[0].category,
-            OmissionCategory::NameAuthorisation(_)
-        ));
-    }
-
-    #[test]
-    fn get_declaration_of_support_omissions_returns_only_declaration_of_support() {
-        let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::DeclarationOfSupport(vec![]));
-        insert(&store, OmissionCategory::General);
-
-        let result = store.get_declaration_of_support_omissions();
-
-        assert_eq!(result.len(), 1);
-        assert!(matches!(
-            result[0].category,
-            OmissionCategory::DeclarationOfSupport(_)
-        ));
     }
 
     #[test]
