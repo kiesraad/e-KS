@@ -9,24 +9,6 @@ use crate::{
 #[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
 #[validate(target = "Representative")]
 #[serde(default)]
-pub struct RepresentativeFieldsForm {
-    #[validate(flatten)]
-    #[serde(flatten)]
-    pub name: FullNameForm,
-    #[validate(flatten)]
-    #[serde(flatten)]
-    pub address: DutchAddressForm,
-}
-
-impl RepresentativeFieldsForm {
-    pub fn is_empty(&self) -> bool {
-        self.name.is_empty() && self.address.is_empty()
-    }
-}
-
-#[derive(Default, Serialize, Deserialize, Clone, Debug, Validate)]
-#[validate(target = "Representative")]
-#[serde(default)]
 pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]
@@ -34,6 +16,12 @@ pub struct RepresentativeForm {
     #[validate(flatten)]
     #[serde(flatten)]
     pub address: DutchAddressForm,
+}
+
+impl RepresentativeForm {
+    pub fn is_empty(&self) -> bool {
+        self.name.is_empty() && self.address.is_empty()
+    }
 }
 
 impl From<Representative> for RepresentativeForm {

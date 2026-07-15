@@ -57,12 +57,7 @@ pub fn handle_db_error(health: &DbHealth, err: AppError, request: &Request) -> R
 /// Render the static 503 maintenance page, localized from `Accept-Language`,
 /// with a `Retry-After` header and a "try again" link back to the request path.
 fn maintenance_response(request: &Request) -> Response {
-    let locale = request
-        .headers()
-        .get(header::ACCEPT_LANGUAGE)
-        .and_then(|value| value.to_str().ok())
-        .and_then(Locale::from_accept_language)
-        .unwrap_or_default();
+    let locale = Locale::from_headers(request.headers());
 
     let retry_path = request
         .uri()

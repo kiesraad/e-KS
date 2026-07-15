@@ -39,21 +39,12 @@ struct AuthCancelledTemplate;
 #[template(path = "app/common/pages/auth_unavailable.html")]
 struct AuthUnavailableTemplate;
 
-/// Resolve locale from `Accept-Language`, falling back to the application default.
-fn request_locale(headers: &HeaderMap) -> Locale {
-    headers
-        .get(axum::http::header::ACCEPT_LANGUAGE)
-        .and_then(|value| value.to_str().ok())
-        .and_then(Locale::from_accept_language)
-        .unwrap_or_default()
-}
-
 /// GET `/login`: DigiD start page with login button and flow explanation.
 pub async fn login_start(headers: HeaderMap) -> impl IntoResponse {
     HtmlTemplate(
         LoginStartTemplate,
         LocaleValues {
-            locale: request_locale(&headers),
+            locale: Locale::from_headers(&headers),
         },
     )
 }
@@ -87,7 +78,7 @@ pub async fn logged_out(_: LoggedOutPath, headers: HeaderMap) -> Response {
     HtmlTemplate(
         LoggedOutTemplate,
         LocaleValues {
-            locale: request_locale(&headers),
+            locale: Locale::from_headers(&headers),
         },
     )
     .into_response()

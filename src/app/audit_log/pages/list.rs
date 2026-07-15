@@ -3,17 +3,13 @@ use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, Event, HtmlTemplate,
-    audit_log::{AuditLogEntry, pages::AuditLogPath},
+    audit_log::{AuditLogEntry, EventTypeCategory, pages::AuditLogPath},
     filters,
     pagination::Pagination,
+    utils::filter_query_suffix,
 };
 
 const PER_PAGE: usize = 20;
-
-pub struct EventTypeCategory {
-    pub key: &'static str,
-    pub event_types: &'static [&'static str],
-}
 
 /// Event type categories grouped with their specific event keys, used by the
 /// filter dropdown to render `<optgroup>`s with fine-grained `<option>`s.
@@ -97,10 +93,7 @@ pub struct AuditLogFilter {
 impl AuditLogFilter {
     /// Build a query string fragment (with leading `&`) for the active filters.
     pub fn as_query_suffix(&self) -> String {
-        match serde_urlencoded::to_string(self) {
-            Ok(query) if !query.is_empty() => format!("&{query}"),
-            _ => String::new(),
-        }
+        filter_query_suffix(self)
     }
 
     pub fn is_active(&self) -> bool {
@@ -113,19 +106,16 @@ impl AuditLogFilter {
 #[template(path = "app/audit_log/pages/list.html")]
 struct AuditLogTemplate {
     entries: Vec<AuditLogEntry>,
-    pagination: crate::pagination::PaginationInfo<NoSort>,
+    pagination: crate::pagination::PaginationInfo,
     filter: AuditLogFilter,
     event_types_by_category: &'static [EventTypeCategory],
 }
-
-#[derive(Debug, Default, Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
-pub struct NoSort;
 
 pub async fn audit_log(
     _: AuditLogPath,
     context: Context,
     store: AppStore,
-    pagination: Pagination<NoSort>,
+    pagination: Pagination,
     Query(filter): Query<AuditLogFilter>,
 ) -> Result<impl IntoResponse, AppError> {
     let locale = context.session.locale;
