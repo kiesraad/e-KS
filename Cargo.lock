@@ -929,7 +929,7 @@ dependencies = [
 
 [[package]]
 name = "eks-development"
-version = "0.5.3"
+version = "0.5.4"
 dependencies = [
  "anyhow",
  "eks",
@@ -3144,12 +3144,13 @@ dependencies = [
 
 [[package]]
 name = "textris-pdf"
-version = "0.6.0"
-source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=874f5430298f1900fcb952d9c7616e22431fb237#874f5430298f1900fcb952d9c7616e22431fb237"
+version = "0.7.0"
+source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=bcee939bda500d101595da1df7bd933eb63cecab#bcee939bda500d101595da1df7bd933eb63cecab"
 dependencies = [
  "harfrust",
  "krilla",
  "read-fonts 0.41.0",
+ "time",
 ]
 
 [[package]]

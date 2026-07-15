@@ -69,7 +69,7 @@ serde-saphyr = "0.0.29"
 
 # tweedegolf
 memory-serve = "2.1.0"
-textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", rev = "874f5430298f1900fcb952d9c7616e22431fb237", default-features = false }
+textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", rev = "bcee939bda500d101595da1df7bd933eb63cecab", default-features = false }
 bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
 
 # kiesraad

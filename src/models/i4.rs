@@ -352,7 +352,7 @@ fn numbering_table<'a>(
 /// per valid list and a page break between lists.
 fn valid_lists_section(doc: &mut Textris, districts: &[DistrictLists]) {
     doc.paragraph("Het centraal stembureau besluit dat de volgende lijsten geldig zijn verklaard:");
-    doc.page_break();
+
     for district in districts {
         doc.h4(format!("Kieskring {}", district.electoral_district));
         for (index, list) in district.lists.iter().enumerate() {

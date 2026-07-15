@@ -86,8 +86,7 @@ impl Pdf for H4 {
 
 impl H4 {
     /// Word choice depending on whether the voter register is kept by a
-    /// municipality (`gr`) or a public body (`non_gr`), like `is_municipality`
-    /// in the Typst template.
+    /// municipality (`gr`) or a public body (`non_gr`)
     fn municipality<'a>(&self, gr: &'a str, non_gr: &'a str) -> String {
         match self.common.election_type {
             ElectionType::Er => non_gr.to_string(),
@@ -112,11 +111,9 @@ impl H4 {
             "{} {mayor}",
             trans("Verklaring van de", "Ferklearring fan de")
         ));
-        // textris-pdf has no inline fill-in within a paragraph; a run of
-        // underscores approximates the blank line of the original template.
         doc.paragraph(
             text(format!("De {mayor} {} ", trans("van", "fan")))
-                .normal("_".repeat(30))
+                .fill_in(120.0)
                 .normal(format!(
                     " {}",
                     trans(

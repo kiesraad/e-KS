@@ -375,7 +375,7 @@ and enables the embedding and TLS features.
 
 | Feature | Effect |
 |---------|--------|
-| `dev-features` | Relaxes config (dev defaults), enables the dev login and the bag-service proxy. |
+| `dev-features` | Relaxes config (dev defaults), enables the dev login. |
 | `database` | Postgres / SQLx storage backend. |
 | `migrations` | Run database migrations on startup. |
 | `fixtures` | Optionally load sample data into the store when an election is selected. |
