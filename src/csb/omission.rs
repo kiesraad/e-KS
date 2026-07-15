@@ -137,7 +137,7 @@ pub enum OmissionCategory {
     /// E.g. missing deposit ("waarborgsom"), unidentified submitter,
     /// or problems with authorised agent and/or statutory name (H 3-1 / H 3-2)
     #[default]
-    General,
+    PoliticalGroup,
     /// E.g. too many candidates on a list (H 1), or missing or incorrect "ondersteuningsverklaringen" (H 4)
     CandidateList(CandidateListId),
     /// E.g. missing or invalid candidate data, missing or invalid "instemmingsverklaring" (H 9),
@@ -156,14 +156,14 @@ impl OmissionCategory {
     /// "add omission" dialog: the [`OmissionType`], the id of the item the
     /// omission is added to, and (for candidates) the list the candidate is on.
     /// For a political group the reference is unused (the stream already
-    /// identifies the group), so it maps to [`Self::General`].
+    /// identifies the group).
     pub fn from_type_and_reference(
         omission_type: OmissionType,
         reference: uuid::Uuid,
         list: Option<CandidateListId>,
     ) -> Self {
         match omission_type {
-            OmissionType::PoliticalGroup => OmissionCategory::General,
+            OmissionType::PoliticalGroup => OmissionCategory::PoliticalGroup,
             OmissionType::CandidateList => OmissionCategory::CandidateList(reference.into()),
             OmissionType::Candidate => OmissionCategory::Candidate {
                 person: reference.into(),
@@ -179,7 +179,7 @@ impl OmissionCategory {
         election: &ElectionConfig,
     ) -> Result<String, AppError> {
         match self {
-            OmissionCategory::General | OmissionCategory::Candidate { list: None, .. } => {
+            OmissionCategory::PoliticalGroup | OmissionCategory::Candidate { list: None, .. } => {
                 Ok(ALL_DISTRICTS.to_string())
             }
             OmissionCategory::CandidateList(id)
@@ -370,7 +370,7 @@ pub mod tests {
     #[tokio::test]
     async fn create_and_get_omission() -> Result<(), AppError> {
         let store = CsbStore::new_for_test();
-        let omission = sample_omission(OmissionCategory::General);
+        let omission = sample_omission(OmissionCategory::PoliticalGroup);
 
         omission.create(&store).await?;
 
@@ -384,7 +384,7 @@ pub mod tests {
     #[tokio::test]
     async fn update_omission_overwrites_fields() -> Result<(), AppError> {
         let store = CsbStore::new_for_test();
-        let mut omission = sample_omission(OmissionCategory::General);
+        let mut omission = sample_omission(OmissionCategory::PoliticalGroup);
 
         omission.create(&store).await?;
 
@@ -400,7 +400,7 @@ pub mod tests {
     #[tokio::test]
     async fn delete_omission_removes_record() -> Result<(), AppError> {
         let store = CsbStore::new_for_test();
-        let omission = sample_omission(OmissionCategory::General);
+        let omission = sample_omission(OmissionCategory::PoliticalGroup);
 
         omission.create(&store).await?;
         omission.delete(&store).await?;
@@ -429,10 +429,10 @@ pub mod tests {
         }
 
         #[test]
-        fn general_maps_to_all_districts() {
+        fn political_group_maps_to_all_districts() {
             let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::General
+                OmissionCategory::PoliticalGroup
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "alle kieskringen"

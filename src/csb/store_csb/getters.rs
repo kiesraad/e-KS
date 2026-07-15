@@ -34,12 +34,12 @@ impl CsbStore {
             .collect()
     }
 
-    pub fn get_general_omissions(&self) -> Vec<Omission> {
+    pub fn get_political_group_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 
         data.omissions
             .values()
-            .filter(|o| matches!(o.category, OmissionCategory::General))
+            .filter(|o| matches!(o.category, OmissionCategory::PoliticalGroup))
             .cloned()
             .collect()
     }
@@ -208,29 +208,32 @@ mod tests {
     }
 
     #[test]
-    fn get_general_omissions_returns_only_general() {
+    fn get_political_group_omissions_returns_only_political_group() {
         let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::General);
+        insert(&store, OmissionCategory::PoliticalGroup);
         insert(
             &store,
             OmissionCategory::CandidateList(CandidateListId::new()),
         );
 
-        let result = store.get_general_omissions();
+        let result = store.get_political_group_omissions();
 
         assert_eq!(result.len(), 1);
-        assert!(matches!(result[0].category, OmissionCategory::General));
+        assert!(matches!(
+            result[0].category,
+            OmissionCategory::PoliticalGroup
+        ));
     }
 
     #[test]
-    fn get_general_omissions_returns_empty_when_none() {
+    fn get_political_group_omissions_returns_empty_when_none() {
         let store = CsbStore::new_for_test();
         insert(
             &store,
             OmissionCategory::CandidateList(CandidateListId::new()),
         );
 
-        assert!(store.get_general_omissions().is_empty());
+        assert!(store.get_political_group_omissions().is_empty());
     }
 
     #[test]
@@ -252,7 +255,7 @@ mod tests {
                 list: None,
             },
         );
-        insert(&store, OmissionCategory::General);
+        insert(&store, OmissionCategory::PoliticalGroup);
 
         let result = store.get_candidate_omissions(person_a);
 
@@ -283,7 +286,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         insert(&store, OmissionCategory::CandidateList(list_a));
         insert(&store, OmissionCategory::CandidateList(list_b));
-        insert(&store, OmissionCategory::General);
+        insert(&store, OmissionCategory::PoliticalGroup);
 
         let result = store.get_candidate_list_omissions(list_a);
 

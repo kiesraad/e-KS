@@ -116,9 +116,9 @@
           </div>
           <div class="card-content">
             <p>{{ "csb.general.overview_text"|trans }}</p>
-            {% if !general_omissions.is_empty() %}
+            {% if !political_group_omissions.is_empty() %}
               <ul class="omission-badges">
-                {% for omission in general_omissions %}
+                {% for omission in political_group_omissions %}
                   <li class="omission-badge{% if !omission.recoverable %} omission-badge-unrecoverable{% endif %}">{{ omission.title }}</li>
                 {% endfor %}
               </ul>

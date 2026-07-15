@@ -124,7 +124,7 @@ pub(super) fn omission_views(
     overview_url: &str,
 ) -> Vec<OmissionView> {
     let omissions = match target.omission_type {
-        OmissionType::PoliticalGroup => store.get_general_omissions(),
+        OmissionType::PoliticalGroup => store.get_political_group_omissions(),
         OmissionType::CandidateList => {
             store.get_candidate_list_omissions(CandidateListId::from(target.reference))
         }

@@ -369,7 +369,7 @@ mod tests {
         let stream_id = store.stream_id;
 
         let omission = Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Deposit missing".to_string(),
             "The deposit is missing.".to_string(),
             String::new(),
@@ -391,7 +391,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        assert!(store.get_general_omissions().is_empty());
+        assert!(store.get_political_group_omissions().is_empty());
         let location = response
             .headers()
             .get("Location")
@@ -427,7 +427,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_candidate_list_omission_persists_the_right_category() {
+    async fn add_candidate_list_omission_persists_category() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let list = CandidateListId::new();
@@ -470,7 +470,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_general_omission_persists_general_category() {
+    async fn add_political_group_omission_persists_category() {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let context = CsbContext::new_test();
@@ -491,7 +491,7 @@ mod tests {
         .await
         .unwrap();
 
-        assert_eq!(store.get_general_omissions().len(), 1);
+        assert_eq!(store.get_political_group_omissions().len(), 1);
     }
 
     #[tokio::test]
@@ -549,7 +549,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        assert!(store.get_general_omissions().is_empty());
+        assert!(store.get_political_group_omissions().is_empty());
     }
 
     #[tokio::test]

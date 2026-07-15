@@ -300,7 +300,7 @@ mod tests {
         csb_store.update(CsbEvent::SetFinished(true)).await?;
         csb_store
             .update(CsbEvent::CreateOmission(Omission::new(
-                OmissionCategory::General,
+                OmissionCategory::PoliticalGroup,
                 "test".to_string(),
                 "test".to_string(),
                 "test".to_string(),

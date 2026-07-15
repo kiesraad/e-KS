@@ -20,8 +20,7 @@ struct CsbGeneralInformationTemplate {
     name_authorisations: Vec<NameAuthorisation>,
     list_submitter: ListSubmitter,
     substitute_submitters: Vec<ListSubmitter>,
-    /// Omissions added at the political group's general information level.
-    general_omissions: Vec<Omission>,
+    political_group_omissions: Vec<Omission>,
     restoration_count: usize,
 }
 
@@ -36,7 +35,7 @@ pub async fn overview(
     let name_authorisations = store.get_name_authorisations();
     let list_submitter = store.get_list_submitter();
     let substitute_submitters = store.get_substitute_submitters();
-    let general_omissions = store.get_general_omissions();
+    let political_group_omissions = store.get_political_group_omissions();
 
     Ok(HtmlTemplate(
         CsbGeneralInformationTemplate {
@@ -44,7 +43,7 @@ pub async fn overview(
             name_authorisations,
             list_submitter,
             substitute_submitters,
-            general_omissions,
+            political_group_omissions,
             restoration_count: rng().random_range(0..=20),
         },
         context,
@@ -105,13 +104,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn renders_added_general_omissions_as_badges() {
+    async fn renders_added_political_group_omissions_as_badges() {
         use crate::csb::OmissionCategory;
 
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Deposit missing".to_string(),
             "The deposit has not been paid.".to_string(),
             String::new(),
@@ -146,7 +145,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let mut omission = Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Unregistered designation".to_string(),
             "The designation is not registered.".to_string(),
             String::new(),
