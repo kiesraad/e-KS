@@ -10,7 +10,7 @@ use crate::{
         LastNamePrefix, PlaceOfResidence,
     },
     constants::DEFAULT_DATE_FORMAT,
-    form::{FieldErrors, FormData, ValidationError},
+    form::{FieldErrors, FormData, MergeErrors, ValidationError},
     persons::{Person, PersonalData},
 };
 
@@ -97,7 +97,7 @@ impl PersonalDataForm {
         let person_result = self.clone().validate_create();
         let errors = self.uniqueness_errors(existing_ref);
 
-        self.merge_validation_results(person_result, errors)
+        person_result.merge_errors(self, errors)
     }
 
     /// Also checks date of birth
@@ -112,7 +112,7 @@ impl PersonalDataForm {
         let person_result = self.clone().validate_update(current);
         let errors = self.uniqueness_errors(existing_without_current);
 
-        self.merge_validation_results(person_result, errors)
+        person_result.merge_errors(self, errors)
     }
 
     /// Validate that the BSN is unique OR the name (initials, prefix, lastname) is unique
@@ -168,24 +168,6 @@ impl PersonalDataForm {
         }
 
         errors
-    }
-
-    fn merge_validation_results(
-        self,
-        person_result: Result<Person, FormData<Self>>,
-        additional_errors: FieldErrors,
-    ) -> Result<Person, Box<FormData<Self>>> {
-        if additional_errors.is_empty() {
-            return Ok(person_result?);
-        }
-        match person_result {
-            Ok(_) => Err(Box::new(FormData::new_with_errors(self, additional_errors))),
-            Err(form_data) => {
-                let mut errors = form_data.errors();
-                errors.extend(additional_errors);
-                Err(Box::new(FormData::new_with_errors(self, errors)))
-            }
-        }
     }
 }
 

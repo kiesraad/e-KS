@@ -2,12 +2,18 @@ use proc_macro::TokenStream;
 use quote::quote;
 use syn::{Data, DeriveInput, Fields, LitStr, Type, parse_macro_input};
 
-/// Derive `Validate` implementations with field annotations.
+/// Derive form validation methods with field annotations.
+///
+/// Generates three inherent methods on the form struct:
+/// - `validate_into(self, base: &Target)` parses the form into a copy of
+///   `base`, replacing the mapped fields and collecting all errors.
+/// - `validate_create(self)` validates into `Target::default()`.
+/// - `validate_update(self, current: &Target)` validates into `current`.
 ///
 /// Supported annotations:
 /// - `#[validate(target = "Type")]` on the struct.
 /// - `#[validate(parse = "Type")]` to parse via `Type::from_str`.
-/// - `#[validate(optional)]` to treat empty strings as `None`.
+/// - `#[validate(optional)]` to treat empty strings as `None` (requires `parse`).
 /// - `#[validate(not_empty)]` to reject empty values via `is_empty`.
 /// - `#[validate(ignore)]` to skip validation and mapping for a field.
 /// - `#[validate(flatten)]` to validate a nested form and prefix its errors with `field.child`.
@@ -29,10 +35,6 @@ struct FieldOptions {
     not_empty: bool,
 }
 
-/// Expand the `Validate` derive into an implementation for the target type.
-///
-/// Example:
-/// - `PersonForm` + `#[validate(target = "Person")]` -> `impl Validate<Person> for PersonForm`.
 fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
     let target = parse_struct_options(input)?;
     let struct_name = &input.ident;
@@ -46,8 +48,7 @@ fn expand_validate(input: &DeriveInput) -> syn::Result<TokenStream> {
 
 struct FieldBlocks {
     field_inits: Vec<proc_macro2::TokenStream>,
-    field_blocks_create: Vec<proc_macro2::TokenStream>,
-    field_blocks_update: Vec<proc_macro2::TokenStream>,
+    field_blocks: Vec<proc_macro2::TokenStream>,
 }
 
 fn collect_named_fields(input: &DeriveInput) -> syn::Result<Vec<&syn::Field>> {
@@ -68,8 +69,7 @@ fn collect_named_fields(input: &DeriveInput) -> syn::Result<Vec<&syn::Field>> {
 
 fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
     let mut field_inits = Vec::new();
-    let mut field_blocks_create = Vec::new();
-    let mut field_blocks_update = Vec::new();
+    let mut field_blocks = Vec::new();
 
     for field in fields {
         let ident = field
@@ -89,34 +89,32 @@ fn build_field_blocks(fields: &[&syn::Field]) -> syn::Result<FieldBlocks> {
             } else {
                 quote!(crate::form::ValidationError::ValueShouldNotBeEmpty)
             };
-            let block = quote! {
+            field_blocks.push(quote! {
                 if self.#ident.is_empty() {
                     errors.push((#field_name.to_string(), #error));
                 }
-            };
-            field_blocks_create.push(block.clone());
-            field_blocks_update.push(block);
+            });
         }
 
-        let validation = build_field_validation(ident, &field_name, &field.ty, &opts)?;
-
-        field_blocks_create.push(build_field_block(ident, &validation.create_expr));
-        field_blocks_update.push(build_field_block(ident, &validation.update_expr));
+        let validation = build_field_validation(ident, &field_name, &field.ty, &opts);
+        let expr = &validation.expr;
+        field_blocks.push(quote! {
+            let #ident = #expr;
+        });
         if validation.validated {
             field_inits.push(quote! {
                 #ident: #ident.expect("validated field")
             });
         } else {
             field_inits.push(quote! {
-                #ident: #ident
+                #ident
             });
         }
     }
 
     Ok(FieldBlocks {
         field_inits,
-        field_blocks_create,
-        field_blocks_update,
+        field_blocks,
     })
 }
 
@@ -138,36 +136,32 @@ fn build_validate_impl(
 ) -> proc_macro2::TokenStream {
     let FieldBlocks {
         field_inits,
-        field_blocks_create,
-        field_blocks_update,
+        field_blocks,
     } = field_blocks;
 
     quote! {
         impl #struct_name {
+            /// Validate into a new target, filling unmapped fields with defaults.
             pub fn validate_create(self) -> Result<#target, crate::form::FormData<Self>> {
-                let mut errors: crate::form::FieldErrors = Vec::new();
-
-                #(#field_blocks_create)*
-
-                if !errors.is_empty() {
-                    tracing::debug!("Validation errors: {errors:?}");
-                    return Err(crate::form::FormData::new_with_errors(self, errors));
-                }
-
-                #[allow(clippy::needless_update)]
-                Ok(#target {
-                    #(#field_inits,)*
-                    ..Default::default()
-                })
+                self.validate_into(&<#target as ::std::default::Default>::default())
             }
 
+            /// Validate into a copy of `current`, replacing the mapped fields.
             pub fn validate_update(
                 self,
                 current: &#target,
             ) -> Result<#target, crate::form::FormData<Self>> {
+                self.validate_into(current)
+            }
+
+            /// Validate into a copy of `base`, collecting all field errors.
+            pub fn validate_into(
+                self,
+                base: &#target,
+            ) -> Result<#target, crate::form::FormData<Self>> {
                 let mut errors: crate::form::FieldErrors = Vec::new();
 
-                #(#field_blocks_update)*
+                #(#field_blocks)*
 
                 if !errors.is_empty() {
                     tracing::debug!("Validation errors: {errors:?}");
@@ -177,7 +171,7 @@ fn build_validate_impl(
                 #[allow(clippy::needless_update)]
                 Ok(#target {
                     #(#field_inits,)*
-                    ..current.clone()
+                    ..base.clone()
                 })
             }
         }
@@ -209,10 +203,7 @@ fn parse_struct_options(input: &DeriveInput) -> syn::Result<Type> {
     })
 }
 
-/// Parse field-level `#[validate(...)]` options.
-///
-/// Example:
-/// - `#[validate(parse = "Date", optional)]` -> parse `Date`, treat empty string as `None`.
+/// Parse field-level `#[validate(...)]` options and check their combination.
 fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
     let mut opts = FieldOptions::default();
 
@@ -221,211 +212,121 @@ fn parse_field_options(field: &syn::Field) -> syn::Result<FieldOptions> {
             continue;
         }
 
-        attr.parse_nested_meta(|meta| apply_field_option(&mut opts, meta))?;
+        attr.parse_nested_meta(|meta| {
+            if meta.path.is_ident("optional") {
+                opts.optional = true;
+            } else if meta.path.is_ident("not_empty") {
+                opts.not_empty = true;
+            } else if meta.path.is_ident("ignore") {
+                opts.ignore = true;
+            } else if meta.path.is_ident("flatten") {
+                opts.flatten = true;
+            } else if meta.path.is_ident("parse") {
+                let lit: LitStr = meta.value()?.parse()?;
+                opts.parse_ty = Some(lit.parse::<Type>()?);
+            } else {
+                return Err(meta.error("unsupported validate attribute on field"));
+            }
+            Ok(())
+        })?;
     }
+
+    check_field_option_conflicts(field, &opts)?;
 
     Ok(opts)
 }
 
-fn apply_field_option(
-    opts: &mut FieldOptions,
-    meta: syn::meta::ParseNestedMeta,
-) -> syn::Result<()> {
-    if meta.path.is_ident("optional") {
-        return set_optional(opts, &meta);
+fn check_field_option_conflicts(field: &syn::Field, opts: &FieldOptions) -> syn::Result<()> {
+    let error = |message| Err(syn::Error::new_spanned(field, message));
+    let other_count =
+        opts.optional as u8 + opts.not_empty as u8 + u8::from(opts.parse_ty.is_some());
+
+    if opts.ignore && (opts.flatten || other_count > 0) {
+        return error("ignore cannot be combined with other validate options");
     }
-    if meta.path.is_ident("not_empty") {
-        return set_not_empty(opts, &meta);
+    if opts.flatten && other_count > 0 {
+        return error("flatten cannot be combined with other validate options");
     }
-    if meta.path.is_ident("ignore") {
-        return set_ignore(opts, &meta);
+    if opts.not_empty && (opts.optional || opts.parse_ty.is_some()) {
+        return error("not_empty cannot be combined with parse or optional");
     }
-    if meta.path.is_ident("flatten") {
-        return set_flatten(opts, &meta);
-    }
-    if meta.path.is_ident("parse") {
-        return set_parse(opts, meta);
+    if opts.optional && opts.parse_ty.is_none() {
+        return error("optional requires parse");
     }
 
-    Err(meta.error("unsupported validate attribute on field"))
-}
-
-fn set_optional(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.flatten || opts.ignore {
-        return Err(meta.error("optional cannot be combined with flatten or ignore"));
-    }
-    opts.optional = true;
-    Ok(())
-}
-
-fn set_not_empty(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.not_empty {
-        return Err(meta.error("not_empty can only be set once"));
-    }
-    if opts.flatten || opts.ignore {
-        return Err(meta.error("not_empty cannot be combined with flatten or ignore"));
-    }
-    opts.not_empty = true;
-    Ok(())
-}
-
-fn set_ignore(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.ignore {
-        return Err(meta.error("ignore can only be set once"));
-    }
-    if opts.optional || opts.parse_ty.is_some() || opts.flatten || opts.not_empty {
-        return Err(meta.error("ignore cannot be combined with other validation options"));
-    }
-    opts.ignore = true;
-    Ok(())
-}
-
-fn set_flatten(opts: &mut FieldOptions, meta: &syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.flatten {
-        return Err(meta.error("flatten can only be set once"));
-    }
-    if opts.optional || opts.parse_ty.is_some() || opts.ignore || opts.not_empty {
-        return Err(meta.error("flatten cannot be combined with other validation options"));
-    }
-    opts.flatten = true;
-    Ok(())
-}
-
-fn set_parse(opts: &mut FieldOptions, meta: syn::meta::ParseNestedMeta) -> syn::Result<()> {
-    if opts.parse_ty.is_some() {
-        return Err(meta.error("only one validator kind is allowed per field"));
-    }
-    if opts.flatten || opts.ignore {
-        return Err(meta.error("parse cannot be combined with flatten or ignore"));
-    }
-    let lit: LitStr = meta.value()?.parse()?;
-    opts.parse_ty = Some(lit.parse::<Type>()?);
     Ok(())
 }
 
 struct FieldValidation {
-    create_expr: proc_macro2::TokenStream,
-    update_expr: proc_macro2::TokenStream,
+    expr: proc_macro2::TokenStream,
     validated: bool,
 }
 
 /// Dispatch to the correct validation strategy for a field.
-///
-/// Example:
-/// - `#[validate(flatten)]` uses nested validation, otherwise parse or pass-through.
 fn build_field_validation(
     ident: &syn::Ident,
     field_name: &str,
     ty: &Type,
     opts: &FieldOptions,
-) -> syn::Result<FieldValidation> {
+) -> FieldValidation {
     if opts.flatten {
-        return Ok(build_flatten_validation(
-            ident,
-            field_name,
-            is_type_named(ty, "Option"),
-        ));
+        return build_flatten_validation(ident, field_name, is_type_named(ty, "Option"));
     }
 
     if let Some(ty) = &opts.parse_ty {
-        return Ok(build_parse_validation(ident, field_name, ty, opts.optional));
+        return build_parse_validation(ident, field_name, ty, opts.optional);
     }
 
-    Ok(build_passthrough_validation(ident))
+    // Pass-through: fields without a validator are cloned as-is.
+    FieldValidation {
+        expr: quote!(self.#ident.clone()),
+        validated: false,
+    }
 }
 
-/// Build validation for a nested form (`#[validate(flatten)]`), forwarding and prefixing errors.
-///
-/// Example:
-/// - `address` field errors become `address.postal_code`.
+/// Build validation for a nested form (`#[validate(flatten)]`), forwarding and
+/// prefixing its errors (`address` field errors become `address.postal_code`).
 fn build_flatten_validation(
     ident: &syn::Ident,
     field_name: &str,
     optional: bool,
 ) -> FieldValidation {
-    if optional {
-        return build_optional_flatten_validation(ident, field_name);
-    }
-
     let extend_errors = quote! {
         errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-            (format!("{}.{}", #field_name, name), err.clone())
+            (format!("{}.{}", #field_name, name), err)
         }));
     };
-    let create_expr = quote!({
-        match self.#ident.clone().validate_create() {
-            Ok(value) => Some(value),
-            Err(form_data) => { #extend_errors None }
-        }
-    });
-    let update_expr = quote!({
-        match self.#ident.clone().validate_update(&current.#ident) {
-            Ok(value) => Some(value),
-            Err(form_data) => { #extend_errors None }
-        }
-    });
-    FieldValidation {
-        create_expr,
-        update_expr,
-        validated: true,
-    }
-}
 
-fn build_optional_flatten_validation(ident: &syn::Ident, field_name: &str) -> FieldValidation {
-    let extend_errors = quote! {
-        errors.extend(form_data.errors().into_iter().map(|(name, err)| {
-            (format!("{}.{}", #field_name, name), err.clone())
-        }));
-    };
-    let create_expr = quote!({
-        match self.#ident.clone() {
-            Some(value) => match value.validate_create() {
-                Ok(value) => Some(Some(value)),
+    let expr = if optional {
+        quote!({
+            match self.#ident.clone() {
+                Some(value) => {
+                    let nested_base = base.#ident.clone().unwrap_or_default();
+                    match value.validate_into(&nested_base) {
+                        Ok(value) => Some(Some(value)),
+                        Err(form_data) => { #extend_errors None }
+                    }
+                }
+                None => Some(None),
+            }
+        })
+    } else {
+        quote!({
+            match self.#ident.clone().validate_into(&base.#ident) {
+                Ok(value) => Some(value),
                 Err(form_data) => { #extend_errors None }
-            },
-            None => Some(None),
-        }
-    });
-    let update_expr = quote!({
-        match self.#ident.clone() {
-            Some(value) => match current.#ident.as_ref() {
-                Some(current_value) => match value.validate_update(current_value) {
-                    Ok(value) => Some(Some(value)),
-                    Err(form_data) => { #extend_errors None }
-                },
-                None => match value.validate_create() {
-                    Ok(value) => Some(Some(value)),
-                    Err(form_data) => { #extend_errors None }
-                },
-            },
-            None => Some(None),
-        }
-    });
+            }
+        })
+    };
 
     FieldValidation {
-        create_expr,
-        update_expr,
+        expr,
         validated: true,
     }
 }
 
-/// Pass-through validation when no validator is configured.
-///
-/// Example:
-/// - `electoral_districts: Vec<ElectoralDistrict>` is cloned as-is.
-fn build_passthrough_validation(ident: &syn::Ident) -> FieldValidation {
-    let expr = quote!(self.#ident.clone());
-    FieldValidation {
-        create_expr: expr.clone(),
-        update_expr: expr,
-        validated: false,
-    }
-}
-
-/// Build validation for `#[validate(parse = "...")]` fields.
-///
-/// Example:
-/// - `first_name: String` parsed into `FirstName`.
+/// Build validation for `#[validate(parse = "...")]` fields, parsing the
+/// trimmed input via `FromStr` (e.g. `first_name: String` into `FirstName`).
 fn build_parse_validation(
     ident: &syn::Ident,
     field_name: &str,
@@ -469,21 +370,7 @@ fn build_parse_validation(
     });
 
     FieldValidation {
-        create_expr: expr.clone(),
-        update_expr: expr,
+        expr,
         validated: true,
-    }
-}
-
-/// Emit a local binding for a validated field value.
-///
-/// Example:
-/// - `let first_name = <parse expr>;`
-fn build_field_block(
-    ident: &syn::Ident,
-    value_expr: &proc_macro2::TokenStream,
-) -> proc_macro2::TokenStream {
-    quote! {
-        let #ident = #value_expr;
     }
 }
