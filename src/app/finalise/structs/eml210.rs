@@ -323,7 +323,7 @@ impl Eml210 {
                 )
             })
             .affiliation(NominationAffiliation {
-                registered_name: political_group.display_name_for_exports()?.into(),
+                registered_name: political_group.pg_display_name()?.into(),
                 affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
                 list_data,
                 candidates: candidates

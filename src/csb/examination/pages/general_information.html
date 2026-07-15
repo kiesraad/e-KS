@@ -1,7 +1,7 @@
 {% extends "csb/components/layout.html" %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
   {{ breadcrumb(political_group.general_information_path() , "common.general_information") }}
 {% endblock %}
 {% block page_title %}
@@ -135,7 +135,7 @@
       <tbody>
         <tr class="clickable">
           <td>
-            {{ "political_group.display_name"|trans }}: <strong>{{ political_group.political_group.csb_display_name() }}</strong>
+            {{ "political_group.display_name"|trans }}: <strong>{{ political_group.csb_display_name() }}</strong>
           </td>
           <td>
             <ul class="tags-list">

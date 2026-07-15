@@ -141,6 +141,25 @@ impl CsbStore {
             .cloned()
     }
 
+    /// The name of the first candidate across all imported candidate lists,
+    /// sorted by list creation date. Returns `None` when no candidates are imported.
+    pub fn first_candidate_name(&self) -> Option<crate::common::FullName> {
+        let mut lists = self.get_candidate_lists();
+        lists.sort_unstable_by_key(|l| l.created_at);
+        lists
+            .into_iter()
+            .flat_map(|list| list.candidates.into_iter())
+            .next()
+            .and_then(|id| self.get_person(id))
+            .map(|p| p.name)
+    }
+
+    /// Short-hand to get the display name of the political group
+    pub fn csb_display_name(&self) -> String {
+        let political_group = self.get_political_group();
+        political_group.csb_display_name(self.first_candidate_name().as_ref())
+    }
+
     pub fn candidate_position(
         &self,
         list_id: CandidateListId,
@@ -199,6 +218,8 @@ mod tests {
     use crate::{
         CsbStore,
         csb::omission::{OmissionCategory, tests::sample_omission},
+        list_designation::ListDesignation,
+        test_utils::{sample_candidate_list, sample_person_with},
     };
 
     fn insert(store: &CsbStore, category: OmissionCategory) {
@@ -349,5 +370,48 @@ mod tests {
         let store = CsbStore::new_for_test();
 
         assert!(store.get_substitute_submitters().is_empty());
+    }
+
+    #[test]
+    fn csb_display_name_standalone_list_uses_display_name() {
+        let store = CsbStore::new_for_test();
+        store.set_political_group(PoliticalGroup {
+            display_name: Some("Kiesraad Demo".parse().unwrap()),
+            list_designation: Some(ListDesignation::Standalone),
+            ..Default::default()
+        });
+
+        assert_eq!(store.csb_display_name(), "Kiesraad Demo");
+    }
+
+    #[test]
+    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+        let store = CsbStore::new_for_test();
+        store.set_political_group(PoliticalGroup {
+            list_designation: Some(ListDesignation::Blank),
+            ..Default::default()
+        });
+
+        let person_id = PersonId::new();
+        let person = sample_person_with(person_id, None, "Jansen", None, "A.B.");
+        store.set_person(person);
+
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates.push(person_id);
+        store.set_candidate_list(list);
+
+        assert_eq!(store.csb_display_name(), "Blanco (Jansen, A.B.)");
+    }
+
+    #[test]
+    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+        let store = CsbStore::new_for_test();
+        store.set_political_group(PoliticalGroup {
+            list_designation: Some(ListDesignation::Blank),
+            ..Default::default()
+        });
+
+        assert_eq!(store.csb_display_name(), "Blanco");
     }
 }
