@@ -4,7 +4,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, CsbStore, CsbStoreData, StreamId, political_groups::PoliticalGroup,
+    AppError, CsbStore, CsbStoreData, StreamId, common::FullName, political_groups::PoliticalGroup,
     store::StoreRegistry,
 };
 
@@ -13,6 +13,7 @@ pub struct CsbPoliticalGroup {
     pub stream_id: StreamId,
     pub is_examination_finished: bool,
     pub omission_count: usize,
+    pub first_candidate_name: Option<FullName>,
 }
 
 impl CsbPoliticalGroup {
@@ -22,7 +23,13 @@ impl CsbPoliticalGroup {
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
             omission_count: store.get_omission_count(),
+            first_candidate_name: store.first_candidate_name(),
         }
+    }
+
+    pub fn csb_display_name(&self) -> String {
+        self.political_group
+            .csb_display_name(self.first_candidate_name.as_ref())
     }
 }
 
@@ -53,7 +60,9 @@ mod tests {
     use super::*;
     use axum::{body::Body, http::Request};
 
-    use crate::{AppState, AppStoreData, CsbEvent, ElectionConfig};
+    use crate::{
+        AppState, AppStoreData, CsbEvent, ElectionConfig, list_designation::ListDesignation,
+    };
 
     /// Persist a CSB stream carrying a single import event in the (in-memory)
     /// test registry, returning its `stream_id`.
@@ -110,5 +119,58 @@ mod tests {
             .unwrap();
 
         assert!(groups.is_empty());
+    }
+
+    #[test]
+    fn csb_display_name_returns_display_name_for_normal_list() {
+        let group = CsbPoliticalGroup {
+            political_group: PoliticalGroup {
+                display_name: Some("Kiesraad Demo".parse().unwrap()),
+                list_designation: Some(ListDesignation::Standalone),
+                ..Default::default()
+            },
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            omission_count: 0,
+            first_candidate_name: None,
+        };
+
+        assert_eq!(group.csb_display_name(), "Kiesraad Demo");
+    }
+
+    #[test]
+    fn csb_display_name_blank_list_with_candidate_uses_first_candidate_name() {
+        let group = CsbPoliticalGroup {
+            political_group: PoliticalGroup {
+                list_designation: Some(ListDesignation::Blank),
+                ..Default::default()
+            },
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            omission_count: 0,
+            first_candidate_name: Some(FullName {
+                last_name: "Jansen".parse().unwrap(),
+                initials: "A.B.".parse().unwrap(),
+                ..Default::default()
+            }),
+        };
+
+        assert_eq!(group.csb_display_name(), "Blanco (Jansen, A.B.)");
+    }
+
+    #[test]
+    fn csb_display_name_blank_list_without_candidates_uses_blanco_fallback() {
+        let group = CsbPoliticalGroup {
+            political_group: PoliticalGroup {
+                list_designation: Some(ListDesignation::Blank),
+                ..Default::default()
+            },
+            stream_id: StreamId::new(),
+            is_examination_finished: false,
+            omission_count: 0,
+            first_candidate_name: None,
+        };
+
+        assert_eq!(group.csb_display_name(), "Blanco");
     }
 }

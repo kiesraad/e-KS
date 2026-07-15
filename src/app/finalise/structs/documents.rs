@@ -137,7 +137,7 @@ impl DocumentData {
         let electoral_districts = ElectoralDistricts::from(&list, &context.election, locale);
 
         let group = store.get_political_group();
-        let designation = group.display_name_for_exports()?;
+        let designation = group.pg_display_name()?;
 
         let list_submitter = store.get_list_submitter();
         if list_submitter.is_empty()

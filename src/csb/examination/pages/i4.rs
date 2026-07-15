@@ -30,9 +30,6 @@ pub async fn gen_i4(
             continue;
         }
 
-        let political_group = store.get_political_group();
-        let designation = political_group.display_name_for_exports()?;
-
         let mut by_district: BTreeMap<String, Vec<String>> = BTreeMap::new();
         for omission in recoverable {
             let district = omission.category.electoral_district(&store, &election)?;
@@ -42,6 +39,7 @@ pub async fn gen_i4(
                 .push(omission.description);
         }
 
+        let designation = store.csb_display_name();
         for (district, descriptions) in by_district {
             found_omissions.push(OmissionGroup {
                 designation: designation.clone(),

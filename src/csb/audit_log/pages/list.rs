@@ -126,10 +126,7 @@ pub async fn csb_audit_log(
     // Build a short label for each import stream from its import event
     let import_stream_labels: Vec<(StreamId, String)> = import_stores
         .iter()
-        .map(|store| {
-            let name = store.get_political_group().csb_display_name();
-            (store.stream_id, name)
-        })
+        .map(|store| (store.stream_id, store.csb_display_name()))
         .collect();
 
     let active_stream = filter.stream.as_deref().filter(|s| !s.is_empty());
@@ -146,7 +143,7 @@ pub async fn csb_audit_log(
         filter_events(
             store.data.read().events.iter(),
             store.stream_id,
-            store.get_political_group().csb_display_name(),
+            store.csb_display_name(),
             locale,
             active_event_type,
             active_search,
