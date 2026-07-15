@@ -62,6 +62,7 @@ mod tests {
             stream_id: StreamId::new(),
             is_examination_finished: false,
             omission_count: 0,
+            first_candidate_name: None,
         }]);
 
         let response = overview(
@@ -86,6 +87,7 @@ mod tests {
             stream_id: StreamId::new(),
             is_examination_finished: false,
             omission_count: 3,
+            first_candidate_name: None,
         }]);
 
         let response = overview(

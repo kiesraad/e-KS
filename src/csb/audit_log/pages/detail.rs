@@ -67,7 +67,7 @@ pub async fn csb_audit_log_detail(
             .ok_or(AppError::GenericNotFound)?;
         CsbEventDetail {
             event_id: event.event_id,
-            stream_label: store.get_political_group().csb_display_name(),
+            stream_label: store.csb_display_name(),
             description: event.payload.description(locale),
             details: event.payload.details(),
             created_at: event.created_at,

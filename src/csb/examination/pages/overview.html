@@ -49,7 +49,7 @@
           <tbody>
             {% for pg in unfinished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>{{ pg.csb_display_name() }}</td>
                 <td>
                   <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
                   {{ omission_count_badge(pg.omission_count) }}
@@ -86,7 +86,7 @@
           <tbody>
             {% for pg in finished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>{{ pg.csb_display_name() }}</td>
                 <td>
                   <div class="status approved">{{ "csb.status.approved"|trans }}</div>
                   {{ omission_count_badge(pg.omission_count) }}
