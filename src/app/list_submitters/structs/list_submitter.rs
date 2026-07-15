@@ -101,6 +101,17 @@ impl ListSubmitter {
         self.name.is_empty() && self.address.is_empty()
     }
 
+    /// Build the updated submitter from validated form data, keeping this
+    /// submitter's id and refreshing the address's BAG flag.
+    pub fn updated_from(&self, data: ListSubmitterData) -> Self {
+        let mut updated = ListSubmitter {
+            id: self.id,
+            ..data.into()
+        };
+        updated.address.update_is_known_in_bag();
+        updated
+    }
+
     pub async fn update(&self, store: &AppStore) -> Result<(), AppError> {
         store
             .update(AppEvent::UpdateListSubmitter(self.clone()))

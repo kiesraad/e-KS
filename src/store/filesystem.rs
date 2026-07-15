@@ -23,9 +23,7 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-use super::{
-    Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
-};
+use super::{Store, StoreData, StreamMeta, chain_hash, encryption::EventCipher, event_aad};
 use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 const FRAME_HEADER_LEN: usize = 4;
@@ -35,7 +33,7 @@ enum Frame {
     V1 {
         event_id: u64,
         created_at_micros: i64,
-        /// Chain hash; see [`super::chain_hash`] and [`StoreEvent::hash`].
+        /// Chain hash; see [`super::chain_hash`] and [`super::StoreEvent::hash`].
         hash: [u8; 32],
         encrypted_payload: Vec<u8>,
     },
@@ -80,73 +78,11 @@ where
     D::Event: DeserializeOwned,
 {
     let path = stream_path(dir, store.stream_id, store.election);
-    let mut file = match File::open(&path).await {
-        Ok(file) => file,
-        Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(0),
-        Err(err) => return Err(AppError::ServerError(err)),
-    };
-
-    let mut last_file_id = 0usize;
-    let mut events = Vec::new();
-
-    loop {
-        let mut len_buf = [0u8; FRAME_HEADER_LEN];
-        match file.read_exact(&mut len_buf).await {
-            Ok(_) => {}
-            Err(err) if err.kind() == std::io::ErrorKind::UnexpectedEof => break,
-            Err(err) => return Err(AppError::ServerError(err)),
-        }
-        let body_len = u32::from_le_bytes(len_buf) as usize;
-
-        let mut body = vec![0u8; body_len];
-        file.read_exact(&mut body)
-            .await
-            .map_err(AppError::ServerError)?;
-
-        let Frame::V1 {
-            event_id,
-            created_at_micros,
-            hash,
-            encrypted_payload,
-        } = postcard::from_bytes::<Frame>(&body)
-            .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
-
-        let event_id = event_id as usize;
-        let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
-
-        last_file_id = last_file_id.max(event_id);
-        events.push((event_id, created_at, hash, encrypted_payload));
-    }
+    let frames = read_frames(&path).await?;
+    let last_file_id = frames.iter().map(|(id, ..)| *id).max().unwrap_or(0);
 
     let mut data = store.data.write();
-    let mut prev_hash = data.last_event_hash();
-
-    for (event_id, created_at, hash, encrypted_payload) in events {
-        if data.last_event_id() >= event_id {
-            continue;
-        }
-
-        // Verify the chain over the stored blob before touching the plaintext.
-        // Gated behind a feature flag: it costs a SHA-256 over every loaded
-        // event. (Reordering, removal, and in-place edits are still caught by
-        // the AES-GCM tag, since `prev_hash` is part of the associated data.)
-        #[cfg(feature = "verify-event-hash-chain")]
-        if chain_hash(&prev_hash, event_id, created_at, &encrypted_payload) != hash {
-            return Err(AppError::EventDecodeError(format!(
-                "hash chain broken at event {event_id}"
-            )));
-        }
-
-        let aad = event_aad(event_id, created_at, &prev_hash);
-        let payload = cipher.decrypt_owned::<D::Event>(encrypted_payload, &aad)?;
-        prev_hash = hash;
-        data.apply(StoreEvent {
-            event_id,
-            payload,
-            created_at,
-            hash,
-        });
-    }
+    super::apply_encrypted_events(&mut *data, cipher, frames)?;
 
     Ok(last_file_id)
 }
@@ -193,18 +129,9 @@ fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(StreamId, Elect
     let stem = name.strip_suffix(".bin")?;
     let (id_str, election_segment) = stem.split_once('_')?;
     let stream_id = StreamId::from_str(id_str).ok()?;
-    let election = parse_stable_id(election_segment)?;
+    // Undo the filename-safe `:` -> `_` mangling (see `stream_path`).
+    let election = ElectionConfig::from_stable_id(&election_segment.replacen('_', ":", 1))?;
     Some((stream_id, election))
-}
-
-/// Parse the filename-safe form of `stable_id()` (with `:` replaced by `_`,
-/// see [`stream_path`]) back into an `ElectionConfig`.
-fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
-    let (code, region) = match value.split_once('_') {
-        Some((code, region)) => (code, Some(region)),
-        None => (value, None),
-    };
-    ElectionConfig::from_code_and_region(code, region)
 }
 
 /// Ensure a stream file exists for local storage.
@@ -279,7 +206,7 @@ pub async fn find_event_by_hash_prefix(
     let mut matches = Vec::new();
     for (stream_id, election) in streams {
         let path = stream_path(dir, stream_id, election);
-        for (event_id, _, hash) in scan_frames(&path).await? {
+        for (event_id, _, hash, _) in read_frames(&path).await? {
             if hash.starts_with(hash_prefix) {
                 matches.push((stream_id, election, event_id));
                 if matches.len() > 1 {
@@ -311,22 +238,24 @@ pub async fn stream_metadata_by_scope(
     let mut result = Vec::with_capacity(streams.len());
     for (stream_id, election) in streams {
         let path = stream_path(dir, stream_id, election);
-        let frames = scan_frames(&path).await?;
+        let frames = read_frames(&path).await?;
         result.push(StreamMeta {
             stream_id,
             election,
             event_count: frames.iter().map(|(id, ..)| *id).max().unwrap_or(0),
-            created_at: frames.first().map(|(_, at, _)| *at),
-            last_event_at: frames.last().map(|(_, at, _)| *at),
+            created_at: frames.first().map(|(_, at, ..)| *at),
+            last_event_at: frames.last().map(|(_, at, ..)| *at),
         });
     }
 
     Ok(result)
 }
 
-/// Read each frame's `(event_id, created_at, chain hash)` from a stream file
-/// without decrypting payloads. Empty vector if the file does not exist.
-async fn scan_frames(path: &Path) -> Result<Vec<(usize, DateTime<Utc>, [u8; 32])>, AppError> {
+/// Read each frame's `(event_id, created_at, chain hash, encrypted payload)`
+/// from a stream file without decrypting. Empty vector if the file does not exist.
+async fn read_frames(
+    path: &Path,
+) -> Result<Vec<(usize, DateTime<Utc>, [u8; 32], Vec<u8>)>, AppError> {
     let mut file = match File::open(path).await {
         Ok(file) => file,
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => return Ok(Vec::new()),
@@ -352,12 +281,12 @@ async fn scan_frames(path: &Path) -> Result<Vec<(usize, DateTime<Utc>, [u8; 32])
             event_id,
             created_at_micros,
             hash,
-            ..
+            encrypted_payload,
         } = postcard::from_bytes::<Frame>(&body)
             .map_err(|e| AppError::EventDecodeError(format!("failed to decode frame: {e}")))?;
 
         let created_at = DateTime::from_timestamp_micros(created_at_micros).unwrap_or_default();
-        result.push((event_id as usize, created_at, hash));
+        result.push((event_id as usize, created_at, hash, encrypted_payload));
     }
 
     Ok(result)
@@ -431,7 +360,7 @@ mod tests {
     use super::*;
     use crate::{
         Event,
-        store::{GENESIS_HASH, encryption::EventEncryption},
+        store::{GENESIS_HASH, StoreEvent, encryption::EventEncryption},
     };
     use parking_lot::RwLock;
     use secrecy::SecretString;

@@ -17,7 +17,7 @@ use crate::{
 use super::CandidateListUpdateAddressPath;
 #[derive(Template)]
 #[template(path = "app/candidates/pages/update_address.html")]
-struct PersonAddressUpdateTemplate {
+struct CandidateAddressUpdateTemplate {
     should_warn: bool,
     address_unknown: bool,
     candidate: Candidate,
@@ -36,7 +36,7 @@ pub async fn update_person_address(
     let form = FormData::new_with_data(AddressForm::from(candidate.person.clone()));
 
     Ok(HtmlTemplate(
-        PersonAddressUpdateTemplate {
+        CandidateAddressUpdateTemplate {
             should_warn: query.should_warn(),
             address_unknown: candidate.person.address.is_unknown(),
             form,
@@ -59,7 +59,7 @@ pub async fn update_person_address_submit(
 ) -> Result<Response, AppError> {
     match form.validate_update(&candidate.person) {
         Err(form_data) => Ok(HtmlTemplate(
-            PersonAddressUpdateTemplate {
+            CandidateAddressUpdateTemplate {
                 should_warn: query.should_warn(),
                 address_unknown: candidate.person.address.is_unknown(),
                 candidate,
@@ -71,11 +71,7 @@ pub async fn update_person_address_submit(
         )
         .into_response()),
         Ok(mut person) => {
-            person.address.update_is_known_in_bag();
-
-            person
-                .update_address(&store, person.address.clone())
-                .await?;
+            person.save_address(&store).await?;
 
             Ok(query.redirect_or(full_list.list.highlight_success_path(candidate.person.id)))
         }
