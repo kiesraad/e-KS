@@ -3,8 +3,9 @@
 use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 use std::path::PathBuf;
+use url::Url;
 
-use crate::{AppError, ElectionConfig, Scope, StreamId, utils::StorageScheme};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 
 use super::{
     Store, StoreData, StoreEvent, chain_hash,
@@ -45,9 +46,12 @@ pub enum StorePersistence {
 impl StorePersistence {
     /// Build a persistence backend from a storage URL.
     pub fn from_storage_url(storage_url: &str) -> Result<Self, AppError> {
-        match StorageScheme::parse(storage_url)? {
-            StorageScheme::Memory => Ok(StorePersistence::Memory(MemoryStore::default())),
-            StorageScheme::Local => {
+        let url = Url::parse(storage_url)
+            .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
+
+        match url.scheme() {
+            "memory" => Ok(StorePersistence::Memory(MemoryStore::default())),
+            "local" => {
                 let path_string = storage_url.strip_prefix("local://").unwrap_or("");
                 let path = PathBuf::from(path_string);
 
@@ -59,7 +63,7 @@ impl StorePersistence {
 
                 Ok(StorePersistence::Local(path))
             }
-            StorageScheme::Postgres => {
+            "postgres" | "postgresql" => {
                 #[cfg(feature = "database")]
                 {
                     let pool = sqlx::PgPool::connect_lazy(storage_url)?;
@@ -67,9 +71,14 @@ impl StorePersistence {
                 }
                 #[cfg(not(feature = "database"))]
                 {
-                    Err(crate::utils::database_disabled_error())
+                    Err(AppError::ConfigLoadError(
+                        "Database storage disabled (enable feature \"database\")".to_string(),
+                    ))
                 }
             }
+            scheme => Err(AppError::ConfigLoadError(format!(
+                "Unsupported storage scheme: {scheme}, supported schemes are: memory://, local://, postgres://"
+            ))),
         }
     }
 

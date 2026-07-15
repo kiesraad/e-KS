@@ -4,7 +4,7 @@ use chrono::{DateTime, Utc};
 
 use crate::{
     ElectionConfig, ElectoralDistrict, Locale,
-    constants::{DATE_TIME_SECONDS_FORMAT, DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIMEZONE},
+    constants::{DEFAULT_DATE_TIME_FORMAT, DEFAULT_TIMEZONE},
     core::AnyLocale,
     form::FormData,
     persons::Person,
@@ -18,22 +18,16 @@ pub fn display<T: std::fmt::Display>(
     Ok(value.as_ref().map(|v| v.to_string()).unwrap_or_default())
 }
 
-/// Format a UTC timestamp in the default timezone with the given format.
-fn format_local(value: &DateTime<Utc>, format: &str) -> String {
-    value
-        .with_timezone(DEFAULT_TIMEZONE)
-        .format(format)
-        .to_string()
-}
-
 #[askama::filter_fn]
 pub fn datetime(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(format_local(value, DEFAULT_DATE_TIME_FORMAT))
+    let local_time = value.with_timezone(DEFAULT_TIMEZONE);
+    Ok(local_time.format(DEFAULT_DATE_TIME_FORMAT).to_string())
 }
 
 #[askama::filter_fn]
 pub fn datetime_seconds(value: &DateTime<Utc>, _: &dyn askama::Values) -> askama::Result<String> {
-    Ok(format_local(value, DATE_TIME_SECONDS_FORMAT))
+    let local_time = value.with_timezone(DEFAULT_TIMEZONE);
+    Ok(local_time.format("%d-%m-%Y %H:%M:%S").to_string())
 }
 
 #[askama::filter_fn]

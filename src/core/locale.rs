@@ -58,16 +58,6 @@ impl Locale {
             .find_map(|part| part.split(';').next())
             .and_then(|lang| Locale::from_language_code(lang.trim()))
     }
-
-    /// Resolve the locale from a request's `Accept-Language` header, falling
-    /// back to the default.
-    pub fn from_headers(headers: &axum::http::HeaderMap) -> Self {
-        headers
-            .get(axum::http::header::ACCEPT_LANGUAGE)
-            .and_then(|value| value.to_str().ok())
-            .and_then(Self::from_accept_language)
-            .unwrap_or_default()
-    }
 }
 
 impl std::fmt::Display for Locale {
@@ -100,25 +90,5 @@ mod tests {
 
         let header = "fr-CA,fr;q=0.8,en;q=0.5";
         assert_eq!(Locale::from_accept_language(header), None);
-    }
-
-    #[test]
-    fn from_headers_resolves_accept_language() {
-        use axum::http::{HeaderMap, header};
-
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-        assert_eq!(Locale::from_headers(&headers), Locale::En);
-    }
-
-    #[test]
-    fn from_headers_falls_back_to_default() {
-        use axum::http::{HeaderMap, header};
-
-        assert_eq!(Locale::from_headers(&HeaderMap::new()), Locale::default());
-
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT_LANGUAGE, "fr-FR".parse().unwrap());
-        assert_eq!(Locale::from_headers(&headers), Locale::default());
     }
 }

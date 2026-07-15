@@ -218,9 +218,7 @@ pub async fn streams_by_scope(
 
     Ok(rows
         .into_iter()
-        .filter_map(|(id, code)| {
-            ElectionConfig::from_stable_id(&code).map(|election| (StreamId(id), election))
-        })
+        .filter_map(|(id, code)| parse_stable_id(&code).map(|election| (StreamId(id), election)))
         .collect())
 }
 
@@ -257,7 +255,7 @@ pub async fn stream_metadata_by_scope(
     Ok(rows
         .into_iter()
         .filter_map(|(id, code, last_id, created_at, last_event_at)| {
-            ElectionConfig::from_stable_id(&code).map(|election| StreamMeta {
+            parse_stable_id(&code).map(|election| StreamMeta {
                 stream_id: StreamId(id),
                 election,
                 event_count: last_id as usize,
@@ -283,7 +281,7 @@ pub async fn elections_for_stream(
 
     Ok(rows
         .into_iter()
-        .filter_map(|(code,)| ElectionConfig::from_stable_id(&code))
+        .filter_map(|(code,)| parse_stable_id(&code))
         .collect())
 }
 
@@ -324,9 +322,18 @@ pub async fn find_event_by_hash_prefix(
         .into_iter()
         .next()
         .and_then(|(stream_id, code, event_id)| {
-            ElectionConfig::from_stable_id(&code)
+            parse_stable_id(&code)
                 .map(|election| (StreamId(stream_id), election, event_id as usize))
         }))
+}
+
+/// Parse a `stable_id()` string (e.g. `"EK27"`, `"PS27:GR"`) back to an `ElectionConfig`.
+fn parse_stable_id(value: &str) -> Option<ElectionConfig> {
+    let (code, region) = match value.split_once(':') {
+        Some((code, region)) => (code, Some(region)),
+        None => (value, None),
+    };
+    ElectionConfig::from_code_and_region(code, region)
 }
 
 /// Load and replay missing events from the database into the store.
@@ -432,13 +439,36 @@ where
     .await?;
 
     let mut data = store.data.write();
-    super::apply_encrypted_events(
-        &mut *data,
-        cipher,
-        missing
-            .into_iter()
-            .map(|e| (e.event_id, e.created_at, e.hash, e.payload)),
-    )?;
+    let mut prev_hash = data.last_event_hash();
+
+    for event in missing {
+        if data.last_event_id() >= event.event_id {
+            continue;
+        }
+
+        // `event.payload` is the encrypted blob; verify the chain over it
+        // before decrypting. Gated behind a feature flag: it costs a SHA-256
+        // over every loaded event. (Reordering, removal, and in-place edits are
+        // still caught by the AES-GCM tag, since `prev_hash` is part of the
+        // associated data.)
+        #[cfg(feature = "verify-event-hash-chain")]
+        if chain_hash(&prev_hash, event.event_id, event.created_at, &event.payload) != event.hash {
+            return Err(AppError::EventDecodeError(format!(
+                "hash chain broken at event {}",
+                event.event_id
+            )));
+        }
+
+        let aad = event_aad(event.event_id, event.created_at, &prev_hash);
+        let payload = cipher.decrypt_owned::<D::Event>(event.payload, &aad)?;
+        prev_hash = event.hash;
+        data.apply(StoreEvent {
+            event_id: event.event_id,
+            payload,
+            created_at: event.created_at,
+            hash: event.hash,
+        });
+    }
 
     Ok(stream_last_id as usize)
 }

@@ -17,7 +17,7 @@ use crate::{
 use super::CandidateListUpdatePersonPath;
 #[derive(Template)]
 #[template(path = "app/candidates/pages/update.html")]
-struct CandidateUpdateTemplate {
+struct PersonUpdateTemplate {
     full_list: FullCandidateList,
     candidate: Candidate,
     form: FormData<PersonalDataForm>,
@@ -32,7 +32,7 @@ pub async fn update_person(
     Query(query): Query<QueryParamState>,
 ) -> AppResponse<impl IntoResponse> {
     Ok(HtmlTemplate(
-        CandidateUpdateTemplate {
+        PersonUpdateTemplate {
             form: FormData::new_with_data(PersonalDataForm::from(candidate.person.clone())),
             overlay: Overlay::new(&query),
             candidate,
@@ -53,7 +53,7 @@ pub async fn update_person_submit(
 ) -> Result<Response, AppError> {
     match form.validate_update_with_checks(&candidate.person, &store) {
         Err(form_data) => Ok(HtmlTemplate(
-            CandidateUpdateTemplate {
+            PersonUpdateTemplate {
                 full_list,
                 candidate,
                 form: *form_data,

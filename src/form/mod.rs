@@ -18,8 +18,7 @@ use crate::AppError;
 
 pub type FieldErrors = Vec<(String, ValidationError)>;
 
-/// Wrapper around `axum_extra::extract::Form` that maps rejections to
-/// [`AppError`]. Validation happens separately via the `Validate` derive.
+/// Wrapper that extracts and validates form data from requests.
 #[derive(Debug)]
 pub struct Form<T>(pub T);
 

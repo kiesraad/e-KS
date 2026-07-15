@@ -61,7 +61,11 @@ pub async fn update_person_address_submit(
         )
         .into_response()),
         Ok(mut person) => {
-            person.save_address(&store).await?;
+            person.address.update_is_known_in_bag();
+
+            person
+                .update_address(&store, person.address.clone())
+                .await?;
 
             Ok(query.redirect_or(person.highlight_success_path()))
         }

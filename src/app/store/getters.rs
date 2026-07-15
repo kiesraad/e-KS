@@ -70,10 +70,10 @@ impl AppStore {
     pub fn get_candidate_list(&self, list_id: CandidateListId) -> Result<CandidateList, AppError> {
         let data = self.data.read();
 
-        data.candidate_lists
-            .get(&list_id)
-            .cloned()
-            .ok_or(AppError::GenericNotFound)
+        match data.candidate_lists.get(&list_id) {
+            Some(list) => Ok(list.clone()),
+            None => Err(AppError::GenericNotFound),
+        }
     }
 
     pub fn get_candidate_lists(&self) -> Vec<CandidateList> {
@@ -89,10 +89,10 @@ impl AppStore {
     pub fn get_person(&self, person_id: PersonId) -> Result<Person, AppError> {
         let data = self.data.read();
 
-        data.persons
-            .get(&person_id)
-            .cloned()
-            .ok_or(AppError::GenericNotFound)
+        match data.persons.get(&person_id) {
+            Some(person) => Ok(person.clone()),
+            None => Err(AppError::GenericNotFound),
+        }
     }
 
     pub fn get_name_authorisation(
@@ -101,10 +101,10 @@ impl AppStore {
     ) -> Result<NameAuthorisation, AppError> {
         let data = self.data.read();
 
-        data.name_authorisations
-            .get(&authorisation_id)
-            .cloned()
-            .ok_or(AppError::GenericNotFound)
+        match data.name_authorisations.get(&authorisation_id) {
+            Some(name_authorisation) => Ok(name_authorisation.clone()),
+            None => Err(AppError::GenericNotFound),
+        }
     }
 
     pub fn get_list_submitter(&self) -> ListSubmitter {

@@ -12,8 +12,9 @@ use parking_lot::RwLock;
 #[cfg(feature = "database")]
 use tracing::error;
 use tracing::info;
+use url::Url;
 
-use crate::{AppError, Locale, Session, auth::session::hash_token, utils::StorageScheme};
+use crate::{AppError, Locale, Session, auth::session::hash_token};
 
 #[cfg(feature = "database")]
 use crate::auth::session_db;
@@ -40,25 +41,22 @@ impl SessionStore {
     /// Disk-backed storage (`local://`) is not a valid session backend and
     /// falls back to an in-memory store (with a log line noting the fallback).
     pub fn from_storage_url(storage_url: &str) -> Result<Self, AppError> {
-        match StorageScheme::parse(storage_url)? {
-            StorageScheme::Memory => Ok(Self::default()),
-            StorageScheme::Local => {
+        let url = Url::parse(storage_url)
+            .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
+
+        match url.scheme() {
+            "memory" => Ok(Self::default()),
+            "local" => {
                 info!(
                     "sessions: STORAGE_URL is local://; falling back to in-memory \
                      (disk-backed sessions are not supported)"
                 );
                 Ok(Self::default())
             }
-            StorageScheme::Postgres => {
-                #[cfg(feature = "database")]
-                {
-                    Ok(Self::Database(sqlx::PgPool::connect_lazy(storage_url)?))
-                }
-                #[cfg(not(feature = "database"))]
-                {
-                    Err(crate::utils::database_disabled_error())
-                }
-            }
+            "postgres" | "postgresql" => build_database_backend(storage_url),
+            scheme => Err(AppError::ConfigLoadError(format!(
+                "Unsupported storage scheme: {scheme}, supported schemes are: memory://, local://, postgres://"
+            ))),
         }
     }
 
@@ -175,6 +173,19 @@ pub async fn run_session_sweeper(sessions: SessionStore) {
         ticker.tick().await;
         sessions.cleanup_expired().await;
     }
+}
+
+#[cfg(feature = "database")]
+fn build_database_backend(storage_url: &str) -> Result<SessionStore, AppError> {
+    let pool = sqlx::PgPool::connect_lazy(storage_url)?;
+    Ok(SessionStore::Database(pool))
+}
+
+#[cfg(not(feature = "database"))]
+fn build_database_backend(_storage_url: &str) -> Result<SessionStore, AppError> {
+    Err(AppError::ConfigLoadError(
+        "Database storage disabled (enable feature \"database\")".to_string(),
+    ))
 }
 
 #[cfg(test)]

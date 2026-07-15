@@ -6,16 +6,19 @@ use axum::{
 
 use crate::{
     AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, StreamId,
-    audit_log::EventTypeCategory,
     csb::audit_log::{pages::CsbAuditLogPath, structs::CsbAuditLogEntry},
     filters,
     pagination::Pagination,
     store::StoreEvent,
     trans,
-    utils::filter_query_suffix,
 };
 
 const PER_PAGE: usize = 20;
+
+pub struct EventTypeCategory {
+    pub key: &'static str,
+    pub event_types: &'static [&'static str],
+}
 
 /// Event type categories grouped with their specific event keys, used by the
 /// filter dropdown to render `<optgroup>`s with fine-grained `<option>`s.
@@ -63,7 +66,10 @@ pub struct CsbAuditLogFilter {
 
 impl CsbAuditLogFilter {
     pub fn as_query_suffix(&self) -> String {
-        filter_query_suffix(self)
+        match serde_urlencoded::to_string(self) {
+            Ok(query) if !query.is_empty() => format!("&{query}"),
+            _ => String::new(),
+        }
     }
 
     pub fn is_active(&self) -> bool {
@@ -73,11 +79,14 @@ impl CsbAuditLogFilter {
     }
 }
 
+#[derive(Debug, Default, Copy, Clone, PartialEq, serde::Serialize, serde::Deserialize)]
+pub struct NoSort;
+
 #[derive(Template)]
 #[template(path = "csb/audit_log/pages/list.html")]
 struct CsbAuditLogTemplate {
     entries: Vec<CsbAuditLogEntry>,
-    pagination: crate::pagination::PaginationInfo,
+    pagination: crate::pagination::PaginationInfo<NoSort>,
     filter: CsbAuditLogFilter,
     /// Import streams available for filtering: (stream_id, label).
     import_streams: Vec<(StreamId, String)>,
@@ -108,7 +117,7 @@ pub async fn csb_audit_log(
     context: CsbContext,
     main_store: CsbMainStore,
     State(state): State<AppState>,
-    pagination: Pagination,
+    pagination: Pagination<NoSort>,
     Query(filter): Query<CsbAuditLogFilter>,
 ) -> Result<impl IntoResponse, AppError> {
     let locale = context.session.locale;

@@ -3,8 +3,9 @@
 //! when `STORAGE_URL` is `postgres://` (required for multi-instance deploys).
 
 use auth_service::PendingRequests;
+use url::Url;
 
-use crate::{AppError, utils::StorageScheme};
+use crate::AppError;
 
 #[cfg(feature = "database")]
 use crate::auth::pending_request_db;
@@ -31,18 +32,15 @@ impl PendingRequestStore {
     /// Construct from `STORAGE_URL`. Same scheme rules as [`crate::SessionStore`];
     /// disk is not a valid backend and falls back to in-memory.
     pub fn from_storage_url(storage_url: &str) -> Result<Self, AppError> {
-        match StorageScheme::parse(storage_url)? {
-            StorageScheme::Memory | StorageScheme::Local => Ok(Self::default()),
-            StorageScheme::Postgres => {
-                #[cfg(feature = "database")]
-                {
-                    Ok(Self::Database(sqlx::PgPool::connect_lazy(storage_url)?))
-                }
-                #[cfg(not(feature = "database"))]
-                {
-                    Err(crate::utils::database_disabled_error())
-                }
-            }
+        let url = Url::parse(storage_url)
+            .map_err(|err| AppError::ConfigLoadError(format!("Invalid storage URL: {err}")))?;
+
+        match url.scheme() {
+            "memory" | "local" => Ok(Self::default()),
+            "postgres" | "postgresql" => build_database_backend(storage_url),
+            scheme => Err(AppError::ConfigLoadError(format!(
+                "Unsupported storage scheme: {scheme}, supported schemes are: memory://, local://, postgres://"
+            ))),
         }
     }
 
@@ -76,6 +74,19 @@ impl PendingRequestStore {
             }
         }
     }
+}
+
+#[cfg(feature = "database")]
+fn build_database_backend(storage_url: &str) -> Result<PendingRequestStore, AppError> {
+    let pool = sqlx::PgPool::connect_lazy(storage_url)?;
+    Ok(PendingRequestStore::Database(pool))
+}
+
+#[cfg(not(feature = "database"))]
+fn build_database_backend(_storage_url: &str) -> Result<PendingRequestStore, AppError> {
+    Err(AppError::ConfigLoadError(
+        "Database storage disabled (enable feature \"database\")".to_string(),
+    ))
 }
 
 #[cfg(test)]

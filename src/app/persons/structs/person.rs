@@ -177,24 +177,6 @@ impl Person {
             .await
     }
 
-    /// Persist a validated representative, refreshing its BAG flag first.
-    pub async fn save_representative(
-        &self,
-        store: &AppStore,
-        mut representative: Representative,
-    ) -> Result<(), AppError> {
-        representative.address.update_is_known_in_bag();
-        self.update_representative(store, Some(representative))
-            .await
-    }
-
-    /// Whether this person's representative has an address not found in the BAG.
-    pub fn representative_address_unknown(&self) -> bool {
-        self.representative
-            .as_ref()
-            .is_some_and(|representative| representative.address.is_unknown())
-    }
-
     pub async fn update_address(
         &self,
         store: &AppStore,
@@ -206,12 +188,6 @@ impl Person {
                 address,
             })
             .await
-    }
-
-    /// Persist this person's (validated) address, refreshing its BAG flag first.
-    pub async fn save_address(&mut self, store: &AppStore) -> Result<(), AppError> {
-        self.address.update_is_known_in_bag();
-        self.update_address(store, self.address.clone()).await
     }
 
     pub async fn delete(&self, store: &AppStore) -> Result<(), AppError> {

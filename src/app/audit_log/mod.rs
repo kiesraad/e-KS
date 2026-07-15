@@ -3,4 +3,4 @@ mod pages;
 mod structs;
 
 pub use pages::{AuditLogDetailPath, AuditLogPath, router};
-pub use structs::{AuditLogDetail, AuditLogEntry, EventTypeCategory};
+pub use structs::{AuditLogDetail, AuditLogEntry};

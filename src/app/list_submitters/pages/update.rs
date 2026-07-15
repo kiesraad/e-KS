@@ -63,7 +63,12 @@ pub async fn update_list_submitter_submit(
         .into_response()),
 
         Ok(list_submitter_data) => {
-            let updated = list_submitter.updated_from(list_submitter_data);
+            let mut updated = ListSubmitter {
+                id: list_submitter.id,
+                ..list_submitter_data.into()
+            };
+            updated.address.update_is_known_in_bag();
+
             updated.update(&store).await?;
 
             Ok(query.redirect_or(ListSubmitter::view_path()))

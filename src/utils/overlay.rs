@@ -20,7 +20,8 @@ impl Overlay {
     /// Returns `redirect_to` if set, otherwise the given default path
     pub fn close_url(&self, default: impl fmt::Display) -> String {
         self.redirect_to
-            .clone()
+            .as_deref()
+            .map(str::to_string)
             .unwrap_or_else(|| default.to_string())
     }
 

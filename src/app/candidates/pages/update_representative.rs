@@ -40,7 +40,11 @@ pub async fn update_representative(
     Ok(HtmlTemplate(
         UpdateRepresentativeTemplate {
             should_warn: query.should_warn(),
-            address_unknown: candidate.person.representative_address_unknown(),
+            address_unknown: candidate
+                .person
+                .representative
+                .as_ref()
+                .is_some_and(|representative| representative.address.is_unknown()),
             candidate: candidate.clone(),
             full_list,
             form,
@@ -64,7 +68,11 @@ pub async fn update_representative_submit(
         Err(form_data) => Ok(HtmlTemplate(
             UpdateRepresentativeTemplate {
                 should_warn: query.should_warn(),
-                address_unknown: candidate.person.representative_address_unknown(),
+                address_unknown: candidate
+                    .person
+                    .representative
+                    .as_ref()
+                    .is_some_and(|representative| representative.address.is_unknown()),
                 candidate,
                 full_list,
                 form: form_data,
@@ -73,10 +81,12 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(representative) => {
+        Ok(mut representative) => {
+            representative.address.update_is_known_in_bag();
+
             candidate
                 .person
-                .save_representative(&store, representative)
+                .update_representative(&store, Some(representative))
                 .await?;
 
             Ok(query.redirect_or(full_list.list.highlight_success_path(candidate.person.id)))

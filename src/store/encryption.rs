@@ -113,8 +113,10 @@ impl EventCipher {
         Ok(out)
     }
 
-    /// Borrowing convenience over [`Self::decrypt_owned`], for tests.
-    #[cfg(test)]
+    /// Decrypt and deserialize an event payload from borrowed data.
+    ///
+    /// Expects `nonce (12 bytes) || ciphertext || tag` and the same `aad` used
+    /// when encrypting.
     pub fn decrypt<E: DeserializeOwned>(&self, data: &[u8], aad: &[u8]) -> Result<E, AppError> {
         self.decrypt_owned(data.to_vec(), aad)
     }

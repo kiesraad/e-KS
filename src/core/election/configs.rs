@@ -136,16 +136,6 @@ impl ElectionConfig {
         }
     }
 
-    /// Parse a [`Self::stable_id`] string (e.g. `"EK27"`, `"PS27:GR"`) back to
-    /// an election configuration.
-    pub fn from_stable_id(value: &str) -> Option<Self> {
-        let (code, region) = match value.split_once(':') {
-            Some((code, region)) => (code, Some(region)),
-            None => (value, None),
-        };
-        Self::from_code_and_region(code, region)
-    }
-
     /// The election title to be followed by the phrase "Het gaat om de verkiezing van ...", as written on the models.
     ///
     /// Specifies the region, but not the year of the election.

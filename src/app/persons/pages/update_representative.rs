@@ -31,7 +31,10 @@ pub async fn update_representative(
     Ok(HtmlTemplate(
         RepresentativeUpdateTemplate {
             should_warn: query.should_warn(),
-            address_unknown: person.representative_address_unknown(),
+            address_unknown: person
+                .representative
+                .as_ref()
+                .is_some_and(|representative| representative.address.is_unknown()),
             form: FormData::new_with_data(RepresentativeForm::from(
                 person.clone().representative.unwrap_or_default(),
             )),
@@ -55,7 +58,10 @@ pub async fn update_representative_submit(
         Err(form_data) => Ok(HtmlTemplate(
             RepresentativeUpdateTemplate {
                 should_warn: query.should_warn(),
-                address_unknown: person.representative_address_unknown(),
+                address_unknown: person
+                    .representative
+                    .as_ref()
+                    .is_some_and(|representative| representative.address.is_unknown()),
                 person,
                 form: form_data,
                 overlay: Overlay::new(&query),
@@ -63,8 +69,12 @@ pub async fn update_representative_submit(
             context,
         )
         .into_response()),
-        Ok(representative) => {
-            person.save_representative(&store, representative).await?;
+        Ok(mut representative) => {
+            representative.address.update_is_known_in_bag();
+
+            person
+                .update_representative(&store, Some(representative))
+                .await?;
 
             Ok(query.redirect_or(person.highlight_success_path()))
         }

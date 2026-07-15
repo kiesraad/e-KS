@@ -9,7 +9,6 @@ use axum::{
 };
 use secrecy::ExposeSecret;
 use sha2::{Digest, Sha256};
-use subtle::ConstantTimeEq;
 
 use crate::AppState;
 
@@ -37,14 +36,21 @@ pub async fn eks_key_middleware(
     }
 }
 
-/// Constant-time secret comparison. Both inputs are first hashed with SHA-256
-/// so the comparison always runs over fixed-length 32-byte digests, avoiding
-/// any length-based early exit.
+/// Compare two secrets in a bit more constant time. Both inputs are first hashed with
+/// SHA-256 so the comparison always runs over fixed-length 32-byte digests,
+/// avoiding any length-based early exit.
+/// Note that this is not a perfect constant-time comparison, but it should be good enough to prevent trivial timing attacks in this context.
 fn keys_match(provided: &str, expected: &str) -> bool {
     let provided_hash = Sha256::digest(provided.as_bytes());
     let expected_hash = Sha256::digest(expected.as_bytes());
 
-    provided_hash.ct_eq(&expected_hash).into()
+    let mut diff = 0u8;
+    for (p, e) in provided_hash.iter().zip(expected_hash.iter()) {
+        diff |= p ^ e;
+    }
+
+    // black_box discourages the optimizer from short-circuiting the check.
+    std::hint::black_box(diff) == 0
 }
 
 #[cfg(test)]
