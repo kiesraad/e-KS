@@ -82,7 +82,7 @@ where
         }
 
         let aad = event_aad(event_id, created_at, &prev_hash);
-        let payload = cipher.decrypt_owned::<D::Event>(encrypted_payload, &aad)?;
+        let payload = cipher.decrypt::<D::Event>(encrypted_payload, &aad)?;
         prev_hash = hash;
         data.apply(StoreEvent {
             event_id,
