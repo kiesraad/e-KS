@@ -67,6 +67,7 @@ export class ListSubmittersPage {
     await this.textfieldStreetName.fill(listSubmitter.streetName ?? "");
     await this.textfieldLocality.fill(listSubmitter.locality ?? "");
     await this.buttonSave.click();
-    await this.page.waitForURL("**/list-submitter**");
+
+    await this.page.waitForURL("/political-group/list-submitter*");
   }
 }
