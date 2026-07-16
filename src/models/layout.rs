@@ -42,7 +42,6 @@ pub(super) fn start_document(
     version: Option<(usize, &str)>,
 ) -> Textris {
     let mut doc = Textris::with_theme(theme());
-    let trans = translator(locale);
 
     // Metadata for the accessible (PDF/UA) output: a document title and its
     // primary language as a BCP 47 tag (Dutch, or West Frisian for the Frisian
@@ -54,7 +53,17 @@ pub(super) fn start_document(
     });
 
     doc.header_right(format!("{model} - {name}"));
+    footers(&mut doc, locale, version);
 
+    doc.h2(model);
+    doc.h1(name);
+    doc
+}
+
+/// The page footers: the optional event version and hash on the left, the
+/// page counter on the right.
+fn footers(doc: &mut Textris, locale: ModelLocale, version: Option<(usize, &str)>) {
+    let trans = translator(locale);
     if let Some((event_id, sha_hash)) = version {
         doc.footer_left(
             Text::new()
@@ -75,24 +84,18 @@ pub(super) fn start_document(
     doc.footer_right(SectionContent::page_counter(move |current, total| {
         text(format!("{page} {current} {of} {total}"))
     }));
-
-    doc.h2(model);
-    doc.h1(name);
-    doc
 }
 
 /// The opening shared by the H models: [`start_document`] with the event
-/// version, the intro paragraph, an optional warning box and the numbered
-/// "Verkiezing" section.
+/// version and the intro paragraph. The models follow up with an optional
+/// [`warning`] box and their numbered "Verkiezing" section (usually
+/// [`election_section`]).
 pub(super) fn start_h_document(
     common: &ModelData,
     model: &str,
     name: &str,
     intro: &str,
-    warning_box: Option<(&str, &str)>,
-    election_intro: &str,
 ) -> Textris {
-    let trans = translator(common.locale);
     let mut doc = start_document(
         model,
         name,
@@ -100,16 +103,22 @@ pub(super) fn start_h_document(
         Some((common.event_id, &common.sha_hash)),
     );
     doc.paragraph(intro);
-    if let Some((title, body)) = warning_box {
-        warning(&mut doc, title, body);
-    }
+    doc
+}
+
+/// The numbered "Verkiezing" section with the standard lead-in, shared by H 1
+/// and H 9. H 3 and H 4 use their own wording via [`bold_value_section`].
+pub(super) fn election_section(doc: &mut Textris, common: &ModelData) {
+    let trans = translator(common.locale);
     bold_value_section(
-        &mut doc,
+        doc,
         trans("Verkiezing", "Ferkiezing"),
-        election_intro,
+        trans(
+            "Het gaat om de verkiezing van ",
+            "It giet om de ferkiezing fan ",
+        ),
         &common.election_name,
     );
-    doc
 }
 
 /// A numbered section whose single paragraph ends in a bold value, like the
@@ -119,16 +128,21 @@ pub(super) fn bold_value_section(doc: &mut Textris, heading: &str, intro: &str, 
     doc.paragraph(text(intro).bold(value));
 }
 
+/// The model-specific wording of the "Kieskringen" section: the lead-in of the
+/// paragraph, the bold phrase when the choice covers all districts and an
+/// optional bold lead-in above the listed district names.
+pub(super) struct DistrictsWording<'a> {
+    pub intro: &'a str,
+    pub all: &'a str,
+    pub some_lead: Option<&'a str>,
+}
+
 /// The numbered "Kieskringen" section; single-district elections omit it.
-/// `all` is the bold phrase when the choice covers all districts, `some`
-/// optionally bolds a lead-in above the listed district names.
 pub(super) fn districts_section(
     doc: &mut Textris,
     locale: ModelLocale,
     districts: &ElectoralDistricts,
-    intro: &str,
-    all: &str,
-    some: Option<&str>,
+    wording: &DistrictsWording,
 ) {
     if *districts == ElectoralDistricts::OnlyOne {
         return;
@@ -137,12 +151,12 @@ pub(super) fn districts_section(
     doc.h3_numbered(trans("Kieskringen", "Kiesrûnten"));
     match districts {
         ElectoralDistricts::All => {
-            doc.paragraph(text(intro).bold(all));
+            doc.paragraph(text(wording.intro).bold(wording.all));
         }
         ElectoralDistricts::Some(names) => {
-            match some {
-                Some(lead) => doc.paragraph(text(intro).bold(lead)),
-                None => doc.paragraph(text(intro)),
+            match wording.some_lead {
+                Some(lead) => doc.paragraph(text(wording.intro).bold(lead)),
+                None => doc.paragraph(text(wording.intro)),
             };
             doc.paragraph(names.join(", "));
         }

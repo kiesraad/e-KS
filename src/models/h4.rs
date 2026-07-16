@@ -7,6 +7,7 @@ use super::{
     inputs::ModelData,
     layout::{
         bold_value_section, candidates_section, signature_line, start_h_document, translator,
+        warning,
     },
 };
 use crate::core::{ElectionType, ModelLocale};
@@ -27,17 +28,23 @@ impl Pdf for H4 {
                 "Met dit formulier verklaart u dat u een kandidatenlijst ondersteunt van een politieke groepering. Dit betekent dat u de deelname van de betreffende groepering aan de verkiezing mogelijk maakt. Deze verklaring wordt ter inzage gelegd.",
                 "Mei dit formulier ferklearje jo dat jo in kandidatelist fan in politike groepearring stypje. Dat betsjut dat jo de dielname fan de oanbelangjende groepearring oan de ferkiezing mooglik meitsje. Dizze ferklearring wurdt op ynsjen lein.",
             ),
-            Some((
-                trans("Let op!", "Tink der om!"),
-                trans(
-                    "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
-                    "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
-                ),
-            )),
+        );
+        warning(
+            &mut doc,
+            trans("Let op!", "Tink der om!"),
+            trans(
+                "U mag zich niet laten omkopen tot het afleggen van deze ondersteuningsverklaring. Degene die u omkoopt of u hiertoe anderszins dwingt, is tevens strafbaar. Op beide misdrijven staat een gevangenisstraf van maximaal zes maanden of een geldboete.",
+                "Jo meie jo net omkeapje litte ta it ôflizzen fan dizze stipeferklearring. Dejinge dy't jo omkeapet of jo dêrta op oare wize twingt, is tagelyk strafber. Op beide misdriuwen stiet in finzenisstraf fan maksimaal seis moannen of in jildboete.",
+            ),
+        );
+        bold_value_section(
+            &mut doc,
+            trans("Verkiezing", "Ferkiezing"),
             trans(
                 "Het gaat om de verkiezing van: ",
                 "It giet om de ferkiezing fan: ",
             ),
+            &self.common.election_name,
         );
 
         bold_value_section(

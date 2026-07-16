@@ -289,35 +289,35 @@ impl DocumentData {
         Ok((headers, body).into_response())
     }
 
+    /// Render a model and add it to the zip under the given path.
+    async fn add_model<T: Pdf>(
+        writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,
+        path: &str,
+        model: T,
+    ) -> Result<(), AppError> {
+        writer.add_file(path, &model.generate_bytes().await?).await
+    }
+
     async fn write_zip(
         self,
         writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,
     ) -> Result<(), AppError> {
         let h1 = H1::from(&self);
-        let h1_path = self.zip_path(h1.filename());
-        writer
-            .add_file(&h1_path, &h1.generate_bytes().await?)
-            .await?;
+        Self::add_model(writer, &self.zip_path(h1.filename()), h1).await?;
 
         if self.list_designation != ListDesignation::Blank {
             let h3 = H3::from(&self);
-            let h3_path = self.zip_path(h3.filename());
-            writer
-                .add_file(&h3_path, &h3.generate_bytes().await?)
-                .await?;
+            Self::add_model(writer, &self.zip_path(h3.filename()), h3).await?;
         }
 
         if !self.previously_seated {
             let h4 = H4::from(&self);
-            let h4_path = self.zip_path(h4.filename());
-            writer
-                .add_file(&h4_path, &h4.generate_bytes().await?)
-                .await?;
+            Self::add_model(writer, &self.zip_path(h4.filename()), h4).await?;
         }
 
         for candidate in self.detailed_candidates.iter() {
             let h9 = H9::from((&self, candidate));
-            let filename = self.zip_path(format!(
+            let path = self.zip_path(format!(
                 "h9-{}/{}",
                 match self.model_data.locale {
                     ModelLocale::Nl => "instemmingsverklaringen",
@@ -325,9 +325,7 @@ impl DocumentData {
                 },
                 h9.filename()
             ));
-            writer
-                .add_file(&filename, &h9.generate_bytes().await?)
-                .await?;
+            Self::add_model(writer, &path, h9).await?;
         }
 
         writer

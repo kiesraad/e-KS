@@ -183,113 +183,22 @@ impl Pdf for I4 {
         );
 
         doc.h3_numbered("Geschrapte kandidaten");
-        optional_table(
-            &mut doc,
-            self.removed_candidates.is_empty(),
-            "Het centraal stembureau besluit dat geen kandidaat van een lijst is geschrapt.",
-            "Het centraal stembureau besluit dat de volgende kandidaten van een lijst zijn geschrapt:",
-            ["Aanduiding in de kieskring(en)", "naam kandidaat", "reden"],
-            self.removed_candidates.iter().flat_map(|group| {
-                group.candidates.iter().enumerate().map(|(i, candidate)| {
-                    [
-                        text(group_label(
-                            i,
-                            &group.designation,
-                            &group.electoral_district,
-                        )),
-                        text(&candidate.name),
-                        text(&candidate.reason),
-                    ]
-                })
-            }),
-        );
+        removed_candidates_section(&mut doc, &self.removed_candidates);
 
         doc.h3_numbered("Geschrapte aanduidingen");
-        optional_table(
-            &mut doc,
-            self.removed_designations.is_empty(),
-            "Het centraal stembureau besluit dat geen aanduiding boven een lijst is geschrapt.",
-            "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst zijn geschrapt:",
-            [
-                "Aanduiding in de kieskring(en)",
-                "naam eerste kandidaat op de lijst",
-                "reden",
-            ],
-            self.removed_designations.iter().map(|removed| {
-                [
-                    text(format!(
-                        "{} in {}",
-                        removed.designation, removed.electoral_district
-                    )),
-                    text(&removed.first_candidate_name),
-                    text(&removed.reason),
-                ]
-            }),
-        );
+        removed_designations_section(&mut doc, &self.removed_designations);
 
         doc.h3_numbered("Gecorrigeerde aanduiding");
-        optional_table(
-            &mut doc,
-            self.corrected_designations.is_empty(),
-            "Het centraal stembureau besluit dat geen aanduiding boven een lijst ambtshalve is aangepast.",
-            "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst ambtshalve zijn aangepast:",
-            [
-                "Naam eerste kandidaat in de kieskring(en)",
-                "vermelde aanduiding bij inlevering",
-                "aangepaste aanduiding",
-            ],
-            self.corrected_designations.iter().map(|corrected| {
-                [
-                    text(format!(
-                        "{} in {}",
-                        corrected.first_candidate_name, corrected.electoral_district
-                    )),
-                    text(&corrected.submitted_designation),
-                    text(&corrected.edited_designation),
-                ]
-            }),
-        );
+        corrected_designations_section(&mut doc, &self.corrected_designations);
 
         doc.h3_numbered("Geldige lijsten");
         valid_lists_section(&mut doc, &self.valid_lists);
 
         doc.h3_numbered("Nummering van de kandidatenlijsten");
-        doc.h4(
-            "Nummering op grond van het aantal stemmen behaald bij de laatstgehouden verkiezing",
-        );
-        doc.paragraph(
-            "Eerst zijn de kandidatenlijsten genummerd van de politieke groeperingen die een of meer zetels hebben behaald bij de laatstgehouden verkiezing, in de volgorde van de bij die verkiezing op de desbetreffende lijsten uitgebrachte aantallen stemmen. Voor zover nodig is rekening gehouden met samengevoegde aanduidingen. Bij een gelijk aantal stemmen is er genummerd via loting.",
-        );
-        numbering_table(
+        numbering_sections(
             &mut doc,
-            [
-                "nummer",
-                "aanduiding politieke groepering",
-                "aantal stemmen bij laatste verkiezing",
-            ],
-            self.numbered_based_on_votes.iter().map(|entry| {
-                (
-                    entry.position,
-                    entry.designation.as_str(),
-                    entry.previous_votes,
-                )
-            }),
-        );
-
-        doc.h4("Nummering van de overige lijsten");
-        doc.paragraph(
-            "Vervolgens zijn de overige kandidatenlijsten genummerd in de volgorde van het aantal kieskringen waarvoor de lijst is ingeleverd. Bij een gelijk aantal kieskringen is er genummerd via loting.",
-        );
-        numbering_table(
-            &mut doc,
-            [
-                "nummer",
-                "aanduiding politieke groepering of naam eerste kandidaat",
-                "aantal kieskringen waarvoor lijst geldt",
-            ],
-            self.numbered_based_on_districts
-                .iter()
-                .map(|entry| (entry.position, entry.designation.as_str(), entry.districts)),
+            &self.numbered_based_on_votes,
+            &self.numbered_based_on_districts,
         );
 
         doc.h3_numbered("Bezwaren van de aanwezige kiezers");
@@ -302,18 +211,19 @@ impl Pdf for I4 {
     }
 }
 
-/// A section that is either a single "none" paragraph, or an intro line plus
-/// the standard three-column table. Shared by the "geschrapte kandidaten",
-/// "geschrapte aanduidingen" and "gecorrigeerde aanduiding" sections.
+/// A section that is either a single "none" paragraph (when there are no
+/// rows), or an intro line plus the standard three-column table. Shared by the
+/// "geschrapte kandidaten", "geschrapte aanduidingen" and "gecorrigeerde
+/// aanduiding" sections.
 fn optional_table(
     doc: &mut Textris,
-    is_empty: bool,
     none_text: &str,
     intro: &str,
     header: [&str; 3],
     rows: impl IntoIterator<Item = [Text; 3]>,
 ) {
-    if is_empty {
+    let rows = rows.into_iter().collect::<Vec<_>>();
+    if rows.is_empty() {
         doc.paragraph(none_text);
         return;
     }
@@ -322,6 +232,122 @@ fn optional_table(
         &plain_table([Fraction(1), Fraction(1), Fraction(2)]),
         header,
         rows,
+    );
+}
+
+/// The "Geschrapte kandidaten" body: one row per removed candidate, grouped
+/// per list.
+fn removed_candidates_section(doc: &mut Textris, removed: &[RemovedCandidates]) {
+    optional_table(
+        doc,
+        "Het centraal stembureau besluit dat geen kandidaat van een lijst is geschrapt.",
+        "Het centraal stembureau besluit dat de volgende kandidaten van een lijst zijn geschrapt:",
+        ["Aanduiding in de kieskring(en)", "naam kandidaat", "reden"],
+        removed.iter().flat_map(|group| {
+            group.candidates.iter().enumerate().map(|(i, candidate)| {
+                [
+                    text(group_label(
+                        i,
+                        &group.designation,
+                        &group.electoral_district,
+                    )),
+                    text(&candidate.name),
+                    text(&candidate.reason),
+                ]
+            })
+        }),
+    );
+}
+
+/// The "Geschrapte aanduidingen" body: one row per removed designation.
+fn removed_designations_section(doc: &mut Textris, removed: &[RemovedDesignation]) {
+    optional_table(
+        doc,
+        "Het centraal stembureau besluit dat geen aanduiding boven een lijst is geschrapt.",
+        "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst zijn geschrapt:",
+        [
+            "Aanduiding in de kieskring(en)",
+            "naam eerste kandidaat op de lijst",
+            "reden",
+        ],
+        removed.iter().map(|removed| {
+            [
+                text(format!(
+                    "{} in {}",
+                    removed.designation, removed.electoral_district
+                )),
+                text(&removed.first_candidate_name),
+                text(&removed.reason),
+            ]
+        }),
+    );
+}
+
+/// The "Gecorrigeerde aanduiding" body: one row per corrected designation.
+fn corrected_designations_section(doc: &mut Textris, corrected: &[CorrectedDesignation]) {
+    optional_table(
+        doc,
+        "Het centraal stembureau besluit dat geen aanduiding boven een lijst ambtshalve is aangepast.",
+        "Het centraal stembureau besluit dat de volgende aanduidingen boven een lijst ambtshalve zijn aangepast:",
+        [
+            "Naam eerste kandidaat in de kieskring(en)",
+            "vermelde aanduiding bij inlevering",
+            "aangepaste aanduiding",
+        ],
+        corrected.iter().map(|corrected| {
+            [
+                text(format!(
+                    "{} in {}",
+                    corrected.first_candidate_name, corrected.electoral_district
+                )),
+                text(&corrected.submitted_designation),
+                text(&corrected.edited_designation),
+            ]
+        }),
+    );
+}
+
+/// The "Nummering van de kandidatenlijsten" body: first the lists numbered by
+/// previous vote count, then the remaining lists numbered by district count.
+fn numbering_sections(
+    doc: &mut Textris,
+    on_votes: &[NumberedOnVotes],
+    on_districts: &[NumberedOnDistricts],
+) {
+    doc.h4("Nummering op grond van het aantal stemmen behaald bij de laatstgehouden verkiezing");
+    doc.paragraph(
+        "Eerst zijn de kandidatenlijsten genummerd van de politieke groeperingen die een of meer zetels hebben behaald bij de laatstgehouden verkiezing, in de volgorde van de bij die verkiezing op de desbetreffende lijsten uitgebrachte aantallen stemmen. Voor zover nodig is rekening gehouden met samengevoegde aanduidingen. Bij een gelijk aantal stemmen is er genummerd via loting.",
+    );
+    numbering_table(
+        doc,
+        [
+            "nummer",
+            "aanduiding politieke groepering",
+            "aantal stemmen bij laatste verkiezing",
+        ],
+        on_votes.iter().map(|entry| {
+            (
+                entry.position,
+                entry.designation.as_str(),
+                entry.previous_votes,
+            )
+        }),
+    );
+
+    doc.h4("Nummering van de overige lijsten");
+    doc.paragraph(
+        "Vervolgens zijn de overige kandidatenlijsten genummerd in de volgorde van het aantal kieskringen waarvoor de lijst is ingeleverd. Bij een gelijk aantal kieskringen is er genummerd via loting.",
+    );
+    numbering_table(
+        doc,
+        [
+            "nummer",
+            "aanduiding politieke groepering of naam eerste kandidaat",
+            "aantal kieskringen waarvoor lijst geldt",
+        ],
+        on_districts
+            .iter()
+            .map(|entry| (entry.position, entry.designation.as_str(), entry.districts)),
     );
 }
 

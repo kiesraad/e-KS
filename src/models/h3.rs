@@ -9,8 +9,8 @@ use super::{
     Pdf,
     inputs::{ElectoralDistricts, ModelData, NameAuthorisation, Person},
     layout::{
-        bold_value_section, candidates_section, districts_section, signature_line, start_document,
-        translator,
+        DistrictsWording, bold_value_section, candidates_section, districts_section,
+        signature_line, start_document, translator,
     },
 };
 use crate::{core::ModelLocale, list_designation::ListDesignation};
@@ -35,6 +35,58 @@ impl Pdf for H3 {
         let trans = translator(self.common.locale);
         let combined = self.list_designation == ListDesignation::Combined;
 
+        let mut doc = self.start(combined);
+
+        bold_value_section(
+            &mut doc,
+            trans("Verkiezing", "Ferkiezing"),
+            trans(
+                "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
+                "It giet om de kandidatelist foar de ferkiezing fan: ",
+            ),
+            &self.common.election_name,
+        );
+
+        districts_section(
+            &mut doc,
+            self.common.locale,
+            &self.electoral_districts,
+            &DistrictsWording {
+                intro: trans("De machtiging geldt ", "De machtiging jildt "),
+                all: trans(
+                    "voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.",
+                    "foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.",
+                ),
+                some_lead: Some(trans(
+                    "uitsluitend voor de volgende kieskring(en):",
+                    "allinnich foar de neikommende kiesrûnte(n):",
+                )),
+            },
+        );
+
+        self.designation_section(&mut doc, combined);
+        permission_section(&mut doc, self, combined);
+        candidates_section(&mut doc, self.common.locale, &self.common.candidates);
+        self.signatures_section(&mut doc, combined);
+
+        doc
+    }
+
+    fn filename(&self) -> String {
+        match (self.common.locale, self.list_designation) {
+            (ModelLocale::Nl, ListDesignation::Combined) => "h3-2-samengevoegde-aanduiding.pdf",
+            (ModelLocale::Fry, ListDesignation::Combined) => "h3-2-gearfoege-oantsjutting.pdf",
+            (ModelLocale::Nl, _) => "h3-1-aanduiding.pdf",
+            (ModelLocale::Fry, _) => "h3-1-oantsjutting.pdf",
+        }
+        .to_string()
+    }
+}
+
+impl H3 {
+    /// The title block and the two intro paragraphs.
+    fn start(&self, combined: bool) -> Textris {
+        let trans = translator(self.common.locale);
         let mut doc = start_document(
             if combined {
                 "Model H 3-2"
@@ -70,32 +122,12 @@ impl Pdf for H3 {
             "U kunt alleen toestemming geven als u hiertoe gemachtigd bent door uw politieke groepering.",
             "Jo kinne allinnich tastimming jaan as jo dêrta machtige binne troch jo politike groepearring.",
         ));
+        doc
+    }
 
-        bold_value_section(
-            &mut doc,
-            trans("Verkiezing", "Ferkiezing"),
-            trans(
-                "Het gaat om de kandidatenlijst voor de verkiezingen van: ",
-                "It giet om de kandidatelist foar de ferkiezing fan: ",
-            ),
-            &self.common.election_name,
-        );
-
-        districts_section(
-            &mut doc,
-            self.common.locale,
-            &self.electoral_districts,
-            trans("De machtiging geldt ", "De machtiging jildt "),
-            trans(
-                "voor alle kieskringen waarvoor de kandidatenlijst wordt ingeleverd.",
-                "foar alle kiesrûnten dêr’t de kandidatelist foar ynlevere wurdt.",
-            ),
-            Some(trans(
-                "uitsluitend voor de volgende kieskring(en):",
-                "allinnich foar de neikommende kiesrûnte(n):",
-            )),
-        );
-
+    /// The numbered, anchored designation section.
+    fn designation_section(&self, doc: &mut Textris, combined: bool) {
+        let trans = translator(self.common.locale);
         doc.h3_numbered(if combined {
             trans(
                 "Aanduiding van de politieke groeperingen",
@@ -122,10 +154,12 @@ impl Pdf for H3 {
             })
             .bold(&self.common.designation),
         );
+    }
 
-        permission_section(&mut doc, self, combined);
-        candidates_section(&mut doc, self.common.locale, &self.common.candidates);
-
+    /// The numbered "Ondertekening" section: one signing block per authorised
+    /// representative for H 3-2, a single one for H 3-1.
+    fn signatures_section(&self, doc: &mut Textris, combined: bool) {
+        let trans = translator(self.common.locale);
         if combined {
             doc.h3_numbered(trans(
                 "Ondertekening door de gemachtigden",
@@ -140,7 +174,7 @@ impl Pdf for H3 {
                     ),
                     index + 1
                 ));
-                authorisation_signature(&mut doc, self.common.locale, authorisation);
+                authorisation_signature(doc, self.common.locale, authorisation);
             }
         } else {
             doc.h3_numbered(trans(
@@ -148,21 +182,9 @@ impl Pdf for H3 {
                 "Undertekening troch de lêsthawwer fan de politike groepearring",
             ));
             if let Some(authorisation) = self.name_authorisations.first() {
-                authorisation_signature(&mut doc, self.common.locale, authorisation);
+                authorisation_signature(doc, self.common.locale, authorisation);
             }
         }
-
-        doc
-    }
-
-    fn filename(&self) -> String {
-        match (self.common.locale, self.list_designation) {
-            (ModelLocale::Nl, ListDesignation::Combined) => "h3-2-samengevoegde-aanduiding.pdf",
-            (ModelLocale::Fry, ListDesignation::Combined) => "h3-2-gearfoege-oantsjutting.pdf",
-            (ModelLocale::Nl, _) => "h3-1-aanduiding.pdf",
-            (ModelLocale::Fry, _) => "h3-1-oantsjutting.pdf",
-        }
-        .to_string()
     }
 }
 

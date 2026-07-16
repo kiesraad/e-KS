@@ -9,8 +9,8 @@ use super::{
     Pdf,
     inputs::{ElectoralDistricts, ModelData, Person},
     layout::{
-        bold_value_section, column_table, districts_section, signature_line, start_h_document,
-        translator,
+        DistrictsWording, bold_value_section, column_table, districts_section, election_section,
+        signature_line, start_h_document, translator,
     },
 };
 use crate::{
@@ -39,26 +39,24 @@ impl Pdf for H1 {
                 "Met dit formulier stelt u, als inleveraar van de kandidatenlijst, kandidaten verkiesbaar voor een verkiezing.",
                 "Mei dit formulier stelle jo, as dejinge dy’t de kandidatelist ynleveret, kandidaten ferkiesber foar in ferkiezing.",
             ),
-            None,
-            trans(
-                "Het gaat om de verkiezing van ",
-                "It giet om de ferkiezing fan ",
-            ),
         );
+        election_section(&mut doc, &self.common);
 
         districts_section(
             &mut doc,
             self.common.locale,
             &self.electoral_districts,
-            trans(
-                "De kandidatenlijst wordt ingeleverd voor ",
-                "De kandidatelist wurdt ynlevere foar ",
-            ),
-            trans("alle kieskringen.", "alle kiesrûnten."),
-            Some(trans(
-                "de volgende kieskring(en):",
-                "de neikommende kiesrûnte(n):",
-            )),
+            &DistrictsWording {
+                intro: trans(
+                    "De kandidatenlijst wordt ingeleverd voor ",
+                    "De kandidatelist wurdt ynlevere foar ",
+                ),
+                all: trans("alle kieskringen.", "alle kiesrûnten."),
+                some_lead: Some(trans(
+                    "de volgende kieskring(en):",
+                    "de neikommende kiesrûnte(n):",
+                )),
+            },
         );
 
         bold_value_section(
@@ -74,6 +72,37 @@ impl Pdf for H1 {
             &self.common.designation,
         );
 
+        self.candidates_section(&mut doc);
+        self.substitutes_section(&mut doc);
+
+        doc.h3_numbered(trans(
+            "In te leveren bij de kandidatenlijst",
+            "Yn te leverjen by de kandidatelist",
+        ));
+        doc.paragraph(trans(
+            "Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:",
+            "Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:",
+        ));
+        doc.task_list(self.attachments().into_iter().map(|item| (true, item)));
+
+        self.submitter_signature(&mut doc);
+
+        doc
+    }
+
+    fn filename(&self) -> String {
+        match self.common.locale {
+            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
+            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
+        }
+    }
+}
+
+impl H1 {
+    /// The numbered "Kandidaten op de lijst" section: unlike the shared
+    /// four-column table this one includes the date of birth.
+    fn candidates_section(&self, doc: &mut Textris) {
+        let trans = translator(self.common.locale);
         doc.h3_numbered(trans("Kandidaten op de lijst", "Kandidaten op de list"));
         doc.table_styled(
             &column_table([Auto, Fraction(1), Fraction(1), Fraction(1), Fraction(1)]),
@@ -94,54 +123,54 @@ impl Pdf for H1 {
                 ]
             }),
         );
+    }
 
+    /// The numbered section listing the substitute submitters, or an italic
+    /// "geen" when there are none.
+    fn substitutes_section(&self, doc: &mut Textris) {
+        let trans = translator(self.common.locale);
         doc.h3_numbered(trans(
             "Vervanger(s) voor het herstel van verzuimen",
             "Ferfanger(s) foar it ferhelpen fan fersommen",
         ));
         if self.substitute_submitters.is_empty() {
             doc.paragraph(italic(trans("geen", "geen")));
-        } else {
-            doc.table_styled(
-                &column_table([
-                    Auto,
-                    Fraction(4),
-                    Fraction(4),
-                    Fraction(4),
-                    Fraction(3),
-                    Fraction(6),
-                ]),
-                [
-                    "",
-                    trans("naam", "namme"),
-                    trans("voorletters", "foarletters"),
-                    trans("postadres", "postadres"),
-                    trans("postcode", "postkoade"),
-                    trans("plaats", "plak"),
-                ],
-                self.substitute_submitters.iter().enumerate().map(|(i, s)| {
-                    [
-                        text((i + 1).to_string()),
-                        text(&s.last_name),
-                        text(&s.initials),
-                        text(&s.postal_address.street_address),
-                        mono(&s.postal_address.postal_code),
-                        text(&s.postal_address.locality),
-                    ]
-                }),
-            );
+            return;
         }
+        doc.table_styled(
+            &column_table([
+                Auto,
+                Fraction(4),
+                Fraction(4),
+                Fraction(4),
+                Fraction(3),
+                Fraction(6),
+            ]),
+            [
+                "",
+                trans("naam", "namme"),
+                trans("voorletters", "foarletters"),
+                trans("postadres", "postadres"),
+                trans("postcode", "postkoade"),
+                trans("plaats", "plak"),
+            ],
+            self.substitute_submitters.iter().enumerate().map(|(i, s)| {
+                [
+                    text((i + 1).to_string()),
+                    text(&s.last_name),
+                    text(&s.initials),
+                    text(&s.postal_address.street_address),
+                    mono(&s.postal_address.postal_code),
+                    text(&s.postal_address.locality),
+                ]
+            }),
+        );
+    }
 
-        doc.h3_numbered(trans(
-            "In te leveren bij de kandidatenlijst",
-            "Yn te leverjen by de kandidatelist",
-        ));
-        doc.paragraph(trans(
-            "Ik ben verplicht de volgende bijlage(n) in te leveren bij de kandidatenlijst:",
-            "Ik bin ferplichte de neikommende taheakke by de kandidatelist yn te leverjen:",
-        ));
-        doc.task_list(self.attachments().into_iter().map(|item| (true, item)));
-
+    /// The numbered "Ondertekening" section: the submitter's details and the
+    /// signature line.
+    fn submitter_signature(&self, doc: &mut Textris) {
+        let trans = translator(self.common.locale);
         doc.h3_numbered(trans(
             "Ondertekening door de inleveraar",
             "Undertekening troch dejinge dy’t ynleveret",
@@ -165,20 +194,9 @@ impl Pdf for H1 {
             ],
             [cell(trans("Datum", "Datum")), fill_in()],
         ]);
-        signature_line(&mut doc, trans("Handtekening", "Hantekening"));
-
-        doc
+        signature_line(doc, trans("Handtekening", "Hantekening"));
     }
 
-    fn filename(&self) -> String {
-        match self.common.locale {
-            ModelLocale::Nl => "h1-kandidatenlijst.pdf".to_string(),
-            ModelLocale::Fry => "h1-kandidatelist.pdf".to_string(),
-        }
-    }
-}
-
-impl H1 {
     /// The checklist of attachments that must be handed in with this list.
     fn attachments(&self) -> Vec<Text> {
         let trans = translator(self.common.locale);
