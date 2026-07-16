@@ -2,7 +2,7 @@ use std::str::FromStr;
 
 use crate::{
     common::{CountryCode, InternationalAddressForm, MinimalNameForm, PostalCode},
-    form::{FieldErrors, FormData},
+    form::{FieldErrors, FormData, MergeErrors},
     list_submitters::{ListSubmitter, ListSubmitterData},
 };
 use serde::Deserialize;
@@ -37,7 +37,7 @@ impl ListSubmitterForm {
     pub fn validate_create_with_checks(self) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         let submitter_result = self.clone().validate_create();
         let postal_code_errors = self.validate_postal_code();
-        self.merge_validation_results(submitter_result, postal_code_errors)
+        submitter_result.merge_errors(self, postal_code_errors)
     }
 
     /// Also checks:
@@ -48,7 +48,7 @@ impl ListSubmitterForm {
     ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
         let submitter = self.clone().validate_update(current);
         let postal_code_errors = self.validate_postal_code();
-        self.merge_validation_results(submitter, postal_code_errors)
+        submitter.merge_errors(self, postal_code_errors)
     }
 
     fn validate_postal_code(&self) -> FieldErrors {
@@ -61,28 +61,6 @@ impl ListSubmitterForm {
             errors.push(("address.postal_code".to_string(), error))
         }
         errors
-    }
-
-    fn merge_validation_results(
-        self,
-        submitter_result: Result<ListSubmitterData, FormData<Self>>,
-        postal_code_errors: FieldErrors,
-    ) -> Result<ListSubmitterData, Box<FormData<Self>>> {
-        if postal_code_errors.is_empty() {
-            return Ok(submitter_result?);
-        }
-
-        match submitter_result {
-            Ok(_) => Err(Box::new(FormData::new_with_errors(
-                self,
-                postal_code_errors,
-            ))),
-            Err(form_data) => {
-                let mut errors = form_data.errors();
-                errors.extend(postal_code_errors);
-                Err(Box::new(FormData::new_with_errors(self, errors)))
-            }
-        }
     }
 }
 
