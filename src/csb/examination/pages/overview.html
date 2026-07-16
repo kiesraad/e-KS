@@ -19,6 +19,8 @@
             <li>{{ "csb.finish_instruction.create_defects"|trans }}</li>
           </ul>
           <button class="button mt-md">{{ "csb.action.finish"|trans }}</button>
+          <a href="{{ CsbI4DownloadPath }}"
+             class="button secondary icon-download mt-md">Print I 4</a>
         </div>
       </div>
       <h4>{{ "csb.progress"|trans }}</h4>
@@ -47,7 +49,7 @@
           <tbody>
             {% for pg in unfinished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>{{ pg.csb_display_name() }}</td>
                 <td>
                   <div class="status in-progress">{{ "csb.status.in_progress"|trans }}</div>
                   {{ omission_count_badge(pg.omission_count) }}
@@ -84,7 +86,7 @@
           <tbody>
             {% for pg in finished_political_groups %}
               <tr class="clickable">
-                <td>{{ pg.political_group.csb_display_name() }}</td>
+                <td>{{ pg.csb_display_name() }}</td>
                 <td>
                   <div class="status approved">{{ "csb.status.approved"|trans }}</div>
                   {{ omission_count_badge(pg.omission_count) }}

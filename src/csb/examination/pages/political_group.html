@@ -2,10 +2,10 @@
 {% import "app/common/components/macros.html" as macros %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
-  {{ breadcrumb(political_group.examination_path() , political_group.political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
 {% endblock %}
 {% block page_title %}
-  {{ political_group.political_group.csb_display_name() }}
+  {{ political_group.csb_display_name() }}
 {% endblock %}
 {% block header_action %}
   {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}
@@ -96,8 +96,6 @@
                 {% endif %}
               </div>
             {% endif %}
-            <a class="add-omission-link"
-               href="{{ political_group.add_candidate_list_omission_path(candidate_list.list.id) }}">{{ "csb.omission.action.add"|trans }}</a>
           </div>
           <a class="card-footer"
              href="{{ political_group.candidate_list_path(candidate_list.list.id) }}">{{ "csb.group.examine_list"|trans }}</a>

@@ -13,7 +13,7 @@ export class CandidateListsOverviewPage {
       name: "Kandidatenlijst beheren",
     });
     this.headingAllCandidates = this.page.getByRole("heading", {
-      name: "Alle kandidaten",
+      name: "Adresboek",
     });
   }
 

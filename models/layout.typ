@@ -79,11 +79,13 @@
     headers.len(),
     message: "the number of headers does not match the number of columns",
   )
-  assert.eq(
-    columns.len(),
-    values.at(0).len(),
-    message: "the first row of values does not match the number of columns",
-  )
+  if values.len() > 0 {
+    assert.eq(
+      columns.len(),
+      values.at(0).len(),
+      message: "the first row of values does not match the number of columns",
+    )
+  }
 
   block(breakable: values.len() > 10, table(
     columns: columns,
@@ -96,13 +98,14 @@
 }
 /// Table without alternating row colors and row height that fits content
 #let plain_table(columns: (), headers: (), values: ()) = {
+  let values = values.flatten()
   block(breakable: values.len() > 10, table(
     columns: columns,
     align: top,
     gutter: 1em,
     inset: 0em,
     table.header(..headers.map(value => { text(style: "italic", size: .9em, value) })),
-    ..values.flatten(),
+    ..values,
   ))
 }
 

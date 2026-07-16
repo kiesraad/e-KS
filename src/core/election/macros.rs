@@ -16,7 +16,7 @@ macro_rules! define_elections {
                 nomination_day_date: $nomination_day_date:expr,
                 document_review_date: $document_review_date:expr,
                 omission_period_end_date: $omission_period_end_date:expr,
-                public_session_date: $public_session_date:expr,
+                public_session: $public_session:expr,
                 election_date: $election_date:expr
             }
         ),* $(,)?
@@ -162,11 +162,11 @@ macro_rules! define_elections {
                 }
             }
 
-            pub fn public_session_date(&self) -> NaiveDate {
+            pub fn public_session(&self) -> crate::core::election::PublicSession {
                 #[allow(unused)]
                 match self {
                     $(
-                        Self::$name $(($binding))? => $public_session_date,
+                        Self::$name $(($binding))? => $public_session,
                     )*
                 }
             }

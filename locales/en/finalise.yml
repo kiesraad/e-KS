@@ -21,7 +21,7 @@ header:
   description: "You have created your candidates and lists of candidates. To finalise, there are a few more steps to complete. These steps are outlined on this page."
   title: A few more steps
 hearing:
-  date: "The session is on <strong>{}</strong>"
+  date: "The session is on <strong>{}</strong> at <strong>{}</strong>"
   description: "During this session, the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
   open_to_public: You may attend the session.
   title: Public session

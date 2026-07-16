@@ -13,7 +13,7 @@ actions:
   select_all_districts: Selecteer alle kieskringen
 add_all: Alle kandidaten toevoegen
 add_candidate: Kandidaat toevoegen
-all_candidates: Alle kandidaten
+all_candidates: Adresboek
 all_candidates_note: Kandidaten die u heeft aangemaakt vindt u hier terug
 candidate:
   delete_warning_text: "Deze persoon staat op {} kandidatenlijst(en). Weet je zeker dat je deze persoon definitief wilt verwijderen?"

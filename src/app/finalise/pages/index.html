@@ -298,7 +298,7 @@
         </div>
         <div class="step-content less-wide">
           <p class="alert alert-info">
-            {{ "finalise.hearing.date"|trans(&election.public_session_date().format("%d-%m-%Y").to_string())|safe }}
+            {{ "finalise.hearing.date"|trans(&election.public_session().formatted_date(), &election.public_session().formatted_time())|safe }}
           </p>
           <p>{{ "finalise.hearing.description"|trans }}</p>
           <p>{{ "finalise.hearing.open_to_public"|trans }}</p>

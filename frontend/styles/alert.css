@@ -100,13 +100,14 @@
 
   .alert-floating {
     background-size: 1.5rem;
-    padding-left: var(--space-14);
+    padding: var(--space-4) var(--space-6) var(--space-4) var(--space-14);
     margin: 0 auto;
-    max-width: 46rem;
+    max-width: 42rem;
     animation: none;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    font-size: var(--font-size-md);
   }
 
   .close-overlay {

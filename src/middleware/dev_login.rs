@@ -11,7 +11,7 @@ use crate::{
     Session, StreamId,
     auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
-    csb::examination::CsbExaminationOverviewPath,
+    csb::index::pages::CsbIndexPath,
     political_groups::PoliticalGroup,
     store::Store,
     utils::random_bsn,
@@ -101,7 +101,7 @@ async fn perform_dev_login(
                 crate::csb::import::fixture::import_csb_fixture(&state, election).await?;
             }
 
-            CsbExaminationOverviewPath {}.to_string()
+            CsbIndexPath {}.to_string()
         }
         Scope::ImportedByCsb => return Err(AppError::Unauthorised),
         Scope::PoliticalGroup => {

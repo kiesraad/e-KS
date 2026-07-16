@@ -2,19 +2,15 @@ use serde::Serialize;
 
 use crate::{
     core::Pdf,
-    finalise::{
-        DocumentData,
-        structs::{
-            typst_detailed_candidate::TypstDetailedCandidate, typst_model_data::TypstModelData,
-        },
-    },
+    finalise::DocumentData,
+    typst::{TypstDetailedCandidate, TypstPgModelData},
     utils::slugify_teletex,
 };
 
 #[derive(Debug, Serialize)]
 pub struct H9<'a> {
     #[serde(flatten)]
-    common: &'a TypstModelData,
+    common: &'a TypstPgModelData,
     detailed_candidate: &'a TypstDetailedCandidate,
 }
 

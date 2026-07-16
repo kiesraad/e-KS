@@ -1,10 +1,7 @@
 use serde::Serialize;
 use tracing::error;
 
-use crate::{
-    AppError, candidates::Candidate, core::ModelLocale,
-    finalise::structs::typst_datetime::TypstDate,
-};
+use crate::{AppError, candidates::Candidate, core::ModelLocale, typst::TypstDate};
 
 #[derive(Debug, Serialize)]
 pub struct TypstCandidate {
@@ -38,30 +35,30 @@ impl TypstCandidate {
             position: candidate.position,
         })
     }
-}
 
-pub fn ordered_candidates(
-    candidates: &mut [crate::candidates::Candidate],
-    locale: ModelLocale,
-) -> Result<Vec<TypstCandidate>, AppError> {
-    candidates.sort_by_key(|c| c.position);
+    pub fn ordered(
+        candidates: &mut [crate::candidates::Candidate],
+        locale: ModelLocale,
+    ) -> Result<Vec<TypstCandidate>, AppError> {
+        candidates.sort_by_key(|c| c.position);
 
-    for (i, candidate) in candidates.iter().enumerate() {
-        if candidate.position != i + 1 {
-            error!(
-                expected_position = i + 1,
-                actual_position = candidate.position,
-                person_id = %candidate.person.id,
-                "Found a hole in candidate list",
-            );
-            return Err(AppError::IntegrityViolation);
+        for (i, candidate) in candidates.iter().enumerate() {
+            if candidate.position != i + 1 {
+                error!(
+                    expected_position = i + 1,
+                    actual_position = candidate.position,
+                    person_id = %candidate.person.id,
+                    "Found a hole in candidate list",
+                );
+                return Err(AppError::IntegrityViolation);
+            }
         }
-    }
 
-    candidates
-        .iter()
-        .map(|c| TypstCandidate::try_from(c, locale))
-        .collect::<Result<Vec<_>, _>>()
+        candidates
+            .iter()
+            .map(|c| TypstCandidate::try_from(c, locale))
+            .collect::<Result<Vec<_>, _>>()
+    }
 }
 
 #[cfg(test)]
@@ -92,7 +89,7 @@ mod tests {
             },
         ];
 
-        let ordered = ordered_candidates(&mut candidates, ModelLocale::Nl)?;
+        let ordered = TypstCandidate::ordered(&mut candidates, ModelLocale::Nl)?;
 
         assert_eq!(ordered.len(), 2);
         assert_eq!(ordered[0].last_name, "Beta");
@@ -121,7 +118,7 @@ mod tests {
             },
         ];
 
-        let err = ordered_candidates(&mut candidates, ModelLocale::Nl).unwrap_err();
+        let err = TypstCandidate::ordered(&mut candidates, ModelLocale::Nl).unwrap_err();
         assert!(matches!(err, AppError::IntegrityViolation));
     }
 

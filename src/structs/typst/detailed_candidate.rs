@@ -5,10 +5,7 @@ use crate::{
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed},
     core::ModelLocale,
-    finalise::structs::{
-        typst_candidate::TypstCandidate, typst_person::TypstPerson,
-        typst_postal_address::TypstPostalAddress,
-    },
+    typst::{TypstCandidate, TypstPerson, TypstPostalAddress},
 };
 
 #[derive(Debug, Serialize)]

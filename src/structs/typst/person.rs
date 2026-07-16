@@ -1,8 +1,8 @@
 use serde::Serialize;
 
 use crate::{
-    AppError, common::Address, finalise::structs::typst_postal_address::TypstPostalAddress,
-    list_submitters::ListSubmitter, persons::Representative,
+    AppError, common::Address, list_submitters::ListSubmitter, persons::Representative,
+    typst::TypstPostalAddress,
 };
 
 #[derive(Debug, Serialize)]

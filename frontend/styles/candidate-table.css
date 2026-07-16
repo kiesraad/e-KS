@@ -138,6 +138,10 @@
 }
 
 #add-candidate-table {
+  tr {
+    transition: background-color 0.5s ease-in-out;
+  }
+
   tr:nth-child(even) {
     background-color: var(--gray-100);
   }
@@ -165,6 +169,17 @@
 
     .position-badge {
       background-color: var(--green-200);
+    }
+  }
+
+  /* The just-added row briefly flashes orange before settling into the green
+     "added" state, so it stands out among any previously added rows. Placed
+     after .remove-candidate to win at equal specificity while highlighted. */
+  tr.highlighted {
+    background-color: var(--orange-100);
+
+    .position-badge {
+      background-color: var(--orange-200);
     }
   }
 }
