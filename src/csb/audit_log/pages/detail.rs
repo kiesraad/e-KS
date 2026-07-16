@@ -6,10 +6,12 @@ use axum::{
 use chrono::{DateTime, Utc};
 
 use crate::{
-    AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Overlay,
+    AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, Overlay,
     QueryParamState,
     csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogDetailPath},
-    filters, trans,
+    filters,
+    store::StoreEvent,
+    trans,
 };
 
 struct CsbEventDetail {
@@ -18,6 +20,28 @@ struct CsbEventDetail {
     description: String,
     details: String,
     created_at: DateTime<Utc>,
+}
+
+impl CsbEventDetail {
+    /// Look up `event_id` in a stream's events and build its detail view.
+    fn find<E: Event>(
+        events: &[StoreEvent<E>],
+        event_id: usize,
+        stream_label: String,
+        locale: Locale,
+    ) -> Result<Self, AppError> {
+        let event = events
+            .iter()
+            .find(|e| e.event_id == event_id)
+            .ok_or(AppError::GenericNotFound)?;
+        Ok(Self {
+            event_id: event.event_id,
+            stream_label,
+            description: event.payload.description(locale),
+            details: event.payload.details(),
+            created_at: event.created_at,
+        })
+    }
 }
 
 #[derive(Template)]
@@ -40,18 +64,12 @@ pub async fn csb_audit_log_detail(
     let locale = context.session.locale;
     let detail = if stream_id == CSB_MAIN_STREAM_ID {
         let data = main_store.data.read();
-        let event = data
-            .events
-            .iter()
-            .find(|e| e.event_id == event_id)
-            .ok_or(AppError::GenericNotFound)?;
-        CsbEventDetail {
-            event_id: event.event_id,
-            stream_label: trans!("audit_log.filter.csb_main_stream", locale),
-            description: event.payload.description(locale),
-            details: event.payload.details(),
-            created_at: event.created_at,
-        }
+        CsbEventDetail::find(
+            &data.events,
+            event_id,
+            trans!("audit_log.filter.csb_main_stream", locale),
+            locale,
+        )?
     } else {
         let import_stores = state.csb_store_registry.stores_by_scope().await?;
         let store = import_stores
@@ -59,19 +77,7 @@ pub async fn csb_audit_log_detail(
             .find(|s| s.stream_id == stream_id)
             .ok_or(AppError::GenericNotFound)?;
         let data = store.data.read();
-
-        let event = data
-            .events
-            .iter()
-            .find(|e| e.event_id == event_id)
-            .ok_or(AppError::GenericNotFound)?;
-        CsbEventDetail {
-            event_id: event.event_id,
-            stream_label: store.csb_display_name(),
-            description: event.payload.description(locale),
-            details: event.payload.details(),
-            created_at: event.created_at,
-        }
+        CsbEventDetail::find(&data.events, event_id, store.csb_display_name(), locale)?
     };
 
     Ok(HtmlTemplate(

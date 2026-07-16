@@ -113,19 +113,11 @@ impl EventCipher {
         Ok(out)
     }
 
-    /// Decrypt and deserialize an event payload from borrowed data.
-    ///
-    /// Expects `nonce (12 bytes) || ciphertext || tag` and the same `aad` used
-    /// when encrypting.
-    pub fn decrypt<E: DeserializeOwned>(&self, data: &[u8], aad: &[u8]) -> Result<E, AppError> {
-        self.decrypt_owned(data.to_vec(), aad)
-    }
-
     /// Decrypt and deserialize from an already-owned buffer, avoiding a copy.
     ///
     /// Expects `nonce (12 bytes) || ciphertext || tag` and the same `aad` used
     /// when encrypting.
-    pub fn decrypt_owned<E: DeserializeOwned>(
+    pub fn decrypt<E: DeserializeOwned>(
         &self,
         mut data: Vec<u8>,
         aad: &[u8],
@@ -176,7 +168,7 @@ mod tests {
 
         let original: Vec<u8> = vec![1, 2, 3, 4, 5];
         let encrypted = cipher.encrypt(&original, NO_AAD).unwrap();
-        let decrypted: Vec<u8> = cipher.decrypt(&encrypted, NO_AAD).unwrap();
+        let decrypted: Vec<u8> = cipher.decrypt(encrypted, NO_AAD).unwrap();
 
         assert_eq!(original, decrypted);
     }
@@ -202,7 +194,7 @@ mod tests {
         let cipher_b = enc.derive_cipher(StreamId::new(), TEST_ELECTION);
 
         let encrypted = cipher_a.encrypt(&42u32, NO_AAD).unwrap();
-        let result = cipher_b.decrypt::<u32>(&encrypted, NO_AAD);
+        let result = cipher_b.decrypt::<u32>(encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -215,7 +207,7 @@ mod tests {
         let cipher_ps = enc.derive_cipher(stream_id, ElectionConfig::PS27(crate::Province::GR));
 
         let encrypted = cipher_ek.encrypt(&42u32, NO_AAD).unwrap();
-        let result = cipher_ps.decrypt::<u32>(&encrypted, NO_AAD);
+        let result = cipher_ps.decrypt::<u32>(encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -228,7 +220,7 @@ mod tests {
             .derive_cipher(stream_id, TEST_ELECTION);
 
         let encrypted = cipher_a.encrypt(&42u32, NO_AAD).unwrap();
-        let result = cipher_b.decrypt::<u32>(&encrypted, NO_AAD);
+        let result = cipher_b.decrypt::<u32>(encrypted, NO_AAD);
 
         assert!(result.is_err());
     }
@@ -243,7 +235,7 @@ mod tests {
         let last = encrypted.len() - 1;
         encrypted[last] ^= 0x01;
 
-        let result = cipher.decrypt::<String>(&encrypted, NO_AAD);
+        let result = cipher.decrypt::<String>(encrypted, NO_AAD);
         assert!(result.is_err());
     }
 
@@ -254,10 +246,14 @@ mod tests {
 
         let encrypted = cipher.encrypt(&"hello", b"aad-a").unwrap();
 
-        assert!(cipher.decrypt::<String>(&encrypted, b"aad-b").is_err());
-        assert!(cipher.decrypt::<String>(&encrypted, NO_AAD).is_err());
+        assert!(
+            cipher
+                .decrypt::<String>(encrypted.clone(), b"aad-b")
+                .is_err()
+        );
+        assert!(cipher.decrypt::<String>(encrypted.clone(), NO_AAD).is_err());
         assert_eq!(
-            cipher.decrypt::<String>(&encrypted, b"aad-a").unwrap(),
+            cipher.decrypt::<String>(encrypted, b"aad-a").unwrap(),
             "hello"
         );
     }
@@ -267,7 +263,7 @@ mod tests {
         let enc = EventEncryption::new(&test_secret());
         let cipher = enc.derive_cipher(StreamId::new(), TEST_ELECTION);
 
-        let result = cipher.decrypt::<u32>(&[0u8; 5], NO_AAD);
+        let result = cipher.decrypt::<u32>(vec![0u8; 5], NO_AAD);
         assert!(result.is_err());
     }
 
@@ -284,8 +280,8 @@ mod tests {
         assert_ne!(enc1, enc2);
 
         // Both decrypt to the same value
-        let dec1: String = cipher.decrypt(&enc1, NO_AAD).unwrap();
-        let dec2: String = cipher.decrypt(&enc2, NO_AAD).unwrap();
+        let dec1: String = cipher.decrypt(enc1, NO_AAD).unwrap();
+        let dec2: String = cipher.decrypt(enc2, NO_AAD).unwrap();
         assert_eq!(dec1, dec2);
         assert_eq!(dec1, "repeated");
     }

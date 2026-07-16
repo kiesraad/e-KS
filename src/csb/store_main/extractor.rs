@@ -18,8 +18,7 @@ where
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let election = Session::from_request_parts(parts, state)
             .await?
-            .current_election
-            .ok_or(AppError::InternalServerError)?;
+            .require_current_election()?;
 
         let registry = StoreRegistry::<CsbMainStoreData>::from_ref(state);
         registry.get_or_create(CSB_MAIN_STREAM_ID, election).await
