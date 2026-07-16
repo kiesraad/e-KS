@@ -246,7 +246,11 @@ mod tests {
 
         let encrypted = cipher.encrypt(&"hello", b"aad-a").unwrap();
 
-        assert!(cipher.decrypt::<String>(encrypted.clone(), b"aad-b").is_err());
+        assert!(
+            cipher
+                .decrypt::<String>(encrypted.clone(), b"aad-b")
+                .is_err()
+        );
         assert!(cipher.decrypt::<String>(encrypted.clone(), NO_AAD).is_err());
         assert_eq!(
             cipher.decrypt::<String>(encrypted, b"aad-a").unwrap(),

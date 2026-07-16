@@ -30,10 +30,10 @@ if [ "$FULL" = true ]; then
 fi
 
 echo "==> Rust checks"
-cargo check "${SCOPE[@]}"
+cargo check ${SCOPE[@]+"${SCOPE[@]}"}
 cargo +nightly fmt --all -- --config imports_granularity="Crate"
-cargo clippy --all-targets "${SCOPE[@]}" -- -D warnings
-cargo test "${SCOPE[@]}"
+cargo clippy --all-targets ${SCOPE[@]+"${SCOPE[@]}"} -- -D warnings
+cargo test ${SCOPE[@]+"${SCOPE[@]}"}
 
 if [ "$FULL" = true ]; then
     echo "==> Rust docs"
