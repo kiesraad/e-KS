@@ -70,6 +70,7 @@ Note that "vervanger herstel verzuim" is called "plaatsvervanger van de inlevera
 | ondersteuningsverklaring       |           | declaration of support    |             |
 | verzuim                        |           | omission                  |             |
 | herstel verzuim                |           | rectify omission          |             |
+| ambtshalve correctie           |           | corrections               |             |
 | dag van kandidaatstelling      |           | nomination day            |             |
 | aanduiding                     |           | appellation               |             |
 | waarborgsom                    |           | deposit                   |             |

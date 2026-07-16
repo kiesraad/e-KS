@@ -261,6 +261,17 @@
       height: var(--space-11);
       width: var(--space-11);
     }
+
+    .correction-icon {
+      background-color: var(--blue-200);
+      background-image: url("../icons/correction.svg");
+      background-position: center;
+      background-repeat: no-repeat;
+      border-radius: var(--rounded-lg);
+      flex-shrink: 0;
+      height: var(--space-11);
+      width: var(--space-11);
+    }
   }
 
   .cards {

@@ -3,7 +3,9 @@ action:
   examine: Onderzoeken
   finish: Afronden
 added: Toegevoegd
-all_restorations: Alle herstelacties
+all_restorations:
+  title: Alle herstelacties
+  explanation: Bekijk hier alle verzuimen en correcties voordat je het onderzoek afrond.
 brp:
   correct: Correct
   errors: Fouten
@@ -120,3 +122,5 @@ status:
   approved: Goedgekeurd
   in_progress: Controle bezig
   omission: Verzuim toegevoegd
+correction:
+  title: Ambtshalve correctie
