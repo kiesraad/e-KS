@@ -64,9 +64,7 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbContext {
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
         let session = Session::from_request_parts(parts, state).await?;
-        let election = session
-            .current_election
-            .ok_or(AppError::InternalServerError)?;
+        let election = session.require_current_election()?;
         let mut context = CsbContext::new(session, election);
 
         context.server_name = state.config().server_name.as_deref();

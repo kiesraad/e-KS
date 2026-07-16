@@ -1,10 +1,13 @@
 use serde::Serialize;
 
-use super::{MAX_PER_PAGE, PageLink, Pagination, SortDirection, links::build_links};
+use super::{MAX_PER_PAGE, NoSort, PageLink, Pagination, SortDirection, links::build_links};
 
 /// Pagination metadata consumed by templates and components.
+///
+/// `S` is the view's sort enum; it defaults to [`NoSort`] for views without
+/// sortable columns.
 #[derive(Clone, Debug, Serialize)]
-pub struct PaginationInfo<S> {
+pub struct PaginationInfo<S = NoSort> {
     /// Current 1-indexed page.
     pub page: usize,
     /// Items per page after clamping.

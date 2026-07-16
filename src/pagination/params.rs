@@ -24,9 +24,16 @@ impl SortDirection {
     }
 }
 
+/// Sort parameter for paginated views without sortable columns.
+#[derive(Debug, Default, Copy, Clone, PartialEq, Serialize, Deserialize)]
+pub struct NoSort;
+
 /// Raw pagination query parameters the client can supply.
+///
+/// `S` is the view's sort enum; it defaults to [`NoSort`] for views without
+/// sortable columns.
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Pagination<S: Default + PartialEq> {
+pub struct Pagination<S: Default + PartialEq = NoSort> {
     /// Requested page number (1-indexed). Defaults to `1`.
     #[serde(default = "default_page")]
     #[serde(skip_serializing_if = "is_default_page")]

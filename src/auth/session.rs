@@ -5,7 +5,7 @@ use rand::{RngExt, distr::Alphanumeric};
 use secrecy::{ExposeSecret, SecretString};
 
 use crate::{
-    ElectionConfig, Locale, Scope, StreamId, TokenValue,
+    AppError, ElectionConfig, Locale, Scope, StreamId, TokenValue,
     form::{csrf_token_matches, generate_csrf_token},
     utils::sha256_hex,
 };
@@ -164,6 +164,12 @@ impl Session {
     /// Assigns the current election for this session.
     pub fn set_current_election(&mut self, election: ElectionConfig) {
         self.current_election = Some(election);
+    }
+
+    /// The current election, or an internal error when the election-selection
+    /// middleware has not set one (CSB routes may rely on it being present).
+    pub fn require_current_election(&self) -> Result<ElectionConfig, AppError> {
+        self.current_election.ok_or(AppError::InternalServerError)
     }
 
     /// Pins the session to the hash of the client's `User-Agent`.
