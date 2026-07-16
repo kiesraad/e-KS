@@ -1,12 +1,14 @@
 mod csrf;
 mod file_form;
 mod form_data;
+mod merge_errors;
 mod string_validators;
 mod validation_error;
 
 pub use csrf::{TokenValue, csrf_token_matches, generate_csrf_token};
 pub use file_form::FileForm;
 pub use form_data::FormData;
+pub use merge_errors::MergeErrors;
 pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};
 pub use validation_error::ValidationError;
 
@@ -18,7 +20,8 @@ use crate::AppError;
 
 pub type FieldErrors = Vec<(String, ValidationError)>;
 
-/// Wrapper that extracts and validates form data from requests.
+/// Wrapper around `axum_extra::extract::Form` that maps rejections to
+/// [`AppError`]. Validation happens separately via the `Validate` derive.
 #[derive(Debug)]
 pub struct Form<T>(pub T);
 

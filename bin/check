@@ -11,8 +11,8 @@ for arg in "$@"; do
         -h|--help)
             echo "Usage: bin/check [--full]"
             echo
-            echo "  --full  Run the Rust checks with --all-features and also check the"
-            echo "          auth-service, tvs_mock, development, and validate crates."
+            echo "  --full  Run the Rust checks for the whole workspace with"
+            echo "          --all-features, and also build the API docs."
             exit 0
             ;;
         *)
@@ -23,29 +23,21 @@ for arg in "$@"; do
     esac
 done
 
-# Run the standard Rust checks in a crate directory. Any extra arguments (e.g.
-# --all-features) are passed through to check/clippy/test.
-rust_checks() {
-    local dir="$1"
-    shift
-    echo "==> Rust checks: ${dir}"
-    (
-        cd "$dir"
-        cargo check "$@"
-        cargo +nightly fmt --all -- --config imports_granularity="Crate"
-        cargo clippy --all-targets "$@" -- -D warnings
-        cargo test "$@"
-    )
-}
-
 # rust
+SCOPE=()
 if [ "$FULL" = true ]; then
-    rust_checks "." --all-features
-    rust_checks "auth-service" --all-features
-    rust_checks "development" --all-features
-    rust_checks "validate" --all-features
-else
-    rust_checks "."
+    SCOPE=(--workspace --all-features)
+fi
+
+echo "==> Rust checks"
+cargo check ${SCOPE[@]+"${SCOPE[@]}"}
+cargo +nightly fmt --all -- --config imports_granularity="Crate"
+cargo clippy --all-targets ${SCOPE[@]+"${SCOPE[@]}"} -- -D warnings
+cargo test ${SCOPE[@]+"${SCOPE[@]}"}
+
+if [ "$FULL" = true ]; then
+    echo "==> Rust docs"
+    cargo doc --workspace --no-deps --all-features --document-private-items
 fi
 
 # typescript

@@ -6,7 +6,7 @@ use crate::{
     common::{BsnOrNoneConfirmed, DutchAddress, DutchAddressForm, FullNameForm},
     constants::DEFAULT_DATE_FORMAT,
     core::AnyLocale,
-    persons::{Person, PersonalDataFieldsForm, Representative, RepresentativeFieldsForm},
+    persons::{Person, PersonalDataFieldsForm, Representative, RepresentativeForm},
 };
 
 const NO_BSN: &str = "kandidaat heeft geen BSN";
@@ -51,7 +51,7 @@ pub struct CandidateRecord {
     address: DutchAddressForm,
     #[serde(flatten)]
     #[validate(flatten)]
-    representative: Option<RepresentativeFieldsForm>,
+    representative: Option<RepresentativeForm>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone, Default)]
@@ -88,7 +88,7 @@ pub(crate) struct CandidateRecordCsv {
 
 impl From<CandidateRecordCsv> for CandidateRecord {
     fn from(csv: CandidateRecordCsv) -> Self {
-        let representative = RepresentativeFieldsForm {
+        let representative = RepresentativeForm {
             name: FullNameForm {
                 first_name: csv.gemachtigde_roepnaam,
                 last_name: csv.gemachtigde_achternaam,

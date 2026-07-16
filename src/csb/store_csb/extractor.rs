@@ -29,8 +29,7 @@ where
 
         let election = Session::from_request_parts(parts, state)
             .await?
-            .current_election
-            .ok_or(AppError::InternalServerError)?;
+            .require_current_election()?;
 
         registry.get_store(stream_id, election).await
     }

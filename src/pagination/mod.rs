@@ -7,4 +7,4 @@ const MAX_PER_PAGE: usize = 500;
 
 pub use info::PaginationInfo;
 pub use links::PageLink;
-pub use params::{Pagination, SortDirection};
+pub use params::{NoSort, Pagination, SortDirection};

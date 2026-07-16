@@ -76,7 +76,7 @@ async fn perform_dev_login(
     let stream_id = state.id_deriver.derive_stream_id(&id_code);
     drop(id_code);
 
-    let locale = request_locale(&headers);
+    let locale = Locale::from_headers(&headers);
     let mut session = Session::new_with_locale(locale);
     session.set_stream_id(stream_id);
     session.set_scope(scope);
@@ -129,14 +129,6 @@ async fn perform_dev_login(
         jar.add(build_session_cookie(&session)),
         Redirect::to(&redirect_to),
     ))
-}
-
-pub(crate) fn request_locale(headers: &axum::http::HeaderMap) -> Locale {
-    headers
-        .get(axum::http::header::ACCEPT_LANGUAGE)
-        .and_then(|value| value.to_str().ok())
-        .and_then(Locale::from_accept_language)
-        .unwrap_or_default()
 }
 
 async fn ensure_dev_store(

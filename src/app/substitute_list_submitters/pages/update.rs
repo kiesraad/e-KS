@@ -61,11 +61,7 @@ pub async fn update_substitute_submitter_submit(
         )
         .into_response()),
         Ok(substitute_submitter_data) => {
-            let mut updated = ListSubmitter {
-                id: substitute_submitter.id,
-                ..substitute_submitter_data.into()
-            };
-            updated.address.update_is_known_in_bag();
+            let updated = substitute_submitter.updated_from(substitute_submitter_data);
             updated.update_substitute(&store).await?;
 
             Ok(query.redirect_or(ListSubmitter::view_path()))

@@ -233,14 +233,6 @@ impl AppState {
     }
 }
 
-fn request_locale(headers: &HeaderMap) -> crate::Locale {
-    headers
-        .get(axum::http::header::ACCEPT_LANGUAGE)
-        .and_then(|value| value.to_str().ok())
-        .and_then(crate::Locale::from_accept_language)
-        .unwrap_or_default()
-}
-
 impl AuthState for AppState {
     async fn on_authenticated(
         &self,
@@ -258,7 +250,7 @@ impl AuthState for AppState {
         let id_code = subject_id.value;
         let stream_id = self.id_deriver.derive_stream_id(&id_code);
 
-        let mut session = Session::new_with_locale(request_locale(headers));
+        let mut session = Session::new_with_locale(crate::Locale::from_headers(headers));
         session.set_stream_id(stream_id);
         session.set_user_agent_hash(user_agent_hash(headers));
         session.saml_name_id = name_id;
@@ -303,7 +295,7 @@ impl AuthState for AppState {
         // failed re-authentication never leaves a stale session behind. The
         // auth-service already logged the technical detail.
         let jar = self.clear_session_cookie(jar).await;
-        let locale = request_locale(headers);
+        let locale = crate::Locale::from_headers(headers);
         (jar, crate::common::auth_failure_response(failure, locale)).into_response()
     }
 
@@ -319,7 +311,6 @@ impl AuthState for AppState {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::Locale;
     use auth_service::SubjectId;
     use axum::http::header;
     use axum_extra::extract::cookie::Cookie;
@@ -358,23 +349,6 @@ mod tests {
         );
 
         Ok(())
-    }
-
-    #[test]
-    fn request_locale_resolves_accept_language() {
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT_LANGUAGE, "en-US,en;q=0.9".parse().unwrap());
-        assert_eq!(request_locale(&headers), Locale::En);
-    }
-
-    #[test]
-    fn request_locale_falls_back_to_default() {
-        let headers = HeaderMap::new();
-        assert_eq!(request_locale(&headers), Locale::default());
-
-        let mut headers = HeaderMap::new();
-        headers.insert(header::ACCEPT_LANGUAGE, "fr-FR".parse().unwrap());
-        assert_eq!(request_locale(&headers), Locale::default());
     }
 
     #[tokio::test]
