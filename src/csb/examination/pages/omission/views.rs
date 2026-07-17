@@ -2,7 +2,7 @@ use askama::Template;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbStore, Overlay, QueryParamState,
+    AppError, Context, CsbStore, ElectoralDistrict, Overlay, QueryParamState,
     candidate_lists::CandidateListId,
     csb::{
         Omission, OmissionPlaceholders, OmissionType,
@@ -28,8 +28,10 @@ pub(super) struct CsbAddOmissionTemplate {
     /// The dialog opened on its two tabs, for the steps sidebar.
     pub(super) add_tab_url: String,
     pub(super) overview_tab_url: String,
-    /// Whether to show the electoral-districts checkbox fieldset
-    pub(super) show_districts: bool,
+    /// Districts that appear on at least one candidate list of this political
+    /// group. The districts section is hidden when this is empty. Districts
+    /// absent from all lists are shown disabled so the user cannot select them.
+    pub(super) available_districts: Vec<ElectoralDistrict>,
 }
 
 /// The overview tab of the dialog: the omissions already added to this entity.

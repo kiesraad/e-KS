@@ -70,6 +70,15 @@ impl OmissionTarget {
         context: CsbContext,
         store: &CsbStore,
     ) -> Response {
+        let available_districts = if self.omission_type == OmissionType::CandidateList {
+            store
+                .get_candidate_lists()
+                .into_iter()
+                .flat_map(|l| l.electoral_districts)
+                .collect()
+        } else {
+            vec![]
+        };
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
         HtmlTemplate(
             CsbAddOmissionTemplate {
@@ -79,7 +88,7 @@ impl OmissionTarget {
                 presets: preset_views(self, store),
                 add_tab_url: add_url(self),
                 overview_tab_url: overview_url(self),
-                show_districts: self.omission_type == OmissionType::CandidateList,
+                available_districts,
             },
             context,
         )
@@ -96,7 +105,20 @@ pub async fn add_omission(
     Query(list_query): Query<OmissionListQuery>,
 ) -> Result<Response, AppError> {
     let target = OmissionTarget::from_add_path(path, list_query);
-    Ok(target.render_add_form(FormData::new(), &query, context, &store))
+    let form = if target.omission_type == OmissionType::CandidateList {
+        // Pre-fill current candidate list's electoral districts
+        let districts = store
+            .get_candidate_list(CandidateListId::from(target.reference))
+            .map(|l| l.electoral_districts)
+            .unwrap_or_default();
+        FormData::new_with_data(OmissionForm {
+            electoral_districts: districts,
+            ..Default::default()
+        })
+    } else {
+        FormData::new()
+    };
+    Ok(target.render_add_form(form, &query, context, &store))
 }
 
 /// Render the omissions overview page for an entity: the list of omissions

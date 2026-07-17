@@ -353,7 +353,6 @@
 }
 
 .form input:disabled {
-  background-color: var(--bg-gray-light);
   cursor: not-allowed;
 }
 
