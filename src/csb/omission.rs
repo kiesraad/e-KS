@@ -138,8 +138,9 @@ pub enum OmissionCategory {
     /// or problems with authorised agent and/or statutory name (H 3-1 / H 3-2)
     #[default]
     PoliticalGroup,
-    /// E.g. too many candidates on a list (H 1), or missing or incorrect "ondersteuningsverklaringen" (H 4)
-    CandidateList(CandidateListId),
+    /// E.g. missing or incorrect "ondersteuningsverklaringen" (H 4), which are per kieskring.
+    /// Stores the specific electoral districts affected by the omission.
+    CandidateList(Vec<ElectoralDistrict>),
     /// E.g. missing or invalid candidate data, missing or invalid "instemmingsverklaring" (H 9),
     /// missing copy of identity document
     Candidate {
@@ -153,10 +154,9 @@ const ALL_DISTRICTS: &str = "alle kieskringen";
 
 impl OmissionCategory {
     /// Build the category for a newly added omission from the parameters of the
-    /// "add omission" dialog: the [`OmissionType`], the id of the item the
-    /// omission is added to, and (for candidates) the list the candidate is on.
-    /// For a political group the reference is unused (the stream already
-    /// identifies the group).
+    /// "add omission" dialog for [`OmissionType::PoliticalGroup`] and
+    /// [`OmissionType::Candidate`]. For candidate list omissions, construct the
+    /// category directly with the selected districts.
     pub fn from_type_and_reference(
         omission_type: OmissionType,
         reference: uuid::Uuid,
@@ -164,7 +164,9 @@ impl OmissionCategory {
     ) -> Self {
         match omission_type {
             OmissionType::PoliticalGroup => OmissionCategory::PoliticalGroup,
-            OmissionType::CandidateList => OmissionCategory::CandidateList(reference.into()),
+            OmissionType::CandidateList => {
+                unreachable!("CandidateList omissions must be created with explicit districts")
+            }
             OmissionType::Candidate => OmissionCategory::Candidate {
                 person: reference.into(),
                 list,
@@ -182,8 +184,10 @@ impl OmissionCategory {
             OmissionCategory::PoliticalGroup | OmissionCategory::Candidate { list: None, .. } => {
                 Ok(ALL_DISTRICTS.to_string())
             }
-            OmissionCategory::CandidateList(id)
-            | OmissionCategory::Candidate { list: Some(id), .. } => store
+            OmissionCategory::CandidateList(districts) => {
+                Ok(format_districts_for_districts(districts, election))
+            }
+            OmissionCategory::Candidate { list: Some(id), .. } => store
                 .get_candidate_list(*id)
                 .as_ref()
                 .map(|list| format_districts_for_list(list, election))
@@ -193,10 +197,21 @@ impl OmissionCategory {
 }
 
 fn format_districts_for_list(list: &CandidateList, election: &ElectionConfig) -> String {
-    if list.contains_all_districts(election) {
+    format_districts_for_districts(&list.electoral_districts, election)
+}
+
+fn format_districts_for_districts(
+    districts: &[ElectoralDistrict],
+    election: &ElectionConfig,
+) -> String {
+    if election
+        .electoral_districts()
+        .iter()
+        .all(|d| districts.contains(d))
+    {
         ALL_DISTRICTS.to_string()
     } else {
-        format_districts(&list.electoral_districts)
+        format_districts(districts)
     }
 }
 
@@ -331,7 +346,7 @@ pub mod tests {
         // deserialize as recoverable rather than as errors.
         let json = r#"{
             "id": "00000000-0000-0000-0000-000000000000",
-            "category": "General",
+            "category": "PoliticalGroup",
             "title": "t",
             "description": "d",
             "help_text": "",
@@ -454,9 +469,9 @@ pub mod tests {
 
         #[test]
         fn candidate_list_with_all_districts_maps_to_all() {
-            let (store, id) = store_with_list(EK.electoral_districts().to_vec());
+            let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::CandidateList(id)
+                OmissionCategory::CandidateList(EK.electoral_districts().to_vec())
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "alle kieskringen"
@@ -465,9 +480,9 @@ pub mod tests {
 
         #[test]
         fn candidate_list_with_one_district() {
-            let (store, id) = store_with_list(vec![ElectoralDistrict::BO]);
+            let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::CandidateList(id)
+                OmissionCategory::CandidateList(vec![ElectoralDistrict::BO])
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "kieskring 13 (Bonaire)"
@@ -476,9 +491,9 @@ pub mod tests {
 
         #[test]
         fn candidate_list_with_multiple_districts() {
-            let (store, id) = store_with_list(vec![ElectoralDistrict::GR, ElectoralDistrict::DR]);
+            let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::CandidateList(id)
+                OmissionCategory::CandidateList(vec![ElectoralDistrict::GR, ElectoralDistrict::DR])
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "kieskring 1 (Groningen), 3 (Drenthe)"
@@ -486,13 +501,14 @@ pub mod tests {
         }
 
         #[test]
-        fn candidate_list_not_found_returns_error() {
+        fn candidate_list_with_no_districts_maps_to_all() {
             let store = CsbStore::new_for_test();
-            let missing_id = CandidateListId::new();
-            assert!(
-                OmissionCategory::CandidateList(missing_id)
+            // An empty district list is treated as "all districts" in format_districts.
+            assert_eq!(
+                OmissionCategory::CandidateList(vec![])
                     .electoral_district(&store, &EK)
-                    .is_err()
+                    .unwrap(),
+                "alle kieskringen"
             );
         }
 

@@ -141,6 +141,11 @@
     .form-field {
       flex: 1;
     }
+
+    &.card {
+      padding: var(--space-8);
+      border: none;
+    }
   }
 
   fieldset {
