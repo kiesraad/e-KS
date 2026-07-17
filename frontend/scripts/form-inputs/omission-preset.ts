@@ -8,6 +8,28 @@ function setValue(
   }
 }
 
+// Return Dutch names of the currently checked district checkboxes
+function selectedDistrictNames(): string[] {
+  const names: string[] = [];
+  document
+    .querySelectorAll<HTMLInputElement>(
+      'input[name="electoral_districts"]:checked',
+    )
+    .forEach((input) => {
+      if (input.dataset.districtNl) {
+        names.push(input.dataset.districtNl);
+      }
+    });
+  return names;
+}
+
+function updatePlaceholderWarning(
+  description: HTMLTextAreaElement,
+  warning: HTMLElement,
+) {
+  warning.classList.toggle("hidden", !description.value.includes("{"));
+}
+
 // Fill the omission description and help-text fields when a preset is clicked.
 export default function omissionPreset() {
   const title = document.querySelector<HTMLInputElement>(
@@ -22,17 +44,36 @@ export default function omissionPreset() {
   const recoverable = document.querySelector<HTMLInputElement>(
     "[data-omission-recoverable]",
   );
+  const warning = document.querySelector<HTMLElement>(
+    "[data-omission-placeholder-warning]",
+  );
 
-  if (!description) {
+  if (!description || !warning) {
     return;
   }
+
+  description.addEventListener("input", () =>
+    updatePlaceholderWarning(description, warning),
+  );
 
   document
     .querySelectorAll<HTMLButtonElement>("[data-omission-preset]")
     .forEach((button) => {
       button.addEventListener("click", () => {
         setValue(title, button.dataset.title);
-        setValue(description, button.dataset.description);
+
+        const districts = selectedDistrictNames();
+        let desc = button.dataset.description ?? "";
+        if (districts.length === 1) {
+          desc = desc.replace("{district}", districts[0]);
+        } else if (districts.length > 1) {
+          const last = districts.at(-1);
+          const rest = districts.slice(0, -1);
+          desc = desc.replace("{districts}", `${rest.join(", ")} en ${last}`);
+        }
+
+        setValue(description, desc);
+        updatePlaceholderWarning(description, warning);
         setValue(helpText, button.dataset.helpText);
         if (recoverable) {
           recoverable.checked = button.dataset.recoverable !== "false";

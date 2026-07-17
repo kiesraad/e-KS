@@ -79,13 +79,6 @@ pub(super) fn overview_url(target: &OmissionTarget) -> String {
 /// its category. Used only when the request carries no explicit `redirect_to`.
 pub(super) fn overview_url_for(category: &OmissionCategory, stream_id: StreamId) -> String {
     let target = match category {
-        OmissionCategory::CandidateList(id) => OmissionTarget {
-            stream_id,
-            omission_type: OmissionType::CandidateList,
-            reference: (*id).into(),
-            list: None,
-            general: false,
-        },
         OmissionCategory::Candidate { person, list } => OmissionTarget {
             stream_id,
             omission_type: OmissionType::Candidate,

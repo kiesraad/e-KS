@@ -1,3 +1,7 @@
+.omission-overlay .checklist.grid {
+  --checklist-column-min-width: 12em;
+}
+
 .omission-presets,
 .omission-badges {
   display: flex;

@@ -141,6 +141,11 @@
     .form-field {
       flex: 1;
     }
+
+    &.card {
+      padding: var(--space-8);
+      border: none;
+    }
   }
 
   fieldset {
@@ -348,7 +353,6 @@
 }
 
 .form input:disabled {
-  background-color: var(--bg-gray-light);
   cursor: not-allowed;
 }
 

@@ -8,6 +8,33 @@
 {% endblock %}
 {% block overlay_form %}
   <fieldset class="omission-form">
+    {% if !available_districts.is_empty() %}
+      <div class="form-row card">
+        <p>{{ "csb.omission.form.districts_intro"|trans }}</p>
+        <div class="checkbox select-all-checkbox">
+          <input type="checkbox"
+                 for-checklist="omission_district_list"
+                 id="select-all-districts" />
+          <label for="select-all-districts">{{ "candidate_list.actions.select_all_districts"|trans }}</label>
+        </div>
+        {% let election = "election"|election_value %}
+        <div class="checklist grid" id="omission_district_list">
+          {% for d in election.electoral_districts() %}
+            <div class="checkbox {% if !available_districts.contains(&d) %}disabled{% endif %}">
+              <input type="checkbox"
+                     name="electoral_districts"
+                     id="omission_district_{{ d.code() }}"
+                     value="{{ d.serde_name() }}"
+                     data-district-nl="{{ d|district_title_nl }}"
+                     {% if form.data.electoral_districts.contains(&d) %}checked{% endif %}
+                     {% if !available_districts.contains(&d) %}disabled{% endif %} />
+              <label for="omission_district_{{ d.code() }}">{{ d|district_name }}</label>
+            </div>
+          {% endfor %}
+        </div>
+        {% for error in form|error("electoral_districts") %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+    {% endif %}
     {% if !presets.is_empty() %}
       <p class="form-field">
         <span class="label">{{ "csb.omission.form.presets_heading"|trans }}</span>
@@ -45,6 +72,7 @@
                   rows="5"
                   data-omission-description>{{ form.data.description }}</textarea>
         {% for error in form|error("description") %}<span class="error">{{ error }}</span>{% endfor %}
+        <span class="warning hidden" data-omission-placeholder-warning>{{ "csb.omission.form.placeholder_warning"|trans }}</span>
       </p>
     </div>
     <div class="form-row">

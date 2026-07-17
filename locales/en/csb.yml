@@ -101,6 +101,8 @@ omission:
     singular: 1 omission
   form:
     description_label: Add I 1 omission
+    districts_intro: "This omission applies to:"
+    placeholder_warning: "The text still contains unfilled placeholders."
     help_text_label: Add omission letter note
     presets_heading: Add one of these omissions
     recoverable_label: Recoverable omission
