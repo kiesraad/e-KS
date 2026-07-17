@@ -23,6 +23,15 @@ function selectedDistrictNames(): string[] {
   return names;
 }
 
+const PLACEHOLDER_RE = /\{[^}]+\}/;
+
+function updatePlaceholderWarning(
+  description: HTMLTextAreaElement,
+  warning: HTMLElement,
+) {
+  warning.classList.toggle("hidden", !PLACEHOLDER_RE.test(description.value));
+}
+
 // Fill the omission description and help-text fields when a preset is clicked.
 export default function omissionPreset() {
   const title = document.querySelector<HTMLInputElement>(
@@ -37,10 +46,17 @@ export default function omissionPreset() {
   const recoverable = document.querySelector<HTMLInputElement>(
     "[data-omission-recoverable]",
   );
+  const warning = document.querySelector<HTMLElement>(
+    "[data-omission-placeholder-warning]",
+  );
 
-  if (!description) {
+  if (!description || !warning) {
     return;
   }
+
+  description.addEventListener("input", () =>
+    updatePlaceholderWarning(description, warning),
+  );
 
   document
     .querySelectorAll<HTMLButtonElement>("[data-omission-preset]")
@@ -59,6 +75,7 @@ export default function omissionPreset() {
         }
 
         setValue(description, desc);
+        updatePlaceholderWarning(description, warning);
         setValue(helpText, button.dataset.helpText);
         if (recoverable) {
           recoverable.checked = button.dataset.recoverable !== "false";
