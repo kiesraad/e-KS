@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use validate::Validate;
 
-use crate::{ElectoralDistrict, csb::Omission};
+use crate::{ElectoralDistrict, candidate_lists::CandidateListId, csb::Omission};
 
 /// Form backing the "add omission" dialog. The category is not part of the form:
 /// it is derived from the dialog's path parameters and set on the resulting
@@ -26,6 +26,10 @@ pub struct OmissionForm {
     /// Ignored for other omission types; validated in the handler.
     #[validate(ignore)]
     pub electoral_districts: Vec<ElectoralDistrict>,
+    /// The candidate lists selected for a Candidate omission.
+    /// Ignored for other omission types; validated in the handler.
+    #[validate(ignore)]
+    pub candidate_lists: Vec<CandidateListId>,
 }
 
 impl Default for OmissionForm {
@@ -38,6 +42,7 @@ impl Default for OmissionForm {
             // otherwise (the common case); presets override this via the dialog.
             recoverable: true,
             electoral_districts: Vec::new(),
+            candidate_lists: Vec::new(),
         }
     }
 }
@@ -50,6 +55,7 @@ impl From<Omission> for OmissionForm {
             help_text: value.help_text,
             recoverable: value.recoverable,
             electoral_districts: Vec::new(),
+            candidate_lists: Vec::new(),
         }
     }
 }

@@ -8,9 +8,33 @@
 {% endblock %}
 {% block overlay_form %}
   <fieldset class="omission-form">
+    {% if !available_candidate_lists.is_empty() %}
+      <div class="form-row card">
+        <p>{{ "csb.omission.form.applies_to"|trans }}</p>
+        <div class="checkbox select-all-checkbox">
+          <input type="checkbox"
+                 for-checklist="omission_candidate_list"
+                 id="select-all-candidate-lists" />
+          <label for="select-all-candidate-lists">{{ "candidate_list.actions.select_all_candidate_lists"|trans }}</label>
+        </div>
+        <div class="checklist" id="omission_candidate_list">
+          {% for option in available_candidate_lists %}
+            <div class="checkbox">
+              <input type="checkbox"
+                     name="candidate_lists"
+                     id="omission_candidate_list_{{ option.id }}"
+                     value="{{ option.id }}"
+                     {% if form.data.candidate_lists.contains(&option.id) %}checked{% endif %} />
+              <label for="omission_candidate_list_{{ option.id }}">{{ option.label }}</label>
+            </div>
+          {% endfor %}
+        </div>
+        {% for error in form|error("candidate_lists") %}<span class="error">{{ error }}</span>{% endfor %}
+      </div>
+    {% endif %}
     {% if !available_districts.is_empty() %}
       <div class="form-row card">
-        <p>{{ "csb.omission.form.districts_intro"|trans }}</p>
+        <p>{{ "csb.omission.form.applies_to"|trans }}</p>
         <div class="checkbox select-all-checkbox">
           <input type="checkbox"
                  for-checklist="omission_district_list"

@@ -10,6 +10,7 @@ actions:
   export_csv_template: Download CSV template
   import_csv: Upload CSV file
   import_export: Import and export candidate list
+  select_all_candidate_lists: Select all candidate lists
   select_all_districts: Select all electoral districts
 add_all: Add all candidates
 add_candidate: Add candidate
