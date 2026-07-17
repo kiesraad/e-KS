@@ -36,19 +36,19 @@ pub(super) fn return_path(target: &OmissionTarget, political_group: &CsbPolitica
     }
 }
 
-/// Append the list/general context as a query string, but only when there is
+/// Append the list context as a query string, but only when there is
 /// something to carry (an empty query would otherwise leave a trailing `?`).
-fn with_context(path: impl TypedPath, list: Option<CandidateListId>, general: bool) -> String {
-    if list.is_none() && !general {
-        path.to_string()
-    } else {
-        path.with_query_params(OmissionListQuery { list, general })
-            .to_string()
+fn with_context(path: impl TypedPath, list: Option<CandidateListId>) -> String {
+    match list {
+        None => path.to_string(),
+        Some(_) => path
+            .with_query_params(OmissionListQuery { list })
+            .to_string(),
     }
 }
 
-/// The URL of the add-omission form for this entity, keeping the list/general
-/// context (the sidebar links here from the overview page).
+/// The URL of the add-omission form for this entity, keeping the list context
+/// (the sidebar links here from the overview page).
 pub(super) fn add_url(target: &OmissionTarget) -> String {
     with_context(
         CsbAddOmissionPath {
@@ -57,12 +57,11 @@ pub(super) fn add_url(target: &OmissionTarget) -> String {
             reference: target.reference,
         },
         target.list,
-        target.general,
     )
 }
 
-/// The URL of the overview page for this entity, keeping the list/general
-/// context (the sidebar links here from the add form).
+/// The URL of the overview page for this entity, keeping the list context
+/// (the sidebar links here from the add form).
 pub(super) fn overview_url(target: &OmissionTarget) -> String {
     with_context(
         CsbOmissionOverviewPath {
@@ -71,7 +70,6 @@ pub(super) fn overview_url(target: &OmissionTarget) -> String {
             reference: target.reference,
         },
         target.list,
-        target.general,
     )
 }
 
@@ -79,19 +77,17 @@ pub(super) fn overview_url(target: &OmissionTarget) -> String {
 /// its category. Used only when the request carries no explicit `redirect_to`.
 pub(super) fn overview_url_for(category: &OmissionCategory, stream_id: StreamId) -> String {
     let target = match category {
-        OmissionCategory::Candidate { person, list } => OmissionTarget {
+        OmissionCategory::Candidate { person, lists } => OmissionTarget {
             stream_id,
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
-            list: *list,
-            general: list.is_none(),
+            list: lists.first().copied(),
         },
         _ => OmissionTarget {
             stream_id,
             omission_type: OmissionType::PoliticalGroup,
             reference: stream_id.into(),
             list: None,
-            general: false,
         },
     };
     overview_url(&target)

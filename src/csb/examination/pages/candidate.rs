@@ -96,16 +96,12 @@ mod tests {
         // The candidate's imported details render.
         assert!(body.contains("Jansen"));
         assert!(body.contains("Juinen"));
-        // Both add-omission buttons target the candidate omission dialog,
+        // The add-omission button targets the candidate omission dialog,
         // carrying the list so the candidate's position can be resolved.
         assert!(body.contains(&format!(
             "/csb/examination/{stream_id}/omission/candidate/{person_id}"
         )));
         assert!(body.contains(&format!("list={list_id}")));
-        // One button adds an omission for the person on every list (general),
-        // the other for the candidate on this specific list. Only the general
-        // one carries the `general` flag.
-        assert!(body.contains("general=true"));
         // The header shows the electoral districts of the candidate's list
         // (the sample list covers Utrecht).
         assert!(body.contains("Electoral districts"));
@@ -128,7 +124,7 @@ mod tests {
         Omission::new(
             OmissionCategory::Candidate {
                 person: person_id,
-                list: Some(list_id),
+                lists: vec![list_id],
             },
             "Missing consent".to_string(),
             "The declaration of consent is missing.".to_string(),

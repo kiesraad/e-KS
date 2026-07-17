@@ -274,14 +274,14 @@ mod tests {
             &store,
             OmissionCategory::Candidate {
                 person: person_a,
-                list: None,
+                lists: Vec::new(),
             },
         );
         insert(
             &store,
             OmissionCategory::Candidate {
                 person: person_b,
-                list: None,
+                lists: Vec::new(),
             },
         );
         insert(&store, OmissionCategory::PoliticalGroup);
@@ -301,7 +301,7 @@ mod tests {
             &store,
             OmissionCategory::Candidate {
                 person: PersonId::new(),
-                list: None,
+                lists: Vec::new(),
             },
         );
 

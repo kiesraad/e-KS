@@ -8,10 +8,7 @@ brp:
   correct: Correct
   errors: Fouten
 candidate:
-  add_candidate_text: Voeg verzuimen toe voor deze kandidaat op alleen deze lijst
-  add_candidate_title: Kandidaat
-  add_person_text: Voeg verzuimen toe voor deze persoon op al hun lijsten
-  add_person_title: Persoon
+  add_candidate_text: Voeg verzuimen toe voor deze kandidaat
   overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
   status: Status
@@ -100,10 +97,10 @@ omission:
     plural: "{} verzuimen"
     singular: 1 verzuim
   form:
+    applies_to: "Dit verzuim geldt voor:"
     description_label: I1 verzuim toevoegen
-    districts_intro: "Dit verzuim geldt voor:"
-    placeholder_warning: "De tekst bevat nog niet ingevulde placeholders."
     help_text_label: Verzuimbriefnotitie toevoegen
+    placeholder_warning: De tekst bevat nog niet ingevulde placeholders.
     presets_heading: Voeg één van deze verzuimen toe
     recoverable_label: Herstelbaar verzuim
     submit: Toevoegen en sluiten
