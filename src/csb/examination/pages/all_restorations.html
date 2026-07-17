@@ -33,7 +33,6 @@
         {% endfor %}
       </ul>
     {% endif %}
-
     {% if !all_omissions.candidate_lists.is_empty() %}
       <h4>Kandidatenlijsten</h4>
       <ul class="tags-list">
@@ -45,10 +44,9 @@
         {% endfor %}
       </ul>
     {% endif %}
-
     {% for candidate in all_omissions.candidates %}
       <h4>{{ candidate.person.name.display() }}</h4>
-       <ul class="tags-list">
+      <ul class="tags-list">
         {% for omission in candidate.omissions %}
           <li class="tag link">
             <a class="{{ omission.class() }}"

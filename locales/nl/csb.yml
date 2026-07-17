@@ -4,10 +4,10 @@ action:
   finish: Afronden
 added: Toegevoegd
 all_restorations:
-  title: Alle herstelacties
+  corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
   explanation: Bekijk hier alle verzuimen en correcties voordat je het onderzoek afrond.
   omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
-  corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
+  title: Alle herstelacties
 brp:
   correct: Correct
   errors: Fouten
@@ -19,6 +19,8 @@ candidate:
   overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
   status: Status
+correction:
+  title: Ambtshalve correctie
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:
@@ -124,5 +126,3 @@ status:
   approved: Goedgekeurd
   in_progress: Controle bezig
   omission: Verzuim toegevoegd
-correction:
-  title: Ambtshalve correctie

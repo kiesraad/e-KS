@@ -105,8 +105,12 @@ impl OmissionType {
 impl From<OmissionCategory> for OmissionType {
     fn from(category: OmissionCategory) -> Self {
         match category {
-            OmissionCategory::General | OmissionCategory::NameAuthorisation {..} => Self::PoliticalGroup,
-            OmissionCategory::DeclarationOfSupport(_) | OmissionCategory::CandidateList(_) => Self::CandidateList,
+            OmissionCategory::General | OmissionCategory::NameAuthorisation { .. } => {
+                Self::PoliticalGroup
+            }
+            OmissionCategory::DeclarationOfSupport(_) | OmissionCategory::CandidateList(_) => {
+                Self::CandidateList
+            }
             OmissionCategory::Candidate { .. } => Self::Candidate,
         }
     }

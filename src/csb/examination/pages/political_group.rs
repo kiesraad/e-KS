@@ -1,7 +1,6 @@
 use askama::Template;
 use axum::response::{IntoResponse, Redirect, Response};
 use axum_extra::{TypedHeader, headers};
-use rand::{RngExt, rng};
 
 use crate::{
     AppError, Context, CsbContext,

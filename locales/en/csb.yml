@@ -3,11 +3,11 @@ action:
   examine: Examine
   finish: Finish
 added: Added
-all_restorations: 
-  title: All restorations
+all_restorations:
+  corrections_explanation: All created corrections are displayed here.
   explanation: Inspect all omissions and corrections here before concluding the examination.
   omissions_explanation: All created omissions are displayed here.
-  corrections_explanation: All created corrections are displayed here.
+  title: All restorations
 brp:
   correct: Correct
   errors: Errors
@@ -19,6 +19,8 @@ candidate:
   overview_text: Added omissions for this candidate
   personal_details: Personal details
   status: Status
+correction:
+  title: Corrections
 examination: Examination
 finish_examination: Finish examination
 finish_instruction:
@@ -119,8 +121,6 @@ omission:
     recoverable: Recoverable
     title: Overview
   title: Omissions
-correction:
-  title: Corrections
 progress: Progress
 status:
   approved: Approved

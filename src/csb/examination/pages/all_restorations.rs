@@ -9,10 +9,7 @@ use crate::{
         OmissionCategory::{
             Candidate, CandidateList, DeclarationOfSupport, General, NameAuthorisation,
         },
-        examination::{
-            extractors::CsbPoliticalGroup,
-            pages::CsbAllRestorationsPath,
-        },
+        examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     },
     filters,
     persons::Person,
@@ -97,10 +94,7 @@ impl CsbStore {
 }
 
 impl Omission {
-    fn path(
-        &self,
-        political_group: &CsbPoliticalGroup
-    ) -> String {
+    fn path(&self, political_group: &CsbPoliticalGroup) -> String {
         match self.category {
             General => political_group
                 .manage_political_group_omissions_path()
@@ -123,9 +117,14 @@ impl Omission {
                     political_group.all_restorations_path().to_string(),
                 ))
                 .to_string(),
-            Candidate { person: _, list: None } =>
+            Candidate {
+                person: _,
+                list: None,
+            } =>
             // TODO: solve this after omission rework
-            "".to_string(),
+            {
+                "".to_string()
+            }
             NameAuthorisation(_) | DeclarationOfSupport(_) => todo!("remove after merge of #965"),
         }
     }
