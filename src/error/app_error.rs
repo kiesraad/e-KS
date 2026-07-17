@@ -26,6 +26,8 @@ pub enum AppError {
     /// PDF serialization failed (most commonly PDF/A-2A or PDF/UA-1 validation,
     /// e.g. a character without a glyph in the embedded fonts).
     PdfError(textris_pdf::render::RenderError),
+    /// A PDF model Markdown template did not parse as the textris-pdf dialect.
+    MarkdownError(textris_pdf::markdown::MarkdownParseError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
 
@@ -86,6 +88,7 @@ impl Display for AppError {
             AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
             AppError::NoStorageConfigured => write!(f, "No event storage configured"),
             AppError::PdfError(err) => write!(f, "PDF error: {err}"),
+            AppError::MarkdownError(err) => write!(f, "Markdown template error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::UserError(msg) => write!(f, "{msg}"),
             AppError::PathRejection(err) => write!(f, "Path error: {err}"),
@@ -157,6 +160,12 @@ impl From<sqlx::Error> for AppError {
 impl From<textris_pdf::render::RenderError> for AppError {
     fn from(err: textris_pdf::render::RenderError) -> Self {
         AppError::PdfError(err)
+    }
+}
+
+impl From<textris_pdf::markdown::MarkdownParseError> for AppError {
+    fn from(err: textris_pdf::markdown::MarkdownParseError) -> Self {
+        AppError::MarkdownError(err)
     }
 }
 

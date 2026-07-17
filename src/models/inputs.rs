@@ -65,6 +65,18 @@ pub struct NameAuthorisation {
     pub legal_name: String,
 }
 
+impl NameAuthorisation {
+    /// The representative's name as printed on the model: the non-empty parts
+    /// of the last name and initials, comma-separated.
+    pub fn name(&self) -> String {
+        [self.last_name.as_str(), self.initials.as_str()]
+            .into_iter()
+            .filter(|part| !part.is_empty())
+            .collect::<Vec<_>>()
+            .join(", ")
+    }
+}
+
 #[derive(Debug, Clone)]
 pub struct DetailedCandidate {
     pub candidate: Candidate,

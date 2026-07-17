@@ -2,10 +2,12 @@
 //! [`textris_pdf`].
 //!
 //! Each model lives in its own file (`h1`, `h3`, `h4`, `h9`, `i4`); H 3 covers
-//! both the H 3-1 and H 3-2 variants. [`layout`] holds the shared page
-//! set-up and table styles, and [`inputs`] the shared input data types.
-//! [`mod@examples`] defines type-checked example inputs, rendered by the round-trip
-//! test and the `pdf_diff` development tool.
+//! both the H 3-1 and H 3-2 variants. The document text is authored as askama
+//! Markdown templates in `templates/` (one per locale and variant), written in
+//! the textris-pdf Markdown dialect and wired up by [`mod@markdown`].
+//! [`layout`] holds the shared page set-up, and [`inputs`] the shared input
+//! data types. [`mod@examples`] defines type-checked example inputs, rendered
+//! by the round-trip test and the `pdf_diff` development tool.
 
 pub mod examples;
 mod fonts;
@@ -16,6 +18,7 @@ pub mod h9;
 pub mod i4;
 pub mod inputs;
 mod layout;
+mod markdown;
 
 pub use examples::{Example, examples};
 pub use fonts::fonts;
@@ -28,7 +31,7 @@ use crate::AppError;
 /// knows its download file name.
 pub trait Pdf: Sized {
     /// Build the document from the input data.
-    fn document(&self) -> Textris;
+    fn document(&self) -> Result<Textris, AppError>;
 
     fn filename(&self) -> String;
 
@@ -38,7 +41,7 @@ pub trait Pdf: Sized {
     // the returned future don't need to be nameable.
     #[allow(async_fn_in_trait)]
     async fn generate_bytes(&self) -> Result<Vec<u8>, AppError> {
-        let document = self.document();
+        let document = self.document()?;
         Ok(
             tokio::task::spawn_blocking(move || document.render(fonts()))
                 .await
@@ -64,7 +67,11 @@ mod tests {
 
     #[track_caller]
     fn render<T: Pdf>(model: T) -> Vec<u8> {
-        model.document().render(fonts()).expect("render model")
+        model
+            .document()
+            .expect("build model document")
+            .render(fonts())
+            .expect("render model")
     }
 
     /// Every example input renders to a valid PDF. This drives all six document

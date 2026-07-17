@@ -46,7 +46,7 @@ fn example<T: Pdf>(name: &'static str, model: T) -> Example {
     Example {
         name,
         filename: model.filename(),
-        document: model.document(),
+        document: model.document().expect("build example document"),
     }
 }
 
