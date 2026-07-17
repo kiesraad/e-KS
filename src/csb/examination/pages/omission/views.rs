@@ -62,6 +62,8 @@ pub(super) struct CsbOmissionOverviewTemplate {
 pub(super) struct OmissionView {
     omission: Omission,
     remove_url: String,
+    /// Formatted district string for display (e.g. "1. Groningen, 2. Friesland").
+    districts: String,
 }
 
 /// A preset shown in the dialog, with `{token}` placeholders in its description
@@ -144,9 +146,12 @@ pub(super) fn omission_views(
         OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(target.reference)),
     };
 
-    Ok(omissions
-        .into_iter()
-        .map(|omission| OmissionView {
+    let mut views = Vec::with_capacity(omissions.len());
+    for omission in omissions {
+        let districts = omission
+            .category
+            .electoral_district(store, &store.election)?;
+        views.push(OmissionView {
             remove_url: CsbDeleteOmissionPath {
                 stream_id: target.stream_id,
                 omission_id: omission.id,
@@ -154,6 +159,8 @@ pub(super) fn omission_views(
             .with_query_params(QueryParamState::redirect_to(overview_url.to_string()))
             .to_string(),
             omission,
-        })
-        .collect())
+            districts,
+        });
+    }
+    Ok(views)
 }

@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AnyLocale, AppError, CsbEvent, CsbStore, ElectionConfig, ElectoralDistrict,
-    candidate_lists::CandidateListId,
-    common::UtcDateTime,
-    form::ValidationError,
-    id_newtype,
+    candidate_lists::CandidateListId, common::UtcDateTime, form::ValidationError, id_newtype,
     persons::PersonId,
 };
 
@@ -175,9 +172,7 @@ impl OmissionCategory {
     ) -> Result<String, AppError> {
         match self {
             OmissionCategory::PoliticalGroup => Ok(ALL_DISTRICTS.to_string()),
-            OmissionCategory::CandidateList(districts) => {
-                Ok(format_districts_for_districts(districts, election))
-            }
+            OmissionCategory::CandidateList(districts) => Ok(format_districts(districts, election)),
             OmissionCategory::Candidate { lists, .. } => {
                 let mut districts: Vec<ElectoralDistrict> = Vec::new();
                 for id in lists {
@@ -190,36 +185,25 @@ impl OmissionCategory {
                         }
                     }
                 }
-                Ok(format_districts_for_districts(&districts, election))
+                Ok(format_districts(&districts, election))
             }
         }
     }
 }
 
-fn format_districts_for_districts(
-    districts: &[ElectoralDistrict],
-    election: &ElectionConfig,
-) -> String {
-    if election
-        .electoral_districts()
-        .iter()
-        .all(|d| districts.contains(d))
-    {
+fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) -> String {
+    let all_districts = election.electoral_districts();
+    if districts.is_empty() || all_districts.iter().all(|d| districts.contains(d)) {
         ALL_DISTRICTS.to_string()
     } else {
-        format_districts(districts)
+        let mut sorted = districts.to_vec();
+        sorted.sort_by_key(|d| d.region_number());
+        let parts: Vec<String> = sorted
+            .iter()
+            .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))
+            .collect();
+        format!("kieskring {}", parts.join(", "))
     }
-}
-
-fn format_districts(districts: &[ElectoralDistrict]) -> String {
-    if districts.is_empty() {
-        return ALL_DISTRICTS.to_string();
-    }
-    let parts: Vec<String> = districts
-        .iter()
-        .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))
-        .collect();
-    format!("kieskring {}", parts.join(", "))
 }
 
 /// An omission ("verzuim") signifies something was wrong with the submitted data
@@ -485,8 +469,9 @@ pub mod tests {
         #[test]
         fn candidate_list_with_multiple_districts() {
             let store = CsbStore::new_for_test();
+            // The districts should be sorted by region number.
             assert_eq!(
-                OmissionCategory::CandidateList(vec![ElectoralDistrict::GR, ElectoralDistrict::DR])
+                OmissionCategory::CandidateList(vec![ElectoralDistrict::DR, ElectoralDistrict::GR])
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "kieskring 1 (Groningen), 3 (Drenthe)"
