@@ -49,7 +49,7 @@ pub async fn overview(
             all_brp_error_count,
             candidate_lists,
             general_omission_count,
-            restoration_count: rng().random_range(0..=20),
+            restoration_count: store.get_omission_count(),
         },
         context,
     )

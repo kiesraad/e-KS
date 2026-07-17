@@ -6,6 +6,8 @@ added: Added
 all_restorations: 
   title: All restorations
   explanation: Inspect all omissions and corrections here before concluding the examination.
+  omissions_explanation: All created omissions are displayed here.
+  corrections_explanation: All created corrections are displayed here.
 brp:
   correct: Correct
   errors: Errors

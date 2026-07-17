@@ -102,6 +102,16 @@ impl OmissionType {
     }
 }
 
+impl From<OmissionCategory> for OmissionType {
+    fn from(category: OmissionCategory) -> Self {
+        match category {
+            OmissionCategory::General | OmissionCategory::NameAuthorisation {..} => Self::PoliticalGroup,
+            OmissionCategory::DeclarationOfSupport(_) | OmissionCategory::CandidateList(_) => Self::CandidateList,
+            OmissionCategory::Candidate { .. } => Self::Candidate,
+        }
+    }
+}
+
 impl FromStr for OmissionType {
     type Err = ValidationError;
 
@@ -263,6 +273,9 @@ impl Omission {
                 omission_id: self.id,
             })
             .await
+    }
+    pub fn class(&self) -> &str {
+        if self.recoverable { "warning" } else { "error" }
     }
 }
 

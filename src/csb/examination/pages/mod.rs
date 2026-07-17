@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppState, QueryParamState, StreamId,
+    AppError, AppState, StreamId,
     candidate_lists::CandidateListId,
     csb::{OmissionId, OmissionType, examination::extractors::CsbPoliticalGroup},
     persons::PersonId,
@@ -250,13 +250,6 @@ impl CsbPoliticalGroup {
             list: Some(*list),
             general: false,
         })
-    }
-
-    pub fn after_toggle_finish_examination_path(&self) -> impl TypedPath {
-        CsbPoliticalGroupPath {
-            stream_id: self.stream_id,
-        }
-        .with_query_params(QueryParamState::success())
     }
 
     pub fn all_restorations_path(&self) -> impl TypedPath {
