@@ -137,18 +137,6 @@ impl CsbStore {
             .collect()
     }
 
-    pub fn get_candidate_list_ids_for_person(&self, person_id: PersonId) -> Vec<CandidateListId> {
-        let data = self.data.read();
-
-        data.imported_data
-            .candidate_lists
-            .values()
-            .filter(|l| l.candidates.contains(&person_id))
-            .map(|l| &l.id)
-            .cloned()
-            .collect()
-    }
-
     /// The imported candidate list with this id, if any.
     pub fn get_candidate_list(&self, list_id: CandidateListId) -> Option<CandidateList> {
         self.data
