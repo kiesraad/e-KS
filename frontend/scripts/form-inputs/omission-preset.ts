@@ -23,13 +23,11 @@ function selectedDistrictNames(): string[] {
   return names;
 }
 
-const PLACEHOLDER_RE = /\{[^}]+\}/;
-
 function updatePlaceholderWarning(
   description: HTMLTextAreaElement,
   warning: HTMLElement,
 ) {
-  warning.classList.toggle("hidden", !PLACEHOLDER_RE.test(description.value));
+  warning.classList.toggle("hidden", !description.value.includes("{"));
 }
 
 // Fill the omission description and help-text fields when a preset is clicked.
@@ -69,7 +67,7 @@ export default function omissionPreset() {
         if (districts.length === 1) {
           desc = desc.replace("{district}", districts[0]);
         } else if (districts.length > 1) {
-          const last = districts[districts.length - 1];
+          const last = districts.at(-1);
           const rest = districts.slice(0, -1);
           desc = desc.replace("{districts}", `${rest.join(", ")} en ${last}`);
         }
