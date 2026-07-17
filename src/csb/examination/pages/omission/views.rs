@@ -89,7 +89,6 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
                     .list
                     .and_then(|list| store.candidate_position(list, person))
                     .map(|nr| nr.to_string()),
-                districts: None,
             }
         }
         // The {district}/{districts} tokens in candidate-list presets are filled

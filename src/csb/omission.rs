@@ -35,8 +35,6 @@ pub struct OmissionPlaceholders {
     pub candidate_number: Option<String>,
     /// `{candidate_name}`: the candidate's initials and last name.
     pub candidate_name: Option<String>,
-    /// `{districts}`: the electoral districts a candidate list was submitted for.
-    pub districts: Option<String>,
 }
 
 impl OmissionPlaceholders {
@@ -47,7 +45,6 @@ impl OmissionPlaceholders {
         for (token, value) in [
             ("{candidate_number}", &self.candidate_number),
             ("{candidate_name}", &self.candidate_name),
-            ("{districts}", &self.districts),
         ] {
             if let Some(value) = value {
                 result = result.replace(token, value);
@@ -338,7 +335,6 @@ pub mod tests {
         let placeholders = OmissionPlaceholders {
             candidate_number: Some("3".to_string()),
             candidate_name: Some("A.B. de Vries".to_string()),
-            districts: None,
         };
 
         let result = placeholders
