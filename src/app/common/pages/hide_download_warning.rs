@@ -43,10 +43,12 @@ mod tests {
             .with_state(state.clone());
 
         let stream_id = crate::StreamId::new();
-        let store = state
-            .store_for_stream(stream_id, ElectionConfig::EK27, false)
-            .await
-            .expect("store");
+        let store = crate::AppStore::own(
+            state
+                .store_for_stream(stream_id, ElectionConfig::EK27, false)
+                .await
+                .expect("store"),
+        );
 
         let mut session = crate::Session::new();
         session.set_stream_id(stream_id);

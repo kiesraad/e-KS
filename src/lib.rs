@@ -90,7 +90,7 @@ pub use state::AppState;
 pub use store::run_db_prober;
 
 pub(crate) use app::{
-    AppEvent, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
+    AppEvent, AppStore, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
     csrf_rejection_response, finalise, list_designation, list_submitters, name_authorisations,
     persons, political_groups, render_error_pages, substitute_list_submitters,
 };
@@ -125,7 +125,7 @@ pub(crate) use store::{DbHealth, Event};
 pub(crate) use structs::typst;
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
-    redirect_success, transparent_string,
+    overlay_referrer, redirect_success, success_alert_requested, transparent_string,
 };
 
 #[cfg(test)]
@@ -137,8 +137,6 @@ mod stream_id {
     crate::id_newtype!(pub struct StreamId);
 }
 pub(crate) use stream_id::StreamId;
-
-pub(crate) type AppStore = store::Store<AppStoreData>;
 
 pub(crate) type CsbStore = store::Store<CsbStoreData>;
 pub(crate) type CsbMainStore = store::Store<CsbMainStoreData>;

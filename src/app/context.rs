@@ -32,6 +32,14 @@ pub struct Context {
     /// URL for the "General information" nav link. Includes `initial=true` when
     /// general information is still empty, so the first-visit flow suppresses warnings.
     pub general_information_path: String,
+    /// Whether a CSB session is correcting a stream's paper documents.
+    pub paper_correction_mode: bool,
+    /// URL that leaves paper-corrections mode, set only in paper-corrections
+    /// mode. Empty otherwise.
+    pub paper_corrections_exit_path: String,
+    /// Display name of the political group being corrected, shown in the
+    /// corrections banner. Empty outside paper-corrections mode.
+    pub paper_corrections_group_name: String,
 }
 
 impl Context {
@@ -43,6 +51,21 @@ impl Context {
 
         let general_information_path = political_group.general_information_path(store);
 
+        let paper_correction_mode = store.paper_corrections_stream_id().is_some();
+
+        let paper_corrections_exit_path = store
+            .paper_corrections_stream_id()
+            .map(|stream_id| {
+                crate::csb::examination::CsbPaperCorrectionsStopPath { stream_id }.to_string()
+            })
+            .unwrap_or_default();
+
+        let paper_corrections_group_name = if paper_correction_mode {
+            political_group.csb_display_name(store.first_candidate_name().as_ref())
+        } else {
+            String::new()
+        };
+
         Self {
             election,
             max_candidates,
@@ -53,6 +76,9 @@ impl Context {
             session,
             server_name: None,
             general_information_path,
+            paper_correction_mode,
+            paper_corrections_exit_path,
+            paper_corrections_group_name,
         }
     }
 
@@ -89,6 +115,13 @@ impl askama::Values for Context {
             "general_information_path" => {
                 Some(&self.general_information_path as &dyn std::any::Any)
             }
+            "paper_correction_mode" => Some(&self.paper_correction_mode as &dyn std::any::Any),
+            "paper_corrections_exit_path" => {
+                Some(&self.paper_corrections_exit_path as &dyn std::any::Any)
+            }
+            "paper_corrections_group_name" => {
+                Some(&self.paper_corrections_group_name as &dyn std::any::Any)
+            }
             _ => None,
         }
     }
@@ -110,16 +143,8 @@ impl<S: AppRequestState> FromRequestParts<S> for Context {
                 || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH)
                 || path.starts_with(crate::persons::PersonsPath::PATH));
 
-        context.show_success_alert = parts
-            .uri
-            .query()
-            .is_some_and(|q| q.contains("success=true"));
-
-        context.overlay_referrer = parts
-            .headers
-            .get(axum::http::header::REFERER)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|url| url.contains("overlay=true"));
+        context.show_success_alert = crate::success_alert_requested(parts);
+        context.overlay_referrer = crate::overlay_referrer(parts);
 
         Ok(context)
     }

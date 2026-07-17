@@ -1,0 +1,22 @@
+{% macro value(v) %}
+  {% if v.differs() %}
+    {% if !v.imported.is_empty() %}<s class="imported-value">{{ v.imported }}</s>{% endif %}
+    {% if !v.corrected.is_empty() %}<strong class="paper-corrected-value">{{ v.corrected }}</strong>{% endif %}
+  {% else %}
+    <strong>{{ v.imported }}</strong>
+  {% endif %}
+{% endmacro %}
+{% macro position_badge(v, class) %}
+  {% if v.differs() %}
+    {% if !v.imported.is_empty() %}
+      <s class="badge position-badge imported-value {{ class }}">{{ v.imported }}</s>
+    {% endif %}
+    {% if !v.corrected.is_empty() %}
+      <span class="badge position-badge paper-corrected-value {{ class }}">{{ v.corrected }}</span>
+    {% endif %}
+  {% else %}
+    {% if !v.imported.is_empty() %}
+      <span class="badge position-badge {{ class }}">{{ v.imported }}</span>
+    {% endif %}
+  {% endif %}
+{% endmacro %}

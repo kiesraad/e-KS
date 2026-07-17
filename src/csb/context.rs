@@ -69,16 +69,8 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbContext {
 
         context.server_name = state.config().server_name.as_deref();
 
-        context.show_success_alert = parts
-            .uri
-            .query()
-            .is_some_and(|q| q.contains("success=true"));
-
-        context.overlay_referrer = parts
-            .headers
-            .get(axum::http::header::REFERER)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|url| url.contains("overlay=true"));
+        context.show_success_alert = crate::success_alert_requested(parts);
+        context.overlay_referrer = crate::overlay_referrer(parts);
 
         Ok(context)
     }

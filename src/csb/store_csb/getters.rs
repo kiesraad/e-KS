@@ -55,7 +55,8 @@ impl CsbStore {
     }
 
     /// Return all candidate-list omissions that are linked to at least one
-    /// electoral district covered by the given list.
+    /// electoral district covered by the given list. Falls back to the
+    /// paper-corrected projection for lists added during paper corrections.
     pub fn get_candidate_list_omissions(
         &self,
         list_id: CandidateListId,
@@ -66,6 +67,7 @@ impl CsbStore {
             .imported_data
             .candidate_lists
             .get(&list_id)
+            .or_else(|| data.paper_corrected_data.candidate_lists.get(&list_id))
             .ok_or(AppError::GenericNotFound)?
             .electoral_districts;
 
@@ -154,6 +156,7 @@ impl CsbStore {
         political_group.csb_display_name(self.first_candidate_name().as_ref())
     }
 
+    /// One-based position of the candidate on the given imported list.
     pub fn candidate_position(
         &self,
         list_id: CandidateListId,
@@ -164,10 +167,7 @@ impl CsbStore {
         data.imported_data
             .candidate_lists
             .get(&list_id)?
-            .candidates
-            .iter()
-            .position(|candidate| *candidate == person_id)
-            .map(|index| index + 1)
+            .position_of(person_id)
     }
 
     /// The list submitter ("lijstinleveraar") imported for this political group.
@@ -182,15 +182,7 @@ impl CsbStore {
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        data.imported_data
-            .substitute_submitters
-            .iter()
-            .cloned()
-            .map(|mut submitter| {
-                submitter.is_substitute = true;
-                submitter
-            })
-            .collect()
+        ListSubmitter::clone_as_substitutes(&data.imported_data.substitute_submitters)
     }
 
     /// The authorised names ("statutaire namen") imported for this political
@@ -203,6 +195,13 @@ impl CsbStore {
             .values()
             .cloned()
             .collect()
+    }
+
+    /// An [`AppStore`](crate::AppStore) view over the paper-corrected
+    /// projection: reads serve `paper_corrected_data` through the regular app
+    /// getters, writes are persisted on this CSB stream as paper corrections.
+    pub fn paper_corrected(&self) -> crate::AppStore {
+        crate::AppStore::paper_corrections(self.clone())
     }
 }
 
@@ -372,6 +371,26 @@ mod tests {
                 .get_candidate_list_omissions(list_id)
                 .unwrap()
                 .is_empty()
+        );
+    }
+
+    #[test]
+    fn get_candidate_list_omissions_falls_back_to_paper_corrected_list() {
+        let list_id = CandidateListId::new();
+        let store = CsbStore::new_for_test();
+        store.set_paper_corrected_candidate_list(CandidateList {
+            id: list_id,
+            electoral_districts: vec![ElectoralDistrict::GR],
+            ..Default::default()
+        });
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+        );
+
+        assert_eq!(
+            store.get_candidate_list_omissions(list_id).unwrap().len(),
+            1
         );
     }
 

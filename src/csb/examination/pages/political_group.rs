@@ -33,11 +33,27 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let candidate_lists = store
+    let corrected_store = store.paper_corrected();
+    // The cards show the paper-corrected lists: lists deleted by the
+    // corrections are hidden, and the corrected candidates and electoral
+    // districts take precedence over the imported ones.
+    let mut candidate_lists = store
         .get_candidate_lists()
         .into_iter()
-        .map(CsbCandidateList::placeholder)
+        .filter_map(|list| {
+            let corrected = corrected_store.get_candidate_list(list.id).ok()?;
+            Some(CsbCandidateList::placeholder(corrected))
+        })
         .collect::<Vec<_>>();
+    // Lists only present in the paper-corrected projection were added during
+    // paper corrections; they get a card too.
+    candidate_lists.extend(
+        corrected_store
+            .get_candidate_lists()
+            .into_iter()
+            .filter(|list| store.get_candidate_list(list.id).is_none())
+            .map(CsbCandidateList::paper_added),
+    );
     let all_brp_error_count = candidate_lists
         .iter()
         .map(|cl| cl.brp_error_count)
@@ -93,6 +109,8 @@ mod tests {
         // The display name is used as the page title.
         let body = response_body_string(response).await;
         assert!(body.contains("Kiesraad Demo"));
+        // The paper corrections card posts to the start route.
+        assert!(body.contains(&format!("/csb/examination/{stream_id}/paper-corrections")));
     }
 
     #[tokio::test]
@@ -113,6 +131,122 @@ mod tests {
         assert_eq!(response.status(), StatusCode::OK);
         let body = response_body_string(response).await;
         assert!(body.contains("Blanco"));
+    }
+
+    #[tokio::test]
+    async fn renders_card_for_list_added_in_paper_corrections() {
+        use crate::{candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        store.set_paper_corrected_candidate_list(sample_candidate_list(list_id));
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The paper-added list gets a card, marked as added on paper, linking
+        // to its examination page.
+        assert!(body.contains("Added during paper corrections"));
+        assert!(body.contains(&format!("/csb/examination/{stream_id}/list/{list_id}")));
+    }
+
+    #[tokio::test]
+    async fn hides_card_for_list_deleted_in_paper_corrections() {
+        use crate::{candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        // An imported list without a corrected counterpart was deleted on paper.
+        store
+            .data
+            .write()
+            .imported_data
+            .candidate_lists
+            .insert(list_id, sample_candidate_list(list_id));
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains(&format!("/csb/examination/{stream_id}/list/{list_id}")));
+    }
+
+    #[tokio::test]
+    async fn card_shows_corrected_electoral_districts() {
+        use crate::{
+            ElectoralDistrict, candidate_lists::CandidateListId, test_utils::sample_candidate_list,
+        };
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        store.add_candidate_list(sample_candidate_list(list_id));
+        let mut corrected = sample_candidate_list(list_id);
+        corrected.electoral_districts = vec![ElectoralDistrict::GR];
+        store.set_paper_corrected_candidate_list(corrected);
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The card shows the corrected districts, not the imported ones.
+        assert!(body.contains("Groningen"));
+        assert!(!body.contains("Utrecht"));
+    }
+
+    #[tokio::test]
+    async fn card_shows_corrected_candidate_count() {
+        use crate::{
+            candidate_lists::CandidateListId, persons::PersonId, test_utils::sample_candidate_list,
+        };
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![PersonId::new()];
+        store.add_candidate_list(list.clone());
+        let mut corrected = list;
+        corrected.candidates.push(PersonId::new());
+        store.set_paper_corrected_candidate_list(corrected);
+
+        let response = overview(
+            CsbPoliticalGroupPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The card counts the corrected candidates, not the imported ones.
+        assert!(body.contains("<strong>2</strong> candidates"));
     }
 
     #[tokio::test]

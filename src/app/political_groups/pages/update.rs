@@ -109,6 +109,49 @@ mod tests {
         Ok(())
     }
 
+    /// In paper-corrections mode the app layout shows the warning banner
+    /// (with the group name and an exit form) and hides the finalise menu.
+    #[tokio::test]
+    async fn renders_corrections_banner_and_hides_finalise_in_corrections_mode()
+    -> Result<(), AppError> {
+        let csb_store = crate::CsbStore::new_for_test();
+        csb_store.set_political_group(crate::test_utils::sample_political_group());
+        let store = AppStore::paper_corrections(csb_store.clone());
+        let context = Context::new(
+            &store,
+            crate::Session::new_test_with_locale(crate::Locale::En),
+        );
+        let political_group = store.get_political_group();
+
+        let response = update_political_group(
+            PoliticalGroupUpdatePath {},
+            context,
+            store,
+            political_group,
+            Query(QueryParamState::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("paper-corrections-banner"));
+        // The banner names the group being corrected and warns to only enter
+        // handwritten corrections from the handed-in paper documents.
+        assert!(body.contains("You are correcting Kiesraad Demo."));
+        assert!(body.contains("handed-in paper documents"));
+        // Leaving corrections mode posts to the stop route of the CSB stream.
+        assert!(body.contains(&format!(
+            "/csb/examination/{}/paper-corrections/stop",
+            csb_store.stream_id
+        )));
+        // The finalise menu item is hidden.
+        assert!(!body.contains("/finalise"));
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn update_political_group_persists_and_redirects() -> Result<(), AppError> {
         let store = AppStore::new_for_test();

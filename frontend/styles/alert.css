@@ -93,6 +93,19 @@
   }
 }
 
+.paper-corrections-banner .alert {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  width: 100%;
+
+  form {
+    flex-shrink: 0;
+    margin-left: var(--space-4);
+  }
+}
+
 .download-warning-banner {
   position: fixed;
   bottom: 0;

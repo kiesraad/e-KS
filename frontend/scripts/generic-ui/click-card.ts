@@ -11,4 +11,13 @@ export default function setupClickCard() {
       }
     });
   });
+
+  // forms
+  document.querySelectorAll<HTMLElement>(".card-form").forEach((card) => {
+    card.addEventListener("click", () => {
+      if (card instanceof HTMLFormElement) {
+        card.submit();
+      }
+    });
+  });
 }

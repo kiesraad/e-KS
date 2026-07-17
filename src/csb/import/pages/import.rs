@@ -99,7 +99,7 @@ async fn do_import(
         .await?;
     source_store.load().await?;
 
-    let events = source_store.get_events();
+    let events = source_store.data.read().events.clone();
     let full_hash = events
         .iter()
         .find(|e| e.event_id == event_id)
@@ -141,7 +141,7 @@ mod tests {
             .await?;
         source_store.update(AppEvent::HideDownloadWarning).await?;
 
-        let hash = source_store.get_events()[0].hash;
+        let hash = source_store.data.read().events[0].hash;
         Ok((source_stream, format_hash(&hash, false)))
     }
 

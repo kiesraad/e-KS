@@ -81,6 +81,9 @@ pub struct Session {
     pub user_agent_hash: Option<String>,
     /// Stream belonging to the user (set on login).
     pub stream_id: Option<StreamId>,
+    /// CSB stream a committee session is correcting paper documents for.
+    /// While set, app routes serve that stream's paper-corrected data.
+    pub paper_correction_stream_id: Option<StreamId>,
     /// Authorization scope of the session, set on login. Governs which streams
     /// the session may reach (see [`crate::Scope`]).
     pub scope: Scope,
@@ -144,6 +147,7 @@ impl Session {
             last_activity: now,
             user_agent_hash: None,
             stream_id: None,
+            paper_correction_stream_id: None,
             scope: Scope::default(),
             current_election: None,
             locale,

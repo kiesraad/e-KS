@@ -17,7 +17,7 @@ mod store;
 pub use context::Context;
 pub(crate) use error_response::csrf_rejection_response;
 pub use error_response::render_error_pages;
-pub use store::{AppEvent, AppStoreData};
+pub use store::{AppEvent, AppStore, AppStoreData};
 
 pub(crate) use store::request_extractor;
 

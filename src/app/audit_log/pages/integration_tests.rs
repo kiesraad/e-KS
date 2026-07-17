@@ -30,7 +30,7 @@ async fn setup() -> (Router, AppStore, String) {
     let token = session.token_string();
     state.sessions.insert(session).await;
 
-    (app, store, token)
+    (app, AppStore::own(store), token)
 }
 
 fn get_request(uri: &str, token: &str, store: AppStore) -> Request<Body> {
