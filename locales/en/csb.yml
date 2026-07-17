@@ -4,6 +4,8 @@ action:
   finish: Finish
 added: Added
 all_restorations:
+  add_note: Add a note
+  add_note_explanation: "Add extra notes used at the bottom of the omission letter:"
   corrections_explanation: All created corrections are displayed here.
   explanation: Inspect all omissions and corrections here before concluding the examination.
   omissions_explanation: All created omissions are displayed here.
