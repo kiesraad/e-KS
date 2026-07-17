@@ -21,6 +21,7 @@ struct CsbCandidateListTemplate {
     electoral_districts: Vec<ElectoralDistrict>,
     candidates: Vec<CsbCandidate>,
     omissions: Vec<Omission>,
+    restoration_count: usize
 }
 
 pub async fn overview(
@@ -53,6 +54,7 @@ pub async fn overview(
             electoral_districts: list.electoral_districts,
             candidates,
             omissions,
+            restoration_count: store.get_omission_count()
         },
         context,
     )

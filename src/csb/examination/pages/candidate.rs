@@ -21,6 +21,8 @@ struct CsbCandidateTemplate {
     candidate: Person,
     position: Option<usize>,
     candidate_omissions: Vec<Omission>,
+    restoration_count: usize
+
 }
 
 pub async fn overview(
@@ -49,6 +51,7 @@ pub async fn overview(
             candidate,
             position,
             candidate_omissions,
+            restoration_count: store.get_omission_count()
         },
         context,
     )

@@ -29,8 +29,8 @@
   </div>
 {% endblock %}
 {% block header_action %}
-  <a href="{{ political_group.candidate_list_path(list_id) }}"
-     class="button secondary">{{ "action.back"|trans }}</a>
+{% set back_url =  political_group.candidate_list_path(list_id) %}
+{% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% macro edit_action() %}
   <td class="actions">

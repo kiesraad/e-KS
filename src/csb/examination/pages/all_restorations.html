@@ -10,6 +10,7 @@
 {% endblock %}
 {% block header_action %}
   {% set back_url = political_group.examination_path() %}
+  {% set include_finish_switch = true %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}

@@ -129,3 +129,10 @@ impl Omission {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    
+}

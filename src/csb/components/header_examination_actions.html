@@ -1,5 +1,6 @@
 <div class="header-buttons">
   <div class="header-controls">
+    {% if include_finish_switch | default(false) %}
     <div class="switch-group {% if political_group.is_examination_finished %} finished {% else %} unfinished {% endif %}">
       <p>
         {% if political_group.is_examination_finished %}
@@ -17,6 +18,7 @@
         </label>
       </form>
     </div>
+    {% endif %}
     <a class="button secondary icon-restoration"
        href="{{ political_group.all_restorations_path() }}">
       {{ "csb.all_restorations.title"|trans }}
