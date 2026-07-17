@@ -23,6 +23,8 @@
             </div>
             <div class="row">
               <div class="omission-item-body">
+                <h5>{{ "common.electoral_districts"|trans }}</h5>
+                <p>In {{ view.districts }}</p>
                 <h5>{{ "csb.omission.overview.description"|trans }}</h5>
                 <p>{{ view.omission.description }}</p>
                 {% if !view.omission.help_text.is_empty() %}

@@ -29,8 +29,8 @@
   </div>
 {% endblock %}
 {% block header_action %}
-{% set back_url =  political_group.candidate_list_path(list_id) %}
-{% include "csb/components/header_examination_actions.html" %}
+  {% set back_url = political_group.candidate_list_path(list_id) %}
+  {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% macro edit_action() %}
   <td class="actions">
@@ -55,30 +55,17 @@
 {% endmacro %}
 {% block content %}
   <section class="general-information">
-    <div class="omission-cards omission-cards--split">
+    <div class="omission-cards">
       <h3>
         <span class="omission-icon" aria-hidden="true"></span>
         {{ "csb.omission.title"|trans }}
       </h3>
       <div class="cards">
         <div class="card omission-card"
-             data-href="{{ political_group.add_person_omission_path(candidate.id, list_id) }}">
-          <div class="card-header">
-            <div>
-              <h3 class="h4">{{ "csb.candidate.add_person_title"|trans }}</h3>
-            </div>
-          </div>
-          <div class="card-content">
-            <p>{{ "csb.candidate.add_person_text"|trans }}</p>
-          </div>
-          <a class="card-footer"
-             href="{{ political_group.add_person_omission_path(candidate.id, list_id) }}">{{ "csb.omission.action.add"|trans }}</a>
-        </div>
-        <div class="card omission-card"
              data-href="{{ political_group.add_candidate_omission_path(candidate.id, list_id) }}">
           <div class="card-header">
             <div>
-              <h3 class="h4">{{ "csb.candidate.add_candidate_title"|trans }}</h3>
+              <h3 class="h4">{{ "csb.omission.add.title"|trans }}</h3>
             </div>
           </div>
           <div class="card-content">
@@ -87,7 +74,7 @@
           <a class="card-footer"
              href="{{ political_group.add_candidate_omission_path(candidate.id, list_id) }}">{{ "csb.omission.action.add"|trans }}</a>
         </div>
-        <div class="card omission-card omission-card--overview"
+        <div class="card omission-card"
              data-href="{{ political_group.manage_candidate_omissions_path(candidate.id, list_id) }}">
           <div class="card-header">
             <div>

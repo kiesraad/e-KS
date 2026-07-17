@@ -36,32 +36,12 @@ impl CsbStore {
             .collect()
     }
 
-    pub fn get_general_omissions(&self) -> Vec<Omission> {
+    pub fn get_political_group_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 
         data.omissions
             .values()
-            .filter(|o| matches!(o.category, OmissionCategory::General))
-            .cloned()
-            .collect()
-    }
-
-    pub fn get_name_authorisation_omissions(&self) -> Vec<Omission> {
-        let data = self.data.read();
-
-        data.omissions
-            .values()
-            .filter(|o| matches!(o.category, OmissionCategory::NameAuthorisation(_)))
-            .cloned()
-            .collect()
-    }
-
-    pub fn get_declaration_of_support_omissions(&self) -> Vec<Omission> {
-        let data = self.data.read();
-
-        data.omissions
-            .values()
-            .filter(|o| matches!(o.category, OmissionCategory::DeclarationOfSupport(_)))
+            .filter(|o| matches!(o.category, OmissionCategory::PoliticalGroup))
             .cloned()
             .collect()
     }
@@ -90,16 +70,30 @@ impl CsbStore {
             .collect()
     }
 
-    pub fn get_candidate_list_omissions(&self, list_id: CandidateListId) -> Vec<Omission> {
+    /// Return all candidate-list omissions that are linked to at least one
+    /// electoral district covered by the given list.
+    pub fn get_candidate_list_omissions(
+        &self,
+        list_id: CandidateListId,
+    ) -> Result<Vec<Omission>, AppError> {
         let data = self.data.read();
 
-        data.omissions
+        let list_districts = &data
+            .imported_data
+            .candidate_lists
+            .get(&list_id)
+            .ok_or(AppError::GenericNotFound)?
+            .electoral_districts;
+
+        Ok(data
+            .omissions
             .values()
-            .filter(
-                |o| matches!(&o.category, OmissionCategory::CandidateList(id) if *id == list_id),
-            )
+            .filter(|o| {
+                matches!(&o.category, OmissionCategory::CandidateList(districts)
+                    if districts.iter().any(|d| list_districts.contains(d)))
+            })
             .cloned()
-            .collect()
+            .collect())
     }
 
     /// Return the single stored omission. Test-only helper for asserting on
@@ -232,7 +226,8 @@ impl CsbStore {
 mod tests {
     use super::*;
     use crate::{
-        CsbStore,
+        CsbStore, ElectoralDistrict,
+        candidate_lists::CandidateList,
         csb::omission::{OmissionCategory, tests::sample_omission},
         list_designation::ListDesignation,
         test_utils::{sample_candidate_list, sample_person_with},
@@ -243,53 +238,47 @@ mod tests {
         store.data.write().omissions.insert(omission.id, omission);
     }
 
-    #[test]
-    fn get_general_omissions_returns_only_general() {
-        let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::General);
-        insert(&store, OmissionCategory::NameAuthorisation(None));
-
-        let result = store.get_general_omissions();
-
-        assert_eq!(result.len(), 1);
-        assert!(matches!(result[0].category, OmissionCategory::General));
+    fn insert_list(store: &CsbStore, list_id: CandidateListId, districts: Vec<ElectoralDistrict>) {
+        let list = CandidateList {
+            id: list_id,
+            electoral_districts: districts,
+            ..Default::default()
+        };
+        store
+            .data
+            .write()
+            .imported_data
+            .candidate_lists
+            .insert(list_id, list);
     }
 
     #[test]
-    fn get_general_omissions_returns_empty_when_none() {
+    fn get_political_group_omissions_returns_only_political_group() {
         let store = CsbStore::new_for_test();
+        insert(&store, OmissionCategory::PoliticalGroup);
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+        );
 
-        assert!(store.get_general_omissions().is_empty());
-    }
-
-    #[test]
-    fn get_name_authorisation_omissions_returns_only_name_authorisation() {
-        let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::NameAuthorisation(None));
-        insert(&store, OmissionCategory::General);
-
-        let result = store.get_name_authorisation_omissions();
+        let result = store.get_political_group_omissions();
 
         assert_eq!(result.len(), 1);
         assert!(matches!(
             result[0].category,
-            OmissionCategory::NameAuthorisation(_)
+            OmissionCategory::PoliticalGroup
         ));
     }
 
     #[test]
-    fn get_declaration_of_support_omissions_returns_only_declaration_of_support() {
+    fn get_political_group_omissions_returns_empty_when_none() {
         let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::DeclarationOfSupport(vec![]));
-        insert(&store, OmissionCategory::General);
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+        );
 
-        let result = store.get_declaration_of_support_omissions();
-
-        assert_eq!(result.len(), 1);
-        assert!(matches!(
-            result[0].category,
-            OmissionCategory::DeclarationOfSupport(_)
-        ));
+        assert!(store.get_political_group_omissions().is_empty());
     }
 
     #[test]
@@ -301,17 +290,17 @@ mod tests {
             &store,
             OmissionCategory::Candidate {
                 person: person_a,
-                list: None,
+                lists: Vec::new(),
             },
         );
         insert(
             &store,
             OmissionCategory::Candidate {
                 person: person_b,
-                list: None,
+                lists: Vec::new(),
             },
         );
-        insert(&store, OmissionCategory::General);
+        insert(&store, OmissionCategory::PoliticalGroup);
 
         let result = store.get_candidate_omissions(person_a);
 
@@ -328,7 +317,7 @@ mod tests {
             &store,
             OmissionCategory::Candidate {
                 person: PersonId::new(),
-                list: None,
+                lists: Vec::new(),
             },
         );
 
@@ -336,32 +325,84 @@ mod tests {
     }
 
     #[test]
-    fn get_candidate_list_omissions_returns_only_omissions_for_the_given_list() {
+    fn get_candidate_list_omissions_returns_omissions_sharing_a_district_with_the_list() {
         let list_a = CandidateListId::new();
         let list_b = CandidateListId::new();
         let store = CsbStore::new_for_test();
-        insert(&store, OmissionCategory::CandidateList(list_a));
-        insert(&store, OmissionCategory::CandidateList(list_b));
-        insert(&store, OmissionCategory::General);
+        insert_list(&store, list_a, vec![ElectoralDistrict::GR]);
+        insert_list(&store, list_b, vec![ElectoralDistrict::DR]);
+        // Omission for GR: should appear in list_a but not list_b.
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+        );
+        // Omission for DR: should appear in list_b but not list_a.
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::DR]),
+        );
+        insert(&store, OmissionCategory::PoliticalGroup);
 
-        let result = store.get_candidate_list_omissions(list_a);
+        let result_a = store.get_candidate_list_omissions(list_a).unwrap();
+        let result_b = store.get_candidate_list_omissions(list_b).unwrap();
 
-        assert_eq!(result.len(), 1);
-        assert!(matches!(result[0].category, OmissionCategory::CandidateList(id) if id == list_a));
+        assert_eq!(result_a.len(), 1);
+        assert!(
+            matches!(&result_a[0].category, OmissionCategory::CandidateList(d) if d == &[ElectoralDistrict::GR])
+        );
+        assert_eq!(result_b.len(), 1);
+        assert!(
+            matches!(&result_b[0].category, OmissionCategory::CandidateList(d) if d == &[ElectoralDistrict::DR])
+        );
     }
 
     #[test]
-    fn get_candidate_list_omissions_returns_empty_when_no_match() {
+    fn get_candidate_list_omissions_includes_omission_covering_multiple_districts() {
+        let list_id = CandidateListId::new();
+        let store = CsbStore::new_for_test();
+        insert_list(&store, list_id, vec![ElectoralDistrict::GR]);
+        // Omission for both GR and DR: overlaps with the list, so it should appear.
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR, ElectoralDistrict::DR]),
+        );
+
+        assert_eq!(
+            store.get_candidate_list_omissions(list_id).unwrap().len(),
+            1
+        );
+    }
+
+    #[test]
+    fn get_candidate_list_omissions_returns_empty_when_no_district_overlap() {
+        let list_id = CandidateListId::new();
+        let store = CsbStore::new_for_test();
+        insert_list(&store, list_id, vec![ElectoralDistrict::GR]);
+        insert(
+            &store,
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::DR]),
+        );
+
+        assert!(
+            store
+                .get_candidate_list_omissions(list_id)
+                .unwrap()
+                .is_empty()
+        );
+    }
+
+    #[test]
+    fn get_candidate_list_omissions_errors_for_unknown_list() {
         let store = CsbStore::new_for_test();
         insert(
             &store,
-            OmissionCategory::CandidateList(CandidateListId::new()),
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
         );
 
         assert!(
             store
                 .get_candidate_list_omissions(CandidateListId::new())
-                .is_empty()
+                .is_err()
         );
     }
 

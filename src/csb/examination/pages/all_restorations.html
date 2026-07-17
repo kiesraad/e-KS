@@ -28,8 +28,7 @@
       <ul class="tags-list">
         {% for omission in all_omissions.general %}
           <li class="tag link">
-            <a class="{{ omission.class() }}"
-               href="{{ omission.path(political_group) }}">{{ omission.title }}</a>
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
           </li>
         {% endfor %}
       </ul>
@@ -39,8 +38,7 @@
       <ul class="tags-list">
         {% for omission in all_omissions.candidate_lists %}
           <li class="tag link">
-            <a class="{{ omission.class() }}"
-               href="{{ omission.path(political_group) }}">{{ omission.title }}</a>
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
           </li>
         {% endfor %}
       </ul>
@@ -50,8 +48,7 @@
       <ul class="tags-list">
         {% for omission in candidate.omissions %}
           <li class="tag link">
-            <a class="{{ omission.class() }}"
-               href="{{ omission.path(political_group) }}">{{ omission.title }}</a>
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
           </li>
         {% endfor %}
       </ul>

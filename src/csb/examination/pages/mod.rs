@@ -111,10 +111,6 @@ pub struct OmissionListQuery {
     /// candidate detail page, which is always scoped to a list.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub list: Option<CandidateListId>,
-    /// When set, the omission applies to the person on every list rather than to
-    /// their candidacy on `list` (which is then only the page to return to).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub general: bool,
 }
 
 impl CsbPoliticalGroup {
@@ -191,46 +187,20 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the dialog that adds an omission to a candidate on a specific
-    /// list. The list is carried as a query parameter so the candidate's
-    /// position on it can be resolved for the preset placeholders.
+    /// Path to the dialog that adds an omission to a candidate. The list is
+    /// carried as a query parameter so the candidate's position on it can be
+    /// resolved for the preset placeholders and to return to this page after.
     pub fn add_candidate_omission_path(
         &self,
         person: &PersonId,
         list: &CandidateListId,
-    ) -> impl TypedPath {
-        self.add_candidate_omission_path_for(person, list, false)
-    }
-
-    /// Path to the dialog that adds an omission covering the person on every
-    /// list (a general candidate omission). The `list` is carried only so the
-    /// dialog can return to the candidate detail page it was opened from.
-    pub fn add_person_omission_path(
-        &self,
-        person: &PersonId,
-        list: &CandidateListId,
-    ) -> impl TypedPath {
-        self.add_candidate_omission_path_for(person, list, true)
-    }
-
-    /// The add-omission dialog for a candidate, keeping the `list` context. A
-    /// `general` omission covers the person on every list; otherwise it is
-    /// scoped to the candidate on this list.
-    fn add_candidate_omission_path_for(
-        &self,
-        person: &PersonId,
-        list: &CandidateListId,
-        general: bool,
     ) -> impl TypedPath {
         CsbAddOmissionPath {
             stream_id: self.stream_id,
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
         }
-        .with_query_params(OmissionListQuery {
-            list: Some(*list),
-            general,
-        })
+        .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
     /// Path to the overview page listing the omissions already added for this
@@ -246,10 +216,7 @@ impl CsbPoliticalGroup {
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
         }
-        .with_query_params(OmissionListQuery {
-            list: Some(*list),
-            general: false,
-        })
+        .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
     pub fn all_restorations_path(&self) -> impl TypedPath {

@@ -4,10 +4,11 @@ export default function setupSelectAllCheckbox() {
     selectAllCheckbox: HTMLInputElement,
     checkList: NodeListOf<HTMLInputElement>,
   ) => {
-    if (Array.from(checkList).every((cb) => cb.checked)) {
+    const enabled = Array.from(checkList).filter((cb) => !cb.disabled);
+    if (enabled.every((cb) => cb.checked)) {
       selectAllCheckbox.checked = true;
       selectAllCheckbox.indeterminate = false;
-    } else if (Array.from(checkList).every((cb) => !cb.checked)) {
+    } else if (enabled.every((cb) => !cb.checked)) {
       selectAllCheckbox.checked = false;
       selectAllCheckbox.indeterminate = false;
     } else {
@@ -36,7 +37,9 @@ export default function setupSelectAllCheckbox() {
       // add event listener for the select all checkbox
       selectAllCheckbox.addEventListener("change", (_) => {
         checkList.forEach((checkbox) => {
-          checkbox.checked = selectAllCheckbox.checked;
+          if (!checkbox.disabled) {
+            checkbox.checked = selectAllCheckbox.checked;
+          }
         });
         determineSelectAllState(selectAllCheckbox, checkList);
       });

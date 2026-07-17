@@ -307,25 +307,6 @@
   }
 }
 
-.all-omissions-table {
-  thead {
-    th {
-      font-weight: var(--font-weight-bold);
-      padding: var(--space-2) 0;
-    }
-  }
-}
-
-.omission-cards--split {
-  .cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .omission-card--overview {
-    grid-column: 1 / -1;
-  }
-}
-
 .overlay.omission-overlay {
   background-color: var(--orange-50);
 

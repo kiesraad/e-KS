@@ -2,7 +2,7 @@ use askama::Template;
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    Context, CsbStore, Locale, Overlay, QueryParamState,
+    AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay, QueryParamState,
     candidate_lists::CandidateListId,
     csb::{
         Omission, OmissionPlaceholders, OmissionType,
@@ -14,6 +14,13 @@ use crate::{
 };
 
 use super::OmissionTarget;
+
+/// One selectable candidate list in the add-omission dialog for candidate omissions.
+pub(super) struct CandidateListOption {
+    pub(super) id: CandidateListId,
+    /// Dutch label derived from the list's electoral districts (e.g. "1. Groningen").
+    pub(super) label: String,
+}
 
 /// The add-omission form tab of the dialog.
 #[derive(Template)]
@@ -28,6 +35,12 @@ pub(super) struct CsbAddOmissionTemplate {
     /// The dialog opened on its two tabs, for the steps sidebar.
     pub(super) add_tab_url: String,
     pub(super) overview_tab_url: String,
+    /// Districts that appear on at least one candidate list of this political
+    /// group. The districts section is hidden when this is empty. Districts
+    /// absent from all lists are shown disabled so the user cannot select them.
+    pub(super) available_districts: Vec<ElectoralDistrict>,
+    /// Candidate lists for a Candidate omission. Hidden when empty.
+    pub(super) available_candidate_lists: Vec<CandidateListOption>,
 }
 
 /// The overview tab of the dialog: the omissions already added to this entity.
@@ -49,6 +62,8 @@ pub(super) struct CsbOmissionOverviewTemplate {
 pub(super) struct OmissionView {
     omission: Omission,
     remove_url: String,
+    /// Formatted district string for display (e.g. "1. Groningen, 2. Friesland").
+    districts: String,
 }
 
 /// A preset shown in the dialog, with `{token}` placeholders in its description
@@ -62,11 +77,7 @@ pub(super) struct PresetView {
 }
 
 /// Resolve the placeholder values that can be derived from the referenced item.
-fn placeholders_for(
-    target: &OmissionTarget,
-    store: &CsbStore,
-    locale: Locale,
-) -> OmissionPlaceholders {
+fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceholders {
     match target.omission_type {
         OmissionType::Candidate => {
             let person = PersonId::from(target.reference);
@@ -78,32 +89,35 @@ fn placeholders_for(
                     .list
                     .and_then(|list| store.candidate_position(list, person))
                     .map(|nr| nr.to_string()),
-                districts: None,
             }
         }
-        OmissionType::CandidateList => OmissionPlaceholders {
-            districts: store
-                .get_candidate_list(CandidateListId::from(target.reference))
-                .map(|list| list.districts_name(locale.into())),
-            ..Default::default()
-        },
-        OmissionType::PoliticalGroup => OmissionPlaceholders::default(),
+        // The {district}/{districts} tokens in candidate-list presets are filled
+        // in by the front-end
+        OmissionType::CandidateList | OmissionType::PoliticalGroup => {
+            OmissionPlaceholders::default()
+        }
     }
 }
 
-/// The presets for this type with their descriptions interpolated. A `general`
-/// candidate omission (applying to the person on every list) offers a different
-/// set than one scoped to the candidate on a specific list.
-pub(super) fn preset_views(
-    target: &OmissionTarget,
-    store: &CsbStore,
-    locale: Locale,
-) -> Vec<PresetView> {
-    let placeholders = placeholders_for(target, store, locale);
+/// All candidate lists of the political group for the candidate omission form
+pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<CandidateListOption> {
+    store
+        .get_candidate_lists()
+        .into_iter()
+        .map(|l| CandidateListOption {
+            id: l.id,
+            label: l.districts_name(locale.into()),
+        })
+        .collect()
+}
+
+/// The presets for this type with their descriptions interpolated.
+pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<PresetView> {
+    let placeholders = placeholders_for(target, store);
 
     target
         .omission_type
-        .presets(target.general)
+        .presets()
         .iter()
         .map(|preset| PresetView {
             title: preset.title.clone(),
@@ -122,18 +136,21 @@ pub(super) fn omission_views(
     target: &OmissionTarget,
     store: &CsbStore,
     overview_url: &str,
-) -> Vec<OmissionView> {
+) -> Result<Vec<OmissionView>, AppError> {
     let omissions = match target.omission_type {
-        OmissionType::PoliticalGroup => store.get_general_omissions(),
+        OmissionType::PoliticalGroup => store.get_political_group_omissions(),
         OmissionType::CandidateList => {
-            store.get_candidate_list_omissions(CandidateListId::from(target.reference))
+            store.get_candidate_list_omissions(CandidateListId::from(target.reference))?
         }
         OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(target.reference)),
     };
 
-    omissions
-        .into_iter()
-        .map(|omission| OmissionView {
+    let mut views = Vec::with_capacity(omissions.len());
+    for omission in omissions {
+        let districts = omission
+            .category
+            .electoral_district(store, &store.election)?;
+        views.push(OmissionView {
             remove_url: CsbDeleteOmissionPath {
                 stream_id: target.stream_id,
                 omission_id: omission.id,
@@ -141,6 +158,8 @@ pub(super) fn omission_views(
             .with_query_params(QueryParamState::redirect_to(overview_url.to_string()))
             .to_string(),
             omission,
-        })
-        .collect()
+            districts,
+        });
+    }
+    Ok(views)
 }

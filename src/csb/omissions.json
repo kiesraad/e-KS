@@ -81,9 +81,7 @@
       "description": "Ten aanzien van kandidaat nr. {candidate_number} {candidate_name} ontbreekt de verklaring dat deze instemt met kandidaatstelling op de lijst. De verklaring wordt geacht te ontbreken omdat de lijst die daarop vermeld staat niet overeenkomt met de lijst zoals deze is ingediend.",
       "help_text": "Dit verzuim is te herstellen door van de kandidaat alsnog een instemmingsverklaring (model H 9) met de lijst zoals deze is ingediend in te leveren.",
       "recoverable": true
-    }
-  ],
-  "person": [
+    },
     {
       "title": "Gemachtigde kandidaat ontbreekt",
       "description": "De instemmingsverklaring van kandidaat nr. {candidate_number}, {candidate_name} wordt geacht te ontbreken, aangezien de aanwijzing van een gemachtigde ontbreekt nu is gebleken dat de kandidaat buiten het Europese deel van Nederland woont.",

@@ -20,7 +20,7 @@ struct CsbPoliticalGroupTemplate {
     political_group: CsbPoliticalGroup,
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
-    general_omission_count: usize,
+    political_group_omission_count: usize,
     restoration_count: usize,
 }
 
@@ -40,14 +40,14 @@ pub async fn overview(
         .iter()
         .map(|cl| cl.brp_error_count)
         .sum::<usize>();
-    let general_omission_count = store.get_general_omissions().len();
+    let political_group_omission_count = store.get_political_group_omissions().len();
 
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
             political_group,
             all_brp_error_count,
             candidate_lists,
-            general_omission_count,
+            political_group_omission_count,
             restoration_count: store.get_omission_count(),
         },
         context,
@@ -115,13 +115,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn renders_general_omission_count_badge() {
+    async fn renders_political_group_omission_count_badge() {
         use crate::csb::{Omission, OmissionCategory};
 
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Deposit missing".to_string(),
             "The deposit has not been paid.".to_string(),
             String::new(),

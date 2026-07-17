@@ -3,16 +3,15 @@ use axum::response::{IntoResponse, Response};
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, HtmlTemplate, QueryParamState,
+    AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate, QueryParamState,
+    candidate_lists::CandidateListId,
     csb::{
         Omission,
-        OmissionCategory::{
-            Candidate, CandidateList, DeclarationOfSupport, General, NameAuthorisation,
-        },
+        OmissionCategory::{Candidate, CandidateList, PoliticalGroup},
         examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     },
     filters,
-    persons::Person,
+    persons::{Person, PersonId},
 };
 
 #[derive(Template)]
@@ -31,9 +30,9 @@ pub async fn all_restorations(
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     Ok(HtmlTemplate(
         CsbAllRestorationsTemplate {
+            all_omissions: store.get_all_omissions(&political_group)?,
             political_group,
             restoration_count: store.get_omission_count(),
-            all_omissions: store.get_all_omissions()?,
         },
         context,
     )
@@ -41,18 +40,26 @@ pub async fn all_restorations(
 }
 
 struct AllOmissions {
-    general: Vec<Omission>,
-    candidate_lists: Vec<Omission>,
+    general: Vec<OmissionWithPath>,
+    candidate_lists: Vec<OmissionWithPath>,
     candidates: Vec<CandidateOmissions>,
 }
 
 struct CandidateOmissions {
-    omissions: Vec<Omission>,
+    omissions: Vec<OmissionWithPath>,
     person: Person,
 }
 
+struct OmissionWithPath {
+    omission: Omission,
+    path: String,
+}
+
 impl CsbStore {
-    fn get_all_omissions(&self) -> Result<AllOmissions, AppError> {
+    fn get_all_omissions(
+        &self,
+        political_group: &CsbPoliticalGroup,
+    ) -> Result<AllOmissions, AppError> {
         let omissions = self
             .data
             .read()
@@ -63,27 +70,37 @@ impl CsbStore {
 
         let mut general = Vec::new();
         let mut candidate_lists = Vec::new();
+        let mut candidates: Vec<CandidateOmissions> = Vec::new();
 
-        for o in omissions {
-            match &o.category {
-                General => general.push(o),
-                CandidateList(_) => candidate_lists.push(o),
-                Candidate { .. } => {} // candidate omissions collected separately
-                NameAuthorisation(_) | DeclarationOfSupport(_) => {
-                    todo!("remove after merge of #965")
+        for omission in omissions {
+            match omission.category {
+                PoliticalGroup => general.push(OmissionWithPath {
+                    omission: omission.clone(),
+                    path: general_path(political_group),
+                }),
+                CandidateList(ref districts) => candidate_lists.push(OmissionWithPath {
+                    omission: omission.clone(),
+                    path: list_path(political_group, districts, self)?,
+                }),
+                Candidate { person, ref lists } => {
+                    if let Some(candidate) = candidates.iter_mut().find(|c| c.person.id == person) {
+                        candidate.omissions.push(OmissionWithPath {
+                            path: candidate_path(political_group, &person, &lists[0]),
+                            omission: omission.clone(),
+                        })
+                    } else {
+                        candidates.push(CandidateOmissions {
+                            omissions: vec![OmissionWithPath {
+                                path: candidate_path(political_group, &person, &lists[0]),
+                                omission,
+                            }],
+                            person: self
+                                .get_person(person)
+                                .ok_or(AppError::InternalServerError)?,
+                        });
+                    }
                 }
             }
-        }
-
-        let mut candidates = Vec::new();
-
-        for person_id in self.get_candidates_with_omissions() {
-            candidates.push(CandidateOmissions {
-                omissions: self.get_candidate_omissions(person_id),
-                person: self
-                    .get_person(person_id)
-                    .ok_or(AppError::InternalServerError)?,
-            });
         }
         Ok(AllOmissions {
             general,
@@ -93,46 +110,48 @@ impl CsbStore {
     }
 }
 
-impl Omission {
-    fn path(&self, political_group: &CsbPoliticalGroup) -> String {
-        match self.category {
-            General => political_group
-                .manage_political_group_omissions_path()
-                .with_query_params(QueryParamState::redirect_to(
-                    political_group.all_restorations_path().to_string(),
-                ))
-                .to_string(),
-            CandidateList(list_id) => political_group
-                .manage_candidate_list_omissions_path(&list_id)
-                .with_query_params(QueryParamState::redirect_to(
-                    political_group.all_restorations_path().to_string(),
-                ))
-                .to_string(),
-            Candidate {
-                person,
-                list: Some(list_id),
-            } => political_group
-                .manage_candidate_omissions_path(&person, &list_id)
-                .with_query_params(QueryParamState::redirect_to(
-                    political_group.all_restorations_path().to_string(),
-                ))
-                .to_string(),
-            Candidate {
-                person: _,
-                list: None,
-            } =>
-            // TODO: solve this after omission rework
-            {
-                "".to_string()
-            }
-            NameAuthorisation(_) | DeclarationOfSupport(_) => todo!("remove after merge of #965"),
-        }
-    }
+fn general_path(political_group: &CsbPoliticalGroup) -> String {
+    political_group
+        .manage_political_group_omissions_path()
+        .with_query_params(QueryParamState::redirect_to(
+            political_group.all_restorations_path().to_string(),
+        ))
+        .to_string()
+}
+
+fn list_path(
+    political_group: &CsbPoliticalGroup,
+    districts: &[ElectoralDistrict],
+    store: &CsbStore,
+) -> Result<String, AppError> {
+    let list = store
+        .get_candidate_lists()
+        .iter()
+        .find(|l| l.electoral_districts.contains(&districts[0]))
+        .ok_or(AppError::InternalServerError)?
+        .id;
+    Ok(political_group
+        .manage_candidate_list_omissions_path(&list)
+        .with_query_params(QueryParamState::redirect_to(
+            political_group.all_restorations_path().to_string(),
+        ))
+        .to_string())
+}
+
+fn candidate_path(
+    political_group: &CsbPoliticalGroup,
+    person: &PersonId,
+    list: &CandidateListId,
+) -> String {
+    political_group
+        .manage_candidate_omissions_path(person, list)
+        .with_query_params(QueryParamState::redirect_to(
+            political_group.all_restorations_path().to_string(),
+        ))
+        .to_string()
 }
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    
+    // TODO
 }

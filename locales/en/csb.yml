@@ -14,10 +14,7 @@ brp:
   correct: Correct
   errors: Errors
 candidate:
-  add_candidate_text: Add omissions for this candidate on this list only
-  add_candidate_title: Candidate
-  add_person_text: Add omissions for this person on all their lists
-  add_person_title: Person
+  add_candidate_text: Add omissions for this candidate
   overview_text: Added omissions for this candidate
   personal_details: Personal details
   status: Status
@@ -108,8 +105,10 @@ omission:
     plural: "{} omissions"
     singular: 1 omission
   form:
+    applies_to: "This omission applies to:"
     description_label: Add I 1 omission
     help_text_label: Add omission letter note
+    placeholder_warning: The text still contains unfilled placeholders.
     presets_heading: Add one of these omissions
     recoverable_label: Recoverable omission
     submit: Add and close
