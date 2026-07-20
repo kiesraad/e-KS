@@ -503,6 +503,45 @@ pub mod tests {
         }
 
         #[test]
+        fn candidate_with_paper_added_list_uses_the_corrected_projection() {
+            let store = CsbStore::new_for_test();
+            let list = CandidateList {
+                electoral_districts: vec![ElectoralDistrict::GR],
+                ..Default::default()
+            };
+            let id = list.id;
+            store.set_paper_corrected_candidate_list(list);
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                lists: vec![id],
+            };
+
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "kieskring 1 (Groningen)"
+            );
+        }
+
+        #[test]
+        fn candidate_with_corrected_list_uses_the_corrected_districts() {
+            let (store, id) = store_with_list(vec![ElectoralDistrict::UT]);
+            store.set_paper_corrected_candidate_list(CandidateList {
+                id,
+                electoral_districts: vec![ElectoralDistrict::GR],
+                ..Default::default()
+            });
+            let category = OmissionCategory::Candidate {
+                person: crate::persons::PersonId::new(),
+                lists: vec![id],
+            };
+
+            assert_eq!(
+                category.electoral_district(&store, &EK).unwrap(),
+                "kieskring 1 (Groningen)"
+            );
+        }
+
+        #[test]
         fn candidate_with_missing_list_returns_error() {
             let store = CsbStore::new_for_test();
             let category = OmissionCategory::Candidate {

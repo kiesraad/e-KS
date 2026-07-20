@@ -42,6 +42,23 @@
       </div>
     </div>
     <div class="cards cards-candidate-lists">
+      <form method="post"
+            class="card card-form card-candidate-list"
+            action="{{ political_group.start_paper_corrections_path() }}">
+        <div class="card-header">
+          <div class="badge badge-data"></div>
+          <div>
+            <h3 class="h4">{{ "csb.paper_corrections.title"|trans }}</h3>
+          </div>
+        </div>
+        <div class="card-content">
+          <ul class="card-instruction">
+            <li>{{ "csb.paper_corrections.instruction"|trans }}</li>
+          </ul>
+        </div>
+        {{ macros::csrf_field() }}
+        <button type="submit" class="card-footer">{{ "csb.paper_corrections.start"|trans }}</button>
+      </form>
       <div class="card card-candidate-list"
            data-href="{{ political_group.general_information_path() }}">
         <div class="card-header">
@@ -67,6 +84,9 @@
             <div class="badge badge-candidates-list"></div>
             <div>
               <h3 class="h4">{{ "candidate_list.title_single"|trans }}</h3>
+              {% if candidate_list.is_paper_added %}
+                <p class="paper-corrected-value">{{ "csb.group.added_on_paper"|trans }}</p>
+              {% endif %}
             </div>
           </div>
           <div class="card-content">

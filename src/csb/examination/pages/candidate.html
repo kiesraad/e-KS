@@ -1,4 +1,5 @@
 {% extends "csb/components/layout.html" %}
+{% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
@@ -6,9 +7,7 @@
   {{ breadcrumb(political_group.candidate_path(list_id, candidate.id) , candidate.name.display() , is_translatable=false) }}
 {% endblock %}
 {% block page_title %}
-  {% if let Some(position) = position %}
-    <span class="badge position-badge candidate-number">{{ position }}</span>
-  {% endif %}
+  {{ paper_corrected::position_badge(position, "candidate-number") }}
   {{ candidate.name.display() }}
 {% endblock %}
 {% block page_sub_title %}
@@ -48,7 +47,7 @@
 {% endmacro %}
 {% macro data_row(label, value) %}
   <tr class="clickable">
-    <td>{{ label }}: <strong>{{ value }}</strong></td>
+    <td>{{ label }}: {{ paper_corrected::value(value) }}</td>
     <td></td>
     {{ edit_action() }}
   </tr>
@@ -100,23 +99,38 @@
     <table class="general-information-table">
       {{ columns_head("person.personal_details"|trans) }}
       <tbody>
-        {{ data_row("person.fields.initials"|trans, candidate.name.initials) }}
-        {{ data_row("person.fields.first_name"|trans, candidate.name.first_name|display) }}
-        {{ data_row("person.fields.last_name"|trans, candidate.name.last_name_with_prefix() ) }}
-        {{ data_row("person.fields.gender"|trans, candidate.gender_key() |trans) }}
-        {{ data_row("person.fields.date_of_birth"|trans, crate::common::DateOfBirth::format_option(candidate.personal_data.date_of_birth) ) }}
-        {{ data_row("person.fields.place_of_residence"|trans, candidate.personal_data.place_of_residence|display) }}
+        {{ data_row("person.fields.initials"|trans, details.initials) }}
+        {{ data_row("person.fields.first_name"|trans, details.first_name) }}
+        {{ data_row("person.fields.last_name"|trans, details.last_name) }}
+        {{ data_row("person.fields.gender"|trans, details.gender) }}
+        {{ data_row("person.fields.date_of_birth"|trans, details.date_of_birth) }}
+        {{ data_row("person.fields.bsn"|trans, details.bsn) }}
+        {{ data_row("person.fields.place_of_residence"|trans, details.place_of_residence) }}
       </tbody>
     </table>
     <table class="general-information-table">
       {{ columns_head("person.correspondence_address"|trans) }}
       <tbody>
-        {{ data_row("person.fields.street_name"|trans, candidate.address.street_name|display) }}
-        {{ data_row("person.fields.house_number"|trans, candidate.address.house_number|display) }}
-        {{ data_row("person.fields.postal_code"|trans, candidate.address.postal_code|display) }}
-        {{ data_row("person.fields.locality"|trans, candidate.address.locality|display) }}
-        {{ data_row("person.fields.country"|trans, candidate.personal_data.country|display) }}
+        {{ data_row("person.fields.street_name"|trans, details.street_name) }}
+        {{ data_row("person.fields.house_number"|trans, details.house_number) }}
+        {{ data_row("person.fields.house_number_addition"|trans, details.house_number_addition) }}
+        {{ data_row("person.fields.postal_code"|trans, details.postal_code) }}
+        {{ data_row("person.fields.locality"|trans, details.locality) }}
+        {{ data_row("person.fields.country"|trans, details.country) }}
       </tbody>
     </table>
+    {% if details.has_representative %}
+      <table class="general-information-table">
+        {{ columns_head("person.representative"|trans) }}
+        <tbody>
+          {{ data_row("person.fields.name"|trans, details.representative_name) }}
+          {{ data_row("person.fields.street_name"|trans, details.representative_street_name) }}
+          {{ data_row("person.fields.house_number"|trans, details.representative_house_number) }}
+          {{ data_row("person.fields.house_number_addition"|trans, details.representative_house_number_addition) }}
+          {{ data_row("person.fields.postal_code"|trans, details.representative_postal_code) }}
+          {{ data_row("person.fields.locality"|trans, details.representative_locality) }}
+        </tbody>
+      </table>
+    {% endif %}
   </section>
 {% endblock %}

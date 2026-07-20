@@ -4,4 +4,4 @@ mod pages;
 mod structs;
 
 pub use forms::OmissionForm;
-pub use pages::{CsbExaminationOverviewPath, router};
+pub use pages::{CsbExaminationOverviewPath, CsbPaperCorrectionsStopPath, router};

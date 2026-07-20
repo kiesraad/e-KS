@@ -11,16 +11,19 @@ use axum_extra::extract::CookieJar;
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppStore, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore,
-    CsbStoreData, DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore,
-    StreamId, TypstRenderer,
+    AppError, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData,
+    DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore, StreamId,
+    TypstRenderer,
     auth::session_extractor::{
         SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
     },
     common::{IndexPath, SelectElectionPath},
     csb::CSB_MAIN_STREAM_ID,
-    store::{EventEncryption, StoreRegistry},
+    store::{EventEncryption, Store, StoreRegistry},
 };
+
+#[cfg(feature = "fixtures")]
+use crate::AppStore;
 
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
@@ -109,13 +112,13 @@ impl AppState {
         stream_id: StreamId,
         election: ElectionConfig,
         load_fixtures: bool,
-    ) -> Result<AppStore, AppError> {
+    ) -> Result<Store<AppStoreData>, AppError> {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
                 .get_or_create_with_init(stream_id, election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
-                        crate::fixtures::load(&store).await?;
+                        crate::fixtures::load(&AppStore::own(store)).await?;
                     }
                     Ok(())
                 })

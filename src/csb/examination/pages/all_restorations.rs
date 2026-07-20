@@ -97,7 +97,7 @@ impl CsbStore {
                                 omission,
                             }],
                             person: self
-                                .get_person(person)
+                                .get_imported_or_corrected_person(person)
                                 .ok_or(AppError::InternalServerError)?,
                         });
                     }
@@ -127,9 +127,12 @@ fn list_path(
     store: &CsbStore,
 ) -> Result<String, AppError> {
     let district = districts.first().ok_or(AppError::InternalServerError)?;
+    // Search both projections: the omission may be recorded against a
+    // district that only its imported or only its corrected list covers.
     let list = store
-        .get_candidate_lists()
-        .iter()
+        .get_imported_candidate_lists()
+        .into_iter()
+        .chain(store.get_corrected_candidate_lists())
         .find(|l| l.electoral_districts.contains(district))
         .ok_or(AppError::InternalServerError)?
         .id;
@@ -233,6 +236,67 @@ mod tests {
         assert!(body.contains(pg_title.as_str()));
         assert!(body.contains(list_title.as_str()));
         assert!(body.contains(candidate_title.as_str()));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn all_restorations_shows_omissions_for_paper_added_candidates_and_lists()
+    -> Result<(), AppError> {
+        let store = CsbStore::new_for_test();
+
+        // Both the candidate and the list only exist in the corrected
+        // projection: they were added during paper corrections.
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store
+            .data
+            .write()
+            .paper_corrected_data
+            .persons
+            .insert(person_id, person);
+        let list_id = CandidateListId::new();
+        store.set_paper_corrected_candidate_list(CandidateList {
+            id: list_id,
+            electoral_districts: vec![ElectoralDistrict::GR],
+            candidates: vec![person_id],
+            created_at: UtcDateTime::now(),
+        });
+
+        Omission::new(
+            OmissionCategory::Candidate {
+                person: person_id,
+                lists: vec![list_id],
+            },
+            "candidate title".to_string(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        Omission::new(
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+            "list title".to_string(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        let response = all_restorations(
+            CsbAllRestorationsPath {
+                stream_id: store.stream_id,
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("candidate title"));
+        assert!(body.contains("list title"));
 
         Ok(())
     }

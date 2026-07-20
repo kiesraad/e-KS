@@ -1,0 +1,17 @@
+/* Paper-corrected values shown next to the imported value in CSB tables. */
+.imported-value {
+  color: var(--gray-500);
+  margin-right: var(--space-2);
+  text-decoration: line-through;
+}
+
+/* A struck-through badge: the imported position next to its correction */
+.badge.imported-value {
+  --badge-bg: var(--gray-200);
+  --badge-color: var(--gray-500);
+  text-decoration: line-through;
+}
+
+.paper-corrected-value {
+  color: var(--blue-700);
+}

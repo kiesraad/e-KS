@@ -63,11 +63,13 @@ async fn session_from(state: &AppState, response: &Response) -> Session {
 /// Open the per-stream store for the dev-login test user.
 async fn open_store(state: &AppState) -> AppStore {
     let expected_id = derive_test_id(state, TEST_ID_CODE);
-    state
-        .store_registry
-        .get_or_create(expected_id, ElectionConfig::EK27)
-        .await
-        .expect("store")
+    AppStore::own(
+        state
+            .store_registry
+            .get_or_create(expected_id, ElectionConfig::EK27)
+            .await
+            .expect("store"),
+    )
 }
 
 /// Log in with the given dev-login request, then load `path` with the

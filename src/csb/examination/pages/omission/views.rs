@@ -35,9 +35,10 @@ pub(super) struct CsbAddOmissionTemplate {
     /// The dialog opened on its two tabs, for the steps sidebar.
     pub(super) add_tab_url: String,
     pub(super) overview_tab_url: String,
-    /// Districts that appear on at least one candidate list of this political
-    /// group. The districts section is hidden when this is empty. Districts
-    /// absent from all lists are shown disabled so the user cannot select them.
+    /// Districts that appear on at least one paper-corrected candidate list of
+    /// this political group. The districts section is hidden when this is
+    /// empty. Districts absent from all lists are shown disabled so the user
+    /// cannot select them.
     pub(super) available_districts: Vec<ElectoralDistrict>,
     /// Candidate lists for a Candidate omission. Hidden when empty.
     pub(super) available_candidate_lists: Vec<CandidateListOption>,
@@ -84,12 +85,14 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
         OmissionType::Candidate => {
             let person = PersonId::from(target.reference);
             OmissionPlaceholders {
-                candidate_name: store.get_person(person).map(|person| person.name.display()),
+                candidate_name: store
+                    .get_imported_or_corrected_person(person)
+                    .map(|person| person.name.display()),
                 // A candidate's position differs per list, so it can only be
                 // resolved when the dialog was opened for a specific list.
                 candidate_number: target
                     .list
-                    .and_then(|list| store.candidate_position(list, person))
+                    .and_then(|list| store.imported_or_corrected_candidate_position(list, person))
                     .map(|nr| nr.to_string()),
             }
         }
@@ -101,10 +104,11 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
     }
 }
 
-/// All candidate lists of the political group for the candidate omission form
+/// All paper-corrected candidate lists of the political group for the
+/// candidate omission form
 pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<CandidateListOption> {
     store
-        .get_candidate_lists()
+        .get_corrected_candidate_lists()
         .into_iter()
         .map(|l| CandidateListOption {
             id: l.id,

@@ -6,17 +6,18 @@ use axum::{
     middleware::Next,
     response::{IntoResponse, Redirect, Response},
 };
-use axum_extra::extract::CookieJar;
+use axum_extra::{extract::CookieJar, routing::TypedPath};
 use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::maintenance::handle_db_error;
 use crate::{
-    AppError, AppState, SESSION_COOKIE_NAME, Scope, Session,
+    AppError, AppState, AppStore, SESSION_COOKIE_NAME, Scope, Session,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
-    common::{LoginStartPath, SelectElectionPath},
+    common::{IndexPath, LoginStartPath, SelectElectionPath},
     csb::index::pages::CsbIndexPath,
     csrf_rejection_response,
+    finalise::FinalisePath,
     store::{Store, StoreData},
 };
 
@@ -95,10 +96,31 @@ pub async fn store_middleware(
         return next.run(request).await;
     };
 
-    // Keep CSB sessions off app routes so they can't create an `AppStore` in
-    // their CSB stream partition. They belong on the CSB routes instead.
+    // A CSB session only reaches app routes while correcting the paper
+    // documents of an imported stream: it then gets a paper-corrections
+    // store view, so its events are wrapped and persisted on the CSB stream
+    // and it can never create an `AppStore` in its CSB stream partition.
+    // Otherwise it belongs on the CSB routes instead.
     if session.scope == Scope::CentralElectoralCommittee {
-        return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
+        let (Some(stream_id), Some(election)) =
+            (session.paper_correction_stream_id, session.current_election)
+        else {
+            return Redirect::to(&CsbIndexPath {}.to_string()).into_response();
+        };
+
+        // Finalising (and generating documents) is not part of paper
+        // corrections: the documents were already handed in on paper.
+        let path = request.uri().path();
+        if path.starts_with(FinalisePath::PATH) || path.starts_with("/generate/") {
+            return Redirect::to(&IndexPath.to_string()).into_response();
+        }
+
+        let resolved = state
+            .csb_store_registry
+            .get_store(stream_id, election)
+            .await;
+        return inject_loaded_store(&state, resolved, request, next, AppStore::paper_corrections)
+            .await;
     }
 
     // Redirect to `/select-election` when the session has not yet picked an election
@@ -107,7 +129,7 @@ pub async fn store_middleware(
     };
 
     let resolved = state.store_for_stream(stream_id, election, false).await;
-    inject_loaded_store(&state, resolved, request, next).await
+    inject_loaded_store(&state, resolved, request, next, AppStore::own).await
 }
 
 /// Middleware that loads the global CSB main store for the session's current
@@ -133,20 +155,23 @@ pub async fn csb_store_middleware(
     };
 
     let resolved = state.csb_main_store(election).await;
-    inject_loaded_store(&state, resolved, request, next).await
+    inject_loaded_store(&state, resolved, request, next, |store| store).await
 }
 
-/// Replay a resolved store's latest events, inject it into the request, and
-/// continue down the middleware chain.
-async fn inject_loaded_store<D>(
+/// Replay a resolved store's latest events, wrap it into the extension value
+/// handlers extract, inject it into the request, and continue down the
+/// middleware chain.
+async fn inject_loaded_store<D, E>(
     state: &AppState,
     resolved: Result<Store<D>, AppError>,
     mut request: Request,
     next: Next,
+    wrap: impl FnOnce(Store<D>) -> E,
 ) -> Response
 where
     D: StoreData,
     D::Event: Serialize + DeserializeOwned,
+    E: Clone + Send + Sync + 'static,
 {
     // A failure to resolve or replay is an  infrastructure problem, so it trips
     // the maintenance gate rather than serving a stale or missing store.
@@ -160,7 +185,7 @@ where
         return handle_db_error(&state.db_health, err, &request);
     }
 
-    request.extensions_mut().insert(store);
+    request.extensions_mut().insert(wrap(store));
 
     next.run(request).await
 }

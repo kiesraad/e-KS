@@ -22,6 +22,14 @@ pub struct CandidateList {
 }
 
 impl CandidateList {
+    /// One-based position of the candidate on this list.
+    pub fn position_of(&self, person_id: PersonId) -> Option<usize> {
+        self.candidates
+            .iter()
+            .position(|candidate| *candidate == person_id)
+            .map(|index| index + 1)
+    }
+
     pub fn districts_name(&self, locale: AnyLocale) -> String {
         self.electoral_districts
             .iter()
@@ -186,11 +194,8 @@ impl CandidateList {
         let list = store.get_candidate_list(self.id)?;
 
         let position = list
-            .candidates
-            .iter()
-            .position(|id| *id == person_id)
-            .map(|index| index + 1)
-            .ok_or_else(|| AppError::GenericNotFound)?;
+            .position_of(person_id)
+            .ok_or(AppError::GenericNotFound)?;
 
         let person = store.get_person(person_id)?;
 

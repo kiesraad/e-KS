@@ -323,6 +323,57 @@ fn snapshot_until_ignores_events_past_the_target() {
     assert!(!snapshot.persons.contains_key(&person_b));
 }
 
+/// In paper-corrections mode the handle reads the CSB stream's corrected
+/// projection, and every dispatched app event is wrapped in
+/// [`crate::CsbEvent::PaperCorrectedUpdate`] and persisted on that stream.
+#[tokio::test]
+async fn paper_corrections_store_wraps_events_and_refreshes_its_snapshot() -> Result<(), AppError> {
+    use crate::{CsbEvent, CsbStore, test_utils::sample_political_group};
+
+    let csb_store = CsbStore::new_for_test();
+    csb_store.set_political_group(sample_political_group());
+    let store = AppStore::paper_corrections(csb_store.clone());
+
+    // Reads serve a snapshot of the corrected projection.
+    assert_eq!(
+        store.get_political_group().display_name,
+        sample_political_group().display_name
+    );
+
+    let mut corrected_group = sample_political_group();
+    corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+    store
+        .update(AppEvent::UpdatePoliticalGroup(corrected_group.clone()))
+        .await?;
+
+    // The event lands on the CSB stream, wrapped as a paper correction.
+    {
+        let data = csb_store.data.read();
+        assert!(matches!(
+            &data.events.last().unwrap().payload,
+            CsbEvent::PaperCorrectedUpdate(inner)
+                if matches!(**inner, AppEvent::UpdatePoliticalGroup(_))
+        ));
+        assert_eq!(
+            data.paper_corrected_data.political_group.display_name,
+            corrected_group.display_name
+        );
+        // The imported snapshot stays untouched.
+        assert_eq!(
+            data.imported_data.political_group.display_name,
+            sample_political_group().display_name
+        );
+    }
+
+    // The request-local snapshot observes the correction right away.
+    assert_eq!(
+        store.get_political_group().display_name,
+        corrected_group.display_name
+    );
+
+    Ok(())
+}
+
 #[cfg(feature = "database")]
 mod database_tests {
     use super::*;

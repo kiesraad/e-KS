@@ -6,10 +6,11 @@ use crate::{
         DutchAddress, FullName, Gender, HasSeverity, PotentialProblems, Problematic, Problems,
         Severity, UtcDateTime, WithProblems,
     },
-    core::AnyLocale,
+    core::{AnyLocale, Locale},
     id_newtype,
     pagination::SortDirection,
     persons::{PersonSort, PersonalData, structs::person_sort::compare_persons},
+    trans,
 };
 
 id_newtype!(pub struct PersonId);
@@ -142,6 +143,16 @@ impl Person {
                 Gender::Female => "common.gender.female",
             })
             .unwrap_or("")
+    }
+
+    pub fn gender_label(&self, locale: Locale) -> String {
+        self.personal_data
+            .gender
+            .map(|g| match g {
+                Gender::Male => trans!("common.gender.male", locale),
+                Gender::Female => trans!("common.gender.female", locale),
+            })
+            .unwrap_or_default()
     }
 
     pub fn personal_info_class(&self, election: &ElectionConfig) -> &'static str {
