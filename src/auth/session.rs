@@ -70,7 +70,7 @@ pub struct Session {
     /// from storage, so a reloaded session can't re-expose it.
     pub(crate) raw_token: Option<SessionToken>,
     /// Random CSRF token embedded in forms and verified on every mutating
-    /// request; fixed for the session's lifetime.
+    /// request
     pub(crate) csrf_token: TokenValue,
     /// Creation time, for the absolute-lifetime cap.
     pub created_at: DateTime<Utc>,
@@ -215,6 +215,12 @@ impl Session {
     pub fn csrf_matches(&self, submitted: &str) -> bool {
         csrf_token_matches(submitted, &self.csrf_token.0)
     }
+
+    /// Replaces the CSRF token, so forms rendered before the switch (e.g. in
+    /// another tab) can no longer submit against the new context.
+    pub fn rotate_csrf_token(&mut self) {
+        self.csrf_token = generate_csrf_token();
+    }
 }
 
 impl Default for Session {
@@ -281,6 +287,19 @@ mod tests {
 
         assert!(session.csrf_matches(&token));
         assert!(!session.csrf_matches("wrong"));
+    }
+
+    /// Rotation replaces the token and invalidates the previous one.
+    #[test]
+    fn rotate_csrf_token_invalidates_previous_token() {
+        let mut session = Session::new_test();
+        let old = session.csrf_token().to_string();
+
+        session.rotate_csrf_token();
+
+        assert_ne!(session.csrf_token().0, old);
+        assert!(!session.csrf_matches(&old));
+        assert!(session.csrf_matches(&session.csrf_token().to_string()));
     }
 
     /// Confirms idle timeout invalidates stale sessions.

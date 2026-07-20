@@ -15,7 +15,7 @@
 @import "candidate-table.css" layer(components);
 @import "cards.css" layer(components);
 @import "checkbox.css" layer(components);
-@import "paper_corrected.css" layer(components);
+@import "paper-corrected.css" layer(components);
 @import "digid.css" layer(components);
 @import "form.css" layer(components);
 @import "header.css" layer(components);
