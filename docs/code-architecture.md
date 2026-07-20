@@ -36,7 +36,7 @@ graph LR
 
 ## Domain glossary
 
-The code, the routes, and the `src/app/<domain>/` folders all use the terms
+The code, the routes, and the `src/pg/<domain>/` folders all use the terms
 below. Each has an established Dutch name from the Kieswet (the Dutch electoral
 law); the English term is what the code uses. Article references are to
 Hoofdstuk H of the Kieswet (*De inlevering van de kandidatenlijsten*) unless
@@ -141,8 +141,10 @@ modules:
 | `src/router.rs` | Top-level Axum router; merges every domain's `router()` and applies middleware. |
 | `src/state.rs` | `AppState`: the shared application state (config, store registry, sessions). |
 | `src/filters.rs` | Askama template filters (display formatting, translation, validation errors). |
-| `src/app/` | Application **domain** modules (see below). |
-| `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/app/middleware/`. |
+| `src/pg/` | Political group (PG) **domain** modules (see below). |
+| `src/csb/` | Central voting bureau (CSB) section: import, examination, monitoring, and its own event stores. |
+| `src/structs/` | Shared domain model structs (persons, political groups, candidate lists, common value types) used by both `src/pg/` and `src/csb/`. |
+| `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/middleware/`. |
 | `src/core/` | Cross-cutting infrastructure: `Config`, server startup, logging/tracing, election configuration, Askama/Typst rendering, PDF, CSV, ZIP, locales. |
 | `src/store/` | The generic event store: persistence backends (memory/file/Postgres), at-rest encryption, the event hash chain, and the per-stream `StoreRegistry`. |
 | `src/error/` | `AppError` and the rendering of error responses/pages. |
@@ -151,16 +153,17 @@ modules:
 | `src/fixtures/` | Sample data loaded into the store on startup in development/test (`fixtures` feature). |
 | `src/utils/` | Small standalone helpers (id newtypes, redirects, health check, embedding helpers, etc.). |
 
-### `src/app/` domain modules
+### `src/pg/` domain modules
 
-`src/app/` holds the business logic, organised per domain. Alongside the
-per-domain folders are a few app-level files that tie the domains together:
+`src/pg/` holds the political group business logic, organised per domain.
+Alongside the per-domain folders are a few section-level files that tie the
+domains together:
 
-- `event.rs`: `AppEvent`, the single enum of all domain events.
-- `store.rs`: `AppStoreData`, the in-memory projection built by replaying
-  `AppEvent`s; `getters.rs` adds read accessors over it.
+- `store/event.rs`: `PgEvent`, the single enum of all PG domain events.
+- `store/mod.rs`: `PgStoreData`, the in-memory projection built by replaying
+  `PgEvent`s; `store/getters.rs` adds read accessors over it.
 - `context.rs`: the request-scoped `Context` passed into templates.
-- `store_extractor.rs`: extracts the per-request `AppStore` from `AppState`.
+- `store/extractor.rs`: extracts the per-request `PgStore` from `AppState`.
 
 The current domains are: `audit_log`, `candidate_lists`, `candidates`,
 `common`, `list_submitters`, `name_authorisations`, `persons`,
@@ -171,7 +174,7 @@ entity.)
 
 ### Common structure of a domain folder
 
-Each `src/app/<domain>/` folder follows the same convention. A given domain
+Each `src/pg/<domain>/` folder follows the same convention. A given domain
 includes only the sub-folders it needs, but when present they always mean the
 same thing:
 
@@ -181,13 +184,13 @@ same thing:
 | `pages/` | One file per page/flow: the Axum request handlers, the `TypedPath` route definitions, and the domain's `router()` that wires them up. `pages/mod.rs` declares the typed paths and assembles the router. |
 | `forms/` | Form structs, the shape of submitted HTML forms, with `#[derive(Validate)]` annotations mapping them onto domain structs. |
 | `extractors/` | Custom Axum extractors (`FromRequestParts`) that load a domain entity (or related state) from the URL/store for use by handlers. |
-| `structs/` | The domain model types for this domain, used by handlers, the store projection, and templates. |
+| `structs/` | Domain model types used only by this section. Structs shared with `src/csb/` (persons, political groups, list submitters, candidates, candidate lists, common value types) live in `src/structs/<domain>/` instead and are re-exported from the domain's `mod.rs`. |
 | `components/` | Askama HTML template **fragments** shared across the domain's pages (tables, form partials, step indicators). |
 
 Page templates are co-located with their handlers: a handler in
 `pages/update.rs` renders `pages/update.html`. Askama is configured
-(`askama.toml`) to resolve templates relative to `src/app`, so templates can
-reference fragments from any domain. This is most used for the application-wide shared layout and macro fragments in `src/app/common/components/`.
+(`askama.toml`) to resolve templates relative to `src`, so templates can
+reference fragments from any domain. This is most used for the application-wide shared layout and macro fragments in `src/pg/common/components/`.
 
 A few domains also carry domain-specific helper files next to these folders,
 for example `candidate_lists/importer.rs` (CSV/EML import) and
@@ -211,22 +214,22 @@ order on an incoming request is:
    `/login`. Otherwise the session's `last_activity` is refreshed and the
    `Session` is placed in the request extensions.
 4. **`store_middleware`.** Takes the `(stream_id, current_election)` from the
-   session and resolves the matching `AppStore` from the registry. A session
+   session and resolves the matching `PgStore` from the registry. A session
    that has not yet picked an election is redirected to `/select-election`. The
    middleware then calls `store.load()` so the projection catches up with any
-   events this process has not seen, and places the `AppStore` in the request
+   events this process has not seen, and places the `PgStore` in the request
    extensions.
 5. **The handler.** Its arguments are extractors: the typed path, `Context`,
-   `Session`, `AppStore`, the domain extractors (which load an entity from the
+   `Session`, `PgStore`, the domain extractors (which load an entity from the
    store), `Form<T>` (parse and validate the body), and `State<...>`.
 
 The handler itself follows one of two shapes:
 
-- **Read (GET).** It reads from the `AppStore` projection, fills an Askama
+- **Read (GET).** It reads from the `PgStore` projection, fills an Askama
   template struct, and returns `HtmlTemplate(template, context)`.
 - **Write (POST).** It validates the submitted `Form<T>`. On a validation error
   it re-renders the same page with the field errors. On success it constructs
-  an `AppEvent` and calls `store.update(event)`, which persists and applies the
+  an `PgEvent` and calls `store.update(event)`, which persists and applies the
   event, then returns a redirect (the Post/Redirect/Get pattern). This covers
   deletions too: removals are submitted as HTML form POSTs rather than DELETE
   requests, since browsers can only emit GET and POST from a `<form>`.
@@ -246,7 +249,7 @@ dependencies shape the architecture enough to be worth describing on their own.
 
 The application *is* an Axum `Router`. The wiring follows a consistent pattern:
 
-- **Per-domain routers.** Each `src/app/<domain>/` exposes a `router()` that
+- **Per-domain routers.** Each `src/pg/<domain>/` exposes a `router()` that
   returns a `Router<AppState>`; `src/router.rs::create` merges them all and adds
   the cross-cutting layers. Feature-gated routers (development login, the embedded
   BAG endpoints, live-reload, `memory-serve` static assets) are merged in the
@@ -258,7 +261,7 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   reverse, the `<endpoint>_path()` helper methods on domain structs (e.g. on
   `Candidate`) produce links for templates without hand-written URL strings.
 - **Extractors.** Handlers declare what they need as arguments: the
-  request-scoped `Context`, the `AppStore`, the `Session`, the `Form<T>`
+  request-scoped `Context`, the `PgStore`, the `Session`, the `Form<T>`
   validating extractor, `State<TypstRenderer>`, and the custom per-domain
   extractors in each `extractors/` folder (which implement `FromRequestParts`
   to load a domain entity from the URL + store).
@@ -273,10 +276,10 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
 ### [`askama`](https://crates.io/crates/askama): compile-time HTML templates
 
 All HTML is rendered with Askama, type-checked against its template structs at
-compile time. `askama.toml` roots template resolution at `src/app`, and
+compile time. `askama.toml` roots template resolution at `src/pg`, and
 templates are co-located with their handlers (for example, `pages/update.rs` lives right next to
 `pages/update.html`); shared fragments live in each domain's `components/`,
-with the global layout and macros in `src/app/common/components/`.
+with the global layout and macros in `src/pg/common/components/`.
 
 - A handler builds a `#[derive(Template)]` struct (`#[template(path = "...")]`)
   and returns it wrapped in `HtmlTemplate(template, context)`
@@ -313,7 +316,7 @@ separate asset directory to deploy:
 
 The official candidate-nomination forms (models H1, H3-1, H4, H9, etc.) are produced
 as PDF files from Typst templates. The `submit` domain assembles serializable
-`typst_*` input structs (`src/app/finalise/structs/`) and hands them to a
+`typst_*` input structs (`src/pg/finalise/structs/`) and hands them to a
 `TypstRenderer` (`src/core/typst_renderer.rs`), which has two modes selected by
 the `embed-typst` feature:
 
@@ -391,8 +394,8 @@ and enables the embedding and TLS features.
 e-KS uses **event sourcing**: rather than storing the current state of each
 record and overwriting it on every change, the application stores every change
 as an immutable event in an append-only log. The current state, the
-`AppStoreData` projection, is never persisted directly; it is *derived* by
-replaying that log of `AppEvent`s from the beginning.
+`PgStoreData` projection, is never persisted directly; it is *derived* by
+replaying that log of `PgEvent`s from the beginning.
 
 This fits the application well for a few reasons:
 
@@ -422,13 +425,13 @@ Event sourcing is implemented by a handful of generic types in `src/store/`,
 parameterized over a projection type `D`:
 
 - **`StoreData`** is the trait a projection implements: how to `apply` an event,
-  and what its last event id and chain hash are. `AppStoreData` is the one
+  and what its last event id and chain hash are. `PgStoreData` is the one
   concrete implementation.
 - **`Store<D>`** is a handle scoped to a single `(stream_id, election)` pair. It
   owns the persistence backend, the per-stream encryption cipher, and the
   in-memory projection as an `Arc<RwLock<D>>`. Cloning a `Store` is cheap: the
-  clone shares the same projection and persistence. `AppStore` is the alias
-  `Store<AppStoreData>`.
+  clone shares the same projection and persistence. `PgStore` is the alias
+  `Store<PgStoreData>`.
 - **`StoreRegistry<D>`** lives in `AppState` and caches one `Store` per
   `(stream_id, election)` in a map behind a `RwLock`. `get_or_create` returns
   the cached store, or builds one: it constructs the `Store`, calls `load()` to

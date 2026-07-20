@@ -6,7 +6,7 @@ use axum::{
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppState, AppStoreData, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale,
+    AppError, AppState, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale, PgStoreData,
     StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success, trans,
     utils::parse_hash_prefix,
 };
@@ -57,11 +57,11 @@ pub async fn import_submit(
 }
 
 /// Locates the political-group event whose hash matches the entry, replays that
-/// stream up to the event into an [`AppStoreData`] snapshot (its event log
+/// stream up to the event into an [`PgStoreData`] snapshot (its event log
 /// excluded), and records the snapshot in a [`CsbEvent::Import`] persisted under
 /// a fresh CSB stream keyed on the source election. The source `stream_id` is
 /// carried on the event for reference; it is never reused as the CSB partition,
-/// which would collide with the app's own events there.
+/// which would collide with the PG stream's own events there.
 async fn do_import(
     state: &AppState,
     form: ImportForm,
@@ -105,7 +105,7 @@ async fn do_import(
         .find(|e| e.event_id == event_id)
         .map(|e| e.hash)
         .ok_or(AppError::GenericNotFound)?;
-    let snapshot = AppStoreData::snapshot_until(&events, event_id);
+    let snapshot = PgStoreData::snapshot_until(&events, event_id);
 
     // Persist the import under a fresh CSB stream.
     let csb_store = state
@@ -128,7 +128,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        AppEvent, AppState, CsbContext, ElectionConfig, test_utils::response_body_string,
+        AppState, CsbContext, ElectionConfig, PgEvent, test_utils::response_body_string,
         utils::format_hash,
     };
 
@@ -139,7 +139,7 @@ mod tests {
         let source_store = state
             .store_for_stream(source_stream, ElectionConfig::EK27, false)
             .await?;
-        source_store.update(AppEvent::HideDownloadWarning).await?;
+        source_store.update(PgEvent::HideDownloadWarning).await?;
 
         let hash = source_store.data.read().events[0].hash;
         Ok((source_stream, format_hash(&hash, false)))

@@ -4,13 +4,15 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate, QueryParamState,
-    candidate_lists::CandidateListId,
     csb::{
         Omission, OmissionCategory,
         examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     },
     filters,
-    persons::{Person, PersonId},
+    structs::{
+        candidate_lists::CandidateListId,
+        persons::{Person, PersonId},
+    },
 };
 
 #[derive(Template)]
@@ -164,9 +166,8 @@ mod tests {
 
     use crate::{
         StreamId,
-        candidate_lists::CandidateList,
-        common::UtcDateTime,
         csb::OmissionType,
+        structs::{candidate_lists::CandidateList, common::UtcDateTime},
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 

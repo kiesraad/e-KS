@@ -1,6 +1,9 @@
 use rand::{RngExt, rng};
 
-use crate::{AnyLocale, AppStore, CsbStore, candidate_lists::CandidateList, persons::Person};
+use crate::{
+    AnyLocale, CsbStore, PgStore,
+    structs::{candidate_lists::CandidateList, persons::Person},
+};
 
 use super::paper_corrected::PaperCorrected;
 
@@ -22,7 +25,7 @@ impl CsbCandidate {
     /// position in the ordering.
     pub fn rows_for_list(
         store: &CsbStore,
-        corrected_store: &AppStore,
+        corrected_store: &PgStore,
         list: &CandidateList,
         locale: AnyLocale,
     ) -> Vec<CsbCandidate> {
@@ -37,7 +40,7 @@ impl CsbCandidate {
 /// their imported position when the corrections removed them).
 fn imported_rows(
     store: &CsbStore,
-    corrected_store: &AppStore,
+    corrected_store: &PgStore,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
@@ -80,7 +83,7 @@ fn imported_rows(
 /// Rows for candidates the paper corrections added to the list, keyed by
 /// their corrected position.
 fn corrected_only_rows(
-    corrected_store: &AppStore,
+    corrected_store: &PgStore,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
@@ -135,8 +138,7 @@ fn residence_string(person: &Person) -> String {
 mod tests {
     use super::*;
     use crate::{
-        candidate_lists::CandidateListId,
-        persons::PersonId,
+        structs::{candidate_lists::CandidateListId, persons::PersonId},
         test_utils::{sample_candidate_list, sample_person_with_last_name},
     };
 

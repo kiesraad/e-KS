@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{AppStore, CsbStore, list_submitters::ListSubmitter};
+use crate::{CsbStore, PgStore, structs::list_submitters::ListSubmitter};
 
 /// A (substitute) list submitter with its rows diffed against the corrections.
 pub struct PaperCorrectedSubmitter {
@@ -53,7 +53,7 @@ impl PaperCorrectedSubmitter {
 /// corrections have none (never present, or deleted by the corrections).
 pub fn paper_corrected_list_submitter(
     store: &CsbStore,
-    corrected: &AppStore,
+    corrected: &PgStore,
 ) -> Option<PaperCorrectedSubmitter> {
     let imported = store.get_imported_list_submitter();
     let corrected = corrected.get_list_submitter();
@@ -73,7 +73,7 @@ pub fn paper_corrected_list_submitter(
 /// the corrections are hidden.
 pub fn paper_corrected_substitute_submitters(
     store: &CsbStore,
-    corrected: &AppStore,
+    corrected: &PgStore,
 ) -> Vec<PaperCorrectedSubmitter> {
     let imported = store.get_imported_substitute_submitters();
     let corrected = corrected.get_substitute_submitters();
@@ -102,7 +102,9 @@ pub fn paper_corrected_substitute_submitters(
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CsbStore, list_submitters::ListSubmitterId, test_utils::sample_list_submitter};
+    use crate::{
+        CsbStore, structs::list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
+    };
 
     #[test]
     fn list_submitter_deleted_by_the_corrections_is_hidden() {
@@ -129,7 +131,7 @@ mod tests {
 
     #[test]
     fn submitter_country_correction_is_shown() {
-        use crate::common::{Address, InternationalAddress};
+        use crate::structs::common::{Address, InternationalAddress};
 
         let store = CsbStore::new_for_test();
         let submitter = sample_list_submitter(ListSubmitterId::new());

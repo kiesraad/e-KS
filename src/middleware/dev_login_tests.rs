@@ -8,7 +8,7 @@ use tower::ServiceExt;
 use secrecy::SecretString;
 
 use crate::{
-    AppEvent, AppState, AppStore, CsbEvent, CsbMainEvent, ElectionConfig, Locale, Scope, Session,
+    AppState, CsbEvent, CsbMainEvent, ElectionConfig, Locale, PgEvent, PgStore, Scope, Session,
     StreamId, router, store::StoreEvent, test_utils::response_body_string,
 };
 
@@ -61,9 +61,9 @@ async fn session_from(state: &AppState, response: &Response) -> Session {
 }
 
 /// Open the per-stream store for the dev-login test user.
-async fn open_store(state: &AppState) -> AppStore {
+async fn open_store(state: &AppState) -> PgStore {
     let expected_id = derive_test_id(state, TEST_ID_CODE);
-    AppStore::own(
+    PgStore::own(
         state
             .store_registry
             .get_or_create(expected_id, ElectionConfig::EK27)
@@ -144,11 +144,11 @@ async fn dev_login_without_fixtures_adds_dev_login_event() {
         store.get_events().as_slice(),
         &[
             StoreEvent {
-                payload: AppEvent::UpdatePoliticalGroup(..),
+                payload: PgEvent::UpdatePoliticalGroup(..),
                 ..
             },
             StoreEvent {
-                payload: AppEvent::DeveloperLogin { .. },
+                payload: PgEvent::DeveloperLogin { .. },
                 ..
             }
         ],

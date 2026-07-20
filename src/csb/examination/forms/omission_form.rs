@@ -1,7 +1,7 @@
 use serde::Deserialize;
 use validate::Validate;
 
-use crate::{ElectoralDistrict, candidate_lists::CandidateListId, csb::Omission};
+use crate::{ElectoralDistrict, csb::Omission, structs::candidate_lists::CandidateListId};
 
 /// Form backing the "add omission" dialog. The category is not part of the form:
 /// it is derived from the dialog's path parameters and set on the resulting

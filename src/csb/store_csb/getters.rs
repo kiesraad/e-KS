@@ -1,11 +1,13 @@
 use crate::{
     AppError, CsbStore, ElectoralDistrict,
-    candidate_lists::{CandidateList, CandidateListId},
     csb::{Omission, OmissionId, omission::OmissionCategory},
-    list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
-    persons::{Person, PersonId},
-    political_groups::PoliticalGroup,
+    structs::{
+        candidate_lists::{CandidateList, CandidateListId},
+        list_submitters::ListSubmitter,
+        persons::{Person, PersonId},
+        political_groups::PoliticalGroup,
+    },
 };
 
 impl CsbStore {
@@ -135,7 +137,7 @@ impl CsbStore {
 
     /// The name of the first candidate across all imported candidate lists,
     /// sorted by list creation date. Returns `None` when no candidates are imported.
-    pub fn first_imported_candidate_name(&self) -> Option<crate::common::FullName> {
+    pub fn first_imported_candidate_name(&self) -> Option<crate::structs::common::FullName> {
         let mut lists = self.get_imported_candidate_lists();
         lists.sort_unstable_by_key(|l| l.created_at);
         lists
@@ -281,11 +283,11 @@ impl CsbStore {
         Some(districts)
     }
 
-    /// An [`AppStore`](crate::AppStore) view over the paper-corrected
+    /// An [`PgStore`](crate::PgStore) view over the paper-corrected
     /// projection: reads serve `paper_corrected_data` through the regular app
     /// getters, writes are persisted on this CSB stream as paper corrections.
-    pub fn paper_corrected(&self) -> crate::AppStore {
-        crate::AppStore::paper_corrections(self.clone())
+    pub fn paper_corrected(&self) -> crate::PgStore {
+        crate::PgStore::paper_corrections(self.clone())
     }
 }
 
@@ -294,9 +296,8 @@ mod tests {
     use super::*;
     use crate::{
         CsbStore, ElectoralDistrict,
-        candidate_lists::CandidateList,
         csb::omission::{OmissionCategory, tests::sample_omission},
-        list_designation::ListDesignation,
+        structs::{candidate_lists::CandidateList, list_designation::ListDesignation},
         test_utils::{sample_candidate_list, sample_person_with},
     };
 

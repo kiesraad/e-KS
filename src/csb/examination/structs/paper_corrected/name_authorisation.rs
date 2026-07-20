@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{AppStore, CsbStore};
+use crate::{CsbStore, PgStore};
 
 /// A name authorisation with its rows diffed against the corrections.
 pub struct PaperCorrectedNameAuthorisation {
@@ -13,7 +13,7 @@ pub struct PaperCorrectedNameAuthorisation {
 /// the corrections are hidden.
 pub fn paper_corrected_name_authorisations(
     store: &CsbStore,
-    corrected: &AppStore,
+    corrected: &PgStore,
 ) -> Vec<PaperCorrectedNameAuthorisation> {
     let imported = store.get_imported_name_authorisations();
     let corrected = corrected.get_name_authorisations();

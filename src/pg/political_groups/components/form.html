@@ -1,0 +1,79 @@
+{% import "pg/common/components/macros.html" as macros %}
+<div>
+  {{ macros::csrf_field() }}
+  {% if steps.is_blank() %}
+    <div class="alert alert-warning">{{ "political_group.blank_list_warning"|trans }}</div>
+  {% endif %}
+  <h3 class="mb-6">{{ "common.political_group"|trans }}</h3>
+  <fieldset>
+    <div class="form-row">
+      <fieldset class="checklist">
+        {% let election = "election"|election_value %}
+        <legend class="legend-md">
+          {% if steps.is_combined() %}
+            {{ "political_group.type.previous_election_results_combined"|trans(&election|election_type_title) }}
+          {% else %}
+            {{ "political_group.previous_election_results"|trans(&election|election_type_title) }}
+          {% endif %}
+        </legend>
+        <div class="checklist">
+          <div class="checkbox">
+            <input type="radio"
+                   name="previous_election_results"
+                   value="zero_seats"
+                   id="previous_election_results_0"
+                   class="hide-alert"
+                   {% if form.data.previous_election_results=="zero_seats" %}checked{% endif %} />
+            <label for="previous_election_results_0">{{ "political_group.type.zero_seats"|trans }}</label>
+          </div>
+          <div class="checkbox">
+            <input type="radio"
+                   name="previous_election_results"
+                   value="one_to_fifteen_seats"
+                   id="previous_election_results_1_15"
+                   class="hide-alert"
+                   {% if form.data.previous_election_results=="one_to_fifteen_seats" %}checked{% endif %} />
+            <label for="previous_election_results_1_15">{{ "political_group.type.one_to_fifteen_seats"|trans }}</label>
+          </div>
+          <div class="checkbox">
+            <input type="radio"
+                   name="previous_election_results"
+                   value="sixteen_or_more_seats"
+                   id="previous_election_results_16"
+                   class="hide-alert"
+                   {% if form.data.previous_election_results=="sixteen_or_more_seats" %}checked{% endif %} />
+            <label for="previous_election_results_16">{{ "political_group.type.sixteen_or_more_seats"|trans }}</label>
+          </div>
+        </div>
+        <span class="alert alert-info hide-on-input">
+          {{ "political_group.type.previous_election_results_hint"|trans }}
+          {% if steps.is_combined() %}{{ "political_group.type.previous_election_results_combined_hint"|trans }}{% endif %}
+        </span>
+      </fieldset>
+    </div>
+    <div class="form-row">
+      <div class="form-field {% if form.data.display_name.is_empty() && steps.basic_state != "empty" %}error{% endif %}">
+        <label for="display_name">
+          {% if steps.is_combined() %}
+            {{ "political_group.display_name_combined"|trans }}
+          {% else %}
+            {{ "political_group.display_name"|trans }}
+          {% endif %}
+        </label>
+        <input type="text"
+               name="display_name"
+               value="{{ form.data.display_name }}"
+               id="display_name" />
+        {% for error in form|error("display_name") %}<span class="error">{{ error }}</span>{% endfor %}
+        {% if !steps.is_combined() %}<span class="hint">{{ "political_group.type.display_name_hint"|trans }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="form-row">
+      {% if steps.is_combined() %}
+        <span class="alert alert-info">{{ "political_group.type.display_name_combined_hint"|trans }}</span>
+      {% endif %}
+    </div>
+  </fieldset>
+  {% set submit_label = "action.save_and_continue"|trans %}
+  {% include "pg/common/components/submit.html" %}
+</div>

@@ -216,7 +216,7 @@ mod tests {
         session.set_current_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
-        let store = crate::AppStore::new_for_test();
+        let store = crate::PgStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,
             format!("{}={}", crate::SESSION_COOKIE_NAME, token)
@@ -335,7 +335,7 @@ mod tests {
         session.set_current_election(crate::ElectionConfig::EK27);
         let token = session.token_string();
         state.sessions.insert(session).await;
-        let store = crate::AppStore::new_for_test();
+        let store = crate::PgStore::new_for_test();
         request.headers_mut().insert(
             header::COOKIE,
             format!("{}={}", crate::SESSION_COOKIE_NAME, token)

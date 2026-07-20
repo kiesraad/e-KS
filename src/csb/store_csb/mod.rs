@@ -9,20 +9,20 @@ use std::collections::HashMap;
 use serde::{Deserialize, Serialize};
 
 #[cfg(test)]
-use crate::political_groups::PoliticalGroup;
+use crate::structs::political_groups::PoliticalGroup;
 use crate::{
-    AppStoreData, Scope,
-    common::UtcDateTime,
+    PgStoreData, Scope,
     csb::{Omission, OmissionId},
     store::{StoreData, StoreEvent},
+    structs::common::UtcDateTime,
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
 /// CSB side.
 #[derive(Debug, Default, Serialize, Deserialize)]
 pub struct CsbStoreData {
-    pub(crate) imported_data: AppStoreData,
-    pub(crate) paper_corrected_data: AppStoreData,
+    pub(crate) imported_data: PgStoreData,
+    pub(crate) paper_corrected_data: PgStoreData,
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
@@ -107,7 +107,7 @@ impl crate::CsbStore {
         data.paper_corrected_data.political_group = political_group;
     }
 
-    pub fn add_candidate_list(&self, list: crate::candidate_lists::CandidateList) {
+    pub fn add_candidate_list(&self, list: crate::structs::candidate_lists::CandidateList) {
         let mut data = self.data.write();
         data.imported_data
             .candidate_lists
@@ -119,7 +119,10 @@ impl crate::CsbStore {
 
     /// Test setter writing only the corrected projection, mirroring a list
     /// added during paper corrections.
-    pub fn set_paper_corrected_candidate_list(&self, list: crate::candidate_lists::CandidateList) {
+    pub fn set_paper_corrected_candidate_list(
+        &self,
+        list: crate::structs::candidate_lists::CandidateList,
+    ) {
         self.data
             .write()
             .paper_corrected_data
@@ -127,7 +130,7 @@ impl crate::CsbStore {
             .insert(list.id, list);
     }
 
-    pub fn add_person(&self, person: crate::persons::Person) {
+    pub fn add_person(&self, person: crate::structs::persons::Person) {
         let mut data = self.data.write();
         data.imported_data.persons.insert(person.id, person.clone());
         data.paper_corrected_data.persons.insert(person.id, person);
@@ -137,15 +140,15 @@ impl crate::CsbStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AppEvent, StreamId, test_utils::sample_political_group};
+    use crate::{PgEvent, StreamId, test_utils::sample_political_group};
 
     fn import_event() -> CsbEvent {
         CsbEvent::Import {
             hash: [42; 32],
             source_stream_id: StreamId::new(),
-            snapshot: Box::new(AppStoreData {
+            snapshot: Box::new(PgStoreData {
                 political_group: sample_political_group(),
-                ..AppStoreData::default()
+                ..PgStoreData::default()
             }),
         }
     }
@@ -171,7 +174,7 @@ mod tests {
         corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
         data.apply(StoreEvent::new(
             2,
-            CsbEvent::PaperCorrectedUpdate(Box::new(AppEvent::UpdatePoliticalGroup(
+            CsbEvent::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
                 corrected_group.clone(),
             ))),
         ));

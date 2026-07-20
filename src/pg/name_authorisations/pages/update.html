@@ -1,0 +1,15 @@
+{% extends "pg/common/components/overlay.html" %}
+{% import "pg/common/components/macros.html" as macros %}
+{% set close_action = NameAuthorisation::list_path() %}
+{% block overlay_title %}{{ "political_group.edit_legal_name"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% include "pg/name_authorisations/components/update_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  {% set should_warn = true %}
+  <fieldset>
+    {% include "pg/name_authorisations/components/legal_name_field.html" %}
+    <h3>{{ "political_group.authorised_agent_data"|trans }}</h3>
+    {% include "pg/common/components/name_fields.html" %}
+  </fieldset>
+{% endblock %}

@@ -11,8 +11,8 @@ use axum_extra::extract::CookieJar;
 use secrecy::ExposeSecret;
 
 use crate::{
-    AppError, AppStoreData, Config, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData,
-    DbHealth, ElectionConfig, IdDeriver, PendingRequestStore, Session, SessionStore, StreamId,
+    AppError, Config, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, DbHealth,
+    ElectionConfig, IdDeriver, PendingRequestStore, PgStoreData, Session, SessionStore, StreamId,
     TypstRenderer,
     auth::session_extractor::{
         SESSION_COOKIE_NAME, build_removal_cookie, build_session_cookie, user_agent_hash,
@@ -23,13 +23,13 @@ use crate::{
 };
 
 #[cfg(feature = "fixtures")]
-use crate::AppStore;
+use crate::PgStore;
 
 /// Shared application state for request handlers and extractors.
 #[derive(FromRef, Clone)]
 pub struct AppState {
     pub config: &'static Config,
-    pub store_registry: StoreRegistry<AppStoreData>,
+    pub store_registry: StoreRegistry<PgStoreData>,
     /// Registry for per-import CSB stores (one per imported political group)
     pub csb_store_registry: StoreRegistry<CsbStoreData>,
     /// Registry for the single global CSB main stream shared by all committee members
@@ -47,7 +47,7 @@ pub struct AppState {
 }
 
 /// Contract the application's request extractors expect from the router
-/// state. The supertrait bounds (`Send + Sync`) cover what `AppStore`'s
+/// state. The supertrait bounds (`Send + Sync`) cover what `PgStore`'s
 /// extractor needs; `config()` replaces ad-hoc `FromRef` lookups so each
 /// extractor only has to write `S: AppRequestState`.
 pub trait AppRequestState: Clone + Send + Sync + 'static {
@@ -74,7 +74,7 @@ impl AppState {
             encryption.clone(),
         )
         .await?;
-        // Both CSB registries reuse the app registry's persistence backend
+        // Both CSB registries reuse the PG registry's persistence backend
         let csb_store_registry = StoreRegistry::with_persistence(
             store_registry.persistence().clone(),
             encryption.clone(),
@@ -112,13 +112,13 @@ impl AppState {
         stream_id: StreamId,
         election: ElectionConfig,
         load_fixtures: bool,
-    ) -> Result<Store<AppStoreData>, AppError> {
+    ) -> Result<Store<PgStoreData>, AppError> {
         #[cfg(feature = "fixtures")]
         {
             self.store_registry
                 .get_or_create_with_init(stream_id, election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
-                        crate::fixtures::load(&AppStore::own(store)).await?;
+                        crate::fixtures::load(&PgStore::own(store)).await?;
                     }
                     Ok(())
                 })

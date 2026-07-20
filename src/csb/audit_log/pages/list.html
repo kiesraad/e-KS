@@ -27,7 +27,7 @@
             </option>
           {% endfor %}
         </select>
-        {% include "app/common/components/audit_log_event_type_filter.html" %}
+        {% include "pg/common/components/audit_log_event_type_filter.html" %}
         <button type="submit" class="button">{{ "audit_log.filter.apply"|trans }}</button>
         {% if filter.is_active() %}
           <a href="{{ audit_log_path }}" class="button secondary">{{ "audit_log.filter.reset"|trans }}</a>
@@ -70,7 +70,7 @@
     </section>
     {% if pagination.total_pages > 1 %}
       {% set suffix = filter.as_query_suffix() %}
-      {% include "app/common/components/pagination.html" %}
+      {% include "pg/common/components/pagination.html" %}
     {% endif %}
   {% endif %}
 {% endblock %}

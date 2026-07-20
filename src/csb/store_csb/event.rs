@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppEvent, AppStoreData, Event, StreamId,
+    Event, PgEvent, PgStoreData, StreamId,
     csb::{Omission, OmissionId},
     trans,
     utils::format_hash,
@@ -13,10 +13,10 @@ pub enum CsbEvent {
     /// Import a submitted candidate-list package, identified by the chain hash
     /// of the event stream it was produced from.
     ///
-    /// Carries a snapshot of the source [`AppStoreData`] reconstructed by
+    /// Carries a snapshot of the source [`PgStoreData`] reconstructed by
     /// replaying the source stream up to the matched event (see
-    /// [`AppStoreData::snapshot_until`]). The import is persisted under a fresh
-    /// CSB stream (never the source partition, which holds the app's own
+    /// [`PgStoreData::snapshot_until`]). The import is persisted under a fresh
+    /// CSB stream (never the source partition, which holds the PG stream's own
     /// events), so `source_stream_id` is recorded for reference. The election is
     /// not: it is copied onto the CSB stream's own `(stream_id, election)` key.
     Import {
@@ -26,11 +26,11 @@ pub enum CsbEvent {
         source_stream_id: StreamId,
         /// Snapshot of the source projection at the matched event, with its own
         /// event log excluded. Boxed to keep the event enum small.
-        snapshot: Box<AppStoreData>,
+        snapshot: Box<PgStoreData>,
     },
     /// An app event applied to the paper-corrected projection instead of a
     /// political group's own stream. Boxed to keep the event enum small.
-    PaperCorrectedUpdate(Box<AppEvent>),
+    PaperCorrectedUpdate(Box<PgEvent>),
     SetFinished(bool),
     CreateOmission(Omission),
     UpdateOmission(Omission),
@@ -101,7 +101,7 @@ mod tests {
         CsbEvent::Import {
             hash: [42; 32],
             source_stream_id: StreamId::default(),
-            snapshot: Box::new(AppStoreData::default()),
+            snapshot: Box::new(PgStoreData::default()),
         }
     }
 
@@ -119,8 +119,8 @@ mod tests {
     /// app event, under its own category.
     #[test]
     fn paper_corrected_update_delegates_to_inner_event() {
-        let event = CsbEvent::PaperCorrectedUpdate(Box::new(AppEvent::UpdatePoliticalGroup(
-            crate::political_groups::PoliticalGroup::default(),
+        let event = CsbEvent::PaperCorrectedUpdate(Box::new(PgEvent::UpdatePoliticalGroup(
+            crate::structs::political_groups::PoliticalGroup::default(),
         )));
 
         assert_eq!(event.category(), "paper_correction");

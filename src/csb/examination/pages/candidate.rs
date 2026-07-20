@@ -3,7 +3,6 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
-    candidate_lists::CandidateListId,
     csb::{
         Omission,
         examination::{
@@ -13,7 +12,7 @@ use crate::{
         },
     },
     filters,
-    persons::Person,
+    structs::{candidate_lists::CandidateListId, persons::Person},
 };
 
 #[derive(Template)]
@@ -92,7 +91,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        persons::PersonId,
+        structs::persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -142,8 +141,7 @@ mod tests {
     #[tokio::test]
     async fn shows_bsn_house_number_addition_and_representative_corrections() {
         use crate::{
-            common::BsnOrNoneConfirmed,
-            persons::Representative,
+            structs::{common::BsnOrNoneConfirmed, persons::Representative},
             test_utils::{sample_dutch_address, sample_full_name},
         };
 

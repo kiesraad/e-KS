@@ -2,7 +2,6 @@ use axum_extra::routing::TypedPath;
 
 use crate::{
     StreamId,
-    candidate_lists::CandidateListId,
     csb::{
         OmissionCategory, OmissionType,
         examination::{
@@ -10,7 +9,7 @@ use crate::{
             pages::{CsbAddOmissionPath, CsbOmissionOverviewPath},
         },
     },
-    persons::PersonId,
+    structs::{candidate_lists::CandidateListId, persons::PersonId},
 };
 
 use super::OmissionTarget;
