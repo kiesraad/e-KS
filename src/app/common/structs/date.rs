@@ -106,4 +106,21 @@ mod tests {
             Err(ValidationError::InvalidValue)
         ));
     }
+
+    #[test]
+    fn format_option_test() {
+        assert_eq!(
+            DateOfBirth::format_option(&Some(DateOfBirth(
+                NaiveDate::from_ymd_opt(2000, 2, 3).unwrap()
+            ))),
+            "03-02-2000".to_string()
+        );
+
+        assert_eq!(
+            DateOfBirth::format_option(&Some(DateOfBirth(
+                NaiveDate::from_ymd_opt(2000, 12, 13).unwrap()
+            ))),
+            "13-12-2000".to_string()
+        );
+    }
 }

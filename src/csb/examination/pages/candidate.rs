@@ -108,6 +108,8 @@ mod tests {
         // (the sample list covers Utrecht).
         assert!(body.contains("Electoral districts"));
         assert!(body.contains("Utrecht"));
+        // date of birth formatted correctly
+        assert!(body.contains("01-02-1990"))
     }
 
     #[tokio::test]
