@@ -38,7 +38,7 @@ pub async fn overview(
     // corrections are hidden, and the corrected candidates and electoral
     // districts take precedence over the imported ones.
     let mut candidate_lists = store
-        .get_candidate_lists()
+        .get_imported_candidate_lists()
         .into_iter()
         .filter_map(|list| {
             let corrected = corrected_store.get_candidate_list(list.id).ok()?;
@@ -51,7 +51,7 @@ pub async fn overview(
         corrected_store
             .get_candidate_lists()
             .into_iter()
-            .filter(|list| store.get_candidate_list(list.id).is_none())
+            .filter(|list| store.get_imported_candidate_list(list.id).is_none())
             .map(CsbCandidateList::paper_added),
     );
     let all_brp_error_count = candidate_lists

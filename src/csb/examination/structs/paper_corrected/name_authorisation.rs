@@ -15,7 +15,7 @@ pub fn paper_corrected_name_authorisations(
     store: &CsbStore,
     corrected: &AppStore,
 ) -> Vec<PaperCorrectedNameAuthorisation> {
-    let imported = store.get_name_authorisations();
+    let imported = store.get_imported_name_authorisations();
     let corrected = corrected.get_name_authorisations();
 
     let mut rows: Vec<PaperCorrectedNameAuthorisation> = imported

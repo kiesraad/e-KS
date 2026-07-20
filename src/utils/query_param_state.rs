@@ -20,6 +20,9 @@ pub struct QueryParamState {
     redirect_to: Option<String>,
     #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
+    overlay: bool,
+    #[serde(default)]
+    #[serde(skip_serializing_if = "std::ops::Not::not")]
     max_candidates_reached: bool,
     #[serde(default)]
     #[serde(skip_serializing_if = "std::ops::Not::not")]
@@ -116,6 +119,16 @@ impl QueryParamState {
         }
     }
 
+    /// Query params for links between pages of an already-open overlay:
+    /// `overlay=true` suppresses the open animation on the target page.
+    pub fn overlay(redirect_to: Option<String>) -> Self {
+        Self {
+            overlay: true,
+            redirect_to,
+            ..Default::default()
+        }
+    }
+
     pub fn redirect_url(&self) -> Option<&str> {
         self.redirect_to
             .as_deref()
@@ -132,6 +145,12 @@ impl QueryParamState {
 
         if !url.contains('?') {
             url.push_str("?&success=true");
+        }
+
+        // Keep the overlay marker across the redirect so a save that lands on
+        // another overlay page does not replay the open animation.
+        if self.overlay && !url.contains("overlay=") {
+            url.push_str("&overlay=true");
         }
 
         url
@@ -191,5 +210,37 @@ mod tests {
         let state = QueryParamState::initial();
         let loc = location(state.redirect_or_preserving_initial("/bar?initial=true"));
         assert_eq!(loc, "/bar?initial=true");
+    }
+
+    #[test]
+    fn redirect_or_propagates_overlay() {
+        // redirect_to target gets the overlay marker appended
+        let state = QueryParamState {
+            overlay: true,
+            redirect_to: Some("/foo?bar=1".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            location(state.redirect_or("/fallback")),
+            "/foo?bar=1&overlay=true"
+        );
+
+        // but not duplicated when already present
+        let state = QueryParamState {
+            overlay: true,
+            redirect_to: Some("/foo?overlay=true".to_string()),
+            ..Default::default()
+        };
+        assert_eq!(
+            location(state.redirect_or("/fallback")),
+            "/foo?overlay=true"
+        );
+
+        // without the flag nothing is appended
+        let state = QueryParamState::default();
+        assert_eq!(
+            location(state.redirect_or("/fallback")),
+            "/fallback?&success=true"
+        );
     }
 }

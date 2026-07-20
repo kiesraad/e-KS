@@ -17,12 +17,12 @@ impl CsbCandidateList {
         }
     }
 
-    /// A list only present in the paper-corrected projection: it was added
-    /// during paper corrections, so there is no imported data to check.
+    /// A list only present in the paper-corrected projection
     pub fn paper_added(candidate_list: CandidateList) -> Self {
         Self {
             list: candidate_list,
-            brp_error_count: 0,
+            // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.
+            brp_error_count: rng().random_range(0..=2),
             is_paper_added: true,
         }
     }

@@ -11,11 +11,11 @@ pub fn success_alert_requested(parts: &Parts) -> bool {
         .is_some_and(|q| q.contains("success=true"))
 }
 
-/// Whether the request came from an overlay page (via the referrer header).
-pub fn overlay_referrer(parts: &Parts) -> bool {
+/// Whether the request query marks the page as part of an already-open
+/// overlay (`overlay=true`), which suppresses the overlay open animation.
+pub fn overlay_active(parts: &Parts) -> bool {
     parts
-        .headers
-        .get(axum::http::header::REFERER)
-        .and_then(|value| value.to_str().ok())
-        .is_some_and(|url| url.contains("overlay=true"))
+        .uri
+        .query()
+        .is_some_and(|q| q.contains("overlay=true"))
 }

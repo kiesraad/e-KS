@@ -34,7 +34,7 @@ pub async fn overview(
     // Fall back to the paper-corrected projection so lists that were added by
     // the corrections have a detail page too. An empty imported side makes
     // every candidate render as a paper-corrected addition.
-    let list = store.get_candidate_list(list_id).or_else(|| {
+    let list = store.get_imported_candidate_list(list_id).or_else(|| {
         corrected_store
             .get_candidate_list(list_id)
             .ok()

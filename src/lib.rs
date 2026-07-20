@@ -125,7 +125,7 @@ pub(crate) use store::{DbHealth, Event};
 pub(crate) use structs::typst;
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
-    overlay_referrer, redirect_success, success_alert_requested, transparent_string,
+    overlay_active, redirect_success, success_alert_requested, transparent_string,
 };
 
 #[cfg(test)]

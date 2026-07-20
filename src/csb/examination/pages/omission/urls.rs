@@ -7,7 +7,7 @@ use crate::{
         OmissionCategory, OmissionType,
         examination::{
             extractors::CsbPoliticalGroup,
-            pages::{CsbAddOmissionPath, CsbOmissionOverviewPath, OmissionListQuery},
+            pages::{CsbAddOmissionPath, CsbOmissionOverviewPath},
         },
     },
     persons::PersonId,
@@ -36,15 +36,24 @@ pub(super) fn return_path(target: &OmissionTarget, political_group: &CsbPolitica
     }
 }
 
-/// Append the list context as a query string, but only when there is
-/// something to carry (an empty query would otherwise leave a trailing `?`).
+/// Query string for links within the dialog: the list context plus the
+/// `overlay=true` marker that suppresses the overlay open animation.
+#[derive(serde::Serialize)]
+struct DialogQuery {
+    #[serde(skip_serializing_if = "Option::is_none")]
+    list: Option<CandidateListId>,
+    overlay: bool,
+}
+
+/// Append the list context and the overlay marker as a query string. These
+/// URLs are only linked from within the already-open dialog (the sidebar tabs
+/// and the remove buttons), so the target should not replay the animation.
 fn with_context(path: impl TypedPath, list: Option<CandidateListId>) -> String {
-    match list {
-        None => path.to_string(),
-        Some(_) => path
-            .with_query_params(OmissionListQuery { list })
-            .to_string(),
-    }
+    path.with_query_params(DialogQuery {
+        list,
+        overlay: true,
+    })
+    .to_string()
 }
 
 /// The URL of the add-omission form for this entity, keeping the list context

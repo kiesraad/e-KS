@@ -138,9 +138,9 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("paper-corrections-banner"));
         // The banner names the group being corrected and warns to only enter
-        // handwritten corrections from the handed-in paper documents.
+        // handwritten corrections from the submitted paper documents.
         assert!(body.contains("You are correcting Kiesraad Demo."));
-        assert!(body.contains("handed-in paper documents"));
+        assert!(body.contains("submitted paper documents"));
         // Leaving corrections mode posts to the stop route of the CSB stream.
         assert!(body.contains(&format!(
             "/csb/examination/{}/paper-corrections/stop",

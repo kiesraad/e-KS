@@ -24,14 +24,12 @@ impl Overlay {
             .unwrap_or_else(|| default.to_string())
     }
 
-    /// Returns `path` with `?redirect_to=<value>` appended when a redirect is
-    /// set, so the target step can return to the right place after saving
+    /// Returns `path` with `overlay=true` appended (the target is another page
+    /// of the already-open overlay, so it skips the open animation), plus
+    /// `redirect_to=<value>` when a redirect is set, so the target step can
+    /// return to the right place after saving
     pub fn forward(&self, path: impl TypedPath) -> String {
-        match &self.redirect_to {
-            Some(r) => path
-                .with_query_params(QueryParamState::redirect_to(r.clone()))
-                .to_string(),
-            None => path.to_string(),
-        }
+        path.with_query_params(QueryParamState::overlay(self.redirect_to.clone()))
+            .to_string()
     }
 }

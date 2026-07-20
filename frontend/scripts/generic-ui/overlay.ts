@@ -4,8 +4,9 @@ export default function setupOverlay() {
   const backdrop: HTMLElement | null =
     document.querySelector(".overlay-backdrop");
 
+  const url = new URL(globalThis.location.href);
+
   if (overlay && backdrop) {
-    const url = new URL(globalThis.location.href);
     url.searchParams.set("overlay", "true");
     globalThis.history.replaceState({}, "", url.toString());
 
@@ -38,5 +39,9 @@ export default function setupOverlay() {
         close();
       }
     });
+  } else if (url.searchParams.has("overlay")) {
+    // Drop the overlay marker a redirect out of an overlay left behind.
+    url.searchParams.delete("overlay");
+    globalThis.history.replaceState({}, "", url.toString());
   }
 }

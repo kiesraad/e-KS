@@ -55,7 +55,7 @@ pub fn paper_corrected_list_submitter(
     store: &CsbStore,
     corrected: &AppStore,
 ) -> Option<PaperCorrectedSubmitter> {
-    let imported = store.get_list_submitter();
+    let imported = store.get_imported_list_submitter();
     let corrected = corrected.get_list_submitter();
 
     if corrected.is_empty() {
@@ -75,7 +75,7 @@ pub fn paper_corrected_substitute_submitters(
     store: &CsbStore,
     corrected: &AppStore,
 ) -> Vec<PaperCorrectedSubmitter> {
-    let imported = store.get_substitute_submitters();
+    let imported = store.get_imported_substitute_submitters();
     let corrected = corrected.get_substitute_submitters();
 
     let mut rows: Vec<PaperCorrectedSubmitter> = imported

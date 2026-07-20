@@ -45,7 +45,7 @@ fn imported_rows(
         .iter()
         .enumerate()
         .filter_map(|(index, person_id)| {
-            let person = store.get_person(*person_id)?;
+            let person = store.get_imported_person(*person_id)?;
             let corrected = corrected_store.get_person(*person_id).ok();
             let corrected_position = corrected_store.candidate_position(list.id, *person_id);
 

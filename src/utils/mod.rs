@@ -37,7 +37,7 @@ pub use overlay::Overlay;
 pub use query_param_state::QueryParamState;
 pub use query_suffix::filter_query_suffix;
 pub use redirect::redirect_success;
-pub use request_flags::{overlay_referrer, success_alert_requested};
+pub use request_flags::{overlay_active, success_alert_requested};
 pub use sha256_hex::sha256_hex;
 pub use slugify_teletex::slugify_teletex;
 pub use storage_url::StorageScheme;

@@ -13,12 +13,12 @@ pub struct PaperCorrectedPoliticalGroupInfo {
 
 impl PaperCorrectedPoliticalGroupInfo {
     pub fn new(store: &CsbStore, corrected: &AppStore, locale: Locale) -> Self {
-        let imported_group = store.get_political_group();
+        let imported_group = store.get_imported_political_group();
         let corrected_group = corrected.get_political_group();
 
         Self {
             display_name: PaperCorrected::new(
-                imported_group.csb_display_name(store.first_candidate_name().as_ref()),
+                imported_group.csb_display_name(store.first_imported_candidate_name().as_ref()),
                 corrected_group.csb_display_name(corrected.first_candidate_name().as_ref()),
             ),
             list_type: PaperCorrected::new(

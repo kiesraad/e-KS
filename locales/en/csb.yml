@@ -124,8 +124,8 @@ omission:
     title: Overview
   title: Omissions
 paper_corrections:
-  banner: "You are correcting {}. Only enter corrections that are handwritten on the handed-in paper documents, nothing else."
-  instruction: Copy handwritten corrections from the handed-in paper documents into the imported data
+  banner: "You are correcting {}. Only enter corrections that are handwritten on the submitted paper documents, nothing else."
+  instruction: Copy handwritten corrections from the submitted paper documents into the imported data
   start: Correct paper documents
   stop: Back to examination
   title: Paper corrections

@@ -40,7 +40,7 @@ pub async fn overview(
     // Fall back to the paper-corrected projection so candidates and lists
     // that were added by the corrections have a detail page too.
     let corrected_store = store.paper_corrected();
-    let imported = store.get_person(person_id);
+    let imported = store.get_imported_person(person_id);
     let corrected = corrected_store.get_person(person_id).ok();
     let candidate = imported
         .clone()
@@ -53,7 +53,7 @@ pub async fn overview(
     );
     let position = PaperCorrected::new(
         store
-            .candidate_position(list_id, person_id)
+            .imported_candidate_position(list_id, person_id)
             .map(|p| p.to_string())
             .unwrap_or_default(),
         corrected_store
@@ -65,7 +65,7 @@ pub async fn overview(
     let electoral_districts = corrected_store
         .get_candidate_list(list_id)
         .ok()
-        .or_else(|| store.get_candidate_list(list_id))
+        .or_else(|| store.get_imported_candidate_list(list_id))
         .map(|list| list.electoral_districts)
         .ok_or(AppError::GenericNotFound)?;
     let candidate_omissions = store.get_candidate_omissions(person_id);

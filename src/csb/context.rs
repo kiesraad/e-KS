@@ -22,8 +22,8 @@ pub struct CsbContext {
     pub server_name: Option<&'static str>,
     /// Whether to show the success alert based on the request query.
     pub show_success_alert: bool,
-    /// Whether the page was loaded as an overlay referrer (suppresses animation).
-    pub overlay_referrer: bool,
+    /// Whether the page is part of an already-open overlay (suppresses animation).
+    pub overlay_active: bool,
 }
 
 impl CsbContext {
@@ -33,7 +33,7 @@ impl CsbContext {
             session,
             server_name: None,
             show_success_alert: false,
-            overlay_referrer: false,
+            overlay_active: false,
         }
     }
 
@@ -53,7 +53,7 @@ impl askama::Values for CsbContext {
             "csrf_token" => Some(&self.session.csrf_token().0 as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
             "show_success_alert" => Some(&self.show_success_alert as &dyn std::any::Any),
-            "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
+            "overlay_active" => Some(&self.overlay_active as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -70,7 +70,7 @@ impl<S: AppRequestState> FromRequestParts<S> for CsbContext {
         context.server_name = state.config().server_name.as_deref();
 
         context.show_success_alert = crate::success_alert_requested(parts);
-        context.overlay_referrer = crate::overlay_referrer(parts);
+        context.overlay_active = crate::overlay_active(parts);
 
         Ok(context)
     }
