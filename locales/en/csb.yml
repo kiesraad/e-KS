@@ -126,7 +126,7 @@ omission:
 paper_corrections:
   banner: "You are correcting {}. Only enter corrections that are handwritten on the submitted paper documents, nothing else."
   instruction: Copy handwritten corrections from the submitted paper documents into the imported data
-  start: Correct paper documents
+  start: Enter corrections
   stop: Back to examination
   title: Paper corrections
 progress: Progress

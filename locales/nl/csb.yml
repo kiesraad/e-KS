@@ -126,7 +126,7 @@ omission:
 paper_corrections:
   banner: "U corrigeert {}. Neem alleen correcties over die met de hand op de ingeleverde papieren documenten zijn geschreven, verder niets."
   instruction: Neem handgeschreven correcties van de ingeleverde papieren documenten over in de geïmporteerde gegevens
-  start: Papieren correcties toevoegen
+  start: Correcties overnemen
   stop: Terug naar onderzoek
   title: Papieren correcties
 progress: Voortgang
