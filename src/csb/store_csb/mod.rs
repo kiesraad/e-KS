@@ -12,9 +12,10 @@ use serde::{Deserialize, Serialize};
 use crate::political_groups::PoliticalGroup;
 use crate::{
     AppStoreData, Scope,
-    common::UtcDateTime,
+    common::{DisplayName, UtcDateTime},
+    persons::{Person, PersonId},
     store::{StoreData, StoreEvent},
-    structs::csb::{Omission, OmissionId},
+    structs::csb::{Correction, Omission, OmissionId},
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
@@ -26,6 +27,8 @@ pub struct CsbStoreData {
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
+    pub(crate) corrected_persons: HashMap<PersonId, Person>,
+    pub(crate) corrected_display_name: Option<DisplayName>,
 }
 
 impl StoreData for CsbStoreData {
@@ -85,6 +88,21 @@ impl StoreData for CsbStoreData {
             CsbEvent::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
+            CsbEvent::UpdateCorrection(correction) => match correction {
+                Correction::DisplayName(display_name) => {
+                    self.corrected_display_name = Some(display_name);
+                }
+                Correction::Person(person_id, correction) => {
+                    let person = self.corrected_persons.entry(person_id).or_insert_with(|| {
+                        self.imported_data
+                            .persons
+                            .get(&person_id)
+                            .cloned()
+                            .unwrap_or_default()
+                    });
+                    correction.apply(person);
+                }
+            },
         }
     }
 

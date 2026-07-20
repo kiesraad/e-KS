@@ -164,7 +164,7 @@ mod tests {
         StreamId,
         candidate_lists::CandidateList,
         common::UtcDateTime,
-        csb::OmissionType,
+        structs::csb::OmissionType,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
