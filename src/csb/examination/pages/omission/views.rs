@@ -41,6 +41,7 @@ pub(super) struct CsbAddOmissionTemplate {
     pub(super) available_districts: Vec<ElectoralDistrict>,
     /// Candidate lists for a Candidate omission. Hidden when empty.
     pub(super) available_candidate_lists: Vec<CandidateListOption>,
+    pub(super) title_suffix: String,
 }
 
 /// The overview tab of the dialog: the omissions already added to this entity.
@@ -55,6 +56,7 @@ pub(super) struct CsbOmissionOverviewTemplate {
     /// The dialog opened on its two tabs, for the steps sidebar.
     pub(super) add_tab_url: String,
     pub(super) overview_tab_url: String,
+    pub(super) title_suffix: String,
 }
 
 /// An omission in the overview tab, paired with the URL of its remove action

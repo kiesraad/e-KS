@@ -1,6 +1,6 @@
 {% extends "csb/components/overlay.html" %}
 {% block overlay_class %}omission-overlay{% endblock %}
-{% block overlay_title %}{{ "csb.omission.overview.title"|trans }}{% endblock %}
+{% block overlay_title %}{{ "csb.omission.title"|trans }} - {{ title_suffix }}{% endblock %}
 {% block overlay_steps %}
   {% set is_overview = true %}
   {% include "csb/examination/pages/omission_steps.html" %}
