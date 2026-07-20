@@ -211,3 +211,127 @@ async fn middleware_accepts_post_with_valid_csrf_token() {
 
     assert_eq!(response.status(), StatusCode::OK);
 }
+
+/// App routes behind session + store middleware whose handler echoes the CSB
+/// stream the injected store sends paper corrections to (empty when the store
+/// writes to its own stream).
+fn store_app(state: AppState) -> Router {
+    Router::new()
+        .route(
+            "/",
+            get(|store: crate::AppStore| async move {
+                store
+                    .paper_corrections_stream_id()
+                    .map(|id| id.to_string())
+                    .unwrap_or_default()
+            }),
+        )
+        .route("/finalise", get(|| async { "finalise" }))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            store_middleware,
+        ))
+        .layer(middleware::from_fn_with_state(
+            state.clone(),
+            session_middleware,
+        ))
+        .with_state(state)
+}
+
+/// Insert a committee session and return its cookie value. `correcting` sets
+/// the paper-corrections stream.
+async fn insert_committee_session(state: &AppState, correcting: Option<crate::StreamId>) -> String {
+    let mut session = Session::new_test();
+    session.set_scope(crate::Scope::CentralElectoralCommittee);
+    session.set_current_election(crate::ElectionConfig::EK27);
+    session.paper_correction_stream_id = correcting;
+    let token = session.token_string();
+    state.sessions.insert(session).await;
+    format!("{SESSION_COOKIE_NAME}={token}")
+}
+
+/// Persist a CSB stream carrying a single import event and return its id.
+async fn seed_csb_stream(state: &AppState) -> crate::StreamId {
+    let stream_id = crate::StreamId::new();
+    let store = state
+        .csb_store_for_stream(stream_id, crate::ElectionConfig::EK27)
+        .await
+        .expect("csb store");
+    store
+        .update(crate::CsbEvent::Import {
+            hash: [0u8; 32],
+            source_stream_id: crate::StreamId::new(),
+            snapshot: Box::new(crate::AppStoreData::default()),
+        })
+        .await
+        .expect("import");
+    stream_id
+}
+
+/// A committee session that is not correcting paper documents stays off the
+/// app routes.
+#[tokio::test]
+async fn csb_session_without_correction_stream_is_redirected_to_csb_index() {
+    let state = AppState::new_for_tests().await;
+    let cookie = insert_committee_session(&state, None).await;
+
+    let response = store_app(state)
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/csb");
+}
+
+/// A committee session in paper-corrections mode reaches app routes with a
+/// store that writes to the CSB stream.
+#[tokio::test]
+async fn csb_session_in_corrections_mode_gets_a_paper_corrections_store() {
+    let state = AppState::new_for_tests().await;
+    let stream_id = seed_csb_stream(&state).await;
+    let cookie = insert_committee_session(&state, Some(stream_id)).await;
+
+    let response = store_app(state)
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_body_string(response).await;
+    assert_eq!(body, stream_id.to_string());
+}
+
+/// The finalise flow is not reachable while correcting paper documents.
+#[tokio::test]
+async fn csb_session_in_corrections_mode_cannot_reach_finalise() {
+    let state = AppState::new_for_tests().await;
+    let stream_id = seed_csb_stream(&state).await;
+    let cookie = insert_committee_session(&state, Some(stream_id)).await;
+
+    let response = store_app(state)
+        .oneshot(
+            HttpRequest::builder()
+                .uri("/finalise")
+                .header(header::COOKIE, &cookie)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+    assert_eq!(response.headers().get(header::LOCATION).unwrap(), "/");
+}

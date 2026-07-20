@@ -69,7 +69,7 @@ impl OmissionTarget {
     ) -> Response {
         let available_districts = if self.omission_type == OmissionType::CandidateList {
             store
-                .get_candidate_lists()
+                .get_corrected_candidate_lists()
                 .into_iter()
                 .flat_map(|l| l.electoral_districts)
                 .collect()
@@ -109,7 +109,7 @@ pub async fn add_omission(
 ) -> Result<Response, AppError> {
     let target = OmissionTarget::from_add_path(path, list_query);
     let form = if target.omission_type == OmissionType::CandidateList {
-        // Pre-fill current candidate list's electoral districts
+        // Pre-fill the candidate list's paper-corrected electoral districts
         let districts = store
             .get_candidate_list(CandidateListId::from(target.reference))
             .map(|l| l.electoral_districts)
@@ -263,6 +263,12 @@ mod tests {
         }
     }
 
+    /// Collapse whitespace so assertions can match attributes the template
+    /// renders on separate lines.
+    fn normalized(body: &str) -> String {
+        body.split_whitespace().collect::<Vec<_>>().join(" ")
+    }
+
     #[tokio::test]
     async fn add_omission_renders_csrf_and_fields() {
         let store = CsbStore::new_for_test();
@@ -317,6 +323,153 @@ mod tests {
             "/csb/examination/{stream_id}/omission/political-group/{stream_id}/overview"
         )));
         assert!(body.contains(">Overview</a>"));
+    }
+
+    #[tokio::test]
+    async fn add_omission_offers_and_prefills_corrected_districts() {
+        use crate::test_utils::sample_candidate_list;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        // The imported list covers Utrecht; the corrections moved it to Groningen.
+        store.add_candidate_list(sample_candidate_list(list_id));
+        let mut corrected = sample_candidate_list(list_id);
+        corrected.electoral_districts = vec![crate::ElectoralDistrict::GR];
+        store.set_paper_corrected_candidate_list(corrected);
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::CandidateList,
+                reference: list_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = normalized(&response_body_string(response).await);
+        // The corrected district is selectable and pre-filled, the imported
+        // one is disabled.
+        assert!(body.contains(r#"data-district-nl="Groningen" checked />"#));
+        assert!(body.contains(r#"data-district-nl="Utrecht" disabled />"#));
+    }
+
+    #[tokio::test]
+    async fn add_omission_offers_districts_of_paper_added_lists() {
+        use crate::test_utils::sample_candidate_list;
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let list_id = CandidateListId::new();
+        // The list only exists in the corrected projection (added on paper).
+        store.set_paper_corrected_candidate_list(sample_candidate_list(list_id));
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::CandidateList,
+                reference: list_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = normalized(&response_body_string(response).await);
+        assert!(body.contains(r#"data-district-nl="Utrecht" checked />"#));
+    }
+
+    #[tokio::test]
+    async fn candidate_dialog_offers_paper_added_lists() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store.add_person(person);
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.set_paper_corrected_candidate_list(list);
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery::default()),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The paper-added list is a selectable option.
+        assert!(body.contains(&format!("omission_candidate_list_{list_id}")));
+    }
+
+    #[tokio::test]
+    async fn candidate_dialog_resolves_placeholders_for_paper_added_candidates() {
+        use crate::test_utils::{sample_candidate_list, sample_person};
+
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        // Both the candidate and the list only exist in the corrected
+        // projection: they were added during paper corrections.
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        store
+            .data
+            .write()
+            .paper_corrected_data
+            .persons
+            .insert(person_id, person);
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+        list.candidates = vec![person_id];
+        store.set_paper_corrected_candidate_list(list);
+
+        let response = add_omission(
+            CsbAddOmissionPath {
+                stream_id,
+                omission_type: OmissionType::Candidate,
+                reference: person_id.into(),
+            },
+            CsbContext::new_test(),
+            store,
+            Query(QueryParamState::default()),
+            Query(OmissionListQuery {
+                list: Some(list_id),
+            }),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The name and position placeholders resolve through the corrected
+        // projection.
+        assert!(body.contains("Kandidaat nr. 1, Jansen, H.A.H.A. (Henk)"));
     }
 
     #[tokio::test]
@@ -376,10 +529,11 @@ mod tests {
         // submit/save button).
         assert!(!body.contains("data-omission-description"));
         assert!(!body.contains("value=\"save\""));
-        // The sidebar still links back to the add-omission form.
+        // The sidebar still links back to the add-omission form, marked as an
+        // in-overlay navigation.
         assert!(body.contains("steps-nav"));
         assert!(body.contains(&format!(
-            "/csb/examination/{stream_id}/omission/candidate-list/{list}\""
+            "/csb/examination/{stream_id}/omission/candidate-list/{list}?&#38;overlay=true\""
         )));
         // Each omission carries a remove button targeting its delete action.
         assert!(body.contains(&format!("/csb/examination/{stream_id}/delete-omission/")));

@@ -9,6 +9,16 @@ use crate::{AppError, AppRequestState, AppStore, ElectionConfig, Session};
 #[cfg(test)]
 use crate::Locale;
 
+/// State for CSB paper-corrections mode.
+#[derive(Clone)]
+pub struct PaperCorrectionMode {
+    /// URL that leaves paper-corrections mode.
+    pub exit_path: String,
+    /// Display name of the political group being corrected,
+    /// shown in the corrections banner.
+    pub group_name: String,
+}
+
 /// Request-scoped template context used by Askama.
 #[derive(Clone)]
 pub struct Context {
@@ -22,8 +32,8 @@ pub struct Context {
     pub show_success_alert: bool,
     /// Whether to show a warning that documents were downloaded and changes won't be reflected.
     pub show_download_warning: bool,
-    /// Whether the request came from an overlay page (via referrer query).
-    pub overlay_referrer: bool,
+    /// Whether the page is part of an already-open overlay (suppresses animation).
+    pub overlay_active: bool,
     /// Session data for locale and CSRF.
     pub session: Session,
     /// Short identifier of the server this instance runs on (e.g. "S1"),
@@ -32,6 +42,8 @@ pub struct Context {
     /// URL for the "General information" nav link. Includes `initial=true` when
     /// general information is still empty, so the first-visit flow suppresses warnings.
     pub general_information_path: String,
+    /// Set when a CSB session is correcting a stream's paper documents.
+    pub paper_correction_mode: Option<PaperCorrectionMode>,
 }
 
 impl Context {
@@ -43,16 +55,27 @@ impl Context {
 
         let general_information_path = political_group.general_information_path(store);
 
+        let paper_correction_mode =
+            store
+                .paper_corrections_stream_id()
+                .map(|stream_id| PaperCorrectionMode {
+                    exit_path: crate::csb::examination::CsbPaperCorrectionsStopPath { stream_id }
+                        .to_string(),
+                    group_name: political_group
+                        .csb_display_name(store.first_candidate_name().as_ref()),
+                });
+
         Self {
             election,
             max_candidates,
             multiple_candidate_lists,
             show_success_alert: false,
             show_download_warning: false,
-            overlay_referrer: false,
+            overlay_active: false,
             session,
             server_name: None,
             general_information_path,
+            paper_correction_mode,
         }
     }
 
@@ -84,11 +107,25 @@ impl askama::Values for Context {
             "multiple_candidate_lists" => {
                 Some(&self.multiple_candidate_lists as &dyn std::any::Any)
             }
-            "overlay_referrer" => Some(&self.overlay_referrer as &dyn std::any::Any),
+            "overlay_active" => Some(&self.overlay_active as &dyn std::any::Any),
             "server_name" => Some(&self.server_name as &dyn std::any::Any),
             "general_information_path" => {
                 Some(&self.general_information_path as &dyn std::any::Any)
             }
+            // `is_some()` yields a temporary, so borrow promoted constants instead
+            "paper_correction_mode" => Some(if self.paper_correction_mode.is_some() {
+                &true
+            } else {
+                &false
+            }),
+            "paper_corrections_exit_path" => self
+                .paper_correction_mode
+                .as_ref()
+                .map(|mode| &mode.exit_path as &dyn std::any::Any),
+            "paper_corrections_group_name" => self
+                .paper_correction_mode
+                .as_ref()
+                .map(|mode| &mode.group_name as &dyn std::any::Any),
             _ => None,
         }
     }
@@ -110,16 +147,8 @@ impl<S: AppRequestState> FromRequestParts<S> for Context {
                 || path.starts_with(crate::candidate_lists::CandidateListsPath::PATH)
                 || path.starts_with(crate::persons::PersonsPath::PATH));
 
-        context.show_success_alert = parts
-            .uri
-            .query()
-            .is_some_and(|q| q.contains("success=true"));
-
-        context.overlay_referrer = parts
-            .headers
-            .get(axum::http::header::REFERER)
-            .and_then(|value| value.to_str().ok())
-            .is_some_and(|url| url.contains("overlay=true"));
+        context.show_success_alert = crate::success_alert_requested(parts);
+        context.overlay_active = crate::overlay_active(parts);
 
         Ok(context)
     }

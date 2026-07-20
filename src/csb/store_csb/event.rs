@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AppStoreData, Event, StreamId,
+    AppEvent, AppStoreData, Event, StreamId,
     csb::{Omission, OmissionId},
     trans,
     utils::format_hash,
@@ -28,6 +28,9 @@ pub enum CsbEvent {
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<AppStoreData>,
     },
+    /// An app event applied to the paper-corrected projection instead of a
+    /// political group's own stream. Boxed to keep the event enum small.
+    PaperCorrectedUpdate(Box<AppEvent>),
     SetFinished(bool),
     CreateOmission(Omission),
     UpdateOmission(Omission),
@@ -40,6 +43,7 @@ impl Event for CsbEvent {
     fn category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::PaperCorrectedUpdate(_) => "paper_correction",
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_)
             | CsbEvent::UpdateOmission(_)
@@ -50,6 +54,7 @@ impl Event for CsbEvent {
     fn key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::PaperCorrectedUpdate(event) => event.key(),
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_) => "create_omission",
             CsbEvent::UpdateOmission(_) => "update_omission",
@@ -60,6 +65,7 @@ impl Event for CsbEvent {
     fn description(&self, locale: crate::Locale) -> String {
         match self {
             CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
+            CsbEvent::PaperCorrectedUpdate(event) => event.description(locale),
             CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
             CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
             CsbEvent::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
@@ -79,6 +85,7 @@ impl Event for CsbEvent {
                     format_hash(hash, true)
                 )
             }
+            CsbEvent::PaperCorrectedUpdate(event) => event.details(),
             CsbEvent::SetFinished(value) => value.to_string(),
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
@@ -106,5 +113,21 @@ mod tests {
     #[test]
     fn import_event_key() {
         assert_eq!(import_event().key(), "import");
+    }
+
+    /// The audit-log metadata of a paper correction delegates to the wrapped
+    /// app event, under its own category.
+    #[test]
+    fn paper_corrected_update_delegates_to_inner_event() {
+        let event = CsbEvent::PaperCorrectedUpdate(Box::new(AppEvent::UpdatePoliticalGroup(
+            crate::political_groups::PoliticalGroup::default(),
+        )));
+
+        assert_eq!(event.category(), "paper_correction");
+        assert_eq!(event.key(), "update_political_group");
+        assert_eq!(
+            event.description(crate::Locale::En),
+            "Updated political group"
+        );
     }
 }

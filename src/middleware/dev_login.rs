@@ -144,13 +144,15 @@ async fn ensure_dev_store(
     let store_is_empty = store.data.read().events.is_empty();
 
     if store_is_empty {
-        PoliticalGroup::default().create(&store).await?;
+        PoliticalGroup::default()
+            .create(&crate::AppStore::own(store.clone()))
+            .await?;
     }
 
     if load_fixtures {
         #[cfg(feature = "fixtures")]
         {
-            crate::fixtures::load(&store).await?;
+            crate::fixtures::load(&crate::AppStore::own(store.clone())).await?;
             return Ok((store, store_is_empty));
         }
     }

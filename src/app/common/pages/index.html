@@ -1,7 +1,9 @@
 {% extends "app/common/components/layout.html" %}
 {% block header_action %}
-  <a href="{{ crate::common::SwitchElectionPath.to_string() }}"
-     class="button secondary">{{ "common.switch_election.label"|trans }}</a>
+  {% if !("paper_correction_mode"|value_true) %}
+    <a href="{{ crate::common::SwitchElectionPath.to_string() }}"
+       class="button secondary">{{ "common.switch_election.label"|trans }}</a>
+  {% endif %}
 {% endblock %}
 {% block page_title %}
   {% let election = "election"|election_value %}
@@ -76,29 +78,31 @@
       </div>
       <p class="card-footer">{{ "action.manage_candidate_lists"|trans }}</p>
     </a>
-    <a href="{{ crate::finalise::FinalisePath{}.to_string() }}" class="card">
-      <div class="card-header">
-        <div class="badge badge-finalise"></div>
-        <div>
-          <h4>{{ "common.step"|trans("3") }}</h4>
+    {% if !("paper_correction_mode"|value_true) %}
+      <a href="{{ crate::finalise::FinalisePath{}.to_string() }}" class="card">
+        <div class="card-header">
+          <div class="badge badge-finalise"></div>
+          <div>
+            <h4>{{ "common.step"|trans("3") }}</h4>
+          </div>
         </div>
-      </div>
-      <div class="card-content">
-        <h2 class="card-title">{{ "common.finalise"|trans }}</h2>
-        <ul class="card-instruction">
-          <li>{{ "common.finalise_description.review_problems"|trans }}</li>
-          <li>{{ "common.finalise_description.download_documents"|trans }}</li>
-          <li>{{ "common.finalise_description.view_follow_up_steps"|trans }}</li>
-        </ul>
-      </div>
-      <div class="alert alert-info">
-        {{ "common.finalise_instruction"|trans }}:
-        <strong>
-          {% let election = "election"|election_value %}
-          {{ election.nomination_day_date().format("%d-%m-%Y") }}
-        </strong>
-      </div>
-      <p class="card-footer">{{ "action.review_and_download"|trans }}</p>
-    </a>
+        <div class="card-content">
+          <h2 class="card-title">{{ "common.finalise"|trans }}</h2>
+          <ul class="card-instruction">
+            <li>{{ "common.finalise_description.review_problems"|trans }}</li>
+            <li>{{ "common.finalise_description.download_documents"|trans }}</li>
+            <li>{{ "common.finalise_description.view_follow_up_steps"|trans }}</li>
+          </ul>
+        </div>
+        <div class="alert alert-info">
+          {{ "common.finalise_instruction"|trans }}:
+          <strong>
+            {% let election = "election"|election_value %}
+            {{ election.nomination_day_date().format("%d-%m-%Y") }}
+          </strong>
+        </div>
+        <p class="card-footer">{{ "action.review_and_download"|trans }}</p>
+      </a>
+    {% endif %}
   </div>
 {% endblock %}

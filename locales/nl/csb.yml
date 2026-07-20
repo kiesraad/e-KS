@@ -37,6 +37,7 @@ general:
   personalia: Personalia
   status: Status
 group:
+  added_on_paper: Toegevoegd bij papieren correcties
   all_brp_errors: Alle BRP fouten
   all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
   brp_errors:
@@ -122,6 +123,12 @@ omission:
     recoverable: Herstelbaar
     title: Overzicht
   title: Verzuimen
+paper_corrections:
+  banner: "U corrigeert {}. Neem alleen correcties over die met de hand op de ingeleverde papieren documenten zijn geschreven, verder niets."
+  instruction: Neem handgeschreven correcties van de ingeleverde papieren documenten over in de geïmporteerde gegevens
+  start: Correcties overnemen
+  stop: Terug naar onderzoek
+  title: Papieren correcties
 progress: Voortgang
 status:
   approved: Goedgekeurd
