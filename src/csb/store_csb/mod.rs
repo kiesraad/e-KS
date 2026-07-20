@@ -13,8 +13,8 @@ use crate::political_groups::PoliticalGroup;
 use crate::{
     AppStoreData, Scope,
     common::UtcDateTime,
-    csb::{Omission, OmissionId},
     store::{StoreData, StoreEvent},
+    structs::csb::{Omission, OmissionId},
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the

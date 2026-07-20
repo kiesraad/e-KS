@@ -198,11 +198,9 @@ mod tests {
     use crate::{
         AppError, AppState, CsbContext, CsbEvent, CsbMainEvent, CsbMainStore, ElectionConfig,
         StreamId,
-        csb::{
-            CSB_MAIN_STREAM_ID, Omission, audit_log::pages::CsbAuditLogPath,
-            omission::OmissionCategory,
-        },
+        csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogPath},
         pagination::Pagination,
+        structs::csb::{Omission, OmissionCategory},
         test_utils::response_body_string,
     };
 

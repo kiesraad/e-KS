@@ -5,12 +5,10 @@ use axum_extra::routing::TypedPath;
 use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate, QueryParamState,
     candidate_lists::CandidateListId,
-    csb::{
-        Omission, OmissionCategory,
-        examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
-    },
+    csb::examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     filters,
     persons::{Person, PersonId},
+    structs::csb::{Omission, OmissionCategory},
 };
 
 #[derive(Template)]

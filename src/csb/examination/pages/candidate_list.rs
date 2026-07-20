@@ -4,13 +4,11 @@ use axum::response::{IntoResponse, Response};
 use crate::{
     AnyLocale, AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
     candidate_lists::{CandidateList, CandidateListId},
-    csb::{
-        Omission,
-        examination::{
-            extractors::CsbPoliticalGroup, pages::CsbCandidateListPath, structs::CsbCandidate,
-        },
+    csb::examination::{
+        extractors::CsbPoliticalGroup, pages::CsbCandidateListPath, structs::CsbCandidate,
     },
     filters,
+    structs::csb::Omission,
 };
 
 #[derive(Template)]
@@ -81,6 +79,7 @@ mod tests {
 
     use crate::{
         persons::PersonId,
+        structs::csb::OmissionCategory,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
@@ -126,8 +125,6 @@ mod tests {
 
     #[tokio::test]
     async fn renders_added_candidate_list_omissions_as_badges() {
-        use crate::csb::{Omission, OmissionCategory};
-
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
 

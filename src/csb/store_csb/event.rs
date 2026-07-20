@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AppEvent, AppStoreData, Event, StreamId,
-    csb::{Omission, OmissionId},
+    structs::csb::{Omission, OmissionId},
     trans,
     utils::format_hash,
 };
