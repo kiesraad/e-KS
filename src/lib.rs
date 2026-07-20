@@ -7,7 +7,7 @@
 //! (`https://github.com/kiesraad/e-KS/blob/main/docs/code-architecture.md`).
 //!
 //! **Persistence configuration**
-//! - `STORAGE_URL` selects the persistence backend used by [`AppStore`].
+//! - `STORAGE_URL` selects the persistence backend used by [`PgStore`].
 //! - Supported scheme `memory:` disables persistence (in-memory only).
 //! - Supported scheme `local://<dir>` stores event streams as files under the provided directory.
 //! - Supported scheme `postgres://` or `postgresql://` uses PostgreSQL (requires the `database` feature).
@@ -15,18 +15,18 @@
 //!
 //! **Core structs and relationships**
 //! - [`AppState`]: application state container shared by request handlers. Owns config,
-//!   a `StoreRegistry<AppStoreData>` for per-stream data, and the in-memory
+//!   a `StoreRegistry<PgStoreData>` for per-stream data, and the in-memory
 //!   [`SessionStore`] for active sessions.
-//! - [`AppStoreData`]: the domain projection for a single stream. It is the
-//!   in-memory state updated by [`AppEvent`] through `StoreData::apply`.
+//! - [`PgStoreData`]: the domain projection for a single stream. It is the
+//!   in-memory state updated by [`PgEvent`] through `StoreData::apply`.
 //! - `Store<D>`: generic event-sourced store wrapper around type parameter `D`
 //!   implementing `StoreData`. It owns
 //!   a persistence backend (database/local/memory) and a shared data handle.
-//! - [`AppStore`]: type alias for `Store<AppStoreData>`, i.e., the concrete store used
+//! - [`PgStore`]: type alias for `Store<PgStoreData>`, i.e., the concrete store used
 //!   by the application.
 //! - `StoreRegistry<D>`: cache/registry that creates and reuses `Store<D>` instances
 //!   per stream ID (scoped to BSN + election).
-//! - [`AppEvent`]: domain event enum driving updates to [`AppStoreData`].
+//! - [`PgEvent`]: domain event enum driving updates to [`PgStoreData`].
 //!
 //! **Event integrity & confidentiality**
 //! - Event payloads are encrypted at rest (AES-256-GCM, per-stream keys) for the
@@ -38,30 +38,32 @@
 //!   rendered from.
 //!
 //! **Directory layout (high level)**
-//! - `src/app/`: application domain modules (candidates, candidate_lists, persons, etc),
-//!   plus the per-stream [`AppStoreData`] projection (`app/store/`) and the HTML
-//!   error-page renderer.
+//! - `src/pg/`: political group section domain modules (candidates, candidate_lists,
+//!   persons, etc), plus the per-stream [`PgStoreData`] projection (`pg/store/`) and
+//!   the HTML error-page renderer.
+//! - `src/csb/`: central voting bureau section (import, examination, monitoring).
+//! - `src/structs/`: shared domain model structs used by both `pg` and `csb`.
 //! - `src/middleware/`: shared HTTP infrastructure that needs [`AppState`]
 //!   (session/store middleware, health, proxy, eks_key, dev login).
 //! - `src/auth/`: authentication, the session model, and session storage (see [`Session`], [`SessionStore`]).
 //! - `src/core/`: shared configuration, logging, server setup, and core helpers (see [`Config`], [`logging`], [`server`]).
-//! - `src/store/`: generic event store, persistence, and registry logic (see [`AppStore`]).
+//! - `src/store/`: generic event store, persistence, and registry logic (see [`PgStore`]).
 //! - `src/state.rs`: [`AppState`] definition and extractors.
 //! - `src/router.rs`: top-level route wiring (see [`router`]).
 //!
-//! **App module layout (per-domain)**
-//! Most `src/app/<domain>/` modules follow a similar structure:
+//! **PG module layout (per-domain)**
+//! Most `src/pg/<domain>/` modules follow a similar structure:
 //! - `pages/`: request handlers, typed paths, and routing glue for HTML flows.
 //! - `forms/`: form structs, validation, and submission handling helpers.
 //! - `extractors/`: custom request extractors and helper types for handlers.
-//! - `structs/`: domain model types used by pages and store projections.
+//! - `structs/`: domain model types used only by this section; shared ones live
+//!   in `src/structs/<domain>/` and are re-exported from the domain's `mod.rs`.
 //! - `components/`: shared UI/template fragments used across pages.
 //! - `mod.rs`: re-exports and module-level wiring.
 //!
 //! This layout keeps domain-specific routing and UI close to each other while
 //! sharing generic infrastructure via `core`, `auth`, `state`, and `store`.
 
-mod app;
 mod auth;
 mod core;
 mod csb;
@@ -70,6 +72,7 @@ mod filters;
 mod form;
 mod middleware;
 mod pagination;
+mod pg;
 mod state;
 mod store;
 mod structs;
@@ -92,14 +95,14 @@ pub use error::AppError;
 pub use state::AppState;
 pub use store::run_db_prober;
 
-pub(crate) use app::{
-    AppEvent, AppStore, AppStoreData, Context, audit_log, candidate_lists, candidates, common,
-    csrf_rejection_response, finalise, list_designation, list_submitters, name_authorisations,
-    persons, political_groups, render_error_pages, substitute_list_submitters,
-};
 pub(crate) use middleware::{
     csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router,
     session_middleware, store_middleware,
+};
+pub(crate) use pg::{
+    Context, PgEvent, PgStore, PgStoreData, audit_log, candidate_lists, candidates, common,
+    csrf_rejection_response, finalise, list_designation, list_submitters, name_authorisations,
+    persons, political_groups, render_error_pages, substitute_list_submitters,
 };
 
 #[cfg(not(feature = "memory-serve"))]

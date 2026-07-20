@@ -4,7 +4,7 @@ use axum::{
 };
 
 use crate::{
-    AppError, AppStoreData,
+    AppError, PgStoreData,
     store::{StoreRegistry, StreamMeta},
 };
 
@@ -30,12 +30,12 @@ pub struct StreamMonitor {
 impl<S> FromRequestParts<S> for StreamMonitor
 where
     S: Send + Sync,
-    StoreRegistry<AppStoreData>: FromRef<S>,
+    StoreRegistry<PgStoreData>: FromRef<S>,
 {
     type Rejection = AppError;
 
     async fn from_request_parts(_parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let registry = StoreRegistry::<AppStoreData>::from_ref(state);
+        let registry = StoreRegistry::<PgStoreData>::from_ref(state);
 
         // Reading these figures never decrypts or warms a stream.
         let metadata = registry.stream_metadata_by_scope().await?;
@@ -90,7 +90,7 @@ mod tests {
     use super::*;
     use axum::{body::Body, http::Request};
 
-    use crate::{AppEvent, AppState, ElectionConfig, StreamId, test_utils::sample_political_group};
+    use crate::{AppState, ElectionConfig, PgEvent, StreamId, test_utils::sample_political_group};
 
     fn empty_parts() -> Parts {
         Request::builder()
@@ -102,7 +102,7 @@ mod tests {
     }
 
     /// Persist a political-group stream with one name-setting event, warming it
-    /// into the app's registry cache.
+    /// into the PG registry cache.
     async fn seed_political_group(state: &AppState, election: ElectionConfig) -> StreamId {
         let stream_id = StreamId::new();
         let store = state
@@ -110,20 +110,20 @@ mod tests {
             .await
             .unwrap();
         store
-            .update(AppEvent::UpdatePoliticalGroup(sample_political_group()))
+            .update(PgEvent::UpdatePoliticalGroup(sample_political_group()))
             .await
             .unwrap();
         stream_id
     }
 
-    /// Persist a stream through a separate registry sharing the app's
-    /// persistence, so it exists on disk but is never warmed into the app cache.
+    /// Persist a stream through a separate registry sharing the PG registry's
+    /// persistence, so it exists on disk but is never warmed into the registry cache.
     async fn seed_cold_political_group(state: &AppState, election: ElectionConfig) -> StreamId {
         use secrecy::SecretString;
 
         use crate::store::EventEncryption;
 
-        let cold_registry = StoreRegistry::<AppStoreData>::with_persistence(
+        let cold_registry = StoreRegistry::<PgStoreData>::with_persistence(
             state.store_registry.persistence().clone(),
             EventEncryption::new(&SecretString::from("monitoring-cold-test")),
         );
@@ -133,7 +133,7 @@ mod tests {
             .await
             .unwrap();
         store
-            .update(AppEvent::UpdatePoliticalGroup(sample_political_group()))
+            .update(PgEvent::UpdatePoliticalGroup(sample_political_group()))
             .await
             .unwrap();
         stream_id

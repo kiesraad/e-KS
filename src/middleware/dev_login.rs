@@ -7,8 +7,8 @@ use secrecy::SecretString;
 use serde::Deserialize;
 
 use crate::{
-    AppError, AppEvent, AppState, AppStoreData, CsbMainEvent, ElectionConfig, Locale, Scope,
-    Session, StreamId,
+    AppError, AppState, CsbMainEvent, ElectionConfig, Locale, PgEvent, PgStoreData, Scope, Session,
+    StreamId,
     auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
     csb::index::pages::CsbIndexPath,
@@ -113,7 +113,7 @@ async fn perform_dev_login(
                     ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
 
                 if was_new {
-                    store.update(AppEvent::DeveloperLogin { stream_id }).await?;
+                    store.update(PgEvent::DeveloperLogin { stream_id }).await?;
                 }
 
                 session.set_current_election(election);
@@ -136,7 +136,7 @@ async fn ensure_dev_store(
     stream_id: StreamId,
     load_fixtures: bool,
     election: ElectionConfig,
-) -> Result<(Store<AppStoreData>, bool), AppError> {
+) -> Result<(Store<PgStoreData>, bool), AppError> {
     let store = state
         .store_registry
         .get_or_create(stream_id, election)
@@ -145,14 +145,14 @@ async fn ensure_dev_store(
 
     if store_is_empty {
         PoliticalGroup::default()
-            .create(&crate::AppStore::own(store.clone()))
+            .create(&crate::PgStore::own(store.clone()))
             .await?;
     }
 
     if load_fixtures {
         #[cfg(feature = "fixtures")]
         {
-            crate::fixtures::load(&crate::AppStore::own(store.clone())).await?;
+            crate::fixtures::load(&crate::PgStore::own(store.clone())).await?;
             return Ok((store, store_is_empty));
         }
     }

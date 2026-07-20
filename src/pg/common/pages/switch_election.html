@@ -1,0 +1,96 @@
+{% extends "pg/common/components/layout.html" %}
+{% import "pg/common/components/macros.html" as macros %}
+{% block page_title %}{{ "common.switch_election.label"|trans }}{% endblock %}
+{% block content %}
+  {% if !existing_elections.is_empty() %}
+    <section class="election-switch-existing">
+      <h2>{{ "common.switch_election.existing"|trans }}</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>{{ "common.switch_election.election"|trans }}</th>
+            <th>{{ "common.switch_election.region"|trans }}</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for e in existing_elections %}
+            <tr class="{% if *e == current_election %}highlighted{% else %}clickable{% endif %}">
+              <td>{{ e.title(*title_locale) }}</td>
+              <td>{{ e.region_title(*title_locale).unwrap_or("") }}</td>
+              <td>
+                {% if *e != current_election %}
+                  <form method="post"
+                        action="{{ crate::common::SwitchElectionPath.to_string() }}">
+                    {{ macros::csrf_field() }}
+                    <input type="hidden" name="election" value="{{ e.code() }}">
+                    {% match e.election_type() %}
+                    {% when crate::ElectionType::Ps %}
+                    <input type="hidden"
+                           name="region_province"
+                           value="{{ e.region_code().unwrap_or("") }}">
+                    {% when crate::ElectionType::Ws %}
+                    <input type="hidden"
+                           name="region_water_council"
+                           value="{{ e.region_code().unwrap_or("") }}">
+                  {% else %}
+                  {% endmatch %}
+                  <button type="submit" class="button secondary">
+                    <span>{{ "common.switch_election.resume"|trans }}</span>
+                  </button>
+                </form>
+              {% endif %}
+            </td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endif %}
+<form method="post"
+      action="{{ crate::common::SwitchElectionPath.to_string() }}"
+      class="form election-switch mt-xl">
+  {{ macros::csrf_field() }}
+  <fieldset>
+    <p class="form-field form-field-lg">
+      <label for="election">{{ "common.switch_election.label"|trans }}</label>
+      <select name="election" id="election">
+        {% for e in elections %}
+          <option value="{{ e.code() }}"
+                  data-region-kind="{% match e.election_type() %}{% when crate::ElectionType::Ps %}province{% when crate::ElectionType::Ws %}water_council{% else %}{% endmatch %}"
+                  {% if current_type == e.code() %}selected{% endif %}>{{ e.title(*title_locale) }}</option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="form-field form-field-lg region-select mt-md"
+       data-region-kind="province">
+      <label for="region_province">{{ "common.switch_election.province"|trans }}</label>
+      <select name="region_province" id="region_province">
+        <option value="">-- {{ "common.switch_election.select_region"|trans }} --</option>
+        {% for p in provinces %}
+          <option value="{{ p.code() }}"
+                  {% if let Some(sel) = selected_region && *sel == p.code() %}selected{% endif %}>
+            {{ p.title(*title_locale) }}
+          </option>
+        {% endfor %}
+      </select>
+    </p>
+    <p class="form-field form-field-lg region-select mt-md"
+       data-region-kind="water_council">
+      <label for="region_water_council">{{ "common.switch_election.water_council"|trans }}</label>
+      <select name="region_water_council" id="region_water_council">
+        <option value="">-- {{ "common.switch_election.select_region"|trans }} --</option>
+        {% for wc in water_councils %}
+          <option value="{{ wc.code() }}"
+                  {% if let Some(sel) = selected_region && *sel == wc.code() %}selected{% endif %}>
+            {{ wc.title(*title_locale) }}
+          </option>
+        {% endfor %}
+      </select>
+    </p>
+  </fieldset>
+  <div class="form-actions">
+    <button type="submit" class="button">{{ "common.switch_election.submit"|trans }}</button>
+  </div>
+</form>
+{% endblock %}

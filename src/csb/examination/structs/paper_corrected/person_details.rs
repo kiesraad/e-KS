@@ -1,8 +1,10 @@
 use super::PaperCorrected;
 use crate::{
     Locale,
-    common::DateOfBirth,
-    persons::{Person, Representative},
+    structs::{
+        common::DateOfBirth,
+        persons::{Person, Representative},
+    },
 };
 
 /// The personal details of a candidate diffed against the corrections.

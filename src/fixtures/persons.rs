@@ -6,7 +6,7 @@ use serde::Deserialize;
 use uuid::Uuid;
 
 use crate::{
-    AppError, AppStore,
+    AppError, PgStore,
     common::{
         BsnOrNoneConfirmed, CountryCode, DateOfBirth, DutchAddress, FirstName, FullName, Gender,
         HouseNumber, Initials, LastName, Locality, PlaceOfResidence, PostalCode, StreetName,
@@ -113,7 +113,7 @@ impl PersonRecord {
     }
 }
 
-pub async fn load(store: &AppStore) -> Result<(), AppError> {
+pub async fn load(store: &PgStore) -> Result<(), AppError> {
     let mut reader = ReaderBuilder::new()
         .trim(Trim::All)
         .from_reader(PERSONS_CSV.as_bytes());
@@ -148,7 +148,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         load(&store).await.unwrap();
 
         let persons =

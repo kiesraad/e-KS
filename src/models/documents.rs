@@ -15,7 +15,7 @@ use super::{
     },
 };
 use crate::{
-    AppError, AppStore, Context, ElectionConfig,
+    AppError, Context, ElectionConfig, PgStore,
     candidate_lists::{CandidateListId, FullCandidateList},
     common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, ZipResponseWriter},
@@ -81,7 +81,7 @@ impl DocumentData {
     /// If there are fewer name authorisations than required, we add fill-ins that show up as
     /// empty spaces on the models.
     fn name_authorisations_with_fill_ins(
-        store: &AppStore,
+        store: &PgStore,
     ) -> Result<Vec<NameAuthorisation>, AppError> {
         let name_authorisations = store.get_name_authorisations();
 
@@ -119,7 +119,7 @@ impl DocumentData {
     /// Collecting the data first prevents errors popping up while the ZIP is streaming,
     /// and it is more efficient because we only collect everything once.
     pub fn new(
-        store: &AppStore,
+        store: &PgStore,
         context: &Context,
         list_id: CandidateListId,
         locale: ModelLocale,
@@ -199,7 +199,7 @@ impl DocumentData {
     }
 
     pub fn from_store_and_context(
-        store: &AppStore,
+        store: &PgStore,
         context: &Context,
         locale: ModelLocale,
     ) -> Result<(Vec<Self>, String), AppError> {
@@ -239,8 +239,8 @@ impl DocumentData {
         bundles: Vec<Self>,
         filename: String,
         download_path: String,
-        event_store: &AppStore,
-        document_store: &AppStore,
+        event_store: &PgStore,
+        document_store: &PgStore,
     ) -> Result<Response, AppError> {
         tracing::info!(
             filename,
@@ -250,7 +250,7 @@ impl DocumentData {
         );
 
         event_store
-            .update(crate::AppEvent::DownloadFile {
+            .update(crate::PgEvent::DownloadFile {
                 file_name: filename.clone(),
                 download_path,
             })

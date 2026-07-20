@@ -1,10 +1,10 @@
-use crate::{AppError, AppStore};
+use crate::{AppError, PgStore};
 
 mod candidate_list;
 mod persons;
 mod political_groups;
 
-pub async fn load(store: &AppStore) -> Result<(), AppError> {
+pub async fn load(store: &PgStore) -> Result<(), AppError> {
     let person_count = store.get_person_count();
     let candidate_list_count = store.get_candidate_list_count();
 
@@ -23,11 +23,11 @@ pub async fn load(store: &AppStore) -> Result<(), AppError> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{AppStore, fixtures::load};
+    use crate::{PgStore, fixtures::load};
 
     #[tokio::test]
     async fn test_load_all_fixtures() {
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         load(&store).await.unwrap();
         let persons = crate::persons::Person::list(
             &store,

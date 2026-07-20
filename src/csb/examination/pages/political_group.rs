@@ -138,7 +138,7 @@ mod tests {
 
     #[tokio::test]
     async fn renders_card_for_list_added_in_paper_corrections() {
-        use crate::{candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+        use crate::{structs::candidate_lists::CandidateListId, test_utils::sample_candidate_list};
 
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
@@ -164,7 +164,7 @@ mod tests {
 
     #[tokio::test]
     async fn hides_card_for_list_deleted_in_paper_corrections() {
-        use crate::{candidate_lists::CandidateListId, test_utils::sample_candidate_list};
+        use crate::{structs::candidate_lists::CandidateListId, test_utils::sample_candidate_list};
 
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
@@ -194,7 +194,8 @@ mod tests {
     #[tokio::test]
     async fn card_shows_corrected_electoral_districts() {
         use crate::{
-            ElectoralDistrict, candidate_lists::CandidateListId, test_utils::sample_candidate_list,
+            ElectoralDistrict, structs::candidate_lists::CandidateListId,
+            test_utils::sample_candidate_list,
         };
 
         let store = CsbStore::new_for_test();
@@ -224,7 +225,8 @@ mod tests {
     #[tokio::test]
     async fn card_shows_corrected_candidate_count() {
         use crate::{
-            candidate_lists::CandidateListId, persons::PersonId, test_utils::sample_candidate_list,
+            structs::{candidate_lists::CandidateListId, persons::PersonId},
+            test_utils::sample_candidate_list,
         };
 
         let store = CsbStore::new_for_test();

@@ -143,8 +143,7 @@ mod tests {
     #[tokio::test]
     async fn shows_bsn_house_number_addition_and_representative_corrections() {
         use crate::{
-            common::BsnOrNoneConfirmed,
-            persons::Representative,
+            structs::{common::BsnOrNoneConfirmed, persons::Representative},
             test_utils::{sample_dutch_address, sample_full_name},
         };
 

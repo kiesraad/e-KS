@@ -1,0 +1,22 @@
+{% extends "pg/common/components/overlay.html" %}
+{% set close_action = CandidateList::list_path() %}
+{% block overlay_title %}{{ "candidate_list.form.create.title"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% include "pg/candidate_lists/components/create_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  {% if has_previous_list %}
+    <fieldset class="mb-lg">
+      <legend>{{ "candidate_list.form.copy_candidates_from_previous_legend"|trans }}</legend>
+      <div class="checkbox mt-sm">
+        <input type="checkbox"
+               name="copy_candidates"
+               id="copy_candidates"
+               value="true"
+               {% if form.data.copy_candidates %}checked{% endif %} />
+        <label for="copy_candidates">{{ "candidate_list.form.copy_candidates_from_previous"|trans }}</label>
+      </div>
+    </fieldset>
+  {% endif %}
+  {% include "pg/candidate_lists/components/districts_form.html" %}
+{% endblock %}

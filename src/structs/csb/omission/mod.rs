@@ -8,8 +8,9 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AnyLocale, AppError, CsbEvent, CsbStore, ElectionConfig, ElectoralDistrict,
-    candidate_lists::CandidateListId, common::UtcDateTime, form::ValidationError, id_newtype,
-    persons::PersonId,
+    form::ValidationError,
+    id_newtype,
+    structs::{candidate_lists::CandidateListId, common::UtcDateTime, persons::PersonId},
 };
 
 id_newtype!(pub struct OmissionId);
@@ -283,7 +284,7 @@ pub mod tests {
 
     mod electoral_district {
         use super::*;
-        use crate::{ElectionConfig, ElectoralDistrict, candidate_lists::CandidateList};
+        use crate::{ElectionConfig, ElectoralDistrict, structs::candidate_lists::CandidateList};
 
         const EK: ElectionConfig = ElectionConfig::EK27;
 
@@ -313,7 +314,7 @@ pub mod tests {
         fn candidate_with_all_districts_maps_to_all() {
             let (store, id) = store_with_list(EK.electoral_districts().to_vec());
             let category = OmissionCategory::Candidate {
-                person: crate::persons::PersonId::new(),
+                person: crate::structs::persons::PersonId::new(),
                 lists: vec![id],
             };
             assert_eq!(
@@ -372,7 +373,7 @@ pub mod tests {
         fn candidate_with_list_specific_district() {
             let (store, id) = store_with_list(vec![ElectoralDistrict::GR]);
             let category = OmissionCategory::Candidate {
-                person: crate::persons::PersonId::new(),
+                person: crate::structs::persons::PersonId::new(),
                 lists: vec![id],
             };
             assert_eq!(
@@ -391,7 +392,7 @@ pub mod tests {
             let id = list.id;
             store.set_paper_corrected_candidate_list(list);
             let category = OmissionCategory::Candidate {
-                person: crate::persons::PersonId::new(),
+                person: crate::structs::persons::PersonId::new(),
                 lists: vec![id],
             };
 
@@ -410,7 +411,7 @@ pub mod tests {
                 ..Default::default()
             });
             let category = OmissionCategory::Candidate {
-                person: crate::persons::PersonId::new(),
+                person: crate::structs::persons::PersonId::new(),
                 lists: vec![id],
             };
 
@@ -424,7 +425,7 @@ pub mod tests {
         fn candidate_with_missing_list_returns_error() {
             let store = CsbStore::new_for_test();
             let category = OmissionCategory::Candidate {
-                person: crate::persons::PersonId::new(),
+                person: crate::structs::persons::PersonId::new(),
                 lists: vec![CandidateListId::new()],
             };
             assert!(category.electoral_district(&store, &EK).is_err());
