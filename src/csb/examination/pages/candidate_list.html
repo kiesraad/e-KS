@@ -25,8 +25,8 @@
   </div>
 {% endblock %}
 {% block header_action %}
-  <a href="{{ political_group.examination_path() }}"
-     class="button secondary">{{ "action.back"|trans }}</a>
+  {% set back_url = political_group.examination_path() %}
+  {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
   <section class="general-information candidate-list">

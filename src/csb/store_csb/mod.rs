@@ -83,7 +83,7 @@ impl crate::CsbStore {
         self.data.write().imported_data.political_group = political_group;
     }
 
-    pub fn set_candidate_list(&self, list: crate::candidate_lists::CandidateList) {
+    pub fn add_candidate_list(&self, list: crate::candidate_lists::CandidateList) {
         self.data
             .write()
             .imported_data
@@ -91,7 +91,7 @@ impl crate::CsbStore {
             .insert(list.id, list);
     }
 
-    pub fn set_person(&self, person: crate::persons::Person) {
+    pub fn add_person(&self, person: crate::persons::Person) {
         self.data
             .write()
             .imported_data

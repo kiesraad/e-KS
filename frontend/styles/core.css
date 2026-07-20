@@ -30,3 +30,14 @@ a {
   color: inherit;
   text-decoration: none;
 }
+
+.content-header {
+  display: flex;
+  flex-direction: column;
+  font-size: var(--font-size-xl);
+  font-weight: 500;
+  gap: 1lh;
+  line-height: var(--leading-xl);
+  max-width: 704px;
+  text-wrap: balance;
+}

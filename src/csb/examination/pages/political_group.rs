@@ -1,11 +1,13 @@
 use askama::Template;
-use axum::response::{IntoResponse, Redirect, Response};
-use rand::{RngExt, rng};
+use axum::{
+    extract::Query,
+    response::{IntoResponse, Response},
+};
 
 use crate::{
     AppError, Context, CsbContext,
     CsbEvent::{self},
-    CsbStore, HtmlTemplate,
+    CsbStore, HtmlTemplate, QueryParamState,
     csb::examination::{
         extractors::CsbPoliticalGroup,
         pages::{CsbPoliticalGroupPath, CsbPoliticalGroupToggleFinishPath},
@@ -48,7 +50,7 @@ pub async fn overview(
             all_brp_error_count,
             candidate_lists,
             political_group_omission_count,
-            restoration_count: rng().random_range(0..=20),
+            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -57,16 +59,12 @@ pub async fn overview(
 
 pub async fn toggle_examination_finish(
     _: CsbPoliticalGroupToggleFinishPath,
+    Query(query): Query<QueryParamState>,
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let finished = store.is_examination_finished();
     store.update(CsbEvent::SetFinished(!finished)).await?;
-    Ok(Redirect::to(
-        &CsbPoliticalGroup::new_from_csb_store(&store)
-            .after_toggle_finish_examination_path()
-            .to_string(),
-    )
-    .into_response())
+    Ok(query.redirect_or(CsbPoliticalGroup::new_from_csb_store(&store).examination_path()))
 }
 
 #[cfg(test)]
@@ -158,6 +156,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            Query(QueryParamState::default()),
             store.clone(),
         )
         .await
@@ -168,6 +167,7 @@ mod tests {
 
         toggle_examination_finish(
             CsbPoliticalGroupToggleFinishPath { stream_id },
+            Query(QueryParamState::default()),
             store.clone(),
         )
         .await
@@ -178,16 +178,42 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn toggle_examination_finish_redirects() {
+    async fn toggle_examination_finish_honours_the_redirect_to() {
         let store = CsbStore::new_for_test();
-
         let stream_id = store.stream_id;
 
-        let response =
-            toggle_examination_finish(CsbPoliticalGroupToggleFinishPath { stream_id }, store)
-                .await
-                .unwrap()
-                .into_response();
+        let response = toggle_examination_finish(
+            CsbPoliticalGroupToggleFinishPath { stream_id },
+            Query(QueryParamState::redirect_to("/back/here".to_string())),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let location = response
+            .headers()
+            .get("Location")
+            .unwrap()
+            .to_str()
+            .unwrap();
+        assert!(location.starts_with("/back/here"));
+    }
+
+    #[tokio::test]
+    async fn toggle_examination_finish_redirects_to_examination_by_default() {
+        let store = CsbStore::new_for_test();
+        let stream_id = store.stream_id;
+
+        let response = toggle_examination_finish(
+            CsbPoliticalGroupToggleFinishPath { stream_id },
+            Query(QueryParamState::default()),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         let location = response

@@ -3,7 +3,13 @@ action:
   examine: Examine
   finish: Finish
 added: Added
-all_restorations: All restorations
+all_restorations:
+  add_note: Add a note
+  add_note_explanation: "Add extra notes used at the bottom of the omission letter:"
+  corrections_explanation: All created corrections are displayed here.
+  explanation: Inspect all omissions and corrections here before concluding the examination.
+  omissions_explanation: All created omissions are displayed here.
+  title: All restorations
 brp:
   correct: Correct
   errors: Errors
@@ -12,6 +18,8 @@ candidate:
   overview_text: Added omissions for this candidate
   personal_details: Personal details
   status: Status
+correction:
+  title: Corrections
 examination: Examination
 finish_examination: Finish examination
 finish_instruction:

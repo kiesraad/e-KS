@@ -435,12 +435,12 @@ mod tests {
 
         let person_id = PersonId::new();
         let person = sample_person_with(person_id, None, "Jansen", None, "A.B.");
-        store.set_person(person);
+        store.add_person(person);
 
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates.push(person_id);
-        store.set_candidate_list(list);
+        store.add_candidate_list(list);
 
         assert_eq!(store.csb_display_name(), "Blanco (Jansen, A.B.)");
     }

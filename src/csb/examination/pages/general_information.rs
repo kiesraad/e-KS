@@ -1,6 +1,5 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
-use rand::{RngExt, rng};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, HtmlTemplate,
@@ -44,7 +43,7 @@ pub async fn overview(
             list_submitter,
             substitute_submitters,
             political_group_omissions,
-            restoration_count: rng().random_range(0..=20),
+            restoration_count: store.get_omission_count(),
         },
         context,
     )

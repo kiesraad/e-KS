@@ -8,14 +8,8 @@
   {{ "common.general_information"|trans }}
 {% endblock %}
 {% block header_action %}
-  <div class="header-buttons">
-    <a href="{{ political_group.examination_path() }}"
-       class="button secondary">{{ "action.back"|trans }}</a>
-    <a class="button secondary icon-restoration">
-      {{ "csb.all_restorations"|trans }}
-      <span class="restoration_count">{{ restoration_count }}</span>
-    </a>
-  </div>
+  {% set back_url = political_group.examination_path() %}
+  {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% macro edit_action() %}
   <td class="actions">

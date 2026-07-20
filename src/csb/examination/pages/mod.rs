@@ -10,6 +10,7 @@ use crate::{
     persons::PersonId,
 };
 
+mod all_restorations;
 mod candidate;
 mod candidate_list;
 mod general_information;
@@ -97,6 +98,12 @@ pub struct CsbDeleteOmissionPath {
     pub omission_id: OmissionId,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/omissions", rejection(AppError))]
+pub struct CsbAllRestorationsPath {
+    pub stream_id: StreamId,
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub struct OmissionListQuery {
     /// The candidate list the omission dialog was opened from. Used to resolve
@@ -113,10 +120,14 @@ impl CsbPoliticalGroup {
         }
     }
 
-    pub fn examination_toggle_finish_path(&self) -> impl TypedPath {
+    pub fn examination_toggle_finish_path(
+        &self,
+        redirect_to: impl std::fmt::Display,
+    ) -> impl TypedPath {
         CsbPoliticalGroupToggleFinishPath {
             stream_id: self.stream_id,
         }
+        .with_query_params(QueryParamState::redirect_to(redirect_to.to_string()))
     }
 
     pub fn general_information_path(&self) -> impl TypedPath {
@@ -212,11 +223,10 @@ impl CsbPoliticalGroup {
         .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
-    pub fn after_toggle_finish_examination_path(&self) -> impl TypedPath {
-        CsbPoliticalGroupPath {
+    pub fn all_restorations_path(&self) -> impl TypedPath {
+        CsbAllRestorationsPath {
             stream_id: self.stream_id,
         }
-        .with_query_params(QueryParamState::success())
     }
 }
 
@@ -233,4 +243,5 @@ pub fn router() -> Router<AppState> {
         .typed_post(omission::add_omission_submit)
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
+        .typed_get(all_restorations::all_restorations)
 }

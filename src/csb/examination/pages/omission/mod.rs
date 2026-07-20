@@ -326,7 +326,7 @@ mod tests {
         let list = CandidateListId::new();
 
         // Store the list so get_candidate_list_omissions can look up its districts.
-        store.set_candidate_list(sample_candidate_list(list));
+        store.add_candidate_list(sample_candidate_list(list));
 
         // A recoverable and an irreparable omission covering the list's district.
         Omission::new(
@@ -391,7 +391,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let list = CandidateListId::new();
-        store.set_candidate_list(sample_candidate_list(list));
+        store.add_candidate_list(sample_candidate_list(list));
 
         let omission = Omission::new(
             OmissionCategory::CandidateList(vec![crate::ElectoralDistrict::UT]),
@@ -666,8 +666,8 @@ mod tests {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
-        store.set_person(person);
-        store.set_candidate_list(list);
+        store.add_person(person);
+        store.add_candidate_list(list);
 
         let response = add_omission(
             CsbAddOmissionPath {
@@ -709,17 +709,17 @@ mod tests {
         // The same candidate sits at different positions on two lists.
         let person = sample_person(PersonId::new());
         let person_id = person.id;
-        store.set_person(person);
+        store.add_person(person);
 
         let first_list_id = CandidateListId::new();
         let mut first_list = sample_candidate_list(first_list_id);
         first_list.candidates = vec![person_id];
-        store.set_candidate_list(first_list);
+        store.add_candidate_list(first_list);
 
         let second_list_id = CandidateListId::new();
         let mut second_list = sample_candidate_list(second_list_id);
         second_list.candidates = vec![PersonId::new(), person_id];
-        store.set_candidate_list(second_list);
+        store.add_candidate_list(second_list);
 
         // Opening the dialog for the second list resolves position 2, not 1.
         let response = add_omission(
@@ -758,8 +758,8 @@ mod tests {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
-        store.set_person(person);
-        store.set_candidate_list(list);
+        store.add_person(person);
+        store.add_candidate_list(list);
 
         let form = OmissionForm {
             candidate_lists: vec![list_id],
@@ -815,8 +815,8 @@ mod tests {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
-        store.set_person(person);
-        store.set_candidate_list(list);
+        store.add_person(person);
+        store.add_candidate_list(list);
 
         // No lists selected: should re-render the form with an error
         let response = add_omission_submit(
