@@ -81,8 +81,8 @@ mod tests {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
-        store.set_person(person);
-        store.set_candidate_list(list);
+        store.add_person(person);
+        store.add_candidate_list(list);
 
         let response = overview(
             CsbCandidateListPath { stream_id, list_id },
@@ -119,7 +119,7 @@ mod tests {
         let stream_id = store.stream_id;
 
         let list_id = CandidateListId::new();
-        store.set_candidate_list(sample_candidate_list(list_id));
+        store.add_candidate_list(sample_candidate_list(list_id));
         Omission::new(
             OmissionCategory::CandidateList(vec![crate::ElectoralDistrict::UT]),
             "Too many candidates".to_string(),

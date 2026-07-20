@@ -77,8 +77,8 @@ mod tests {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
         list.candidates = vec![person_id];
-        store.set_person(person);
-        store.set_candidate_list(list);
+        store.add_person(person);
+        store.add_candidate_list(list);
 
         let response = overview(
             CsbCandidatePath {
@@ -120,8 +120,8 @@ mod tests {
         let person = sample_person(PersonId::new());
         let person_id = person.id;
         let list_id = CandidateListId::new();
-        store.set_person(person);
-        store.set_candidate_list(sample_candidate_list(list_id));
+        store.add_person(person);
+        store.add_candidate_list(sample_candidate_list(list_id));
 
         Omission::new(
             OmissionCategory::Candidate {
@@ -183,7 +183,7 @@ mod tests {
         // so the handler fails when resolving the list's electoral districts.
         let person = sample_person(PersonId::new());
         let person_id = person.id;
-        store.set_person(person);
+        store.add_person(person);
 
         let result = overview(
             CsbCandidatePath {

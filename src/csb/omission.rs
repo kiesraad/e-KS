@@ -415,7 +415,7 @@ pub mod tests {
                 ..Default::default()
             };
             let id = list.id;
-            store.set_candidate_list(list);
+            store.add_candidate_list(list);
             (store, id)
         }
 

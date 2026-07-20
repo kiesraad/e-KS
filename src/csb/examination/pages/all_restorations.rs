@@ -6,8 +6,7 @@ use crate::{
     AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate, QueryParamState,
     candidate_lists::CandidateListId,
     csb::{
-        Omission,
-        OmissionCategory::{Candidate, CandidateList, PoliticalGroup},
+        Omission, OmissionCategory,
         examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     },
     filters,
@@ -74,15 +73,17 @@ impl CsbStore {
 
         for omission in omissions {
             match omission.category {
-                PoliticalGroup => general.push(OmissionWithPath {
+                OmissionCategory::PoliticalGroup => general.push(OmissionWithPath {
                     omission: omission.clone(),
                     path: general_path(political_group),
                 }),
-                CandidateList(ref districts) => candidate_lists.push(OmissionWithPath {
-                    omission: omission.clone(),
-                    path: list_path(political_group, districts, self)?,
-                }),
-                Candidate { person, ref lists } => {
+                OmissionCategory::CandidateList(ref districts) => {
+                    candidate_lists.push(OmissionWithPath {
+                        omission: omission.clone(),
+                        path: list_path(political_group, districts, self)?,
+                    })
+                }
+                OmissionCategory::Candidate { person, ref lists } => {
                     if let Some(candidate) = candidates.iter_mut().find(|c| c.person.id == person) {
                         candidate.omissions.push(OmissionWithPath {
                             path: candidate_path(political_group, &person, &lists[0]),
@@ -153,5 +154,243 @@ fn candidate_path(
 
 #[cfg(test)]
 mod tests {
-    // TODO
+
+    use reqwest::StatusCode;
+
+    use crate::{
+        StreamId,
+        candidate_lists::CandidateList,
+        common::UtcDateTime,
+        csb::OmissionType,
+        test_utils::{response_body_string, sample_candidate_list, sample_person},
+    };
+
+    use super::*;
+
+    #[tokio::test]
+    async fn all_restorations_shows_all_omissions() -> Result<(), AppError> {
+        let store = CsbStore::new_for_test();
+        let pg_title = "pg title".to_string();
+
+        let candidate_title = "candidate title".to_string();
+        let person_id = PersonId::new();
+        store.add_person(sample_person(person_id));
+
+        let list_title = "list title".to_string();
+        let list_id = CandidateListId::new();
+        store.add_candidate_list(CandidateList {
+            id: list_id,
+            electoral_districts: vec![ElectoralDistrict::UT, ElectoralDistrict::GR],
+            candidates: vec![person_id],
+            created_at: UtcDateTime::now(),
+        });
+
+        Omission::new(
+            OmissionCategory::PoliticalGroup,
+            pg_title.clone(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        Omission::new(
+            OmissionCategory::CandidateList(vec![ElectoralDistrict::UT, ElectoralDistrict::GR]),
+            list_title.clone(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        Omission::new(
+            OmissionCategory::Candidate {
+                person: person_id,
+                lists: vec![list_id],
+            },
+            candidate_title.clone(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        let stream_id = store.stream_id;
+
+        let response = all_restorations(
+            CsbAllRestorationsPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+
+        // page contains titles
+        assert!(body.contains(pg_title.as_str()));
+        assert!(body.contains(list_title.as_str()));
+        assert!(body.contains(candidate_title.as_str()));
+
+        Ok(())
+    }
+
+    fn redirect_param(stream_id: StreamId) -> String {
+        format!("&redirect_to=%2Fcsb%2Fexamination%2F{stream_id}%2Fomissions")
+    }
+
+    #[test]
+    fn general_path_test() {
+        let store = CsbStore::new_for_test();
+
+        let path = general_path(&CsbPoliticalGroup::new_from_csb_store(&store));
+
+        let pg_type = OmissionType::PoliticalGroup.to_string();
+        let stream_id = store.stream_id;
+        let redirect_param = redirect_param(stream_id);
+        assert!(
+            path.contains(
+                format!("/csb/examination/{stream_id}/omission/{pg_type}/{stream_id}/overview?")
+                    .as_str()
+            )
+        );
+        assert!(path.contains(redirect_param.as_str()));
+    }
+
+    #[test]
+    fn list_path_test() {
+        let store = CsbStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        store.add_candidate_list(list.clone());
+
+        let path = list_path(
+            &CsbPoliticalGroup::new_from_csb_store(&store),
+            &list.electoral_districts,
+            &store,
+        )
+        .expect("list path can't be created");
+
+        let list_type = OmissionType::CandidateList.to_string();
+        let stream_id = store.stream_id;
+        let redirect_param = redirect_param(stream_id);
+        assert!(
+            path.contains(
+                format!("/csb/examination/{stream_id}/omission/{list_type}/{list_id}/overview?")
+                    .as_str()
+            )
+        );
+        assert!(path.contains(redirect_param.as_str()));
+    }
+
+    #[test]
+    fn candidate_path_test() {
+        let store = CsbStore::new_for_test();
+
+        let list_id = CandidateListId::new();
+        let list = sample_candidate_list(list_id);
+        store.add_candidate_list(list);
+
+        let person_id = PersonId::new();
+        store.add_person(sample_person(person_id));
+
+        let path = candidate_path(
+            &CsbPoliticalGroup::new_from_csb_store(&store),
+            &person_id,
+            &list_id,
+        );
+
+        let candidate_type = OmissionType::Candidate.to_string();
+        let stream_id = store.stream_id;
+        let redirect_param = redirect_param(stream_id);
+        let list_param = format!("&list={list_id}");
+        assert!(
+            path.contains(
+                format!(
+                    "/csb/examination/{stream_id}/omission/{candidate_type}/{person_id}/overview?"
+                )
+                .as_str()
+            )
+        );
+        assert!(path.contains(list_param.as_str()));
+        assert!(path.contains(redirect_param.as_str()));
+    }
+
+    #[test]
+    fn person_without_omissions() {
+        let store = CsbStore::new_for_test();
+
+        store.add_person(sample_person(PersonId::new()));
+
+        let all_omissions = store
+            .get_all_omissions(&CsbPoliticalGroup::new_from_csb_store(&store))
+            .expect("Couldn't retrieve all omissions");
+
+        assert!(all_omissions.candidates.is_empty());
+    }
+
+    #[tokio::test]
+    async fn person_with_omission() {
+        let store = CsbStore::new_for_test();
+
+        let person_id = PersonId::new();
+        store.add_person(sample_person(person_id));
+
+        let list_id = CandidateListId::new();
+        store.add_candidate_list(sample_candidate_list(list_id));
+
+        Omission::new(
+            OmissionCategory::Candidate {
+                person: person_id,
+                lists: vec![list_id],
+            },
+            "title".to_string(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await
+        .expect("Couldn't create omission");
+
+        let all_omissions = store
+            .get_all_omissions(&CsbPoliticalGroup::new_from_csb_store(&store))
+            .expect("Couldn't retrieve all omissions");
+
+        assert_eq!(all_omissions.candidates.len(), 1);
+        assert_eq!(all_omissions.candidates[0].omissions.len(), 1)
+    }
+
+    #[tokio::test]
+    async fn person_with_multiple_omissions() {
+        let omission_count = 10;
+        let store = CsbStore::new_for_test();
+
+        let person_id = PersonId::new();
+        store.add_person(sample_person(person_id));
+
+        let list_id = CandidateListId::new();
+        store.add_candidate_list(sample_candidate_list(list_id));
+        for _ in 0..omission_count {
+            Omission::new(
+                OmissionCategory::Candidate {
+                    person: person_id,
+                    lists: vec![list_id],
+                },
+                "title".to_string(),
+                "description".to_string(),
+                "help_text".to_string(),
+            )
+            .create(&store)
+            .await
+            .expect("Couldn't create omission");
+        }
+
+        let all_omissions = store
+            .get_all_omissions(&CsbPoliticalGroup::new_from_csb_store(&store))
+            .expect("Couldn't retrieve all omissions");
+
+        // creates one candidate with 10 omissions
+        assert_eq!(all_omissions.candidates.len(), 1);
+        assert_eq!(all_omissions.candidates[0].omissions.len(), omission_count)
+    }
 }
