@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use crate::{
     AppError, CsbStore,
     candidate_lists::{CandidateList, CandidateListId},
@@ -43,20 +41,6 @@ impl CsbStore {
             .values()
             .filter(|o| matches!(o.category, OmissionCategory::PoliticalGroup))
             .cloned()
-            .collect()
-    }
-
-    pub fn get_candidates_with_omissions(&self) -> Vec<PersonId> {
-        let data = self.data.read();
-
-        data.omissions
-            .values()
-            .filter_map(|o| match o.category {
-                OmissionCategory::Candidate { person, .. } => Some(person),
-                _ => None,
-            })
-            .collect::<HashSet<_>>()
-            .into_iter()
             .collect()
     }
 

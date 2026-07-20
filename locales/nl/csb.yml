@@ -7,7 +7,7 @@ all_restorations:
   add_note: Voeg een notitie toe
   add_note_explanation: "Voeg extra notities toe voor onderaan de verzuimbrief:"
   corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
-  explanation: Bekijk hier alle verzuimen en correcties voordat je het onderzoek afrond.
+  explanation: Bekijk hier alle verzuimen en correcties voordat u het onderzoek afrondt.
   omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
   title: Alle herstelacties
 brp:

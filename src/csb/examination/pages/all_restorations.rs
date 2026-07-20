@@ -84,15 +84,16 @@ impl CsbStore {
                     })
                 }
                 OmissionCategory::Candidate { person, ref lists } => {
+                    let list = lists.first().ok_or(AppError::InternalServerError)?;
                     if let Some(candidate) = candidates.iter_mut().find(|c| c.person.id == person) {
                         candidate.omissions.push(OmissionWithPath {
-                            path: candidate_path(political_group, &person, &lists[0]),
+                            path: candidate_path(political_group, &person, list),
                             omission: omission.clone(),
                         })
                     } else {
                         candidates.push(CandidateOmissions {
                             omissions: vec![OmissionWithPath {
-                                path: candidate_path(political_group, &person, &lists[0]),
+                                path: candidate_path(political_group, &person, list),
                                 omission,
                             }],
                             person: self
@@ -125,10 +126,11 @@ fn list_path(
     districts: &[ElectoralDistrict],
     store: &CsbStore,
 ) -> Result<String, AppError> {
+    let district = districts.first().ok_or(AppError::InternalServerError)?;
     let list = store
         .get_candidate_lists()
         .iter()
-        .find(|l| l.electoral_districts.contains(&districts[0]))
+        .find(|l| l.electoral_districts.contains(district))
         .ok_or(AppError::InternalServerError)?
         .id;
     Ok(political_group

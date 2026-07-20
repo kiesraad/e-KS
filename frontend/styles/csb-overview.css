@@ -251,33 +251,28 @@
     margin-top: 0;
     margin-bottom: var(--space-4);
 
-    .omission-icon {
-      background-color: var(--orange-200);
-      background-image: url("../icons/omission.svg");
+    .omission-icon,
+    .correction-icon {
       background-position: center;
       background-repeat: no-repeat;
       border-radius: var(--rounded-lg);
       flex-shrink: 0;
       height: var(--space-11);
       width: var(--space-11);
+    }
+
+    .omission-icon {
+      background-color: var(--orange-200);
+      background-image: url("../icons/omission.svg");
     }
 
     .correction-icon {
       background-color: var(--blue-200);
       background-image: url("../icons/correction.svg");
-      background-position: center;
-      background-repeat: no-repeat;
-      border-radius: var(--rounded-lg);
-      flex-shrink: 0;
-      height: var(--space-11);
-      width: var(--space-11);
     }
   }
 
-  .tag.link a.warning::after {
-    mask-image: url("../icons/arrowNarrowRight.svg");
-  }
-
+  .tag.link a.warning::after,
   .tag.link a.error::after {
     mask-image: url("../icons/arrowNarrowRight.svg");
   }

@@ -10,6 +10,7 @@
 {% block header_action %}
   {% set back_url = crate::csb::examination::CsbExaminationOverviewPath %}
   {% set include_finish_switch = true %}
+  {% set toggle_redirect_url = political_group.examination_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}

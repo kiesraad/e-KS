@@ -10,7 +10,7 @@
           {% endif %}
         </p>
         <form method="post"
-              action="{{ political_group.examination_toggle_finish_path() }}">
+              action="{{ political_group.examination_toggle_finish_path(toggle_redirect_url | default(back_url.to_string() )) }}">
           {{ macros::csrf_field() }}
           <label class="switch" aria-label="{{ "csb.group.toggle"|trans }}">
             <input type="submit">
