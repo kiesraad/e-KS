@@ -83,14 +83,16 @@
       </tbody>
     </table>
   {% endif %}
-  {% if !is_downloadable_state %}
-    <p class="font-italic mb-md">{{ "audit_log.documents.no_download"|trans }}</p>
-  {% endif %}
-  {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
-  {{ macros::download_button("audit_log.documents.download"|trans, download_path_nl, is_downloadable_state, detail.event_id) }}
-  {% if frisian_export_allowed %}
-    <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
-    {{ macros::download_button("Dokuminten downloade", download_path_fry, is_downloadable_state, detail.event_id) }}
+  {% if !("paper_correction_mode"|value_true) %}
+    {% if !is_downloadable_state %}
+      <p class="font-italic mb-md">{{ "audit_log.documents.no_download"|trans }}</p>
+    {% endif %}
+    {% if frisian_export_allowed %}<div>{{ "common.languages.dutch"|trans }}:</div>{% endif %}
+    {{ macros::download_button("audit_log.documents.download"|trans, download_path_nl, is_downloadable_state, detail.event_id) }}
+    {% if frisian_export_allowed %}
+      <div class="mt-md">{{ "common.languages.frisian"|trans }}:</div>
+      {{ macros::download_button("Dokuminten downloade", download_path_fry, is_downloadable_state, detail.event_id) }}
+    {% endif %}
   {% endif %}
 </div>
 {% endblock %}

@@ -393,6 +393,51 @@ mod tests {
         Ok(())
     }
 
+    /// In paper-corrections mode the audit log lists only the CSB's
+    /// corrections, never the source stream's own events.
+    #[tokio::test]
+    async fn paper_corrections_mode_lists_only_csb_corrections() -> Result<(), AppError> {
+        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+
+        // Source stream with an event of its own.
+        let source = AppStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        person.create(&source).await?;
+
+        // Import the source stream the way `do_import` does: the snapshot
+        // excludes the source event log.
+        let events = source.data.read().events.clone();
+        let snapshot = crate::AppStoreData::snapshot_until(&events, usize::MAX);
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
+            .await?;
+
+        let store = AppStore::paper_corrections(csb_store);
+        sample_political_group().update(&store).await?;
+
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store,
+            Pagination::default(),
+            no_filter(),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Updated political group</td>"));
+        assert!(!body.contains("<td>Created person</td>"));
+
+        Ok(())
+    }
+
     #[tokio::test]
     async fn searches_by_details() -> Result<(), AppError> {
         let store = AppStore::new_for_test();

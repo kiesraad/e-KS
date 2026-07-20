@@ -36,8 +36,9 @@ pub async fn audit_log_detail(
     let events = store.get_events();
     let locale = context.session.locale;
 
-    let detail =
-        AuditLogDetail::compute(&events, event_id, locale).ok_or(AppError::GenericNotFound)?;
+    let base = store.imported_snapshot().unwrap_or_default();
+    let detail = AuditLogDetail::compute(&base, &events, event_id, locale)
+        .ok_or(AppError::GenericNotFound)?;
 
     let temp_store = create_temp_store(&store, event_id);
     let is_downloadable_state = AllProblems::find_all(&temp_store)?.models_downloadable();
@@ -77,6 +78,11 @@ pub async fn audit_log_gen_documents(
     State(renderer): State<TypstRenderer>,
     store: AppStore,
 ) -> Result<impl IntoResponse, AppError> {
+    // Downloading documents is not part of paper corrections.
+    if store.paper_corrections_stream_id().is_some() {
+        return Err(AppError::Unauthorised);
+    }
+
     let temp_store = create_temp_store(&store, event_id);
 
     if !AllProblems::find_all(&temp_store)?.models_downloadable() {
@@ -100,8 +106,13 @@ pub async fn audit_log_gen_documents(
 
 /// Replay the event stream up to and including `event_id` into a throwaway
 /// in-memory store, so document state can be inspected as it was back then.
+/// In paper-corrections mode the replay starts from the imported snapshot the
+/// corrections were applied on top of.
 fn create_temp_store(store: &AppStore, event_id: usize) -> AppStore {
     let temp_store = AppStore::new_for_temp_stream(store.election);
+    if let Some(imported) = store.imported_snapshot() {
+        *temp_store.data.write() = imported;
+    }
 
     store
         .get_events()
@@ -192,6 +203,133 @@ mod tests {
             body.contains(&person_name),
             "expected person display name to appear next to the abbreviated id"
         );
+
+        Ok(())
+    }
+
+    /// Build a paper-corrections store carrying one CSB correction.
+    async fn paper_corrections_store() -> Result<AppStore, AppError> {
+        use crate::{CsbEvent, CsbStore, StreamId};
+
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(crate::AppStoreData {
+                    political_group: crate::test_utils::sample_political_group(),
+                    ..Default::default()
+                }),
+            })
+            .await?;
+
+        let store = AppStore::paper_corrections(csb_store);
+        sample_person(PersonId::new()).create(&store).await?;
+        Ok(store)
+    }
+
+    #[tokio::test]
+    async fn paper_corrections_mode_hides_document_download() -> Result<(), AppError> {
+        // Normal mode renders the download button.
+        let store = AppStore::new_for_test();
+        sample_person(PersonId::new()).create(&store).await?;
+        let response = audit_log_detail(
+            AuditLogDetailPath { event_id: 1 },
+            Context::new_test_from_store(&store),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+        let body = response_body_string(response).await;
+        assert!(body.contains("icon-download"));
+
+        // Paper-corrections mode hides it.
+        let store = paper_corrections_store().await?;
+        let event_id = store.get_events().last().unwrap().event_id;
+        let response = audit_log_detail(
+            AuditLogDetailPath { event_id },
+            Context::new_test_from_store(&store),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("icon-download"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn paper_corrections_mode_rejects_document_download() -> Result<(), AppError> {
+        let store = paper_corrections_store().await?;
+        let event_id = store.get_events().last().unwrap().event_id;
+
+        let result = audit_log_gen_documents(
+            AuditLogDownloadDocumentsPath {
+                event_id,
+                locale: ModelLocale::Nl,
+            },
+            Context::new_test_from_store(&store),
+            State(TypstRenderer::http("http://localhost".to_string())),
+            store,
+        )
+        .await;
+
+        assert!(matches!(result, Err(AppError::Unauthorised)));
+
+        Ok(())
+    }
+
+    /// A correction to an imported entity diffs against the imported
+    /// snapshot: the old values are the imported paper values, not blanks.
+    #[tokio::test]
+    async fn paper_corrections_detail_diffs_against_the_imported_snapshot() -> Result<(), AppError>
+    {
+        use crate::{AppEvent, CsbEvent, CsbStore, StreamId};
+
+        // Source stream with an imported person.
+        let source = AppStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        let person_id = person.id;
+        person.create(&source).await?;
+
+        let events = source.data.read().events.clone();
+        let snapshot = crate::AppStoreData::snapshot_until(&events, usize::MAX);
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
+            .await?;
+
+        // Correct the imported person's first name.
+        let store = AppStore::paper_corrections(csb_store);
+        let mut corrected = store.get_person(person_id)?;
+        corrected.name.first_name = Some("Gecorrigeerd".parse().unwrap());
+        store.update(AppEvent::UpdatePerson(corrected)).await?;
+
+        let event_id = store.get_events().last().unwrap().event_id;
+        let response = audit_log_detail(
+            AuditLogDetailPath { event_id },
+            Context::new_test_from_store(&store),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains("diff-table"));
+        // Old value from the imported snapshot, new value from the correction.
+        assert!(body.contains("Henk"));
+        assert!(body.contains("Gecorrigeerd"));
 
         Ok(())
     }
