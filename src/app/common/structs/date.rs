@@ -71,6 +71,12 @@ impl DateOfBirth {
     pub fn is_too_young(&self, election: &ElectionConfig) -> bool {
         self.0 > election.eligible_date_of_birth()
     }
+
+    pub fn format_option(date: &Option<Self>) -> String {
+        date.as_ref()
+            .map(|date| date.0.format(DEFAULT_DATE_FORMAT).to_string())
+            .unwrap_or("-".to_string())
+    }
 }
 
 #[cfg(test)]

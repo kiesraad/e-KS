@@ -103,12 +103,8 @@ impl OmissionTarget {
 
     fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
         match self.omission_type {
-            OmissionType::PoliticalGroup => {
-                Ok(trans!("common.general_information", locale))
-            }
-            OmissionType::CandidateList => {
-                Ok(trans!("candidate_list.title_single", locale))
-            }
+            OmissionType::PoliticalGroup => Ok(trans!("common.general_information", locale)),
+            OmissionType::CandidateList => Ok(trans!("candidate_list.title_single", locale)),
             OmissionType::Candidate => Ok(store
                 .get_person(PersonId::from(self.reference))
                 .ok_or(AppError::InternalServerError)?
