@@ -6,16 +6,16 @@ complete_list:
   title: Complete your list
 correction:
   deadline: "The missing documents must be received by the central electoral committee by <strong>{}</strong> at <strong>17:00</strong>."
-  description: "If you have received an omission letter, the political group has two days to rectify the omissions and resubmit the documents."
+  description: "If you have received an omission letter, the political group has three days to rectify the omissions and resubmit the documents."
   title: Omission period
   until: "Omissions can be rectified until <strong>{}</strong>"
 delivery:
   appointment: "Please make an appointment for this. The address is:"
-  description: On nomination day you must submit your documents to the central electoral committee.
+  description: "On nomination day you must submit your documents to the central electoral committee between <strong>09:00</strong> and <strong>17:00</strong> ."
   only_on: "Nomination day is on <strong>{}</strong>"
   title: Submit documents
 follow_up_steps:
-  description: "After downloading the documents, there are a few more steps to take outside of e-KS. Below, the rest of the nomination process up to and including the public session is described."
+  description: "After printing the documents, there are a few more steps to take outside of e-KS. Below, the rest of the nomination process up to and including the public session is described."
   title: Follow-up steps
 header:
   description: "You have created your candidates and lists of candidates. To finalise, there are a few more steps to complete. These steps are outlined on this page."
@@ -41,7 +41,7 @@ print:
   incomplete_warning: "Attention! You can print the documents, but they will be considered incomplete by the central electoral committee. Resolve the warnings in step 1 to complete the list."
   title: Print the documents
 verification:
-  correction_notice: "If anything is missing, you will receive a letter from us listing the missing documents."
+  correction_notice: "If anything is missing, you will receive a letter from us listing the omissions."
   description: The central electoral committee reviews the submitted documents for completeness and correctness.
   title: Review of documents
   until: "The review runs until <strong>{}</strong>"

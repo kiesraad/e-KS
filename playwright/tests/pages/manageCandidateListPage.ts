@@ -33,10 +33,10 @@ export class ManageCandidateListPage {
 
   constructor(protected readonly page: Page) {
     this.buttonAddExistingCandidate = this.page.getByRole("link", {
-      name: "Bestaande",
+      name: "Bestaand",
     });
     this.buttonAddNewCandidate = this.page.getByRole("link", {
-      name: "Nieuwe",
+      name: "Nieuw",
     });
     this.buttonSearchExistingCandidate = this.page.getByLabel(
       "Zoek bestaande kandidaat",
