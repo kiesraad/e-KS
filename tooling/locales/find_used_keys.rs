@@ -23,8 +23,8 @@ fn find_used_keys(path: &std::path::Path) -> Vec<String> {
 
     let re = regex::Regex::new(r#""([\w\.]+)"\|trans"#).unwrap();
     let mut template_files = Vec::new();
-    // Scan every template root listed in `askama.toml` (`src/pg` and `src/csb`).
-    for templates_dir in ["pg", "csb"] {
+    // Scan every template root listed in `askama.toml` (`src/app` and `src/csb`).
+    for templates_dir in ["app", "csb"] {
         let templates_dir = path.join("src").join(templates_dir);
         collect_files_recursively(&templates_dir, "html", &mut template_files);
     }

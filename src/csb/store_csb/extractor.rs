@@ -46,7 +46,7 @@ mod tests {
     };
     use tower::ServiceExt;
 
-    use crate::{AppState, CsbEvent, CsbStoreData, ElectionConfig, Locale, PgStoreData};
+    use crate::{AppState, AppStoreData, CsbEvent, CsbStoreData, ElectionConfig, Locale};
 
     /// Persist a CSB stream carrying a single import event and return its id.
     async fn seed_csb_store(state: &AppState, election: ElectionConfig) -> StreamId {
@@ -59,7 +59,7 @@ mod tests {
             .update(CsbEvent::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
+                snapshot: Box::new(AppStoreData::default()),
             })
             .await
             .unwrap();

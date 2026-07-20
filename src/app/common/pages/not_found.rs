@@ -1,0 +1,43 @@
+use askama::Template;
+use axum::{extract::OriginalUri, http::StatusCode, response::IntoResponse};
+
+use crate::{AppError, Context, HtmlTemplate, filters};
+
+#[derive(Template)]
+#[template(path = "app/common/pages/not_found.html")]
+pub struct NotFoundTemplate {
+    path: String,
+}
+
+pub async fn not_found(
+    OriginalUri(uri): OriginalUri,
+    context: Context,
+) -> Result<impl IntoResponse, AppError> {
+    let html = HtmlTemplate(
+        NotFoundTemplate {
+            path: uri.to_string(),
+        },
+        context,
+    );
+
+    Ok((StatusCode::NOT_FOUND, html))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    use crate::test_utils::response_body_string;
+
+    #[tokio::test]
+    async fn not_found_renders_html() {
+        let into_response = not_found(
+            OriginalUri("/not_found".parse().unwrap()),
+            Context::new_test_without_db(),
+        )
+        .await
+        .unwrap();
+        let body = response_body_string(into_response.into_response()).await;
+        assert!(body.contains("The page you are looking for does not exist"));
+    }
+}

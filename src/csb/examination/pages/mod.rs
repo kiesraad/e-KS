@@ -5,8 +5,9 @@ use uuid::Uuid;
 
 use crate::{
     AppError, AppState, QueryParamState, StreamId,
+    candidate_lists::CandidateListId,
     csb::{OmissionId, OmissionType, examination::extractors::CsbPoliticalGroup},
-    structs::{candidate_lists::CandidateListId, persons::PersonId},
+    persons::PersonId,
 };
 
 mod all_restorations;

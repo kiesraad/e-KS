@@ -2,7 +2,7 @@
 use http_body_util::BodyExt;
 
 use crate::{
-    AppError, Context, ElectionConfig, ElectoralDistrict, PgStore, TokenValue,
+    AppError, AppStore, Context, ElectionConfig, ElectoralDistrict, TokenValue,
     candidate_lists::{CandidateList, CandidateListId},
     common::{
         Address, BsnOrNoneConfirmed, CountryCode, DateOfBirth, DisplayName, DutchAddress,
@@ -274,8 +274,8 @@ pub async fn setup_documents_test_state(
     include_list_submitter: bool,
     include_authorised_agent: bool,
     election: ElectionConfig,
-) -> Result<(PgStore, Vec<CandidateListId>, Context), AppError> {
-    let store = PgStore::new_for_test_with_election(election);
+) -> Result<(AppStore, Vec<CandidateListId>, Context), AppError> {
+    let store = AppStore::new_for_test_with_election(election);
     let mut list_ids = Vec::new();
 
     if include_list_submitter {

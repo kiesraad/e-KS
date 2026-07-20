@@ -97,7 +97,7 @@ mod tests {
     /// value struck through, the corrected value highlighted.
     #[tokio::test]
     async fn renders_corrected_value_next_to_differing_imported_value() {
-        use crate::{CsbEvent, PgEvent};
+        use crate::{AppEvent, CsbEvent};
 
         let store = CsbStore::new_for_test();
         store.set_political_group(sample_political_group());
@@ -107,7 +107,7 @@ mod tests {
         corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
         store
             .update(CsbEvent::PaperCorrectedUpdate(Box::new(
-                PgEvent::UpdatePoliticalGroup(corrected_group),
+                AppEvent::UpdatePoliticalGroup(corrected_group),
             )))
             .await
             .unwrap();
@@ -134,8 +134,7 @@ mod tests {
     #[tokio::test]
     async fn hides_substitute_submitter_deleted_by_the_corrections() {
         use crate::{
-            CsbEvent, PgEvent, structs::list_submitters::ListSubmitterId,
-            test_utils::sample_list_submitter,
+            AppEvent, CsbEvent, list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
         };
 
         let store = CsbStore::new_for_test();
@@ -151,7 +150,7 @@ mod tests {
 
         store
             .update(CsbEvent::PaperCorrectedUpdate(Box::new(
-                PgEvent::DeleteSubstituteSubmitter {
+                AppEvent::DeleteSubstituteSubmitter {
                     substitute_submitter_id: submitter.id,
                 },
             )))

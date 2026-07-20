@@ -1,0 +1,26 @@
+{% extends "app/common/components/overlay.html" %}
+{% block overlay_title %}
+  <span class="person-badge"></span>
+  {{ person.name.display() }}
+{% endblock %}
+{% set close_action = person.highlight_path() %}
+{% block overlay_steps %}
+  {% include "app/persons/components/update_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  <fieldset>
+    <h3>{{ "person.correspondence_address"|trans }}</h3>
+    <div class="alert alert-info">
+      <p>{{ "person.correspondence_address_info"|trans }}</p>
+    </div>
+    {% include "app/common/components/address_fields.html" %}
+  </fieldset>
+{% endblock %}
+{% block overlay_actions %}
+  {% if should_warn %}
+    {% include "app/common/components/submit.html" %}
+  {% else %}
+    {% set submit_label = "action.add"|trans %}
+    {% include "app/common/components/submit.html" %}
+  {% endif %}
+{% endblock %}

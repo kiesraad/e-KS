@@ -6,6 +6,7 @@ use uuid::Uuid;
 
 use crate::{
     AppError, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState, StreamId,
+    candidate_lists::CandidateListId,
     csb::{
         OmissionCategory, OmissionType,
         examination::{
@@ -18,7 +19,6 @@ use crate::{
         },
     },
     form::{FormData, ValidationError},
-    structs::candidate_lists::CandidateListId,
 };
 
 mod urls;
@@ -246,8 +246,9 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
+        candidate_lists::CandidateListId,
         csb::{Omission, OmissionType},
-        structs::{candidate_lists::CandidateListId, persons::PersonId},
+        persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list},
     };
 

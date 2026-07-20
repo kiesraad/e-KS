@@ -1,6 +1,6 @@
 use rand::{RngExt, rng};
 
-use crate::structs::candidate_lists::CandidateList;
+use crate::candidate_lists::CandidateList;
 
 pub struct CsbCandidateList {
     pub list: CandidateList,

@@ -219,7 +219,7 @@ fn store_app(state: AppState) -> Router {
     Router::new()
         .route(
             "/",
-            get(|store: crate::PgStore| async move {
+            get(|store: crate::AppStore| async move {
                 store
                     .paper_corrections_stream_id()
                     .map(|id| id.to_string())
@@ -261,7 +261,7 @@ async fn seed_csb_stream(state: &AppState) -> crate::StreamId {
         .update(crate::CsbEvent::Import {
             hash: [0u8; 32],
             source_stream_id: crate::StreamId::new(),
-            snapshot: Box::new(crate::PgStoreData::default()),
+            snapshot: Box::new(crate::AppStoreData::default()),
         })
         .await
         .expect("import");

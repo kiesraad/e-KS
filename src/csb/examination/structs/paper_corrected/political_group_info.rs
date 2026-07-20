@@ -1,11 +1,7 @@
 use super::PaperCorrected;
 use crate::{
-    CsbStore, Locale, PgStore,
-    structs::{
-        common::PreviousElectionResults, list_designation::ListDesignation,
-        political_groups::PoliticalGroup,
-    },
-    trans,
+    AppStore, CsbStore, Locale, common::PreviousElectionResults, list_designation::ListDesignation,
+    political_groups::PoliticalGroup, trans,
 };
 
 /// The political group rows of the general information page.
@@ -16,7 +12,7 @@ pub struct PaperCorrectedPoliticalGroupInfo {
 }
 
 impl PaperCorrectedPoliticalGroupInfo {
-    pub fn new(store: &CsbStore, corrected: &PgStore, locale: Locale) -> Self {
+    pub fn new(store: &CsbStore, corrected: &AppStore, locale: Locale) -> Self {
         let imported_group = store.get_imported_political_group();
         let corrected_group = corrected.get_political_group();
 

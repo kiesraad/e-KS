@@ -12,7 +12,7 @@ use serde::{Serialize, de::DeserializeOwned};
 
 use super::maintenance::handle_db_error;
 use crate::{
-    AppError, AppState, PgStore, SESSION_COOKIE_NAME, Scope, Session,
+    AppError, AppState, AppStore, SESSION_COOKIE_NAME, Scope, Session,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{IndexPath, LoginStartPath, SelectElectionPath},
     csb::index::pages::CsbIndexPath,
@@ -99,7 +99,7 @@ pub async fn store_middleware(
     // A CSB session only reaches app routes while correcting the paper
     // documents of an imported stream: it then gets a paper-corrections
     // store view, so its events are wrapped and persisted on the CSB stream
-    // and it can never create an `PgStore` in its CSB stream partition.
+    // and it can never create an `AppStore` in its CSB stream partition.
     // Otherwise it belongs on the CSB routes instead.
     if session.scope == Scope::CentralElectoralCommittee {
         let (Some(stream_id), Some(election)) =
@@ -119,7 +119,7 @@ pub async fn store_middleware(
             .csb_store_registry
             .get_store(stream_id, election)
             .await;
-        return inject_loaded_store(&state, resolved, request, next, PgStore::paper_corrections)
+        return inject_loaded_store(&state, resolved, request, next, AppStore::paper_corrections)
             .await;
     }
 
@@ -129,7 +129,7 @@ pub async fn store_middleware(
     };
 
     let resolved = state.store_for_stream(stream_id, election, false).await;
-    inject_loaded_store(&state, resolved, request, next, PgStore::own).await
+    inject_loaded_store(&state, resolved, request, next, AppStore::own).await
 }
 
 /// Middleware that loads the global CSB main store for the session's current

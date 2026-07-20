@@ -1,7 +1,7 @@
 use uuid::Uuid;
 
 use crate::{
-    AppError, PgStore,
+    AppError, AppStore,
     candidate_lists::CandidateList,
     common::HasSeverity,
     pagination::SortDirection,
@@ -14,7 +14,7 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
     persons.into_iter().map(|person| person.id).collect()
 }
 
-pub async fn load(store: &PgStore) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let election = store.get_election();
 
     let persons = persons::Person::list(
@@ -101,7 +101,7 @@ mod tests {
     };
     #[tokio::test]
     async fn test_load() {
-        let store = PgStore::new_for_test();
+        let store = AppStore::new_for_test();
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
@@ -123,7 +123,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_single_district_election() {
         let store =
-            PgStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::Rivierenland));
+            AppStore::new_for_test_with_election(ElectionConfig::WS27(WaterCouncil::Rivierenland));
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 
@@ -141,7 +141,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_two_district_election() {
         let election = ElectionConfig::PS27(Province::GE);
-        let store = PgStore::new_for_test_with_election(election);
+        let store = AppStore::new_for_test_with_election(election);
         crate::fixtures::persons::load(&store).await.unwrap();
         load(&store).await.unwrap();
 

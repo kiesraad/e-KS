@@ -1,0 +1,10 @@
+{% extends "app/common/components/overlay.html" %}
+{% import "app/common/components/macros.html" as macros %}
+{% set close_action = candidate_list.view_path() %}
+{% block overlay_title %}{{ "candidate_list.form.update.title"|trans }}{% endblock %}
+{% block overlay_steps %}
+  {% include "app/candidate_lists/components/update_steps.html" %}
+{% endblock %}
+{% block overlay_form %}
+  {% include "app/candidate_lists/components/districts_form.html" %}
+{% endblock %}

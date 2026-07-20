@@ -55,7 +55,7 @@ impl CsbAuditLogEntry {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{CsbEvent, CsbMainEvent, Locale, PgStoreData, StreamId, store::StoreEvent};
+    use crate::{AppStoreData, CsbEvent, CsbMainEvent, Locale, StreamId, store::StoreEvent};
 
     const EN: Locale = Locale::En;
 
@@ -100,7 +100,7 @@ mod tests {
             CsbEvent::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
+                snapshot: Box::new(AppStoreData::default()),
             },
         );
 
@@ -131,7 +131,7 @@ mod tests {
             CsbEvent::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
-                snapshot: Box::new(PgStoreData::default()),
+                snapshot: Box::new(AppStoreData::default()),
             },
         );
 
@@ -171,7 +171,7 @@ mod tests {
         let event = CsbEvent::Import {
             hash: [0u8; 32],
             source_stream_id: StreamId::new(),
-            snapshot: Box::new(PgStoreData::default()),
+            snapshot: Box::new(AppStoreData::default()),
         };
         assert_eq!(event.category(), "import");
         assert_eq!(event.key(), "import");

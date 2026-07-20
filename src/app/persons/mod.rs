@@ -1,0 +1,9 @@
+//! Person management and related routes.
+mod extractors;
+mod forms;
+mod pages;
+mod structs;
+
+pub use forms::{AddressForm, PersonalDataFieldsForm, PersonalDataForm, RepresentativeForm};
+pub use pages::{PersonsPath, UpdatePersonPath, router};
+pub use structs::{Person, PersonId, PersonPagination, PersonSort, PersonalData, Representative};

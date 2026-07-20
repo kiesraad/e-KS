@@ -1,5 +1,5 @@
 use crate::{
-    AppError, PgStore,
+    AppError, AppStore,
     common::{Address, DutchAddress, FullName},
     list_designation::ListDesignation,
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -8,7 +8,7 @@ use crate::{
 };
 use uuid::Uuid;
 
-pub async fn load(store: &PgStore) -> Result<(), AppError> {
+pub async fn load(store: &AppStore) -> Result<(), AppError> {
     let agent_id: NameAuthorisationId =
         Uuid::new_v5(&Uuid::NAMESPACE_OID, b"fixture_authorised_agent").into();
 
@@ -114,7 +114,7 @@ mod tests {
 
     #[tokio::test]
     async fn test_load() {
-        let store = PgStore::new_for_test();
+        let store = AppStore::new_for_test();
         load(&store).await.unwrap();
 
         let list_submitter = store.get_list_submitter();

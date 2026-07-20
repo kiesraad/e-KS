@@ -3,6 +3,7 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AnyLocale, AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate,
+    candidate_lists::{CandidateList, CandidateListId},
     csb::{
         Omission,
         examination::{
@@ -10,7 +11,6 @@ use crate::{
         },
     },
     filters,
-    structs::candidate_lists::{CandidateList, CandidateListId},
 };
 
 #[derive(Template)]
@@ -80,7 +80,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        structs::persons::PersonId,
+        persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };
 
