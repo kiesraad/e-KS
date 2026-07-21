@@ -3,14 +3,12 @@ use axum_extra::routing::TypedPath;
 use crate::{
     StreamId,
     candidate_lists::CandidateListId,
-    csb::{
-        OmissionCategory, OmissionType,
-        examination::{
-            extractors::CsbPoliticalGroup,
-            pages::{CsbAddOmissionPath, CsbOmissionOverviewPath},
-        },
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::{CsbAddOmissionPath, CsbOmissionOverviewPath},
     },
     persons::PersonId,
+    structs::csb::{OmissionCategory, OmissionType},
 };
 
 use super::OmissionTarget;

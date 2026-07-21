@@ -7,19 +7,16 @@ use uuid::Uuid;
 use crate::{
     AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
     candidate_lists::CandidateListId,
-    csb::{
-        OmissionCategory, OmissionType,
-        examination::{
-            OmissionForm,
-            extractors::CsbPoliticalGroup,
-            pages::{
-                CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath,
-                OmissionListQuery,
-            },
+    csb::examination::{
+        OmissionForm,
+        extractors::CsbPoliticalGroup,
+        pages::{
+            CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath, OmissionListQuery,
         },
     },
     form::{FormData, ValidationError},
     persons::PersonId,
+    structs::csb::{OmissionCategory, OmissionType},
     trans,
 };
 
@@ -263,8 +260,8 @@ mod tests {
 
     use crate::{
         candidate_lists::CandidateListId,
-        csb::{Omission, OmissionType},
         persons::PersonId,
+        structs::csb::Omission,
         test_utils::{response_body_string, sample_candidate_list},
     };
 

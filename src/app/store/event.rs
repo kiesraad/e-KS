@@ -92,6 +92,15 @@ pub enum AppEvent {
         updated_persons: Vec<Person>,
         candidates: Vec<PersonId>,
     },
+
+    /// Marks the CSB import that seeds a paper-corrections projection. Not
+    /// persisted on an app stream: it is synthesised from
+    /// [`CsbEvent::Import`](crate::CsbEvent::Import) when building the
+    /// paper-corrected projection, so the import shows up as event #1 in that
+    /// audit log. `hash` is the imported package's source hash.
+    Import {
+        hash: [u8; 32],
+    },
 }
 
 impl Event for AppEvent {
@@ -124,6 +133,7 @@ impl Event for AppEvent {
             | AppEvent::HideDownloadWarning
             | AppEvent::ExportCsv { .. }
             | AppEvent::ImportCandidates { .. } => "system",
+            AppEvent::Import { .. } => "import",
         }
     }
 
@@ -160,6 +170,7 @@ impl Event for AppEvent {
             AppEvent::HideDownloadWarning => "hide_download_warning",
             AppEvent::ExportCsv { .. } => "export_csv",
             AppEvent::ImportCandidates { .. } => "import_csv",
+            AppEvent::Import { .. } => "import",
         }
     }
 

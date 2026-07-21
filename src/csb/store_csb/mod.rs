@@ -12,9 +12,10 @@ use serde::{Deserialize, Serialize};
 use crate::political_groups::PoliticalGroup;
 use crate::{
     AppStoreData, Scope,
-    common::UtcDateTime,
-    csb::{Omission, OmissionId},
+    common::{DisplayName, UtcDateTime},
+    persons::{Person, PersonId},
     store::{StoreData, StoreEvent},
+    structs::csb::{Correction, Omission, OmissionId},
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
@@ -26,6 +27,8 @@ pub struct CsbStoreData {
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
+    pub(crate) corrected_persons: HashMap<PersonId, Person>,
+    pub(crate) corrected_display_name: Option<DisplayName>,
 }
 
 impl StoreData for CsbStoreData {
@@ -43,9 +46,22 @@ impl StoreData for CsbStoreData {
         } = event;
 
         match event.payload {
-            CsbEvent::Import { snapshot, .. } => {
+            CsbEvent::Import {
+                snapshot,
+                hash: source_hash,
+                ..
+            } => {
                 self.imported_data = *snapshot;
                 self.paper_corrected_data = self.imported_data.clone();
+
+                // Record the import as event #1 of the corrected projection,
+                // so the paper-corrections audit log starts with it.
+                self.paper_corrected_data.apply(StoreEvent {
+                    event_id,
+                    payload: crate::AppEvent::Import { hash: source_hash },
+                    created_at,
+                    hash,
+                });
             }
             CsbEvent::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,
@@ -72,6 +88,21 @@ impl StoreData for CsbStoreData {
             CsbEvent::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
+            CsbEvent::UpdateCorrection(correction) => match correction {
+                Correction::DisplayName(display_name) => {
+                    self.corrected_display_name = Some(display_name);
+                }
+                Correction::Person(person_id, correction) => {
+                    let person = self.corrected_persons.entry(person_id).or_insert_with(|| {
+                        self.imported_data
+                            .persons
+                            .get(&person_id)
+                            .cloned()
+                            .unwrap_or_default()
+                    });
+                    correction.apply(person);
+                }
+            },
         }
     }
 
@@ -137,7 +168,12 @@ impl crate::CsbStore {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{AppEvent, StreamId, test_utils::sample_political_group};
+    use crate::{
+        AppEvent, StreamId,
+        common::PlaceOfResidence,
+        structs::csb::PersonCorrection,
+        test_utils::{sample_person, sample_political_group},
+    };
 
     fn import_event() -> CsbEvent {
         CsbEvent::Import {
@@ -147,6 +183,16 @@ mod tests {
                 political_group: sample_political_group(),
                 ..AppStoreData::default()
             }),
+        }
+    }
+
+    fn import_event_with_person(person: Person) -> CsbEvent {
+        let mut snapshot = AppStoreData::default();
+        snapshot.persons.insert(person.id, person);
+        CsbEvent::Import {
+            hash: [42; 32],
+            source_stream_id: StreamId::new(),
+            snapshot: Box::new(snapshot),
         }
     }
 
@@ -184,6 +230,104 @@ mod tests {
         assert_eq!(
             data.imported_data.political_group.display_name,
             sample_political_group().display_name
+        );
+    }
+
+    #[test]
+    fn correction_display_name_sets_corrected_display_name() {
+        let mut data = CsbStoreData::default();
+        data.apply(StoreEvent::new(1, import_event()));
+
+        let display_name: DisplayName = "Gecorrigeerde Naam".parse().unwrap();
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::DisplayName(display_name.clone())),
+        ));
+
+        assert_eq!(data.corrected_display_name, Some(display_name));
+    }
+
+    #[test]
+    fn correction_person_accumulates_multiple_corrections() {
+        let person_id = PersonId::new();
+        let person = sample_person(person_id);
+        let original_last_name = person.name.last_name.to_string();
+
+        let mut data = CsbStoreData::default();
+        data.apply(StoreEvent::new(1, import_event_with_person(person)));
+
+        // initials
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+            )),
+        ));
+        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
+        assert_eq!(corrected.name.last_name.to_string(), original_last_name);
+
+        // last name
+        data.apply(StoreEvent::new(
+            3,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::LastName("Bakker".parse().unwrap()),
+            )),
+        ));
+        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
+        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
+
+        // date of birth
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
+            )),
+        ));
+
+        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
+        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
+        assert_eq!(
+            corrected
+                .personal_data
+                .date_of_birth
+                .as_ref()
+                .unwrap()
+                .to_string(),
+            "1985-06-15"
+        );
+
+        // place of residence
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
+                    "Amsterdam".to_string(),
+                )),
+            )),
+        ));
+
+        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
+        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
+        assert_eq!(
+            corrected
+                .personal_data
+                .date_of_birth
+                .as_ref()
+                .unwrap()
+                .to_string(),
+            "1985-06-15"
+        );
+        assert_eq!(
+            corrected.personal_data.place_of_residence,
+            Some(PlaceOfResidence::Known("Amsterdam".to_string()))
         );
     }
 }

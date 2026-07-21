@@ -72,6 +72,7 @@ mod middleware;
 mod pagination;
 mod state;
 mod store;
+mod structs;
 mod utils;
 
 // `pub` because the `pdf_diff` development tool renders the PDF models (from

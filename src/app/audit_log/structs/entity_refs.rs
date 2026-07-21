@@ -4,13 +4,7 @@
 
 use crate::{AppStoreData, candidate_lists::CandidateListId, persons::PersonId};
 
-/// A reference to another entity mentioned inside a diff value. Rendered in
-/// the template as an abbreviated link + the entity's description.
-#[cfg_attr(test, derive(Debug, PartialEq))]
-pub struct EntityRef {
-    pub id_full: String,
-    pub description: String,
-}
+pub use crate::structs::audit_log::EntityRef;
 
 /// Entity types that can appear as ID references inside diff values.
 enum EntityKind {

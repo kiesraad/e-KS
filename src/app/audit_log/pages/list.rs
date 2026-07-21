@@ -3,9 +3,10 @@ use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, Event, HtmlTemplate,
-    audit_log::{AuditLogEntry, EventTypeCategory, pages::AuditLogPath},
+    audit_log::{AuditLogEntry, pages::AuditLogPath},
     filters,
     pagination::Pagination,
+    structs::audit_log::EventTypeCategory,
     utils::filter_query_suffix,
 };
 
@@ -389,6 +390,148 @@ mod tests {
 
         let body = response_body_string(response).await;
         assert!(body.contains("/audit-log\" class=\"button secondary\">Reset"));
+
+        Ok(())
+    }
+
+    /// In paper-corrections mode the audit log lists only the CSB's
+    /// corrections, never the source stream's own events.
+    #[tokio::test]
+    async fn paper_corrections_mode_lists_only_csb_corrections() -> Result<(), AppError> {
+        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+
+        // Source stream with an event of its own.
+        let source = AppStore::new_for_test();
+        let person = sample_person(PersonId::new());
+        person.create(&source).await?;
+
+        // Import the source stream the way `do_import` does: the snapshot
+        // excludes the source event log.
+        let events = source.data.read().events.clone();
+        let snapshot = crate::AppStoreData::snapshot_until(&events, usize::MAX);
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(snapshot),
+            })
+            .await?;
+
+        let store = AppStore::paper_corrections(csb_store);
+        sample_political_group().update(&store).await?;
+
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store,
+            Pagination::default(),
+            no_filter(),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Updated political group</td>"));
+        assert!(!body.contains("<td>Created person</td>"));
+        // The import that seeds the corrections shows up as event #1.
+        assert!(body.contains("<td>Imported political group</td>"));
+
+        Ok(())
+    }
+
+    /// In paper-corrections mode the import (CSB event #1) is listed as a
+    /// synthetic entry, so the numbering starts at 1 rather than 2.
+    #[tokio::test]
+    async fn paper_corrections_mode_lists_the_import_as_event_one() -> Result<(), AppError> {
+        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(crate::AppStoreData::default()),
+            })
+            .await?;
+
+        let store = AppStore::paper_corrections(csb_store);
+        sample_political_group().update(&store).await?;
+
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store,
+            Pagination::default(),
+            no_filter(),
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        let body = response_body_string(response).await;
+        // Event #1 is the import; the first correction is event #2.
+        assert!(body.contains("<td>1</td>"));
+        assert!(body.contains("<td>Imported political group</td>"));
+        assert!(body.contains("<td>2</td>"));
+
+        Ok(())
+    }
+
+    /// The synthetic import entry honours the event-type filter: it appears
+    /// under the "import" type and is excluded from unrelated types.
+    #[tokio::test]
+    async fn paper_corrections_import_entry_respects_event_type_filter() -> Result<(), AppError> {
+        use crate::{CsbEvent, CsbStore, StreamId, test_utils::sample_political_group};
+
+        let csb_store = CsbStore::new_for_test();
+        csb_store
+            .update(CsbEvent::Import {
+                hash: [1; 32],
+                source_stream_id: StreamId::new(),
+                snapshot: Box::new(crate::AppStoreData::default()),
+            })
+            .await?;
+        let store = AppStore::paper_corrections(csb_store);
+        sample_political_group().update(&store).await?;
+
+        let filtered = |event_type: &str| {
+            Query(AuditLogFilter {
+                event_type: Some(event_type.to_string()),
+                search: None,
+            })
+        };
+
+        // Filtering by "import" keeps the import, drops the correction.
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store.clone(),
+            Pagination::default(),
+            filtered("import"),
+        )
+        .await
+        .unwrap()
+        .into_response();
+        let body = response_body_string(response).await;
+        assert!(body.contains("<td>Imported political group</td>"));
+        assert!(!body.contains("<td>Updated political group</td>"));
+
+        // Filtering by an unrelated type drops the import.
+        let response = audit_log(
+            AuditLogPath {},
+            Context::new_test_without_db(),
+            store,
+            Pagination::default(),
+            filtered("political_group"),
+        )
+        .await
+        .unwrap()
+        .into_response();
+        let body = response_body_string(response).await;
+        assert!(!body.contains("<td>Imported political group</td>"));
+        assert!(body.contains("<td>Updated political group</td>"));
 
         Ok(())
     }

@@ -46,9 +46,11 @@
               <td>{{ entry.description }}</td>
               <td>{{ entry.details }}</td>
               <td class="subject-id">
-                <a href="{{ audit_log_path }}?search={{ entry.subject_id_full }}">
-                  <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id_full|abbreviate_str }}</abbr>
-                </a>
+                {% if !entry.subject_id_full.is_empty() %}
+                  <a href="{{ audit_log_path }}?search={{ entry.subject_id_full }}">
+                    <abbr title="{{ entry.subject_id_full }}">{{ entry.subject_id_full|abbreviate_str }}</abbr>
+                  </a>
+                {% endif %}
               </td>
               <td>
                 <a href="{{ entry.detail_path() }}">

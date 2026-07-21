@@ -9,7 +9,7 @@ use chrono::{DateTime, Utc};
 use serde::{Deserialize, Serialize};
 use sha2::{Digest, Sha256};
 
-use crate::Locale;
+use crate::{Locale, structs::audit_log::FieldChange};
 
 /// Hash linked to the (virtual) event preceding the first event of a stream.
 pub const GENESIS_HASH: [u8; 32] = [0u8; 32];
@@ -29,6 +29,12 @@ pub trait Event {
 
     /// Short human-readable details for a listing row (name, file, districts, ...)
     fn details(&self) -> String;
+
+    /// Field-level changes to show in the audit log detail view. Returns an
+    /// empty vec for events that have no structured change data.
+    fn changes(&self, _locale: Locale) -> Vec<FieldChange> {
+        vec![]
+    }
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
