@@ -6,9 +6,16 @@
 //! Markdown templates in `templates/` (one per locale and variant), written in
 //! the textris-pdf Markdown dialect and wired up by [`mod@markdown`].
 //! [`layout`] holds the shared page set-up, and [`inputs`] the shared input
-//! data types. [`mod@examples`] defines type-checked example inputs, rendered
-//! by the round-trip test and the `pdf_diff` development tool.
+//! data types plus their conversions from the application store types.
+//! [`mod@examples`] defines type-checked example inputs, rendered by the
+//! round-trip test and the `pdf_diff` development tool.
+//!
+//! [`mod@documents`] collects the store data for a candidate list and streams
+//! the rendered models plus the [`mod@eml210`] nomination export as a ZIP
+//! download.
 
+pub(crate) mod documents;
+pub(crate) mod eml210;
 pub mod examples;
 mod fonts;
 pub mod h1;

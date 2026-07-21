@@ -1,18 +1,25 @@
+//! The submit-documents download: collects the store data for a candidate
+//! list and streams the rendered PDF models plus the EML 2.10 nomination
+//! export as a ZIP response.
+
+use super::{
+    Pdf,
+    eml210::eml210,
+    h1::H1,
+    h3::H3,
+    h4::H4,
+    h9::H9,
+    inputs::{
+        DetailedCandidate, ElectoralDistricts, ModelData, NameAuthorisation, Person,
+        ordered_candidates,
+    },
+};
 use crate::{
     AppError, AppStore, Context, ElectionConfig,
     candidate_lists::{CandidateListId, FullCandidateList},
     common::{HasSeverity, Problematic, Severity},
     core::{ModelLocale, ZipResponseWriter},
-    finalise::structs::{eml210::Eml210, ordered_candidates},
     list_designation::ListDesignation,
-    models::{
-        Pdf,
-        h1::H1,
-        h3::H3,
-        h4::H4,
-        h9::H9,
-        inputs::{DetailedCandidate, ElectoralDistricts, ModelData, NameAuthorisation, Person},
-    },
     utils::{format_hash, no_cache_headers, slugify_teletex},
 };
 use axum::{
@@ -38,7 +45,9 @@ pub struct DocumentData {
     pub list_submitter: Person,
     pub substitute_submitters: Vec<Person>,
     pub name_authorisations: Vec<NameAuthorisation>,
-    nomination: Eml210,
+    /// The EML 2.10 nomination XML, built eagerly so errors surface before
+    /// the ZIP starts streaming.
+    nomination: Vec<u8>,
 }
 
 impl DocumentData {
@@ -147,15 +156,15 @@ impl DocumentData {
         {
             return Err(AppError::IncompleteData("Incomplete list submitter"));
         }
-        let list_submitter = list_submitter.try_into()?;
+        let list_submitter = Person::from(list_submitter);
 
         let substitute_submitters = store
             .get_substitute_submitters()
             .into_iter()
-            .map(Person::try_from)
-            .collect::<Result<Vec<_>, _>>()?;
+            .map(Person::from)
+            .collect();
 
-        let nomination = Eml210::new(store, &election, &group, list_id, locale)?;
+        let nomination = eml210(store, &election, &group, list_id, locale)?;
         let folder_name = format!(
             "{}-{}",
             match locale {
@@ -215,11 +224,7 @@ impl DocumentData {
                 .map(|&list_id| Self::new(store, context, list_id, locale))
                 .collect::<Result<Vec<_>, _>>()?
         };
-        let Some(document_data) = bundles.first() else {
-            return Err(AppError::IncompleteData("No candidate lists"));
-        };
-
-        let filename = document_data.archive_filename();
+        let filename = bundles[0].archive_filename();
         Ok((bundles, filename))
     }
 
@@ -302,21 +307,40 @@ impl DocumentData {
         self,
         writer: &mut ZipResponseWriter<tokio::io::DuplexStream>,
     ) -> Result<(), AppError> {
-        let h1 = H1::from(&self);
+        let h1 = H1 {
+            common: self.model_data.clone(),
+            electoral_districts: self.electoral_districts.clone(),
+            previously_seated: self.previously_seated,
+            list_designation: self.list_designation,
+            list_submitter: self.list_submitter.clone(),
+            substitute_submitters: self.substitute_submitters.clone(),
+        };
         Self::add_model(writer, &self.zip_path(h1.filename()), h1).await?;
 
         if self.list_designation != ListDesignation::Blank {
-            let h3 = H3::from(&self);
+            let h3 = H3 {
+                common: self.model_data.clone(),
+                electoral_districts: self.electoral_districts.clone(),
+                list_designation: self.list_designation,
+                list_submitter: self.list_submitter.clone(),
+                name_authorisations: self.name_authorisations.clone(),
+            };
             Self::add_model(writer, &self.zip_path(h3.filename()), h3).await?;
         }
 
         if !self.previously_seated {
-            let h4 = H4::from(&self);
+            let h4 = H4 {
+                common: self.model_data.clone(),
+            };
             Self::add_model(writer, &self.zip_path(h4.filename()), h4).await?;
         }
 
         for candidate in self.detailed_candidates.iter() {
-            let h9 = H9::from((&self, candidate));
+            let h9 = H9 {
+                common: self.model_data.clone(),
+                electoral_districts: self.electoral_districts.clone(),
+                detailed_candidate: candidate.clone(),
+            };
             let path = self.zip_path(format!(
                 "h9-{}/{}",
                 match self.model_data.locale {
@@ -331,7 +355,7 @@ impl DocumentData {
         writer
             .add_file(
                 &self.zip_path("eml210.eml.xml".to_string()),
-                &self.nomination.build()?,
+                &self.nomination,
             )
             .await?;
 

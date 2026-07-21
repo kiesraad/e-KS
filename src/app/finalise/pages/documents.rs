@@ -1,8 +1,8 @@
 use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context,
-    finalise::{DocumentData, pages::DownloadDocumentsPath},
+    AppError, AppStore, Context, finalise::pages::DownloadDocumentsPath,
+    models::documents::DocumentData,
 };
 
 pub async fn gen_documents(

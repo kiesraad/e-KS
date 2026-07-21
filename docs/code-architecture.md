@@ -318,16 +318,18 @@ variable fonts are embedded in the binary with `include_bytes!`
 (`src/models/fonts.rs`); DM Sans is patched to cover the Teletex character set
 (`src/models/fonts/DM_Sans/modifications.md`).
 
-The `finalise` domain converts store types into the model input structs
-(`src/app/finalise/structs/` → `src/models/inputs.rs`). Each model implements
+The model input structs and their conversions from store types live in
+`src/models/inputs.rs`. Each model implements
 the `Pdf` trait (`src/models/mod.rs`): `document()` builds the layout and
 `generate_bytes()` renders it on `spawn_blocking` (rendering is CPU-bound).
 The output is archival PDF/A-2b; a validation failure (e.g. a character
 without a glyph in the embedded fonts) surfaces as `AppError::PdfError`.
-`finalise/pages/documents.rs` renders multiple documents and streams them to
-the client as a single ZIP download.
+`src/models/documents.rs` collects the store data for a candidate list,
+renders the documents plus the EML 2.10 nomination export
+(`src/models/eml210.rs`), and streams them to the client as a single ZIP
+download.
 
-Type-checked example inputs live in `src/models/examples.rs`; the `pdf_diff`
+Type-checked example inputs live in `src/models/examples/`; the `pdf_diff`
 tool renders every example and visually diffs the output against a saved
 baseline (`tmp/main-pdfs/`, created with
 `cargo run --bin pdf_diff -- --save-baseline`).

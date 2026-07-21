@@ -1,3 +1,5 @@
+//! The EML 2.10 candidate nomination export, built with [`eml_nl`].
+
 use chrono::Datelike;
 use eml_nl::{
     common::{
@@ -19,7 +21,7 @@ use eml_nl::{
 
 use crate::{
     AnyLocale, AppError, AppStore, ElectionConfig,
-    candidate_lists::FullCandidateList,
+    candidate_lists::{CandidateListId, FullCandidateList},
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
     core::{ElectionType, ModelLocale},
@@ -248,102 +250,94 @@ fn nomination_proposer(
     })
 }
 
-pub struct Eml210(Nomination);
+/// Build the EML 2.10 candidate nomination XML for a candidate list.
+pub fn eml210(
+    store: &AppStore,
+    election: &ElectionConfig,
+    political_group: &PoliticalGroup,
+    list_id: CandidateListId,
+    locale: ModelLocale,
+) -> Result<Vec<u8>, AppError> {
+    let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
 
-impl Eml210 {
-    pub fn new(
-        store: &AppStore,
-        election: &ElectionConfig,
-        political_group: &PoliticalGroup,
-        list_id: crate::candidate_lists::CandidateListId,
-        locale: ModelLocale,
-    ) -> Result<Self, AppError> {
-        let FullCandidateList { list, candidates } = FullCandidateList::get(store, list_id)?;
+    let substitutes = store.get_substitute_submitters();
+    let mut nominated = Vec::with_capacity(1 + substitutes.len());
+    nominated.push(nomination_proposer(
+        store.get_list_submitter(),
+        eml_nl::documents::nomination::NominationJobTitle::Submitter,
+        None,
+    )?);
 
-        let substitutes = store.get_substitute_submitters();
-        let mut nominated = Vec::with_capacity(1 + substitutes.len());
+    for (i, sub) in substitutes.into_iter().enumerate() {
         nominated.push(nomination_proposer(
-            store.get_list_submitter(),
-            eml_nl::documents::nomination::NominationJobTitle::Submitter,
-            None,
+            sub,
+            eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
+            Some((i + 1).to_string().into()),
         )?);
+    }
 
-        for (i, sub) in substitutes.into_iter().enumerate() {
-            nominated.push(nomination_proposer(
-                sub,
-                eml_nl::documents::nomination::NominationJobTitle::DeputySubmitter,
-                Some((i + 1).to_string().into()),
-            )?);
-        }
+    // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
+    let list_data = ListData {
+        // We always publish genders, but the individual candidates may leave the gender unspecified
+        publish_gender: StringValue::Parsed(true),
+        publication_language: Some(StringValue::from_value(match locale {
+            ModelLocale::Fry => eml_nl::utils::PublicationLanguage::Frisian,
+            ModelLocale::Nl => eml_nl::utils::PublicationLanguage::Dutch,
+        })),
+        belongs_to_set: None,
+        belongs_to_combination: None,
+        contests: list
+            .electoral_districts
+            .iter()
+            .map(|d| {
+                Ok(ListDataContest::new(ContestId::new(d.region_number())?)
+                    .with_name(d.title(AnyLocale::Nl)))
+            })
+            .collect::<Result<Vec<ListDataContest>, AppError>>()?,
+    };
 
-        // ListData is additional data specifically for OSV, we can possibly change this in the future if necessary
-        let list_data = ListData {
-            // We always publish genders, but the individual candidates may leave the gender unspecified
-            publish_gender: StringValue::Parsed(true),
-            publication_language: Some(StringValue::from_value(match locale {
-                crate::core::ModelLocale::Fry => eml_nl::utils::PublicationLanguage::Frisian,
-                crate::core::ModelLocale::Nl => eml_nl::utils::PublicationLanguage::Dutch,
-            })),
-            belongs_to_set: None,
-            belongs_to_combination: None,
-            contests: list
-                .electoral_districts
+    let now = chrono::Utc::now();
+    let nomination = Nomination::builder()
+        .transaction_id(
+            u64::try_from(store.current_event_id()).map_err(|_| AppError::InternalServerError)?,
+        )
+        .managing_authority(
+            ManagingAuthority::new(AuthorityIdentifier::new(AuthorityId::new("0000")?))
+                .with_created_by_authority(
+                    CreatedByAuthority::new(AuthorityId::new("0000")?)
+                        .with_name("De politieke partij"),
+                ),
+        )
+        .issue_date(now.date_naive())
+        .creation_date_time(now)
+        .election_identifier(NominationElectionIdentifier::try_from(*election)?)
+        .contest_identifier(if election.has_only_one_district() {
+            NominationContestIdentifier::new(ContestId::geen(), "")
+        } else if list.contains_all_districts(election) {
+            NominationContestIdentifier::new(ContestId::alle(), "")
+        } else {
+            // If there are multiple districts but this list is not linked to all districts,
+            // we always choose the first district (to avoid collisions with other lists).
+            // The full set of electoral districts can be found in the ListData.
+            let district = list.electoral_districts[0];
+            NominationContestIdentifier::new(
+                ContestId::new(district.region_number())?,
+                district.title(AnyLocale::Nl),
+            )
+        })
+        .affiliation(NominationAffiliation {
+            registered_name: political_group.pg_display_name()?.into(),
+            affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
+            list_data,
+            candidates: candidates
                 .iter()
-                .map(|d| {
-                    Ok(ListDataContest::new(ContestId::new(d.region_number())?)
-                        .with_name(d.title(AnyLocale::Nl)))
-                })
-                .collect::<Result<Vec<ListDataContest>, AppError>>()?,
-        };
+                .map(|c| (&c.data).try_into())
+                .collect::<Result<Vec<_>, AppError>>()?,
+        })
+        .nominate(NominationNominate::new(nominated))
+        .build()?;
 
-        let now = chrono::Utc::now();
-        let nomination = Nomination::builder()
-            .transaction_id(
-                u64::try_from(store.current_event_id())
-                    .map_err(|_| AppError::InternalServerError)?,
-            )
-            .managing_authority(
-                ManagingAuthority::new(AuthorityIdentifier::new(AuthorityId::new("0000")?))
-                    .with_created_by_authority(
-                        CreatedByAuthority::new(AuthorityId::new("0000")?)
-                            .with_name("De politieke partij"),
-                    ),
-            )
-            .issue_date(now.date_naive())
-            .creation_date_time(now)
-            .election_identifier(NominationElectionIdentifier::try_from(*election)?)
-            .contest_identifier(if election.has_only_one_district() {
-                NominationContestIdentifier::new(ContestId::geen(), "")
-            } else if list.contains_all_districts(election) {
-                NominationContestIdentifier::new(ContestId::alle(), "")
-            } else {
-                // If there are multiple districts but this list is not linked to all districts,
-                // we always choose the first district (to avoid collisions with other lists).
-                // The full set of electoral districts can be found in the ListData.
-                let district = list.electoral_districts[0];
-                NominationContestIdentifier::new(
-                    ContestId::new(district.region_number())?,
-                    district.title(AnyLocale::Nl),
-                )
-            })
-            .affiliation(NominationAffiliation {
-                registered_name: political_group.pg_display_name()?.into(),
-                affiliation_type: StringValue::from_value(AffiliationType::StandAloneList),
-                list_data,
-                candidates: candidates
-                    .iter()
-                    .map(|c| (&c.data).try_into())
-                    .collect::<Result<Vec<_>, AppError>>()?,
-            })
-            .nominate(NominationNominate::new(nominated))
-            .build()?;
-
-        Ok(Self(nomination))
-    }
-
-    pub fn build(self) -> Result<Vec<u8>, AppError> {
-        Ok(EML::from_nomination_doc(self.0).write_eml_root(true, true)?)
-    }
+    Ok(EML::from_nomination_doc(nomination).write_eml_root(true, true)?)
 }
 
 #[cfg(test)]
@@ -424,21 +418,19 @@ mod tests {
         let list = create_sample_list(&store).await.unwrap();
 
         // test
-        let eml = Eml210::new(
+        let eml = eml210(
             &store,
             &context.election,
             &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
-        .unwrap()
-        .build()
         .unwrap();
 
         // verify
         check_eml(
             &String::from_utf8(eml).unwrap(),
-            include_str!("../testdata/ek27.eml.xml"),
+            include_str!("testdata/ek27.eml.xml"),
         )
         .await;
     }
@@ -454,21 +446,19 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let eml = Eml210::new(
+        let eml = eml210(
             &store,
             &context.election,
             &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
-        .unwrap()
-        .build()
         .unwrap();
 
         // verify
         check_eml(
             &String::from_utf8(eml).unwrap(),
-            include_str!("../testdata/ps27-1.eml.xml"),
+            include_str!("testdata/ps27-1.eml.xml"),
         )
         .await;
     }
@@ -485,21 +475,19 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let eml = Eml210::new(
+        let eml = eml210(
             &store,
             &context.election,
             &store.get_political_group(),
             list.id(),
             ModelLocale::Nl,
         )
-        .unwrap()
-        .build()
         .unwrap();
 
         // verify
         check_eml(
             &String::from_utf8(eml).unwrap(),
-            include_str!("../testdata/ps27-2.eml.xml"),
+            include_str!("testdata/ps27-2.eml.xml"),
         )
         .await;
     }
@@ -515,21 +503,19 @@ mod tests {
         list.list.update_districts(&store).await.unwrap();
 
         // test
-        let eml = Eml210::new(
+        let eml = eml210(
             &store,
             &context.election,
             &store.get_political_group(),
             list.id(),
             ModelLocale::Fry,
         )
-        .unwrap()
-        .build()
         .unwrap();
 
         // verify
         check_eml(
             &String::from_utf8(eml).unwrap(),
-            include_str!("../testdata/ws27.eml.xml"),
+            include_str!("testdata/ws27.eml.xml"),
         )
         .await;
     }

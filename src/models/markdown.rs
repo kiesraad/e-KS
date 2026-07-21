@@ -91,3 +91,41 @@ macro_rules! model_template {
     };
 }
 pub(super) use model_template;
+
+#[cfg(test)]
+mod tests {
+    use super::filters;
+
+    fn upper_alpha(index: usize) -> String {
+        filters::upper_alpha::default()
+            .execute(&index, askama::NO_VALUES)
+            .unwrap()
+    }
+
+    #[test]
+    fn upper_alpha_single_letters() {
+        assert_eq!(upper_alpha(1), "A");
+        assert_eq!(upper_alpha(2), "B");
+        assert_eq!(upper_alpha(26), "Z");
+    }
+
+    #[test]
+    fn upper_alpha_double_letters() {
+        assert_eq!(upper_alpha(27), "AA");
+        assert_eq!(upper_alpha(28), "AB");
+        assert_eq!(upper_alpha(52), "AZ");
+        assert_eq!(upper_alpha(53), "BA");
+        assert_eq!(upper_alpha(702), "ZZ");
+    }
+
+    #[test]
+    fn upper_alpha_triple_letters() {
+        assert_eq!(upper_alpha(703), "AAA");
+        assert_eq!(upper_alpha(704), "AAB");
+    }
+
+    #[test]
+    fn upper_alpha_zero_is_empty() {
+        assert_eq!(upper_alpha(0), "");
+    }
+}

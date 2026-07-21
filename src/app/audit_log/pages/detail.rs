@@ -1,8 +1,6 @@
 use crate::{
-    core::ModelLocale,
-    finalise::{AllProblems, DocumentData},
-    structs::audit_log::FieldChange,
-    utils::format_hash,
+    core::ModelLocale, finalise::AllProblems, models::documents::DocumentData,
+    structs::audit_log::FieldChange, utils::format_hash,
 };
 use askama::Template;
 use axum::response::IntoResponse;

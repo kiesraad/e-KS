@@ -9,7 +9,7 @@ use super::{
     layout::markdown_document,
     markdown::{filters, model_template},
 };
-use crate::AppError;
+use crate::{AppError, core::election};
 
 #[derive(Debug)]
 pub struct I4 {
@@ -37,6 +37,18 @@ pub struct PublicSession {
     pub time: String,
     pub chair: String,
     pub members: Vec<String>,
+}
+
+impl From<election::PublicSession> for PublicSession {
+    fn from(session: election::PublicSession) -> Self {
+        PublicSession {
+            location: session.location.to_string(),
+            date: session.formatted_date(),
+            time: session.formatted_time(),
+            chair: session.chair.to_string(),
+            members: session.members.iter().map(|m| m.to_string()).collect(),
+        }
+    }
 }
 
 /// Omissions for one list, identified by its designation and district(s).

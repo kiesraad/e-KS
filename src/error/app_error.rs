@@ -23,11 +23,6 @@ pub enum AppError {
     UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
-    /// PDF serialization failed (most commonly PDF/A-2A or PDF/UA-1 validation,
-    /// e.g. a character without a glyph in the embedded fonts).
-    PdfError(textris_pdf::render::RenderError),
-    /// A PDF model Markdown template did not parse as the textris-pdf dialect.
-    MarkdownError(textris_pdf::markdown::MarkdownParseError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
 
@@ -44,9 +39,10 @@ pub enum AppError {
     ServerError(std::io::Error),
     UpstreamError(reqwest::Error),
 
-    /// Missing data when generating a PDF.
+    /// Missing or invalid data when generating a PDF.
     IncompleteData(&'static str),
-
+    PdfError(textris_pdf::render::RenderError),
+    MarkdownError(textris_pdf::markdown::MarkdownParseError),
     EmlError(eml_nl::EMLError),
 
     AuthError(auth_service::error::AuthError),

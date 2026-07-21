@@ -8,7 +8,7 @@ use crate::{
     csb::examination::pages::CsbI4DownloadPath,
     models::{
         Pdf,
-        i4::{I4, OmissionGroup, PublicSession},
+        i4::{I4, OmissionGroup},
     },
     store::StoreRegistry,
     utils::no_cache_headers,
@@ -49,20 +49,13 @@ pub async fn gen_i4(
         }
     }
 
-    let session = election.public_session();
     let model = I4 {
         election_name: election.formal_title(ModelLocale::Nl),
         election_date: election
             .election_date()
             .format(DEFAULT_DATE_FORMAT)
             .to_string(),
-        public_session: PublicSession {
-            location: session.location.to_string(),
-            date: session.formatted_date(),
-            time: session.formatted_time(),
-            chair: session.chair.to_string(),
-            members: session.members.iter().map(|m| m.to_string()).collect(),
-        },
+        public_session: election.public_session().into(),
         found_omissions,
         recovered_omissions: Vec::new(),
         invalid_lists: Vec::new(),
