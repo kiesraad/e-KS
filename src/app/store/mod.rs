@@ -90,7 +90,8 @@ impl StoreData for AppStoreData {
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
             | AppEvent::HideDownloadWarning
-            | AppEvent::ExportCsv { .. } => {}
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::Import { .. } => {}
         }
     }
 
@@ -419,6 +420,19 @@ impl AppStore {
         match &self.target {
             WriteTarget::Own => None,
             WriteTarget::PaperCorrections(csb_store) => Some(csb_store.stream_id),
+        }
+    }
+
+    /// The imported snapshot the paper corrections were applied on top of,
+    /// when this handle is in paper-corrections mode. Serves as the base
+    /// state for audit-log replays, since the correction events alone do not
+    /// reconstruct the imported entities.
+    pub fn imported_snapshot(&self) -> Option<AppStoreData> {
+        match &self.target {
+            WriteTarget::Own => None,
+            WriteTarget::PaperCorrections(csb_store) => {
+                Some(csb_store.data.read().imported_data.clone())
+            }
         }
     }
 }

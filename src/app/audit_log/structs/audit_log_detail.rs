@@ -1,8 +1,8 @@
 //! Detailed (per-field) view of a single audit-log event.
 //!
-//! `AuditLogDetail::compute` replays the event stream to reconstruct the state
-//! before and after the target event, then diffs the flattened JSON
-//! representations to produce a list of `FieldChange`s.
+//! `AuditLogDetail::compute` replays the event stream on top of a base state
+//! to reconstruct the state before and after the target event, then diffs the
+//! flattened JSON representations to produce a list of `FieldChange`s.
 
 use std::collections::BTreeMap;
 
@@ -70,9 +70,11 @@ pub struct AuditLogDetail {
 }
 
 impl AuditLogDetail {
-    /// Compute the detail view for a specific event by replaying the event log.
-    /// Returns `None` if the event id is not found.
+    /// Compute the detail view for a specific event by replaying the event log
+    /// on top of `base`: the imported snapshot in paper-corrections mode, an
+    /// empty projection otherwise. Returns `None` if the event id is not found.
     pub fn compute(
+        base: &AppStoreData,
         events: &[StoreEvent<AppEvent>],
         target_event_id: usize,
         locale: Locale,
@@ -80,8 +82,8 @@ impl AuditLogDetail {
         let target_index = events.iter().position(|e| e.event_id == target_event_id)?;
         let target_event = &events[target_index];
 
-        let state_before = replay(&events[..target_index]);
-        let state_after = replay(&events[..=target_index]);
+        let state_before = replay(base, &events[..target_index]);
+        let state_after = replay(base, &events[..=target_index]);
 
         let (old_json, new_json) =
             extract_old_new(&target_event.payload, &state_before, &state_after);
@@ -109,8 +111,8 @@ impl AuditLogDetail {
     }
 }
 
-fn replay(events: &[StoreEvent<AppEvent>]) -> AppStoreData {
-    let mut state = AppStoreData::default();
+fn replay(base: &AppStoreData, events: &[StoreEvent<AppEvent>]) -> AppStoreData {
+    let mut state = base.clone();
     for event in events {
         state.apply(event.clone());
     }
@@ -530,7 +532,7 @@ mod tests {
         let person = sample_person(PersonId::new());
         let events = vec![StoreEvent::new(1, AppEvent::CreatePerson(person))];
 
-        let detail = AuditLogDetail::compute(&events, 1, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 1, Locale::En).unwrap();
         assert_eq!(detail.event_id, 1);
         assert_eq!(detail.description, "Created person");
         assert!(!detail.changes.is_empty());
@@ -554,13 +556,38 @@ mod tests {
             StoreEvent::new(2, AppEvent::UpdatePerson(updated_person)),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 2, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 2, Locale::En).unwrap();
         let first_name_change = detail
             .changes
             .iter()
             .find(|c| c.field() == "First name")
             .expect("should have first_name change");
         assert_eq!(first_name_change.new_value(), "Updated");
+    }
+
+    /// Paper-corrections case: the updated person exists only in the base
+    /// (imported) state, not in the event stream itself.
+    #[test]
+    fn compute_update_diffs_against_the_base_state() {
+        let person = sample_person(PersonId::new());
+        let mut base = AppStoreData::default();
+        base.persons.insert(person.id, person.clone());
+
+        let mut updated = person.clone();
+        updated.name = FullName {
+            first_name: Some("Updated".parse().unwrap()),
+            ..person.name.clone()
+        };
+        let events = vec![StoreEvent::new(2, AppEvent::UpdatePerson(updated))];
+
+        let detail = AuditLogDetail::compute(&base, &events, 2, EN).unwrap();
+        let change = detail
+            .changes
+            .iter()
+            .find(|c| c.field() == "First name")
+            .expect("first name change");
+        assert_eq!(change.old_value(), "Henk");
+        assert_eq!(change.new_value(), "Updated");
     }
 
     #[test]
@@ -573,7 +600,7 @@ mod tests {
             StoreEvent::new(2, AppEvent::DeletePerson { person_id }),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 2, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 2, Locale::En).unwrap();
         assert!(!detail.changes.is_empty());
         for change in &detail.changes {
             change.assert_no_new();
@@ -586,13 +613,13 @@ mod tests {
             1,
             AppEvent::UpdatePoliticalGroup(sample_political_group()),
         )];
-        assert!(AuditLogDetail::compute(&events, 999, Locale::En).is_none());
+        assert!(AuditLogDetail::compute(&empty_state(), &events, 999, Locale::En).is_none());
     }
 
     #[test]
     fn compute_returns_none_for_empty_events() {
         let events: Vec<StoreEvent<AppEvent>> = vec![];
-        assert!(AuditLogDetail::compute(&events, 1, Locale::En).is_none());
+        assert!(AuditLogDetail::compute(&empty_state(), &events, 1, Locale::En).is_none());
     }
 
     #[test]
@@ -607,7 +634,7 @@ mod tests {
             },
         )];
 
-        let detail = AuditLogDetail::compute(&events, 1, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 1, Locale::En).unwrap();
         for change in &detail.changes {
             change.assert_no_old();
         }
@@ -630,7 +657,7 @@ mod tests {
             ),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 2, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 2, Locale::En).unwrap();
         let districts: Vec<_> = detail
             .changes
             .iter()
@@ -670,7 +697,7 @@ mod tests {
             ),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 5, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 5, Locale::En).unwrap();
         let candidate_changes: Vec<_> = detail
             .changes
             .iter()
@@ -714,7 +741,7 @@ mod tests {
             StoreEvent::new(2, AppEvent::UpdatePerson(updated)),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 2, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 2, Locale::En).unwrap();
         let change = detail
             .changes
             .iter()
@@ -745,7 +772,7 @@ mod tests {
             ),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 3, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 3, Locale::En).unwrap();
         let change = detail
             .changes
             .iter()
@@ -778,7 +805,9 @@ mod tests {
             AppEvent::CreateCandidateList(list),
         ));
 
-        let detail = AuditLogDetail::compute(&events, persons.len() + 1, Locale::En).unwrap();
+        let detail =
+            AuditLogDetail::compute(&empty_state(), &events, persons.len() + 1, Locale::En)
+                .unwrap();
         let candidate_fields: Vec<&str> = detail
             .changes
             .iter()
@@ -821,7 +850,7 @@ mod tests {
             ),
         ];
 
-        let detail = AuditLogDetail::compute(&events, 3, Locale::En).unwrap();
+        let detail = AuditLogDetail::compute(&empty_state(), &events, 3, Locale::En).unwrap();
 
         let created_change = detail
             .changes
