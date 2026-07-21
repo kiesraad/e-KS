@@ -24,9 +24,40 @@ use crate::{
 
 /// Form backing the correction overlay. A single free-text value is submitted
 /// and validated as the appropriate typed value in the handler.
+/// The `date_of_birth` alias allows the date-input JS to submit under its
+/// native field name while the handler reads it as `value`.
 #[derive(Deserialize, Debug, Default)]
 pub struct CorrectionForm {
+    #[serde(alias = "date_of_birth")]
     pub value: String,
+}
+
+/// Which type of input to render in the correction overlay.
+pub enum CorrectionFieldType {
+    Text,
+    Initials,
+    DateOfBirth,
+    PlaceOfResidence,
+}
+
+impl From<CandidateCorrectionField> for CorrectionFieldType {
+    fn from(field: CandidateCorrectionField) -> Self {
+        match field {
+            CandidateCorrectionField::Initials => Self::Initials,
+            CandidateCorrectionField::LastName => Self::Text,
+            CandidateCorrectionField::DateOfBirth => Self::DateOfBirth,
+            CandidateCorrectionField::PlaceOfResidence => Self::PlaceOfResidence,
+        }
+    }
+}
+
+/// Display arguments for the correction overlay, grouped to keep
+/// `render_correction` within the argument-count limit.
+struct CorrectionDisplay {
+    label: String,
+    imported_value: String,
+    paper_corrected_value: Option<String>,
+    field_type: CorrectionFieldType,
 }
 
 #[derive(Template)]
@@ -34,12 +65,13 @@ pub struct CorrectionForm {
 struct CsbCorrectionTemplate {
     overlay: Overlay,
     close_action: String,
-    /// Translated label for the field being corrected.
+    /// Translated label for the field being corrected
     label: String,
-    /// The value from the original imported data.
+    /// The value from the original imported data
     imported_value: String,
-    /// The paper-corrected value, shown only when it differs from the imported.
+    /// The paper-corrected value, shown only when it differs from the imported
     paper_corrected_value: Option<String>,
+    field_type: CorrectionFieldType,
     form: FormData<CorrectionForm>,
 }
 
@@ -51,39 +83,18 @@ pub async fn display_name_correction(
     Query(query): Query<QueryParamState>,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected_store = store.paper_corrected();
     let locale = context.session.locale;
-
-    let imported_value = store
-        .get_imported_political_group()
-        .csb_display_name(store.first_imported_candidate_name().as_ref());
-    let paper_corrected_value = {
-        let corrected = corrected_store
-            .get_political_group()
-            .csb_display_name(corrected_store.first_candidate_name().as_ref());
-        if corrected != imported_value {
-            Some(corrected)
-        } else {
-            None
-        }
-    };
-    let prefill = store
-        .get_corrected_display_name()
-        .map(|dn| dn.to_string())
-        .unwrap_or_else(|| {
-            paper_corrected_value
-                .clone()
-                .unwrap_or_else(|| imported_value.clone())
-        });
-
+    let field_values = FieldValues::for_display_name(&store);
+    let value = field_values.prefill();
     Ok(render_correction(
         context,
         query,
         political_group.general_information_path().to_string(),
-        crate::trans!("political_group.display_name", locale),
-        imported_value,
-        paper_corrected_value,
-        FormData::new_with_data(CorrectionForm { value: prefill }),
+        field_values.into_display(
+            crate::trans!("political_group.display_name", locale),
+            CorrectionFieldType::Text,
+        ),
+        FormData::new_with_data(CorrectionForm { value }),
     ))
 }
 
@@ -100,31 +111,16 @@ pub async fn display_name_correction_submit(
     let locale = context.session.locale;
 
     match form.value.parse::<DisplayName>() {
-        Err(err) => {
-            let corrected_store = store.paper_corrected();
-            let imported_value = store
-                .get_imported_political_group()
-                .csb_display_name(store.first_imported_candidate_name().as_ref());
-            let paper_corrected_value = {
-                let corrected = corrected_store
-                    .get_political_group()
-                    .csb_display_name(corrected_store.first_candidate_name().as_ref());
-                if corrected != imported_value {
-                    Some(corrected)
-                } else {
-                    None
-                }
-            };
-            Ok(render_correction(
-                context,
-                query,
-                close_action,
+        Err(err) => Ok(render_correction(
+            context,
+            query,
+            close_action,
+            FieldValues::for_display_name(&store).into_display(
                 crate::trans!("political_group.display_name", locale),
-                imported_value,
-                paper_corrected_value,
-                FormData::new_with_errors(form, vec![("value".to_string(), err)]),
-            ))
-        }
+                CorrectionFieldType::Text,
+            ),
+            FormData::new_with_errors(form, vec![("value".to_string(), err)]),
+        )),
         Ok(display_name) => {
             store
                 .update(crate::CsbEvent::UpdateCorrection(Correction::DisplayName(
@@ -148,32 +144,14 @@ pub async fn person_correction(
     let close_action = return_path(&political_group, path.person_id, list_query.list);
     let locale = context.session.locale;
 
-    let imported = store.get_imported_person(path.person_id);
-    let paper_corrected = store.paper_corrected().get_person(path.person_id).ok();
-    let ex_officio = store.get_corrected_person(path.person_id);
-
-    let field_values = FieldValues::build(
-        path.field,
-        imported.as_ref(),
-        paper_corrected.as_ref(),
-        ex_officio.as_ref(),
-    );
-
-    let prefill = field_values.current_correction.unwrap_or_else(|| {
-        field_values
-            .paper_corrected
-            .clone()
-            .unwrap_or_else(|| field_values.imported.clone())
-    });
-
+    let field_values = FieldValues::for_person(&store, path.person_id, path.field);
+    let value = field_values.prefill();
     Ok(render_correction(
         context,
         query,
         close_action,
-        field_label(path.field, locale),
-        field_values.imported,
-        field_values.paper_corrected,
-        FormData::new_with_data(CorrectionForm { value: prefill }),
+        field_values.into_person_display(path.field, locale),
+        FormData::new_with_data(CorrectionForm { value }),
     ))
 }
 
@@ -193,26 +171,14 @@ pub async fn person_correction_submit(
     let correction = parse_person_correction(path.field, &form.value);
 
     match correction {
-        Err(err) => {
-            let imported = store.get_imported_person(path.person_id);
-            let paper_corrected = store.paper_corrected().get_person(path.person_id).ok();
-            let ex_officio = store.get_corrected_person(path.person_id);
-            let field_values = FieldValues::build(
-                path.field,
-                imported.as_ref(),
-                paper_corrected.as_ref(),
-                ex_officio.as_ref(),
-            );
-            Ok(render_correction(
-                context,
-                query,
-                close_action,
-                field_label(path.field, locale),
-                field_values.imported,
-                field_values.paper_corrected,
-                FormData::new_with_errors(form, vec![("value".to_string(), err)]),
-            ))
-        }
+        Err(err) => Ok(render_correction(
+            context,
+            query,
+            close_action,
+            FieldValues::for_person(&store, path.person_id, path.field)
+                .into_person_display(path.field, locale),
+            FormData::new_with_errors(form, vec![("value".to_string(), err)]),
+        )),
         Ok(person_correction) => {
             store
                 .update(crate::CsbEvent::UpdateCorrection(Correction::Person(
@@ -238,25 +204,6 @@ fn return_path(
             .candidate_path(&list_id, &person_id)
             .to_string(),
         None => political_group.examination_path().to_string(),
-    }
-}
-
-/// Translated label for a correction field, reusing the existing person-field
-/// translation keys.
-fn field_label(field: CandidateCorrectionField, locale: crate::Locale) -> String {
-    match field {
-        CandidateCorrectionField::Initials => {
-            crate::trans!("person.fields.initials", locale)
-        }
-        CandidateCorrectionField::LastName => {
-            crate::trans!("person.fields.last_name", locale)
-        }
-        CandidateCorrectionField::DateOfBirth => {
-            crate::trans!("person.fields.date_of_birth", locale)
-        }
-        CandidateCorrectionField::PlaceOfResidence => {
-            crate::trans!("person.fields.place_of_residence", locale)
-        }
     }
 }
 
@@ -291,35 +238,78 @@ struct FieldValues {
 }
 
 impl FieldValues {
-    fn build(
-        field: CandidateCorrectionField,
-        imported: Option<&Person>,
-        paper_corrected: Option<&Person>,
-        ex_officio: Option<&Person>,
-    ) -> Self {
-        let imported_val = imported
-            .map(|p| extract_field(field, p))
+    fn for_display_name(store: &CsbStore) -> Self {
+        let imported = store
+            .get_imported_political_group()
+            .display_name
+            .as_ref()
+            .map(|d| d.to_string())
             .unwrap_or_default();
-
-        let paper_corrected_val = paper_corrected
-            .map(|p| extract_field(field, p))
-            .filter(|v| v != &imported_val)
-            .filter(|v| !v.is_empty());
-
-        let current_correction = ex_officio.and_then(|p| {
-            let corrected_val = extract_field(field, p);
-            if corrected_val.is_empty() {
-                None
-            } else {
-                Some(corrected_val)
-            }
-        });
-
+        let paper_corrected = store
+            .paper_corrected()
+            .get_political_group()
+            .display_name
+            .as_ref()
+            .map(|d| d.to_string())
+            .filter(|d| d != &imported);
+        let current_correction = store.get_corrected_display_name().map(|d| d.to_string());
         Self {
-            imported: imported_val,
-            paper_corrected: paper_corrected_val,
+            imported,
+            paper_corrected,
             current_correction,
         }
+    }
+
+    fn for_person(store: &CsbStore, person_id: PersonId, field: CandidateCorrectionField) -> Self {
+        let imported = store.get_imported_person(person_id);
+        let paper_corrected = store.paper_corrected().get_person(person_id).ok();
+        let ex_officio = store.get_corrected_person(person_id);
+
+        let imported = imported
+            .as_ref()
+            .map(|p| extract_field(field, p))
+            .unwrap_or_default();
+        let paper_corrected = paper_corrected
+            .as_ref()
+            .map(|p| extract_field(field, p))
+            .filter(|v| v != &imported)
+            .filter(|v| !v.is_empty());
+        let current_correction = ex_officio
+            .as_ref()
+            .map(|p| extract_field(field, p))
+            .filter(|v| !v.is_empty());
+
+        Self {
+            imported,
+            paper_corrected,
+            current_correction,
+        }
+    }
+
+    /// The value to pre-fill the form with: ex-officio correction if one
+    /// exists, otherwise paper-corrected, otherwise imported.
+    fn prefill(&self) -> String {
+        self.current_correction
+            .clone()
+            .or_else(|| self.paper_corrected.clone())
+            .unwrap_or_else(|| self.imported.clone())
+    }
+
+    fn into_display(self, label: String, field_type: CorrectionFieldType) -> CorrectionDisplay {
+        CorrectionDisplay {
+            label,
+            imported_value: self.imported,
+            paper_corrected_value: self.paper_corrected,
+            field_type,
+        }
+    }
+
+    fn into_person_display(
+        self,
+        field: CandidateCorrectionField,
+        locale: crate::Locale,
+    ) -> CorrectionDisplay {
+        self.into_display(field.label(locale), field.into())
     }
 }
 
@@ -345,18 +335,17 @@ fn render_correction(
     context: CsbContext,
     query: QueryParamState,
     close_action: String,
-    label: String,
-    imported_value: String,
-    paper_corrected_value: Option<String>,
+    display: CorrectionDisplay,
     form: FormData<CorrectionForm>,
 ) -> Response {
     HtmlTemplate(
         CsbCorrectionTemplate {
             overlay: Overlay::new(&query),
             close_action,
-            label,
-            imported_value,
-            paper_corrected_value,
+            label: display.label,
+            imported_value: display.imported_value,
+            paper_corrected_value: display.paper_corrected_value,
+            field_type: display.field_type,
             form,
         },
         context,

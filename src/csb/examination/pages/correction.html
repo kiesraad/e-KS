@@ -21,6 +21,78 @@
           </dl>
         </div>
         <div class="form-row">
+          {% match field_type %}
+          {% when CorrectionFieldType::Initials %}
+          <p class="form-field form-field-sm">
+            <label for="value">{{ "csb.correction.form.value_label"|trans }}</label>
+            <input type="text"
+                   name="value"
+                   id="value"
+                   value="{{ form.data.value }}"
+                   class="initials-input"
+                   autocomplete="off" />
+            <label class="autoformat">
+              <input type="checkbox" checked tabindex="-1" />
+              <span>{{ "person.autoformat_initials"|trans }}</span>
+            </label>
+            {% for error in form|error("value") %}<span class="error">{{ error }}</span>{% endfor %}
+          </p>
+          {% when CorrectionFieldType::DateOfBirth %}
+          <p class="form-field form-field-md">
+            <label for="date_of_birth">{{ "csb.correction.form.value_label"|trans }}</label>
+            <span class="date-input-row">
+              <span class="date-separate hidden">
+                <input type="text"
+                       class="day"
+                       placeholder="dd"
+                       name="day_of_birth"
+                       id="day_of_birth"
+                       inputmode="numeric" />
+                <span class="dash">-</span>
+                <input type="text"
+                       class="month"
+                       placeholder="mm"
+                       name="month_of_birth"
+                       id="month_of_birth"
+                       aria-label="{{ "person.fields.month"|trans }}"
+                       inputmode="numeric" />
+                <span class="dash">-</span>
+                <input type="text"
+                       class="year"
+                       placeholder="{{ "person.fields.year_placeholder"|trans }}"
+                       name="year_of_birth"
+                       id="year_of_birth"
+                       aria-label="{{ "person.fields.year"|trans }}"
+                       inputmode="numeric" />
+              </span>
+              <input type="text"
+                     placeholder=" "
+                     name="date_of_birth"
+                     id="date_of_birth"
+                     value="{{ form.data.value }}"
+                     aria-label="{{ "person.fields.date_of_birth"|trans }}"
+                     inputmode="numeric" />
+            </span>
+            {% for error in form|error("value") %}<span class="error">{{ error }}</span>{% endfor %}
+          </p>
+          {% when CorrectionFieldType::PlaceOfResidence %}
+          {% let election = "election"|election_value %}
+          <p class="form-field">
+            <label for="locality">{{ "csb.correction.form.value_label"|trans }}</label>
+            <input type="text"
+                   placeholder=" "
+                   name="value"
+                   id="locality"
+                   value="{{ form.data.value }}"
+                   autocomplete="off" />
+            <span id="locality-suggestion"
+                  class="suggestion with-municipalities{% if election.frisian_export_allowed() %} frisian-aliases-allowed{% endif %} hidden">
+              {{ "person.fields.locality_suggestion"|trans }}
+              <button type="button" id="locality-suggestion-name"></button>
+            </span>
+            {% for error in form|error("value") %}<span class="error">{{ error }}</span>{% endfor %}
+          </p>
+          {% when CorrectionFieldType::Text %}
           <p class="form-field">
             <label for="value">{{ "csb.correction.form.value_label"|trans }}</label>
             <input type="text"
@@ -30,9 +102,10 @@
                    autocomplete="off" />
             {% for error in form|error("value") %}<span class="error">{{ error }}</span>{% endfor %}
           </p>
-        </div>
-      </fieldset>
-      {% include "pg/common/components/submit.html" %}
-    </div>
+        {% endmatch %}
+      </div>
+    </fieldset>
+    {% include "pg/common/components/submit.html" %}
   </div>
+</div>
 {% endblock %}

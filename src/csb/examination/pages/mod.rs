@@ -151,6 +151,17 @@ pub enum CandidateCorrectionField {
     PlaceOfResidence,
 }
 
+impl CandidateCorrectionField {
+    pub fn label(self, locale: crate::Locale) -> String {
+        match self {
+            Self::Initials => crate::trans!("person.fields.initials", locale),
+            Self::LastName => crate::trans!("person.fields.last_name", locale),
+            Self::DateOfBirth => crate::trans!("person.fields.date_of_birth", locale),
+            Self::PlaceOfResidence => crate::trans!("person.fields.place_of_residence", locale),
+        }
+    }
+}
+
 impl std::str::FromStr for CandidateCorrectionField {
     type Err = &'static str;
 
