@@ -5,7 +5,7 @@
   {% let max_candidates = "max_candidates"|integer_value %}
   {% let election = "election"|election_value %}
   <div class="finalise">
-    <div class="finalise-header">
+    <div class="content-header">
       <h3>{{ "finalise.header.title"|trans }}</h3>
       <p>{{ "finalise.header.description"|trans }}</p>
     </div>
@@ -225,7 +225,7 @@
         </div>
       </div>
     </div>
-    <div class="finalise-header">
+    <div class="content-header">
       <h3>{{ "finalise.follow_up_steps.title"|trans }}</h3>
       <p>{{ "finalise.follow_up_steps.description"|trans }}</p>
     </div>
@@ -249,7 +249,7 @@
           <p class="alert alert-info">
             {{ "finalise.delivery.only_on"|trans(&election.nomination_day_date().format("%d-%m-%Y").to_string())|safe }}
           </p>
-          <p>{{ "finalise.delivery.description"|trans }}</p>
+          <p>{{ "finalise.delivery.description"|trans |safe}}</p>
           <p>{{ "finalise.delivery.appointment"|trans }}</p>
           <address>
             Zurichtoren

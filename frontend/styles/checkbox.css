@@ -8,14 +8,16 @@
   gap: var(--space-4);
 
   &.grid {
-    --checklist-column-min-width: 25rem;
-    display: grid;
-    grid-template-columns: repeat(
-        auto-fit,
-        minmax(var(--checklist-column-min-width), 1fr)
-      );
-    align-items: start;
-    gap: var(--space-md) 0;
+    --checklist-column-min-width: 20rem;
+    display: block;
+    columns: var(--checklist-column-min-width);
+    column-gap: 0;
+    width: 100%;
+
+    > .checkbox {
+      break-inside: avoid;
+      margin-bottom: var(--space-md);
+    }
   }
 
   legend {

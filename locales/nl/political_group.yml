@@ -6,7 +6,7 @@ add_list_submitter: Lijstinleveraar toevoegen
 add_substitute_submitter: Vervanger voor het herstel van verzuimen
 authorised_agent: Gemachtigde
 authorised_agent_data: Gegevens (plv.) gemachtigde
-authorised_agent_info: Bij het centraal stembureau is een gemachtigde of plaatsvervangend gemachtigde voor de aanduiding geregistreerd. Deze persoon geeft de lijstinleveraar toestemming om de naam van de partij boven de kandidatenlijst te plaatsen. Dit gebeurt met formulier H 3-1 of H 3-2.
+authorised_agent_info: Voeg hier de statutaire naam met bijbehorende gemachtigde toe. Bij het centraal stembureau is een gemachtigde of plaatsvervangend gemachtigde voor de aanduiding geregistreerd. Deze persoon geeft de lijstinleveraar toestemming om de naam van de partij boven de kandidatenlijst te plaatsen. Dit gebeurt met formulier H 3-1 of H 3-2.
 basic_information_political_group: Gegevens politieke groepering
 blank_list_warning: U gebruikt een blanco lijst. Wijzigingen die u hier maakt hebben geen effect.
 delete_name_authorisation_warning_text: Weet u zeker dat u de machtiging voor deze statutaire naam wilt verwijderen? Deze actie kan niet ongedaan worden gemaakt.
@@ -20,9 +20,9 @@ legal_name: Volledige statutaire naam
 legal_name_data: Statutaire naam
 legal_name_data_combined: Statutaire namen
 list_submitter: Lijstinleveraar
-list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd
+list_submitter_address_info: Naar dit adres wordt de verzuimbrief verstuurd.
 list_submitter_data: Gegevens lijstinleveraar
-list_submitter_info: De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren en om verzuimen te herstellen.
+list_submitter_info: "Het centraal stembureau controleert de stukken die worden overhandigd op de dag van kandidaatstelling. Mochten hierbij verzuimen worden vastgesteld, dan ontvangt u hierover schriftelijk bericht. In het bericht dat u van het centraal stembureau ontvangt staat ook tot wanneer verzuimen kunnen worden hersteld. De lijstinleveraar is de enige persoon die bevoegd is om de kandidatenlijst in te leveren."
 list_type: Type lijstaanduiding
 names_size_hint_add_name: Voeg de statutaire naam van de partij toe.
 names_size_hint_combination: Combinaties van meerdere geregistreerde namen moeten uit minstens twee statutaire namen bestaan.
@@ -34,7 +34,7 @@ previous_election_results: "Bij de vorige {} had uw partij:"
 substitute_submitter: Vervanger voor het herstel van verzuimen
 substitute_submitter_data: Gegevens vervanger
 substitute_submitters_data: Gegevens vervangers voor het herstel van verzuimen
-substitute_submitters_info: "Het centraal stembureau controleert de stukken die worden overhandigd op de dag van kandidaatstelling. Mochten hierbij verzuimen worden vastgesteld, dan ontvangt u hierover schriftelijk bericht. In het bericht dat u van het centraal stembureau ontvangt staat ook tot wanneer verzuimen kunnen worden hersteld."
+substitute_submitters_info: Alleen de lijstinleveraar en de vervangers voor het herstel van verzuimen mogen verzuimen herstellen bij het centraal stembureau. Wij adviseren om tenminste één vervanger op te geven.
 type:
   blank_name: Blanco lijst
   blank_name_hint: Er is geen geregistreerde aanduiding.
@@ -48,6 +48,6 @@ type:
   previous_election_results_combined_hint: "Als de partijen bij de vorige verkiezing als afzonderlijke lijsten hebben meegedaan, kies dan het hoogste aantal zetels dat één van de partijen had behaald. De zetels die partijen afzonderlijk hebben behaald mogen niet bij elkaar worden opgeteld."
   previous_election_results_hint: Het aantal behaalde zetels bij de vorige verkiezing bepaalt of u ondersteuningsverklaringen moet indienen. Ook bepaalt het of het maximale aantal toegestane kandidaten op de lijst 50 of 80 is.
   registered_name: Op zichzelf staande geregistreerde naam
-  registered_name_hint: De partij neemt als één eenduidige partij deel aan de verkiezing.
+  registered_name_hint: De partij neemt deel aan de verkiezing met een geregistreerde naam.
   sixteen_or_more_seats: 16 of meer zetels
   zero_seats: "0 zetels, of niet meegedaan"

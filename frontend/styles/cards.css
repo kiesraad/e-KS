@@ -32,11 +32,13 @@
   text-wrap: balance;
 
   &:not(.card-plain):has(> a),
+  &.card-form,
   &:is(a) {
     cursor: pointer;
   }
 
   &:not(.card-plain):has(> a):hover,
+  &.card-form:hover,
   &:is(a):hover {
     --card-bg: var(--gray-25);
     --card-chevron-translate: var(--space-1);
@@ -131,6 +133,20 @@
     list-style-position: inside;
     list-style-type: disc;
     padding: 0;
+  }
+
+  /* a form whose submit button acts as the card footer */
+  &.card-form {
+    .card-footer {
+      background: none;
+      border: none;
+      cursor: pointer;
+      font: inherit;
+      font-weight: 500;
+      padding: 0;
+      text-align: left;
+      width: 100%;
+    }
   }
 
   .card-footer {

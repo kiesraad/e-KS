@@ -1,27 +1,32 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
-use rand::{RngExt, rng};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, HtmlTemplate,
     csb::{
         Omission,
-        examination::{extractors::CsbPoliticalGroup, pages::CsbGeneralInformationPath},
+        examination::{
+            extractors::CsbPoliticalGroup,
+            pages::CsbGeneralInformationPath,
+            structs::{
+                PaperCorrectedNameAuthorisation, PaperCorrectedPoliticalGroupInfo,
+                PaperCorrectedSubmitter, paper_corrected_list_submitter,
+                paper_corrected_name_authorisations, paper_corrected_substitute_submitters,
+            },
+        },
     },
     filters,
-    list_submitters::ListSubmitter,
-    name_authorisations::NameAuthorisation,
 };
 
 #[derive(Template)]
 #[template(path = "csb/examination/pages/general_information.html")]
 struct CsbGeneralInformationTemplate {
     political_group: CsbPoliticalGroup,
-    name_authorisations: Vec<NameAuthorisation>,
-    list_submitter: ListSubmitter,
-    substitute_submitters: Vec<ListSubmitter>,
-    /// Omissions added at the political group's general information level.
-    general_omissions: Vec<Omission>,
+    group_info: PaperCorrectedPoliticalGroupInfo,
+    name_authorisations: Vec<PaperCorrectedNameAuthorisation>,
+    list_submitter: Option<PaperCorrectedSubmitter>,
+    substitute_submitters: Vec<PaperCorrectedSubmitter>,
+    political_group_omissions: Vec<Omission>,
     restoration_count: usize,
 }
 
@@ -33,19 +38,23 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let name_authorisations = store.get_name_authorisations();
-    let list_submitter = store.get_list_submitter();
-    let substitute_submitters = store.get_substitute_submitters();
-    let general_omissions = store.get_general_omissions();
+    let corrected = store.paper_corrected();
+    let group_info =
+        PaperCorrectedPoliticalGroupInfo::new(&store, &corrected, context.session.locale);
+    let name_authorisations = paper_corrected_name_authorisations(&store, &corrected);
+    let list_submitter = paper_corrected_list_submitter(&store, &corrected);
+    let substitute_submitters = paper_corrected_substitute_submitters(&store, &corrected);
+    let political_group_omissions = store.get_political_group_omissions();
 
     Ok(HtmlTemplate(
         CsbGeneralInformationTemplate {
             political_group,
+            group_info,
             name_authorisations,
             list_submitter,
             substitute_submitters,
-            general_omissions,
-            restoration_count: rng().random_range(0..=20),
+            political_group_omissions,
+            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -84,6 +93,84 @@ mod tests {
         assert!(body.contains("Substitute submitters data"));
     }
 
+    /// A paper correction shows up next to the imported value: the imported
+    /// value struck through, the corrected value highlighted.
+    #[tokio::test]
+    async fn renders_corrected_value_next_to_differing_imported_value() {
+        use crate::{AppEvent, CsbEvent};
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        let stream_id = store.stream_id;
+
+        let mut corrected_group = sample_political_group();
+        corrected_group.display_name = Some("Gecorrigeerde Naam".parse().unwrap());
+        store
+            .update(CsbEvent::PaperCorrectedUpdate(Box::new(
+                AppEvent::UpdatePoliticalGroup(corrected_group),
+            )))
+            .await
+            .unwrap();
+
+        let response = overview(
+            CsbGeneralInformationPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(body.contains(r#"<s class="imported-value">Kiesraad Demo</s>"#));
+        assert!(
+            body.contains(r#"<strong class="paper-corrected-value">Gecorrigeerde Naam</strong>"#)
+        );
+    }
+
+    /// A substitute submitter deleted by the paper corrections disappears from
+    /// the page instead of rendering struck through.
+    #[tokio::test]
+    async fn hides_substitute_submitter_deleted_by_the_corrections() {
+        use crate::{
+            AppEvent, CsbEvent, list_submitters::ListSubmitterId, test_utils::sample_list_submitter,
+        };
+
+        let store = CsbStore::new_for_test();
+        store.set_political_group(sample_political_group());
+        let stream_id = store.stream_id;
+
+        let submitter = sample_list_submitter(ListSubmitterId::new());
+        {
+            let mut data = store.data.write();
+            data.imported_data.substitute_submitters = vec![submitter.clone()];
+            data.paper_corrected_data.substitute_submitters = vec![submitter.clone()];
+        }
+
+        store
+            .update(CsbEvent::PaperCorrectedUpdate(Box::new(
+                AppEvent::DeleteSubstituteSubmitter {
+                    substitute_submitter_id: submitter.id,
+                },
+            )))
+            .await
+            .unwrap();
+
+        let response = overview(
+            CsbGeneralInformationPath { stream_id },
+            CsbContext::new_test(),
+            store,
+        )
+        .await
+        .unwrap()
+        .into_response();
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        assert!(!body.contains("Bos"));
+    }
+
     #[tokio::test]
     async fn renders_without_imported_data() {
         // A fresh store has no imported political group or substitutes.
@@ -105,13 +192,13 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn renders_added_general_omissions_as_badges() {
+    async fn renders_added_political_group_omissions_as_badges() {
         use crate::csb::OmissionCategory;
 
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Deposit missing".to_string(),
             "The deposit has not been paid.".to_string(),
             String::new(),
@@ -146,7 +233,7 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let mut omission = Omission::new(
-            OmissionCategory::General,
+            OmissionCategory::PoliticalGroup,
             "Unregistered designation".to_string(),
             "The designation is not registered.".to_string(),
             String::new(),

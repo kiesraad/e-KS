@@ -45,14 +45,7 @@ impl AppStore {
     pub fn get_substitute_submitters(&self) -> Vec<ListSubmitter> {
         let data = self.data.read();
 
-        data.substitute_submitters
-            .iter()
-            .cloned()
-            .map(|mut submitter| {
-                submitter.is_substitute = true;
-                submitter
-            })
-            .collect()
+        ListSubmitter::clone_as_substitutes(&data.substitute_submitters)
     }
 
     pub fn get_person_count(&self) -> usize {
@@ -93,6 +86,28 @@ impl AppStore {
             .get(&person_id)
             .cloned()
             .ok_or(AppError::GenericNotFound)
+    }
+
+    /// One-based position of the candidate on the given list.
+    pub fn candidate_position(
+        &self,
+        list_id: CandidateListId,
+        person_id: PersonId,
+    ) -> Option<usize> {
+        let data = self.data.read();
+
+        data.candidate_lists.get(&list_id)?.position_of(person_id)
+    }
+
+    /// The name of the first candidate across all candidate lists (already
+    /// sorted by creation date), or `None` when there are no candidates.
+    pub fn first_candidate_name(&self) -> Option<crate::common::FullName> {
+        self.get_candidate_lists()
+            .into_iter()
+            .flat_map(|list| list.candidates.into_iter())
+            .next()
+            .and_then(|id| self.get_person(id).ok())
+            .map(|p| p.name)
     }
 
     pub fn get_name_authorisation(

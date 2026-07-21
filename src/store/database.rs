@@ -109,6 +109,7 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
         CREATE TABLE IF NOT EXISTS sessions (
           token TEXT PRIMARY KEY,
           stream_id UUID,
+          paper_correction_stream_id UUID,
           current_election JSONB,
           locale TEXT NOT NULL,
           last_activity TIMESTAMPTZ NOT NULL,
@@ -122,6 +123,11 @@ async fn create_sessions_table(conn: &mut sqlx::PgConnection) -> Result<(), AppE
     )
     .execute(&mut *conn)
     .await?;
+
+    // Upgrade path for databases created before paper corrections existed.
+    sqlx::query("ALTER TABLE sessions ADD COLUMN IF NOT EXISTS paper_correction_stream_id UUID")
+        .execute(&mut *conn)
+        .await?;
 
     sqlx::query(
         r#"CREATE INDEX IF NOT EXISTS sessions_last_activity_idx

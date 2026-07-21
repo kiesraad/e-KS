@@ -10,12 +10,14 @@ use crate::{
     persons::PersonId,
 };
 
+mod all_restorations;
 mod candidate;
 mod candidate_list;
 mod general_information;
 mod i4;
 mod omission;
 mod overview;
+mod paper_corrections;
 mod political_group;
 
 #[derive(TypedPath)]
@@ -44,6 +46,21 @@ pub struct CsbPoliticalGroupToggleFinishPath {
     rejection(AppError)
 )]
 pub struct CsbGeneralInformationPath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/paper-corrections", rejection(AppError))]
+pub struct CsbPaperCorrectionsStartPath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/paper-corrections/stop",
+    rejection(AppError)
+)]
+pub struct CsbPaperCorrectionsStopPath {
     pub stream_id: StreamId,
 }
 
@@ -97,6 +114,12 @@ pub struct CsbDeleteOmissionPath {
     pub omission_id: OmissionId,
 }
 
+#[derive(TypedPath, Deserialize)]
+#[typed_path("/csb/examination/{stream_id}/omissions", rejection(AppError))]
+pub struct CsbAllRestorationsPath {
+    pub stream_id: StreamId,
+}
+
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
 pub struct OmissionListQuery {
     /// The candidate list the omission dialog was opened from. Used to resolve
@@ -104,10 +127,6 @@ pub struct OmissionListQuery {
     /// candidate detail page, which is always scoped to a list.
     #[serde(skip_serializing_if = "Option::is_none")]
     pub list: Option<CandidateListId>,
-    /// When set, the omission applies to the person on every list rather than to
-    /// their candidacy on `list` (which is then only the page to return to).
-    #[serde(default, skip_serializing_if = "std::ops::Not::not")]
-    pub general: bool,
 }
 
 impl CsbPoliticalGroup {
@@ -117,14 +136,25 @@ impl CsbPoliticalGroup {
         }
     }
 
-    pub fn examination_toggle_finish_path(&self) -> impl TypedPath {
+    pub fn examination_toggle_finish_path(
+        &self,
+        redirect_to: impl std::fmt::Display,
+    ) -> impl TypedPath {
         CsbPoliticalGroupToggleFinishPath {
             stream_id: self.stream_id,
         }
+        .with_query_params(QueryParamState::redirect_to(redirect_to.to_string()))
     }
 
     pub fn general_information_path(&self) -> impl TypedPath {
         CsbGeneralInformationPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    /// Path that puts the session in paper-corrections mode for this stream.
+    pub fn start_paper_corrections_path(&self) -> impl TypedPath {
+        CsbPaperCorrectionsStartPath {
             stream_id: self.stream_id,
         }
     }
@@ -184,46 +214,20 @@ impl CsbPoliticalGroup {
         }
     }
 
-    /// Path to the dialog that adds an omission to a candidate on a specific
-    /// list. The list is carried as a query parameter so the candidate's
-    /// position on it can be resolved for the preset placeholders.
+    /// Path to the dialog that adds an omission to a candidate. The list is
+    /// carried as a query parameter so the candidate's position on it can be
+    /// resolved for the preset placeholders and to return to this page after.
     pub fn add_candidate_omission_path(
         &self,
         person: &PersonId,
         list: &CandidateListId,
-    ) -> impl TypedPath {
-        self.add_candidate_omission_path_for(person, list, false)
-    }
-
-    /// Path to the dialog that adds an omission covering the person on every
-    /// list (a general candidate omission). The `list` is carried only so the
-    /// dialog can return to the candidate detail page it was opened from.
-    pub fn add_person_omission_path(
-        &self,
-        person: &PersonId,
-        list: &CandidateListId,
-    ) -> impl TypedPath {
-        self.add_candidate_omission_path_for(person, list, true)
-    }
-
-    /// The add-omission dialog for a candidate, keeping the `list` context. A
-    /// `general` omission covers the person on every list; otherwise it is
-    /// scoped to the candidate on this list.
-    fn add_candidate_omission_path_for(
-        &self,
-        person: &PersonId,
-        list: &CandidateListId,
-        general: bool,
     ) -> impl TypedPath {
         CsbAddOmissionPath {
             stream_id: self.stream_id,
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
         }
-        .with_query_params(OmissionListQuery {
-            list: Some(*list),
-            general,
-        })
+        .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
     /// Path to the overview page listing the omissions already added for this
@@ -239,17 +243,13 @@ impl CsbPoliticalGroup {
             omission_type: OmissionType::Candidate,
             reference: (*person).into(),
         }
-        .with_query_params(OmissionListQuery {
-            list: Some(*list),
-            general: false,
-        })
+        .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
-    pub fn after_toggle_finish_examination_path(&self) -> impl TypedPath {
-        CsbPoliticalGroupPath {
+    pub fn all_restorations_path(&self) -> impl TypedPath {
+        CsbAllRestorationsPath {
             stream_id: self.stream_id,
         }
-        .with_query_params(QueryParamState::success())
     }
 }
 
@@ -260,10 +260,13 @@ pub fn router() -> Router<AppState> {
         .typed_get(political_group::overview)
         .typed_post(political_group::toggle_examination_finish)
         .typed_get(general_information::overview)
+        .typed_post(paper_corrections::start_paper_corrections)
+        .typed_post(paper_corrections::stop_paper_corrections)
         .typed_get(candidate_list::overview)
         .typed_get(candidate::overview)
         .typed_get(omission::add_omission)
         .typed_post(omission::add_omission_submit)
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
+        .typed_get(all_restorations::all_restorations)
 }

@@ -30,9 +30,11 @@ async fn setup_app() -> Result<(Router, AppStore, Session), AppError> {
 
     let state = AppState::new_for_tests_with_config(config).await;
     let stream_id = StreamId::new();
-    let store = state
-        .store_for_stream(stream_id, ElectionConfig::EK27, false)
-        .await?;
+    let store = AppStore::own(
+        state
+            .store_for_stream(stream_id, ElectionConfig::EK27, false)
+            .await?,
+    );
     sample_political_group().update(&store).await?;
 
     let mut session = Session::new_test_with_locale(Locale::En);

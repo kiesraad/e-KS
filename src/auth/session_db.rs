@@ -19,6 +19,7 @@ use crate::{
 struct SessionRow {
     token: String,
     stream_id: Option<uuid::Uuid>,
+    paper_correction_stream_id: Option<uuid::Uuid>,
     current_election: Option<serde_json::Value>,
     locale: String,
     last_activity: DateTime<Utc>,
@@ -41,10 +42,11 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     sqlx::query(
         r#"
         INSERT INTO sessions
-            (token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+            (token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
         ON CONFLICT (token) DO UPDATE SET
             stream_id = EXCLUDED.stream_id,
+            paper_correction_stream_id = EXCLUDED.paper_correction_stream_id,
             current_election = EXCLUDED.current_election,
             locale = EXCLUDED.locale,
             last_activity = EXCLUDED.last_activity,
@@ -55,6 +57,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
     )
     .bind(session.token_hash())
     .bind(session.stream_id.map(|s| s.uuid()))
+    .bind(session.paper_correction_stream_id.map(|s| s.uuid()))
     .bind(current_election_json)
     .bind(session.locale.as_str())
     .bind(session.last_activity)
@@ -72,7 +75,7 @@ pub async fn upsert(pool: &sqlx::PgPool, session: &Session) -> Result<(), AppErr
 /// Fetch a single session by its token hash.
 pub async fn load(pool: &sqlx::PgPool, token_hash: &str) -> Result<Option<Session>, AppError> {
     let row: Option<SessionRow> = sqlx::query_as(
-        r#"SELECT token, stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token
+        r#"SELECT token, stream_id, paper_correction_stream_id, current_election, locale, last_activity, saml_name_id, scope, created_at, user_agent_hash, csrf_token
            FROM sessions WHERE token = $1"#,
     )
     .bind(token_hash)
@@ -96,6 +99,7 @@ fn session_from_row(row: SessionRow) -> Result<Session, AppError> {
         last_activity: row.last_activity,
         user_agent_hash: row.user_agent_hash,
         stream_id: row.stream_id.map(StreamId::from),
+        paper_correction_stream_id: row.paper_correction_stream_id.map(StreamId::from),
         scope: Scope::from_str(&row.scope).unwrap_or_default(),
         current_election,
         locale: Locale::from_str(&row.locale).unwrap_or_default(),
@@ -134,6 +138,7 @@ mod tests {
         SessionRow {
             token: "token-hash-abc".to_string(),
             stream_id: None,
+            paper_correction_stream_id: None,
             current_election: None,
             locale: Locale::default().as_str().to_string(),
             last_activity: Utc::now(),

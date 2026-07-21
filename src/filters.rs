@@ -96,6 +96,14 @@ pub fn initials_as_printed_on_list(
 }
 
 #[askama::filter_fn]
+pub fn district_title_nl(
+    value: &ElectoralDistrict,
+    _: &dyn askama::Values,
+) -> askama::Result<String> {
+    Ok(value.title(AnyLocale::Nl).to_string())
+}
+
+#[askama::filter_fn]
 pub fn district_name(
     value: &ElectoralDistrict,
     values: &dyn askama::Values,

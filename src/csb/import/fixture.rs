@@ -21,7 +21,7 @@ pub async fn import_csb_fixture(
 
     let pg_stream_id = StreamId::new();
     let app_store = state.store_for_stream(pg_stream_id, election, true).await?;
-    let events = app_store.get_events();
+    let events = app_store.data.read().events.clone();
     let snapshot = AppStoreData::snapshot_until(&events, usize::MAX);
 
     state

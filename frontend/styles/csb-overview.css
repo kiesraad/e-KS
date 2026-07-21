@@ -251,9 +251,8 @@
     margin-top: 0;
     margin-bottom: var(--space-4);
 
-    .omission-icon {
-      background-color: var(--orange-200);
-      background-image: url("../icons/omission.svg");
+    .omission-icon,
+    .correction-icon {
       background-position: center;
       background-repeat: no-repeat;
       border-radius: var(--rounded-lg);
@@ -261,6 +260,31 @@
       height: var(--space-11);
       width: var(--space-11);
     }
+
+    .omission-icon {
+      background-color: var(--orange-200);
+      background-image: url("../icons/omission.svg");
+    }
+
+    .correction-icon {
+      background-color: var(--blue-200);
+      background-image: url("../icons/correction.svg");
+    }
+  }
+
+  .tag.link a.warning::after,
+  .tag.link a.error::after {
+    mask-image: url("../icons/arrowNarrowRight.svg");
+  }
+
+  & > h4 {
+    align-content: center;
+    height: 2.75rem;
+    text-align: left;
+    font-size: var(--font-size-xs);
+    border-bottom: 1px solid var(--gray-200);
+    padding: var(--space-2);
+    margin-bottom: var(--space-md);
   }
 
   .cards {
@@ -275,16 +299,6 @@
 
   .omission-badges {
     margin: 0;
-  }
-}
-
-.omission-cards--split {
-  .cards {
-    grid-template-columns: 1fr 1fr;
-  }
-
-  .omission-card--overview {
-    grid-column: 1 / -1;
   }
 }
 

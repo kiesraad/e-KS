@@ -49,10 +49,12 @@
   <nav class="sticky-nav">
     <div class="sticky-nav-bar">
       <div>
-        <p>{{ "candidate_list.actions.import_export"|trans }}:</p>
-        <a href="{{ full_list.list.import_path() }}"
-           class="button secondary icon-download"
-           title="{{ "candidate_list.actions.import_export"|trans }}"></a>
+        {% if !("paper_correction_mode"|value_true) %}
+          <p>{{ "candidate_list.actions.import_export"|trans }}:</p>
+          <a href="{{ full_list.list.import_path() }}"
+             class="button secondary icon-download"
+             title="{{ "candidate_list.actions.import_export"|trans }}"></a>
+        {% endif %}
       </div>
       {% if full_list.candidates.len() < crate::MAX_CANDIDATES %}
         <div>
@@ -75,9 +77,11 @@
     {% else %}
       {% let max_candidates = "max_candidates"|integer_value %}
       {% include "app/candidate_lists/components/candidates_table.html" %}
-      <p class="mt-xl">
-        <a href="{{ crate::finalise::FinalisePath{} }}" class="button">{{ "common.continue_to_finalise"|trans }}</a>
-      </p>
+      {% if !("paper_correction_mode"|value_true) %}
+        <p class="mt-xl">
+          <a href="{{ crate::finalise::FinalisePath{} }}" class="button">{{ "common.continue_to_finalise"|trans }}</a>
+        </p>
+      {% endif %}
     {% endif %}
   </section>
 {% endblock %}

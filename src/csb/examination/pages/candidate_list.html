@@ -1,4 +1,5 @@
 {% extends "csb/components/layout.html" %}
+{% import "csb/components/paper_corrected.html" as paper_corrected %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
@@ -25,8 +26,8 @@
   </div>
 {% endblock %}
 {% block header_action %}
-  <a href="{{ political_group.examination_path() }}"
-     class="button secondary">{{ "action.back"|trans }}</a>
+  {% set back_url = political_group.examination_path() %}
+  {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
 {% block content %}
   <section class="general-information candidate-list">
@@ -87,19 +88,25 @@
         <tbody>
           {% for candidate in candidates %}
             <tr class="clickable">
+              <td>{{ paper_corrected::position_badge(candidate.position, "") }}</td>
               <td>
-                <span class="badge position-badge">{{ candidate.position }}</span>
-              </td>
-              <td>
-                <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
-                {{ candidate.person|initials_as_printed_on_list }}
-              </td>
-              <td>
-                {% if let Some(place_of_residence) = candidate.person.personal_data.place_of_residence %}
-                  {{ place_of_residence }}
+                {% if candidate.name.differs() %}
+                  {{ paper_corrected::value(candidate.name) }}
+                {% else %}
+                  <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
+                  {{ candidate.person|initials_as_printed_on_list }}
                 {% endif %}
-                {% if let Some(country) = candidate.person.personal_data.country && !candidate.person.lives_in_nl() %}
-                  ({{ country }})
+              </td>
+              <td>
+                {% if candidate.residence.differs() %}
+                  {{ paper_corrected::value(candidate.residence) }}
+                {% else %}
+                  {% if let Some(place_of_residence) = candidate.person.personal_data.place_of_residence %}
+                    {{ place_of_residence }}
+                  {% endif %}
+                  {% if let Some(country) = candidate.person.personal_data.country && !candidate.person.lives_in_nl() %}
+                    ({{ country }})
+                  {% endif %}
                 {% endif %}
               </td>
               <td>

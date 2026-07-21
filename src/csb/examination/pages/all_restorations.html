@@ -1,0 +1,68 @@
+{% extends "csb/components/layout.html" %}
+{% import "app/common/components/macros.html" as macros %}
+{% block breadcrumbs %}
+  {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
+  {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
+  {{ breadcrumb(political_group.all_restorations_path() , "csb.all_restorations.title") }}
+{% endblock %}
+{% block page_title %}
+  {{ "csb.all_restorations.title"|trans }}
+{% endblock %}
+{% block header_action %}
+  {% set back_url = political_group.examination_path() %}
+  {% set include_finish_switch = true %}
+  {% set toggle_redirect_url = political_group.all_restorations_path() %}
+  {% include "csb/components/header_examination_actions.html" %}
+{% endblock %}
+{% block content %}
+  <div class="content-header mb-xxl">
+    <p>{{ "csb.all_restorations.explanation"|trans }}</p>
+  </div>
+  <div class="omission-cards mb-xl">
+    <h3>
+      <span class="omission-icon" aria-hidden="true"></span>
+      {{ "csb.omission.title"|trans }}
+    </h3>
+    <p>{{ "csb.all_restorations.omissions_explanation"|trans }}</p>
+    {% if !all_omissions.general.is_empty() %}
+      <h4>{{ "common.general_information"|trans }}</h4>
+      <ul class="tags-list">
+        {% for omission in all_omissions.general %}
+          <li class="tag link">
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% if !all_omissions.candidate_lists.is_empty() %}
+      <h4>{{ "candidate_list.title_plural"|trans }}</h4>
+      <ul class="tags-list">
+        {% for omission in all_omissions.candidate_lists %}
+          <li class="tag link">
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+    {% for candidate in all_omissions.candidates %}
+      <h4>{{ candidate.person.name.display() }}</h4>
+      <ul class="tags-list">
+        {% for omission in candidate.omissions %}
+          <li class="tag link">
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endfor %}
+    <p class="mt-md mb-sm">{{ "csb.all_restorations.add_note_explanation"|trans }}</p>
+    <button class="button secondary icon-plus">{{ "csb.all_restorations.add_note"|trans }}</button>
+  </div>
+  <div class="omission-cards">
+    <h3>
+      <span class="correction-icon" aria-hidden="true"></span>
+      {{ "csb.correction.title"|trans }}
+    </h3>
+    <p>{{ "csb.all_restorations.corrections_explanation"|trans }}</p>
+    <p class="font-italic">Under construction...</p>
+  </div>
+{% endblock %}

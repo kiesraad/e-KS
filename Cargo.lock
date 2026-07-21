@@ -879,7 +879,7 @@ dependencies = [
 
 [[package]]
 name = "eks"
-version = "0.13.0"
+version = "0.14.0"
 dependencies = [
  "aes-gcm",
  "askama",
@@ -3144,8 +3144,8 @@ dependencies = [
 
 [[package]]
 name = "textris-pdf"
-version = "0.7.0"
-source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=594bcfb6f7736c73d9472e6c49e13090537fc2fa#594bcfb6f7736c73d9472e6c49e13090537fc2fa"
+version = "0.8.0"
+source = "git+https://github.com/tweedegolf/textris-pdf.git?rev=577ea0046441c714b5ee8f6258f298215b106c40#577ea0046441c714b5ee8f6258f298215b106c40"
 dependencies = [
  "harfrust",
  "krilla",

@@ -93,6 +93,21 @@
   }
 }
 
+.paper-corrections-banner .alert {
+  align-items: center;
+  display: flex;
+  justify-content: space-between;
+  margin: 0;
+  width: 100%;
+  border-left: none;
+  border-bottom: 4px solid var(--alert-border-color);
+
+  form {
+    flex-shrink: 0;
+    margin-left: var(--space-4);
+  }
+}
+
 .download-warning-banner {
   position: fixed;
   bottom: 0;

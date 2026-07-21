@@ -3,18 +3,23 @@ action:
   examine: Onderzoeken
   finish: Afronden
 added: Toegevoegd
-all_restorations: Alle herstelacties
+all_restorations:
+  add_note: Voeg een notitie toe
+  add_note_explanation: "Voeg extra notities toe voor onderaan de verzuimbrief:"
+  corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
+  explanation: Bekijk hier alle verzuimen en correcties voordat u het onderzoek afrondt.
+  omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
+  title: Alle herstelacties
 brp:
   correct: Correct
   errors: Fouten
 candidate:
-  add_candidate_text: Voeg verzuimen toe voor deze kandidaat op alleen deze lijst
-  add_candidate_title: Kandidaat
-  add_person_text: Voeg verzuimen toe voor deze persoon op al hun lijsten
-  add_person_title: Persoon
+  add_candidate_text: Voeg verzuimen toe voor deze kandidaat
   overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
   status: Status
+correction:
+  title: Ambtshalve correctie
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:
@@ -32,6 +37,7 @@ general:
   personalia: Personalia
   status: Status
 group:
+  added_on_paper: Toegevoegd bij papieren correcties
   all_brp_errors: Alle BRP fouten
   all_brp_errors_note: Hier vindt u alle BRP fouten verzameld terug
   brp_errors:
@@ -100,8 +106,10 @@ omission:
     plural: "{} verzuimen"
     singular: 1 verzuim
   form:
+    applies_to: "Dit verzuim geldt voor:"
     description_label: I1 verzuim toevoegen
     help_text_label: Verzuimbriefnotitie toevoegen
+    placeholder_warning: De tekst bevat nog niet ingevulde placeholders.
     presets_heading: Voeg één van deze verzuimen toe
     recoverable_label: Herstelbaar verzuim
     submit: Toevoegen en sluiten
@@ -115,6 +123,12 @@ omission:
     recoverable: Herstelbaar
     title: Overzicht
   title: Verzuimen
+paper_corrections:
+  banner: "U corrigeert {}. Neem alleen correcties over die met de hand op de ingeleverde papieren documenten zijn geschreven, verder niets."
+  instruction: Neem handgeschreven correcties van de ingeleverde papieren documenten over in de geïmporteerde gegevens
+  start: Correcties overnemen
+  stop: Terug naar onderzoek
+  title: Papieren correcties
 progress: Voortgang
 status:
   approved: Goedgekeurd
