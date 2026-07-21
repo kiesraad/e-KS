@@ -11,6 +11,7 @@ use crate::{
     persons::{PersonId, UpdatePersonPath},
     political_groups::PoliticalGroupUpdatePath,
     trans,
+    utils::format_hash,
 };
 
 /// Translated label describing what the event did.
@@ -72,6 +73,7 @@ pub(super) fn event_description(event: &AppEvent, locale: Locale) -> String {
         AppEvent::ImportCandidates { .. } => {
             trans!("audit_log.event.import_csv", locale)
         }
+        AppEvent::Import { .. } => trans!("audit_log.event.import", locale),
     }
 }
 
@@ -109,6 +111,7 @@ pub(super) fn event_details(event: &AppEvent) -> String {
         AppEvent::DownloadFile { file_name, .. }
         | AppEvent::ExportCsv { file_name, .. }
         | AppEvent::ImportCandidates { file_name, .. } => file_name.clone(),
+        AppEvent::Import { hash } => format_hash(hash, true),
         AppEvent::UpdatePersonAddress { .. }
         | AppEvent::UpdatePersonRepresentative { .. }
         | AppEvent::DeletePerson { .. }
@@ -158,7 +161,9 @@ impl AppEvent {
             AppEvent::ExportCsv { list_id, .. } | AppEvent::ImportCandidates { list_id, .. } => {
                 list_id.to_string()
             }
-            AppEvent::DownloadFile { .. } | AppEvent::HideDownloadWarning => String::new(),
+            AppEvent::DownloadFile { .. }
+            | AppEvent::HideDownloadWarning
+            | AppEvent::Import { .. } => String::new(),
         }
     }
 

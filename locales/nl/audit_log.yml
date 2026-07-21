@@ -78,7 +78,6 @@ fields:
   timestamp: Tijdstip
 filter:
   all_events: Alle gebeurtenissen
-  all_streams: Alle streams
   apply: Filteren
   category:
     candidate_list: Kandidatenlijst

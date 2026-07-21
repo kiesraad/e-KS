@@ -21,10 +21,12 @@
           {{ detail.details }}
         </dd>
       {% endif %}
-      <dt>{{ "audit_log.fields.subject_id"|trans }}</dt>
-      <dd>
-        <code>{{ detail.subject_id_full }}</code>
-      </dd>
+      {% if !detail.subject_id_full.is_empty() %}
+        <dt>{{ "audit_log.fields.subject_id"|trans }}</dt>
+        <dd>
+          <code>{{ detail.subject_id_full }}</code>
+        </dd>
+      {% endif %}
       {% if !detail.subject_path.is_empty() %}
         <dt>{{ "audit_log.detail.subject_link"|trans }}</dt>
         <dd>
@@ -96,5 +98,4 @@
   {% endif %}
 </div>
 {% endblock %}
-{% block overlay_actions %}
-{% endblock %}
+{% block overlay_actions %}{% endblock %}

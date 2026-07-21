@@ -17,10 +17,6 @@
         <select name="stream" id="stream" class="form-control">
           <option value=""
                   {% if filter.stream.as_deref().unwrap_or_default().is_empty() %}selected{% endif %}>
-            {{ "audit_log.filter.all_streams"|trans }}
-          </option>
-          <option value="main"
-                  {% if filter.stream.as_deref() == Some("main") %}selected{% endif %}>
             {{ "audit_log.filter.csb_main_stream"|trans }}
           </option>
           {% for (stream_id, label) in import_streams %}

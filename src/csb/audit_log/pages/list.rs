@@ -17,10 +17,6 @@ use crate::{
 
 const PER_PAGE: usize = 20;
 
-/// `stream` filter value selecting the CSB main stream (import streams are
-/// selected by their UUID, which can never equal this marker).
-const MAIN_STREAM_FILTER: &str = "main";
-
 /// Event type categories grouped with their specific event keys, used by the
 /// filter dropdown to render `<optgroup>`s with fine-grained `<option>`s.
 ///
@@ -52,8 +48,7 @@ pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
 #[derive(Debug, Default, Clone, serde::Deserialize, serde::Serialize)]
 pub struct CsbAuditLogFilter {
     /// The stream can be:
-    /// - `None` to show all streams combined
-    /// - [`MAIN_STREAM_FILTER`] to show the CSB main stream
+    /// - `None` to show the CSB main stream
     /// - a UUID string to show that import stream
     #[serde(default)]
     #[serde(skip_serializing_if = "Option::is_none")]
@@ -129,9 +124,25 @@ pub async fn csb_audit_log(
     let active_event_type = filter.event_type.as_deref().filter(|s| !s.is_empty());
     let active_search = filter.search.as_deref().filter(|s| !s.is_empty());
 
-    let all_entries: Vec<CsbAuditLogEntry> = match active_stream {
-        // Main stream events only
-        Some(MAIN_STREAM_FILTER) => filter_events(
+    let all_entries: Vec<CsbAuditLogEntry> = if let Some(stream_id) = active_stream {
+        // Add import stream events
+        let store = import_stores
+            .iter()
+            .find(|s| s.stream_id.to_string() == stream_id)
+            .ok_or(AppError::GenericNotFound)?;
+
+        filter_events(
+            store.data.read().events.iter(),
+            store.stream_id,
+            store.csb_display_name(),
+            locale,
+            active_event_type,
+            active_search,
+        )
+        .collect()
+    } else {
+        // Add main stream events
+        filter_events(
             main_store.data.read().events.iter(),
             main_store.stream_id,
             trans!("audit_log.filter.csb_main_stream", locale),
@@ -139,51 +150,7 @@ pub async fn csb_audit_log(
             active_event_type,
             active_search,
         )
-        .collect(),
-        // A single import stream's events
-        Some(stream_id) => {
-            let store = import_stores
-                .iter()
-                .find(|s| s.stream_id.to_string() == stream_id)
-                .ok_or(AppError::GenericNotFound)?;
-
-            filter_events(
-                store.data.read().events.iter(),
-                store.stream_id,
-                store.csb_display_name(),
-                locale,
-                active_event_type,
-                active_search,
-            )
-            .collect()
-        }
-        // All streams combined: main plus every import stream, newest first
-        None => {
-            let mut entries: Vec<CsbAuditLogEntry> = filter_events(
-                main_store.data.read().events.iter(),
-                main_store.stream_id,
-                trans!("audit_log.filter.csb_main_stream", locale),
-                locale,
-                active_event_type,
-                active_search,
-            )
-            .collect();
-
-            for store in &import_stores {
-                let data = store.data.read();
-                entries.extend(filter_events(
-                    data.events.iter(),
-                    store.stream_id,
-                    store.csb_display_name(),
-                    locale,
-                    active_event_type,
-                    active_search,
-                ));
-            }
-
-            entries.sort_by_key(|entry| std::cmp::Reverse(entry.created_at));
-            entries
-        }
+        .collect()
     };
 
     let total = all_entries.len();
@@ -386,54 +353,6 @@ mod tests {
         Ok(())
     }
 
-    /// Without a stream filter the list merges the main stream and every
-    /// import stream, newest first.
-    #[tokio::test]
-    async fn shows_all_streams_by_default() -> Result<(), AppError> {
-        let main_store = CsbMainStore::new_for_test();
-        main_store
-            .update(CsbMainEvent::DeveloperLogin {
-                stream_id: CSB_MAIN_STREAM_ID,
-            })
-            .await?;
-
-        let state = AppState::new_for_tests().await;
-        let csb_store = state
-            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
-            .await?;
-        csb_store
-            .update(CsbEvent::Import {
-                hash: [0u8; 32],
-                source_stream_id: StreamId::new(),
-                snapshot: Box::new(crate::AppStoreData::default()),
-            })
-            .await?;
-        csb_store
-            .update(CsbEvent::CreateOmission(Omission::new(
-                OmissionCategory::PoliticalGroup,
-                "test".to_string(),
-                "test".to_string(),
-                "test".to_string(),
-            )))
-            .await?;
-
-        let response = call(main_store, state, no_filter()).await?;
-
-        let body = response_body_string(response).await;
-        assert!(body.contains("<td>Developer login</td>"));
-        assert!(body.contains("<td>Imported political group</td>"));
-        assert!(body.contains("<td>Created omission</td>"));
-
-        // Newest first across streams: the omission was created last, the
-        // developer login first.
-        let omission_pos = body.find("<td>Created omission</td>").unwrap();
-        let import_pos = body.find("<td>Imported political group</td>").unwrap();
-        let login_pos = body.find("<td>Developer login</td>").unwrap();
-        assert!(omission_pos < import_pos && import_pos < login_pos);
-
-        Ok(())
-    }
-
     #[tokio::test]
     async fn filters_by_main_stream() -> Result<(), AppError> {
         let main_store = CsbMainStore::new_for_test();
@@ -449,15 +368,7 @@ mod tests {
             .await?;
         csb_store.update(CsbEvent::SetFinished(true)).await?;
 
-        let response = call(
-            main_store,
-            state,
-            Query(CsbAuditLogFilter {
-                stream: Some(MAIN_STREAM_FILTER.to_string()),
-                ..Default::default()
-            }),
-        )
-        .await?;
+        let response = call(main_store, state, no_filter()).await?;
 
         let body = response_body_string(response).await;
         assert!(body.contains("<td>Developer login</td>"));

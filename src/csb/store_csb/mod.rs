@@ -43,9 +43,22 @@ impl StoreData for CsbStoreData {
         } = event;
 
         match event.payload {
-            CsbEvent::Import { snapshot, .. } => {
+            CsbEvent::Import {
+                snapshot,
+                hash: source_hash,
+                ..
+            } => {
                 self.imported_data = *snapshot;
                 self.paper_corrected_data = self.imported_data.clone();
+
+                // Record the import as event #1 of the corrected projection,
+                // so the paper-corrections audit log starts with it.
+                self.paper_corrected_data.apply(StoreEvent {
+                    event_id,
+                    payload: crate::AppEvent::Import { hash: source_hash },
+                    created_at,
+                    hash,
+                });
             }
             CsbEvent::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,

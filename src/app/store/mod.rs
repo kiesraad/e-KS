@@ -90,7 +90,8 @@ impl StoreData for AppStoreData {
             AppEvent::DeveloperLogin { .. }
             | AppEvent::DownloadFile { .. }
             | AppEvent::HideDownloadWarning
-            | AppEvent::ExportCsv { .. } => {}
+            | AppEvent::ExportCsv { .. }
+            | AppEvent::Import { .. } => {}
         }
     }
 
