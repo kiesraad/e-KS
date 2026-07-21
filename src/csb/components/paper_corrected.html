@@ -1,5 +1,9 @@
 {% macro value(v) %}
-  {% if v.differs() %}
+  {% if let Some(eo) = v.ex_officio %}
+    {% if !v.imported.is_empty() %}<s class="imported-value">{{ v.imported }}</s>{% endif %}
+    {% if v.differs() && !v.corrected.is_empty() %}<s class="imported-value">{{ v.corrected }}</s>{% endif %}
+    <strong class="ex-officio-value">{{ eo }}</strong>
+  {% else if v.differs() %}
     {% if !v.imported.is_empty() %}<s class="imported-value">{{ v.imported }}</s>{% endif %}
     {% if !v.corrected.is_empty() %}<strong class="paper-corrected-value">{{ v.corrected }}</strong>{% endif %}
   {% else %}

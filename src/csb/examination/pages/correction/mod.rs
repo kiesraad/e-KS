@@ -308,10 +308,10 @@ impl FieldValues {
 
         let current_correction = ex_officio.and_then(|p| {
             let corrected_val = extract_field(field, p);
-            if corrected_val != imported_val && !corrected_val.is_empty() {
-                Some(corrected_val)
-            } else {
+            if corrected_val.is_empty() {
                 None
+            } else {
+                Some(corrected_val)
             }
         });
 

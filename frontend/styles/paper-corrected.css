@@ -15,3 +15,7 @@
 .paper-corrected-value {
   color: var(--blue-700);
 }
+
+.ex-officio-value {
+  color: var(--red-700);
+}

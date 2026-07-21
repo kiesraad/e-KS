@@ -15,12 +15,14 @@ pub use submitter::{
     PaperCorrectedSubmitter, paper_corrected_list_submitter, paper_corrected_substitute_submitters,
 };
 
-/// An imported value paired with its paper-corrected counterpart. Identical
-/// values render as a single value; differing values render the imported
-/// value struck through, followed by the correction.
+/// An imported value paired with its paper-corrected counterpart and an
+/// optional ex-officio correction. The ex-officio layer takes precedence:
+/// when present, all prior values are struck through and the ex-officio
+/// value is shown in red.
 pub struct PaperCorrected {
     pub imported: String,
     pub corrected: String,
+    pub ex_officio: Option<String>,
 }
 
 impl PaperCorrected {
@@ -28,7 +30,13 @@ impl PaperCorrected {
         Self {
             imported: imported.into(),
             corrected: corrected.into(),
+            ex_officio: None,
         }
+    }
+
+    pub fn with_ex_officio(mut self, value: Option<String>) -> Self {
+        self.ex_officio = value.filter(|v| v != &self.corrected);
+        self
     }
 
     /// Pair one field of an imported entity with the same field of its

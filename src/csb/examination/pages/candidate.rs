@@ -40,6 +40,7 @@ pub async fn overview(
     let corrected_store = store.paper_corrected();
     let imported = store.get_imported_person(person_id);
     let corrected = corrected_store.get_person(person_id).ok();
+    let ex_officio = store.get_corrected_person(person_id);
     let candidate = imported
         .clone()
         .or_else(|| corrected.clone())
@@ -47,6 +48,7 @@ pub async fn overview(
     let details = PaperCorrectedPersonDetails::new(
         imported.as_ref(),
         corrected.as_ref(),
+        ex_officio.as_ref(),
         context.session.locale,
     );
     let position = PaperCorrected::new(

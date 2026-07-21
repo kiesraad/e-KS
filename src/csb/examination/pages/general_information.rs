@@ -37,8 +37,13 @@ pub async fn overview(
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let corrected = store.paper_corrected();
-    let group_info =
-        PaperCorrectedPoliticalGroupInfo::new(&store, &corrected, context.session.locale);
+    let ex_officio_display_name = store.get_corrected_display_name().map(|d| d.to_string());
+    let group_info = PaperCorrectedPoliticalGroupInfo::new(
+        &store,
+        &corrected,
+        ex_officio_display_name,
+        context.session.locale,
+    );
     let name_authorisations = paper_corrected_name_authorisations(&store, &corrected);
     let list_submitter = paper_corrected_list_submitter(&store, &corrected);
     let substitute_submitters = paper_corrected_substitute_submitters(&store, &corrected);
