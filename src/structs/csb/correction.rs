@@ -1,8 +1,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Locale,
     common::{DateOfBirth, DisplayName, Initials, LastName, PlaceOfResidence},
     persons::{Person, PersonId},
+    structs::audit_log::FieldChange,
+    trans,
 };
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -31,20 +34,42 @@ impl PersonCorrection {
         }
     }
 
-    pub fn details(&self, person_id: PersonId) -> String {
+    pub fn change(&self, locale: Locale) -> FieldChange {
+        let (field, new_value) = match self {
+            PersonCorrection::Initials(v) => (
+                trans!("audit_log.detail.fields.initials", locale),
+                v.to_string(),
+            ),
+            PersonCorrection::LastName(v) => (
+                trans!("audit_log.detail.fields.last_name", locale),
+                v.to_string(),
+            ),
+            PersonCorrection::DateOfBirth(v) => (
+                trans!("audit_log.detail.fields.date_of_birth", locale),
+                v.to_string(),
+            ),
+            PersonCorrection::PlaceOfResidence(v) => (
+                trans!("audit_log.detail.fields.place_of_residence", locale),
+                v.to_string(),
+            ),
+        };
+        FieldChange::Regular {
+            field,
+            old_value: String::new(),
+            new_value,
+        }
+    }
+}
+
+impl Correction {
+    pub fn change(&self, locale: Locale) -> FieldChange {
         match self {
-            PersonCorrection::Initials(initials) => {
-                format!("Person ({person_id}) initials: {initials}")
-            }
-            PersonCorrection::LastName(last_name) => {
-                format!("Person ({person_id}) last name: {last_name}")
-            }
-            PersonCorrection::DateOfBirth(date_of_birth) => {
-                format!("Person ({person_id}) date of birth: {date_of_birth}")
-            }
-            PersonCorrection::PlaceOfResidence(place_of_residence) => {
-                format!("Person ({person_id}) place of residence: {place_of_residence}")
-            }
+            Correction::DisplayName(v) => FieldChange::Regular {
+                field: trans!("audit_log.detail.fields.display_name", locale),
+                old_value: String::new(),
+                new_value: v.to_string(),
+            },
+            Correction::Person(_, person_correction) => person_correction.change(locale),
         }
     }
 }

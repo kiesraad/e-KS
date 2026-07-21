@@ -31,6 +31,10 @@ a {
   text-decoration: none;
 }
 
+pre {
+  white-space: pre-wrap;
+}
+
 .content-header {
   display: flex;
   flex-direction: column;

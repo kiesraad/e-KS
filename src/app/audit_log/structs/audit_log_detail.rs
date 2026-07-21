@@ -14,49 +14,15 @@ use crate::{
     trans,
 };
 
+use crate::structs::audit_log::FieldChange;
+
 use super::{
-    audit_log_entry::AuditLogEntry,
-    entity_refs::{EntityRef, build_ref_diffs_for_key},
-    event_payload::extract_old_new,
-    json_flatten::flatten,
+    audit_log_entry::AuditLogEntry, entity_refs::build_ref_diffs_for_key,
+    event_payload::extract_old_new, json_flatten::flatten,
 };
 
 /// Flattened-JSON keys to skip from the diff (metadata, not meaningful changes).
 const EXCLUDED_FIELDS: &[&str] = &["id", "updated_at", "created_at"];
-
-/// A single field-level change in an audit log event.
-///
-/// When the field is an entity ID (or list of IDs), `old_refs` / `new_refs`
-/// carry resolved references so the template can render abbreviated clickable
-/// links plus a human-readable description. Otherwise the raw `old_value` /
-/// `new_value` strings are rendered.
-#[cfg_attr(test, derive(Debug, PartialEq))]
-pub enum FieldChange {
-    Regular {
-        field: String,
-        old_value: String,
-        new_value: String,
-    },
-    Entities {
-        field: String,
-        old_refs: Vec<EntityRef>,
-        new_refs: Vec<EntityRef>,
-    },
-}
-
-impl FieldChange {
-    pub fn change_kind(&self) -> &'static str {
-        match self {
-            FieldChange::Regular { old_value, .. } if old_value.is_empty() => "added",
-            FieldChange::Regular { new_value, .. } if new_value.is_empty() => "removed",
-            FieldChange::Regular { .. } => "changed",
-
-            FieldChange::Entities { old_refs, .. } if old_refs.is_empty() => "added",
-            FieldChange::Entities { new_refs, .. } if new_refs.is_empty() => "removed",
-            FieldChange::Entities { .. } => "changed",
-        }
-    }
-}
 
 /// Detailed view of an audit log event, including field-level changes.
 pub struct AuditLogDetail {
@@ -258,6 +224,7 @@ mod tests {
         candidate_lists::CandidateListId,
         common::FullName,
         persons::PersonId,
+        structs::audit_log::EntityRef,
         test_utils::{sample_candidate_list, sample_person, sample_political_group},
     };
 

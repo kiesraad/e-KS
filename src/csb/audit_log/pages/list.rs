@@ -6,11 +6,11 @@ use axum::{
 
 use crate::{
     AppError, AppState, Context, CsbContext, CsbMainStore, Event, HtmlTemplate, Locale, StreamId,
-    audit_log::EventTypeCategory,
     csb::audit_log::{pages::CsbAuditLogPath, structs::CsbAuditLogEntry},
     filters,
     pagination::Pagination,
     store::StoreEvent,
+    structs::audit_log::EventTypeCategory,
     trans,
     utils::filter_query_suffix,
 };

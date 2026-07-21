@@ -95,12 +95,14 @@ impl Event for CsbEvent {
             CsbEvent::SetFinished(value) => value.to_string(),
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
-            CsbEvent::UpdateCorrection(correction) => match correction {
-                Correction::DisplayName(display_name) => {
-                    format!("Display name: {display_name}")
-                }
-                Correction::Person(person_id, correction) => correction.details(*person_id),
-            },
+            CsbEvent::UpdateCorrection(_) => String::new(),
+        }
+    }
+
+    fn changes(&self, locale: crate::Locale) -> Vec<crate::structs::audit_log::FieldChange> {
+        match self {
+            CsbEvent::UpdateCorrection(correction) => vec![correction.change(locale)],
+            _ => vec![],
         }
     }
 }

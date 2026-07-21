@@ -1,14 +1,13 @@
-//! Extract the old/new JSON snapshots for a given event, used by
-//! `AuditLogDetail::compute` to build a field-level diff.
-//!
-//! - Create events: no old state; new contains the created entity.
-//! - Update events: old is the prior entity from `state_before`; new is from
-//!   `state_after`.
-//! - Delete events: old is the entity from `state_before`; no new state.
-//! - System events: informational only; rendered as additions.
-
 use crate::{AppEvent, AppStoreData, persons::Person};
 
+/// Extract the old/new JSON snapshots for a given event, used by
+/// `AuditLogDetail::compute` to build a field-level diff.
+///
+/// - Create events: no old state; new contains the created entity.
+/// - Update events: old is the prior entity from `state_before`; new is from
+///   `state_after`.
+/// - Delete events: old is the entity from `state_before`; no new state.
+/// - System events: informational only; rendered as additions.
 pub(super) fn extract_old_new(
     event: &AppEvent,
     state_before: &AppStoreData,
@@ -263,8 +262,6 @@ mod tests {
             &before,
             &after,
         );
-        // The whole Person is serialized — this is the key change from the refactor:
-        // we no longer build a custom { name, personal_data } payload.
         assert_eq!(old, serde_json::to_value(&before_person).ok());
         assert_eq!(new, serde_json::to_value(&after_person).ok());
     }
