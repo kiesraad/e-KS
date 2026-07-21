@@ -1,5 +1,5 @@
 {% extends "csb/components/layout.html" %}
-{% import "app/common/components/macros.html" as macros %}
+{% import "pg/common/components/macros.html" as macros %}
 {% block body_class %}overlay-open{% endblock %}
 {% block overlay %}
   <div class="overlay-backdrop">
@@ -22,7 +22,7 @@
           <div class="form">
             {% block overlay_form %}{% endblock %}
             {% block overlay_actions %}
-              {% include "app/common/components/submit.html" %}
+              {% include "pg/common/components/submit.html" %}
             {% endblock %}
           </div>
         </div>

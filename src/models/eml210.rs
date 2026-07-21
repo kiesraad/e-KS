@@ -20,7 +20,7 @@ use eml_nl::{
 };
 
 use crate::{
-    AnyLocale, AppError, AppStore, ElectionConfig,
+    AnyLocale, AppError, ElectionConfig, PgStore,
     candidate_lists::{CandidateListId, FullCandidateList},
     candidates::Candidate,
     common::{Address, BsnOrNoneConfirmed, DutchAddress, FullName, Gender},
@@ -252,7 +252,7 @@ fn nomination_proposer(
 
 /// Build the EML 2.10 candidate nomination XML for a candidate list.
 pub fn eml210(
-    store: &AppStore,
+    store: &PgStore,
     election: &ElectionConfig,
     political_group: &PoliticalGroup,
     list_id: CandidateListId,
@@ -346,7 +346,7 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        AppError, AppStore, Context, ElectoralDistrict,
+        AppError, Context, ElectoralDistrict, PgStore,
         candidate_lists::{CandidateListId, FullCandidateList},
         common::CountryCode,
         core::ModelLocale,
@@ -358,7 +358,7 @@ mod tests {
         },
     };
 
-    async fn create_sample_list(store: &AppStore) -> Result<FullCandidateList, AppError> {
+    async fn create_sample_list(store: &PgStore) -> Result<FullCandidateList, AppError> {
         let list_id = CandidateListId::new();
         let mut list = sample_candidate_list(list_id);
 
@@ -412,7 +412,7 @@ mod tests {
     #[tokio::test]
     async fn ek_export() {
         // setup
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::EK27;
         let list = create_sample_list(&store).await.unwrap();
@@ -438,7 +438,7 @@ mod tests {
     #[tokio::test]
     async fn ps1_export() {
         // setup
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::PS27(crate::Province::GR);
         let mut list = create_sample_list(&store).await.unwrap();
@@ -466,7 +466,7 @@ mod tests {
     #[tokio::test]
     async fn ps2_export() {
         // setup
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::PS27(crate::Province::LI);
         let mut list = create_sample_list(&store).await.unwrap();
@@ -495,7 +495,7 @@ mod tests {
     #[tokio::test]
     async fn ws_export() {
         // setup
-        let store = AppStore::new_for_test();
+        let store = PgStore::new_for_test();
         let mut context = Context::new_test_without_db();
         context.election = ElectionConfig::WS27(crate::WaterCouncil::Fryslan);
         let mut list = create_sample_list(&store).await.unwrap();

@@ -12,7 +12,7 @@ use axum::{
 };
 
 #[derive(Template)]
-#[template(path = "app/common/pages/maintenance.html")]
+#[template(path = "pg/common/pages/maintenance.html")]
 struct MaintenanceTemplate {
     retry_path: String,
 }

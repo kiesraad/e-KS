@@ -1,0 +1,34 @@
+{% extends "pg/common/components/layout.html" %}
+{% import "pg/common/components/macros.html" as macros %}
+{% block body_class %}overlay-open{% endblock %}
+{% block overlay %}
+  <div class="overlay-backdrop">
+    <form method="post"
+          class="overlay {% if "overlay_active"|value_true %}no-animation{% else %}animation{% endif %}">
+      {{ macros::csrf_field() }}
+      <header>
+        <h2>
+          {% block overlay_title %}{% endblock %}
+        </h2>
+        <a href="{{ overlay.close_url(close_action) }}"
+           class="close-overlay"
+           aria-label="{{ "action.close"|trans }}">
+          <span>{{ "action.close"|trans }}</span>
+        </a>
+      </header>
+      {% block overlay_content %}
+        <div class="overlay-content steps">
+          {% block overlay_steps %}{% endblock %}
+          <div class="form">
+            {% block overlay_form %}{% endblock %}
+            {% block overlay_actions %}
+              {% include "pg/common/components/submit.html" %}
+            {% endblock %}
+          </div>
+        </div>
+      {% endblock %}
+      {% block overlay_footer %}{% endblock %}
+    </form>
+  </div>
+  {% block overlay_end %}{% endblock %}
+{% endblock %}

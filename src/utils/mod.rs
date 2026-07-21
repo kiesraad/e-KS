@@ -17,6 +17,7 @@ pub mod bag;
 pub mod id_newtype;
 pub mod locality_aliases;
 pub mod no_cache_headers;
+pub mod pagination;
 pub mod transparent_string;
 
 #[cfg(feature = "livereload")]

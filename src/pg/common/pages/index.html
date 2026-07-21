@@ -1,0 +1,108 @@
+{% extends "pg/common/components/layout.html" %}
+{% block header_action %}
+  {% if !("paper_correction_mode"|value_true) %}
+    <a href="{{ crate::common::SwitchElectionPath.to_string() }}"
+       class="button secondary">{{ "common.switch_election.label"|trans }}</a>
+  {% endif %}
+{% endblock %}
+{% block page_title %}
+  {% let election = "election"|election_value %}
+  {{ (&election)|election_title }}
+  {% if let Some(region) = (&election)|region_title %}- {{ region }}{% endif %}
+{% endblock %}
+{% block content %}
+  <h2 class="hidden">{{ "common.steps"|trans }}</h2>
+  <div class="cards cards-home">
+    <a class="card" href="{{ "general_information_path"|str_value }}">
+      <div class="card-header">
+        <div class="badge badge-data {{ general_problems_severity }}"></div>
+        <div>
+          <h4>{{ "common.step"|trans("1") }}</h4>
+          {% if general_problems > 0 %}
+            <p class="{{ general_problems_severity }}">
+              {% if general_problems == 1 %}
+                {{ "common.possible_problems_one"|trans }}
+              {% else %}
+                {{ "common.possible_problems"|trans(&general_problems.to_string() ) }}
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-content">
+        <h2 class="card-title">{{ "common.general_information"|trans }}</h2>
+        <ul class="card-instruction">
+          <li>{{ "common.general_information_description.basic"|trans }}</li>
+          <li>{{ "common.general_information_description.submitter"|trans }}</li>
+        </ul>
+      </div>
+      <p class="card-footer">{{ "action.manage_data"|trans }}</p>
+    </a>
+    <a href="{{ crate::candidate_lists::CandidateList::list_path() }}"
+       class="card card-candidate-list">
+      <div class="card-header">
+        <div class="badge badge-candidates-list {{ problematic_lists_severity }}"></div>
+        <div>
+          <h4>{{ "common.step"|trans("2") }}</h4>
+          {% if problematic_lists > 0 %}
+            <p class="{{ problematic_lists_severity }}">
+              {% if problematic_lists == 1 %}
+                {{ "common.lists_have_problems_one"|trans }}
+              {% else %}
+                {{ "common.lists_have_problems"|trans(&problematic_lists.to_string() ) }}
+              {% endif %}
+            </p>
+          {% else if general_list_problems > 0 %}
+            <p class="{{ problematic_lists_severity }}">
+              {% if general_list_problems == 1 %}
+                {{ "common.possible_problems_one"|trans }}
+              {% else %}
+                {{ "common.possible_problems"|trans(&general_problems.to_string() ) }}
+              {% endif %}
+            </p>
+          {% endif %}
+        </div>
+      </div>
+      <div class="card-content">
+        <h2 class="card-title">
+          {% if "multiple_candidate_lists"|value_true %}
+            {{ "candidate_list.title_plural"|trans }}
+          {% else %}
+            {{ "candidate_list.title_single"|trans }}
+          {% endif %}
+        </h2>
+        <ul class="card-instruction">
+          <li>{{ "candidate_list.candidate_list_description.add_candidate"|trans }}</li>
+          <li>{{ "candidate_list.candidate_list_description.add_candidate_list"|trans }}</li>
+        </ul>
+      </div>
+      <p class="card-footer">{{ "action.manage_candidate_lists"|trans }}</p>
+    </a>
+    {% if !("paper_correction_mode"|value_true) %}
+      <a href="{{ crate::finalise::FinalisePath{}.to_string() }}" class="card">
+        <div class="card-header">
+          <div class="badge badge-finalise"></div>
+          <div>
+            <h4>{{ "common.step"|trans("3") }}</h4>
+          </div>
+        </div>
+        <div class="card-content">
+          <h2 class="card-title">{{ "common.finalise"|trans }}</h2>
+          <ul class="card-instruction">
+            <li>{{ "common.finalise_description.review_problems"|trans }}</li>
+            <li>{{ "common.finalise_description.download_documents"|trans }}</li>
+            <li>{{ "common.finalise_description.view_follow_up_steps"|trans }}</li>
+          </ul>
+        </div>
+        <div class="alert alert-info">
+          {{ "common.finalise_instruction"|trans }}:
+          <strong>
+            {% let election = "election"|election_value %}
+            {{ election.nomination_day_date().format("%d-%m-%Y") }}
+          </strong>
+        </div>
+        <p class="card-footer">{{ "action.review_and_download"|trans }}</p>
+      </a>
+    {% endif %}
+  </div>
+{% endblock %}

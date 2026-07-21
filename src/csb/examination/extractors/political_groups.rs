@@ -4,8 +4,9 @@ use axum::{
 };
 
 use crate::{
-    AppError, CsbStore, CsbStoreData, StreamId, common::FullName, political_groups::PoliticalGroup,
+    AppError, CsbStore, CsbStoreData, StreamId,
     store::StoreRegistry,
+    structs::{common::FullName, political_groups::PoliticalGroup},
 };
 
 pub struct CsbPoliticalGroup {
@@ -61,7 +62,7 @@ mod tests {
     use axum::{body::Body, http::Request};
 
     use crate::{
-        AppState, AppStoreData, CsbEvent, ElectionConfig, list_designation::ListDesignation,
+        AppState, CsbEvent, ElectionConfig, PgStoreData, structs::list_designation::ListDesignation,
     };
 
     /// Persist a CSB stream carrying a single import event in the (in-memory)
@@ -76,7 +77,7 @@ mod tests {
             .update(CsbEvent::Import {
                 hash: [0u8; 32],
                 source_stream_id: StreamId::new(),
-                snapshot: Box::new(AppStoreData::default()),
+                snapshot: Box::new(PgStoreData::default()),
             })
             .await
             .unwrap();

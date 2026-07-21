@@ -1,5 +1,5 @@
 {% extends "csb/components/layout.html" %}
-{% import "app/common/components/macros.html" as macros %}
+{% import "pg/common/components/macros.html" as macros %}
 {% block breadcrumbs %}
   {{ breadcrumb(crate::csb::examination::CsbExaminationOverviewPath, "csb.examination") }}
   {{ breadcrumb(political_group.examination_path() , political_group.csb_display_name(), is_translatable=false) }}
