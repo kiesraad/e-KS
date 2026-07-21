@@ -14,6 +14,7 @@ fn theme() -> Theme {
     let mut theme = Theme::default();
     theme.font_size.h5 = em(1.0);
     theme.table.inset_y = em(0.2);
+    theme.table.fill_in_min_height = em(2.0);
     theme.spacing.heading_above.h3 = em(1.5);
     theme.spacing.heading_above.h4 = em(1.5);
     theme.spacing.heading_above.h5 = em(1.5);
