@@ -90,7 +90,7 @@
             <tr class="clickable">
               <td>{{ paper_corrected::position_badge(candidate.position, "") }}</td>
               <td>
-                {% if candidate.name.differs() %}
+                {% if candidate.name.differs() || candidate.name.ex_officio.is_some() %}
                   {{ paper_corrected::value(candidate.name) }}
                 {% else %}
                   <strong>{{ candidate.person.name.last_name_with_prefix_appended() }},</strong>
@@ -98,7 +98,7 @@
                 {% endif %}
               </td>
               <td>
-                {% if candidate.residence.differs() %}
+                {% if candidate.residence.differs() || candidate.residence.ex_officio.is_some() %}
                   {{ paper_corrected::value(candidate.residence) }}
                 {% else %}
                   {% if let Some(place_of_residence) = candidate.person.personal_data.place_of_residence %}
