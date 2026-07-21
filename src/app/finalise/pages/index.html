@@ -249,7 +249,7 @@
           <p class="alert alert-info">
             {{ "finalise.delivery.only_on"|trans(&election.nomination_day_date().format("%d-%m-%Y").to_string())|safe }}
           </p>
-          <p>{{ "finalise.delivery.description"|trans }}</p>
+          <p>{{ "finalise.delivery.description"|trans |safe}}</p>
           <p>{{ "finalise.delivery.appointment"|trans }}</p>
           <address>
             Zurichtoren
