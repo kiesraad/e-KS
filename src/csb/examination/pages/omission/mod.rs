@@ -107,7 +107,7 @@ impl OmissionTarget {
             OmissionType::CandidateList => Ok(trans!("candidate_list.title_single", locale)),
             OmissionType::Candidate => Ok(store
                 .get_imported_or_corrected_person(PersonId::from(self.reference))
-                .ok_or(AppError::InternalServerError)?
+                .ok_or(AppError::GenericNotFound)?
                 .name
                 .display()),
         }
