@@ -114,10 +114,10 @@ impl PgStore {
         pool: sqlx::PgPool,
         stream_id: crate::StreamId,
         election: crate::ElectionConfig,
-        encryption: &crate::store::EventEncryption,
+        master: &crate::crypto::MasterKey,
     ) -> Result<Self, AppError> {
         Ok(Self::own(
-            Store::new_with_pool_for_stream(pool, stream_id, election, encryption).await?,
+            Store::new_with_pool_for_stream(pool, stream_id, election, master).await?,
         ))
     }
 }

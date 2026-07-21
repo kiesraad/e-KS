@@ -17,17 +17,14 @@ mod dev_defaults {
 
     pub(super) const ID_DERIVATION_KEY: &str = "eks-dev-id-derivation-key-not-for-production";
 
-    pub(super) const DEFAULT_ENCRYPTION_DERIVATION_KEY: &str =
-        "eks-dev-encryption-derivation-key-not-for-production";
+    pub(super) const DEFAULT_MASTER_ENCRYPTION_KEY: &str =
+        "eks-dev-master-encryption-key-not-for-production";
 
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
-            (
-                "ENCRYPTION_DERIVATION_KEY",
-                DEFAULT_ENCRYPTION_DERIVATION_KEY,
-            ),
+            ("MASTER_ENCRYPTION_KEY", DEFAULT_MASTER_ENCRYPTION_KEY),
         ])
         .get(name)
         .map(|value| (*value).to_string())
@@ -47,7 +44,7 @@ pub struct TlsConfig {
 pub struct Config {
     pub storage_url: SecretString,
     pub id_derivation_key: SecretString,
-    pub encryption_derivation_key: SecretString,
+    pub master_encryption_key: SecretString,
     pub tls: Option<TlsConfig>,
     /// Short identifier of the server this instance runs on (e.g. "S1"),
     /// rendered next to the version in the layout footer.
@@ -91,7 +88,7 @@ impl Config {
         let storage_url = get_env_with("STORAGE_URL", &mut lookup)?;
         let id_derivation_key = get_env_with("ID_DERIVATION_KEY", &mut lookup)?;
 
-        let encryption_derivation_key = get_env_with("ENCRYPTION_DERIVATION_KEY", &mut lookup)?;
+        let master_encryption_key = get_env_with("MASTER_ENCRYPTION_KEY", &mut lookup)?;
 
         let tls = match (lookup("TLS_CERT_PATH").ok(), lookup("TLS_KEY_PATH").ok()) {
             (Some(cert), Some(key)) => Some(TlsConfig {
@@ -123,7 +120,7 @@ impl Config {
         Ok(Self {
             storage_url: SecretString::from(storage_url),
             id_derivation_key: SecretString::from(id_derivation_key),
-            encryption_derivation_key: SecretString::from(encryption_derivation_key),
+            master_encryption_key: SecretString::from(master_encryption_key),
             tls,
             server_name,
             eks_key,
@@ -136,7 +133,7 @@ impl Config {
         Self {
             storage_url: SecretString::from("memory://"),
             id_derivation_key: SecretString::from("test-secret-123"),
-            encryption_derivation_key: SecretString::from("test-encryption-secret-123"),
+            master_encryption_key: SecretString::from("test-encryption-secret-123"),
             tls: None,
             server_name: None,
             eks_key: None,

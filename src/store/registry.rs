@@ -12,8 +12,8 @@ use std::{
 use parking_lot::RwLock;
 use serde::{Serialize, de::DeserializeOwned};
 
-use super::{Store, StoreData, StorePersistence, StreamMeta, encryption::EventEncryption};
-use crate::{AppError, ElectionConfig, StreamId};
+use super::{Store, StoreData, StorePersistence, StreamMeta};
+use crate::{AppError, ElectionConfig, StreamId, crypto::MasterKey};
 
 type StoreKey = (StreamId, ElectionConfig);
 type StoreMap<D> = Arc<RwLock<HashMap<StoreKey, Store<D>>>>;
@@ -29,7 +29,7 @@ where
     D::Event: Serialize + DeserializeOwned,
 {
     persistence: StorePersistence,
-    encryption: EventEncryption,
+    master: MasterKey,
     inner: StoreMap<D>,
 }
 
@@ -41,7 +41,7 @@ where
     fn clone(&self) -> Self {
         Self {
             persistence: self.persistence.clone(),
-            encryption: self.encryption.clone(),
+            master: self.master.clone(),
             inner: self.inner.clone(),
         }
     }
@@ -54,13 +54,13 @@ where
 {
     /// Create a new registry for stores backed by the given storage URL. Every
     /// stream row it creates is recorded with `scope`.
-    pub async fn new(storage_url: String, encryption: EventEncryption) -> Result<Self, AppError> {
+    pub async fn new(storage_url: String, master: MasterKey) -> Result<Self, AppError> {
         let persistence = StorePersistence::from_storage_url(&storage_url)?;
         persistence.init().await?;
 
         Ok(Self {
             persistence,
-            encryption,
+            master,
             inner: Arc::new(RwLock::new(HashMap::new())),
         })
     }
@@ -69,10 +69,10 @@ where
     /// (e.g. the same Postgres pool) with another registry, but caches a
     /// different `Store<D>` projection and records its own `scope`. Skips
     /// re-initialization since the backend is assumed to be initialized already.
-    pub fn with_persistence(persistence: StorePersistence, encryption: EventEncryption) -> Self {
+    pub fn with_persistence(persistence: StorePersistence, master: MasterKey) -> Self {
         Self {
             persistence,
-            encryption,
+            master,
             inner: Arc::new(RwLock::new(HashMap::new())),
         }
     }
@@ -156,7 +156,7 @@ where
             self.persistence.clone(),
             stream_id,
             election,
-            &self.encryption,
+            &self.master,
         )
         .await?;
         store.load().await?;

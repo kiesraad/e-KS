@@ -356,7 +356,7 @@ Runtime configuration is read from environment variables once at startup into a
 |----------|---------|
 | `STORAGE_URL` | Persistence backend: `memory://`, `local://<dir>`, or `postgres://<connection_string>`. |
 | `ID_DERIVATION_KEY` | Master secret for stream-id derivation. |
-| `ENCRYPTION_DERIVATION_KEY` | Master secret for event-payload encryption. |
+| `MASTER_ENCRYPTION_KEY` | Master secret from which the key-wrapping key for the per-stream encryption keys is derived. |
 | `TLS_CERT_PATH` / `TLS_KEY_PATH` | HTTPS certificate and key; both or neither. |
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
@@ -365,7 +365,7 @@ Runtime configuration is read from environment variables once at startup into a
 The binary itself only reads `env::var`, but the deployment can supply these
 variables from a file (e.g. systemd `EnvironmentFile=`, Docker `--env-file`,
 Kubernetes secret mounts). This is the preferred way to provide the master
-secrets (`ID_DERIVATION_KEY`, `ENCRYPTION_DERIVATION_KEY`, `EKS_KEY`) so they
+secrets (`ID_DERIVATION_KEY`, `MASTER_ENCRYPTION_KEY`, `EKS_KEY`) so they
 never end up in shell history or process listings.
 
 In `dev-features` builds a missing variable falls back to a built-in development
@@ -488,31 +488,40 @@ properties matter here:
 
 A domain-separation salt (`"e-KS BSN identifier derivation v1"`) and an
 `info` prefix scope this derivation so its output can never collide with the
-encryption-key derivation below. One `StreamId` covers all of a user's
+key-wrapping-key derivation below. One `StreamId` covers all of a user's
 elections; the `election` is a separate axis of the `(stream_id, election)`
 key.
 
-### Event payload encryption and key derivation
+### Event payload encryption and stream keys
 
 On the file and PostgreSQL backends, every event payload is encrypted at rest
-with AES-256-GCM. For implementation details, see `EventEncryption` / `EventCipher` in
-`src/store/encryption.rs`.
+with AES-256-GCM. For implementation details, see `MasterKey` / `StreamKey` /
+`EventCipher` in `src/crypto.rs`.
 
-The encryption key is **per `(stream_id, election)`**. It is derived with
-HKDF-SHA256 from a master secret (`ENCRYPTION_DERIVATION_KEY`, distinct from the
-ID-derivation secret), mixing the `stream_id` and the election's stable ID into
-the `info` string. The master secret is HKDF-extracted once at startup; each
-per-stream key is only the cheaper HKDF-Expand step. The consequences:
+The scheme is envelope encryption with one key **per `(stream_id, election)`**.
+When a stream is first created, a fresh random 256-bit *stream key* is
+generated; event payloads are encrypted only with this key. The stream key is
+stored *wrapped*: encrypted under a key-wrapping key derived at startup with
+HKDF-SHA256 from a master secret (`MASTER_ENCRYPTION_KEY`, distinct from the
+ID-derivation secret). The wrapped key lives next to the stream: the
+`streams.encrypted_key` column on the database backend, a
+`{stream_id}_{election}.key` sidecar file on the file backend. The
+consequences:
 
-- Every `(user, election)` pair gets its own independent key, so a key
-  recovered or misused for one stream reveals nothing about any other, and
-  payloads cannot be transplanted between streams or elections.
+- Every `(user, election)` pair gets its own independent random key, so a key
+  recovered or misused for one stream reveals nothing about any other.
+- The wrap binds the `(stream_id, election)` pair into the GCM associated
+  data, so a wrapped key (and with it, payloads) cannot be transplanted
+  between streams or elections.
+- Rotating the master secret only requires re-wrapping each stream's key; the
+  event payloads never have to be re-encrypted.
 - A payload is `postcard`-serialized, then AES-256-GCM encrypted under a fresh
   random 12-byte nonce, and stored as `nonce ‖ ciphertext ‖ tag`. The GCM
   *associated data* additionally binds each ciphertext to its event metadata and
   chain position (see the hash chain below).
 - A database dump or a copy of the files, on its own, is unreadable: every
-  payload is indistinguishable from random without the master secret.
+  payload is indistinguishable from random, and every stored stream key is
+  wrapped, without the master secret.
 
 **This is a defence-in-depth measure, not the primary protection.** The server
 necessarily holds the master secrets in memory and works with plaintext, so the

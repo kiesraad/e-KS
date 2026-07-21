@@ -6,9 +6,9 @@ use chrono::{DateTime, Utc};
 
 use std::path::PathBuf;
 
-use crate::{ElectionConfig, StreamId};
+use crate::{ElectionConfig, StreamId, crypto::EventCipher};
 
-use super::{StoreData, StoreEvent, encryption::EventCipher, memory::MemoryStore};
+use super::{StoreData, StoreEvent, memory::MemoryStore};
 
 /// Event-sourced store handle for a single (stream, election) pair.
 pub struct Store<D> {
@@ -40,9 +40,10 @@ impl<D> Clone for Store<D> {
 /// per-stream [`EventCipher`].
 ///
 /// The persisting variants (`Database`, `Local`) cannot be constructed
-/// without a cipher, so events written to disk or database are *always*
-/// encrypted. `Memory` carries no cipher because it never writes events out; it
-/// keeps only the shared index used to answer cross-stream lookups.
+/// without a cipher (see `StorePersistence::into_backend_for_stream`), so
+/// events written to disk or database are *always* encrypted. `Memory` carries
+/// no cipher because it never writes events out; it keeps only the shared
+/// index used to answer cross-stream lookups.
 #[derive(Clone, Debug)]
 pub(crate) enum StoreBackend {
     /// PostgreSQL-backed, encrypted persistence.
