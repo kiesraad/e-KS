@@ -88,7 +88,10 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::test_utils::{response_body_string, sample_political_group};
+    use crate::{
+        structs::csb::{Omission, OmissionCategory},
+        test_utils::{response_body_string, sample_political_group},
+    };
 
     #[tokio::test]
     async fn political_group_renders_imported_display_name() {
@@ -251,8 +254,6 @@ mod tests {
 
     #[tokio::test]
     async fn renders_political_group_omission_count_badge() {
-        use crate::csb::{Omission, OmissionCategory};
-
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         Omission::new(

@@ -3,19 +3,17 @@ use axum::response::{IntoResponse, Response};
 
 use crate::{
     AppError, Context, CsbContext, CsbStore, HtmlTemplate,
-    csb::{
-        Omission,
-        examination::{
-            extractors::CsbPoliticalGroup,
-            pages::CsbGeneralInformationPath,
-            structs::{
-                PaperCorrectedNameAuthorisation, PaperCorrectedPoliticalGroupInfo,
-                PaperCorrectedSubmitter, paper_corrected_list_submitter,
-                paper_corrected_name_authorisations, paper_corrected_substitute_submitters,
-            },
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::CsbGeneralInformationPath,
+        structs::{
+            PaperCorrectedNameAuthorisation, PaperCorrectedPoliticalGroupInfo,
+            PaperCorrectedSubmitter, paper_corrected_list_submitter,
+            paper_corrected_name_authorisations, paper_corrected_substitute_submitters,
         },
     },
     filters,
+    structs::csb::Omission,
 };
 
 #[derive(Template)]
@@ -66,7 +64,10 @@ mod tests {
     use super::*;
     use axum::http::StatusCode;
 
-    use crate::test_utils::{response_body_string, sample_political_group};
+    use crate::{
+        structs::csb::OmissionCategory,
+        test_utils::{response_body_string, sample_political_group},
+    };
 
     #[tokio::test]
     async fn renders_section_headings_and_registered_designation() {
@@ -193,8 +194,6 @@ mod tests {
 
     #[tokio::test]
     async fn renders_added_political_group_omissions_as_badges() {
-        use crate::csb::OmissionCategory;
-
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         Omission::new(
@@ -228,8 +227,6 @@ mod tests {
 
     #[tokio::test]
     async fn renders_non_recoverable_omission_as_error() {
-        use crate::csb::OmissionCategory;
-
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let mut omission = Omission::new(

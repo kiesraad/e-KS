@@ -3,9 +3,10 @@ use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, AppStore, Context, Event, HtmlTemplate,
-    audit_log::{AuditLogEntry, EventTypeCategory, pages::AuditLogPath},
+    audit_log::{AuditLogEntry, pages::AuditLogPath},
     filters,
     pagination::Pagination,
+    structs::audit_log::EventTypeCategory,
     utils::filter_query_suffix,
 };
 

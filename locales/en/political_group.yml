@@ -34,7 +34,7 @@ previous_election_results: "In the previous {}, your party obtained:"
 substitute_submitter: Substitute submitter
 substitute_submitter_data: Substitute submitter data
 substitute_submitters_data: Substitute submitters data
-substitute_submitters_info: "The list submitter and the substitute submitters are the only people authorised to remedy omissions at the central electoral committee. We advise you to appoint at least one substitute submitter."
+substitute_submitters_info: The list submitter and the substitute submitters are the only people authorised to remedy omissions at the central electoral committee. We advise you to appoint at least one substitute submitter.
 type:
   blank_name: Blank list
   blank_name_hint: There is no registered designation.
@@ -48,6 +48,6 @@ type:
   previous_election_results_combined_hint: "If the parties participated as separate lists in the previous election, select the highest number of seats obtained by any one of the parties. The seats won by the parties separately must not be added together."
   previous_election_results_hint: The number of seats obtained in the previous election determines whether you must submit declarations of support. It also determines whether the maximum number of candidates allowed on the list is 50 or 80.
   registered_name: Standalone registered name
-  registered_name_hint: "The party participates in the election with a registered name."
+  registered_name_hint: The party participates in the election with a registered name.
   sixteen_or_more_seats: 16 or more seats
   zero_seats: "0 seats, or did not participate"

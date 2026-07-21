@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     AppEvent, AppStoreData, Event, StreamId,
-    csb::{Omission, OmissionId},
+    structs::csb::{Correction, Omission, OmissionId},
     trans,
     utils::format_hash,
 };
@@ -37,6 +37,7 @@ pub enum CsbEvent {
     DeleteOmission {
         omission_id: OmissionId,
     },
+    UpdateCorrection(Correction),
 }
 
 impl Event for CsbEvent {
@@ -48,6 +49,7 @@ impl Event for CsbEvent {
             CsbEvent::CreateOmission(_)
             | CsbEvent::UpdateOmission(_)
             | CsbEvent::DeleteOmission { .. } => "omission",
+            CsbEvent::UpdateCorrection(_) => "correction",
         }
     }
 
@@ -59,6 +61,7 @@ impl Event for CsbEvent {
             CsbEvent::CreateOmission(_) => "create_omission",
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
+            CsbEvent::UpdateCorrection(_) => "update_correction",
         }
     }
 
@@ -70,6 +73,9 @@ impl Event for CsbEvent {
             CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
             CsbEvent::UpdateOmission(_) => trans!("audit_log.event.update_omission", locale),
             CsbEvent::DeleteOmission { .. } => trans!("audit_log.event.delete_omission", locale),
+            CsbEvent::UpdateCorrection { .. } => {
+                trans!("audit_log.event.update_correction", locale)
+            }
         }
     }
 
@@ -89,6 +95,14 @@ impl Event for CsbEvent {
             CsbEvent::SetFinished(value) => value.to_string(),
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
+            CsbEvent::UpdateCorrection(_) => String::new(),
+        }
+    }
+
+    fn changes(&self, locale: crate::Locale) -> Vec<crate::structs::audit_log::FieldChange> {
+        match self {
+            CsbEvent::UpdateCorrection(correction) => vec![correction.change(locale)],
+            _ => vec![],
         }
     }
 }

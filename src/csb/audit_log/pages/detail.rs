@@ -11,6 +11,7 @@ use crate::{
     csb::{CSB_MAIN_STREAM_ID, audit_log::pages::CsbAuditLogDetailPath},
     filters,
     store::StoreEvent,
+    structs::audit_log::FieldChange,
     trans,
 };
 
@@ -20,6 +21,7 @@ struct CsbEventDetail {
     description: String,
     details: String,
     created_at: DateTime<Utc>,
+    changes: Vec<FieldChange>,
 }
 
 impl CsbEventDetail {
@@ -39,6 +41,7 @@ impl CsbEventDetail {
             stream_label,
             description: event.payload.description(locale),
             details: event.payload.details(),
+            changes: event.payload.changes(locale),
             created_at: event.created_at,
         })
     }

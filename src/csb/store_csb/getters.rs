@@ -1,11 +1,11 @@
 use crate::{
     AppError, CsbStore, ElectoralDistrict,
     candidate_lists::{CandidateList, CandidateListId},
-    csb::{Omission, OmissionId, omission::OmissionCategory},
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     persons::{Person, PersonId},
     political_groups::PoliticalGroup,
+    structs::csb::{Omission, OmissionCategory, OmissionId},
 };
 
 impl CsbStore {
@@ -295,8 +295,8 @@ mod tests {
     use crate::{
         CsbStore, ElectoralDistrict,
         candidate_lists::CandidateList,
-        csb::omission::{OmissionCategory, tests::sample_omission},
         list_designation::ListDesignation,
+        structs::csb::{OmissionCategory, sample_omission},
         test_utils::{sample_candidate_list, sample_person_with},
     };
 

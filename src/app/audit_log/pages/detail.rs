@@ -1,6 +1,7 @@
 use crate::{
     core::ModelLocale,
     finalise::{AllProblems, DocumentData},
+    structs::audit_log::FieldChange,
     utils::format_hash,
 };
 use askama::Template;
@@ -11,7 +12,6 @@ use crate::{
     audit_log::{
         AuditLogDetail, AuditLogPath,
         pages::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
-        structs::FieldChange,
     },
     filters,
 };

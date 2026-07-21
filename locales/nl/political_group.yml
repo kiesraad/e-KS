@@ -34,7 +34,7 @@ previous_election_results: "Bij de vorige {} had uw partij:"
 substitute_submitter: Vervanger voor het herstel van verzuimen
 substitute_submitter_data: Gegevens vervanger
 substitute_submitters_data: Gegevens vervangers voor het herstel van verzuimen
-substitute_submitters_info: "Alleen de lijstinleveraar en de vervangers voor het herstel van verzuimen mogen verzuimen herstellen bij het centraal stembureau. Wij adviseren om tenminste één vervanger op te geven."
+substitute_submitters_info: Alleen de lijstinleveraar en de vervangers voor het herstel van verzuimen mogen verzuimen herstellen bij het centraal stembureau. Wij adviseren om tenminste één vervanger op te geven.
 type:
   blank_name: Blanco lijst
   blank_name_hint: Er is geen geregistreerde aanduiding.
