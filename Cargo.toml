@@ -13,8 +13,8 @@ publish = false
 # Single source of truth for third-party dependency versions and their base
 # feature set. Member crates opt in with `<dep> = { workspace = true }` and may
 # add extra features or mark the dependency optional. Path and git dependencies
-# whose requirements diverge between crates (e.g. typst-webservice) stay local
-# to the crate that uses them.
+# whose requirements diverge between crates stay local to the crate that uses
+# them.
 [workspace.dependencies]
 # tokio universe
 axum = { version = "0.8.9" }
@@ -69,7 +69,7 @@ serde-saphyr = "0.0.29"
 
 # tweedegolf
 memory-serve = "2.1.0"
-typst-webservice = { git = "https://github.com/tweedegolf/typst-webservice.git", tag = "0.8.0", default-features = false }
+textris-pdf = { git = "https://github.com/tweedegolf/textris-pdf.git", rev = "577ea0046441c714b5ee8f6258f298215b106c40", default-features = false, features = ["markdown-parser"] }
 bag_address_lookup = { git = "https://github.com/tweedegolf/bag-address-lookup.git", tag = "lib-v0.8.1", default-features = false, features = ["compressed_database"] }
 
 # kiesraad
@@ -120,8 +120,6 @@ verify-event-hash-chain = []
 livereload = []
 # Serve embedded static assets from memory.
 memory-serve = ["dep:memory-serve"]
-# Run the embedded Typst webservice in-process.
-embed-typst = ["dep:typst-webservice"]
 # Serve over HTTPS via rustls (production deployments).
 tls = ["dep:axum-server", "dep:rustls"]
 
@@ -157,12 +155,12 @@ serde_urlencoded = { workspace = true }
 sha2 = { workspace = true }
 sqlx = { workspace = true, optional = true }
 subtle = { workspace = true }
+textris-pdf = { workspace = true }
 tokio = { workspace = true, features = ["test-util"] }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
 tracing-subscriber = { workspace = true, features = ["fmt", "json"] }
-typst-webservice = { workspace = true, default-features = false, optional = true }
 url = { workspace = true }
 urlencoding = { workspace = true }
 uuid = { workspace = true }

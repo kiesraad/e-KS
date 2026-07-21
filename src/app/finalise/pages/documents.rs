@@ -1,27 +1,18 @@
-use axum::{extract::State, response::IntoResponse};
+use axum::response::IntoResponse;
 
 use crate::{
-    AppError, AppStore, Context, TypstRenderer,
-    finalise::{DocumentData, pages::DownloadDocumentsPath},
+    AppError, AppStore, Context, finalise::pages::DownloadDocumentsPath,
+    models::documents::DocumentData,
 };
 
 pub async fn gen_documents(
     path @ DownloadDocumentsPath { locale }: DownloadDocumentsPath,
     store: AppStore,
-    State(renderer): State<TypstRenderer>,
     context: Context,
 ) -> Result<impl IntoResponse, AppError> {
     let (bundles, filename) = DocumentData::from_store_and_context(&store, &context, locale)?;
 
-    DocumentData::serve_download(
-        bundles,
-        filename,
-        path.to_string(),
-        &store,
-        &store,
-        renderer,
-    )
-    .await
+    DocumentData::serve_download(bundles, filename, path.to_string(), &store, &store).await
 }
 
 #[cfg(test)]
@@ -29,29 +20,22 @@ mod tests {
     use super::*;
     use crate::{
         ElectionConfig,
+        common::{BsnOrNoneConfirmed, CountryCode, FullName},
         core::ModelLocale,
         name_authorisations::NameAuthorisationId,
+        persons::Representative,
         test_utils::{sample_name_authorisation, setup_documents_test_state},
     };
-    #[cfg(feature = "embed-typst")]
-    use crate::{
-        common::{BsnOrNoneConfirmed, CountryCode, FullName},
-        persons::Representative,
-    };
-    use axum::extract::State;
 
     #[tokio::test]
     async fn gen_documents_missing_list_submitter_returns_error() -> Result<(), AppError> {
         let (store, _, context) =
             setup_documents_test_state(1, 1, false, true, ElectionConfig::EK27).await?;
-        let renderer = TypstRenderer::http("http://unused.test".to_string());
-
         let result = gen_documents(
             DownloadDocumentsPath {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(renderer),
             context,
         )
         .await;
@@ -71,14 +55,11 @@ mod tests {
         sample_name_authorisation(NameAuthorisationId::new())
             .create(&store)
             .await?;
-        let renderer = TypstRenderer::http("http://unused.test".to_string());
-
         let result = gen_documents(
             DownloadDocumentsPath {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(renderer),
             context,
         )
         .await;
@@ -93,7 +74,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn multiple_name_authorisations_ok_for_list_combinations() -> Result<(), AppError> {
         use axum::response::IntoResponse;
@@ -110,9 +90,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?
@@ -124,7 +101,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn blank_lists_produce_no_h3() -> Result<(), AppError> {
         use axum::response::IntoResponse;
@@ -141,9 +117,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?
@@ -164,14 +137,11 @@ mod tests {
         political_group.display_name = None;
         political_group.update(&store).await?;
 
-        let renderer = TypstRenderer::http("http://unused.test".to_string());
-
         let result = gen_documents(
             DownloadDocumentsPath {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(renderer),
             context,
         )
         .await;
@@ -190,14 +160,11 @@ mod tests {
             setup_documents_test_state(1, 1, true, true, ElectionConfig::PS27(crate::Province::GR))
                 .await?;
 
-        let renderer = TypstRenderer::http("http://unused.test".to_string());
-
         let result = gen_documents(
             DownloadDocumentsPath {
                 locale: ModelLocale::Fry,
             },
             store,
-            State(renderer),
             context,
         )
         .await;
@@ -212,7 +179,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_documents_returns_zip_response() -> Result<(), AppError> {
         use axum::{
@@ -235,9 +201,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?
@@ -306,7 +269,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_documents_single_list_writes_files_at_zip_root() -> Result<(), AppError> {
         use axum::response::IntoResponse;
@@ -318,9 +280,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?
@@ -348,7 +307,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_documents_single_list_allows_candidate_warnings() -> Result<(), AppError> {
         use axum::response::IntoResponse;
@@ -375,9 +333,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?
@@ -399,7 +354,6 @@ mod tests {
         Ok(())
     }
 
-    #[cfg(feature = "embed-typst")]
     #[tokio::test]
     async fn gen_documents_single_list_allows_general_information_warnings() -> Result<(), AppError>
     {
@@ -418,9 +372,6 @@ mod tests {
                 locale: crate::core::ModelLocale::Nl,
             },
             store,
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
             context,
         )
         .await?

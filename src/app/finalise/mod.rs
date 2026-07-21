@@ -1,11 +1,7 @@
-//! Validation and PDF generation for submission.
-//!
-//! Contains logic to validate application state and generate filled-in PDF documents.
+//! The finalise page: validation of the application state and the download of
+//! the filled-in PDF documents (built in `crate::models::documents`).
 mod pages;
 mod structs;
 
 pub use pages::{FinalisePath, router};
-pub use structs::{
-    documents::DocumentData,
-    problems::{AllProblems, EntityProblems},
-};
+pub use structs::problems::{AllProblems, EntityProblems};

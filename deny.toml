@@ -20,7 +20,6 @@ allow = [
     "Zlib",
     "BSD-2-Clause",
     "CC0-1.0",
-    "Apache-2.0 WITH LLVM-exception",
     "CDLA-Permissive-2.0",
 ]
 
@@ -39,18 +38,12 @@ multiple-versions = "allow"
 
 [advisories]
 ignore = [
-    { id = "RUSTSEC-2024-0320", reason = "yaml-rust is transitively used by Typst, see https://github.com/trishume/syntect/issues/537" },
-    { id = "RUSTSEC-2024-0436", reason = "paste pulled transitively by Typst (biblatex, https://github.com/typst/biblatex/issues/87) and by bergshamra-crypto (via cryptoki/kryptering); both are external and unmaintained at the dep level" },
-    { id = "RUSTSEC-2025-0141", reason = "bincode is used by Typst, see https://github.com/trishume/syntect/issues/606" },
-    { id = "RUSTSEC-2026-0192", reason = "ttf-parser is used by Typst" },
-    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9 pulled transitively by bergshamra-crypto; no patched release available upstream. Server-side use only, revisit when bergshamra publishes a release on a constant-time rsa." },
-    { id = "RUSTSEC-2026-0194", reason = "quick-xml <0.41 DoS (quadratic duplicate-attribute check) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
-    { id = "RUSTSEC-2026-0195", reason = "quick-xml <0.41 DoS (unbounded namespace-declaration allocation) pulled transitively by Typst (and eml-nl); no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
-    { id = "RUSTSEC-2026-0206", reason = "rustybuzz is unmaintained (maintainer recommends harfrust); pulled transitively by Typst; no migration available upstream yet, see https://github.com/harfbuzz/rustybuzz/issues/166" },
+    { id = "RUSTSEC-2026-0194", reason = "quick-xml <0.41 DoS (quadratic duplicate-attribute check) pulled transitively by eml-nl; no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
+    { id = "RUSTSEC-2026-0195", reason = "quick-xml <0.41 DoS (unbounded namespace-declaration allocation) pulled transitively by eml-nl; no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
 ]
 
 [sources]
 allow-git = [
     "https://github.com/tweedegolf/bag-address-lookup.git",
-    "https://github.com/tweedegolf/typst-webservice.git",
+    "https://github.com/tweedegolf/textris-pdf.git",
 ]

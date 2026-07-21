@@ -23,8 +23,6 @@ pub enum AppError {
     UserError(String),
     #[cfg(feature = "database")]
     DatabaseError(sqlx::Error),
-    #[cfg(feature = "embed-typst")]
-    TypstError(typst_webservice::AppError),
     TemplateError(askama::Error),
     FormRejection(FormRejection),
 
@@ -41,9 +39,10 @@ pub enum AppError {
     ServerError(std::io::Error),
     UpstreamError(reqwest::Error),
 
-    /// Missing data when generating a PDF.
+    /// Missing or invalid data when generating a PDF.
     IncompleteData(&'static str),
-
+    PdfError(textris_pdf::render::RenderError),
+    MarkdownError(textris_pdf::markdown::MarkdownParseError),
     EmlError(eml_nl::EMLError),
 
     AuthError(auth_service::error::AuthError),
@@ -69,8 +68,6 @@ impl Display for AppError {
             AppError::ConfigLoadError(err) => write!(f, "Configuration load error: {err}"),
             #[cfg(feature = "database")]
             AppError::DatabaseError(err) => write!(f, "Database error: {err}"),
-            #[cfg(feature = "embed-typst")]
-            AppError::TypstError(err) => write!(f, "Typst error: {err}"),
             AppError::FormRejection(err) => write!(f, "Form error: {err}"),
             AppError::GenericNotFound => write!(f, "Page not found"),
             AppError::IntegrityViolation => write!(f, "Data integrity violation"),
@@ -86,6 +83,8 @@ impl Display for AppError {
             AppError::MultipartError(err) => write!(f, "Multipart error: {err}"),
             AppError::MultipartFormError(err) => write!(f, "Multipart form error: {err}"),
             AppError::NoStorageConfigured => write!(f, "No event storage configured"),
+            AppError::PdfError(err) => write!(f, "PDF error: {err}"),
+            AppError::MarkdownError(err) => write!(f, "Markdown template error: {err}"),
             AppError::NotFound(msg) => write!(f, "{msg}"),
             AppError::UserError(msg) => write!(f, "{msg}"),
             AppError::PathRejection(err) => write!(f, "Path error: {err}"),
@@ -154,10 +153,15 @@ impl From<sqlx::Error> for AppError {
     }
 }
 
-#[cfg(feature = "embed-typst")]
-impl From<typst_webservice::AppError> for AppError {
-    fn from(err: typst_webservice::AppError) -> Self {
-        AppError::TypstError(err)
+impl From<textris_pdf::render::RenderError> for AppError {
+    fn from(err: textris_pdf::render::RenderError) -> Self {
+        AppError::PdfError(err)
+    }
+}
+
+impl From<textris_pdf::markdown::MarkdownParseError> for AppError {
+    fn from(err: textris_pdf::markdown::MarkdownParseError) -> Self {
+        AppError::MarkdownError(err)
     }
 }
 

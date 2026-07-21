@@ -1,6 +1,5 @@
 //! Embedded BAG address lookup: handles `/lookup` and `/suggest` in-process
-//! using the `bag-address-lookup` library, instead of proxying to an external
-//! bag-service.
+//! using the `bag-address-lookup` library
 use std::sync::LazyLock;
 
 use axum::{
@@ -23,8 +22,7 @@ static DATABASE: LazyLock<DatabaseHandle> =
     LazyLock::new(|| DatabaseHandle::load().expect("failed to load embedded BAG database"));
 
 /// Axum router exposing the `/lookup` and `/suggest` endpoints backed by the
-/// embedded BAG database, drop-in compatible with the external bag-service
-/// proxy the frontend otherwise talks to.
+/// embedded BAG database
 pub fn router<S>() -> Router<S>
 where
     S: Clone + Send + Sync + 'static,

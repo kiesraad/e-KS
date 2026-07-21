@@ -75,6 +75,9 @@ mod store;
 mod structs;
 mod utils;
 
+// `pub` because the `pdf_diff` development tool renders the PDF models (from
+// the JSON example inputs) through this module.
+pub mod models;
 pub mod router;
 
 #[cfg(feature = "fixtures")]
@@ -111,7 +114,7 @@ pub(crate) use auth::{
 pub(crate) use core::TlsConfig;
 pub(crate) use core::{
     AnyLocale, ElectionConfig, ElectionType, ElectoralDistrict, HtmlTemplate, Locale, LocaleValues,
-    Province, Scope, SessionPageValues, TypstRenderer, WaterCouncil,
+    Province, Scope, SessionPageValues, WaterCouncil,
     constants::{self, MAX_CANDIDATES},
     http_trace, translate,
 };
@@ -122,7 +125,6 @@ pub(crate) use error::AppResponse;
 pub(crate) use form::{Form, TokenValue};
 pub(crate) use state::AppRequestState;
 pub(crate) use store::{DbHealth, Event};
-pub(crate) use structs::typst;
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
     overlay_active, redirect_success, success_alert_requested, transparent_string,

@@ -6,7 +6,7 @@ use crate::{AppError, AppState, core::ModelLocale};
 
 pub mod documents;
 mod index;
-#[cfg(all(test, feature = "net-tests", feature = "embed-typst"))]
+#[cfg(all(test, feature = "net-tests"))]
 mod integration_tests;
 
 #[derive(TypedPath, Deserialize)]

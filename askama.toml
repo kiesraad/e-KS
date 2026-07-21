@@ -1,2 +1,9 @@
 [general]
 dirs = ["src"]
+
+# The PDF model templates (src/models/templates/*.md) are textris-pdf Markdown
+# dialect, not HTML: interpolated values are escaped so they can never change
+# the document structure. HTML escaping must never apply to these templates.
+[[escaper]]
+path = "crate::models::markdown::MarkdownEscaper"
+extensions = ["md"]

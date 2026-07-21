@@ -25,7 +25,7 @@ graph LR
     subgraph eks["e-KS (web application)"]
         direction TB
         BAG["BAG service\n(address lookup)"]
-        typst["Typst service\n(PDF generation)"]
+        pdf["textris-pdf\n(PDF generation)"]
     end
 
     TVS <-- "authentication" --> eks
@@ -124,10 +124,9 @@ path dependencies of the root crate, each keeping its own `Cargo.lock`.
   `update_locales`, and `pdf_diff` (used by CI to to visualize PDF document
   differences).
 
-Document generation is done using Typst via the `typst-webservice` crate,
-which is a separate binary dependency (not a library crate) that runs as
-an external process in production but is embedded in-process in development with
-the `embed-typst` feature.
+Document generation is done in-process with the
+[`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF
+models are plain Rust code in `src/models/`.
 
 ### `src/` layout
 
@@ -142,8 +141,9 @@ modules:
 | `src/state.rs` | `AppState`: the shared application state (config, store registry, sessions). |
 | `src/filters.rs` | Askama template filters (display formatting, translation, validation errors). |
 | `src/app/` | Application **domain** modules (see below). |
+| `src/models/` | The official PDF models (H 1, H 3-1, H 3-2, H 4, H 9, I 4) rendered with `textris-pdf`, plus the embedded fonts and the JSON example inputs. |
 | `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/app/middleware/`. |
-| `src/core/` | Cross-cutting infrastructure: `Config`, server startup, logging/tracing, election configuration, Askama/Typst rendering, PDF, CSV, ZIP, locales. |
+| `src/core/` | Cross-cutting infrastructure: `Config`, server startup, logging/tracing, election configuration, Askama rendering, CSV, ZIP, locales. |
 | `src/store/` | The generic event store: persistence backends (memory/file/Postgres), at-rest encryption, the event hash chain, and the per-stream `StoreRegistry`. |
 | `src/error/` | `AppError` and the rendering of error responses/pages. |
 | `src/form/` | Generic form extraction and validation: the `Form<T>` extractor, CSRF tokens, file uploads, string validators. |
@@ -259,7 +259,7 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   `Candidate`) produce links for templates without hand-written URL strings.
 - **Extractors.** Handlers declare what they need as arguments: the
   request-scoped `Context`, the `AppStore`, the `Session`, the `Form<T>`
-  validating extractor, `State<TypstRenderer>`, and the custom per-domain
+  validating extractor, and the custom per-domain
   extractors in each `extractors/` folder (which implement `FromRequestParts`
   to load a domain entity from the URL + store).
 - **Middleware and layers.** Session handling, store resolution, error-page
@@ -267,8 +267,8 @@ The application *is* an Axum `Router`. The wiring follows a consistent pattern:
   `middleware::from_fn_with_state`. [`tower-http`](https://crates.io/crates/tower-http) adds the security response
   headers (CSP, `X-Frame-Options`, `X-Content-Type-Options`, `Referrer-Policy`)
   and HTTP tracing.
-- **Shared state.** `AppState` derives `FromRef`, so sub-states such as
-  `TypstRenderer` can be extracted directly into handlers without having to thread through the whole `AppState`.
+- **Shared state.** `AppState` derives `FromRef`, so sub-states can be
+  extracted directly into handlers without having to thread through the whole `AppState`.
 
 ### [`askama`](https://crates.io/crates/askama): compile-time HTML templates
 
@@ -309,25 +309,30 @@ separate asset directory to deploy:
   and JS. The URL paths are identical in both modes, so templates never need to
   know which mode is active.
 
-### [`typst-webservice`](https://github.com/tweedegolf/typst-webservice): PDF generation
+### [`textris-pdf`](https://github.com/tweedegolf/textris-pdf): PDF generation
 
-The official candidate-nomination forms (models H1, H3-1, H4, H9, etc.) are produced
-as PDF files from Typst templates. The `submit` domain assembles serializable
-`typst_*` input structs (`src/app/finalise/structs/`) and hands them to a
-`TypstRenderer` (`src/core/typst_renderer.rs`), which has two modes selected by
-the `embed-typst` feature:
+The official candidate-nomination forms (models H 1, H 3-1, H 3-2, H 4, H 9 and
+I 4) are produced as PDF files by the `src/models/` module, one Rust file per
+model, using the `textris-pdf` document renderer. The DM Sans and Geist Mono
+variable fonts are embedded in the binary with `include_bytes!`
+(`src/models/fonts.rs`); DM Sans is patched to cover the Teletex character set
+(`src/models/fonts/DM_Sans/modifications.md`).
 
-- **`Embedded`**: runs typst-webservice in-process from a `PdfContext` built
-  out of Typst assets baked into the binary at build time (`build.rs` via
-  `tooling/typst`, loaded by `src/utils/embed_typst.rs`). Rendering is CPU-bound,
-  and runs on `spawn_blocking`.
-- **`Http`**: POSTs the input JSON to an external typst-webservice over HTTP
-  at `TYPST_URL`.
+The model input structs and their conversions from store types live in
+`src/models/inputs.rs`. Each model implements
+the `Pdf` trait (`src/models/mod.rs`): `document()` builds the layout and
+`generate_bytes()` renders it on `spawn_blocking` (rendering is CPU-bound).
+The output is archival PDF/A-2b; a validation failure (e.g. a character
+without a glyph in the embedded fonts) surfaces as `AppError::PdfError`.
+`src/models/documents.rs` collects the store data for a candidate list,
+renders the documents plus the EML 2.10 nomination export
+(`src/models/eml210.rs`), and streams them to the client as a single ZIP
+download.
 
-The renderer is built once at startup (`build_typst_renderer` in `state.rs`),
-stored in `AppState`, and reached by handlers via `State<TypstRenderer>`.
-`finalise/pages/documents.rs` renders multiple documents and streams them to the
-client as a single ZIP download.
+Type-checked example inputs live in `src/models/examples/`; the `pdf_diff`
+tool renders every example and visually diffs the output against a saved
+baseline (`tmp/main-pdfs/`, created with
+`cargo run --bin pdf_diff -- --save-baseline`).
 
 ### [`bag_address_lookup`](https://github.com/tweedegolf/bag-address-lookup): Dutch address lookup
 
@@ -347,7 +352,6 @@ Runtime configuration is read from environment variables once at startup into a
 | Variable | Purpose |
 |----------|---------|
 | `STORAGE_URL` | Persistence backend: `memory://`, `local://<dir>`, or `postgres://<connection_string>`. |
-| `TYPST_URL` | External typst-webservice URL (only without the `embed-typst` feature). |
 | `ID_DERIVATION_KEY` | Master secret for stream-id derivation. |
 | `ENCRYPTION_DERIVATION_KEY` | Master secret for event-payload encryption. |
 | `TLS_CERT_PATH` / `TLS_KEY_PATH` | HTTPS certificate and key; both or neither. |
@@ -373,14 +377,13 @@ and enables the embedding and TLS features.
 
 | Feature | Effect |
 |---------|--------|
-| `dev-features` | Relaxes config (dev defaults), enables the dev login and the bag-service proxy. |
+| `dev-features` | Relaxes config (dev defaults), enables the dev login. |
 | `database` | Postgres / SQLx storage backend. |
 | `migrations` | Run database migrations on startup. |
 | `fixtures` | Optionally load sample data into the store when an election is selected. |
 | `verify-event-hash-chain` | Recompute and verify the event hash chain when replaying. |
 | `livereload` | Live-reload assets and templates during development. |
 | `memory-serve` | Serve the frontend assets embedded in the binary. |
-| `embed-typst` | Run the Typst PDF service in-process instead of over HTTP. |
 | `tls` | Serve over HTTPS via rustls. |
 | `db-tests` / `net-tests` | Enable database- and network-dependent tests. |
 

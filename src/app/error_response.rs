@@ -201,13 +201,13 @@ impl ErrorResponse {
             ),
             #[cfg(feature = "database")]
             AppError::DatabaseError(_) => internal(),
-            #[cfg(feature = "embed-typst")]
-            AppError::TypstError(_) => internal(),
             AppError::InternalServerError
             | AppError::NoStorageConfigured
             | AppError::IntegrityViolation
             | AppError::MissingEnvVar(_)
             | AppError::ConfigLoadError(_)
+            | AppError::PdfError(_)
+            | AppError::MarkdownError(_)
             | AppError::TemplateError(_)
             | AppError::UpstreamError(_)
             | AppError::ServerError(_)

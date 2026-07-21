@@ -3,11 +3,14 @@ use std::collections::BTreeMap;
 use axum::{extract::State, http::HeaderValue, response::IntoResponse};
 
 use crate::{
-    AppError, CsbMainStore, CsbStoreData, TypstRenderer,
-    core::{ModelLocale, Pdf, constants::DEFAULT_DATE_FORMAT},
+    AppError, CsbMainStore, CsbStoreData,
+    core::{ModelLocale, constants::DEFAULT_DATE_FORMAT},
     csb::examination::pages::CsbI4DownloadPath,
+    models::{
+        Pdf,
+        i4::{I4, OmissionGroup},
+    },
     store::StoreRegistry,
-    structs::typst::{I4, TypstOmission},
     utils::no_cache_headers,
 };
 
@@ -17,7 +20,6 @@ pub async fn gen_i4(
     _: CsbI4DownloadPath,
     main_store: CsbMainStore,
     State(csb_registry): State<StoreRegistry<CsbStoreData>>,
-    State(renderer): State<TypstRenderer>,
 ) -> Result<impl IntoResponse, AppError> {
     let election = main_store.election;
 
@@ -39,7 +41,7 @@ pub async fn gen_i4(
 
         let designation = store.csb_display_name();
         for (district, descriptions) in by_district {
-            found_omissions.push(TypstOmission {
+            found_omissions.push(OmissionGroup {
                 designation: designation.clone(),
                 electoral_district: district,
                 omission_descriptions: descriptions,
@@ -53,12 +55,23 @@ pub async fn gen_i4(
             .election_date()
             .format(DEFAULT_DATE_FORMAT)
             .to_string(),
-        public_session: election.public_session(),
+        public_session: election.public_session().into(),
         found_omissions,
-        ..I4::default()
+        recovered_omissions: Vec::new(),
+        invalid_lists: Vec::new(),
+        removed_candidates: Vec::new(),
+        removed_designations: Vec::new(),
+        corrected_designations: Vec::new(),
+        valid_lists: Vec::new(),
+        numbered_based_on_votes: Vec::new(),
+        numbered_based_on_districts: Vec::new(),
+        // Downloaded before the public session, so leave room to record any
+        // objections raised during it.
+        objections: None,
+        response_objections: None,
     };
     let filename = model.filename();
-    let bytes = model.generate_bytes(&renderer).await?;
+    let bytes = model.generate_bytes().await?;
 
     let headers = no_cache_headers::generate_attachment_headers(
         &filename,
@@ -68,7 +81,6 @@ pub async fn gen_i4(
     Ok((headers, bytes).into_response())
 }
 
-#[cfg(feature = "embed-typst")]
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -86,16 +98,9 @@ mod tests {
         let state = AppState::new_for_tests().await;
         let csb_registry = StoreRegistry::<CsbStoreData>::from_ref(&state);
 
-        let response = gen_i4(
-            CsbI4DownloadPath,
-            main_store,
-            State(csb_registry),
-            State(TypstRenderer::embedded(
-                crate::utils::embed_typst::pdf_context(),
-            )),
-        )
-        .await?
-        .into_response();
+        let response = gen_i4(CsbI4DownloadPath, main_store, State(csb_registry))
+            .await?
+            .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
         let headers = response.headers();
@@ -107,7 +112,7 @@ mod tests {
             headers
                 .get(header::CONTENT_DISPOSITION)
                 .expect("content disposition"),
-            "attachment; filename=\"i4-geldigheid-en-nummering.pdf\""
+            "attachment; filename=\"i4-proces-verbaal.pdf\""
         );
         assert_eq!(
             headers.get(header::CACHE_CONTROL).expect("cache control"),

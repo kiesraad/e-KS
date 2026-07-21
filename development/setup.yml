@@ -7,14 +7,6 @@ tools:
     # https://github.com/biomejs/biome/releases
     version: "2.4.2"
     base_url: "https://github.com/biomejs/biome/releases/download/@biomejs/biome@"
-  - name: bag-service
-    # https://github.com/tweedegolf/bag-address-lookup/releases
-    version: "0.8.0"
-    base_url: "https://github.com/tweedegolf/bag-address-lookup/releases/download"
-  - name: typst-webservice
-    # https://github.com/tweedegolf/typst-webservice/releases
-    version: "0.8.0"
-    base_url: "https://github.com/tweedegolf/typst-webservice/releases/download"
 commands:
   docker_compose_rm:
     command: docker

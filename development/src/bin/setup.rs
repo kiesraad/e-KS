@@ -167,8 +167,6 @@ impl ToolConfig {
         match self.name.as_str() {
             "esbuild" => install_esbuild(platform, target, self).await,
             "biome" => install_biome(platform, target, self).await,
-            "bag-service" => install_bag_service(platform, target, self).await,
-            "typst-webservice" => install_typst_service(platform, target, self).await,
             _ => anyhow::bail!("unknown tool: {}", self.name),
         }
     }
@@ -216,20 +214,6 @@ async fn install_biome(platform: &str, target: &Path, tool: &ToolConfig) -> Resu
     download_executable(&url, target, &tool.name).await
 }
 
-async fn install_bag_service(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
-    let platform_suffix = platform_suffix(platform, &BAG_SERVICE_SUFFIXES)?;
-    let url = format!("{}/{}/{}", tool.base_url, tool.version, platform_suffix);
-
-    download_executable(&url, target, &tool.name).await
-}
-
-async fn install_typst_service(platform: &str, target: &Path, tool: &ToolConfig) -> Result<()> {
-    let platform_suffix = platform_suffix(platform, &TYPST_SUFFIXES)?;
-    let url = format!("{}/{}/{}", tool.base_url, tool.version, platform_suffix);
-
-    download_executable(&url, target, &tool.name).await
-}
-
 const ESBUILD_SUFFIXES: [(&str, &str); 5] = [
     ("Darwin arm64", "darwin-arm64"),
     ("Darwin x86_64", "darwin-x64"),
@@ -244,22 +228,6 @@ const BIOME_SUFFIXES: [(&str, &str); 5] = [
     ("Linux arm64", "biome-linux-arm64-musl"),
     ("Linux aarch64", "biome-linux-arm64-musl"),
     ("Linux x86_64", "biome-linux-x64-musl"),
-];
-
-const BAG_SERVICE_SUFFIXES: [(&str, &str); 5] = [
-    ("Darwin arm64", "bag-service-macos-arm64"),
-    ("Darwin x86_64", "bag-service-macos-x64"),
-    ("Linux arm64", "bag-service-linux-arm64"),
-    ("Linux aarch64", "bag-service-linux-arm64"),
-    ("Linux x86_64", "bag-service-linux-x64"),
-];
-
-const TYPST_SUFFIXES: [(&str, &str); 5] = [
-    ("Darwin arm64", "typst-webservice-macos-arm64"),
-    ("Darwin x86_64", "typst-webservice-macos-x64"),
-    ("Linux arm64", "typst-webservice-linux-arm64"),
-    ("Linux aarch64", "typst-webservice-linux-arm64"),
-    ("Linux x86_64", "typst-webservice-linux-x64"),
 ];
 
 fn platform_suffix<'a>(platform: &str, suffixes: &'a [(&str, &'a str)]) -> Result<&'a str> {

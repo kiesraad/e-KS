@@ -13,9 +13,7 @@ async fn main() {
     start(address).await;
 }
 
-/// Starts the server on the given address. If the "embed-typst" feature is
-/// enabled, PDFs are rendered in-process using the embedded typst-webservice
-/// library; otherwise an external typst-webservice is contacted over HTTP.
+/// Starts the server on the given address.
 async fn start(address: String) {
     // Initialize tracing subscriber (logging)
     logging::init();

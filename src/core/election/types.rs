@@ -2,7 +2,7 @@ use serde::Serialize;
 
 use crate::Locale;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize)]
 #[serde(rename_all = "UPPERCASE")]
 pub enum ElectionType {
     Tk,
@@ -11,7 +11,8 @@ pub enum ElectionType {
     Ps,
     Ws,
     Ep,
-    Kc, // TODO typst templates now use KCNI as type for "Kies College Niet Ingezetenen", make sure this is properly supported
+    Kc,
+    Kcni,
     Er,
 }
 
@@ -26,6 +27,7 @@ impl ElectionType {
             ElectionType::Ws => "WS",
             ElectionType::Ep => "EP",
             ElectionType::Kc => "KC",
+            ElectionType::Kcni => "KCNI",
             ElectionType::Er => "ER",
         }
     }
@@ -46,6 +48,8 @@ impl ElectionType {
             (ElectionType::Ep, Locale::Nl) => "Europees Parlementsverkiezing",
             (ElectionType::Kc, Locale::En) => "electoral colleges for the Senate",
             (ElectionType::Kc, Locale::Nl) => "kiescolleges Eerste Kamer",
+            (ElectionType::Kcni, Locale::En) => "electoral colleges for non-residents",
+            (ElectionType::Kcni, Locale::Nl) => "kiescolleges niet-ingezetenen",
             (ElectionType::Er, Locale::En) => "elections of the Island Councils",
             (ElectionType::Er, Locale::Nl) => "eilandsraadsverkiezingen",
         }

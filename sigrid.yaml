@@ -23,7 +23,8 @@ exclude:
   - ".*/frontend/fonts/.*"
   - ".*/frontend/icons/.*"
   - ".*/locales/.*"
-  - ".*/models/.*"
+  - ".*/src/models/fonts/.*"
+  - ".*/src/models/example-inputs/.*"
   - ".*/offline/.*"
   - ".*/src/fixtures/.*"
   - ".*/tooling/.*"
@@ -34,7 +35,7 @@ dependencychecker:
     - "eks"
     - "validate"
     - "memory-serve"
-    - "typst-webservice"
+    - "textris-pdf"
   transitive: true
 
 architecture:

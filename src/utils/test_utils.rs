@@ -320,7 +320,6 @@ pub async fn setup_documents_test_state(
     ))
 }
 
-#[cfg(feature = "embed-typst")]
 pub async fn zip_entry_names(response: axum::response::Response) -> Vec<String> {
     use async_zip::base::read::mem::ZipFileReader;
 
@@ -341,7 +340,6 @@ pub async fn zip_entry_names(response: axum::response::Response) -> Vec<String> 
         .collect()
 }
 
-#[cfg(feature = "embed-typst")]
 async fn response_body(response: axum::response::Response) -> bytes::Bytes {
     use http_body_util::BodyExt;
 
