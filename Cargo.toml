@@ -22,9 +22,9 @@ axum-extra = { version = "0.12.6", features = ["cookie"] }
 axum-server = { version = "0.8.0", features = ["tls-rustls"] }
 rustls = "0.23.40"
 hyper-util = { version = "0.1.20", features = ["client-legacy"] }
-tokio = { version = "1.52.1", features = ["full"] }
+tokio = { version = "1.52.1", features = ["fs", "io-util", "macros", "net", "parking_lot", "rt-multi-thread", "signal", "sync", "time"] }
 tower-http = { version = "0.7.0", features = ["csrf", "set-header", "trace"] }
-tracing = "0.1.44"
+tracing = { version = "0.1.44", default-features = false, features = ["std"] }
 tracing-subscriber = { version = "0.3.23", features = ["env-filter"] }
 bytes = "1.11.1"
 tokio-util = { version = "0.7", features = ["io"] }
@@ -40,18 +40,18 @@ serde_urlencoded = "0.7"
 thiserror = "2"
 
 # blessed.rs
-chrono = { version = "0.4.44", features = ["alloc", "std", "serde"] }
+chrono = { version = "0.4.44", default-features = false, features = ["alloc", "std", "serde"] }
 parking_lot = "0.12.5"
 rand = "0.10.1"
-sha2 = "0.11.0"
-subtle = "2.6.1"
-sqlx = { version = "0.9.0", features = ["runtime-tokio", "postgres", "chrono", "uuid", "tls-rustls-aws-lc-rs"] }
+sha2 = { version = "0.11.0", default-features = false, features = ["alloc"] }
+subtle = { version = "2.6.1", default-features = false }
+sqlx = { version = "0.9.0", default-features = false, features = ["runtime-tokio", "postgres", "chrono", "uuid", "macros", "migrate"] }
 uuid = { version = "1.23.2", features = ["serde", "v4", "v5", "v8"] }
 url = "2.5.8"
 reqwest = { version = "0.13.4", default-features = false, features = ["json", "stream"] }
 
 # well maintained + many downloads
-askama = "0.16.0" # 38M downloads (Dirkjan Ochtman)
+askama = { version = "0.16.0", default-features = false, features = ["config", "derive", "std"] } # 38M downloads (Dirkjan Ochtman)
 async_zip = { version = "0.0.18", features = ["tokio", "deflate"] } # 5M downloads (Harry Majored)
 chrono-tz = "0.10.4" # 125M downloads (Dirkjan Ochtman)
 csv = "1.4.0" # 203M downloads (Andrew Gallant)
@@ -59,13 +59,13 @@ phf = { version = "0.14.0", default-features = false } # 411M downloads (Steven 
 phf_codegen = "0.14.0"
 aes-gcm = "0.11.0" # 118M downloads (RustCrypto)
 hkdf = "0.13.0" # 198M downloads (RustCrypto)
-postcard = { version = "1.1.3", features = ["alloc"] } # 42M downloads (James Munns)
+postcard = { version = "1.1.3", default-features = false, features = ["alloc"] } # 42M downloads (James Munns)
 secrecy = "0.10.3" # 126M downloads (Tony Arcieri)
 urlencoding = "2.1.3" # 213M downloads (Kornel)
 
 # yaml (development tooling)
-saphyr = "0.0.11"
-serde-saphyr = "0.0.29"
+saphyr = { version = "0.0.11", default-features = false }
+serde-saphyr = { version = "0.0.29", default-features = false, features = ["deserialize"] }
 
 # tweedegolf
 memory-serve = "2.1.0"
@@ -95,13 +95,9 @@ repository = "https://github.com/kiesraad/e-KS"
 [features]
 # Default development-oriented feature set.
 default = ["database", "migrations", "fixtures", "livereload", "dev-features", "db-tests", "net-tests", "tvs-mock"]
-# Development-only defaults (relaxes some config requirements + proxy to bag service).
+# Development-only defaults (relaxes some config requirements) + dev login endpoint
 dev-features = []
-# Talk to the online TVS mock service: default TVS_ENV to `test` (so the RD
-# endpoint resolves to the shared TVS mock) and embed the committed DV
-# cert/key bundle (auth-service/fixtures) into the binary, so the auth flow works on
-# a deployed host with no CERTS_DIR on disk. Does NOT run a TVS back-channel
-# itself. For test keys only, never enable for a real deployment.
+# Talk to the online TVS mock service, never enable for a real deployment.
 tvs-mock = ["auth-service/tvs-mock"]
 # Enable database-backed storage via Postgres / SQLx.
 database = ["dep:sqlx"]
@@ -120,8 +116,8 @@ verify-event-hash-chain = []
 livereload = []
 # Serve embedded static assets from memory.
 memory-serve = ["dep:memory-serve"]
-# Serve over HTTPS via rustls (production deployments).
-tls = ["dep:axum-server", "dep:rustls"]
+# Serve over HTTPS via rustls and connect to the database over TLS (production deployments)
+tls = ["dep:axum-server", "dep:rustls", "sqlx?/tls-rustls-aws-lc-rs", "reqwest/rustls"]
 
 [dependencies]
 aes-gcm = { workspace = true }
@@ -131,9 +127,9 @@ auth-service = { path = "auth-service" }
 axum = { workspace = true, features = ["multipart", "macros"] }
 axum-extra = { workspace = true, features = ["routing", "typed-routing", "form", "typed-header"] }
 axum-server = { workspace = true, optional = true }
-bag_address_lookup = { workspace = true, default-features = false, features = ["compressed_database"] }
+bag_address_lookup = { workspace = true }
 bytes = { workspace = true }
-chrono = { workspace = true }
+chrono = { workspace = true, features = ["now"] }
 chrono-tz = { workspace = true }
 csv = { workspace = true }
 eml-nl = { workspace = true }
@@ -156,7 +152,7 @@ sha2 = { workspace = true }
 sqlx = { workspace = true, optional = true }
 subtle = { workspace = true }
 textris-pdf = { workspace = true }
-tokio = { workspace = true, features = ["test-util"] }
+tokio = { workspace = true }
 tokio-util = { workspace = true }
 tower-http = { workspace = true }
 tracing = { workspace = true }
@@ -171,10 +167,9 @@ memory-serve = { workspace = true, optional = true }
 phf_codegen = { workspace = true }
 
 [dev-dependencies]
-http-body-util = { workspace = true }
 tower = { workspace = true }
 tracing-test = { workspace = true }
-chrono = { workspace = true, features = ["now"] }
+tokio = { workspace = true, features = ["test-util"] }
 reqwest = { workspace = true, features = ["rustls"] }
 
 [lints.rust]
