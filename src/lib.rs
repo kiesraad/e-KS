@@ -71,7 +71,6 @@ mod error;
 mod filters;
 mod form;
 mod middleware;
-mod pagination;
 mod pg;
 mod state;
 mod store;
@@ -130,7 +129,7 @@ pub(crate) use state::AppRequestState;
 pub(crate) use store::{DbHealth, Event};
 pub(crate) use utils::{
     OptionAsStrExt, OptionStringExt, Overlay, QueryParamState, abbreviate_str, id_newtype,
-    overlay_active, redirect_success, success_alert_requested, transparent_string,
+    overlay_active, pagination, redirect_success, success_alert_requested, transparent_string,
 };
 
 #[cfg(test)]

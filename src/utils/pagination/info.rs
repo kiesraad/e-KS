@@ -4,10 +4,10 @@ use super::{MAX_PER_PAGE, NoSort, PageLink, Pagination, SortDirection, links::bu
 
 /// Pagination metadata consumed by templates and components.
 ///
-/// `S` is the view's sort enum; it defaults to [`NoSort`] for views without
+/// `Sort` is the view's sort enum; it defaults to [`NoSort`] for views without
 /// sortable columns.
 #[derive(Clone, Debug, Serialize)]
-pub struct PaginationInfo<S = NoSort> {
+pub struct PaginationInfo<Sort = NoSort> {
     /// Current 1-indexed page.
     pub page: usize,
     /// Items per page after clamping.
@@ -18,13 +18,13 @@ pub struct PaginationInfo<S = NoSort> {
     /// Pre-computed markup-friendly page links (numbers and ellipses).
     pub links: Vec<PageLink>,
 
-    pub sort: S,
+    pub sort: Sort,
     pub order: SortDirection,
 }
 
-impl<S> PaginationInfo<S>
+impl<Sort> PaginationInfo<Sort>
 where
-    S: Serialize + Copy + PartialEq + Default,
+    Sort: Serialize + Copy + PartialEq + Default,
 {
     /// Translate the pagination configuration into a SQL `LIMIT`.
     pub fn limit(&self) -> usize {
@@ -47,7 +47,7 @@ where
         .as_query()
     }
 
-    pub fn sort(&self) -> &S {
+    pub fn sort(&self) -> &Sort {
         &self.sort
     }
 
@@ -67,7 +67,7 @@ where
         self.url(*page, self.per_page)
     }
 
-    pub fn sort_link(&self, sort: S) -> String {
+    pub fn sort_link(&self, sort: Sort) -> String {
         Pagination {
             page: 1,
             per_page: self.per_page,
@@ -81,7 +81,7 @@ where
         .as_query()
     }
 
-    pub fn dir_icon(&self, sort: S) -> &'static str {
+    pub fn dir_icon(&self, sort: Sort) -> &'static str {
         if sort == self.sort {
             match self.order {
                 SortDirection::Asc => "▲",
@@ -93,9 +93,9 @@ where
     }
 }
 
-pub fn to_info<S>(pagination: Pagination<S>, total_items: usize) -> PaginationInfo<S>
+pub fn to_info<Sort>(pagination: Pagination<Sort>, total_items: usize) -> PaginationInfo<Sort>
 where
-    S: Serialize + Copy + PartialEq + Default,
+    Sort: Serialize + Copy + PartialEq + Default,
 {
     let per_page = pagination.per_page.clamp(1, MAX_PER_PAGE);
 

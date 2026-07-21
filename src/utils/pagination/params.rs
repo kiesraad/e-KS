@@ -30,10 +30,10 @@ pub struct NoSort;
 
 /// Raw pagination query parameters the client can supply.
 ///
-/// `S` is the view's sort enum; it defaults to [`NoSort`] for views without
+/// `Sort` is the view's sort enum; it defaults to [`NoSort`] for views without
 /// sortable columns.
 #[derive(Debug, Deserialize, Serialize)]
-pub struct Pagination<S: Default + PartialEq = NoSort> {
+pub struct Pagination<Sort: Default + PartialEq = NoSort> {
     /// Requested page number (1-indexed). Defaults to `1`.
     #[serde(default = "default_page")]
     #[serde(skip_serializing_if = "is_default_page")]
@@ -45,7 +45,7 @@ pub struct Pagination<S: Default + PartialEq = NoSort> {
     /// Optional field to sort by.
     #[serde(default)]
     #[serde(skip_serializing_if = "is_default")]
-    pub sort: S,
+    pub sort: Sort,
     /// Optional sort order.
     #[serde(default)]
     #[serde(skip_serializing_if = "is_default")]
@@ -74,43 +74,43 @@ fn is_default<T: Default + PartialEq>(t: &T) -> bool {
     *t == Default::default()
 }
 
-impl<S> Default for Pagination<S>
+impl<Sort> Default for Pagination<Sort>
 where
-    S: Default + PartialEq,
+    Sort: Default + PartialEq,
 {
     fn default() -> Self {
         Self {
             page: default_page(),
             per_page: default_per_page(),
-            sort: S::default(),
+            sort: Sort::default(),
             order: SortDirection::default(),
         }
     }
 }
 
-impl<S, SO> FromRequestParts<S> for Pagination<SO>
+impl<S, Sort> FromRequestParts<S> for Pagination<Sort>
 where
     S: Send + Sync,
-    SO: DeserializeOwned + Serialize + Default + PartialEq,
-    Pagination<SO>: DeserializeOwned,
+    Sort: DeserializeOwned + Serialize + Default + PartialEq,
+    Pagination<Sort>: DeserializeOwned,
 {
     type Rejection = QueryRejection;
 
     async fn from_request_parts(parts: &mut Parts, state: &S) -> Result<Self, Self::Rejection> {
-        let Query(pagination) = Query::<Pagination<SO>>::from_request_parts(parts, state).await?;
+        let Query(pagination) = Query::<Pagination<Sort>>::from_request_parts(parts, state).await?;
 
         Ok(pagination)
     }
 }
 
-impl<S> Pagination<S>
+impl<Sort> Pagination<Sort>
 where
-    S: Serialize + Copy + PartialEq + Default,
+    Sort: Serialize + Copy + PartialEq + Default,
 {
     /// Combine the current request with the number of available items to compute final pagination
     /// values. This clamps the current page within valid bounds and prepares the metadata we need
     /// for database queries and template rendering.
-    pub fn set_total(self, total_items: usize) -> PaginationInfo<S> {
+    pub fn set_total(self, total_items: usize) -> PaginationInfo<Sort> {
         info::to_info(self, total_items)
     }
 
