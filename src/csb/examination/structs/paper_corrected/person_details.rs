@@ -1,6 +1,7 @@
 use super::PaperCorrected;
 use crate::{
     Locale,
+    common::DateOfBirth,
     persons::{Person, Representative},
 };
 
@@ -44,7 +45,7 @@ impl PaperCorrectedPersonDetails {
             }),
             gender: PaperCorrected::from_field(imported, corrected, |p| p.gender_label(locale)),
             date_of_birth: PaperCorrected::from_field(imported, corrected, |p| {
-                opt_display(&p.personal_data.date_of_birth)
+                DateOfBirth::format_option(&p.personal_data.date_of_birth)
             }),
             bsn: PaperCorrected::from_field(imported, corrected, |p| {
                 p.personal_data

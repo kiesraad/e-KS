@@ -5,7 +5,7 @@ use axum::{
 use uuid::Uuid;
 
 use crate::{
-    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Overlay, QueryParamState, StreamId,
+    AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
     candidate_lists::CandidateListId,
     csb::{
         OmissionCategory, OmissionType,
@@ -19,6 +19,8 @@ use crate::{
         },
     },
     form::{FormData, ValidationError},
+    persons::PersonId,
+    trans,
 };
 
 mod urls;
@@ -66,7 +68,7 @@ impl OmissionTarget {
         query: &QueryParamState,
         context: CsbContext,
         store: &CsbStore,
-    ) -> Response {
+    ) -> Result<Response, AppError> {
         let available_districts = if self.omission_type == OmissionType::CandidateList {
             store
                 .get_corrected_candidate_lists()
@@ -82,7 +84,7 @@ impl OmissionTarget {
             Vec::new()
         };
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
-        HtmlTemplate(
+        Ok(HtmlTemplate(
             CsbAddOmissionTemplate {
                 form,
                 overlay: Overlay::new(query),
@@ -92,10 +94,23 @@ impl OmissionTarget {
                 overview_tab_url: overview_url(self),
                 available_districts,
                 available_candidate_lists,
+                title_suffix: self.generate_title_suffix(store, context.session.locale)?,
             },
             context,
         )
-        .into_response()
+        .into_response())
+    }
+
+    fn generate_title_suffix(&self, store: &CsbStore, locale: Locale) -> Result<String, AppError> {
+        match self.omission_type {
+            OmissionType::PoliticalGroup => Ok(trans!("common.general_information", locale)),
+            OmissionType::CandidateList => Ok(trans!("candidate_list.title_single", locale)),
+            OmissionType::Candidate => Ok(store
+                .get_imported_or_corrected_person(PersonId::from(self.reference))
+                .ok_or(AppError::GenericNotFound)?
+                .name
+                .display()),
+        }
     }
 }
 
@@ -128,7 +143,7 @@ pub async fn add_omission(
     } else {
         FormData::new()
     };
-    Ok(target.render_add_form(form, &query, context, &store))
+    target.render_add_form(form, &query, context, &store)
 }
 
 /// Render the omissions overview page for an entity: the list of omissions
@@ -152,6 +167,7 @@ pub async fn overview(
             omissions: omission_views(&target, &store, &overview_tab_url)?,
             add_tab_url: add_url(&target),
             overview_tab_url,
+            title_suffix: target.generate_title_suffix(&store, context.session.locale)?,
         },
         context,
     )
@@ -177,12 +193,12 @@ pub async fn add_omission_submit(
             "electoral_districts".to_string(),
             ValidationError::ChooseAtLeastOneOption,
         )];
-        return Ok(target.render_add_form(
+        return target.render_add_form(
             FormData::new_with_errors(form, errors),
             &query,
             context,
             &store,
-        ));
+        );
     }
 
     // For candidate omissions at least one list must be selected
@@ -192,16 +208,16 @@ pub async fn add_omission_submit(
             "candidate_lists".to_string(),
             ValidationError::ChooseAtLeastOneOption,
         )];
-        return Ok(target.render_add_form(
+        return target.render_add_form(
             FormData::new_with_errors(form, errors),
             &query,
             context,
             &store,
-        ));
+        );
     }
 
     match form.validate_create() {
-        Err(form_data) => Ok(target.render_add_form(form_data, &query, context, &store)),
+        Err(form_data) => target.render_add_form(form_data, &query, context, &store),
         Ok(mut omission) => {
             omission.category = if target.omission_type == OmissionType::CandidateList {
                 OmissionCategory::CandidateList(districts)

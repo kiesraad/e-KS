@@ -71,6 +71,12 @@ impl DateOfBirth {
     pub fn is_too_young(&self, election: &ElectionConfig) -> bool {
         self.0 > election.eligible_date_of_birth()
     }
+
+    pub fn format_option(date: &Option<Self>) -> String {
+        date.as_ref()
+            .map(|date| date.0.format(DEFAULT_DATE_FORMAT).to_string())
+            .unwrap_or("-".to_string())
+    }
 }
 
 #[cfg(test)]
@@ -99,5 +105,22 @@ mod tests {
             "12-12-9".parse::<DateOfBirth>(),
             Err(ValidationError::InvalidValue)
         ));
+    }
+
+    #[test]
+    fn format_option_test() {
+        assert_eq!(
+            DateOfBirth::format_option(&Some(DateOfBirth(
+                NaiveDate::from_ymd_opt(2000, 2, 3).unwrap()
+            ))),
+            "03-02-2000".to_string()
+        );
+
+        assert_eq!(
+            DateOfBirth::format_option(&Some(DateOfBirth(
+                NaiveDate::from_ymd_opt(2000, 12, 13).unwrap()
+            ))),
+            "13-12-2000".to_string()
+        );
     }
 }
