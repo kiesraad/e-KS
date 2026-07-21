@@ -14,6 +14,7 @@ use crate::{
 mod all_restorations;
 mod candidate;
 mod candidate_list;
+mod correction;
 mod general_information;
 mod i4;
 mod omission;
@@ -119,6 +120,67 @@ pub struct CsbDeleteOmissionPath {
 #[typed_path("/csb/examination/{stream_id}/omissions", rejection(AppError))]
 pub struct CsbAllRestorationsPath {
     pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/correction/display-name",
+    rejection(AppError)
+)]
+pub struct CsbDisplayNameCorrectionPath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/correction/person/{person_id}/{field}",
+    rejection(AppError)
+)]
+pub struct CsbPersonCorrectionPath {
+    pub stream_id: StreamId,
+    pub person_id: PersonId,
+    pub field: CandidateCorrectionField,
+}
+
+/// Which personal-data field of a candidate the correction dialog operates on.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum CandidateCorrectionField {
+    Initials,
+    LastName,
+    DateOfBirth,
+    PlaceOfResidence,
+}
+
+impl std::str::FromStr for CandidateCorrectionField {
+    type Err = &'static str;
+
+    fn from_str(s: &str) -> Result<Self, Self::Err> {
+        match s {
+            "initials" => Ok(Self::Initials),
+            "last-name" => Ok(Self::LastName),
+            "date-of-birth" => Ok(Self::DateOfBirth),
+            "place-of-residence" => Ok(Self::PlaceOfResidence),
+            _ => Err("unknown correction field"),
+        }
+    }
+}
+
+impl std::fmt::Display for CandidateCorrectionField {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Initials => write!(f, "initials"),
+            Self::LastName => write!(f, "last-name"),
+            Self::DateOfBirth => write!(f, "date-of-birth"),
+            Self::PlaceOfResidence => write!(f, "place-of-residence"),
+        }
+    }
+}
+
+impl<'de> Deserialize<'de> for CandidateCorrectionField {
+    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
+        let s = String::deserialize(deserializer)?;
+        s.parse().map_err(serde::de::Error::custom)
+    }
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -252,6 +314,30 @@ impl CsbPoliticalGroup {
             stream_id: self.stream_id,
         }
     }
+
+    /// Path to the correction overlay for the political group display name.
+    pub fn correction_display_name_path(&self) -> impl TypedPath {
+        CsbDisplayNameCorrectionPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    /// Path to the correction overlay for a specific personal-data field of a
+    /// candidate. The `list` is carried as a query parameter so the overlay can
+    /// return to the candidate's detail page after saving.
+    pub fn correction_person_path(
+        &self,
+        person: &PersonId,
+        field: CandidateCorrectionField,
+        list: &CandidateListId,
+    ) -> impl TypedPath {
+        CsbPersonCorrectionPath {
+            stream_id: self.stream_id,
+            person_id: *person,
+            field,
+        }
+        .with_query_params(OmissionListQuery { list: Some(*list) })
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -270,4 +356,8 @@ pub fn router() -> Router<AppState> {
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
         .typed_get(all_restorations::all_restorations)
+        .typed_get(correction::display_name_correction)
+        .typed_post(correction::display_name_correction_submit)
+        .typed_get(correction::person_correction)
+        .typed_post(correction::person_correction_submit)
 }

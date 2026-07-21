@@ -31,7 +31,7 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("Pre-examination"));
         assert!(body.contains("Examination"));
-        assert!(body.contains("Restored lists"));
+        assert!(body.contains("Rectified lists"));
         assert!(body.contains("List numbering"));
         assert!(body.contains("Finalise candidate lists"));
     }

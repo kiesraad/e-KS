@@ -240,6 +240,26 @@
   }
 }
 
+.omission-icon,
+.correction-icon {
+  background-position: center;
+  background-repeat: no-repeat;
+  border-radius: var(--rounded-lg);
+  flex-shrink: 0;
+  height: var(--space-11);
+  width: var(--space-11);
+}
+
+.omission-icon {
+  background-color: var(--orange-200);
+  background-image: url("../icons/omission.svg");
+}
+
+.correction-icon {
+  background-color: var(--blue-200);
+  background-image: url("../icons/correction.svg");
+}
+
 .omission-cards {
   background-color: var(--base-white);
   padding: var(--space-6);
@@ -250,26 +270,6 @@
     gap: var(--space-3);
     margin-top: 0;
     margin-bottom: var(--space-4);
-
-    .omission-icon,
-    .correction-icon {
-      background-position: center;
-      background-repeat: no-repeat;
-      border-radius: var(--rounded-lg);
-      flex-shrink: 0;
-      height: var(--space-11);
-      width: var(--space-11);
-    }
-
-    .omission-icon {
-      background-color: var(--orange-200);
-      background-image: url("../icons/omission.svg");
-    }
-
-    .correction-icon {
-      background-color: var(--blue-200);
-      background-image: url("../icons/correction.svg");
-    }
   }
 
   .tag.link a.warning::after,
@@ -299,6 +299,15 @@
 
   .omission-badges {
     margin: 0;
+  }
+}
+
+.overlay.correction-overlay,
+.overlay.omission-overlay {
+  header h2 {
+    align-items: center;
+    display: flex;
+    gap: var(--space-3);
   }
 }
 
@@ -396,7 +405,7 @@
   }
 }
 
-.general-information-table {
+.detail-table {
   table-layout: fixed;
 
   tbody {
@@ -433,7 +442,7 @@
       text-align: right;
 
       a {
-        background-image: url("../icons/edit.svg");
+        background-image: url("../icons/wand.svg");
       }
     }
   }
@@ -553,4 +562,14 @@
 
 .csb-phase-locked > * {
   opacity: 0.4;
+}
+
+.original-values {
+  gap: 0.5rem 1rem;
+  font-size: var(--font-size-md);
+  color: var(--gray-900);
+
+  dt {
+    font-weight: bold;
+  }
 }

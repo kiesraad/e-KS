@@ -1,6 +1,7 @@
 use crate::{
     AppError, CsbStore, ElectoralDistrict,
     candidate_lists::{CandidateList, CandidateListId},
+    common::DisplayName,
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,
     persons::{Person, PersonId},
@@ -286,6 +287,20 @@ impl CsbStore {
     /// getters, writes are persisted on this CSB stream as paper corrections.
     pub fn paper_corrected(&self) -> crate::PgStore {
         crate::PgStore::paper_corrections(self.clone())
+    }
+
+    /// The current ex officio correction for the political group display name,
+    /// if one has been recorded via `CsbEvent::UpdateCorrection`.
+    pub fn get_corrected_display_name(&self) -> Option<DisplayName> {
+        self.data.read().corrected_display_name.clone()
+    }
+
+    /// The person from the ex officio corrections projection, if any correction
+    /// has been applied to that person. The returned [`Person`] reflects the
+    /// accumulated state of all corrections applied so far (starting from the
+    /// imported snapshot), NOT the paper-corrected projection.
+    pub fn get_corrected_person(&self, person_id: PersonId) -> Option<Person> {
+        self.data.read().corrected_persons.get(&person_id).cloned()
     }
 }
 

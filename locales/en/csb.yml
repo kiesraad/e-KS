@@ -19,6 +19,13 @@ candidate:
   personal_details: Personal details
   status: Status
 correction:
+  form:
+    submit: Save correction
+    value_label: Corrected value
+  original_value: Original value
+  overlay:
+    title: Edit correction
+  paper_corrected: Paper correction
   title: Corrections
 examination: Examination
 finish_examination: Finish examination
@@ -74,7 +81,7 @@ index:
   phase_2:
     title: Examination
   phase_3:
-    title: Restored lists
+    title: Rectified lists
   phase_4:
     title: List numbering
   phase_5:

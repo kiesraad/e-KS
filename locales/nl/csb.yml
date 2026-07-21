@@ -19,7 +19,14 @@ candidate:
   personal_details: Persoonsgegevens
   status: Status
 correction:
-  title: Ambtshalve correctie
+  form:
+    submit: Correctie opslaan
+    value_label: Gecorrigeerde waarde
+  original_value: Originele waarde
+  overlay:
+    title: Ambtshalve correctie aanpassen
+  paper_corrected: Papieren correctie
+  title: Ambtshalve correcties
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:

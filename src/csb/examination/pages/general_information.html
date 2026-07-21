@@ -12,11 +12,6 @@
   {% set back_url = political_group.examination_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
-{% macro edit_action() %}
-  <td class="actions">
-    <a href="#" aria-label="{{ "action.edit"|trans }}"></a>
-  </td>
-{% endmacro %}
 {% macro columns_head(label) %}
   <thead>
     <tr>
@@ -27,21 +22,21 @@
   </thead>
 {% endmacro %}
 {% macro data_row(label, value) %}
-  <tr class="clickable">
+  <tr>
     <td>{{ label }}: {{ paper_corrected::value(value) }}</td>
     <td></td>
-    {{ edit_action() }}
+    <td></td>
   </tr>
 {% endmacro %}
 {% macro submitter_tables(submitter) %}
-  <table class="general-information-table">
+  <table class="detail-table">
     {{ columns_head("csb.general.personalia"|trans) }}
     <tbody>
       {{ data_row("person.fields.initials"|trans, submitter.initials) }}
       {{ data_row("person.fields.last_name"|trans, submitter.last_name) }}
     </tbody>
   </table>
-  <table class="general-information-table">
+  <table class="detail-table">
     {{ columns_head("person.correspondence_address"|trans) }}
     <tbody>
       {{ data_row("person.fields.postal_code"|trans, submitter.postal_code) }}
@@ -97,10 +92,17 @@
       </div>
     </div>
     <h2>{{ "csb.general.group_info"|trans }}</h2>
-    <table class="general-information-table">
+    <table class="detail-table">
       {{ columns_head("common.general_information"|trans) }}
       <tbody>
-        {{ data_row("political_group.display_name"|trans, group_info.display_name) }}
+        <tr class="clickable">
+          <td>{{ "political_group.display_name"|trans }}: {{ paper_corrected::value(group_info.display_name) }}</td>
+          <td></td>
+          <td class="actions">
+            <a href="{{ political_group.correction_display_name_path() }}"
+               aria-label="{{ "action.edit"|trans }}"></a>
+          </td>
+        </tr>
         {{ data_row("political_group.list_type"|trans, group_info.list_type) }}
         {{ data_row("problems.no_previous_election_results"|trans, group_info.previous_results) }}
       </tbody>
@@ -109,7 +111,7 @@
       <p class="font-italic">{{ "political_group.no_legal_names"|trans }}</p>
     {% else %}
       {% for name_authorisation in name_authorisations %}
-        <table class="general-information-table">
+        <table class="detail-table">
           {{ columns_head(name_authorisation.heading) }}
           <tbody>
             {{ data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}

@@ -1,0 +1,38 @@
+{% extends "csb/components/overlay.html" %}
+{% set submit_label = "csb.correction.form.submit"|trans %}
+{% block overlay_class %}correction-overlay{% endblock %}
+{% block overlay_title %}<span class="correction-icon" aria-hidden="true"></span>{{ "csb.correction.overlay.title"|trans }}: {{ label }}{% endblock %}
+{% block overlay_content %}
+  <div class="overlay-content">
+    <div class="form">
+      <fieldset>
+        <div class="form-row">
+          <dl class="original-values">
+            <dt>{{ "csb.correction.original_value"|trans }}</dt>
+            <dd>
+              {{ imported_value }}
+            </dd>
+            {% if let Some(paper_corrected) = paper_corrected_value %}
+              <dt>{{ "csb.correction.paper_corrected"|trans }}</dt>
+              <dd>
+                {{ paper_corrected }}
+              </dd>
+            {% endif %}
+          </dl>
+        </div>
+        <div class="form-row">
+          <p class="form-field">
+            <label for="value">{{ "csb.correction.form.value_label"|trans }}</label>
+            <input type="text"
+                   name="value"
+                   id="value"
+                   value="{{ form.data.value }}"
+                   autocomplete="off" />
+            {% for error in form|error("value") %}<span class="error">{{ error }}</span>{% endfor %}
+          </p>
+        </div>
+      </fieldset>
+      {% include "pg/common/components/submit.html" %}
+    </div>
+  </div>
+{% endblock %}
