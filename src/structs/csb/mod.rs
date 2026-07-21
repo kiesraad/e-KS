@@ -6,3 +6,6 @@ pub use omission::{Omission, OmissionCategory, OmissionId, OmissionPlaceholders,
 
 #[cfg(test)]
 pub use omission::tests::sample_omission;
+
+#[cfg(test)]
+pub use correction::PersonCorrection;
