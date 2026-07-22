@@ -7,7 +7,7 @@ use axum::{
 
 use crate::{
     AnyLocale, AppError, AppState, Context, Province, Scope, Session, SessionPageValues,
-    WaterCouncil, common::SelectElectionForm, csb::index::pages::CsbIndexPath, filters,
+    WaterCouncil, common::SelectElectionForm, csb::index::CsbIndexPath, filters,
 };
 
 use super::{IndexPath, SelectElectionPath};

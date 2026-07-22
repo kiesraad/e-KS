@@ -1,6 +1,8 @@
 use axum::{Router, routing::get};
 use axum_extra::routing::{RouterExt, TypedPath};
 
+use super::paths::*;
+
 mod auth;
 mod hide_download_warning;
 mod index;
@@ -10,42 +12,9 @@ mod switch_election;
 mod switch_locale;
 mod well_known;
 
-use crate::{AppError, AppState};
+use crate::AppState;
 
-pub use auth::auth_failure_response;
 pub use not_found::not_found;
-
-#[derive(TypedPath)]
-#[typed_path("/login", rejection(AppError))]
-pub struct LoginStartPath;
-
-#[derive(TypedPath)]
-#[typed_path("/", rejection(AppError))]
-pub struct IndexPath;
-
-#[derive(TypedPath)]
-#[typed_path("/language", rejection(AppError))]
-pub struct SwitchLanguagePath;
-
-#[derive(TypedPath)]
-#[typed_path("/switch-election", rejection(AppError))]
-pub struct SwitchElectionPath;
-
-#[derive(TypedPath)]
-#[typed_path("/select-election", rejection(AppError))]
-pub struct SelectElectionPath;
-
-#[derive(TypedPath)]
-#[typed_path("/hide-download-warning", rejection(AppError))]
-pub struct HideDownloadWarningPath;
-
-#[derive(TypedPath)]
-#[typed_path("/logout", rejection(AppError))]
-pub struct LogoutPath;
-
-#[derive(TypedPath)]
-#[typed_path("/logged-out", rejection(AppError))]
-pub struct LoggedOutPath;
 
 pub fn router() -> Router<AppState> {
     Router::new()

@@ -93,31 +93,36 @@ where
     }
 }
 
-pub fn to_info<Sort>(pagination: Pagination<Sort>, total_items: usize) -> PaginationInfo<Sort>
+impl<Sort> Pagination<Sort>
 where
     Sort: Serialize + Copy + PartialEq + Default,
 {
-    let per_page = pagination.per_page.clamp(1, MAX_PER_PAGE);
+    /// Combine the current request with the number of available items to compute final pagination
+    /// values. This clamps the current page within valid bounds and prepares the metadata we need
+    /// for database queries and template rendering.
+    pub fn set_total(self, total_items: usize) -> PaginationInfo<Sort> {
+        let per_page = self.per_page.clamp(1, MAX_PER_PAGE);
 
-    let total_pages = if total_items == 0 {
-        1
-    } else {
-        ((total_items - 1) / per_page) + 1
-    };
+        let total_pages = if total_items == 0 {
+            1
+        } else {
+            ((total_items - 1) / per_page) + 1
+        };
 
-    let page: usize = pagination.page.min(total_pages).max(1);
-    let has_prev = page > 1;
-    let has_next = page < total_pages;
+        let page: usize = self.page.min(total_pages).max(1);
+        let has_prev = page > 1;
+        let has_next = page < total_pages;
 
-    PaginationInfo {
-        page,
-        per_page,
-        has_prev,
-        has_next,
-        total_pages,
-        links: build_links(page, total_pages),
-        sort: pagination.sort,
-        order: pagination.order,
+        PaginationInfo {
+            page,
+            per_page,
+            has_prev,
+            has_next,
+            total_pages,
+            links: build_links(page, total_pages),
+            sort: self.sort,
+            order: self.order,
+        }
     }
 }
 

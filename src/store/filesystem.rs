@@ -439,7 +439,7 @@ mod tests {
         Store {
             stream_id,
             election: TEST_ELECTION,
-            backend: super::super::persistence::StoreBackend::Memory {
+            backend: crate::store::StoreBackend::Memory {
                 store: super::super::memory::MemoryStore::default(),
             },
             data: Arc::new(RwLock::new(TestData::default())),

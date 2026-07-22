@@ -4,8 +4,6 @@ use axum::{
 };
 use serde::{Deserialize, Serialize, de::DeserializeOwned};
 
-use super::{PaginationInfo, info};
-
 #[derive(Debug, Copy, Clone, Deserialize, Serialize, Default, PartialEq)]
 #[serde(rename_all = "lowercase")]
 pub enum SortDirection {
@@ -107,13 +105,6 @@ impl<Sort> Pagination<Sort>
 where
     Sort: Serialize + Copy + PartialEq + Default,
 {
-    /// Combine the current request with the number of available items to compute final pagination
-    /// values. This clamps the current page within valid bounds and prepares the metadata we need
-    /// for database queries and template rendering.
-    pub fn set_total(self, total_items: usize) -> PaginationInfo<Sort> {
-        info::to_info(self, total_items)
-    }
-
     pub fn as_query(&self) -> String {
         match serde_urlencoded::to_string(self) {
             Ok(query) if !query.is_empty() => format!("?{}", query),

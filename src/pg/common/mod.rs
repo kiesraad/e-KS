@@ -5,6 +5,7 @@
 mod extractors;
 mod forms;
 mod pages;
+mod paths;
 
 pub use forms::{
     DutchAddressForm, FullNameForm, InternationalAddressForm, MinimalNameForm, SelectElectionForm,
@@ -22,8 +23,8 @@ pub use crate::structs::common::{
     RVIG_COUNTRY_CODES_URL, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
 };
 
-pub use pages::{
+pub use pages::{not_found, public_router, router, session_only_router, wellknown_router};
+pub use paths::{
     HideDownloadWarningPath, IndexPath, LoginStartPath, LogoutPath, SelectElectionPath,
-    SwitchElectionPath, SwitchLanguagePath, auth_failure_response, not_found, public_router,
-    router, session_only_router, wellknown_router,
+    SwitchElectionPath, SwitchLanguagePath,
 };

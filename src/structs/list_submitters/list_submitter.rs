@@ -1,5 +1,4 @@
 use crate::{
-    AppError, PgEvent, PgStore,
     common::{
         Address, FullName, InternationalAddress, InternationalPostalCode, PostalCode, Problematic,
         Problems, Severity,
@@ -124,32 +123,6 @@ impl ListSubmitter {
         };
         updated.address.update_is_known_in_bag();
         updated
-    }
-
-    pub async fn update(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::UpdateListSubmitter(self.clone()))
-            .await
-    }
-
-    pub async fn create_substitute(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::CreateSubstituteSubmitter(self.clone()))
-            .await
-    }
-
-    pub async fn update_substitute(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::UpdateSubstituteSubmitter(self.clone()))
-            .await
-    }
-
-    pub async fn delete_substitute(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::DeleteSubstituteSubmitter {
-                substitute_submitter_id: self.id,
-            })
-            .await
     }
 
     pub fn address_line_1(&self) -> String {

@@ -1,5 +1,5 @@
 use crate::{
-    AppError, ElectionConfig, PgStore,
+    AppError, ElectionConfig, PgStoreData,
     candidate_lists::{CandidateList, CandidateListId},
     list_submitters::{ListSubmitter, ListSubmitterId},
     name_authorisations::{NameAuthorisation, NameAuthorisationId},
@@ -7,9 +7,9 @@ use crate::{
     political_groups::PoliticalGroup,
 };
 
-use crate::store::StoreEvent;
+use crate::store::{Store, StoreEvent};
 
-impl PgStore {
+impl Store<PgStoreData> {
     pub fn get_election(&self) -> ElectionConfig {
         self.election
     }

@@ -1,33 +1,21 @@
 //! Persistence backends for the event store.
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
 use crate::{AppError, ElectionConfig, Scope, StreamId, utils::StorageScheme};
 
 use super::{
-    Store, StoreData, StoreEvent, chain_hash,
-    encryption::EventCipher,
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash,
+    encryption::{EventCipher, EventEncryption},
     filesystem::{self, replay_from_file, update_in_filesystem},
     memory::{self, MemoryStore},
+    store_handle::StoreBackend,
 };
 
 #[cfg(feature = "database")]
 use super::database::{self, load_from_database, update_in_database};
-
-/// Decryption-free metadata about a persisted stream, read from the backend's
-/// index without replaying (or warming) it. The political group name is absent:
-/// it lives in the encrypted payloads.
-#[derive(Clone, Debug)]
-pub struct StreamMeta {
-    pub stream_id: StreamId,
-    pub election: ElectionConfig,
-    /// Number of events, i.e. the last event id (events are appended `1..=n`).
-    pub event_count: usize,
-    pub created_at: Option<DateTime<Utc>>,
-    pub last_event_at: Option<DateTime<Utc>>,
-}
 
 /// Persistence backend selection for a store.
 #[derive(Clone, Debug)]
@@ -247,31 +235,6 @@ impl StorePersistence {
     }
 }
 
-/// A store's resolved backend: a persistence target paired with the
-/// per-stream [`EventCipher`].
-///
-/// The persisting variants (`Database`, `Local`) cannot be constructed
-/// without a cipher, so events written to disk or database are *always*
-/// encrypted. `Memory` carries no cipher because it never writes events out; it
-/// keeps only the shared index used to answer cross-stream lookups.
-#[derive(Clone, Debug)]
-pub(crate) enum StoreBackend {
-    /// PostgreSQL-backed, encrypted persistence.
-    #[cfg(feature = "database")]
-    Database {
-        pool: sqlx::PgPool,
-        cipher: Box<EventCipher>,
-    },
-    /// Local filesystem-backed, encrypted persistence.
-    Local {
-        dir: PathBuf,
-        cipher: Box<EventCipher>,
-    },
-    /// In-memory only: no durable persistence and no encryption, just the shared
-    /// index that records event hashes and stream scopes.
-    Memory { store: MemoryStore },
-}
-
 impl StorePersistence {
     /// Pair this persistence target with a stream's cipher to form a
     /// [`StoreBackend`]. The cipher is dropped for [`StorePersistence::Memory`],
@@ -284,6 +247,57 @@ impl StorePersistence {
             StorePersistence::Local(dir) => StoreBackend::Local { dir, cipher },
             StorePersistence::Memory(store) => StoreBackend::Memory { store },
         }
+    }
+}
+
+impl<D> Store<D>
+where
+    D: StoreData,
+{
+    /// Create a new store scoped to a specific (stream_id, election) pair.
+    pub async fn new_for_stream(
+        storage_url: &str,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        encryption: &EventEncryption,
+    ) -> Result<Self, AppError> {
+        let persistence = StorePersistence::from_storage_url(storage_url)?;
+        persistence.init().await?;
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
+    }
+
+    /// Create a new store for a stream using an already-initialized persistence
+    /// backend. `scope` is recorded on the stream row when it is first created.
+    pub async fn new_for_stream_with_persistence(
+        persistence: StorePersistence,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        encryption: &EventEncryption,
+    ) -> Result<Self, AppError> {
+        persistence
+            .ensure_stream(stream_id, election, D::scope())
+            .await?;
+
+        let cipher = encryption.derive_cipher(stream_id, election);
+        Ok(Store {
+            stream_id,
+            election,
+            backend: persistence.into_backend(cipher),
+            data: Arc::new(parking_lot::RwLock::new(D::default())),
+        })
+    }
+
+    #[cfg(feature = "database")]
+    /// Create a new store backed by the provided database pool for a (stream, election).
+    pub async fn new_with_pool_for_stream(
+        pool: sqlx::PgPool,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        encryption: &EventEncryption,
+    ) -> Result<Self, AppError> {
+        let persistence = StorePersistence::Database(pool);
+        persistence.init().await?;
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, encryption).await
     }
 }
 
