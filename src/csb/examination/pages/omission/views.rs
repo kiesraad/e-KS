@@ -115,6 +115,19 @@ pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<Ca
         .collect()
 }
 
+/// All paper-corrected candidate list districts of the political group
+/// for the candidate list omission form (mainly declarations of support)
+pub(super) fn available_electoral_districts(store: &CsbStore) -> Vec<ElectoralDistrict> {
+    let mut districts: Vec<_> = store
+        .get_corrected_candidate_lists()
+        .into_iter()
+        .flat_map(|l| l.electoral_districts)
+        .collect();
+    districts.sort();
+    districts.dedup();
+    districts
+}
+
 /// The presets for this type with their descriptions interpolated.
 pub(super) fn preset_views(target: &OmissionTarget, store: &CsbStore) -> Vec<PresetView> {
     let placeholders = placeholders_for(target, store);

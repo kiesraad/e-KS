@@ -66,20 +66,14 @@ impl OmissionTarget {
         context: CsbContext,
         store: &CsbStore,
     ) -> Result<Response, AppError> {
-        let available_districts = if self.omission_type == OmissionType::CandidateList {
-            store
-                .get_corrected_candidate_lists()
-                .into_iter()
-                .flat_map(|l| l.electoral_districts)
-                .collect()
-        } else {
-            Vec::new()
-        };
-        let available_candidate_lists = if self.omission_type == OmissionType::Candidate {
-            views::candidate_list_options(store, context.session.locale)
-        } else {
-            Vec::new()
-        };
+        let available_districts = (self.omission_type == OmissionType::CandidateList)
+            .then(|| views::available_electoral_districts(store))
+            .filter(|options| options.len() > 1)
+            .unwrap_or_default();
+        let available_candidate_lists = (self.omission_type == OmissionType::Candidate)
+            .then(|| views::candidate_list_options(store, context.session.locale))
+            .filter(|options| options.len() > 1)
+            .unwrap_or_default();
         let political_group = CsbPoliticalGroup::new_from_csb_store(store);
         Ok(HtmlTemplate(
             CsbAddOmissionTemplate {
@@ -183,35 +177,53 @@ pub async fn add_omission_submit(
 ) -> Result<Response, AppError> {
     let target = OmissionTarget::from_add_path(path, list_query);
 
-    // For candidate list omissions at least one district muse be selected
-    let districts = form.electoral_districts.clone();
-    if target.omission_type == OmissionType::CandidateList && districts.is_empty() {
-        let errors = vec![(
-            "electoral_districts".to_string(),
-            ValidationError::ChooseAtLeastOneOption,
-        )];
-        return target.render_add_form(
-            FormData::new_with_errors(form, errors),
-            &query,
-            context,
-            &store,
-        );
-    }
+    // For candidate list omissions at least one district must be selected
+    let districts = if target.omission_type != OmissionType::CandidateList {
+        Vec::new()
+    } else if !form.electoral_districts.is_empty() {
+        form.electoral_districts.clone()
+    } else {
+        // auto-fill when there is only one district available
+        let available = views::available_electoral_districts(&store);
+        if available.len() == 1 {
+            available
+        } else {
+            let errors = vec![(
+                "electoral_districts".to_string(),
+                ValidationError::ChooseAtLeastOneOption,
+            )];
+            return target.render_add_form(
+                FormData::new_with_errors(form, errors),
+                &query,
+                context,
+                &store,
+            );
+        }
+    };
 
     // For candidate omissions at least one list must be selected
-    let candidate_lists = form.candidate_lists.clone();
-    if target.omission_type == OmissionType::Candidate && candidate_lists.is_empty() {
-        let errors = vec![(
-            "candidate_lists".to_string(),
-            ValidationError::ChooseAtLeastOneOption,
-        )];
-        return target.render_add_form(
-            FormData::new_with_errors(form, errors),
-            &query,
-            context,
-            &store,
-        );
-    }
+    let candidate_lists = if target.omission_type != OmissionType::Candidate {
+        Vec::new()
+    } else if !form.candidate_lists.is_empty() {
+        form.candidate_lists.clone()
+    } else {
+        // auto-fill when there is only one available.
+        let options = views::candidate_list_options(&store, context.session.locale);
+        if options.len() == 1 {
+            vec![options[0].id]
+        } else {
+            let errors = vec![(
+                "candidate_lists".to_string(),
+                ValidationError::ChooseAtLeastOneOption,
+            )];
+            return target.render_add_form(
+                FormData::new_with_errors(form, errors),
+                &query,
+                context,
+                &store,
+            );
+        }
+    };
 
     match form.validate_create() {
         Err(form_data) => target.render_add_form(form_data, &query, context, &store),
@@ -259,6 +271,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
+        ElectoralDistrict,
         candidate_lists::CandidateListId,
         persons::PersonId,
         structs::csb::Omission,
@@ -340,16 +353,16 @@ mod tests {
 
     #[tokio::test]
     async fn add_omission_offers_and_prefills_corrected_districts() {
-        use crate::test_utils::sample_candidate_list;
-
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let list_id = CandidateListId::new();
-        // The imported list covers Utrecht; the corrections moved it to Groningen.
-        store.add_candidate_list(sample_candidate_list(list_id));
-        let mut corrected = sample_candidate_list(list_id);
-        corrected.electoral_districts = vec![crate::ElectoralDistrict::GR];
-        store.set_paper_corrected_candidate_list(corrected);
+        let mut list = sample_candidate_list(list_id);
+        list.electoral_districts = vec![ElectoralDistrict::UT, ElectoralDistrict::FR];
+        store.add_candidate_list(list.clone());
+
+        // Change Utrecht to Groningen
+        list.electoral_districts = vec![ElectoralDistrict::GR, ElectoralDistrict::FR];
+        store.set_paper_corrected_candidate_list(list);
 
         let response = add_omission(
             CsbAddOmissionPath {
@@ -368,9 +381,10 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::OK);
         let body = normalized(&response_body_string(response).await);
-        // The corrected district is selectable and pre-filled, the imported
-        // one is disabled.
+        // The corrected districts are selectable and pre-filled, the removed
+        // district is disabled
         assert!(body.contains(r#"data-district-nl="Groningen" checked />"#));
+        assert!(body.contains(r#"data-district-nl="Fryslân" checked />"#));
         assert!(body.contains(r#"data-district-nl="Utrecht" disabled />"#));
     }
 
@@ -381,27 +395,38 @@ mod tests {
         let store = CsbStore::new_for_test();
         let stream_id = store.stream_id;
         let list_id = CandidateListId::new();
-        // The list only exists in the corrected projection (added on paper).
+        // The list only exists in the corrected projection (added on paper)
         store.set_paper_corrected_candidate_list(sample_candidate_list(list_id));
 
-        let response = add_omission(
-            CsbAddOmissionPath {
-                stream_id,
-                omission_type: OmissionType::CandidateList,
-                reference: list_id.into(),
-            },
-            CsbContext::new_test(),
-            store,
-            Query(QueryParamState::default()),
-            Query(OmissionListQuery::default()),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let render = |store| async move {
+            let response = add_omission(
+                CsbAddOmissionPath {
+                    stream_id,
+                    omission_type: OmissionType::CandidateList,
+                    reference: list_id.into(),
+                },
+                CsbContext::new_test(),
+                store,
+                Query(QueryParamState::default()),
+                Query(OmissionListQuery::default()),
+            )
+            .await
+            .unwrap()
+            .into_response();
+            let body = response_body_string(response).await;
+            normalized(&body)
+        };
 
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = normalized(&response_body_string(response).await);
+        // With only one district the selector is hidden
+        let body = render(store.clone()).await;
+        assert!(!body.contains("data-district-nl"));
+        // A second list in Drenthe shows the selector
+        let mut list2 = sample_candidate_list(CandidateListId::new());
+        list2.electoral_districts = vec![crate::ElectoralDistrict::DR];
+        store.set_paper_corrected_candidate_list(list2);
+        let body = render(store.clone()).await;
         assert!(body.contains(r#"data-district-nl="Utrecht" checked />"#));
+        assert!(body.contains(r#"data-district-nl="Drenthe" />"#));
     }
 
     #[tokio::test]
@@ -418,24 +443,30 @@ mod tests {
         list.candidates = vec![person_id];
         store.set_paper_corrected_candidate_list(list);
 
-        let response = add_omission(
-            CsbAddOmissionPath {
-                stream_id,
-                omission_type: OmissionType::Candidate,
-                reference: person_id.into(),
-            },
-            CsbContext::new_test(),
-            store,
-            Query(QueryParamState::default()),
-            Query(OmissionListQuery::default()),
-        )
-        .await
-        .unwrap()
-        .into_response();
+        let render = |store| async move {
+            let response = add_omission(
+                CsbAddOmissionPath {
+                    stream_id,
+                    omission_type: OmissionType::Candidate,
+                    reference: person_id.into(),
+                },
+                CsbContext::new_test(),
+                store,
+                Query(QueryParamState::default()),
+                Query(OmissionListQuery::default()),
+            )
+            .await
+            .unwrap()
+            .into_response();
+            response_body_string(response).await
+        };
 
-        assert_eq!(response.status(), StatusCode::OK);
-        let body = response_body_string(response).await;
-        // The paper-added list is a selectable option.
+        // With only one list the selector is hidden
+        let body = render(store.clone()).await;
+        assert!(!body.contains(&format!("omission_candidate_list_{list_id}")));
+        // A second list shows the selector
+        store.set_paper_corrected_candidate_list(sample_candidate_list(CandidateListId::new()));
+        let body = render(store.clone()).await;
         assert!(body.contains(&format!("omission_candidate_list_{list_id}")));
     }
 
@@ -970,7 +1001,7 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn add_candidate_omission_without_lists_rerenders_form() {
+    async fn add_candidate_omission_auto_fills_single_list() {
         use crate::test_utils::{sample_candidate_list, sample_person};
 
         let store = CsbStore::new_for_test();
@@ -985,7 +1016,7 @@ mod tests {
         store.add_person(person);
         store.add_candidate_list(list);
 
-        // No lists selected: should re-render the form with an error
+        // No list selected in the form: the single available list is auto-filled
         let response = add_omission_submit(
             CsbAddOmissionPath {
                 stream_id,
@@ -1004,7 +1035,12 @@ mod tests {
         .unwrap()
         .into_response();
 
-        assert_eq!(response.status(), StatusCode::OK);
-        assert_eq!(store.get_omission_count(), 0);
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+        let omission = store.get_omission_for_test();
+        let OmissionCategory::Candidate { person, ref lists } = omission.category else {
+            panic!("Should be a candidate omission")
+        };
+        assert_eq!(person, person_id);
+        assert_eq!(lists, &[list_id]);
     }
 }
