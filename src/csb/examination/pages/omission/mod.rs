@@ -14,7 +14,7 @@ use crate::{
             CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath, OmissionListQuery,
         },
     },
-    form::{FormData, ValidationError},
+    form::{FieldErrors, FormData, ValidationError},
     persons::PersonId,
     structs::csb::{OmissionCategory, OmissionType},
     trans,
@@ -165,6 +165,32 @@ pub async fn overview(
     .into_response())
 }
 
+/// Returns the selected values if non-empty, auto-fills if exactly one option
+/// is available, or returns a validation error to re-render with.
+fn selected_or_only_available<T: Clone>(
+    active: bool,
+    selected: &[T],
+    available: impl FnOnce() -> Vec<T>,
+    error_label: &str,
+) -> Result<Vec<T>, FieldErrors> {
+    if !active {
+        return Ok(Vec::new());
+    }
+    if !selected.is_empty() {
+        return Ok(selected.to_vec());
+    }
+
+    let available = available();
+    if available.len() == 1 {
+        Ok(available)
+    } else {
+        Err(vec![(
+            error_label.to_string(),
+            ValidationError::ChooseAtLeastOneOption,
+        )])
+    }
+}
+
 /// Handle the submitted "add omission" form: validate, attach the category
 /// derived from the path parameters, persist, and redirect back.
 pub async fn add_omission_submit(
@@ -178,20 +204,14 @@ pub async fn add_omission_submit(
     let target = OmissionTarget::from_add_path(path, list_query);
 
     // For candidate list omissions at least one district must be selected
-    let districts = if target.omission_type != OmissionType::CandidateList {
-        Vec::new()
-    } else if !form.electoral_districts.is_empty() {
-        form.electoral_districts.clone()
-    } else {
-        // auto-fill when there is only one district available
-        let available = views::available_electoral_districts(&store);
-        if available.len() == 1 {
-            available
-        } else {
-            let errors = vec![(
-                "electoral_districts".to_string(),
-                ValidationError::ChooseAtLeastOneOption,
-            )];
+    let districts = match selected_or_only_available(
+        target.omission_type == OmissionType::CandidateList,
+        &form.electoral_districts,
+        || views::available_electoral_districts(&store),
+        "electoral_districts",
+    ) {
+        Ok(districts) => districts,
+        Err(errors) => {
             return target.render_add_form(
                 FormData::new_with_errors(form, errors),
                 &query,
@@ -202,20 +222,19 @@ pub async fn add_omission_submit(
     };
 
     // For candidate omissions at least one list must be selected
-    let candidate_lists = if target.omission_type != OmissionType::Candidate {
-        Vec::new()
-    } else if !form.candidate_lists.is_empty() {
-        form.candidate_lists.clone()
-    } else {
-        // auto-fill when there is only one available.
-        let options = views::candidate_list_options(&store, context.session.locale);
-        if options.len() == 1 {
-            vec![options[0].id]
-        } else {
-            let errors = vec![(
-                "candidate_lists".to_string(),
-                ValidationError::ChooseAtLeastOneOption,
-            )];
+    let candidate_lists = match selected_or_only_available(
+        target.omission_type == OmissionType::Candidate,
+        &form.candidate_lists,
+        || {
+            views::candidate_list_options(&store, context.session.locale)
+                .into_iter()
+                .map(|o| o.id)
+                .collect()
+        },
+        "candidate_lists",
+    ) {
+        Ok(candidate_lists) => candidate_lists,
+        Err(errors) => {
             return target.render_add_form(
                 FormData::new_with_errors(form, errors),
                 &query,
