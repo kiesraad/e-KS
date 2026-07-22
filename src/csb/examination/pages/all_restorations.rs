@@ -38,6 +38,7 @@ pub async fn all_restorations(
 
 struct AllOmissions {
     general: Vec<OmissionWithPath>,
+    declarations_of_support: Vec<OmissionWithPath>,
     candidate_lists: Vec<OmissionWithPath>,
     candidates: Vec<CandidateOmissions>,
 }
@@ -66,6 +67,7 @@ impl CsbStore {
             .collect::<Vec<_>>();
 
         let mut general = Vec::new();
+        let mut declarations_of_support = Vec::new();
         let mut candidate_lists = Vec::new();
         let mut candidates: Vec<CandidateOmissions> = Vec::new();
 
@@ -79,6 +81,17 @@ impl CsbStore {
                     candidate_lists.push(OmissionWithPath {
                         omission: omission.clone(),
                         path: list_path(political_group, districts, self)?,
+                    })
+                }
+                OmissionCategory::DeclarationsOfSupport(_) => {
+                    declarations_of_support.push(OmissionWithPath {
+                        omission: omission.clone(),
+                        path: political_group
+                            .manage_declarations_of_support_omissions_path()
+                            .with_query_params(QueryParamState::redirect_to(
+                                political_group.all_restorations_path().to_string(),
+                            ))
+                            .to_string(),
                     })
                 }
                 OmissionCategory::Candidate { person, ref lists } => {
@@ -104,6 +117,7 @@ impl CsbStore {
         }
         Ok(AllOmissions {
             general,
+            declarations_of_support,
             candidate_lists,
             candidates,
         })

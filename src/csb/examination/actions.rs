@@ -17,6 +17,9 @@ impl OmissionCategory {
         match self {
             OmissionCategory::PoliticalGroup => Ok(ALL_DISTRICTS.to_string()),
             OmissionCategory::CandidateList(districts) => Ok(format_districts(districts, election)),
+            OmissionCategory::DeclarationsOfSupport(districts) => {
+                Ok(format_districts(districts, election))
+            }
             OmissionCategory::Candidate { lists, .. } => {
                 let mut districts: Vec<ElectoralDistrict> = Vec::new();
                 for id in lists {

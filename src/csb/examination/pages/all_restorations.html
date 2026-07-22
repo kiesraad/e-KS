@@ -34,6 +34,16 @@
         {% endfor %}
       </ul>
     {% endif %}
+    {% if !all_omissions.declarations_of_support.is_empty() %}
+      <h4>{{ "csb.declarations_of_support.title"|trans }}</h4>
+      <ul class="tags-list">
+        {% for omission in all_omissions.declarations_of_support %}
+          <li class="tag link">
+            <a class="{{ omission.omission.class() }}" href="{{ omission.path }}">{{ omission.omission.title }}</a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
     {% if !all_omissions.candidate_lists.is_empty() %}
       <h4>{{ "candidate_list.title_plural"|trans }}</h4>
       <ul class="tags-list">

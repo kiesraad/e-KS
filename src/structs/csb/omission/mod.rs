@@ -23,6 +23,7 @@ id_newtype!(pub struct OmissionId);
 pub enum OmissionType {
     PoliticalGroup,
     CandidateList,
+    DeclarationsOfSupport,
     Candidate,
 }
 
@@ -31,8 +32,20 @@ impl OmissionType {
         match self {
             OmissionType::PoliticalGroup => "political-group",
             OmissionType::CandidateList => "candidate-list",
+            OmissionType::DeclarationsOfSupport => "declarations-of-support",
             OmissionType::Candidate => "candidate",
         }
+    }
+
+    pub fn needs_districts(self) -> bool {
+        matches!(
+            self,
+            OmissionType::CandidateList | OmissionType::DeclarationsOfSupport
+        )
+    }
+
+    pub fn needs_candidate_lists(self) -> bool {
+        matches!(self, OmissionType::Candidate)
     }
 }
 
@@ -43,6 +56,7 @@ impl FromStr for OmissionType {
         match s {
             "political-group" => Ok(OmissionType::PoliticalGroup),
             "candidate-list" => Ok(OmissionType::CandidateList),
+            "declarations-of-support" => Ok(OmissionType::DeclarationsOfSupport),
             "candidate" => Ok(OmissionType::Candidate),
             _ => Err(ValidationError::InvalidValue),
         }
@@ -73,9 +87,10 @@ pub enum OmissionCategory {
     /// or problems with authorised agent and/or statutory name (H 3-1 / H 3-2)
     #[default]
     PoliticalGroup,
-    /// E.g. missing or incorrect "ondersteuningsverklaringen" (H 4), which are per kieskring.
-    /// Stores the specific electoral districts affected by the omission.
+    /// Omissions scoped to a candidate list, per district.
     CandidateList(Vec<ElectoralDistrict>),
+    /// Missing or incorrect "ondersteuningsverklaringen" (H 4), per district.
+    DeclarationsOfSupport(Vec<ElectoralDistrict>),
     /// E.g. missing or invalid candidate data, missing or invalid "instemmingsverklaring" (H 9),
     /// missing copy of identity document
     Candidate {
@@ -99,6 +114,11 @@ impl OmissionCategory {
             OmissionType::PoliticalGroup => OmissionCategory::PoliticalGroup,
             OmissionType::CandidateList => {
                 unreachable!("CandidateList omissions must be created with explicit districts")
+            }
+            OmissionType::DeclarationsOfSupport => {
+                unreachable!(
+                    "DeclarationsOfSupport omissions must be created with explicit districts"
+                )
             }
             OmissionType::Candidate => OmissionCategory::Candidate {
                 person: reference.into(),

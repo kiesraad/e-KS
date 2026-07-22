@@ -66,11 +66,15 @@ impl OmissionTarget {
         context: CsbContext,
         store: &CsbStore,
     ) -> Result<Response, AppError> {
-        let available_districts = (self.omission_type == OmissionType::CandidateList)
+        let available_districts = self
+            .omission_type
+            .needs_districts()
             .then(|| views::available_electoral_districts(store))
             .filter(|options| options.len() > 1)
             .unwrap_or_default();
-        let available_candidate_lists = (self.omission_type == OmissionType::Candidate)
+        let available_candidate_lists = self
+            .omission_type
+            .needs_candidate_lists()
             .then(|| views::candidate_list_options(store, context.session.locale))
             .filter(|options| options.len() > 1)
             .unwrap_or_default();
@@ -96,6 +100,9 @@ impl OmissionTarget {
         match self.omission_type {
             OmissionType::PoliticalGroup => Ok(trans!("common.general_information", locale)),
             OmissionType::CandidateList => Ok(trans!("candidate_list.title_single", locale)),
+            OmissionType::DeclarationsOfSupport => {
+                Ok(trans!("csb.declarations_of_support.title", locale))
+            }
             OmissionType::Candidate => Ok(store
                 .get_imported_or_corrected_person(PersonId::from(self.reference))
                 .ok_or(AppError::GenericNotFound)?
@@ -203,9 +210,9 @@ pub async fn add_omission_submit(
 ) -> Result<Response, AppError> {
     let target = OmissionTarget::from_add_path(path, list_query);
 
-    // For candidate list omissions at least one district must be selected
+    // For candidate list and declarations-of-support omissions at least one district must be selected
     let districts = match selected_or_only_available(
-        target.omission_type == OmissionType::CandidateList,
+        target.omission_type.needs_districts(),
         &form.electoral_districts,
         || views::available_electoral_districts(&store),
         "electoral_districts",
@@ -223,7 +230,7 @@ pub async fn add_omission_submit(
 
     // For candidate omissions at least one list must be selected
     let candidate_lists = match selected_or_only_available(
-        target.omission_type == OmissionType::Candidate,
+        target.omission_type.needs_candidate_lists(),
         &form.candidate_lists,
         || {
             views::candidate_list_options(&store, context.session.locale)
@@ -249,6 +256,8 @@ pub async fn add_omission_submit(
         Ok(mut omission) => {
             omission.category = if target.omission_type == OmissionType::CandidateList {
                 OmissionCategory::CandidateList(districts)
+            } else if target.omission_type == OmissionType::DeclarationsOfSupport {
+                OmissionCategory::DeclarationsOfSupport(districts)
             } else {
                 OmissionCategory::from_type_and_reference(
                     target.omission_type,

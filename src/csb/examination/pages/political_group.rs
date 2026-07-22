@@ -23,6 +23,7 @@ struct CsbPoliticalGroupTemplate {
     all_brp_error_count: usize,
     candidate_lists: Vec<CsbCandidateList>,
     political_group_omission_count: usize,
+    declarations_of_support_omission_count: usize,
     restoration_count: usize,
 }
 
@@ -59,6 +60,8 @@ pub async fn overview(
         .map(|cl| cl.brp_error_count)
         .sum::<usize>();
     let political_group_omission_count = store.get_political_group_omissions().len();
+    let declarations_of_support_omission_count =
+        store.get_all_declarations_of_support_omissions().len();
 
     Ok(HtmlTemplate(
         CsbPoliticalGroupTemplate {
@@ -66,6 +69,7 @@ pub async fn overview(
             all_brp_error_count,
             candidate_lists,
             political_group_omission_count,
+            declarations_of_support_omission_count,
             restoration_count: store.get_omission_count(),
         },
         context,

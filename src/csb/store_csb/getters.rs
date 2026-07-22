@@ -56,8 +56,7 @@ impl CsbStore {
     }
 
     /// Return all candidate-list omissions that are linked to at least one
-    /// electoral district covered by the given list, matched against the union
-    /// of the list's imported and paper-corrected districts.
+    /// electoral district covered by the given list.
     pub fn get_candidate_list_omissions(
         &self,
         list_id: CandidateListId,
@@ -77,6 +76,16 @@ impl CsbStore {
             })
             .cloned()
             .collect())
+    }
+
+    pub fn get_all_declarations_of_support_omissions(&self) -> Vec<Omission> {
+        let data = self.data.read();
+
+        data.omissions
+            .values()
+            .filter(|o| matches!(o.category, OmissionCategory::DeclarationsOfSupport(_)))
+            .cloned()
+            .collect()
     }
 
     /// Return the single stored omission. Test-only helper for asserting on

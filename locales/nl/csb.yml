@@ -27,6 +27,9 @@ correction:
     title: Ambtshalve correctie aanpassen
   paper_corrected: Papieren correctie
   title: Ambtshalve correcties
+declarations_of_support:
+  instruction: Meld problemen met de ondersteuningsverklaringen
+  title: Ondersteuningsverklaringen
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:

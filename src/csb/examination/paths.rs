@@ -191,6 +191,15 @@ impl CsbPoliticalGroup {
         }
     }
 
+    /// Path to the overview page listing declarations-of-support omissions.
+    pub fn manage_declarations_of_support_omissions_path(&self) -> impl TypedPath {
+        CsbOmissionOverviewPath {
+            stream_id: self.stream_id,
+            omission_type: OmissionType::DeclarationsOfSupport,
+            reference: self.stream_id.into(),
+        }
+    }
+
     /// Path to the dialog that adds an omission to a specific candidate list.
     pub fn add_candidate_list_omission_path(&self, list: &CandidateListId) -> impl TypedPath {
         CsbAddOmissionPath {
