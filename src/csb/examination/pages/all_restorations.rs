@@ -3,7 +3,7 @@ use axum::response::{IntoResponse, Response};
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, Context, CsbContext, CsbStore, ElectoralDistrict, HtmlTemplate, QueryParamState,
+    AppError, Context, CsbContext, CsbStore, HtmlTemplate, QueryParamState,
     candidate_lists::CandidateListId,
     csb::examination::{extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath},
     filters,
@@ -77,10 +77,16 @@ impl CsbStore {
                     omission: omission.clone(),
                     path: general_path(political_group),
                 }),
-                OmissionCategory::CandidateList(ref districts) => {
+                OmissionCategory::CandidateList(ref lists) => {
+                    let list_id = lists.first().ok_or(AppError::InternalServerError)?;
                     candidate_lists.push(OmissionWithPath {
                         omission: omission.clone(),
-                        path: list_path(political_group, districts, self)?,
+                        path: political_group
+                            .manage_candidate_list_omissions_path(list_id)
+                            .with_query_params(QueryParamState::redirect_to(
+                                political_group.all_restorations_path().to_string(),
+                            ))
+                            .to_string(),
                     })
                 }
                 OmissionCategory::DeclarationsOfSupport(_) => {
@@ -133,29 +139,6 @@ fn general_path(political_group: &CsbPoliticalGroup) -> String {
         .to_string()
 }
 
-fn list_path(
-    political_group: &CsbPoliticalGroup,
-    districts: &[ElectoralDistrict],
-    store: &CsbStore,
-) -> Result<String, AppError> {
-    let district = districts.first().ok_or(AppError::InternalServerError)?;
-    // Search both projections: the omission may be recorded against a
-    // district that only its imported or only its corrected list covers.
-    let list = store
-        .get_imported_candidate_lists()
-        .into_iter()
-        .chain(store.get_corrected_candidate_lists())
-        .find(|l| l.electoral_districts.contains(district))
-        .ok_or(AppError::InternalServerError)?
-        .id;
-    Ok(political_group
-        .manage_candidate_list_omissions_path(&list)
-        .with_query_params(QueryParamState::redirect_to(
-            political_group.all_restorations_path().to_string(),
-        ))
-        .to_string())
-}
-
 fn candidate_path(
     political_group: &CsbPoliticalGroup,
     person: &PersonId,
@@ -175,7 +158,7 @@ mod tests {
     use reqwest::StatusCode;
 
     use crate::{
-        StreamId,
+        ElectoralDistrict, StreamId,
         candidate_lists::CandidateList,
         common::UtcDateTime,
         structs::csb::OmissionType,
@@ -202,6 +185,8 @@ mod tests {
             created_at: UtcDateTime::now(),
         });
 
+        let dos_title = "declarations of support title".to_string();
+
         Omission::new(
             OmissionCategory::PoliticalGroup,
             pg_title.clone(),
@@ -212,8 +197,17 @@ mod tests {
         .await?;
 
         Omission::new(
-            OmissionCategory::CandidateList(vec![ElectoralDistrict::UT, ElectoralDistrict::GR]),
+            OmissionCategory::CandidateList(vec![list_id]),
             list_title.clone(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        Omission::new(
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
+            dos_title.clone(),
             "description".to_string(),
             "help_text".to_string(),
         )
@@ -247,6 +241,7 @@ mod tests {
         // page contains titles
         assert!(body.contains(pg_title.as_str()));
         assert!(body.contains(list_title.as_str()));
+        assert!(body.contains(dos_title.as_str()));
         assert!(body.contains(candidate_title.as_str()));
 
         Ok(())
@@ -288,7 +283,7 @@ mod tests {
         .await?;
 
         Omission::new(
-            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+            OmissionCategory::CandidateList(vec![list_id]),
             "list title".to_string(),
             "description".to_string(),
             "help_text".to_string(),
@@ -336,18 +331,18 @@ mod tests {
     }
 
     #[test]
-    fn list_path_test() {
+    fn candidate_list_omission_path_links_to_the_referenced_list() {
         let store = CsbStore::new_for_test();
         let list_id = CandidateListId::new();
-        let list = sample_candidate_list(list_id);
-        store.add_candidate_list(list.clone());
+        store.add_candidate_list(sample_candidate_list(list_id));
 
-        let path = list_path(
-            &CsbPoliticalGroup::new_from_csb_store(&store),
-            &list.electoral_districts,
-            &store,
-        )
-        .expect("list path can't be created");
+        let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+        let path = political_group
+            .manage_candidate_list_omissions_path(&list_id)
+            .with_query_params(QueryParamState::redirect_to(
+                political_group.all_restorations_path().to_string(),
+            ))
+            .to_string();
 
         let list_type = OmissionType::CandidateList.to_string();
         let stream_id = store.stream_id;

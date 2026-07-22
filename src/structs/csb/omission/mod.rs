@@ -38,14 +38,11 @@ impl OmissionType {
     }
 
     pub fn needs_districts(self) -> bool {
-        matches!(
-            self,
-            OmissionType::CandidateList | OmissionType::DeclarationsOfSupport
-        )
+        matches!(self, OmissionType::DeclarationsOfSupport)
     }
 
     pub fn needs_candidate_lists(self) -> bool {
-        matches!(self, OmissionType::Candidate)
+        matches!(self, OmissionType::CandidateList | OmissionType::Candidate)
     }
 }
 
@@ -87,8 +84,8 @@ pub enum OmissionCategory {
     /// or problems with authorised agent and/or statutory name (H 3-1 / H 3-2)
     #[default]
     PoliticalGroup,
-    /// Omissions scoped to a candidate list, per district.
-    CandidateList(Vec<ElectoralDistrict>),
+    /// Omissions scoped to one or more specific candidate lists.
+    CandidateList(Vec<CandidateListId>),
     /// Missing or incorrect "ondersteuningsverklaringen" (H 4), per district.
     DeclarationsOfSupport(Vec<ElectoralDistrict>),
     /// E.g. missing or invalid candidate data, missing or invalid "instemmingsverklaring" (H 9),
@@ -102,9 +99,8 @@ pub enum OmissionCategory {
 
 impl OmissionCategory {
     /// Build the category for a newly added omission from the parameters of the
-    /// "add omission" dialog for [`OmissionType::PoliticalGroup`] and
-    /// [`OmissionType::Candidate`]. For candidate list omissions, construct the
-    /// category directly with the selected districts.
+    /// "add omission" dialog. For `DeclarationsOfSupport`, construct the category
+    /// directly with the selected districts (see `add_omission_submit`).
     pub fn from_type_and_reference(
         omission_type: OmissionType,
         reference: uuid::Uuid,
@@ -112,9 +108,7 @@ impl OmissionCategory {
     ) -> Self {
         match omission_type {
             OmissionType::PoliticalGroup => OmissionCategory::PoliticalGroup,
-            OmissionType::CandidateList => {
-                unreachable!("CandidateList omissions must be created with explicit districts")
-            }
+            OmissionType::CandidateList => OmissionCategory::CandidateList(lists),
             OmissionType::DeclarationsOfSupport => {
                 unreachable!(
                     "DeclarationsOfSupport omissions must be created with explicit districts"
@@ -286,10 +280,10 @@ pub mod tests {
         }
 
         #[test]
-        fn candidate_list_with_all_districts_maps_to_all() {
+        fn dos_all_districts_maps_to_all() {
             let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::CandidateList(EK.electoral_districts().to_vec())
+                OmissionCategory::DeclarationsOfSupport(EK.electoral_districts().to_vec())
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "alle kieskringen"
@@ -297,10 +291,10 @@ pub mod tests {
         }
 
         #[test]
-        fn candidate_list_with_one_district() {
+        fn dos_one_district() {
             let store = CsbStore::new_for_test();
             assert_eq!(
-                OmissionCategory::CandidateList(vec![ElectoralDistrict::BO])
+                OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::BO])
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "kieskring 13 (Bonaire)"
@@ -308,23 +302,26 @@ pub mod tests {
         }
 
         #[test]
-        fn candidate_list_with_multiple_districts() {
+        fn dos_multiple_districts() {
             let store = CsbStore::new_for_test();
             // The districts should be sorted by region number.
             assert_eq!(
-                OmissionCategory::CandidateList(vec![ElectoralDistrict::DR, ElectoralDistrict::GR])
-                    .electoral_district(&store, &EK)
-                    .unwrap(),
+                OmissionCategory::DeclarationsOfSupport(vec![
+                    ElectoralDistrict::DR,
+                    ElectoralDistrict::GR
+                ])
+                .electoral_district(&store, &EK)
+                .unwrap(),
                 "kieskring 1 (Groningen), 3 (Drenthe)"
             );
         }
 
         #[test]
-        fn candidate_list_with_no_districts_maps_to_all() {
+        fn dos_no_districts_maps_to_all() {
             let store = CsbStore::new_for_test();
             // An empty district list is treated as "all districts" in format_districts.
             assert_eq!(
-                OmissionCategory::CandidateList(vec![])
+                OmissionCategory::DeclarationsOfSupport(vec![])
                     .electoral_district(&store, &EK)
                     .unwrap(),
                 "alle kieskringen"
