@@ -50,7 +50,7 @@ fn imported_rows(
         .filter_map(|(index, person_id)| {
             let person = store.get_imported_person(*person_id)?;
             let corrected = corrected_store.get_person(*person_id).ok();
-            let ex_officio = store.get_corrected_person(*person_id);
+            let csb_corrected = store.get_csb_corrected_person(*person_id);
             let corrected_position = corrected_store.candidate_position(list.id, *person_id);
 
             Some((
@@ -69,12 +69,12 @@ fn imported_rows(
                             .map(|p| name_string(p, locale))
                             .unwrap_or_default(),
                     )
-                    .with_ex_officio(ex_officio.as_ref().map(|p| name_string(p, locale))),
+                    .with_csb_correction(csb_corrected.as_ref().map(|p| name_string(p, locale))),
                     residence: PaperCorrected::new(
                         residence_string(&person),
                         corrected.as_ref().map(residence_string).unwrap_or_default(),
                     )
-                    .with_ex_officio(ex_officio.as_ref().map(residence_string)),
+                    .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
                     person,
                     brp_error_count: rng().random_range(0..=2),
                 },
@@ -102,15 +102,17 @@ fn corrected_only_rows(
         .filter(|(_, id)| !list.candidates.contains(id))
         .filter_map(|(index, person_id)| {
             let person = corrected_store.get_person(*person_id).ok()?;
-            let ex_officio = store.get_corrected_person(*person_id);
+            let csb_corrected = store.get_csb_corrected_person(*person_id);
             Some((
                 index + 1,
                 CsbCandidate {
                     position: PaperCorrected::new(String::new(), (index + 1).to_string()),
                     name: PaperCorrected::new(String::new(), name_string(&person, locale))
-                        .with_ex_officio(ex_officio.as_ref().map(|p| name_string(p, locale))),
+                        .with_csb_correction(
+                            csb_corrected.as_ref().map(|p| name_string(p, locale)),
+                        ),
                     residence: PaperCorrected::new(String::new(), residence_string(&person))
-                        .with_ex_officio(ex_officio.as_ref().map(residence_string)),
+                        .with_csb_correction(csb_corrected.as_ref().map(residence_string)),
                     person,
                     brp_error_count: 0,
                 },

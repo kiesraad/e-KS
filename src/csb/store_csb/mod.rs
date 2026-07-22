@@ -27,8 +27,8 @@ pub struct CsbStoreData {
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
-    pub(crate) corrected_persons: HashMap<PersonId, Person>,
-    pub(crate) corrected_display_name: Option<DisplayName>,
+    pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
+    pub(crate) csb_corrected_display_name: Option<DisplayName>,
 }
 
 impl StoreData for CsbStoreData {
@@ -90,16 +90,19 @@ impl StoreData for CsbStoreData {
             }
             CsbEvent::UpdateCorrection(correction) => match correction {
                 Correction::DisplayName(display_name) => {
-                    self.corrected_display_name = Some(display_name);
+                    self.csb_corrected_display_name = Some(display_name);
                 }
                 Correction::Person(person_id, correction) => {
-                    let person = self.corrected_persons.entry(person_id).or_insert_with(|| {
-                        self.imported_data
-                            .persons
-                            .get(&person_id)
-                            .cloned()
-                            .unwrap_or_default()
-                    });
+                    let person = self
+                        .csb_corrected_persons
+                        .entry(person_id)
+                        .or_insert_with(|| {
+                            self.imported_data
+                                .persons
+                                .get(&person_id)
+                                .cloned()
+                                .unwrap_or_default()
+                        });
                     correction.apply(person);
                 }
             },
@@ -247,7 +250,7 @@ mod tests {
             CsbEvent::UpdateCorrection(Correction::DisplayName(display_name.clone())),
         ));
 
-        assert_eq!(data.corrected_display_name, Some(display_name));
+        assert_eq!(data.csb_corrected_display_name, Some(display_name));
     }
 
     #[test]
@@ -267,7 +270,7 @@ mod tests {
                 PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
             )),
         ));
-        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
         assert_eq!(corrected.name.last_name.to_string(), original_last_name);
 
@@ -279,7 +282,7 @@ mod tests {
                 PersonCorrection::LastName("Bakker".parse().unwrap()),
             )),
         ));
-        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
         assert_eq!(corrected.name.last_name.to_string(), "Bakker");
 
@@ -292,7 +295,7 @@ mod tests {
             )),
         ));
 
-        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
         assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(
@@ -316,7 +319,7 @@ mod tests {
             )),
         ));
 
-        let corrected = data.corrected_persons.get(&person_id).unwrap();
+        let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
         assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(

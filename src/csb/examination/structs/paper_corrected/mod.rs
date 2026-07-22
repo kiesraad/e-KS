@@ -16,13 +16,13 @@ pub use submitter::{
 };
 
 /// An imported value paired with its paper-corrected counterpart and an
-/// optional ex-officio correction. The ex-officio layer takes precedence:
-/// when present, all prior values are struck through and the ex-officio
+/// optional CSB correction. The CSB corrected value takes precedence:
+/// when present, all prior values are struck through and the CSB corrected
 /// value is shown in red.
 pub struct PaperCorrected {
     pub imported: String,
     pub corrected: String,
-    pub ex_officio: Option<String>,
+    pub csb_corrected: Option<String>,
 }
 
 impl PaperCorrected {
@@ -30,12 +30,12 @@ impl PaperCorrected {
         Self {
             imported: imported.into(),
             corrected: corrected.into(),
-            ex_officio: None,
+            csb_corrected: None,
         }
     }
 
-    pub fn with_ex_officio(mut self, value: Option<String>) -> Self {
-        self.ex_officio = value.filter(|v| v != &self.corrected);
+    pub fn with_csb_correction(mut self, value: Option<String>) -> Self {
+        self.csb_corrected = value.filter(|v| v != &self.corrected);
         self
     }
 

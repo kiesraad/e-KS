@@ -289,18 +289,22 @@ impl CsbStore {
         crate::PgStore::paper_corrections(self.clone())
     }
 
-    /// The current ex officio correction for the political group display name,
+    /// The current CSB correction for the political group display name,
     /// if one has been recorded via `CsbEvent::UpdateCorrection`.
-    pub fn get_corrected_display_name(&self) -> Option<DisplayName> {
-        self.data.read().corrected_display_name.clone()
+    pub fn get_csb_corrected_display_name(&self) -> Option<DisplayName> {
+        self.data.read().csb_corrected_display_name.clone()
     }
 
-    /// The person from the ex officio corrections projection, if any correction
+    /// The person from the CSB corrections projection, if any correction
     /// has been applied to that person. The returned [`Person`] reflects the
     /// accumulated state of all corrections applied so far (starting from the
     /// imported snapshot), NOT the paper-corrected projection.
-    pub fn get_corrected_person(&self, person_id: PersonId) -> Option<Person> {
-        self.data.read().corrected_persons.get(&person_id).cloned()
+    pub fn get_csb_corrected_person(&self, person_id: PersonId) -> Option<Person> {
+        self.data
+            .read()
+            .csb_corrected_persons
+            .get(&person_id)
+            .cloned()
     }
 }
 
