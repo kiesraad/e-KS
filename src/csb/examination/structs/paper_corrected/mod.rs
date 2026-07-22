@@ -15,12 +15,14 @@ pub use submitter::{
     PaperCorrectedSubmitter, paper_corrected_list_submitter, paper_corrected_substitute_submitters,
 };
 
-/// An imported value paired with its paper-corrected counterpart. Identical
-/// values render as a single value; differing values render the imported
-/// value struck through, followed by the correction.
+/// An imported value paired with its paper-corrected counterpart and an
+/// optional CSB correction. The CSB corrected value takes precedence:
+/// when present, all prior values are struck through and the CSB corrected
+/// value is shown in red.
 pub struct PaperCorrected {
     pub imported: String,
     pub corrected: String,
+    pub csb_corrected: Option<String>,
 }
 
 impl PaperCorrected {
@@ -28,7 +30,13 @@ impl PaperCorrected {
         Self {
             imported: imported.into(),
             corrected: corrected.into(),
+            csb_corrected: None,
         }
+    }
+
+    pub fn with_csb_correction(mut self, value: Option<String>) -> Self {
+        self.csb_corrected = value.filter(|v| v != &self.corrected);
+        self
     }
 
     /// Pair one field of an imported entity with the same field of its

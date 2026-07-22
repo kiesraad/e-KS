@@ -34,21 +34,33 @@ pub struct PaperCorrectedPersonDetails {
 }
 
 impl PaperCorrectedPersonDetails {
-    pub fn new(imported: Option<&Person>, corrected: Option<&Person>, locale: Locale) -> Self {
+    pub fn new(
+        imported: Option<&Person>,
+        corrected: Option<&Person>,
+        csb_corrected: Option<&Person>,
+        locale: Locale,
+    ) -> Self {
+        let cc_field = |f: fn(&Person) -> String| csb_corrected.map(f);
+
         Self {
             initials: PaperCorrected::from_field(imported, corrected, |p| {
                 p.name.initials.to_string()
-            }),
+            })
+            .with_csb_correction(cc_field(|p| p.name.initials.to_string())),
             first_name: PaperCorrected::from_field(imported, corrected, |p| {
                 opt_display(&p.name.first_name)
             }),
             last_name: PaperCorrected::from_field(imported, corrected, |p| {
                 p.name.last_name_with_prefix()
-            }),
+            })
+            .with_csb_correction(cc_field(|p| p.name.last_name_with_prefix())),
             gender: PaperCorrected::from_field(imported, corrected, |p| p.gender_label(locale)),
             date_of_birth: PaperCorrected::from_field(imported, corrected, |p| {
                 DateOfBirth::format_option(&p.personal_data.date_of_birth)
-            }),
+            })
+            .with_csb_correction(cc_field(|p| {
+                DateOfBirth::format_option(&p.personal_data.date_of_birth)
+            })),
             bsn: PaperCorrected::from_field(imported, corrected, |p| {
                 p.personal_data
                     .bsn
@@ -58,7 +70,10 @@ impl PaperCorrectedPersonDetails {
             }),
             place_of_residence: PaperCorrected::from_field(imported, corrected, |p| {
                 opt_display(&p.personal_data.place_of_residence)
-            }),
+            })
+            .with_csb_correction(cc_field(|p| {
+                opt_display(&p.personal_data.place_of_residence)
+            })),
             street_name: PaperCorrected::from_field(imported, corrected, |p| {
                 opt_display(&p.address.street_name)
             }),

@@ -6,7 +6,9 @@ use uuid::Uuid;
 use crate::{
     AppError, AppState, QueryParamState, StreamId,
     candidate_lists::CandidateListId,
-    csb::examination::extractors::CsbPoliticalGroup,
+    csb::examination::{
+        extractors::CsbPoliticalGroup, pages::correction::CandidateCorrectionField,
+    },
     persons::PersonId,
     structs::csb::{OmissionId, OmissionType},
 };
@@ -14,6 +16,7 @@ use crate::{
 mod all_restorations;
 mod candidate;
 mod candidate_list;
+mod correction;
 mod general_information;
 mod i4;
 mod omission;
@@ -119,6 +122,26 @@ pub struct CsbDeleteOmissionPath {
 #[typed_path("/csb/examination/{stream_id}/omissions", rejection(AppError))]
 pub struct CsbAllRestorationsPath {
     pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/correction/display-name",
+    rejection(AppError)
+)]
+pub struct CsbDisplayNameCorrectionPath {
+    pub stream_id: StreamId,
+}
+
+#[derive(TypedPath, Deserialize)]
+#[typed_path(
+    "/csb/examination/{stream_id}/correction/person/{person_id}/{field}",
+    rejection(AppError)
+)]
+pub struct CsbPersonCorrectionPath {
+    pub stream_id: StreamId,
+    pub person_id: PersonId,
+    pub field: CandidateCorrectionField,
 }
 
 #[derive(Debug, Default, Clone, Copy, Serialize, Deserialize)]
@@ -252,6 +275,30 @@ impl CsbPoliticalGroup {
             stream_id: self.stream_id,
         }
     }
+
+    /// Path to the correction overlay for the political group display name.
+    pub fn correction_display_name_path(&self) -> impl TypedPath {
+        CsbDisplayNameCorrectionPath {
+            stream_id: self.stream_id,
+        }
+    }
+
+    /// Path to the correction overlay for a specific personal-data field of a
+    /// candidate. The `list` is carried as a query parameter so the overlay can
+    /// return to the candidate's detail page after saving.
+    pub fn correction_person_path(
+        &self,
+        person: &PersonId,
+        field: CandidateCorrectionField,
+        list: &CandidateListId,
+    ) -> impl TypedPath {
+        CsbPersonCorrectionPath {
+            stream_id: self.stream_id,
+            person_id: *person,
+            field,
+        }
+        .with_query_params(OmissionListQuery { list: Some(*list) })
+    }
 }
 
 pub fn router() -> Router<AppState> {
@@ -270,4 +317,8 @@ pub fn router() -> Router<AppState> {
         .typed_get(omission::overview)
         .typed_post(omission::delete_omission)
         .typed_get(all_restorations::all_restorations)
+        .typed_get(correction::display_name_correction)
+        .typed_post(correction::display_name_correction_submit)
+        .typed_get(correction::person_correction)
+        .typed_post(correction::person_correction_submit)
 }
