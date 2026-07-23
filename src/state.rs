@@ -8,8 +8,9 @@ use secrecy::ExposeSecret;
 use crate::{
     AppError, Config, CsbMainStore, CsbMainStoreData, CsbStore, CsbStoreData, DbHealth,
     ElectionConfig, IdDeriver, PendingRequestStore, PgStoreData, SessionStore, StreamId,
+    crypto::MasterKey,
     csb::CSB_MAIN_STREAM_ID,
-    store::{EventEncryption, Store, StoreRegistry},
+    store::{Store, StoreRegistry},
 };
 
 #[cfg(feature = "fixtures")]
@@ -57,19 +58,17 @@ impl AppState {
     }
 
     pub async fn new_with_config(config: Config) -> Result<Self, AppError> {
-        let encryption = EventEncryption::new(&config.encryption_derivation_key);
+        let master = MasterKey::new(&config.master_encryption_key);
         let store_registry = StoreRegistry::new(
             config.storage_url.expose_secret().to_string(),
-            encryption.clone(),
+            master.clone(),
         )
         .await?;
         // Both CSB registries reuse the PG registry's persistence backend
-        let csb_store_registry = StoreRegistry::with_persistence(
-            store_registry.persistence().clone(),
-            encryption.clone(),
-        );
+        let csb_store_registry =
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), master.clone());
         let csb_main_store_registry =
-            StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), master);
         let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())?;
         let pending_requests =
             PendingRequestStore::from_storage_url(config.storage_url.expose_secret())?;
@@ -160,7 +159,7 @@ impl AppState {
     #[cfg(test)]
     pub async fn new_for_tests_with_config(config: Config) -> Self {
         let id_deriver = IdDeriver::new(&config.id_derivation_key);
-        let encryption = EventEncryption::new(&config.encryption_derivation_key);
+        let master = MasterKey::new(&config.master_encryption_key);
         let sessions = SessionStore::from_storage_url(config.storage_url.expose_secret())
             .expect("test SessionStore must initialize");
         let pending_requests =
@@ -170,16 +169,14 @@ impl AppState {
 
         let store_registry = StoreRegistry::new(
             config.storage_url.expose_secret().to_string(),
-            encryption.clone(),
+            master.clone(),
         )
         .await
         .expect("test StoreRegistry must initialize");
-        let csb_store_registry = StoreRegistry::with_persistence(
-            store_registry.persistence().clone(),
-            encryption.clone(),
-        );
+        let csb_store_registry =
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), master.clone());
         let csb_main_store_registry =
-            StoreRegistry::with_persistence(store_registry.persistence().clone(), encryption);
+            StoreRegistry::with_persistence(store_registry.persistence().clone(), master);
 
         Self {
             store_registry,

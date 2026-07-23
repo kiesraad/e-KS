@@ -1,7 +1,6 @@
 #[cfg(feature = "database")]
 pub(crate) mod database;
 
-pub(crate) mod encryption;
 pub(crate) mod persistence;
 
 mod event;
@@ -11,7 +10,6 @@ pub(crate) mod memory;
 mod registry;
 mod store_handle;
 
-pub use encryption::EventEncryption;
 pub use event::{Event, GENESIS_HASH, StoreEvent};
 pub use health::{DbHealth, run_db_prober};
 pub use persistence::StorePersistence;
@@ -25,8 +23,7 @@ pub(crate) use event::{chain_hash, event_aad};
 use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
 
-use crate::{AppError, ElectionConfig, Scope, StreamId};
-use encryption::EventCipher;
+use crate::{AppError, ElectionConfig, Scope, StreamId, crypto::EventCipher};
 
 /// Decryption-free metadata about a persisted stream, read from the backend's
 /// index without replaying (or warming) it. The political group name is absent:

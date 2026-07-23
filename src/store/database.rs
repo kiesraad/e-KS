@@ -4,9 +4,12 @@ use chrono::{DateTime, Utc};
 use serde::{Serialize, de::DeserializeOwned};
 
 use super::{
-    Store, StoreData, StoreEvent, StreamMeta, chain_hash, encryption::EventCipher, event_aad,
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash, event_aad, persistence::NewStream,
 };
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use crate::{
+    AppError, ElectionConfig, Scope, StreamId,
+    crypto::{EventCipher, WrappedKey},
+};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -66,12 +69,19 @@ async fn create_streams_table(conn: &mut sqlx::PgConnection) -> Result<(), AppEr
           election TEXT NOT NULL,
           last_event_id BIGINT NOT NULL,
           scope TEXT NOT NULL DEFAULT 'political_group',
+          encrypted_key BYTEA,
           PRIMARY KEY (stream_id, election)
         )
         "#,
     )
     .execute(&mut *conn)
     .await?;
+
+    // Upgrade path for databases created before per-stream keys existed.
+    sqlx::query("ALTER TABLE streams ADD COLUMN IF NOT EXISTS encrypted_key BYTEA")
+        .execute(&mut *conn)
+        .await?;
+
     Ok(())
 }
 
@@ -180,27 +190,26 @@ pub async fn verify_schema(pool: &sqlx::PgPool) -> Result<(), AppError> {
     Ok(())
 }
 
-/// Ensure a stream row exists for the given (stream_id, election), recording its
-/// `scope`. The scope is fixed when the row is first created (a stream is only
-/// ever used by one store type); later calls leave the existing scope untouched.
-pub async fn ensure_stream(
-    pool: &sqlx::PgPool,
-    stream_id: StreamId,
-    election: ElectionConfig,
-    scope: Scope,
-) -> Result<(), AppError> {
-    sqlx::query(
-        r#"INSERT INTO streams (stream_id, election, last_event_id, scope)
-        VALUES ($1, $2, 0, $3)
-        ON CONFLICT (stream_id, election) DO NOTHING"#,
+/// Ensure a stream row exists, recording `new`'s scope and wrapped key on
+/// first creation (later calls leave both untouched), and return the stored
+/// wrapped key. The `COALESCE` backfills keys onto pre-upgrade rows; their
+/// old events fail on decrypt.
+pub async fn ensure_stream(pool: &sqlx::PgPool, new: &NewStream) -> Result<WrappedKey, AppError> {
+    let wrapped: Vec<u8> = sqlx::query_scalar(
+        r#"INSERT INTO streams (stream_id, election, last_event_id, scope, encrypted_key)
+        VALUES ($1, $2, 0, $3, $4)
+        ON CONFLICT (stream_id, election) DO UPDATE
+          SET encrypted_key = COALESCE(streams.encrypted_key, EXCLUDED.encrypted_key)
+        RETURNING encrypted_key"#,
     )
-    .bind(stream_id.uuid())
-    .bind(election.stable_id())
-    .bind(scope.as_str())
-    .execute(pool)
+    .bind(new.stream_id.uuid())
+    .bind(new.election.stable_id())
+    .bind(new.scope.as_str())
+    .bind(new.encrypted_key.as_bytes())
+    .fetch_one(pool)
     .await?;
 
-    Ok(())
+    Ok(WrappedKey::from(wrapped))
 }
 
 /// List every `(stream_id, election)` stream with the given scope that has

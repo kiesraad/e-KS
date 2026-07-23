@@ -23,8 +23,11 @@ use tokio::{
     io::{AsyncReadExt, AsyncWriteExt},
 };
 
-use super::{Store, StoreData, StreamMeta, chain_hash, encryption::EventCipher, event_aad};
-use crate::{AppError, ElectionConfig, Scope, StreamId};
+use super::{Store, StoreData, StreamMeta, chain_hash, event_aad, persistence::NewStream};
+use crate::{
+    AppError, ElectionConfig, Scope, StreamId,
+    crypto::{EventCipher, WrappedKey},
+};
 
 const FRAME_HEADER_LEN: usize = 4;
 
@@ -42,30 +45,6 @@ enum Frame {
 /// Ensure the filesystem storage directory exists.
 pub async fn init_local(dir: &Path) -> Result<(), AppError> {
     fs::create_dir_all(dir).await.map_err(AppError::ServerError)
-}
-
-/// Append the event to the filesystem and apply it to the store.
-pub async fn update_in_filesystem<D>(
-    store: &Store<D>,
-    dir: &Path,
-    cipher: &EventCipher,
-    event: D::Event,
-) -> Result<(), AppError>
-where
-    D: StoreData,
-    D::Event: Serialize + DeserializeOwned,
-{
-    let last_id = replay_from_file(store, dir, cipher).await?;
-    let next_id = last_id + 1;
-    let created_at = Utc::now();
-    let prev_hash = store.data.read().last_event_hash();
-
-    let path = stream_path(dir, store.stream_id, store.election);
-    let hash = append_event(&path, cipher, next_id, created_at, &event, &prev_hash).await?;
-
-    store.apply_persisted_event(next_id, event, created_at, hash);
-
-    Ok(())
 }
 
 pub async fn replay_from_file<D>(
@@ -134,29 +113,24 @@ fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(StreamId, Elect
     Some((stream_id, election))
 }
 
-/// Ensure a stream file exists for local storage.
+/// Ensure a stream file and its wrapped key sidecar exist, returning the
+/// stored wrapped key.
 ///
 /// File storage only ever holds [`Scope::PoliticalGroup`] streams (CSB data
 /// lives only in the database backend), so a stream of any other scope is
 /// rejected here rather than persisted. Because every store is created through
-/// [`super::persistence::StorePersistence::ensure_stream`] before its first
-/// write, this is the single gate that keeps non-political-group events off
-/// disk.
-pub async fn ensure_stream_file(
-    dir: &Path,
-    stream_id: StreamId,
-    election: ElectionConfig,
-    scope: Scope,
-) -> Result<(), AppError> {
-    if scope != Scope::PoliticalGroup {
+/// [`super::persistence::StorePersistence`] before its first write, this is
+/// the single gate that keeps non-political-group events off disk.
+pub async fn ensure_stream_file(dir: &Path, new: &NewStream) -> Result<WrappedKey, AppError> {
+    if new.scope != Scope::PoliticalGroup {
         return Err(AppError::ConfigLoadError(format!(
             "local file storage only supports political-group streams, \
              got scope `{}`; use database storage for CSB",
-            scope.as_str()
+            new.scope.as_str()
         )));
     }
 
-    let path = stream_path(dir, stream_id, election);
+    let path = stream_path(dir, new.stream_id, new.election);
     OpenOptions::new()
         .create(true)
         .write(true)
@@ -165,7 +139,43 @@ pub async fn ensure_stream_file(
         .await
         .map_err(AppError::ServerError)?;
 
-    Ok(())
+    load_or_create_key_file(dir, new).await
+}
+
+/// Read the stream's `.key` sidecar, writing `new`'s wrapped key first if the
+/// file is missing.
+async fn load_or_create_key_file(dir: &Path, new: &NewStream) -> Result<WrappedKey, AppError> {
+    let path = key_path(dir, new.stream_id, new.election);
+
+    match fs::read(&path).await {
+        Ok(wrapped) => Ok(WrappedKey::from(wrapped)),
+        Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
+            // create_new: never clobber a concurrently created key
+            match OpenOptions::new()
+                .write(true)
+                .create_new(true)
+                .open(&path)
+                .await
+            {
+                Ok(mut file) => {
+                    file.write_all(new.encrypted_key.as_bytes())
+                        .await
+                        .map_err(AppError::ServerError)?;
+                    file.sync_data().await.map_err(AppError::ServerError)?;
+                    Ok(new.encrypted_key.clone())
+                }
+                Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
+                    // lost the race: use the winner's key
+                    fs::read(&path)
+                        .await
+                        .map(WrappedKey::from)
+                        .map_err(AppError::ServerError)
+                }
+                Err(err) => Err(AppError::ServerError(err)),
+            }
+        }
+        Err(err) => Err(AppError::ServerError(err)),
+    }
 }
 
 /// List every `(stream_id, election)` stream with the given scope.
@@ -294,7 +304,7 @@ async fn read_frames(
 
 /// Encrypt `payload`, append a frame for it to the stream file, and return the
 /// event's chain hash (computed over the encrypted blob).
-async fn append_event<E: Serialize>(
+pub(super) async fn append_event<E: Serialize>(
     path: &Path,
     cipher: &EventCipher,
     event_id: usize,
@@ -348,11 +358,20 @@ async fn append_event<E: Serialize>(
     Ok(hash)
 }
 
-fn stream_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> PathBuf {
+pub(super) fn stream_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> PathBuf {
+    stream_file(dir, stream_id, election, "bin")
+}
+
+/// Sidecar file holding the stream's wrapped encryption key.
+fn key_path(dir: &Path, stream_id: StreamId, election: ElectionConfig) -> PathBuf {
+    stream_file(dir, stream_id, election, "key")
+}
+
+fn stream_file(dir: &Path, stream_id: StreamId, election: ElectionConfig, ext: &str) -> PathBuf {
     // Election identifiers can contain ':' (e.g. `PS27:GR`); replace with '_'
     // so the filename stays portable on all filesystems.
     let election_segment = election.stable_id().replace(':', "_");
-    dir.join(format!("{stream_id}_{election_segment}.bin"))
+    dir.join(format!("{stream_id}_{election_segment}.{ext}"))
 }
 
 #[cfg(test)]
@@ -360,7 +379,8 @@ mod tests {
     use super::*;
     use crate::{
         Event,
-        store::{GENESIS_HASH, StoreEvent, encryption::EventEncryption},
+        crypto::{MasterKey, StreamKey},
+        store::{GENESIS_HASH, StoreEvent},
     };
     use parking_lot::RwLock;
     use secrecy::SecretString;
@@ -422,11 +442,21 @@ mod tests {
         assert_eq!(event.details(), "hello");
     }
 
-    fn test_encryption() -> EventEncryption {
-        EventEncryption::new(&SecretString::from("test-secret"))
+    fn test_master() -> MasterKey {
+        MasterKey::new(&SecretString::from("test-secret"))
     }
 
     const TEST_ELECTION: ElectionConfig = ElectionConfig::EK27;
+
+    fn test_new_stream(stream_id: StreamId, scope: Scope, master: &MasterKey) -> NewStream {
+        let key = StreamKey::generate();
+        NewStream {
+            stream_id,
+            election: TEST_ELECTION,
+            scope,
+            encrypted_key: master.wrap_key(&key, stream_id, TEST_ELECTION).unwrap(),
+        }
+    }
 
     async fn temp_dir() -> PathBuf {
         let mut dir = std::env::temp_dir();
@@ -446,9 +476,22 @@ mod tests {
         }
     }
 
-    /// The cipher a real store would derive for this stream.
-    fn test_cipher(stream_id: StreamId) -> EventCipher {
-        test_encryption().derive_cipher(stream_id, TEST_ELECTION)
+    /// A fresh stream cipher, as a real store would unwrap from its key file.
+    fn test_cipher() -> EventCipher {
+        StreamKey::generate().cipher()
+    }
+
+    /// A store wired to the local backend, as the registry would build it.
+    fn local_store(dir: &Path, stream_id: StreamId, cipher: &EventCipher) -> Store<TestData> {
+        Store {
+            stream_id,
+            election: TEST_ELECTION,
+            backend: crate::store::StoreBackend::Local {
+                dir: dir.to_path_buf(),
+                cipher: Box::new(cipher.clone()),
+            },
+            data: Arc::new(RwLock::new(TestData::default())),
+        }
     }
 
     #[tokio::test]
@@ -464,26 +507,18 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "first".to_string(),
-            },
-        )
-        .await?;
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+            })
+            .await?;
+        store
+            .update(TestEvent {
                 label: "second".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
         let file_contents = fs::read(&path).await.expect("read log");
@@ -528,26 +563,18 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "one".to_string(),
-            },
-        )
-        .await?;
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+            })
+            .await?;
+        store
+            .update(TestEvent {
                 label: "two".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         // Flip the last byte of the first frame (the GCM tag of event 1).
         let path = stream_path(&dir, stream_id, TEST_ELECTION);
@@ -576,17 +603,13 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "one".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         // Rewrite the stored chain hash. AES-GCM does not cover it, so only the
         // chain check can catch this; re-encode the frame so it stays well-formed.
@@ -627,16 +650,52 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn ensure_stream_creates_empty_file() -> Result<(), AppError> {
+    async fn ensure_stream_creates_empty_file_and_key() -> Result<(), AppError> {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
+        let master = test_master();
         let stream_id = StreamId::new();
-        ensure_stream_file(&dir, stream_id, TEST_ELECTION, Scope::PoliticalGroup).await?;
+        let new = test_new_stream(stream_id, Scope::PoliticalGroup, &master);
+        ensure_stream_file(&dir, &new).await?;
 
         let path = stream_path(&dir, stream_id, TEST_ELECTION);
         let metadata = fs::metadata(&path).await.map_err(AppError::ServerError)?;
         assert_eq!(metadata.len(), 0);
+
+        // the key sidecar exists and unwraps with the same master key
+        let wrapped = fs::read(key_path(&dir, stream_id, TEST_ELECTION))
+            .await
+            .map_err(AppError::ServerError)?;
+        assert!(
+            master
+                .unwrap_key(&WrappedKey::from(wrapped), stream_id, TEST_ELECTION)
+                .is_ok()
+        );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn ensure_stream_reuses_existing_key() -> Result<(), AppError> {
+        let dir = temp_dir().await;
+        init_local(&dir).await?;
+
+        let master = test_master();
+        let stream_id = StreamId::new();
+        let first = ensure_stream_file(
+            &dir,
+            &test_new_stream(stream_id, Scope::PoliticalGroup, &master),
+        )
+        .await?;
+        let second = ensure_stream_file(
+            &dir,
+            &test_new_stream(stream_id, Scope::PoliticalGroup, &master),
+        )
+        .await?;
+
+        // the second call returns the stored key, not its own fresh one
+        assert_eq!(first, second);
 
         Ok(())
     }
@@ -647,19 +706,20 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let err = ensure_stream_file(
-            &dir,
-            stream_id,
-            TEST_ELECTION,
-            Scope::CentralElectoralCommittee,
-        )
-        .await
-        .expect_err("non-political-group scope must be rejected on file storage");
+        let new = test_new_stream(stream_id, Scope::CentralElectoralCommittee, &test_master());
+        let err = ensure_stream_file(&dir, &new)
+            .await
+            .expect_err("non-political-group scope must be rejected on file storage");
         assert!(matches!(err, AppError::ConfigLoadError(_)));
 
-        // Nothing was written to disk.
+        // nothing was written: neither stream file nor key
         let path = stream_path(&dir, stream_id, TEST_ELECTION);
         assert!(fs::metadata(&path).await.is_err());
+        assert!(
+            fs::metadata(key_path(&dir, stream_id, TEST_ELECTION))
+                .await
+                .is_err()
+        );
 
         Ok(())
     }
@@ -670,17 +730,13 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "one".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         let political = streams_by_scope(&dir, Scope::PoliticalGroup).await;
         assert_eq!(political, vec![(stream_id, TEST_ELECTION)]);
@@ -697,17 +753,13 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "one".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         let target_hash = store.data.read().last_event_hash();
 
@@ -730,15 +782,11 @@ mod tests {
         );
 
         // A second event makes the empty prefix ambiguous.
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        store
+            .update(TestEvent {
                 label: "two".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
         assert!(matches!(
             find_event_by_hash_prefix(&dir, &[]).await,
             Err(AppError::AmbiguousHash)
@@ -752,8 +800,8 @@ mod tests {
         let dir = temp_dir().await;
         init_local(&dir).await?;
 
-        let store = test_store(StreamId::new());
-        let cipher = test_cipher(store.stream_id);
+        let cipher = test_cipher();
+        let store = local_store(&dir, StreamId::new(), &cipher);
         let path = stream_path(&dir, store.stream_id, TEST_ELECTION);
         append_event(
             &path,
@@ -766,15 +814,11 @@ mod tests {
             &GENESIS_HASH,
         )
         .await?;
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        store
+            .update(TestEvent {
                 label: "next".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
         // Replay and check that the new event got ID 6.
         let fresh = test_store(store.stream_id);
@@ -794,21 +838,16 @@ mod tests {
         init_local(&dir).await?;
 
         let stream_id = StreamId::new();
-        let store = test_store(stream_id);
-        let cipher = test_cipher(stream_id);
-        update_in_filesystem(
-            &store,
-            &dir,
-            &cipher,
-            TestEvent {
+        let cipher = test_cipher();
+        let store = local_store(&dir, stream_id, &cipher);
+        store
+            .update(TestEvent {
                 label: "secret".to_string(),
-            },
-        )
-        .await?;
+            })
+            .await?;
 
-        // Replay with a cipher derived from a different master secret.
-        let wrong_cipher = EventEncryption::new(&SecretString::from("wrong-secret"))
-            .derive_cipher(stream_id, TEST_ELECTION);
+        // Replay with a different stream's key.
+        let wrong_cipher = StreamKey::generate().cipher();
         let wrong_store = test_store(stream_id);
 
         let err = replay_from_file(&wrong_store, &dir, &wrong_cipher)

@@ -41,6 +41,7 @@ dependencies = [
  "ctr",
  "ghash",
  "subtle",
+ "zeroize",
 ]
 
 [[package]]
@@ -901,6 +902,7 @@ dependencies = [
  "urlencoding",
  "uuid",
  "validate",
+ "zeroize",
 ]
 
 [[package]]
