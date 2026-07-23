@@ -1,3 +1,5 @@
+const SOFT_HYPHEN: &str = "\\u00AD";
+
 /// Generates `locales.rs` in `out_dir` with translation macros and PHF maps.
 ///
 /// The output includes data for the hard-coded language list and emits
@@ -28,7 +30,15 @@ pub fn load_locales(out_dir: &str) {
             let entries = naive_yaml_parse(key, &yaml);
 
             for (key, mut value) in entries {
-                value = format!("r###\"{value}\"###");
+                value = if value.contains(SOFT_HYPHEN) {
+                    let parts: Vec<String> = value
+                        .split(SOFT_HYPHEN)
+                        .map(|part| format!("r###\"{part}\"###"))
+                        .collect();
+                    format!("concat!({})", parts.join(r#", "\u{AD}", "#))
+                } else {
+                    format!("r###\"{value}\"###")
+                };
                 writeln!(file, "    (\"{key}\") => {{ {value} }};").unwrap();
                 map.entry(key, value);
             }
