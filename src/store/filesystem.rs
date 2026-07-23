@@ -24,7 +24,10 @@ use tokio::{
 };
 
 use super::{Store, StoreData, StreamMeta, chain_hash, event_aad, persistence::NewStream};
-use crate::{AppError, ElectionConfig, Scope, StreamId, crypto::EventCipher};
+use crate::{
+    AppError, ElectionConfig, Scope, StreamId,
+    crypto::{EventCipher, WrappedKey},
+};
 
 const FRAME_HEADER_LEN: usize = 4;
 
@@ -118,7 +121,7 @@ fn parse_stream_filename(file_name: &std::ffi::OsStr) -> Option<(StreamId, Elect
 /// rejected here rather than persisted. Because every store is created through
 /// [`super::persistence::StorePersistence`] before its first write, this is
 /// the single gate that keeps non-political-group events off disk.
-pub async fn ensure_stream_file(dir: &Path, new: &NewStream) -> Result<Vec<u8>, AppError> {
+pub async fn ensure_stream_file(dir: &Path, new: &NewStream) -> Result<WrappedKey, AppError> {
     if new.scope != Scope::PoliticalGroup {
         return Err(AppError::ConfigLoadError(format!(
             "local file storage only supports political-group streams, \
@@ -141,11 +144,11 @@ pub async fn ensure_stream_file(dir: &Path, new: &NewStream) -> Result<Vec<u8>, 
 
 /// Read the stream's `.key` sidecar, writing `new`'s wrapped key first if the
 /// file is missing.
-async fn load_or_create_key_file(dir: &Path, new: &NewStream) -> Result<Vec<u8>, AppError> {
+async fn load_or_create_key_file(dir: &Path, new: &NewStream) -> Result<WrappedKey, AppError> {
     let path = key_path(dir, new.stream_id, new.election);
 
     match fs::read(&path).await {
-        Ok(wrapped) => Ok(wrapped),
+        Ok(wrapped) => Ok(WrappedKey::from(wrapped)),
         Err(err) if err.kind() == std::io::ErrorKind::NotFound => {
             // create_new: never clobber a concurrently created key
             match OpenOptions::new()
@@ -155,7 +158,7 @@ async fn load_or_create_key_file(dir: &Path, new: &NewStream) -> Result<Vec<u8>,
                 .await
             {
                 Ok(mut file) => {
-                    file.write_all(&new.encrypted_key)
+                    file.write_all(new.encrypted_key.as_bytes())
                         .await
                         .map_err(AppError::ServerError)?;
                     file.sync_data().await.map_err(AppError::ServerError)?;
@@ -163,7 +166,10 @@ async fn load_or_create_key_file(dir: &Path, new: &NewStream) -> Result<Vec<u8>,
                 }
                 Err(err) if err.kind() == std::io::ErrorKind::AlreadyExists => {
                     // lost the race: use the winner's key
-                    fs::read(&path).await.map_err(AppError::ServerError)
+                    fs::read(&path)
+                        .await
+                        .map(WrappedKey::from)
+                        .map_err(AppError::ServerError)
                 }
                 Err(err) => Err(AppError::ServerError(err)),
             }
@@ -663,7 +669,7 @@ mod tests {
             .map_err(AppError::ServerError)?;
         assert!(
             master
-                .unwrap_key(&wrapped, stream_id, TEST_ELECTION)
+                .unwrap_key(&WrappedKey::from(wrapped), stream_id, TEST_ELECTION)
                 .is_ok()
         );
 

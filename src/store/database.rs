@@ -6,7 +6,10 @@ use serde::{Serialize, de::DeserializeOwned};
 use super::{
     Store, StoreData, StoreEvent, StreamMeta, chain_hash, event_aad, persistence::NewStream,
 };
-use crate::{AppError, ElectionConfig, Scope, StreamId, crypto::EventCipher};
+use crate::{
+    AppError, ElectionConfig, Scope, StreamId,
+    crypto::{EventCipher, WrappedKey},
+};
 
 #[cfg(feature = "database")]
 impl<'r> sqlx::FromRow<'r, sqlx::postgres::PgRow> for StoreEvent<Vec<u8>> {
@@ -191,7 +194,7 @@ pub async fn verify_schema(pool: &sqlx::PgPool) -> Result<(), AppError> {
 /// first creation (later calls leave both untouched), and return the stored
 /// wrapped key. The `COALESCE` backfills keys onto pre-upgrade rows; their
 /// old events fail on decrypt.
-pub async fn ensure_stream(pool: &sqlx::PgPool, new: &NewStream) -> Result<Vec<u8>, AppError> {
+pub async fn ensure_stream(pool: &sqlx::PgPool, new: &NewStream) -> Result<WrappedKey, AppError> {
     let wrapped: Vec<u8> = sqlx::query_scalar(
         r#"INSERT INTO streams (stream_id, election, last_event_id, scope, encrypted_key)
         VALUES ($1, $2, 0, $3, $4)
@@ -202,11 +205,11 @@ pub async fn ensure_stream(pool: &sqlx::PgPool, new: &NewStream) -> Result<Vec<u
     .bind(new.stream_id.uuid())
     .bind(new.election.stable_id())
     .bind(new.scope.as_str())
-    .bind(&new.encrypted_key)
+    .bind(new.encrypted_key.as_bytes())
     .fetch_one(pool)
     .await?;
 
-    Ok(wrapped)
+    Ok(WrappedKey::from(wrapped))
 }
 
 /// List every `(stream_id, election)` stream with the given scope that has

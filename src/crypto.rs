@@ -54,13 +54,13 @@ impl MasterKey {
     }
 
     /// Encrypt `key` for storage next to its stream, binding
-    /// `(stream_id, election)` into the tag. Returns `nonce || ciphertext || tag`.
+    /// `(stream_id, election)` into the tag.
     pub fn wrap_key(
         &self,
         key: &StreamKey,
         stream_id: StreamId,
         election: ElectionConfig,
-    ) -> Result<Vec<u8>, AppError> {
+    ) -> Result<WrappedKey, AppError> {
         let nonce = Nonce::<Aes256Gcm>::generate();
 
         // encrypt_in_place overwrites the plaintext copy
@@ -72,17 +72,18 @@ impl MasterKey {
         let mut out = Vec::with_capacity(NONCE_LEN + buf.len());
         out.extend_from_slice(&nonce);
         out.extend_from_slice(&buf);
-        Ok(out)
+        Ok(WrappedKey(out))
     }
 
     /// Decrypt a key wrapped by [`wrap_key`](Self::wrap_key) for the same
     /// `(stream_id, election)`.
     pub fn unwrap_key(
         &self,
-        wrapped: &[u8],
+        wrapped: &WrappedKey,
         stream_id: StreamId,
         election: ElectionConfig,
     ) -> Result<StreamKey, AppError> {
+        let wrapped = wrapped.as_bytes();
         if wrapped.len() < NONCE_LEN {
             return Err(AppError::EventDecodeError(
                 "wrapped stream key too short for nonce".to_string(),
@@ -127,6 +128,33 @@ fn wrap_aad(stream_id: StreamId, election: ElectionConfig) -> Vec<u8> {
     aad.push(b':');
     aad.extend_from_slice(election_id.as_bytes());
     aad
+}
+
+/// A [`StreamKey`] encrypted by the [`MasterKey`] as `nonce || ciphertext || tag`:
+/// the only form in which stream keys are persisted. Ciphertext, not a secret,
+/// but a distinct type so wrapped-key blobs cannot be confused with other byte
+/// buffers (unwrapped keys are [`StreamKey`]s and never leave this module).
+#[derive(Clone, PartialEq, Eq)]
+pub struct WrappedKey(Vec<u8>);
+
+impl WrappedKey {
+    pub fn as_bytes(&self) -> &[u8] {
+        &self.0
+    }
+}
+
+/// Only for reading back a persisted wrapped key; wrap fresh keys with
+/// [`MasterKey::wrap_key`].
+impl From<Vec<u8>> for WrappedKey {
+    fn from(bytes: Vec<u8>) -> Self {
+        Self(bytes)
+    }
+}
+
+impl std::fmt::Debug for WrappedKey {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(f, "WrappedKey({} bytes)", self.0.len())
+    }
 }
 
 /// Random 256-bit data-encryption key for a single stream. Zeroed on drop;
@@ -310,9 +338,14 @@ mod tests {
         let stream_id = StreamId::new();
         let key = StreamKey::generate();
 
-        let mut wrapped = master.wrap_key(&key, stream_id, TEST_ELECTION).unwrap();
-        let last = wrapped.len() - 1;
-        wrapped[last] ^= 0x01;
+        let mut bytes = master
+            .wrap_key(&key, stream_id, TEST_ELECTION)
+            .unwrap()
+            .as_bytes()
+            .to_vec();
+        let last = bytes.len() - 1;
+        bytes[last] ^= 0x01;
+        let wrapped = WrappedKey::from(bytes);
 
         assert!(
             master
@@ -324,7 +357,11 @@ mod tests {
     #[test]
     fn too_short_wrapped_key_fails() {
         let master = test_master();
-        let result = master.unwrap_key(&[0u8; 5], StreamId::new(), TEST_ELECTION);
+        let result = master.unwrap_key(
+            &WrappedKey::from(vec![0u8; 5]),
+            StreamId::new(),
+            TEST_ELECTION,
+        );
         assert!(matches!(result, Err(AppError::EventDecodeError(_))));
     }
 

@@ -645,4 +645,92 @@ mod database_tests {
 
         Ok(())
     }
+
+    /// A stream row created before per-stream keys existed carries no
+    /// `encrypted_key`. `ensure_stream` backfills the caller's fresh key onto
+    /// such a row exactly once (later calls keep the stored key), and events
+    /// written under the old scheme fail to decrypt rather than replay.
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn ensure_stream_backfills_keys_onto_pre_upgrade_rows(
+        pool: PgPool,
+    ) -> Result<(), AppError> {
+        use crate::{
+            crypto::{StreamKey, WrappedKey},
+            store::{
+                GENESIS_HASH, chain_hash, database::ensure_stream, event_aad,
+                persistence::NewStream,
+            },
+        };
+
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let master = test_master();
+        let group_id = StreamId::new();
+        let election = ElectionConfig::EK27;
+        let election_id = election.stable_id();
+
+        // A pre-upgrade row: no wrapped key, one event encrypted under the old
+        // scheme, whose key is not recoverable from the database.
+        sqlx::query(
+            r#"INSERT INTO streams (stream_id, election, last_event_id, scope, encrypted_key)
+            VALUES ($1, $2, 1, $3, NULL)"#,
+        )
+        .bind(group_id.uuid())
+        .bind(&election_id)
+        .bind(Scope::PoliticalGroup.as_str())
+        .execute(&pool)
+        .await?;
+
+        let old_cipher = StreamKey::generate().cipher();
+        let created_at = Utc::now();
+        let event = PgEvent::CreatePerson(sample_person(PersonId::new()));
+        let payload = old_cipher.encrypt(&event, &event_aad(1, created_at, &GENESIS_HASH))?;
+        let hash = chain_hash(&GENESIS_HASH, 1, created_at, &payload);
+        sqlx::query(
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
+            VALUES ($1, $2, $3, $4, $5, $6)"#,
+        )
+        .bind(group_id.uuid())
+        .bind(&election_id)
+        .bind(1_i64)
+        .bind(created_at)
+        .bind(hash.as_slice())
+        .bind(&payload)
+        .execute(&pool)
+        .await?;
+
+        let new_stream = |encrypted_key: WrappedKey| NewStream {
+            stream_id: group_id,
+            election,
+            scope: Scope::PoliticalGroup,
+            encrypted_key,
+        };
+
+        // The first call backfills its fresh key onto the NULL column.
+        let first_key = master.wrap_key(&StreamKey::generate(), group_id, election)?;
+        assert_eq!(
+            ensure_stream(&pool, &new_stream(first_key.clone())).await?,
+            first_key
+        );
+
+        // Later calls keep the stored key; the new candidate is discarded.
+        let second_key = master.wrap_key(&StreamKey::generate(), group_id, election)?;
+        assert_eq!(
+            ensure_stream(&pool, &new_stream(second_key)).await?,
+            first_key
+        );
+
+        // The old event was not written under the backfilled key, so it must
+        // fail to decrypt instead of silently replaying.
+        let store = PgStore::new_with_pool_for_stream(pool, group_id, election, &master).await?;
+        let err = store
+            .load()
+            .await
+            .expect_err("pre-upgrade events must not decrypt under the backfilled key");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
+
+        Ok(())
+    }
 }

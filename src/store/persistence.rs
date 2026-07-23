@@ -6,7 +6,7 @@ use std::{path::PathBuf, sync::Arc};
 
 use crate::{
     AppError, ElectionConfig, Scope, StreamId,
-    crypto::{MasterKey, StreamKey},
+    crypto::{MasterKey, StreamKey, WrappedKey},
     utils::StorageScheme,
 };
 
@@ -27,7 +27,7 @@ pub(crate) struct NewStream {
     pub election: ElectionConfig,
     pub scope: Scope,
     /// Fresh stream key, wrapped by the master key.
-    pub encrypted_key: Vec<u8>,
+    pub encrypted_key: WrappedKey,
 }
 
 impl NewStream {
@@ -128,7 +128,7 @@ impl StorePersistence {
     ) -> Result<StoreBackend, AppError> {
         // The stored key may differ from the generated one: an existing
         // stream keeps the key it was created with.
-        let stored_cipher = |wrapped: Vec<u8>| {
+        let stored_cipher = |wrapped: WrappedKey| {
             Ok::<_, AppError>(Box::new(
                 master.unwrap_key(&wrapped, stream_id, election)?.cipher(),
             ))
