@@ -7,7 +7,7 @@ use std::str::FromStr;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    AnyLocale, AppError, CsbEvent, CsbStore, ElectionConfig, ElectoralDistrict,
+    ElectoralDistrict,
     form::ValidationError,
     id_newtype,
     structs::{candidate_lists::CandidateListId, common::UtcDateTime, persons::PersonId},
@@ -85,8 +85,6 @@ pub enum OmissionCategory {
     },
 }
 
-const ALL_DISTRICTS: &str = "alle kieskringen";
-
 impl OmissionCategory {
     /// Build the category for a newly added omission from the parameters of the
     /// "add omission" dialog for [`OmissionType::PoliticalGroup`] and
@@ -107,47 +105,6 @@ impl OmissionCategory {
                 lists,
             },
         }
-    }
-
-    /// Returns the electoral district string for use in model I 4.
-    pub fn electoral_district(
-        &self,
-        store: &CsbStore,
-        election: &ElectionConfig,
-    ) -> Result<String, AppError> {
-        match self {
-            OmissionCategory::PoliticalGroup => Ok(ALL_DISTRICTS.to_string()),
-            OmissionCategory::CandidateList(districts) => Ok(format_districts(districts, election)),
-            OmissionCategory::Candidate { lists, .. } => {
-                let mut districts: Vec<ElectoralDistrict> = Vec::new();
-                for id in lists {
-                    let list = store
-                        .get_candidate_list(*id)
-                        .ok_or(AppError::GenericNotFound)?;
-                    for d in list.electoral_districts {
-                        if !districts.contains(&d) {
-                            districts.push(d);
-                        }
-                    }
-                }
-                Ok(format_districts(&districts, election))
-            }
-        }
-    }
-}
-
-fn format_districts(districts: &[ElectoralDistrict], election: &ElectionConfig) -> String {
-    let all_districts = election.electoral_districts();
-    if districts.is_empty() || all_districts.iter().all(|d| districts.contains(d)) {
-        ALL_DISTRICTS.to_string()
-    } else {
-        let mut sorted = districts.to_vec();
-        sorted.sort_by_key(|d| d.region_number());
-        let parts: Vec<String> = sorted
-            .iter()
-            .map(|d| format!("{} ({})", d.region_number(), d.title(AnyLocale::Nl)))
-            .collect();
-        format!("kieskring {}", parts.join(", "))
     }
 }
 
@@ -188,21 +145,6 @@ impl Omission {
         }
     }
 
-    pub async fn create(&self, store: &CsbStore) -> Result<(), AppError> {
-        store.update(CsbEvent::CreateOmission(self.clone())).await
-    }
-
-    pub async fn update(&self, store: &CsbStore) -> Result<(), AppError> {
-        store.update(CsbEvent::UpdateOmission(self.clone())).await
-    }
-
-    pub async fn delete(&self, store: &CsbStore) -> Result<(), AppError> {
-        store
-            .update(CsbEvent::DeleteOmission {
-                omission_id: self.id,
-            })
-            .await
-    }
     pub fn class(&self) -> &str {
         if self.recoverable { "warning" } else { "error" }
     }
@@ -211,7 +153,7 @@ impl Omission {
 #[cfg(test)]
 pub mod tests {
     use super::*;
-    use crate::CsbStore;
+    use crate::{AppError, CsbStore};
 
     pub fn sample_omission(category: OmissionCategory) -> Omission {
         Omission::new(

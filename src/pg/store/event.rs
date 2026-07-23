@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict, Event, StreamId,
+    ElectoralDistrict, StreamId,
     candidate_lists::{CandidateList, CandidateListId},
     common::{DutchAddress, FullName},
     list_submitters::{ListSubmitter, ListSubmitterId},
@@ -101,80 +101,4 @@ pub enum PgEvent {
     Import {
         hash: [u8; 32],
     },
-}
-
-impl Event for PgEvent {
-    /// Return a stable category key for filtering in the audit log.
-    fn category(&self) -> &'static str {
-        match self {
-            PgEvent::UpdatePoliticalGroup(_) => "political_group",
-            PgEvent::CreatePerson(_)
-            | PgEvent::CreatePersonPersonalData { .. }
-            | PgEvent::UpdatePerson(_)
-            | PgEvent::UpdatePersonPersonalData { .. }
-            | PgEvent::UpdatePersonAddress { .. }
-            | PgEvent::UpdatePersonRepresentative { .. }
-            | PgEvent::DeletePerson { .. } => "person",
-            PgEvent::CreateCandidateList(_)
-            | PgEvent::UpdateCandidateListDistricts { .. }
-            | PgEvent::UpdateCandidateListOrder { .. }
-            | PgEvent::AddCandidateToCandidateList { .. }
-            | PgEvent::RemoveCandidateFromCandidateList { .. }
-            | PgEvent::DeleteCandidateList(_) => "candidate_list",
-            PgEvent::CreateNameAuthorisation(_)
-            | PgEvent::UpdateNameAuthorisation(_)
-            | PgEvent::DeleteNameAuthorisation(_) => "name_authorisation",
-            PgEvent::UpdateListSubmitter(_) => "list_submitter",
-            PgEvent::CreateSubstituteSubmitter(_)
-            | PgEvent::UpdateSubstituteSubmitter(_)
-            | PgEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
-            PgEvent::DeveloperLogin { .. }
-            | PgEvent::DownloadFile { .. }
-            | PgEvent::HideDownloadWarning
-            | PgEvent::ExportCsv { .. }
-            | PgEvent::ImportCandidates { .. } => "system",
-            PgEvent::Import { .. } => "import",
-        }
-    }
-
-    /// Return a stable snake_case key identifying the event variant.
-    /// Variants that share a user-facing description share a key (e.g. both
-    /// `CreatePerson` and `CreatePersonPersonalData` map to `create_person`).
-    fn key(&self) -> &'static str {
-        match self {
-            PgEvent::UpdatePoliticalGroup(_) => "update_political_group",
-            PgEvent::CreatePerson(_) | PgEvent::CreatePersonPersonalData { .. } => "create_person",
-            PgEvent::UpdatePerson(_) | PgEvent::UpdatePersonPersonalData { .. } => "update_person",
-            PgEvent::UpdatePersonAddress { .. } => "update_person_address",
-            PgEvent::UpdatePersonRepresentative { .. } => "update_person_representative",
-            PgEvent::DeletePerson { .. } => "delete_person",
-            PgEvent::CreateCandidateList(_) => "create_candidate_list",
-            PgEvent::UpdateCandidateListDistricts { .. } => "update_candidate_list_districts",
-            PgEvent::UpdateCandidateListOrder { .. } => "update_candidate_list_order",
-            PgEvent::AddCandidateToCandidateList { .. } => "add_candidate_to_list",
-            PgEvent::RemoveCandidateFromCandidateList { .. } => "remove_candidate_from_list",
-            PgEvent::DeleteCandidateList(_) => "delete_candidate_list",
-            PgEvent::CreateNameAuthorisation(_) => "create_name_authorisation",
-            PgEvent::UpdateNameAuthorisation(_) => "update_name_authorisation",
-            PgEvent::DeleteNameAuthorisation(_) => "delete_name_authorisation",
-            PgEvent::UpdateListSubmitter(_) => "update_list_submitter",
-            PgEvent::CreateSubstituteSubmitter(_) => "create_substitute_submitter",
-            PgEvent::UpdateSubstituteSubmitter(_) => "update_substitute_submitter",
-            PgEvent::DeleteSubstituteSubmitter { .. } => "delete_substitute_submitter",
-            PgEvent::DeveloperLogin { .. } => "developer_login",
-            PgEvent::DownloadFile { .. } => "download_file",
-            PgEvent::HideDownloadWarning => "hide_download_warning",
-            PgEvent::ExportCsv { .. } => "export_csv",
-            PgEvent::ImportCandidates { .. } => "import_csv",
-            PgEvent::Import { .. } => "import",
-        }
-    }
-
-    fn description(&self, locale: crate::Locale) -> String {
-        super::event_info::event_description(self, locale)
-    }
-
-    fn details(&self) -> String {
-        super::event_info::event_details(self)
-    }
 }

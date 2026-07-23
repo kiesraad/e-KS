@@ -126,7 +126,7 @@ impl crate::CsbStore {
         crate::store::Store {
             stream_id: StreamId::new(),
             election: crate::ElectionConfig::EK27,
-            backend: crate::store::persistence::StoreBackend::Memory {
+            backend: crate::store::StoreBackend::Memory {
                 store: crate::store::memory::MemoryStore::default(),
             },
             data: std::sync::Arc::new(parking_lot::RwLock::new(CsbStoreData::default())),

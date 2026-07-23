@@ -14,17 +14,32 @@ mod store_handle;
 pub use encryption::EventEncryption;
 pub use event::{Event, GENESIS_HASH, StoreEvent};
 pub use health::{DbHealth, run_db_prober};
-pub use persistence::{StorePersistence, StreamMeta};
+pub use persistence::StorePersistence;
 pub use registry::StoreRegistry;
 pub use store_handle::Store;
+#[cfg(test)]
+pub(crate) use store_handle::StoreBackend;
 
 pub(crate) use event::{chain_hash, event_aad};
 
 use chrono::{DateTime, Utc};
 use serde::de::DeserializeOwned;
 
-use crate::{AppError, Scope};
+use crate::{AppError, ElectionConfig, Scope, StreamId};
 use encryption::EventCipher;
+
+/// Decryption-free metadata about a persisted stream, read from the backend's
+/// index without replaying (or warming) it. The political group name is absent:
+/// it lives in the encrypted payloads.
+#[derive(Clone, Debug)]
+pub struct StreamMeta {
+    pub stream_id: StreamId,
+    pub election: ElectionConfig,
+    /// Number of events, i.e. the last event id (events are appended `1..=n`).
+    pub event_count: usize,
+    pub created_at: Option<DateTime<Utc>>,
+    pub last_event_at: Option<DateTime<Utc>>,
+}
 
 pub trait StoreData: Default + Send + Sync + 'static {
     type Event: Event;

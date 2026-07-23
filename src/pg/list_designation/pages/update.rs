@@ -8,8 +8,8 @@ use crate::{
     AppError, Context, Form, HtmlTemplate, PgStore, QueryParamState, filters,
     form::FormData,
     list_designation::{
-        ListDesignation, forms::list_designation_form::ListDesignationForm,
-        pages::ListDesignationUpdatePath,
+        ListDesignation, ListDesignationUpdatePath,
+        forms::list_designation_form::ListDesignationForm,
     },
     list_submitters::ListSubmitter,
     name_authorisations::NameAuthorisation,

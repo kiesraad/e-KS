@@ -12,14 +12,17 @@ pub mod substitute_list_submitters;
 
 mod context;
 mod error_response;
+mod extractor;
 mod store;
+mod store_handle;
 
 pub use context::Context;
 pub(crate) use error_response::csrf_rejection_response;
 pub use error_response::render_error_pages;
-pub use store::{PgEvent, PgStore, PgStoreData};
+pub use store::{PgEvent, PgStoreData};
+pub use store_handle::PgStore;
 
-pub(crate) use store::request_extractor;
+pub(crate) use extractor::request_extractor;
 
 #[cfg(test)]
 mod error_response_tests;

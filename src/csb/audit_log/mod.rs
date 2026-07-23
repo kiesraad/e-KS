@@ -1,4 +1,6 @@
 mod pages;
+mod paths;
 mod structs;
 
-pub use pages::{CsbAuditLogPath, router};
+pub use pages::router;
+pub use paths::CsbAuditLogPath;
