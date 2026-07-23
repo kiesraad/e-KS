@@ -11,7 +11,7 @@ use crate::{
     StreamId,
     auth::session_extractor::{build_session_cookie, user_agent_hash},
     common::{IndexPath, SelectElectionPath},
-    csb::index::pages::CsbIndexPath,
+    csb::index::CsbIndexPath,
     political_groups::PoliticalGroup,
     store::Store,
     utils::random_bsn,

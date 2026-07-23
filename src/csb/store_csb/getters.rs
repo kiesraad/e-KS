@@ -282,13 +282,6 @@ impl CsbStore {
         Some(districts)
     }
 
-    /// An [`PgStore`](crate::PgStore) view over the paper-corrected
-    /// projection: reads serve `paper_corrected_data` through the regular app
-    /// getters, writes are persisted on this CSB stream as paper corrections.
-    pub fn paper_corrected(&self) -> crate::PgStore {
-        crate::PgStore::paper_corrections(self.clone())
-    }
-
     /// The current CSB correction for the political group display name,
     /// if one has been recorded via `CsbEvent::UpdateCorrection`.
     pub fn get_csb_corrected_display_name(&self) -> Option<DisplayName> {

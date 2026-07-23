@@ -1,12 +1,8 @@
-use crate::{AppError, AppState};
+use crate::AppState;
 use axum::Router;
-use axum_extra::routing::{RouterExt, TypedPath};
+use axum_extra::routing::RouterExt;
 
 mod index;
-
-#[derive(TypedPath)]
-#[typed_path("/csb", rejection(AppError))]
-pub struct CsbIndexPath;
 
 pub fn router() -> Router<AppState> {
     Router::new().typed_get(index::index)

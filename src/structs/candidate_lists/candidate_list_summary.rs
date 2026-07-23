@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    ElectoralDistrict, OptionAsStrExt, PgStore,
+    ElectoralDistrict, OptionAsStrExt,
     candidate_lists::{CandidateList, FullCandidateList},
     common::{InfoProblems, PotentialProblems, Problematic, Problems, WithProblems},
 };
@@ -90,22 +90,6 @@ impl CandidateListSummary {
         }
 
         items
-    }
-
-    pub fn list(store: &PgStore) -> Vec<CandidateListSummary> {
-        let max_count = store.get_political_group().get_max_candidates();
-        store
-            .get_candidate_lists()
-            .into_iter()
-            .map(|list| {
-                let duplicate_districts = list.duplicate_districts(store);
-                CandidateListSummary {
-                    list,
-                    max_count,
-                    duplicate_districts,
-                }
-            })
-            .collect()
     }
 
     pub fn candidate_count(&self) -> usize {

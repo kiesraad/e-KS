@@ -1,4 +1,5 @@
 //! List submitter management and related routes.
+mod actions;
 mod forms;
 mod pages;
 

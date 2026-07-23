@@ -1,9 +1,7 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
 
-use crate::{
-    AppError, Context, CsbContext, HtmlTemplate, csb::index::pages::CsbIndexPath, filters,
-};
+use crate::{AppError, Context, CsbContext, HtmlTemplate, csb::index::CsbIndexPath, filters};
 
 #[derive(Template)]
 #[template(path = "csb/index/pages/index.html")]

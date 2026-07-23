@@ -16,7 +16,7 @@ pub use views::{
     person_correction_submit,
 };
 
-pub use structs::CandidateCorrectionField;
+pub use crate::csb::examination::structs::CandidateCorrectionField;
 
 /// Form backing the correction overlay. A single free-text value is submitted
 /// and validated as the appropriate typed value in the handler.

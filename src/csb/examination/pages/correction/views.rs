@@ -180,7 +180,7 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        csb::examination::pages::CandidateCorrectionField,
+        csb::examination::structs::CandidateCorrectionField,
         persons::PersonId,
         test_utils::{response_body_string, sample_candidate_list, sample_person},
     };

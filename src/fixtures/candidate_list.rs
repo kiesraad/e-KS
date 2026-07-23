@@ -5,7 +5,7 @@ use crate::{
     candidate_lists::CandidateList,
     common::HasSeverity,
     pagination::SortDirection,
-    persons::{self, Person, PersonId},
+    persons::{Person, PersonId, PersonSort},
 };
 
 const FIXTURE_CANDIDATE_LIST_SIZE: usize = 55;
@@ -17,25 +17,19 @@ fn collect_person_ids(persons: Vec<Person>) -> Vec<PersonId> {
 pub async fn load(store: &PgStore) -> Result<(), AppError> {
     let election = store.get_election();
 
-    let persons = persons::Person::list(
+    let persons = Person::list(
         store,
         FIXTURE_CANDIDATE_LIST_SIZE,
         0,
-        &persons::PersonSort::UpdatedAt,
+        &PersonSort::UpdatedAt,
         &SortDirection::Asc,
     )?;
-    let valid_persons = persons::Person::list(
-        store,
-        1000,
-        0,
-        &persons::PersonSort::UpdatedAt,
-        &SortDirection::Asc,
-    )?
-    .into_iter()
-    .filter(|p| p.problems.is_all_good())
-    .map(|p| p.data)
-    .take(FIXTURE_CANDIDATE_LIST_SIZE)
-    .collect::<Vec<_>>();
+    let valid_persons = Person::list(store, 1000, 0, &PersonSort::UpdatedAt, &SortDirection::Asc)?
+        .into_iter()
+        .filter(|p| p.problems.is_all_good())
+        .map(|p| p.data)
+        .take(FIXTURE_CANDIDATE_LIST_SIZE)
+        .collect::<Vec<_>>();
     let person_ids = collect_person_ids(persons.into_iter().map(|p| p.data).collect());
     let valid_person_ids = collect_person_ids(valid_persons);
 

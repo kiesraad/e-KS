@@ -13,7 +13,7 @@ use crate::{
     political_groups::{PoliticalGroup, PoliticalGroupForm, PoliticalGroupSteps},
 };
 
-use super::PoliticalGroupUpdatePath;
+use crate::political_groups::PoliticalGroupUpdatePath;
 
 #[derive(Template)]
 #[template(path = "pg/political_groups/pages/update.html")]

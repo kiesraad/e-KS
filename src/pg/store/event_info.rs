@@ -5,7 +5,7 @@
 //! subject entity URL, and the primary subject ID).
 
 use crate::{
-    Locale, PgEvent,
+    Event, Locale, PgEvent,
     candidate_lists::{CandidateListId, ViewCandidateListPath},
     list_submitters::ListSubmitter,
     persons::{PersonId, UpdatePersonPath},
@@ -15,7 +15,7 @@ use crate::{
 };
 
 /// Translated label describing what the event did.
-pub(super) fn event_description(event: &PgEvent, locale: Locale) -> String {
+fn event_description(event: &PgEvent, locale: Locale) -> String {
     match event {
         PgEvent::UpdatePoliticalGroup(_) => {
             trans!("audit_log.event.update_political_group", locale)
@@ -78,7 +78,7 @@ pub(super) fn event_description(event: &PgEvent, locale: Locale) -> String {
 }
 
 /// Short human-readable details for a listing row (name, file, districts, ...).
-pub(super) fn event_details(event: &PgEvent) -> String {
+fn event_details(event: &PgEvent) -> String {
     fn district_codes(districts: &[crate::ElectoralDistrict]) -> String {
         districts
             .iter()
@@ -203,5 +203,81 @@ impl PgEvent {
             }
             _ => String::new(),
         }
+    }
+}
+
+impl Event for PgEvent {
+    /// Return a stable category key for filtering in the audit log.
+    fn category(&self) -> &'static str {
+        match self {
+            PgEvent::UpdatePoliticalGroup(_) => "political_group",
+            PgEvent::CreatePerson(_)
+            | PgEvent::CreatePersonPersonalData { .. }
+            | PgEvent::UpdatePerson(_)
+            | PgEvent::UpdatePersonPersonalData { .. }
+            | PgEvent::UpdatePersonAddress { .. }
+            | PgEvent::UpdatePersonRepresentative { .. }
+            | PgEvent::DeletePerson { .. } => "person",
+            PgEvent::CreateCandidateList(_)
+            | PgEvent::UpdateCandidateListDistricts { .. }
+            | PgEvent::UpdateCandidateListOrder { .. }
+            | PgEvent::AddCandidateToCandidateList { .. }
+            | PgEvent::RemoveCandidateFromCandidateList { .. }
+            | PgEvent::DeleteCandidateList(_) => "candidate_list",
+            PgEvent::CreateNameAuthorisation(_)
+            | PgEvent::UpdateNameAuthorisation(_)
+            | PgEvent::DeleteNameAuthorisation(_) => "name_authorisation",
+            PgEvent::UpdateListSubmitter(_) => "list_submitter",
+            PgEvent::CreateSubstituteSubmitter(_)
+            | PgEvent::UpdateSubstituteSubmitter(_)
+            | PgEvent::DeleteSubstituteSubmitter { .. } => "substitute_submitter",
+            PgEvent::DeveloperLogin { .. }
+            | PgEvent::DownloadFile { .. }
+            | PgEvent::HideDownloadWarning
+            | PgEvent::ExportCsv { .. }
+            | PgEvent::ImportCandidates { .. } => "system",
+            PgEvent::Import { .. } => "import",
+        }
+    }
+
+    /// Return a stable snake_case key identifying the event variant.
+    /// Variants that share a user-facing description share a key (e.g. both
+    /// `CreatePerson` and `CreatePersonPersonalData` map to `create_person`).
+    fn key(&self) -> &'static str {
+        match self {
+            PgEvent::UpdatePoliticalGroup(_) => "update_political_group",
+            PgEvent::CreatePerson(_) | PgEvent::CreatePersonPersonalData { .. } => "create_person",
+            PgEvent::UpdatePerson(_) | PgEvent::UpdatePersonPersonalData { .. } => "update_person",
+            PgEvent::UpdatePersonAddress { .. } => "update_person_address",
+            PgEvent::UpdatePersonRepresentative { .. } => "update_person_representative",
+            PgEvent::DeletePerson { .. } => "delete_person",
+            PgEvent::CreateCandidateList(_) => "create_candidate_list",
+            PgEvent::UpdateCandidateListDistricts { .. } => "update_candidate_list_districts",
+            PgEvent::UpdateCandidateListOrder { .. } => "update_candidate_list_order",
+            PgEvent::AddCandidateToCandidateList { .. } => "add_candidate_to_list",
+            PgEvent::RemoveCandidateFromCandidateList { .. } => "remove_candidate_from_list",
+            PgEvent::DeleteCandidateList(_) => "delete_candidate_list",
+            PgEvent::CreateNameAuthorisation(_) => "create_name_authorisation",
+            PgEvent::UpdateNameAuthorisation(_) => "update_name_authorisation",
+            PgEvent::DeleteNameAuthorisation(_) => "delete_name_authorisation",
+            PgEvent::UpdateListSubmitter(_) => "update_list_submitter",
+            PgEvent::CreateSubstituteSubmitter(_) => "create_substitute_submitter",
+            PgEvent::UpdateSubstituteSubmitter(_) => "update_substitute_submitter",
+            PgEvent::DeleteSubstituteSubmitter { .. } => "delete_substitute_submitter",
+            PgEvent::DeveloperLogin { .. } => "developer_login",
+            PgEvent::DownloadFile { .. } => "download_file",
+            PgEvent::HideDownloadWarning => "hide_download_warning",
+            PgEvent::ExportCsv { .. } => "export_csv",
+            PgEvent::ImportCandidates { .. } => "import_csv",
+            PgEvent::Import { .. } => "import",
+        }
+    }
+
+    fn description(&self, locale: crate::Locale) -> String {
+        event_description(self, locale)
+    }
+
+    fn details(&self) -> String {
+        event_details(self)
     }
 }

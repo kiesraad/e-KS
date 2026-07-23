@@ -1,19 +1,9 @@
 use axum::Router;
-use axum_extra::routing::{RouterExt, TypedPath};
+use axum_extra::routing::RouterExt;
 
-use crate::{AppError, AppState, political_groups::PoliticalGroup};
+use crate::AppState;
 
 mod update;
-
-#[derive(TypedPath)]
-#[typed_path("/political-group/information", rejection(AppError))]
-pub struct PoliticalGroupUpdatePath;
-
-impl PoliticalGroup {
-    pub fn update_path() -> impl TypedPath {
-        PoliticalGroupUpdatePath {}
-    }
-}
 
 pub fn router() -> Router<AppState> {
     Router::new()
@@ -24,6 +14,7 @@ pub fn router() -> Router<AppState> {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use crate::political_groups::PoliticalGroup;
 
     #[test]
     fn political_group_update_path_matches_expected_route() {
