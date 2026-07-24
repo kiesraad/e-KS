@@ -7,11 +7,15 @@ use uuid::Uuid;
 use crate::{
     AppError, CsbContext, CsbStore, Form, HtmlTemplate, Locale, Overlay, QueryParamState, StreamId,
     candidate_lists::CandidateListId,
-    csb::examination::{
-        OmissionForm,
-        extractors::CsbPoliticalGroup,
-        pages::{
-            CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath, OmissionListQuery,
+    csb::{
+        WithCorrections,
+        examination::{
+            OmissionForm,
+            extractors::CsbPoliticalGroup,
+            pages::{
+                CsbAddOmissionPath, CsbDeleteOmissionPath, CsbOmissionOverviewPath,
+                OmissionListQuery,
+            },
         },
     },
     form::{FieldErrors, FormData, ValidationError},
@@ -104,7 +108,7 @@ impl OmissionTarget {
                 Ok(trans!("csb.declarations_of_support.title", locale))
             }
             OmissionType::Candidate => Ok(store
-                .get_imported_or_corrected_person(PersonId::from(self.reference))
+                .get_person(PersonId::from(self.reference), WithCorrections::All)
                 .ok_or(AppError::GenericNotFound)?
                 .name
                 .display()),

@@ -20,11 +20,11 @@ pub struct CsbPoliticalGroup {
 impl CsbPoliticalGroup {
     pub fn new_from_csb_store(store: &CsbStore) -> Self {
         CsbPoliticalGroup {
-            political_group: store.get_imported_political_group(),
+            political_group: store.get_political_group(crate::csb::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
             omission_count: store.get_omission_count(),
-            first_candidate_name: store.first_imported_candidate_name(),
+            first_candidate_name: store.get_first_candidate_name(crate::csb::WithCorrections::All),
         }
     }
 

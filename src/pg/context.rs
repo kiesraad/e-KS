@@ -62,7 +62,7 @@ impl Context {
                     exit_path: crate::csb::examination::CsbPaperCorrectionsStopPath { stream_id }
                         .to_string(),
                     group_name: political_group
-                        .csb_display_name(store.first_candidate_name().as_ref()),
+                        .csb_display_name(store.get_first_candidate_name().as_ref()),
                 });
 
         Self {

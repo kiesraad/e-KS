@@ -80,7 +80,12 @@ pub async fn csb_audit_log_detail(
             .find(|s| s.stream_id == stream_id)
             .ok_or(AppError::GenericNotFound)?;
         let data = store.data.read();
-        CsbEventDetail::find(&data.events, event_id, store.csb_display_name(), locale)?
+        CsbEventDetail::find(
+            &data.events,
+            event_id,
+            store.get_display_name(crate::csb::WithCorrections::All),
+            locale,
+        )?
     };
 
     Ok(HtmlTemplate(

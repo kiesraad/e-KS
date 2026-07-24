@@ -35,27 +35,24 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected_store = store.paper_corrected();
-    // The cards show the paper-corrected lists: lists deleted by the
-    // corrections are hidden, and the corrected candidates and electoral
-    // districts take precedence over the imported ones.
-    let mut candidate_lists = store
-        .get_imported_candidate_lists()
+
+    let imported_lists = store.get_candidate_lists(crate::csb::WithCorrections::None);
+    let candidate_lists = store
+        .get_candidate_lists(crate::csb::WithCorrections::All)
         .into_iter()
-        .filter_map(|list| {
-            let corrected = corrected_store.get_candidate_list(list.id).ok()?;
-            Some(CsbCandidateList::placeholder(corrected))
+        .map(|list| {
+            // TODO: This is a placeholder value, the real value should be calculated based on the candidate list data.
+            let brp_error_count = (list.id.uuid().as_u128() % 3) as usize;
+
+            let from_original_import = imported_lists.iter().any(|l| l.id == list.id);
+            CsbCandidateList {
+                list,
+                brp_error_count,
+                is_paper_added: !from_original_import,
+            }
         })
         .collect::<Vec<_>>();
-    // Lists only present in the paper-corrected projection were added during
-    // paper corrections; they get a card too.
-    candidate_lists.extend(
-        corrected_store
-            .get_candidate_lists()
-            .into_iter()
-            .filter(|list| store.get_imported_candidate_list(list.id).is_none())
-            .map(CsbCandidateList::paper_added),
-    );
+
     let all_brp_error_count = candidate_lists
         .iter()
         .map(|cl| cl.brp_error_count)

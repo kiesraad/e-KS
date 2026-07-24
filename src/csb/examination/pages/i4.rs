@@ -39,7 +39,7 @@ pub async fn gen_i4(
                 .push(omission.description);
         }
 
-        let designation = store.csb_display_name();
+        let designation = store.get_display_name(crate::csb::WithCorrections::All);
         for (district, descriptions) in by_district {
             found_omissions.push(OmissionGroup {
                 designation: designation.clone(),

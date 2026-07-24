@@ -114,7 +114,7 @@ impl CsbStore {
                                 omission,
                             }],
                             person: self
-                                .get_imported_or_corrected_person(person)
+                                .get_person(person, crate::csb::WithCorrections::All)
                                 .ok_or(AppError::InternalServerError)?,
                         });
                     }

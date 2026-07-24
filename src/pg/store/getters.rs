@@ -89,7 +89,7 @@ impl Store<PgStoreData> {
     }
 
     /// One-based position of the candidate on the given list.
-    pub fn candidate_position(
+    pub fn get_candidate_position(
         &self,
         list_id: CandidateListId,
         person_id: PersonId,
@@ -101,7 +101,7 @@ impl Store<PgStoreData> {
 
     /// The name of the first candidate across all candidate lists (already
     /// sorted by creation date), or `None` when there are no candidates.
-    pub fn first_candidate_name(&self) -> Option<crate::common::FullName> {
+    pub fn get_first_candidate_name(&self) -> Option<crate::common::FullName> {
         self.get_candidate_lists()
             .into_iter()
             .flat_map(|list| list.candidates.into_iter())
