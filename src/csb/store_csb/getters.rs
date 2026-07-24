@@ -297,14 +297,29 @@ impl CsbStore {
 
     /// The person from the CSB corrections projection, if any correction
     /// has been applied to that person. The returned [`Person`] reflects the
-    /// accumulated state of all corrections applied so far (starting from the
-    /// imported snapshot), NOT the paper-corrected projection.
+    /// accumulated state of all CSB corrections applied so far (starting from the
+    /// imported snapshot).
+    /// This projection of [`Person`] also includes potential paper corrections.
     pub fn get_csb_corrected_person(&self, person_id: PersonId) -> Option<Person> {
         self.data
             .read()
             .csb_corrected_persons
             .get(&person_id)
             .cloned()
+    }
+
+    /// All people from the CSB corrections projection where CSB corrections have been applied to.
+    /// Every [`Person`] in the returned [`Vec<Person>`] reflects the
+    /// accumulated state of all CSB corrections applied so far (starting from the
+    /// imported snapshot).
+    /// This projection of [`Person`] also includes potential paper corrections.
+    pub fn get_all_csb_corrected_persons(&self) -> Vec<Person> {
+        self.data
+            .read()
+            .csb_corrected_persons
+            .values()
+            .cloned()
+            .collect()
     }
 }
 

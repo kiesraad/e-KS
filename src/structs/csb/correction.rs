@@ -1,3 +1,5 @@
+use std::{collections::HashSet, mem};
+
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -8,12 +10,34 @@ use crate::{
     trans,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone)]
+#[derive(Debug, Serialize, Deserialize, Clone, PartialEq, Eq, Hash)]
 pub enum PersonCorrection {
     Initials(Initials),
     LastName(LastName),
     DateOfBirth(DateOfBirth),
     PlaceOfResidence(PlaceOfResidence),
+}
+
+/// Representing a set of corrections on a single person. 
+/// - [`None`] means no correction.
+/// - [`Some(_)`] contains the corrected value
+#[derive(Debug, Default, Serialize, Deserialize)]
+pub struct PersonCorrectionDelta {
+    // NOTE: deliberately not public, mutate, and create through impl methods
+    changes: HashSet<PersonCorrection>
+}
+
+impl PersonCorrectionDelta {
+    pub fn new() ->  PersonCorrectionDelta {
+        PersonCorrectionDelta { changes: HashSet::new() }
+    }
+
+    /// Add a correction to this delta
+    /// Replaces the previous [`PersonCorrection`] variant in the delta if present
+    pub fn add_correction(&mut self, correction: PersonCorrection) {
+        self.changes.retain(|c| mem::discriminant(c) != mem::discriminant(&correction));
+        self.changes.insert(correction);
+    }
 }
 
 impl PersonCorrection {

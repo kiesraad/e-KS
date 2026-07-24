@@ -15,7 +15,7 @@ use crate::{
     common::{DisplayName, UtcDateTime},
     persons::{Person, PersonId},
     store::{StoreData, StoreEvent},
-    structs::csb::{Correction, Omission, OmissionId},
+    structs::csb::{Correction, Omission, OmissionId, PersonCorrectionDelta},
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
@@ -27,7 +27,7 @@ pub struct CsbStoreData {
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
-    pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
+    pub(crate) csb_corrected_persons: HashMap<PersonId, PersonCorrectionDelta>,
     pub(crate) csb_corrected_display_name: Option<DisplayName>,
 }
 
@@ -93,17 +93,10 @@ impl StoreData for CsbStoreData {
                     self.csb_corrected_display_name = Some(display_name);
                 }
                 Correction::Person(person_id, correction) => {
-                    let person = self
-                        .csb_corrected_persons
+                    self.csb_corrected_persons
                         .entry(person_id)
-                        .or_insert_with(|| {
-                            self.imported_data
-                                .persons
-                                .get(&person_id)
-                                .cloned()
-                                .unwrap_or_default()
-                        });
-                    correction.apply(person);
+                        .or_insert_with(|| PersonCorrectionDelta::new())
+                        .add_correction(correction);
                 }
             },
         }
@@ -271,6 +264,7 @@ mod tests {
             )),
         ));
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
+        assert_eq!(corrected.len(), 2);
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
         assert_eq!(corrected.name.last_name.to_string(), original_last_name);
 

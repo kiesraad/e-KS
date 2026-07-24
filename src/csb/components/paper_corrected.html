@@ -24,3 +24,19 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
+{% macro data_row(label, value) %}
+  <tr>
+    <td>{{ label }}: {{ value(value) }}</td>
+    <td></td>
+    <td></td>
+  </tr>
+{% endmacro %}
+{% macro editable_data_row(label, value, edit_url) %}
+  <tr class="clickable">
+    <td>{{ label }}: {{ value(value) }}</td>
+    <td></td>
+    <td class="actions">
+      <a href="{{ edit_url }}" aria-label="{{ "action.edit"|trans }}"></a>
+    </td>
+  </tr>
+{% endmacro %}

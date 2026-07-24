@@ -25,7 +25,7 @@ use crate::{
 /// distinction only records the outcome of the BAG lookup performed while
 /// parsing. Use [`Display`](std::fmt::Display), [`Deref`] or [`AsRef`] to read
 /// the underlying name regardless of variant.
-#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize)]
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord, Deserialize, Serialize, Hash)]
 pub enum PlaceOfResidence {
     /// The name matches a locality known in the BAG.
     Known(String),

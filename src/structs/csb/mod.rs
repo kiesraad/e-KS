@@ -1,7 +1,7 @@
 mod correction;
 mod omission;
 
-pub use correction::{Correction, PersonCorrection};
+pub use correction::{Correction, PersonCorrection, PersonCorrectionDelta};
 pub use omission::{Omission, OmissionCategory, OmissionId, OmissionPlaceholders, OmissionType};
 
 #[cfg(test)]
