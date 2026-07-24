@@ -27,6 +27,9 @@ correction:
     title: Edit correction
   paper_corrected: Paper correction
   title: Corrections
+declarations_of_support:
+  instruction: Report problems with the declarations of support
+  title: Declarations of support
 examination: Examination
 finish_examination: Finish examination
 finish_instruction:

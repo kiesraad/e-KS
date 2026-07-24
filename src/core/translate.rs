@@ -49,4 +49,33 @@ mod tests {
             );
         }
     }
+
+    #[test]
+    fn test_no_long_words_without_soft_hyphen() {
+        // Long words should be broken up by soft hyphens (\u00AD in YAML)
+        // Soft hyphens are only rendered by the browser when it wants to split up the text
+        const MAX_WORD_LENGTH: usize = 20;
+
+        let mut failures = Vec::new();
+
+        for (locale_name, locale) in [("nl", &LOCALE_NL), ("en", &LOCALE_EN)] {
+            for (key, value) in locale.entries() {
+                for word in value.split(|c: char| !c.is_alphabetic()) {
+                    if word.chars().count() >= MAX_WORD_LENGTH {
+                        failures.push(format!(
+                            "  locales/{locale_name}: [{key}] \"{word}\" ({} chars)",
+                            word.chars().count()
+                        ));
+                    }
+                }
+            }
+        }
+
+        assert!(
+            failures.is_empty(),
+            "Translation values contain words of {MAX_WORD_LENGTH}+ characters. \
+             Use \\u00AD in the YAML file to mark where the word can be hyphenated:\n{}",
+            failures.join("\n")
+        );
+    }
 }

@@ -96,9 +96,9 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
         }
         // The {district}/{districts} tokens in candidate-list presets are filled
         // in by the front-end
-        OmissionType::CandidateList | OmissionType::PoliticalGroup => {
-            OmissionPlaceholders::default()
-        }
+        OmissionType::CandidateList
+        | OmissionType::DeclarationsOfSupport
+        | OmissionType::PoliticalGroup => OmissionPlaceholders::default(),
     }
 }
 
@@ -159,6 +159,7 @@ pub(super) fn omission_views(
         OmissionType::CandidateList => {
             store.get_candidate_list_omissions(CandidateListId::from(target.reference))?
         }
+        OmissionType::DeclarationsOfSupport => store.get_all_declarations_of_support_omissions(),
         OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(target.reference)),
     };
 
