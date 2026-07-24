@@ -7,6 +7,7 @@ mod auth;
 mod hide_download_warning;
 mod index;
 mod not_found;
+mod robots;
 mod select_election;
 mod switch_election;
 mod switch_locale;
@@ -40,9 +41,15 @@ pub fn session_only_router() -> Router<AppState> {
         .typed_post(auth::logout_submit)
 }
 
-/// Routes for paths under .well-known
-pub fn wellknown_router() -> Router<AppState> {
-    Router::new().typed_get(well_known::security_txt)
+/// Routes that need no session and no database: `/robots.txt` must always
+/// answer crawlers, and RFC 9116 requires `/.well-known/security.txt` to be
+/// retrievable anonymously. They stay behind the `eks-key` gate like every
+/// other route, since that gate only ensures requests come through our CDN.
+pub fn always_public_router() -> Router<AppState> {
+    Router::new().typed_get(robots::robots_txt).nest(
+        "/.well-known",
+        Router::new().typed_get(well_known::security_txt),
+    )
 }
 
 /// Routes mounted outside the session middleware (no session required):

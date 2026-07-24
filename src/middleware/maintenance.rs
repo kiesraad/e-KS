@@ -18,10 +18,12 @@ struct MaintenanceTemplate {
 }
 
 /// Paths that must keep working while the database is unavailable: the health
-/// probe (so orchestration can still read liveness) and static assets / live
-/// reload (so the maintenance page can load its style sheet).
+/// probe (so orchestration can still read liveness), static assets / live
+/// reload (so the maintenance page can load its style sheet), and the
+/// always-public files (robots.txt, .well-known).
 fn is_exempt(path: &str) -> bool {
     path == "/health"
+        || path == "/robots.txt"
         || path.starts_with("/static/")
         || path.starts_with("/.well-known/")
         || path.starts_with("/livereload/")
@@ -89,6 +91,7 @@ mod tests {
     #[test]
     fn exempts_health_static_and_wellknown() {
         assert!(is_exempt("/health"));
+        assert!(is_exempt("/robots.txt"));
         assert!(is_exempt("/static/index.css"));
         assert!(is_exempt("/.well-known/security.txt"));
         assert!(!is_exempt("/"));
