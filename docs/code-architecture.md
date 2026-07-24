@@ -14,6 +14,13 @@ scoping lets the application persist a user's work throughout the nomination
 period, so the candidate list can be built up over multiple sessions before it
 is submitted.
 
+The application serves two kinds of users, in two sections of the code. The
+**political group side** (`src/pg/`) is where a political group assembles,
+validates, and exports its submission. The **CSB side** (`src/csb/`) is where
+the central voting bureau (*centraal stembureau*) imports a submitted package
+and examines it, records omissions (*verzuimen*) and corrections, following
+Hoofdstuk I of the Kieswet (see [The CSB section](#the-csb-section-srccsb)).
+
 ### High-level overview
 ```mermaid
 graph LR
@@ -54,6 +61,9 @@ noted otherwise.
 | Authorised agent | Gemachtigde | Art. H 3, tweede/derde lid (Art. G 1, derde lid) | The political group's agent, registered with the central electoral committee under Hoofdstuk G, who authorises placing the political group's name above the list. This authorisation is filed as model **H3-1** (or **H3-2** for a combined name). Modelled by `authorised_agents`. |
 | Representative | Gemachtigde van kandidaat | Art. H 10, H 10a | For a candidate residing outside the European part of the Netherlands: a representative, named in the candidate's consent declaration, who receives official correspondence (such as the appointment letter) on the candidate's behalf. Stored in the `persons`/`candidates` data. |
 | Support declaration | Ondersteuningsverklaring | Art. H 4 | A declaration of support for a list, model **H4**, required in certain cases. |
+| Central voting bureau | Centraal stembureau (CSB) | Art. I 1 | The electoral committee that receives the submitted candidate lists and examines them in a session on nomination day. The `src/csb/` section serves its members. |
+| Omission | Verzuim | Art. I 1, I 2 | A defect the CSB finds when examining a submitted list. Recoverable omissions are notified to the list submitter with model **I 4** and may be repaired during the *herstel* period (Art. I 2). Modelled by `Omission` in the CSB store. |
+| List designation | Lijstaanduiding | Art. G 1, H 3 | How the list is presented above the candidates: with the group's registered name (standalone), without one (a *blanco lijst*), or with a combined name. Modelled by `ListDesignation`. |
 
 Both an "authorised agent" and a candidate's "representative" are a *gemachtigde*
 in Dutch, but they are distinct roles: the authorised agent acts for the
@@ -67,7 +77,8 @@ H 9, vierde lid).
 
 The `finalise` domain validates the assembled data and renders the official forms
 (the **H-models** H1, H3-1, H4, H9) as PDF files; `audit_log` is a read view over all
-recorded changes.
+recorded changes. Model **I 4**, the notice of omissions, belongs to the
+examination and is rendered on the CSB side instead.
 
 ### Election types
 
@@ -141,7 +152,7 @@ modules:
 | `src/state.rs` | `AppState`: the shared application state (config, store registry, sessions). |
 | `src/filters.rs` | Askama template filters (display formatting, translation, validation errors). |
 | `src/pg/` | Political group (PG) **domain** modules (see below). |
-| `src/csb/` | Central voting bureau (CSB) section: import, examination, monitoring, and its own event stores. |
+| `src/csb/` | Central voting bureau (CSB) section: import, examination, monitoring, audit log, and its own event stores (see [The CSB section](#the-csb-section-srccsb)). |
 | `src/structs/` | Shared domain model structs (persons, political groups, candidate lists, common value types) used by both `src/pg/` and `src/csb/`. |
 | `src/models/` | The official PDF models (H 1, H 3-1, H 3-2, H 4, H 9, I 4) rendered with `textris-pdf`, plus the embedded fonts and the JSON example inputs. |
 | `src/auth/` | Authentication: the session model and token handling, session/pending-request storage, id derivation, and the session cookie helpers + `Session` extractor. The session/store middleware and the development login endpoint live in `src/middleware/`. |
@@ -161,13 +172,19 @@ domains together:
 
 - `store/event.rs`: `PgEvent`, the single enum of all PG domain events.
 - `store/mod.rs`: `PgStoreData`, the in-memory projection built by replaying
-  `PgEvent`s; `store/getters.rs` adds read accessors over it.
+  `PgEvent`s, including `snapshot_until`, which rebuilds the state as of an
+  earlier event (used by the CSB import); `store/getters.rs` adds read
+  accessors over it.
+- `store_handle.rs`: `PgStore`, the store handle the feature handlers work
+  with (see [The store at runtime](#the-store-at-runtime)).
 - `context.rs`: the request-scoped `Context` passed into templates.
-- `store/extractor.rs`: extracts the per-request `PgStore` from `AppState`.
+- `extractor.rs`: extracts the per-request `PgStore` from the request
+  extensions, plus the `request_extractor!` macro the per-domain extractors
+  build on.
 
 The current domains are: `audit_log`, `candidate_lists`, `candidates`,
-`common`, `list_submitters`, `name_authorisations`, `persons`,
-`political_groups`, `finalise`, and `substitute_list_submitters`.
+`common`, `list_designation`, `list_submitters`, `name_authorisations`,
+`persons`, `political_groups`, `finalise`, and `substitute_list_submitters`.
 (`common` is the shared domain: reusable field types (names, addresses,
 dates, country codes) and shared pages/components rather than a single
 entity.)
@@ -196,6 +213,102 @@ A few domains also carry domain-specific helper files next to these folders,
 for example `candidate_lists/importer.rs` (CSV/EML import) and
 `political_groups/steps.rs` (multi-step flow state).
 
+### The CSB section (`src/csb/`)
+
+`src/csb/` holds the central voting bureau side of the application: CSB
+members import the packages submitted by political groups and examine them
+(Hoofdstuk I of the Kieswet). It mirrors the `src/pg/` conventions (the same
+`pages/`, `forms/`, `extractors/`, `structs/`, `components/` layout, with
+`CsbContext` in place of `Context`), but its access model is fundamentally
+different: a political group only ever sees its own stream, while a committee
+member works across all imported streams.
+
+#### Scopes
+
+Sessions and streams both carry a `Scope` (`src/core/scope.rs`):
+
+- **`PoliticalGroup`** (the default): a political-group session only reaches
+  the single stream derived from its own identifier.
+- **`CentralElectoralCommittee`**: a committee member's session, and the
+  shared CSB main stream. A committee session can reach every imported stream.
+- **`ImportedByCsb`**: a candidate-list package imported by the CSB; one
+  stream per import action.
+
+Every persisted stream records its scope, and each store registry only sees
+streams matching its projection's scope, so the separation between the two
+sections is enforced in the storage layer, not just in routing. On top of
+that, all CSB routes sit behind `csb_store_middleware`, which rejects any
+session that is not committee-scoped. (The development login can create
+either kind of session; the TVS login flow currently creates political-group
+sessions only.)
+
+#### CSB stores
+
+The CSB section has two projections of its own on the shared store machinery
+(see [The store at runtime](#the-store-at-runtime)):
+
+- **`CsbStoreData`** (`src/csb/store_csb/`), one stream per imported package
+  (scope `ImportedByCsb`), driven by `CsbEvent`. The projection holds the
+  imported snapshot (`imported_data`), a second projection with the paper
+  corrections replayed on top (`paper_corrected_data`), the recorded
+  omissions and person corrections, and the examination-finished flag.
+- **`CsbMainStoreData`** (`src/csb/store_main/`), a single stream per
+  election shared by all committee members under the fixed
+  `CSB_MAIN_STREAM_ID` (scope `CentralElectoralCommittee`). It records
+  committee-wide events (currently logins) and backs the main CSB audit log.
+
+#### Domains
+
+- **`index`**: the CSB home page.
+- **`import`**: brings a submitted package into the CSB side. The documents
+  generated on the PG side embed the chain hash of the event they were
+  rendered from; a committee member enters that hash (a unique prefix
+  suffices) and the import locates the matching event
+  (`find_event_by_hash_prefix`, backed by the `events_hash_idx` index),
+  replays the source stream up to it (`PgStoreData::snapshot_until`), and
+  persists the snapshot as a `CsbEvent::Import` on a **fresh** `ImportedByCsb`
+  stream. The political group's own stream is never written to, and importing
+  the same source stream twice is rejected.
+- **`examination`**: the examination of the imported lists. An overview
+  groups the imported political groups by finished/unfinished; detail pages
+  render the imported data read-only; omissions and corrections are recorded
+  in overlays; and the model **I 4** notice (the letter listing every
+  recoverable omission across all imported streams, per electoral district)
+  is generated here.
+- **`monitoring`**: an overview of the political-group streams built from
+  `StreamMeta`: event counts and timestamps read from the backend's index.
+  This deliberately reads no payloads: no stream key is unwrapped and nothing
+  is decrypted, so monitoring works without touching any political group's
+  data.
+- **`audit_log`**: the CSB audit log, a read view over either the main
+  committee stream or a single imported stream.
+
+#### Omissions and corrections
+
+An **omission** (*verzuim*) is a defect found during examination.
+`OmissionCategory` ties each omission to what it concerns: the political
+group itself, a candidate list (with the affected electoral districts), or a
+candidate (with the affected lists). Recoverable omissions feed the I 4
+notice. A **correction** (`CsbEvent::UpdateCorrection`) records a fix to
+imported person data (initials, last name, date of birth, place of
+residence); corrected persons are kept in a separate map in the projection
+(`csb_corrected_persons`), so the imported snapshot itself stays untouched.
+
+#### Paper-corrections mode
+
+The paper documents handed in on nomination day are authoritative; where the
+imported digital data deviates from them, a committee member edits the data
+to match the paper. "Start paper corrections" puts the committee session in
+paper-corrections mode by setting its `paper_correction_stream_id` (and
+rotating the CSRF token, so forms rendered before the switch cannot submit
+against the newly selected stream). While the mode is active, the regular app
+routes serve the familiar political-group interface over the imported
+stream's `paper_corrected_data`, through the same handlers the PG side uses:
+`store_middleware` hands them a `PgStore` in paper-corrections mode, whose
+writes wrap each `PgEvent` in `CsbEvent::PaperCorrectedUpdate` and append it
+to the CSB stream. The source political group's stream is never touched, and
+the finalise/document-generation routes are blocked: the documents were
+already handed in on paper.
 
 ## Request lifecycle
 
@@ -213,12 +326,19 @@ order on an incoming request is:
    session up in the `SessionStore`. A missing or invalid session redirects to
    `/login`. Otherwise the session's `last_activity` is refreshed and the
    `Session` is placed in the request extensions.
-4. **`store_middleware`.** Takes the `(stream_id, current_election)` from the
-   session and resolves the matching `PgStore` from the registry. A session
-   that has not yet picked an election is redirected to `/select-election`. The
-   middleware then calls `store.load()` so the projection catches up with any
-   events this process has not seen, and places the `PgStore` in the request
-   extensions.
+4. **Store middleware.** App (political group) routes get `store_middleware`;
+   CSB routes get `csb_store_middleware` instead. Both resolve a store from
+   the matching registry, call `store.load()` so the projection catches up
+   with any events this process has not seen, and place the store handle in
+   the request extensions.
+   - `store_middleware` takes the `(stream_id, current_election)` from the
+     session and resolves the matching `PgStore`. A session that has not yet
+     picked an election is redirected to `/select-election`. A committee
+     session in paper-corrections mode instead gets a `PgStore` over the
+     imported stream's corrected data (see the CSB section); any other
+     committee session is redirected off the app routes to the CSB home page.
+   - `csb_store_middleware` rejects non-committee sessions with `401` and
+     resolves the global CSB main store for the session's election.
 5. **The handler.** Its arguments are extractors: the typed path, `Context`,
    `Session`, `PgStore`, the domain extractors (which load an entity from the
    store), `Form<T>` (parse and validate the body), and `State<...>`.
@@ -427,20 +547,36 @@ its integrity is protected.
 Event sourcing is implemented by a handful of generic types in `src/store/`,
 parameterized over a projection type `D`:
 
-- **`StoreData`** is the trait a projection implements: how to `apply` an event,
-  and what its last event id and chain hash are. `PgStoreData` is the one
-  concrete implementation.
+- **`StoreData`** is the trait a projection implements: how to `apply` an
+  event, what its last event id and chain hash are, and which `Scope` its
+  streams are recorded with. There are three concrete implementations:
+  `PgStoreData` (a political group's data), `CsbStoreData` (one imported
+  package on the CSB side), and `CsbMainStoreData` (committee-wide events).
 - **`Store<D>`** is a handle scoped to a single `(stream_id, election)` pair. It
   owns the persistence backend, the per-stream encryption cipher, and the
   in-memory projection as an `Arc<RwLock<D>>`. Cloning a `Store` is cheap: the
-  clone shares the same projection and persistence. `PgStore` is the alias
-  `Store<PgStoreData>`.
-- **`StoreRegistry<D>`** lives in `AppState` and caches one `Store` per
-  `(stream_id, election)` in a map behind a `RwLock`. `get_or_create` returns
-  the cached store, or builds one: it constructs the `Store`, calls `load()` to
-  replay the persisted events into a fresh projection, runs an optional
-  one-time init hook (this is where `fixtures` are loaded on first use), and
-  caches the result.
+  clone shares the same projection and persistence.
+- **`StoreRegistry<D>`** caches one `Store` per `(stream_id, election)` in a
+  map behind a `RwLock`. `AppState` holds three registries, one per projection
+  type, all sharing a single `StorePersistence` backend and master key.
+  `get_or_create` returns the cached store, or builds one: it constructs the
+  `Store`, calls `load()` to replay the persisted events into a fresh
+  projection, runs an optional one-time init hook (this is where `fixtures`
+  are loaded on first use), and caches the result. `get_store` is the
+  read-only variant: it refuses to materialise a stream that was never
+  persisted, and is used where a stream must already exist (the CSB
+  extractors). Registry queries are scope-aware: `streams_by_scope` and
+  `stream_metadata_by_scope` list only streams recorded with the projection's
+  own scope.
+- **`PgStore`** (`src/pg/store_handle.rs`) is the handle the feature handlers
+  actually work with: it pairs a `Store<PgStoreData>` projection (reads) with
+  a *write target*. For a political group session the target is its own
+  stream, and `update(event)` appends `PgEvent`s there. For a committee
+  session in paper-corrections mode the projection is a request-local
+  snapshot of the imported stream's `paper_corrected_data`, and every
+  `PgEvent` is wrapped in `CsbEvent::PaperCorrectedUpdate` and appended to
+  the CSB stream instead. Handlers are agnostic to which target they write
+  to.
 
 Two operations drive a `Store`:
 
@@ -464,6 +600,12 @@ All domain changes are stored as an append-only stream of events, partitioned pe
 in-memory (`memory://`), local files (`local://`), and PostgreSQL (`postgres://`).
 On the file and database backends each event payload is encrypted at rest; the
 in-memory backend keeps plaintext only.
+
+Every stream is additionally recorded with its `Scope` (`political_group`,
+`central_electoral_committee`, or `imported_by_csb`), and a registry only ever
+sees streams of its own scope. The local file backend accepts only
+political-group streams: CSB data lives exclusively in the database (the
+in-memory backend supports all scopes for development and tests).
 
 ### Stream IDs and not leaking the BSN
 
@@ -500,7 +642,9 @@ with AES-256-GCM. For implementation details, see `MasterKey` / `StreamKey` /
 
 The scheme is envelope encryption with one key **per `(stream_id, election)`**.
 When a stream is first created, a fresh random 256-bit *stream key* is
-generated; event payloads are encrypted only with this key. The stream key is
+generated; event payloads are encrypted only with this key. The scheme is the
+same for every stream scope: political-group streams, CSB import streams, and
+the CSB main stream each get their own independent key. The stream key is
 stored *wrapped*: encrypted under a key-wrapping key derived at startup with
 HKDF-SHA256 from a master secret (`MASTER_ENCRYPTION_KEY`, distinct from the
 ID-derivation secret). The wrapped key lives next to the stream: the
@@ -567,7 +711,10 @@ detecting an in-place rewrite of the stored `hash` value itself; enable it where
 that extra check is worth the load-time cost.
 
 On the database backend the `events.hash` column has an index (`events_hash_idx`)
-to support looking up an event by its chain hash.
+to support looking up an event by its chain hash. This is what the CSB import
+uses: the documents generated on the PG side carry the chain hash of the event
+they were rendered from, and entering (a prefix of) that hash on the import
+page locates the exact event, and thus the exact state, to import.
 
 The chain is not a substitute for storing the database/files on an encrypted,
 access-controlled volume; it is a defence-in-depth, integrity-detection measure.
