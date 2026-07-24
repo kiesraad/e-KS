@@ -215,12 +215,8 @@ pub async fn add_omission_submit(
     ) {
         Ok(districts) => districts,
         Err(errors) => {
-            return target.render_add_form(
-                FormData::new_with_errors(form, errors),
-                &query,
-                context,
-                &store,
-            );
+            let form = FormData::new_with_errors(form, errors);
+            return target.render_add_form(form, &query, context, &store);
         }
     };
 
@@ -238,12 +234,8 @@ pub async fn add_omission_submit(
     ) {
         Ok(candidate_lists) => candidate_lists,
         Err(errors) => {
-            return target.render_add_form(
-                FormData::new_with_errors(form, errors),
-                &query,
-                context,
-                &store,
-            );
+            let form = FormData::new_with_errors(form, errors);
+            return target.render_add_form(form, &query, context, &store);
         }
     };
 
