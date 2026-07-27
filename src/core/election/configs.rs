@@ -33,7 +33,7 @@ super::define_elections! {
             en: "Election of the Senate of the States General 2027",
         },
         electoral_districts: ElectoralDistrict::ek27(),
-        nineteen_or_more_seats: true,
+        number_of_seats: 75,
         frisian_export_allowed: false,
         eligible_date_of_birth: const { date(2014, 4, 20) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 4, 20) },
@@ -70,7 +70,20 @@ super::define_elections! {
             Province::NB => &[ElectoralDistrict::PsTilburg, ElectoralDistrict::PsDenBosch],
             Province::LI => &[ElectoralDistrict::PsMaastricht, ElectoralDistrict::PsVenlo],
         },
-        nineteen_or_more_seats: true, // for this election, all provinces have >= 19 seats
+        number_of_seats: match province {
+            Province::GR => 43,
+            Province::FR => 43,
+            Province::DR => 43,
+            Province::OV => 47,
+            Province::FL => 41,
+            Province::GE => 55,
+            Province::UT => 49,
+            Province::NH => 55,
+            Province::ZH => 55,
+            Province::ZE => 39,
+            Province::NB => 55,
+            Province::LI => 47,
+        },
         frisian_export_allowed: matches!(province, Province::FR),
         eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 2, 1) },
@@ -115,7 +128,29 @@ super::define_elections! {
             WaterCouncil::Limburg => &[ElectoralDistrict::WsLimburg],
             WaterCouncil::Zuiderzeeland => &[ElectoralDistrict::WsZuiderzeeland],
         },
-        nineteen_or_more_seats: true, // for this election, all councils have >= 19 seats
+        number_of_seats: match water_council {
+            WaterCouncil::AaEnMaas => 26,
+            WaterCouncil::AmstelGooiEnVecht => 26,
+            WaterCouncil::BrabantseDelta => 26,
+            WaterCouncil::DeDommel => 26,
+            WaterCouncil::DeStichtseRijnlanden => 26,
+            WaterCouncil::Delfland => 26,
+            WaterCouncil::DrentsOverijsselseDelta => 25,
+            WaterCouncil::HollandseDelta => 26,
+            WaterCouncil::HollandsNoorderkwartier => 26,
+            WaterCouncil::HunzeEnAas => 19,
+            WaterCouncil::Fryslan => 21,
+            WaterCouncil::Limburg => 26,
+            WaterCouncil::Noorderzijlvest => 19,
+            WaterCouncil::RijnEnIJssel => 30,
+            WaterCouncil::Rijnland => 26,
+            WaterCouncil::Rivierenland => 26,
+            WaterCouncil::SchielandEnDeKrimpenerwaard => 26,
+            WaterCouncil::Scheldestromen => 26,
+            WaterCouncil::ValleiEnVeluwe => 26,
+            WaterCouncil::Vechtstromen => 23,
+            WaterCouncil::Zuiderzeeland => 21,
+        },
         frisian_export_allowed: matches!(water_council, WaterCouncil::Fryslan),
         eligible_date_of_birth: const { date(2014, 2, 1) }, // TODO: determine definitive date
         nomination_day_date: const { date(2027, 2, 1) },
@@ -254,6 +289,10 @@ impl ElectionConfig {
 
     pub fn has_only_one_district(&self) -> bool {
         self.electoral_districts().len() == 1
+    }
+
+    pub fn nineteen_or_more_seats(&self) -> bool {
+        self.number_of_seats() >= 19
     }
 }
 

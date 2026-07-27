@@ -4,7 +4,7 @@
 
 use super::{
     Pdf,
-    eml210::eml210,
+    eml::eml210::eml210,
     h1::H1,
     h3::H3,
     h4::H4,
