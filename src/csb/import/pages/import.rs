@@ -7,11 +7,13 @@ use serde::Deserialize;
 
 use crate::{
     AppError, AppState, Context, CsbContext, CsbEvent, Form, HtmlTemplate, Locale, PgStoreData,
-    StreamId, csb::examination::CsbExaminationOverviewPath, filters, redirect_success, trans,
+    StreamId,
+    csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
+    filters, redirect_success, trans,
     utils::parse_hash_prefix,
 };
 
-use super::CsbImportPath;
+use super::{CsbCreateEmptyPath, CsbImportPath};
 
 #[derive(Template)]
 #[template(path = "csb/import/pages/import.html")]
@@ -119,7 +121,24 @@ async fn do_import(
         })
         .await?;
 
-    Ok(redirect_success(CsbExaminationOverviewPath {}))
+    Ok(redirect_success(CsbPoliticalGroupPath {
+        stream_id: csb_store.stream_id,
+    }))
+}
+
+/// Create a new empty CSB store without importing from a political-group stream.
+pub async fn create_empty(
+    _: CsbCreateEmptyPath,
+    State(state): State<AppState>,
+    context: CsbContext,
+) -> Result<Response, AppError> {
+    let csb_store = state
+        .csb_store_for_stream(StreamId::new(), context.election)
+        .await?;
+    csb_store.update(CsbEvent::CreateEmpty).await?;
+    Ok(redirect_success(CsbPoliticalGroupPath {
+        stream_id: csb_store.stream_id,
+    }))
 }
 
 #[cfg(test)]
@@ -266,6 +285,33 @@ mod tests {
         // Only the first import was recorded.
         let csb_stores = state.csb_store_registry.stores_by_scope().await?;
         assert_eq!(csb_stores.len(), 1);
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn create_empty_creates_csb_store_with_create_empty_event() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+
+        let response = create_empty(
+            CsbCreateEmptyPath {},
+            State(state.clone()),
+            CsbContext::new_test(),
+        )
+        .await?
+        .into_response();
+
+        // A successful creation redirects to the political group examination page.
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        // A single CSB store is recorded carrying the CreateEmpty event.
+        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 1);
+        let data = csb_stores[0].data.read();
+        assert!(matches!(
+            data.events.first().unwrap().payload,
+            CsbEvent::CreateEmpty
+        ));
 
         Ok(())
     }
