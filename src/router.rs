@@ -89,7 +89,7 @@ pub fn create(state: AppState) -> Router<AppState> {
     #[cfg(feature = "livereload")]
     let router = router.merge(crate::utils::livereload::livereload_router());
 
-    let router = mount_static_assets(router).nest("/.well-known", common::wellknown_router());
+    let router = mount_static_assets(router).merge(common::always_public_router());
 
     router
         .layer(csrf_layer())
@@ -319,6 +319,43 @@ mod tests {
         let response = app.oneshot(request).await.expect("response");
 
         assert_ne!(response.status(), StatusCode::FORBIDDEN);
+    }
+
+    /// robots.txt and security.txt must answer requests without a session
+    /// cookie (they are served to anonymous visitors through the CDN).
+    #[tokio::test]
+    async fn robots_and_security_txt_need_no_session() {
+        let state = AppState::new_for_tests().await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        for (uri, expected) in [
+            ("/robots.txt", "Disallow: /"),
+            ("/.well-known/security.txt", "Contact: mailto:"),
+        ] {
+            let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+            let response = app.clone().oneshot(request).await.expect("response");
+
+            assert_eq!(response.status(), StatusCode::OK, "{uri} must be public");
+            let body = response_body_string(response).await;
+            assert!(body.contains(expected), "{uri} body: {body}");
+        }
+    }
+
+    /// The eks-key gate guards robots.txt and security.txt like every other
+    /// route: it exists so only our CDN can reach the server directly.
+    #[tokio::test]
+    async fn robots_and_security_txt_stay_behind_eks_key_gate() {
+        let mut config = crate::Config::new_test();
+        config.eks_key = Some(secrecy::SecretString::from("s3cret"));
+        let state = AppState::new_for_tests_with_config(config).await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        for uri in ["/robots.txt", "/.well-known/security.txt"] {
+            let request = Request::builder().uri(uri).body(Body::empty()).unwrap();
+            let response = app.clone().oneshot(request).await.expect("response");
+
+            assert_eq!(response.status(), StatusCode::UNAUTHORIZED, "{uri}");
+        }
     }
 
     #[tokio::test]
