@@ -200,7 +200,8 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        AppState, CsbContext, ElectionConfig, PgEvent, test_utils::response_body_string,
+        AppState, CsbContext, ElectionConfig, PgEvent,
+        test_utils::{response_body_string, sample_person_from_brp},
         utils::format_hash,
     };
 
@@ -365,6 +366,43 @@ mod tests {
             data.events.first().unwrap().payload,
             CsbEvent::CreateEmpty
         ));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn brp_verification_records_an_omission_for_a_mismatched_person() -> Result<(), AppError>
+    {
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+
+        // This person matches a record in the local BRP mock exactly, except for
+        // the tampered field below, so the check should find one mismatch.
+        let mut person = sample_person_from_brp();
+        person.address.house_number_addition = Some("nope".parse().unwrap());
+        csb_store.add_person(person);
+
+        let brp_client =
+            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+        do_brp_verification(&csb_store, &brp_client).await?;
+
+        // The check runs in a spawned background task; poll briefly for its
+        // result instead of sleeping for the full courtesy timeout.
+        let mut omission = None;
+        for _ in 0..100 {
+            if let Some(o) = csb_store.data.read().omissions.values().next().cloned() {
+                omission = Some(o);
+                break;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        let omission = omission.expect("BRP verification did not record an omission in time");
+        assert_eq!(
+            omission.description,
+            "De huisnummertoevoeging komt niet overeen met de BRP"
+        );
 
         Ok(())
     }
