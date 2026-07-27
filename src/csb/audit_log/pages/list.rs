@@ -22,13 +22,27 @@ const PER_PAGE: usize = 20;
 ///
 /// Category label translations (referenced dynamically in the template):
 /// trans!("audit_log.filter.category.import", _)
+/// trans!("audit_log.filter.category.paper_correction", _)
+/// trans!("audit_log.filter.category.correction", _)
 /// trans!("audit_log.filter.category.set_finished", _)
 /// trans!("audit_log.filter.category.omission", _)
 /// trans!("audit_log.filter.category.system", _)
+///
+/// Event type option labels (referenced dynamically in the template):
+/// trans!("audit_log.event.paper_correction", _)
 pub const EVENT_TYPES_BY_CATEGORY: &[EventTypeCategory] = &[
     EventTypeCategory {
         key: "import",
-        event_types: &["import"],
+        event_types: &["import", "create_empty"],
+    },
+    EventTypeCategory {
+        key: "paper_correction",
+        // key() delegates to the wrapped PgEvent, so filter by category string
+        event_types: &["paper_correction"],
+    },
+    EventTypeCategory {
+        key: "correction",
+        event_types: &["update_correction"],
     },
     EventTypeCategory {
         key: "set_finished",

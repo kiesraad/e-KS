@@ -43,6 +43,7 @@ event:
   create_candidate_list: Created list of candidates
   create_name_authorisation: Created statutory name and authorised agent
   create_empty: Created empty political group
+  paper_correction: Paper corrections
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
@@ -83,8 +84,10 @@ filter:
   apply: Filter
   category:
     candidate_list: Candidate list
+    correction: Corrections
     import: Import
     list_submitter: List submitter
+    paper_correction: Paper corrections
     name_authorisation: Statutory name and authorised agent
     omission: Omission
     person: Person
