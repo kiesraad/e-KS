@@ -39,6 +39,7 @@ pub fn router<S: AppRequestState>() -> Router<S> {
 pub fn session_only_router<S>() -> Router<S>
 where
     S: AppRequestState + AuthState,
+    AuthServiceState: FromRef<S>,
 {
     Router::new()
         .typed_post(switch_locale::switch_language::<S>)

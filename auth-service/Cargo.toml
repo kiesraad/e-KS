@@ -5,15 +5,33 @@ edition.workspace = true
 license.workspace = true
 publish.workspace = true
 
-[lib]
-path = "src/lib.rs"
-
 [features]
+# Talk to the online TVS mock service: default `TVS_ENV` to `test` and `BASE_URL`
+# to `http://localhost:3000`, and embed the committed DV cert/key bundle
+# (`auth-service/fixtures`)
 tvs-mock = []
 
 [dependencies]
-axum = { workspace = true }
+bergshamra-dsig = "0.7"
+bergshamra-enc  = "0.7"
+bergshamra-keys = "0.7"
+cookie = "0.18"
+base64 = "0.22"
+sha1 = "0.11"
+roxmltree = "0.21"
+rustls-webpki = { version = "0.103", default-features = false, features = ["std", "aws-lc-rs"] }
+rustls-pki-types = "1"
+x509-cert = "0.2"
+
+axum = { workspace = true, features = ["macros"] }
 axum-extra = { workspace = true, features = ["typed-routing"] }
-rand = { workspace = true }
+tokio = { workspace = true }
+askama = { workspace = true }
+uuid = { workspace = true }
+chrono = { workspace = true }
+parking_lot = { workspace = true }
 secrecy = { workspace = true }
+sha2 = { workspace = true }
+reqwest = { workspace = true, features = ["form", "rustls"] }
+tracing = { workspace = true }
 thiserror = { workspace = true }

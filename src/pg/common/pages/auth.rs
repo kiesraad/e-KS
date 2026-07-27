@@ -3,9 +3,9 @@
 //! [`AuthState`] hooks the auth-service invokes on login and logout.
 
 use askama::Template;
-use auth_service::{AuthFailure, AuthState, handle_logout};
+use auth_service::{AuthFailure, AuthServiceState, AuthState, handle_logout};
 use axum::{
-    extract::State,
+    extract::{FromRef, State},
     http::{HeaderMap, HeaderName, HeaderValue},
     response::{IntoResponse, Response},
 };
@@ -66,11 +66,15 @@ pub async fn logout(_: LogoutPath, session: Session) -> Response {
 
 /// POST `/logout`: starts SP-initiated logout (eID §7.7.1); the session
 /// middleware has already verified the CSRF token.
-pub async fn logout_submit<S: AppRequestState + AuthState>(
+pub async fn logout_submit<S>(
     _: LogoutPath,
     State(state): State<S>,
     jar: CookieJar,
-) -> Response {
+) -> Response
+where
+    S: AppRequestState + AuthState,
+    AuthServiceState: FromRef<S>,
+{
     handle_logout(&state, jar, &LoggedOutPath.to_string()).await
 }
 
