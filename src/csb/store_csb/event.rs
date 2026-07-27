@@ -41,10 +41,11 @@ pub enum CsbEvent {
         omission_id: OmissionId,
     },
     UpdateCorrection(Correction),
-    BrpValidation {
+    BrpPersonValidated {
         person: PersonId,
         valid: bool,
     },
+    SetBrpValidationInProgress(bool),
 }
 
 impl Event for CsbEvent {
@@ -58,7 +59,9 @@ impl Event for CsbEvent {
             | CsbEvent::UpdateOmission(_)
             | CsbEvent::DeleteOmission { .. } => "omission",
             CsbEvent::UpdateCorrection(_) => "correction",
-            CsbEvent::BrpValidation { .. } => "brp_validation",
+            CsbEvent::BrpPersonValidated { .. } | CsbEvent::SetBrpValidationInProgress(_) => {
+                "brp_validation"
+            }
         }
     }
 
@@ -72,7 +75,8 @@ impl Event for CsbEvent {
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
             CsbEvent::UpdateCorrection(_) => "update_correction",
-            CsbEvent::BrpValidation { .. } => "brp_validation",
+            CsbEvent::BrpPersonValidated { .. } => "brp_person_validated",
+            Self::SetBrpValidationInProgress(_) => "brp_validation",
         }
     }
 
@@ -88,7 +92,10 @@ impl Event for CsbEvent {
             CsbEvent::UpdateCorrection { .. } => {
                 trans!("audit_log.event.update_correction", locale)
             }
-            CsbEvent::BrpValidation { .. } => trans!("audit_log.event.brp_validation", locale),
+            CsbEvent::BrpPersonValidated { .. } => trans!("audit_log.event.brp_validation", locale),
+            Self::SetBrpValidationInProgress(_) => {
+                trans!("audit_log.event.set_brp_validation_state", locale)
+            }
         }
     }
 
@@ -110,7 +117,8 @@ impl Event for CsbEvent {
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
             CsbEvent::UpdateCorrection(_) => String::new(),
-            CsbEvent::BrpValidation { person, .. } => person.to_string(),
+            CsbEvent::BrpPersonValidated { person, .. } => person.to_string(),
+            CsbEvent::SetBrpValidationInProgress(value) => value.to_string(),
         }
     }
 

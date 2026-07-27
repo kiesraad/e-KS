@@ -167,9 +167,11 @@ pub async fn do_brp_verification(
     let store = store.clone();
     let brp_client = brp_client.clone();
 
-    tokio::task::spawn(async move {
-        store.data.write().brp_verification_in_progress = true;
+    store
+        .update(CsbEvent::SetBrpValidationInProgress(true))
+        .await?;
 
+    tokio::task::spawn(async move {
         let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
         for person in store.get_persons(WithCorrections::None) {
             tracing::info!("Checking person {} against the brp", person.id);
@@ -196,7 +198,13 @@ pub async fn do_brp_verification(
             "Finished checking candidates on list {:?}",
             store.data.read().imported_data.political_group
         );
-        store.data.write().brp_verification_in_progress = false;
+
+        if let Err(err) = store
+            .update(CsbEvent::SetBrpValidationInProgress(false))
+            .await
+        {
+            tracing::error!("Failed to set BRP validation to false: {err}");
+        }
     });
 
     Ok(())

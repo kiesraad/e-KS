@@ -61,6 +61,7 @@ event:
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd
+  set_brp_validation_state: BRP validatie status gezet
   set_finished: Afgerond gezet
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
   update_candidate_list_order: Volgorde van kandidatenlijst bijgewerkt
