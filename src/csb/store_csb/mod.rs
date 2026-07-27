@@ -3,6 +3,7 @@ mod extractor;
 mod getters;
 
 pub use event::CsbEvent;
+pub use getters::WithCorrections;
 
 use std::collections::HashMap;
 

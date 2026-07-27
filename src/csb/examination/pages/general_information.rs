@@ -35,30 +35,14 @@ pub async fn overview(
     context: CsbContext,
     store: CsbStore,
 ) -> Result<Response, AppError> {
-    let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected = store.paper_corrected();
-    let csb_corrected_display_name = store
-        .get_csb_corrected_display_name()
-        .map(|d| d.to_string());
-    let group_info = PaperCorrectedPoliticalGroupInfo::new(
-        &store,
-        &corrected,
-        csb_corrected_display_name,
-        context.session.locale,
-    );
-    let name_authorisations = paper_corrected_name_authorisations(&store, &corrected);
-    let list_submitter = paper_corrected_list_submitter(&store, &corrected);
-    let substitute_submitters = paper_corrected_substitute_submitters(&store, &corrected);
-    let political_group_omissions = store.get_political_group_omissions();
-
     Ok(HtmlTemplate(
         CsbGeneralInformationTemplate {
-            political_group,
-            group_info,
-            name_authorisations,
-            list_submitter,
-            substitute_submitters,
-            political_group_omissions,
+            political_group: CsbPoliticalGroup::new_from_csb_store(&store),
+            group_info: PaperCorrectedPoliticalGroupInfo::new(&store, context.session.locale),
+            name_authorisations: paper_corrected_name_authorisations(&store),
+            list_submitter: paper_corrected_list_submitter(&store),
+            substitute_submitters: paper_corrected_substitute_submitters(&store),
+            political_group_omissions: store.get_political_group_omissions(),
             restoration_count: store.get_omission_count(),
         },
         context,

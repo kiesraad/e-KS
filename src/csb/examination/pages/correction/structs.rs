@@ -1,6 +1,9 @@
 use crate::{
     CsbStore,
-    csb::examination::{pages::correction::extract_field, structs::CandidateCorrectionField},
+    csb::{
+        WithCorrections,
+        examination::{pages::correction::extract_field, structs::CandidateCorrectionField},
+    },
     persons::PersonId,
 };
 
@@ -42,22 +45,12 @@ pub(crate) struct FieldValues {
 
 impl FieldValues {
     pub(crate) fn for_display_name(store: &CsbStore) -> Self {
-        let imported = store
-            .get_imported_political_group()
-            .display_name
-            .as_ref()
-            .map(|d| d.to_string())
-            .unwrap_or_default();
-        let paper_corrected = store
-            .paper_corrected()
-            .get_political_group()
-            .display_name
-            .as_ref()
-            .map(|d| d.to_string())
-            .filter(|d| d != &imported);
-        let current_correction = store
-            .get_csb_corrected_display_name()
-            .map(|d| d.to_string());
+        let imported = store.get_display_name(WithCorrections::None);
+        let paper_corrected =
+            Some(store.get_display_name(WithCorrections::Paper)).filter(|d| d != &imported);
+        let current_correction = Some(store.get_display_name(WithCorrections::All))
+            .filter(|d| d != paper_corrected.as_ref().unwrap_or(&imported));
+
         Self {
             imported,
             paper_corrected,
@@ -70,9 +63,9 @@ impl FieldValues {
         person_id: PersonId,
         field: CandidateCorrectionField,
     ) -> Self {
-        let imported = store.get_imported_person(person_id);
-        let paper_corrected = store.paper_corrected().get_person(person_id).ok();
-        let csb_corrected = store.get_csb_corrected_person(person_id);
+        let imported = store.get_person(person_id, WithCorrections::None);
+        let paper_corrected = store.get_person(person_id, WithCorrections::Paper);
+        let csb_corrected = store.get_person(person_id, WithCorrections::All);
 
         let imported = imported
             .as_ref()
@@ -81,12 +74,11 @@ impl FieldValues {
         let paper_corrected = paper_corrected
             .as_ref()
             .map(|p| extract_field(field, p))
-            .filter(|v| v != &imported)
-            .filter(|v| !v.is_empty());
+            .filter(|v| v != &imported);
         let current_correction = csb_corrected
             .as_ref()
             .map(|p| extract_field(field, p))
-            .filter(|v| !v.is_empty());
+            .filter(|v| v != paper_corrected.as_ref().unwrap_or(&imported));
 
         Self {
             imported,

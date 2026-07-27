@@ -1,7 +1,8 @@
 use rand::{RngExt, rng};
 
 use crate::{
-    AnyLocale, CsbStore, PgStore,
+    AnyLocale, CsbStore,
+    csb::WithCorrections,
     structs::{candidate_lists::CandidateList, persons::Person},
 };
 
@@ -25,12 +26,11 @@ impl CsbCandidate {
     /// position in the ordering.
     pub fn rows_for_list(
         store: &CsbStore,
-        corrected_store: &PgStore,
         list: &CandidateList,
         locale: AnyLocale,
     ) -> Vec<CsbCandidate> {
-        let mut rows = imported_rows(store, corrected_store, list, locale);
-        rows.extend(corrected_only_rows(store, corrected_store, list, locale));
+        let mut rows = imported_rows(store, list, locale);
+        rows.extend(corrected_only_rows(store, list, locale));
         rows.sort_by_key(|(position, _)| *position);
         rows.into_iter().map(|(_, row)| row).collect()
     }
@@ -40,7 +40,6 @@ impl CsbCandidate {
 /// their imported position when the corrections removed them).
 fn imported_rows(
     store: &CsbStore,
-    corrected_store: &PgStore,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
@@ -48,10 +47,11 @@ fn imported_rows(
         .iter()
         .enumerate()
         .filter_map(|(index, person_id)| {
-            let person = store.get_imported_person(*person_id)?;
-            let corrected = corrected_store.get_person(*person_id).ok();
-            let csb_corrected = store.get_csb_corrected_person(*person_id);
-            let corrected_position = corrected_store.candidate_position(list.id, *person_id);
+            let person = store.get_person(*person_id, WithCorrections::None)?;
+            let corrected = store.get_person(*person_id, WithCorrections::Paper);
+            let csb_corrected = store.get_person(*person_id, WithCorrections::All);
+            let corrected_position =
+                store.get_candidate_position(list.id, *person_id, WithCorrections::All);
 
             Some((
                 corrected_position.unwrap_or(index + 1),
@@ -87,11 +87,10 @@ fn imported_rows(
 /// their corrected position.
 fn corrected_only_rows(
     store: &CsbStore,
-    corrected_store: &PgStore,
     list: &CandidateList,
     locale: AnyLocale,
 ) -> Vec<(usize, CsbCandidate)> {
-    let Ok(corrected_list) = corrected_store.get_candidate_list(list.id) else {
+    let Some(corrected_list) = store.get_candidate_list(list.id, WithCorrections::All) else {
         return Vec::new();
     };
 
@@ -101,8 +100,8 @@ fn corrected_only_rows(
         .enumerate()
         .filter(|(_, id)| !list.candidates.contains(id))
         .filter_map(|(index, person_id)| {
-            let person = corrected_store.get_person(*person_id).ok()?;
-            let csb_corrected = store.get_csb_corrected_person(*person_id);
+            let person = store.get_person(*person_id, WithCorrections::All)?;
+            let csb_corrected = store.get_person(*person_id, WithCorrections::All);
             Some((
                 index + 1,
                 CsbCandidate {
@@ -172,8 +171,7 @@ mod tests {
         corrected_list.candidates = vec![b, a];
         store.set_paper_corrected_candidate_list(corrected_list);
 
-        let rows =
-            CsbCandidate::rows_for_list(&store, &store.paper_corrected(), &list, AnyLocale::En);
+        let rows = CsbCandidate::rows_for_list(&store, &list, AnyLocale::En);
 
         assert_eq!(
             rows.iter().map(|r| r.person.id).collect::<Vec<_>>(),
@@ -199,8 +197,7 @@ mod tests {
         store.set_paper_corrected_candidate_list(corrected_list);
         store.add_person(sample_person_with_last_name(d, "Nieuw"));
 
-        let rows =
-            CsbCandidate::rows_for_list(&store, &store.paper_corrected(), &list, AnyLocale::En);
+        let rows = CsbCandidate::rows_for_list(&store, &list, AnyLocale::En);
 
         assert_eq!(
             rows.iter().map(|r| r.person.id).collect::<Vec<_>>(),

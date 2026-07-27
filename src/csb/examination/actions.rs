@@ -20,7 +20,7 @@ impl OmissionCategory {
                 let mut districts: Vec<ElectoralDistrict> = Vec::new();
                 for id in lists {
                     let list = store
-                        .get_candidate_list(*id)
+                        .get_candidate_list(*id, crate::csb::WithCorrections::All)
                         .ok_or(AppError::GenericNotFound)?;
                     for d in list.electoral_districts {
                         if !districts.contains(&d) {
