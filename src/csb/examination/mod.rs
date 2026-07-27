@@ -7,4 +7,4 @@ mod structs;
 
 pub use forms::OmissionForm;
 pub use pages::router;
-pub use paths::{CsbExaminationOverviewPath, CsbPaperCorrectionsStopPath};
+pub use paths::{CsbExaminationOverviewPath, CsbPaperCorrectionsStopPath, CsbPoliticalGroupPath};

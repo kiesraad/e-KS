@@ -29,6 +29,8 @@ pub enum CsbEvent {
         /// event log excluded. Boxed to keep the event enum small.
         snapshot: Box<PgStoreData>,
     },
+    /// Create an empty political-group store without importing from a PG stream.
+    CreateEmpty,
     /// An app event applied to the paper-corrected projection instead of a
     /// political group's own stream. Boxed to keep the event enum small.
     PaperCorrectedUpdate(Box<PgEvent>),
@@ -49,6 +51,7 @@ impl Event for CsbEvent {
     fn category(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::CreateEmpty => "import",
             CsbEvent::PaperCorrectedUpdate(_) => "paper_correction",
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_)
@@ -62,6 +65,7 @@ impl Event for CsbEvent {
     fn key(&self) -> &'static str {
         match self {
             CsbEvent::Import { .. } => "import",
+            CsbEvent::CreateEmpty => "create_empty",
             CsbEvent::PaperCorrectedUpdate(event) => event.key(),
             CsbEvent::SetFinished(_) => "set_finished",
             CsbEvent::CreateOmission(_) => "create_omission",
@@ -75,6 +79,7 @@ impl Event for CsbEvent {
     fn description(&self, locale: crate::Locale) -> String {
         match self {
             CsbEvent::Import { .. } => trans!("audit_log.event.import", locale),
+            CsbEvent::CreateEmpty => trans!("audit_log.event.create_empty", locale),
             CsbEvent::PaperCorrectedUpdate(event) => event.description(locale),
             CsbEvent::SetFinished(_) => trans!("audit_log.event.set_finished", locale),
             CsbEvent::CreateOmission(_) => trans!("audit_log.event.create_omission", locale),
@@ -99,6 +104,7 @@ impl Event for CsbEvent {
                     format_hash(hash, true)
                 )
             }
+            CsbEvent::CreateEmpty => String::new(),
             CsbEvent::PaperCorrectedUpdate(event) => event.details(),
             CsbEvent::SetFinished(value) => value.to_string(),
             CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),

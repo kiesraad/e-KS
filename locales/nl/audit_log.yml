@@ -43,6 +43,8 @@ event:
   brp_validation: Kandidaat gevalideerd tegen de BRP
   create_candidate_list: Kandidatenlijst aangemaakt
   create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
+  create_empty: Lege politieke groepering aangemaakt
+  paper_correction: Papieren correcties
   create_omission: Verzuim aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
@@ -83,8 +85,10 @@ filter:
   apply: Filteren
   category:
     candidate_list: Kandidatenlijst
+    correction: Ambtshalve correcties
     import: Import
     list_submitter: Lijstinleveraar
+    paper_correction: Papieren correcties
     name_authorisation: Statutaire naam en gemachtigde
     omission: Verzuim
     person: Persoon

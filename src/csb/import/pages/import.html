@@ -31,4 +31,15 @@
       </div>
     </fieldset>
   </form>
+  <form action="{{ crate::csb::import::CsbCreateEmptyPath{}.to_string() }}"
+        method="post"
+        class="form mt-xl">
+    {{ macros::csrf_field() }}
+    <fieldset>
+      <p class="text-balance w-32">{{ "csb.form.create_empty_explanation"|trans }}</p>
+      <div class="form-actions">
+        <button type="submit" class="button secondary lg">{{ "csb.form.create_empty"|trans }}</button>
+      </div>
+    </fieldset>
+  </form>
 {% endblock %}
