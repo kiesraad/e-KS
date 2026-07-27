@@ -72,7 +72,7 @@ impl Event for CsbEvent {
             CsbEvent::UpdateOmission(_) => "update_omission",
             CsbEvent::DeleteOmission { .. } => "delete_omission",
             CsbEvent::UpdateCorrection(_) => "update_correction",
-            CsbEvent::BrpValidation { .. } => "brep_validation",
+            CsbEvent::BrpValidation { .. } => "brp_validation",
         }
     }
 

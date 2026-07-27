@@ -1,5 +1,6 @@
 use reqwest::Client;
 use serde::{Deserialize, Serialize};
+use std::time::Duration;
 
 use super::{BrpField, BrpPerson};
 use crate::{
@@ -15,15 +16,17 @@ pub struct BrpClient {
     base_url: String,
     api_key: String,
     persons_endpoint: String,
+    timeout: Duration,
 }
 
 impl BrpClient {
-    pub fn new(base_url: &str, api_key: &str, persons_endpoint: &str) -> Self {
+    pub fn new(base_url: &str, api_key: &str, persons_endpoint: &str, timeout: Duration) -> Self {
         Self {
             http_client: Client::new(),
             base_url: base_url.to_string(),
             api_key: api_key.to_string(),
             persons_endpoint: persons_endpoint.to_string(),
+            timeout,
         }
     }
 
@@ -35,6 +38,7 @@ impl BrpClient {
             .post(&url)
             .header("Authorization", format!("Bearer {}", self.api_key))
             .json(query)
+            .timeout(self.timeout)
             .send()
             .await?;
 
@@ -62,14 +66,18 @@ impl BrpClient {
                 ],
             },
             Some(BsnOrNoneConfirmed::NoneConfirmed) => {
-                unimplemented!("BRP search with address? Or manual verification")
+                // TODO: This needs to be implemented
+                tracing::error!(
+                    "Person {} has BSN none confirmed. Use BRP search with address? Or manual verification",
+                    person.id
+                );
+                return Err(AppError::GenericNotFound);
             }
             None => {
                 // TODO: This needs to be implemented
                 tracing::warn!(
-                    "Person {} currently does not have a BSN filled in (or none confirmed)\n{:?}",
+                    "Person {} does not have a BSN filled in (or none confirmed)",
                     person.id,
-                    person
                 );
                 return Err(AppError::GenericNotFound);
             }
@@ -241,8 +249,12 @@ mod tests {
 
     #[tokio::test]
     async fn brp_request() {
-        let brp_client =
-            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+        let brp_client = BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(30),
+        );
         let query = BrpQuery::ConsultWithBsn {
             bsn: vec!["100600505".parse().unwrap()],
             fields: vec![BrpField::LastName],
@@ -255,8 +267,12 @@ mod tests {
 
     #[tokio::test]
     async fn brp_verify() {
-        let brp_client =
-            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+        let brp_client = BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(30),
+        );
 
         let person = sample_person_from_brp();
 
@@ -273,8 +289,12 @@ mod tests {
 
     #[tokio::test]
     async fn brp_verify_returns_omissions() {
-        let brp_client =
-            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+        let brp_client = BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(30),
+        );
 
         let mut person = sample_person(PersonId::new());
         // Dit bsn voldoet aan de 11-proef maar staat niet in de mock brp
@@ -318,10 +338,8 @@ mod tests {
         // als het verkeerde bsn is ingevuld.
         person.personal_data.bsn = Some("999992806".parse().unwrap());
 
-        dbg!(&person);
         match brp_client.verify(&person).await {
             Ok(ommissions) => {
-                dbg!(&ommissions);
                 assert_eq!(ommissions.len(), 8);
             }
             Err(e) => panic!("{e}"),

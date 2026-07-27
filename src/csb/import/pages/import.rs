@@ -10,7 +10,10 @@ use serde::Deserialize;
 use crate::{
     AppError, AppState, Context, CsbContext, CsbEvent, CsbStoreData, Form, HtmlTemplate, Locale,
     PgStoreData, StreamId,
-    csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
+    csb::{
+        WithCorrections,
+        examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
+    },
     filters, redirect_success,
     store::Store,
     structs::brp::BrpClient,
@@ -129,7 +132,12 @@ async fn do_import(
         .await?;
 
     // TODO: get from env at higher level probably
-    let brp_client = BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+    let brp_client = BrpClient::new(
+        "http://localhost:5010",
+        "",
+        "haalcentraal/api/brp/personen",
+        Duration::from_secs(30),
+    );
     do_brp_verification(&csb_store, &brp_client).await?;
 
     Ok(redirect_success(CsbPoliticalGroupPath {
@@ -163,7 +171,7 @@ pub async fn do_brp_verification(
         store.data.write().brp_verification_in_progress = true;
 
         let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
-        for person in store.get_persons() {
+        for person in store.get_persons(WithCorrections::None) {
             tracing::info!("Checking person {} against the brp", person.id);
             ticker.tick().await;
 
@@ -384,8 +392,12 @@ mod tests {
         person.address.house_number_addition = Some("nope".parse().unwrap());
         csb_store.add_person(person);
 
-        let brp_client =
-            BrpClient::new("http://localhost:5010", "", "haalcentraal/api/brp/personen");
+        let brp_client = BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(30),
+        );
         do_brp_verification(&csb_store, &brp_client).await?;
 
         // The check runs in a spawned background task; poll briefly for its

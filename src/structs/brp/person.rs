@@ -131,10 +131,11 @@ impl From<BrpPersonRaw> for BrpPerson {
             Some(BrpPlaceOfResidence::NonDutchAddress) => {
                 // TODO: How to handle this? Set the address to None and conduct an additional BRP check
                 // for the Authorised Person?
-                todo!("Not a Dutch Address")
+                tracing::error!("Person has an non-Dutch address");
+                (None, None)
             }
             None => {
-                eprintln!("Field 'verblijfplaats' not included");
+                tracing::error!("Field 'verblijfplaats' not included");
                 (None, None)
             }
         };
