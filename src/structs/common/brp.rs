@@ -211,6 +211,10 @@ impl BrpClient {
 
 // ontbreekt: Aanduiding bijzonder Nederlanderschap
 // ontbreekt: Ingangsdatum geldigheid met betrekking tot de elementen van de categorie Nationaliteit
+#[expect(
+    unused,
+    reason = "These are all the fields we can request from the BRP, not necessarily all the ones we need"
+)]
 #[derive(Debug, Serialize)]
 pub enum BrpField {
     // Personen
@@ -487,9 +491,10 @@ mod tests {
 
         match brp_client.verify(&person).await {
             Err(e) => panic!("brp verification error: {e}"),
-            Ok(false) => panic!(
-                "person could not be verified: {}",
-                serde_json::to_string_pretty(&person).unwrap()
+            Ok(omissions) if !omissions.is_empty() => panic!(
+                "person could not be verified: {}\nFollowing omissions were found: {:?}",
+                serde_json::to_string_pretty(&person).unwrap(),
+                omissions
             ),
             _ => {}
         }
