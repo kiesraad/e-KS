@@ -288,4 +288,31 @@ mod tests {
 
         Ok(())
     }
+
+    #[tokio::test]
+    async fn create_empty_creates_csb_store_with_create_empty_event() -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+
+        let response = create_empty(
+            CsbCreateEmptyPath {},
+            State(state.clone()),
+            CsbContext::new_test(),
+        )
+        .await?
+        .into_response();
+
+        // A successful creation redirects to the political group examination page.
+        assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+        // A single CSB store is recorded carrying the CreateEmpty event.
+        let csb_stores = state.csb_store_registry.stores_by_scope().await?;
+        assert_eq!(csb_stores.len(), 1);
+        let data = csb_stores[0].data.read();
+        assert!(matches!(
+            data.events.first().unwrap().payload,
+            CsbEvent::CreateEmpty
+        ));
+
+        Ok(())
+    }
 }
