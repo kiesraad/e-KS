@@ -42,6 +42,7 @@ event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   create_candidate_list: Kandidatenlijst aangemaakt
   create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
+  create_empty: Lege politieke groepering aangemaakt
   create_omission: Verzuim aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt

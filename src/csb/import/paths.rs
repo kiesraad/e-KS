@@ -7,3 +7,7 @@ use crate::AppError;
 #[derive(TypedPath)]
 #[typed_path("/csb/import", rejection(AppError))]
 pub struct CsbImportPath;
+
+#[derive(TypedPath)]
+#[typed_path("/csb/create-empty", rejection(AppError))]
+pub struct CsbCreateEmptyPath;

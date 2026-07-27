@@ -42,6 +42,7 @@ event:
   add_candidate_to_list: Added candidate to list
   create_candidate_list: Created list of candidates
   create_name_authorisation: Created statutory name and authorised agent
+  create_empty: Created empty political group
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
