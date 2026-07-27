@@ -96,7 +96,7 @@ pub use state::AppState;
 pub use store::run_db_prober;
 
 pub(crate) use middleware::{
-    csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router,
+    csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router, lb_health_router,
     session_middleware, store_middleware,
 };
 pub(crate) use pg::{

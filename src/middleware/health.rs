@@ -1,15 +1,29 @@
-//! Health check endpoint reporting whether the app can reach its persistence
-//! backend (typically the configured database).
+//! Health check endpoints: [`health_router`] reports whether the app can reach
+//! its persistence backend (typically the configured database),
+//! [`lb_health_router`] only that this process is up and serving HTTP.
 
-use axum::{Router, extract::State, http::StatusCode, response::IntoResponse, routing::get};
+use axum::{Router, extract::State, http::StatusCode, response::IntoResponse};
+use axum_extra::routing::{RouterExt, TypedPath};
 
-use crate::AppState;
+use crate::{AppError, AppState};
+
+#[derive(TypedPath)]
+#[typed_path("/health", rejection(AppError))]
+pub struct HealthPath;
+
+#[derive(TypedPath)]
+#[typed_path("/lb-health", rejection(AppError))]
+pub struct LbHealthPath;
 
 pub fn health_router() -> Router<AppState> {
-    Router::new().route("/health", get(health_handler))
+    Router::new().typed_get(health_handler)
 }
 
-async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
+pub fn lb_health_router() -> Router<AppState> {
+    Router::new().typed_get(lb_health_handler)
+}
+
+async fn health_handler(_: HealthPath, State(state): State<AppState>) -> impl IntoResponse {
     match state.store_registry.persistence().health_check().await {
         Ok(()) => (StatusCode::OK, "healthy"),
         Err(err) => {
@@ -17,4 +31,8 @@ async fn health_handler(State(state): State<AppState>) -> impl IntoResponse {
             (StatusCode::SERVICE_UNAVAILABLE, "unhealthy")
         }
     }
+}
+
+async fn lb_health_handler(_: LbHealthPath) -> impl IntoResponse {
+    (StatusCode::OK, "started")
 }

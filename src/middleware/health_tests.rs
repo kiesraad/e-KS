@@ -4,6 +4,7 @@ use axum::{
     body::Body,
     http::{Request, StatusCode},
 };
+use axum_extra::routing::TypedPath;
 use tower::ServiceExt;
 
 use crate::{AppState, test_utils::response_body_string};
@@ -16,7 +17,7 @@ async fn health_returns_ok_for_reachable_backend() {
     let response = app
         .oneshot(
             Request::builder()
-                .uri("/health")
+                .uri(HealthPath::PATH)
                 .body(Body::empty())
                 .unwrap(),
         )
@@ -26,4 +27,24 @@ async fn health_returns_ok_for_reachable_backend() {
     assert_eq!(response.status(), StatusCode::OK);
     let body = response_body_string(response).await;
     assert_eq!(body, "healthy");
+}
+
+#[tokio::test]
+async fn lb_health_reports_started() {
+    let state = AppState::new_for_tests().await;
+    let app: Router = lb_health_router().with_state(state);
+
+    let response = app
+        .oneshot(
+            Request::builder()
+                .uri(LbHealthPath::PATH)
+                .body(Body::empty())
+                .unwrap(),
+        )
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::OK);
+    let body = response_body_string(response).await;
+    assert_eq!(body, "started");
 }
