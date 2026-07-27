@@ -1,5 +1,4 @@
 mod address;
-mod brp;
 mod bsn;
 mod constrained_string;
 mod countries;
@@ -23,7 +22,6 @@ mod severity;
 mod utc_date_time;
 
 pub use address::{Address, DutchAddress, InternationalAddress};
-pub use brp::BrpClient;
 pub use bsn::{BSN_NONE_CONFIRMATION, Bsn, BsnOrNoneConfirmed};
 pub use constrained_string::{FirstName, LegalName, StateOrProvince, StreetName};
 pub use countries::COUNTRY_CODES;

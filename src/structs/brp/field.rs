@@ -2,6 +2,10 @@ use serde::Serialize;
 
 // ontbreekt: Aanduiding bijzonder Nederlanderschap
 // ontbreekt: Ingangsdatum geldigheid met betrekking tot de elementen van de categorie Nationaliteit
+#[expect(
+    unused,
+    reason = "These are all the fields we can request from the BRP, not necessarily all the ones we need"
+)]
 #[derive(Debug, Serialize)]
 pub enum BrpField {
     // Personen

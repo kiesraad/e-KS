@@ -13,7 +13,7 @@ use crate::{
     csb::examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     filters, redirect_success,
     store::Store,
-    structs::common::BrpClient,
+    structs::brp::BrpClient,
     trans,
     utils::parse_hash_prefix,
 };
