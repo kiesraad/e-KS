@@ -1,6 +1,6 @@
 # Use cases politieke groepering - kandidaatstelling
 
-## Politieke groepering maakt de set benodigde documenten (vlieger)
+## Politieke groepering maakt de set benodigde documenten (vlieger) art. R
 
 __Niveau:__ Hoog-over, vlieger, 🪁
 
@@ -40,9 +40,10 @@ __Hoofdscenario:__
 
 1. De gebruiker selecteert dat ze meedoen met een op zichzelfstaande geregistreerde naam.
 2. De gebruiker vult in dat er bij de vorige verkiezing 16 of meer zetels zijn behaald en mag hierdoor maximaal 80 kandidaten op de lijst plaatsen **art. R 4 (voor Eerste Kamerverkiezing)** 
-3. De gebruiker vult de gegevens van de politieke groepering in: aanduiding en volledige statuaire naam. **art. R (voor Eerste Kamerverkiezing)** 
-4. De gebruiker vult de gegevens van de gemachtigde in.
-3. De gebruiker vult de gegevens van de lijstinleveraar in en de vervangers voor herstel verzuim, dit kunnen oo bestaande kandidaten zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
+3. De gebruiker vult de aanduiding van de politieke groepering in. **art. R (voor Eerste Kamerverkiezing)** 
+4. De gebruiker vult de volledige statutaire naam en de gegevens van de gemachtigde in.
+5. Politieke groepering vult de lijstinleveraar en vervangers herstel van verzuimen in **art. R 7 (voor Eerste Kamerverkiezing)**
+6. De gebruiker vult de gegevens van de lijstinleveraar in en de vervangers voor herstel verzuim, dit kunnen oo bestaande kandidaten zijn. *de stap is hier logisch als je kijkt naar welke gebruiker het doet, maar moet per lijst te kiezen zijn* **art. R 7 (voor Eerste Kamerverkiezing)**
 
 
 __Uitbreidingen__:   
@@ -63,23 +64,20 @@ __Niveau:__ Gebruikersdoel, zee, 🌊
 __Hoofdscenario:__
 
 1. Politieke groepering maakt een lijst aan
-2. Politieke groepering bevestigt lijstinleveraar **art. R 7 (voor Eerste Kamerverkiezing)**
-3. Politieke groepering vinkt aan voor welke gebieden de lijst geldig is **art. R 10 (voor Eerste Kamerverkiezing)**
-4. Politieke groepering vult de lijst door personen toe te voegen
-5. De lijstinleveraar vult de benodigde personalia ([Personalia kandidaat H1](./data.md#personalia-kandidaat-h1-art-h2-kiesbesluit)) in.
-6. De applicatie valideert de ingevoerde gegevens en geeft feedback. **art. R 5 (voor Eerste Kamerverkiezing)**
-7. Politieke groepering geeft aan dat de lijst klaar is
+2. Politieke groepering vinkt aan voor welke gebieden de lijst geldig is **art. R 10 (voor Eerste Kamerverkiezing)**
+3. Politieke groepering vult de lijst door personen toe te voegen
+4. De lijstinleveraar vult de benodigde personalia ([Personalia kandidaat H1](./data.md#personalia-kandidaat-h1-art-h2-kiesbesluit)) in.
+5. De applicatie valideert de ingevoerde gegevens en geeft feedback. **art. R 5 (voor Eerste Kamerverkiezing)**
+6. Politieke groepering download alle modellen vanuit het systeem.
 
 Optioneel vervolg: door naar stap 1
 
 __Uitbreidingen__:
 
 - 1a. Politieke groepering selecteert een bestaande lijst als sjabloon
-- 2a. Politieke groepering kiest voor deze lijst een andere lijstinleveraar
-  - 2a1. De gemachtigde bevestigt lijstinleveraar
-- 4a. Poltieke groepering vult de lijst en past de volgorde van de kandidaten aan
+- 3a. Poltieke groepering vult de lijst en past de volgorde van de kandidaten aan
 
-## Politieke groepering machtigt de lijstinleveraar (zee)
+## Politieke groepering machtigt de lijstinleveraar (zee) - Nice to have (Fase 2)
 
 __Niveau:__ Gebruikersdoel, zee, 🌊
 
@@ -126,7 +124,7 @@ __Hoofdscenario:__
 5. De applicatie genereert de benodigde documenten. (LINK naar pagina met alle benodigden documenten per verkiezing)
 6. De lijstinleveraar downloadt de benodigde documenten in pdf.
 7. De lijstinleveraar print de benodigde documenten uit.
-8. Het centraal stembureau ontvangt de gegevens (via de applicatie).
+
 
 __Uitbreidingen__:
 
@@ -167,11 +165,10 @@ __Niveau:__ Gebruikersdoel, zee, 🌊
 __Hoofdscenario:__
 
 1. Politieke groepering ontvangt schriftelijk de te maken wijzigingen.
-2. Politieke groepering stelt vast dat de schriftelijke te maken wijzigingen ook in de applicatie staan. **@Richard: papier is leidend.**
-3. Politieke groepering corrigeert de fouten
-4. Vervolg zie: [De lijstinleveraar stelt vast alle gegevens volledig zijn en downloadt en print alle benodigde documenten. (zee)]((#de-lijstinleveraar-stelt-vast-alle-gegevens-volledig-zijn-en-downloadt-en-print-alle-benodigde-documenten-zee))
+2. Politieke groepering corrigeert de fouten
+3. Vervolg zie: [De lijstinleveraar stelt vast alle gegevens volledig zijn en downloadt en print alle benodigde documenten. (zee)]((#de-lijstinleveraar-stelt-vast-alle-gegevens-volledig-zijn-en-downloadt-en-print-alle-benodigde-documenten-zee))
 
-## De politieke groepering kiest ervoor om de lijst samen in te leveren
+## De politieke groepering kiest ervoor om de lijst samen in te leveren (art. R 7)
 
 __Niveau:__ Gebruikersdoel, zee, 🌊
 
@@ -180,4 +177,5 @@ __Hoofdscenario:__
 1. De politieke groepering geeft aan dat ze meedoen met een samengevoegde aanduiding
 2. De politieke groepering vult één samengevoegde aanduiding in
 3. De politieke groepering vult voor elke partij een gemachtigde in
+4. De poltieke groepering vult alle statutaire namen in
 
