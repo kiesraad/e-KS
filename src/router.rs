@@ -13,9 +13,10 @@ use tower_http::{csrf::CsrfLayer, set_header::SetResponseHeaderLayer};
 
 use crate::{
     AppState, audit_log, candidate_lists, candidates, common, csb, csb_store_middleware,
-    db_gate_middleware, eks_key_middleware, finalise, health_router, http_trace, list_designation,
-    list_submitters, name_authorisations, persons, political_groups, render_error_pages,
-    session_middleware, store_middleware, substitute_list_submitters, utils::bag,
+    db_gate_middleware, eks_key_middleware, finalise, health_router, http_trace, lb_health_router,
+    list_designation, list_submitters, name_authorisations, persons, political_groups,
+    render_error_pages, session_middleware, store_middleware, substitute_list_submitters,
+    utils::bag,
 };
 
 pub fn create(state: AppState) -> Router<AppState> {
@@ -91,12 +92,16 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     let router = mount_static_assets(router).merge(common::always_public_router());
 
-    router
+    let router = router
         .layer(csrf_layer())
         .layer(middleware::from_fn_with_state(
             state.clone(),
             eks_key_middleware,
-        ))
+        ));
+
+    // The load balancer only checks that this process is up, and holds no
+    // `x-eks-key`: its probe is merged last so it sits outside that gate.
+    router.merge(lb_health_router())
 }
 
 /// Global fetch-metadata CSRF protection, backstopping the session
@@ -264,6 +269,33 @@ mod tests {
         // The health probe must keep answering (memory backend is reachable),
         // not be swallowed by the maintenance gate.
         assert_eq!(response.status(), StatusCode::OK);
+    }
+
+    /// The load balancer has no `x-eks-key`, so its probe must answer from
+    /// behind a configured gate that rejects `/health`.
+    #[tokio::test]
+    async fn lb_health_answers_without_eks_key() {
+        let mut config = crate::Config::new_test();
+        config.eks_key = Some(secrecy::SecretString::from("s3cret"));
+        let state = AppState::new_for_tests_with_config(config).await;
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri(crate::middleware::health::LbHealthPath::PATH)
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response_body_string(response).await, "started");
+
+        let request = Request::builder()
+            .uri(crate::middleware::health::HealthPath::PATH)
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::UNAUTHORIZED);
     }
 
     /// A cross-site POST is rejected by the global CSRF layer before it

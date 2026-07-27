@@ -16,7 +16,7 @@ pub mod proxy;
 pub mod dev_login;
 
 pub use eks_key::eks_key_middleware;
-pub use health::health_router;
+pub use health::{health_router, lb_health_router};
 pub use maintenance::db_gate_middleware;
 pub use session::{csb_store_middleware, session_middleware, store_middleware};
 
