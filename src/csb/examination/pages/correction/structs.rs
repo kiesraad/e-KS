@@ -1,6 +1,11 @@
-use serde::Deserialize;
-
-use crate::{CsbStore, csb::examination::pages::correction::extract_field, persons::PersonId};
+use crate::{
+    CsbStore,
+    csb::{
+        WithCorrections,
+        examination::{pages::correction::extract_field, structs::CandidateCorrectionField},
+    },
+    persons::PersonId,
+};
 
 /// Which type of input to render in the correction overlay.
 pub enum CorrectionFieldType {
@@ -40,22 +45,12 @@ pub(crate) struct FieldValues {
 
 impl FieldValues {
     pub(crate) fn for_display_name(store: &CsbStore) -> Self {
-        let imported = store
-            .get_imported_political_group()
-            .display_name
-            .as_ref()
-            .map(|d| d.to_string())
-            .unwrap_or_default();
-        let paper_corrected = store
-            .paper_corrected()
-            .get_political_group()
-            .display_name
-            .as_ref()
-            .map(|d| d.to_string())
-            .filter(|d| d != &imported);
-        let current_correction = store
-            .get_csb_corrected_display_name()
-            .map(|d| d.to_string());
+        let imported = store.get_display_name(WithCorrections::None);
+        let paper_corrected =
+            Some(store.get_display_name(WithCorrections::Paper)).filter(|d| d != &imported);
+        let current_correction = Some(store.get_display_name(WithCorrections::All))
+            .filter(|d| d != paper_corrected.as_ref().unwrap_or(&imported));
+
         Self {
             imported,
             paper_corrected,
@@ -68,9 +63,9 @@ impl FieldValues {
         person_id: PersonId,
         field: CandidateCorrectionField,
     ) -> Self {
-        let imported = store.get_imported_person(person_id);
-        let paper_corrected = store.paper_corrected().get_person(person_id).ok();
-        let csb_corrected = store.get_csb_corrected_person(person_id);
+        let imported = store.get_person(person_id, WithCorrections::None);
+        let paper_corrected = store.get_person(person_id, WithCorrections::Paper);
+        let csb_corrected = store.get_person(person_id, WithCorrections::All);
 
         let imported = imported
             .as_ref()
@@ -79,12 +74,11 @@ impl FieldValues {
         let paper_corrected = paper_corrected
             .as_ref()
             .map(|p| extract_field(field, p))
-            .filter(|v| v != &imported)
-            .filter(|v| !v.is_empty());
+            .filter(|v| v != &imported);
         let current_correction = csb_corrected
             .as_ref()
             .map(|p| extract_field(field, p))
-            .filter(|v| !v.is_empty());
+            .filter(|v| v != paper_corrected.as_ref().unwrap_or(&imported));
 
         Self {
             imported,
@@ -121,57 +115,5 @@ impl FieldValues {
         locale: crate::Locale,
     ) -> CorrectionDisplay {
         self.into_display(field.label(locale), field.into())
-    }
-}
-
-/// Which personal-data field of a candidate a correction dialog operates on.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum CandidateCorrectionField {
-    Initials,
-    LastName,
-    DateOfBirth,
-    PlaceOfResidence,
-}
-
-impl CandidateCorrectionField {
-    pub fn label(self, locale: crate::Locale) -> String {
-        match self {
-            Self::Initials => crate::trans!("person.fields.initials", locale),
-            Self::LastName => crate::trans!("person.fields.last_name", locale),
-            Self::DateOfBirth => crate::trans!("person.fields.date_of_birth", locale),
-            Self::PlaceOfResidence => crate::trans!("person.fields.place_of_residence", locale),
-        }
-    }
-}
-
-impl std::str::FromStr for CandidateCorrectionField {
-    type Err = &'static str;
-
-    fn from_str(s: &str) -> Result<Self, Self::Err> {
-        match s {
-            "initials" => Ok(Self::Initials),
-            "last-name" => Ok(Self::LastName),
-            "date-of-birth" => Ok(Self::DateOfBirth),
-            "place-of-residence" => Ok(Self::PlaceOfResidence),
-            _ => Err("unknown correction field"),
-        }
-    }
-}
-
-impl std::fmt::Display for CandidateCorrectionField {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Initials => write!(f, "initials"),
-            Self::LastName => write!(f, "last-name"),
-            Self::DateOfBirth => write!(f, "date-of-birth"),
-            Self::PlaceOfResidence => write!(f, "place-of-residence"),
-        }
-    }
-}
-
-impl<'de> Deserialize<'de> for CandidateCorrectionField {
-    fn deserialize<D: serde::Deserializer<'de>>(deserializer: D) -> Result<Self, D::Error> {
-        let s = String::deserialize(deserializer)?;
-        s.parse().map_err(serde::de::Error::custom)
     }
 }

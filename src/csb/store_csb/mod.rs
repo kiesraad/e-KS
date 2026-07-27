@@ -3,6 +3,7 @@ mod extractor;
 mod getters;
 
 pub use event::CsbEvent;
+pub use getters::WithCorrections;
 
 use std::collections::HashMap;
 
@@ -119,7 +120,7 @@ impl crate::CsbStore {
         crate::store::Store {
             stream_id: StreamId::new(),
             election: crate::ElectionConfig::EK27,
-            backend: crate::store::persistence::StoreBackend::Memory {
+            backend: crate::store::StoreBackend::Memory {
                 store: crate::store::memory::MemoryStore::default(),
             },
             data: std::sync::Arc::new(parking_lot::RwLock::new(CsbStoreData::default())),
@@ -166,10 +167,12 @@ impl crate::CsbStore {
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::HashSet, str::FromStr};
+
     use super::*;
     use crate::{
         PgEvent, StreamId,
-        common::PlaceOfResidence,
+        common::{Initials, LastName, PlaceOfResidence},
         structs::csb::PersonCorrection,
         test_utils::{sample_person, sample_political_group},
     };
@@ -264,9 +267,10 @@ mod tests {
             )),
         ));
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.len(), 2);
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), original_last_name);
+        assert_eq!(
+            corrected.get_corrections(),
+            HashSet::from([PersonCorrection::Initials("X.Y.Z.".parse().unwrap())])
+        );
 
         // last name
         data.apply(StoreEvent::new(
@@ -277,12 +281,17 @@ mod tests {
             )),
         ));
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
+        assert_eq!(
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap())
+            ])
+        );
 
         // date of birth
         data.apply(StoreEvent::new(
-            2,
+            4,
             CsbEvent::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
@@ -290,21 +299,18 @@ mod tests {
         ));
 
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(
-            corrected
-                .personal_data
-                .date_of_birth
-                .as_ref()
-                .unwrap()
-                .to_string(),
-            "1985-06-15"
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap()),
+                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap())
+            ])
         );
 
         // place of residence
         data.apply(StoreEvent::new(
-            2,
+            5,
             CsbEvent::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
@@ -314,20 +320,16 @@ mod tests {
         ));
 
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(
-            corrected
-                .personal_data
-                .date_of_birth
-                .as_ref()
-                .unwrap()
-                .to_string(),
-            "1985-06-15"
-        );
-        assert_eq!(
-            corrected.personal_data.place_of_residence,
-            Some(PlaceOfResidence::Known("Amsterdam".to_string()))
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap()),
+                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
+                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
+                    "Amsterdam".to_string()
+                ))
+            ])
         );
     }
 }

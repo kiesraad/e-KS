@@ -1,5 +1,5 @@
 use super::PaperCorrected;
-use crate::{CsbStore, PgStore};
+use crate::{CsbStore, csb::WithCorrections};
 
 /// A name authorisation with its rows diffed against the corrections.
 pub struct PaperCorrectedNameAuthorisation {
@@ -13,10 +13,9 @@ pub struct PaperCorrectedNameAuthorisation {
 /// the corrections are hidden.
 pub fn paper_corrected_name_authorisations(
     store: &CsbStore,
-    corrected: &PgStore,
 ) -> Vec<PaperCorrectedNameAuthorisation> {
-    let imported = store.get_imported_name_authorisations();
-    let corrected = corrected.get_name_authorisations();
+    let imported = store.get_name_authorisations(WithCorrections::None);
+    let corrected = store.get_name_authorisations(WithCorrections::Paper);
 
     let mut rows: Vec<PaperCorrectedNameAuthorisation> = imported
         .iter()
@@ -73,7 +72,7 @@ mod tests {
                 .insert(kept.id, kept.clone());
         }
 
-        let rows = paper_corrected_name_authorisations(&store, &store.paper_corrected());
+        let rows = paper_corrected_name_authorisations(&store);
         assert_eq!(rows.len(), 1);
         assert_eq!(rows[0].heading, kept.legal_name.to_string());
     }

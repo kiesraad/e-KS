@@ -2,7 +2,7 @@ use axum_extra::routing::TypedPath;
 use chrono::{DateTime, Utc};
 
 use crate::{
-    Event, Locale, QueryParamState, StreamId, csb::audit_log::pages::CsbAuditLogDetailPath,
+    Event, Locale, QueryParamState, StreamId, csb::audit_log::paths::CsbAuditLogDetailPath,
     store::StoreEvent,
 };
 

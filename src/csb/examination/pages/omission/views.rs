@@ -4,7 +4,10 @@ use axum_extra::routing::TypedPath;
 use crate::{
     AppError, Context, CsbStore, ElectoralDistrict, Locale, Overlay, QueryParamState,
     candidate_lists::CandidateListId,
-    csb::examination::{OmissionForm, pages::CsbDeleteOmissionPath},
+    csb::{
+        WithCorrections,
+        examination::{OmissionForm, pages::CsbDeleteOmissionPath},
+    },
     filters,
     form::FormData,
     persons::PersonId,
@@ -84,21 +87,23 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
             let person = PersonId::from(target.reference);
             OmissionPlaceholders {
                 candidate_name: store
-                    .get_imported_or_corrected_person(person)
+                    .get_person(person, WithCorrections::All)
                     .map(|person| person.name.display()),
                 // A candidate's position differs per list, so it can only be
                 // resolved when the dialog was opened for a specific list.
                 candidate_number: target
                     .list
-                    .and_then(|list| store.imported_or_corrected_candidate_position(list, person))
+                    .and_then(|list| {
+                        store.get_candidate_position(list, person, WithCorrections::All)
+                    })
                     .map(|nr| nr.to_string()),
             }
         }
         // The {district}/{districts} tokens in candidate-list presets are filled
         // in by the front-end
-        OmissionType::CandidateList | OmissionType::PoliticalGroup => {
-            OmissionPlaceholders::default()
-        }
+        OmissionType::CandidateList
+        | OmissionType::DeclarationsOfSupport
+        | OmissionType::PoliticalGroup => OmissionPlaceholders::default(),
     }
 }
 
@@ -106,13 +111,26 @@ fn placeholders_for(target: &OmissionTarget, store: &CsbStore) -> OmissionPlaceh
 /// candidate omission form
 pub(super) fn candidate_list_options(store: &CsbStore, locale: Locale) -> Vec<CandidateListOption> {
     store
-        .get_corrected_candidate_lists()
+        .get_candidate_lists(WithCorrections::All)
         .into_iter()
         .map(|l| CandidateListOption {
             id: l.id,
             label: l.districts_name(locale.into()),
         })
         .collect()
+}
+
+/// All paper-corrected candidate list districts of the political group
+/// for the candidate list omission form (mainly declarations of support)
+pub(super) fn available_electoral_districts(store: &CsbStore) -> Vec<ElectoralDistrict> {
+    let mut districts: Vec<_> = store
+        .get_candidate_lists(WithCorrections::All)
+        .into_iter()
+        .flat_map(|l| l.electoral_districts)
+        .collect();
+    districts.sort();
+    districts.dedup();
+    districts
 }
 
 /// The presets for this type with their descriptions interpolated.
@@ -146,6 +164,7 @@ pub(super) fn omission_views(
         OmissionType::CandidateList => {
             store.get_candidate_list_omissions(CandidateListId::from(target.reference))?
         }
+        OmissionType::DeclarationsOfSupport => store.get_all_declarations_of_support_omissions(),
         OmissionType::Candidate => store.get_candidate_omissions(PersonId::from(target.reference)),
     };
 

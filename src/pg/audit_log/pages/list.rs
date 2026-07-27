@@ -3,7 +3,7 @@ use axum::{extract::Query, response::IntoResponse};
 
 use crate::{
     AppError, Context, Event, HtmlTemplate, PgStore,
-    audit_log::{AuditLogEntry, pages::AuditLogPath},
+    audit_log::{AuditLogEntry, paths::AuditLogPath},
     filters,
     pagination::Pagination,
     structs::audit_log::EventTypeCategory,

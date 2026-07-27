@@ -37,6 +37,14 @@
     --badge-icon: url("../icons/badge-finalise.svg");
   }
 
+  &:is(.badge-omission) {
+    --badge-icon: url("../icons/omission.svg");
+
+    &:not(.position-badge)::after {
+      mask-size: 1.5em;
+    }
+  }
+
   &:is(.locked) {
     --badge-bg: var(--gray-200);
     --badge-icon: url("../icons/badge-locked.svg");

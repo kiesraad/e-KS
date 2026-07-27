@@ -29,8 +29,8 @@
 //! - [`PgEvent`]: domain event enum driving updates to [`PgStoreData`].
 //!
 //! **Event integrity & confidentiality**
-//! - Event payloads are encrypted at rest (AES-256-GCM, per-stream keys) for the
-//!   file and database backends; see `store::EventEncryption`.
+//! - Event payloads are encrypted at rest (AES-256-GCM, a random key per stream,
+//!   wrapped by a master key) for the file and database backends; see `crypto`.
 //! - Persisted events form a hash chain: each event hashes the previous event's
 //!   hash plus its own metadata and stored body, making tampering detectable.
 //! - Generated PDFs/exports embed the current event ID and chain hash (shown in
@@ -66,6 +66,7 @@
 
 mod auth;
 mod core;
+mod crypto;
 mod csb;
 mod error;
 mod filters;

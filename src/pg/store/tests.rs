@@ -383,8 +383,31 @@ mod database_tests {
     use chrono::Utc;
     use sqlx::PgPool;
 
-    fn test_encryption() -> crate::store::EventEncryption {
-        crate::store::EventEncryption::new(&secrecy::SecretString::from("test-encryption-key"))
+    fn test_master() -> crate::crypto::MasterKey {
+        crate::crypto::MasterKey::new(&secrecy::SecretString::from("test-encryption-key"))
+    }
+
+    /// Create a stream row directly, as `into_backend_for_stream` would.
+    async fn ensure_test_stream(
+        pool: &PgPool,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        scope: Scope,
+    ) -> Result<(), AppError> {
+        use crate::{crypto::StreamKey, store::persistence::NewStream};
+
+        let encrypted_key = test_master().wrap_key(&StreamKey::generate(), stream_id, election)?;
+        crate::store::database::ensure_stream(
+            pool,
+            &NewStream {
+                stream_id,
+                election,
+                scope,
+                encrypted_key,
+            },
+        )
+        .await?;
+        Ok(())
     }
 
     #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
@@ -393,13 +416,13 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let encryption = test_encryption();
+        let master = test_master();
         let group_id = StreamId::new();
         let store = PgStore::new_with_pool_for_stream(
             pool.clone(),
             group_id,
             ElectionConfig::EK27,
-            &encryption,
+            &master,
         )
         .await
         .unwrap();
@@ -412,7 +435,7 @@ mod database_tests {
         assert_eq!(loaded.id, person_id);
 
         let fresh_store =
-            PgStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &encryption)
+            PgStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &master)
                 .await
                 .unwrap();
         fresh_store.load().await?;
@@ -429,13 +452,13 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let encryption = test_encryption();
+        let master = test_master();
         let group_id = StreamId::new();
         let store = PgStore::new_with_pool_for_stream(
             pool.clone(),
             group_id,
             ElectionConfig::EK27,
-            &encryption,
+            &master,
         )
         .await
         .unwrap();
@@ -473,7 +496,7 @@ mod database_tests {
         .await?;
 
         let fresh_store =
-            PgStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &encryption)
+            PgStore::new_with_pool_for_stream(pool, group_id, ElectionConfig::EK27, &master)
                 .await
                 .unwrap();
 
@@ -495,7 +518,7 @@ mod database_tests {
     async fn streams_by_scope_lists_stream_election_pairs_per_scope(
         pool: PgPool,
     ) -> Result<(), AppError> {
-        use crate::store::database::{ensure_stream, streams_by_scope};
+        use crate::store::database::streams_by_scope;
 
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
@@ -507,9 +530,9 @@ mod database_tests {
 
         // The committee stream joins two elections; each row is created with the
         // committee scope. The political group joins one.
-        ensure_stream(&pool, committee, ek27, Scope::CentralElectoralCommittee).await?;
-        ensure_stream(&pool, committee, ps27, Scope::CentralElectoralCommittee).await?;
-        ensure_stream(&pool, group, ek27, Scope::PoliticalGroup).await?;
+        ensure_test_stream(&pool, committee, ek27, Scope::CentralElectoralCommittee).await?;
+        ensure_test_stream(&pool, committee, ps27, Scope::CentralElectoralCommittee).await?;
+        ensure_test_stream(&pool, group, ek27, Scope::PoliticalGroup).await?;
 
         // Empty placeholder rows (last_event_id = 0) are not yet accessible.
         assert!(
@@ -554,16 +577,12 @@ mod database_tests {
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
-        let encryption = test_encryption();
+        let master = test_master();
         let group = StreamId::new();
-        let store = PgStore::new_with_pool_for_stream(
-            pool.clone(),
-            group,
-            ElectionConfig::EK27,
-            &encryption,
-        )
-        .await
-        .unwrap();
+        let store =
+            PgStore::new_with_pool_for_stream(pool.clone(), group, ElectionConfig::EK27, &master)
+                .await
+                .unwrap();
         sample_person(PersonId::new()).create(&store).await?;
 
         let target = store
@@ -593,14 +612,14 @@ mod database_tests {
     async fn find_event_by_hash_prefix_ignores_committee_events(
         pool: PgPool,
     ) -> Result<(), AppError> {
-        use crate::store::database::{ensure_stream, find_event_by_hash_prefix};
+        use crate::store::database::find_event_by_hash_prefix;
 
         #[cfg(feature = "migrations")]
         crate::store::database::migrate(&pool).await?;
 
         let committee = StreamId::new();
         let election_id = ElectionConfig::EK27.stable_id();
-        ensure_stream(
+        ensure_test_stream(
             &pool,
             committee,
             ElectionConfig::EK27,
@@ -623,6 +642,94 @@ mod database_tests {
         .await?;
 
         assert_eq!(find_event_by_hash_prefix(&pool, &hash).await?, None);
+
+        Ok(())
+    }
+
+    /// A stream row created before per-stream keys existed carries no
+    /// `encrypted_key`. `ensure_stream` backfills the caller's fresh key onto
+    /// such a row exactly once (later calls keep the stored key), and events
+    /// written under the old scheme fail to decrypt rather than replay.
+    #[cfg_attr(not(feature = "db-tests"), ignore = "requires database")]
+    #[sqlx::test(migrations = false)]
+    async fn ensure_stream_backfills_keys_onto_pre_upgrade_rows(
+        pool: PgPool,
+    ) -> Result<(), AppError> {
+        use crate::{
+            crypto::{StreamKey, WrappedKey},
+            store::{
+                GENESIS_HASH, chain_hash, database::ensure_stream, event_aad,
+                persistence::NewStream,
+            },
+        };
+
+        #[cfg(feature = "migrations")]
+        crate::store::database::migrate(&pool).await?;
+
+        let master = test_master();
+        let group_id = StreamId::new();
+        let election = ElectionConfig::EK27;
+        let election_id = election.stable_id();
+
+        // A pre-upgrade row: no wrapped key, one event encrypted under the old
+        // scheme, whose key is not recoverable from the database.
+        sqlx::query(
+            r#"INSERT INTO streams (stream_id, election, last_event_id, scope, encrypted_key)
+            VALUES ($1, $2, 1, $3, NULL)"#,
+        )
+        .bind(group_id.uuid())
+        .bind(&election_id)
+        .bind(Scope::PoliticalGroup.as_str())
+        .execute(&pool)
+        .await?;
+
+        let old_cipher = StreamKey::generate().cipher();
+        let created_at = Utc::now();
+        let event = PgEvent::CreatePerson(sample_person(PersonId::new()));
+        let payload = old_cipher.encrypt(&event, &event_aad(1, created_at, &GENESIS_HASH))?;
+        let hash = chain_hash(&GENESIS_HASH, 1, created_at, &payload);
+        sqlx::query(
+            r#"INSERT INTO events (stream_id, election, event_id, created_at, hash, payload)
+            VALUES ($1, $2, $3, $4, $5, $6)"#,
+        )
+        .bind(group_id.uuid())
+        .bind(&election_id)
+        .bind(1_i64)
+        .bind(created_at)
+        .bind(hash.as_slice())
+        .bind(&payload)
+        .execute(&pool)
+        .await?;
+
+        let new_stream = |encrypted_key: WrappedKey| NewStream {
+            stream_id: group_id,
+            election,
+            scope: Scope::PoliticalGroup,
+            encrypted_key,
+        };
+
+        // The first call backfills its fresh key onto the NULL column.
+        let first_key = master.wrap_key(&StreamKey::generate(), group_id, election)?;
+        assert_eq!(
+            ensure_stream(&pool, &new_stream(first_key.clone())).await?,
+            first_key
+        );
+
+        // Later calls keep the stored key; the new candidate is discarded.
+        let second_key = master.wrap_key(&StreamKey::generate(), group_id, election)?;
+        assert_eq!(
+            ensure_stream(&pool, &new_stream(second_key)).await?,
+            first_key
+        );
+
+        // The old event was not written under the backfilled key, so it must
+        // fail to decrypt instead of silently replaying.
+        let store = PgStore::new_with_pool_for_stream(pool, group_id, election, &master).await?;
+        let err = store
+            .load()
+            .await
+            .expect_err("pre-upgrade events must not decrypt under the backfilled key");
+        assert!(matches!(err, AppError::EventDecodeError(_)));
 
         Ok(())
     }

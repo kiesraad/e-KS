@@ -1,4 +1,4 @@
-use std::{collections::HashSet, mem};
+use std::collections::{HashMap, HashSet};
 
 use serde::{Deserialize, Serialize};
 
@@ -18,25 +18,41 @@ pub enum PersonCorrection {
     PlaceOfResidence(PlaceOfResidence),
 }
 
-/// Representing a set of corrections on a single person. 
-/// - [`None`] means no correction.
-/// - [`Some(_)`] contains the corrected value
-#[derive(Debug, Default, Serialize, Deserialize)]
+#[derive(Serialize, Deserialize, Debug, PartialEq, Eq, Hash, Clone)]
+enum PersonCorrectionKind {
+    Initials,
+    LastName,
+    DateOfBirth,
+    PlaceOfResidence,
+}
+
+/// Representing a set of corrections on a single person.
+#[derive(Debug, Default, Serialize, Deserialize, Clone)]
 pub struct PersonCorrectionDelta {
-    // NOTE: deliberately not public, mutate, and create through impl methods
-    changes: HashSet<PersonCorrection>
+    corrections: HashMap<PersonCorrectionKind, PersonCorrection>,
 }
 
 impl PersonCorrectionDelta {
-    pub fn new() ->  PersonCorrectionDelta {
-        PersonCorrectionDelta { changes: HashSet::new() }
+    pub fn new() -> PersonCorrectionDelta {
+        PersonCorrectionDelta {
+            corrections: HashMap::new(),
+        }
     }
 
     /// Add a correction to this delta
     /// Replaces the previous [`PersonCorrection`] variant in the delta if present
     pub fn add_correction(&mut self, correction: PersonCorrection) {
-        self.changes.retain(|c| mem::discriminant(c) != mem::discriminant(&correction));
-        self.changes.insert(correction);
+        self.corrections.insert(correction.kind(), correction);
+    }
+
+    pub fn apply(self, person: &mut Person) {
+        self.corrections
+            .into_iter()
+            .for_each(|(_, correction)| correction.apply(person));
+    }
+
+    pub fn get_corrections(&self) -> HashSet<PersonCorrection> {
+        self.corrections.values().cloned().collect()
     }
 }
 
@@ -81,6 +97,15 @@ impl PersonCorrection {
             field,
             old_value: String::new(),
             new_value,
+        }
+    }
+
+    fn kind(&self) -> PersonCorrectionKind {
+        match self {
+            PersonCorrection::Initials(_) => PersonCorrectionKind::Initials,
+            PersonCorrection::LastName(_) => PersonCorrectionKind::LastName,
+            PersonCorrection::DateOfBirth(_) => PersonCorrectionKind::DateOfBirth,
+            PersonCorrection::PlaceOfResidence(_) => PersonCorrectionKind::PlaceOfResidence,
         }
     }
 }

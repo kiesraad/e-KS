@@ -9,7 +9,7 @@ use crate::{
     AppError, Context, HtmlTemplate, Overlay, PgStore,
     audit_log::{
         AuditLogDetail, AuditLogPath,
-        pages::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
+        paths::{AuditLogDetailPath, AuditLogDownloadDocumentsPath},
     },
     filters,
 };

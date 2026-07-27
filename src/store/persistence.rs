@@ -1,32 +1,51 @@
 //! Persistence backends for the event store.
 
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use serde::{Serialize, de::DeserializeOwned};
-use std::path::PathBuf;
+use std::{path::PathBuf, sync::Arc};
 
-use crate::{AppError, ElectionConfig, Scope, StreamId, utils::StorageScheme};
+use crate::{
+    AppError, ElectionConfig, Scope, StreamId,
+    crypto::{MasterKey, StreamKey, WrappedKey},
+    utils::StorageScheme,
+};
 
 use super::{
-    Store, StoreData, StoreEvent, chain_hash,
-    encryption::EventCipher,
-    filesystem::{self, replay_from_file, update_in_filesystem},
+    Store, StoreData, StoreEvent, StreamMeta, chain_hash,
+    filesystem::{self, replay_from_file},
     memory::{self, MemoryStore},
+    store_handle::StoreBackend,
 };
 
 #[cfg(feature = "database")]
 use super::database::{self, load_from_database, update_in_database};
 
-/// Decryption-free metadata about a persisted stream, read from the backend's
-/// index without replaying (or warming) it. The political group name is absent:
-/// it lives in the encrypted payloads.
-#[derive(Clone, Debug)]
-pub struct StreamMeta {
+/// Everything a backend records when a stream is first created. Backends
+/// store `encrypted_key` as-is; wrapping and unwrapping stay in this module.
+pub(crate) struct NewStream {
     pub stream_id: StreamId,
     pub election: ElectionConfig,
-    /// Number of events, i.e. the last event id (events are appended `1..=n`).
-    pub event_count: usize,
-    pub created_at: Option<DateTime<Utc>>,
-    pub last_event_at: Option<DateTime<Utc>>,
+    pub scope: Scope,
+    /// Fresh stream key, wrapped by the master key.
+    pub encrypted_key: WrappedKey,
+}
+
+impl NewStream {
+    /// Generate and wrap a fresh stream key for a stream to be created.
+    fn generate(
+        stream_id: StreamId,
+        election: ElectionConfig,
+        scope: Scope,
+        master: &MasterKey,
+    ) -> Result<Self, AppError> {
+        let encrypted_key = master.wrap_key(&StreamKey::generate(), stream_id, election)?;
+        Ok(Self {
+            stream_id,
+            election,
+            scope,
+            encrypted_key,
+        })
+    }
 }
 
 /// Persistence backend selection for a store.
@@ -96,28 +115,48 @@ impl StorePersistence {
         Ok(())
     }
 
-    /// Ensure the given (stream, election) exists in the selected backend,
-    /// recording its `scope` when the row is first created.
-    pub async fn ensure_stream(
-        &self,
+    /// Ensure the stream exists (recording `scope` on first creation) and
+    /// resolve this persistence target into a [`StoreBackend`]. Persisting
+    /// backends get the stream's cipher, unwrapped with `master`; the
+    /// in-memory backend has none.
+    pub(crate) async fn into_backend_for_stream(
+        self,
         stream_id: StreamId,
         election: ElectionConfig,
         scope: Scope,
-    ) -> Result<(), AppError> {
+        master: &MasterKey,
+    ) -> Result<StoreBackend, AppError> {
+        // The stored key may differ from the generated one: an existing
+        // stream keeps the key it was created with.
+        let stored_cipher = |wrapped: WrappedKey| {
+            Ok::<_, AppError>(Box::new(
+                master.unwrap_key(&wrapped, stream_id, election)?.cipher(),
+            ))
+        };
+
         match self {
             #[cfg(feature = "database")]
             StorePersistence::Database(pool) => {
-                database::ensure_stream(pool, stream_id, election, scope).await?;
+                let new = NewStream::generate(stream_id, election, scope, master)?;
+                let wrapped = database::ensure_stream(&pool, &new).await?;
+                Ok(StoreBackend::Database {
+                    pool,
+                    cipher: stored_cipher(wrapped)?,
+                })
             }
             StorePersistence::Local(dir) => {
-                filesystem::ensure_stream_file(dir, stream_id, election, scope).await?;
+                let new = NewStream::generate(stream_id, election, scope, master)?;
+                let wrapped = filesystem::ensure_stream_file(&dir, &new).await?;
+                Ok(StoreBackend::Local {
+                    dir,
+                    cipher: stored_cipher(wrapped)?,
+                })
             }
             StorePersistence::Memory(store) => {
-                memory::ensure_stream(store, stream_id, election, scope);
+                memory::ensure_stream(&store, stream_id, election, scope);
+                Ok(StoreBackend::Memory { store })
             }
         }
-
-        Ok(())
     }
 
     /// List every `(stream_id, election)` stream with the given scope.
@@ -247,43 +286,53 @@ impl StorePersistence {
     }
 }
 
-/// A store's resolved backend: a persistence target paired with the
-/// per-stream [`EventCipher`].
-///
-/// The persisting variants (`Database`, `Local`) cannot be constructed
-/// without a cipher, so events written to disk or database are *always*
-/// encrypted. `Memory` carries no cipher because it never writes events out; it
-/// keeps only the shared index used to answer cross-stream lookups.
-#[derive(Clone, Debug)]
-pub(crate) enum StoreBackend {
-    /// PostgreSQL-backed, encrypted persistence.
-    #[cfg(feature = "database")]
-    Database {
-        pool: sqlx::PgPool,
-        cipher: Box<EventCipher>,
-    },
-    /// Local filesystem-backed, encrypted persistence.
-    Local {
-        dir: PathBuf,
-        cipher: Box<EventCipher>,
-    },
-    /// In-memory only: no durable persistence and no encryption, just the shared
-    /// index that records event hashes and stream scopes.
-    Memory { store: MemoryStore },
-}
+impl<D> Store<D>
+where
+    D: StoreData,
+{
+    /// Create a new store scoped to a specific (stream_id, election) pair.
+    pub async fn new_for_stream(
+        storage_url: &str,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        master: &MasterKey,
+    ) -> Result<Self, AppError> {
+        let persistence = StorePersistence::from_storage_url(storage_url)?;
+        persistence.init().await?;
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, master).await
+    }
 
-impl StorePersistence {
-    /// Pair this persistence target with a stream's cipher to form a
-    /// [`StoreBackend`]. The cipher is dropped for [`StorePersistence::Memory`],
-    /// since an in-memory store neither persists nor encrypts events.
-    pub(crate) fn into_backend(self, cipher: EventCipher) -> StoreBackend {
-        let cipher = Box::new(cipher);
-        match self {
-            #[cfg(feature = "database")]
-            StorePersistence::Database(pool) => StoreBackend::Database { pool, cipher },
-            StorePersistence::Local(dir) => StoreBackend::Local { dir, cipher },
-            StorePersistence::Memory(store) => StoreBackend::Memory { store },
-        }
+    /// Create a new store for a stream using an already-initialized persistence
+    /// backend. Scope and wrapped key are recorded on first creation.
+    pub async fn new_for_stream_with_persistence(
+        persistence: StorePersistence,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        master: &MasterKey,
+    ) -> Result<Self, AppError> {
+        let backend = persistence
+            .into_backend_for_stream(stream_id, election, D::scope(), master)
+            .await?;
+
+        Ok(Store {
+            stream_id,
+            election,
+            backend,
+            data: Arc::new(parking_lot::RwLock::new(D::default())),
+        })
+    }
+
+    #[cfg(feature = "database")]
+    /// Create a new store backed by the provided database pool for a (stream, election).
+    pub async fn new_with_pool_for_stream(
+        pool: sqlx::PgPool,
+        stream_id: StreamId,
+        election: ElectionConfig,
+        master: &MasterKey,
+    ) -> Result<Self, AppError> {
+        let persistence = StorePersistence::Database(pool);
+        persistence.init().await?;
+        Self::new_for_stream_with_persistence(persistence, stream_id, election, master).await
     }
 }
 
@@ -318,7 +367,20 @@ where
                 update_in_database(self, pool, cipher, event).await
             }
             StoreBackend::Local { dir, cipher } => {
-                update_in_filesystem(self, dir, cipher, event).await
+                let last_id = replay_from_file(self, dir, cipher).await?;
+                let next_id = last_id + 1;
+                let created_at = Utc::now();
+                let prev_hash = self.data.read().last_event_hash();
+
+                let path = filesystem::stream_path(dir, self.stream_id, self.election);
+                let hash = filesystem::append_event(
+                    &path, cipher, next_id, created_at, &event, &prev_hash,
+                )
+                .await?;
+
+                self.apply_persisted_event(next_id, event, created_at, hash);
+
+                Ok(())
             }
             StoreBackend::Memory { store } => {
                 let mut data = self.data.write();
@@ -349,7 +411,7 @@ where
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::{Scope, store::encryption::EventEncryption};
+    use crate::Scope;
     use secrecy::SecretString;
     use std::{fs, path::PathBuf};
     use uuid::Uuid;
@@ -362,8 +424,8 @@ mod tests {
         dir
     }
 
-    fn test_encryption() -> EventEncryption {
-        EventEncryption::new(&SecretString::from("test-secret"))
+    fn test_master() -> MasterKey {
+        MasterKey::new(&SecretString::from("test-secret"))
     }
 
     #[test]
@@ -468,7 +530,7 @@ mod tests {
     #[tokio::test]
     async fn correct_key_loads_persisted_events() -> Result<(), AppError> {
         let dir = temp_dir();
-        let encryption = test_encryption();
+        let master = test_master();
         let stream_id = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
 
@@ -476,7 +538,7 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
 
@@ -487,7 +549,7 @@ mod tests {
             persistence,
             stream_id,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
         fresh.load().await?;
@@ -502,7 +564,7 @@ mod tests {
     #[tokio::test]
     async fn stream_metadata_by_scope_reports_counts_and_timestamps() -> Result<(), AppError> {
         let dir = temp_dir();
-        let encryption = test_encryption();
+        let master = test_master();
         let persistence = StorePersistence::Local(dir.clone());
         let stream_id = StreamId::new();
 
@@ -510,7 +572,7 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
         store.update(10).await?;
@@ -538,9 +600,9 @@ mod tests {
     }
 
     #[tokio::test]
-    async fn wrong_secret_cannot_load_persisted_events() -> Result<(), AppError> {
+    async fn wrong_secret_cannot_unwrap_stream_key() -> Result<(), AppError> {
         let dir = temp_dir();
-        let encryption = test_encryption();
+        let master = test_master();
         let stream_id = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
 
@@ -548,28 +610,26 @@ mod tests {
             persistence.clone(),
             stream_id,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
 
         store.update(10).await?;
         store.update(20).await?;
 
-        let wrong_encryption = EventEncryption::new(&SecretString::from("wrong-secret"));
-        let wrong_store = Store::<TestData>::new_for_stream_with_persistence(
+        // wrong master secret: the stored key cannot be unwrapped
+        let wrong_master = MasterKey::new(&SecretString::from("wrong-secret"));
+        let Err(err) = Store::<TestData>::new_for_stream_with_persistence(
             persistence,
             stream_id,
             TEST_ELECTION,
-            &wrong_encryption,
+            &wrong_master,
         )
-        .await?;
-
-        let err = wrong_store
-            .load()
-            .await
-            .expect_err("load must fail with the wrong secret");
+        .await
+        else {
+            panic!("store construction must fail with the wrong secret");
+        };
         assert!(matches!(err, AppError::EventDecodeError(_)));
-        assert!(wrong_store.data.read().applied.is_empty());
 
         Ok(())
     }
@@ -577,7 +637,7 @@ mod tests {
     #[tokio::test]
     async fn wrong_stream_cannot_load_events_from_other_stream() -> Result<(), AppError> {
         let dir = temp_dir();
-        let encryption = test_encryption();
+        let master = test_master();
         let stream_a = StreamId::new();
         let stream_b = StreamId::new();
         let persistence = StorePersistence::Local(dir.clone());
@@ -586,23 +646,23 @@ mod tests {
             persistence.clone(),
             stream_a,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
 
         store_a.update(42).await?;
 
-        // Manually copy stream_a's file to stream_b's path so stream_b
-        // tries to read data encrypted with stream_a's key.
+        // Copy stream_a's file to stream_b's path, so stream_b (with its own
+        // fresh key) tries to read data encrypted with stream_a's key.
         let src = dir.join(format!("{stream_a}_{}.bin", TEST_ELECTION.stable_id()));
         let dst = dir.join(format!("{stream_b}_{}.bin", TEST_ELECTION.stable_id()));
         std::fs::copy(&src, &dst).expect("copy stream file");
 
         let store_b = Store::<TestData>::new_for_stream_with_persistence(
-            persistence,
+            persistence.clone(),
             stream_b,
             TEST_ELECTION,
-            &encryption,
+            &master,
         )
         .await?;
 
@@ -612,6 +672,42 @@ mod tests {
             .expect_err("load must fail for events encrypted with another stream's key");
         assert!(matches!(err, AppError::EventDecodeError(_)));
         assert!(store_b.data.read().applied.is_empty());
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn transplanted_key_file_cannot_be_unwrapped() -> Result<(), AppError> {
+        let dir = temp_dir();
+        let master = test_master();
+        let stream_a = StreamId::new();
+        let stream_b = StreamId::new();
+        let persistence = StorePersistence::Local(dir.clone());
+
+        Store::<TestData>::new_for_stream_with_persistence(
+            persistence.clone(),
+            stream_a,
+            TEST_ELECTION,
+            &master,
+        )
+        .await?;
+
+        // the wrap AAD binds the key to stream_a, so it must not unwrap for stream_b
+        let src = dir.join(format!("{stream_a}_{}.key", TEST_ELECTION.stable_id()));
+        let dst = dir.join(format!("{stream_b}_{}.key", TEST_ELECTION.stable_id()));
+        std::fs::copy(&src, &dst).expect("copy key file");
+
+        let Err(err) = Store::<TestData>::new_for_stream_with_persistence(
+            persistence,
+            stream_b,
+            TEST_ELECTION,
+            &master,
+        )
+        .await
+        else {
+            panic!("a transplanted key file must not unwrap");
+        };
+        assert!(matches!(err, AppError::EventDecodeError(_)));
 
         Ok(())
     }

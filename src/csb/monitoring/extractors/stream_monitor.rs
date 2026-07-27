@@ -119,13 +119,11 @@ mod tests {
     /// Persist a stream through a separate registry sharing the PG registry's
     /// persistence, so it exists on disk but is never warmed into the registry cache.
     async fn seed_cold_political_group(state: &AppState, election: ElectionConfig) -> StreamId {
-        use secrecy::SecretString;
-
-        use crate::store::EventEncryption;
+        use crate::crypto::MasterKey;
 
         let cold_registry = StoreRegistry::<PgStoreData>::with_persistence(
             state.store_registry.persistence().clone(),
-            EventEncryption::new(&SecretString::from("monitoring-cold-test")),
+            MasterKey::new(&state.config.master_encryption_key),
         );
         let stream_id = StreamId::new();
         let store = cold_registry

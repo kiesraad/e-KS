@@ -1,5 +1,4 @@
 use crate::{
-    AppError, PgEvent, PgStore,
     common::{FullName, LegalName, PotentialProblems, Problematic, Problems, Severity},
     id_newtype,
     list_designation::ListDesignation,
@@ -46,23 +45,5 @@ impl NameAuthorisation {
             }
             _ => None,
         }
-    }
-
-    pub async fn create(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::CreateNameAuthorisation(self.clone()))
-            .await
-    }
-
-    pub async fn update(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::UpdateNameAuthorisation(self.clone()))
-            .await
-    }
-
-    pub async fn delete(&self, store: &PgStore) -> Result<(), AppError> {
-        store
-            .update(PgEvent::DeleteNameAuthorisation(self.id))
-            .await
     }
 }

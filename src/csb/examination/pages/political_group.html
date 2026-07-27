@@ -77,6 +77,22 @@
         <a class="card-footer"
            href="{{ political_group.general_information_path() }}">{{ "csb.group.examine_general"|trans }}</a>
       </div>
+      <div class="card card-candidate-list"
+           data-href="{{ declarations_of_support_card_path }}">
+        <div class="card-header">
+          <div class="badge badge-omission"></div>
+          <div>
+            <h3 class="h4">{{ "csb.declarations_of_support.title"|trans }}</h3>
+          </div>
+        </div>
+        <div class="card-content">
+          <ul class="card-instruction">
+            <li>{{ "csb.declarations_of_support.instruction"|trans }}</li>
+          </ul>
+          {{ omission_count_badge(declarations_of_support_omission_count) }}
+        </div>
+        <a class="card-footer" href="{{ declarations_of_support_card_path }}">{{ "csb.omission.action.manage"|trans }}</a>
+      </div>
       {% for candidate_list in candidate_lists %}
         <div class="card card-candidate-list"
              data-href="{{ political_group.candidate_list_path(candidate_list.list.id) }}">

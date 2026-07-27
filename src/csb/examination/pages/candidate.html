@@ -87,13 +87,13 @@
     <table class="detail-table">
       {{ columns_head("person.personal_details"|trans) }}
       <tbody>
-        {{ paper_corrected::editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::pages::CandidateCorrectionField::Initials, list_id) ) }}
+        {{ paper_corrected::editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) ) }}
         {{ paper_corrected::data_row("person.fields.first_name"|trans, details.first_name) }}
-        {{ paper_corrected::editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::pages::CandidateCorrectionField::LastName, list_id) ) }}
+        {{ paper_corrected::editable_data_row("person.fields.last_name"|trans, details.last_name, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::LastName, list_id) ) }}
         {{ paper_corrected::data_row("person.fields.gender"|trans, details.gender) }}
-        {{ paper_corrected::editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::pages::CandidateCorrectionField::DateOfBirth, list_id) ) }}
+        {{ paper_corrected::editable_data_row("person.fields.date_of_birth"|trans, details.date_of_birth, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::DateOfBirth, list_id) ) }}
         {{ paper_corrected::data_row("person.fields.bsn"|trans, details.bsn) }}
-        {{ paper_corrected::editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::pages::CandidateCorrectionField::PlaceOfResidence, list_id) ) }}
+        {{ paper_corrected::editable_data_row("person.fields.place_of_residence"|trans, details.place_of_residence, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::PlaceOfResidence, list_id) ) }}
       </tbody>
     </table>
     <table class="detail-table">

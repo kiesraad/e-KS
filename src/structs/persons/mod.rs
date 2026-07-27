@@ -6,4 +6,5 @@ mod personal_data;
 pub use person::{Person, PersonId, PersonWithProblems, Representative};
 pub use person_pagination::PersonPagination;
 pub use person_sort::PersonSort;
+pub(crate) use person_sort::compare_persons;
 pub use personal_data::PersonalData;

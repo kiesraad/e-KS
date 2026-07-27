@@ -1,10 +1,13 @@
 //! Political group setup and maintenance flows.
+mod actions;
 mod extractors;
 mod forms;
 mod pages;
+mod paths;
 mod steps;
 
 pub use crate::structs::political_groups::PoliticalGroup;
 pub use forms::PoliticalGroupForm;
-pub use pages::{PoliticalGroupUpdatePath, router};
+pub use pages::router;
+pub use paths::PoliticalGroupUpdatePath;
 pub use steps::PoliticalGroupSteps;

@@ -1,10 +1,14 @@
 use askama::Template;
 use axum::response::{IntoResponse, Response};
 
-use crate::{filters, Context,
-    AppError, CsbContext, CsbStore, HtmlTemplate, csb::examination::{
-        extractors::CsbPoliticalGroup, pages::CsbAllRestorationsPath, structs::{AllCsbCorrections, AllOmissions},
+use crate::{
+    AppError, Context, CsbContext, CsbStore, HtmlTemplate,
+    csb::examination::{
+        extractors::CsbPoliticalGroup,
+        pages::CsbAllRestorationsPath,
+        structs::{AllCsbCorrections, AllOmissions},
     },
+    filters,
 };
 
 #[derive(Template)]
@@ -27,7 +31,7 @@ pub async fn all_restorations(
             all_omissions: store.get_all_omissions(&political_group)?,
             political_group,
             restoration_count: store.get_omission_count(),
-            all_corrections: store.get_all_corrections(),
+            all_corrections: store.get_all_corrections()?,
         },
         context,
     )
@@ -40,7 +44,12 @@ mod tests {
     use reqwest::StatusCode;
 
     use crate::{
-        ElectoralDistrict, candidate_lists::{CandidateList, CandidateListId}, common::UtcDateTime, persons::PersonId, structs::csb::{Omission, OmissionCategory}, test_utils::{response_body_string, sample_person},
+        ElectoralDistrict,
+        candidate_lists::{CandidateList, CandidateListId},
+        common::UtcDateTime,
+        persons::PersonId,
+        structs::csb::{Omission, OmissionCategory},
+        test_utils::{response_body_string, sample_person},
     };
 
     #[tokio::test]
@@ -61,6 +70,8 @@ mod tests {
             created_at: UtcDateTime::now(),
         });
 
+        let dos_title = "declarations of support title".to_string();
+
         Omission::new(
             OmissionCategory::PoliticalGroup,
             pg_title.clone(),
@@ -71,8 +82,17 @@ mod tests {
         .await?;
 
         Omission::new(
-            OmissionCategory::CandidateList(vec![ElectoralDistrict::UT, ElectoralDistrict::GR]),
+            OmissionCategory::CandidateList(vec![list_id]),
             list_title.clone(),
+            "description".to_string(),
+            "help_text".to_string(),
+        )
+        .create(&store)
+        .await?;
+
+        Omission::new(
+            OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
+            dos_title.clone(),
             "description".to_string(),
             "help_text".to_string(),
         )
@@ -106,6 +126,7 @@ mod tests {
         // page contains titles
         assert!(body.contains(pg_title.as_str()));
         assert!(body.contains(list_title.as_str()));
+        assert!(body.contains(dos_title.as_str()));
         assert!(body.contains(candidate_title.as_str()));
 
         Ok(())
@@ -147,7 +168,7 @@ mod tests {
         .await?;
 
         Omission::new(
-            OmissionCategory::CandidateList(vec![ElectoralDistrict::GR]),
+            OmissionCategory::CandidateList(vec![list_id]),
             "list title".to_string(),
             "description".to_string(),
             "help_text".to_string(),

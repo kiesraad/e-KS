@@ -28,35 +28,31 @@ pub async fn overview(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
-    let corrected_store = store.paper_corrected();
-    // Fall back to the paper-corrected projection so lists that were added by
-    // the corrections have a detail page too. An empty imported side makes
-    // every candidate render as a paper-corrected addition.
-    let list = store.get_imported_candidate_list(list_id).or_else(|| {
-        corrected_store
-            .get_candidate_list(list_id)
-            .ok()
-            .map(|corrected| CandidateList {
+    let corrected_list = store.get_candidate_list(list_id, crate::csb::WithCorrections::All);
+    // For paper-added lists there is no imported side; use an empty-candidate
+    // placeholder so all candidates render as paper-corrected additions.
+    let imported_list = store
+        .get_candidate_list(list_id, crate::csb::WithCorrections::None)
+        .or_else(|| {
+            corrected_list.as_ref().map(|corrected| CandidateList {
                 candidates: Vec::new(),
-                ..corrected
+                ..corrected.clone()
             })
-    });
-    let list = list.ok_or(AppError::GenericNotFound)?;
+        })
+        .ok_or(AppError::GenericNotFound)?;
 
     let candidates = CsbCandidate::rows_for_list(
         &store,
-        &corrected_store,
-        &list,
+        &imported_list,
         AnyLocale::from(context.session.locale),
     );
 
     let omissions = store.get_candidate_list_omissions(list_id)?;
 
     // The corrected electoral districts take precedence over the imported ones.
-    let electoral_districts = corrected_store
-        .get_candidate_list(list_id)
+    let electoral_districts = corrected_list
         .map(|corrected| corrected.electoral_districts)
-        .unwrap_or(list.electoral_districts);
+        .unwrap_or(imported_list.electoral_districts);
 
     Ok(HtmlTemplate(
         CsbCandidateListTemplate {
@@ -131,7 +127,7 @@ mod tests {
         let list_id = CandidateListId::new();
         store.add_candidate_list(sample_candidate_list(list_id));
         Omission::new(
-            OmissionCategory::CandidateList(vec![crate::ElectoralDistrict::UT]),
+            OmissionCategory::CandidateList(vec![list_id]),
             "Too many candidates".to_string(),
             "The list holds more candidates than allowed.".to_string(),
             String::new(),

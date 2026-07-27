@@ -1,13 +1,11 @@
 use axum::Router;
-use axum_extra::routing::{RouterExt, TypedPath};
+use axum_extra::routing::RouterExt;
 
-use crate::{AppError, AppState};
+use crate::AppState;
+
+pub(crate) use super::paths::CsbImportPath;
 
 mod import;
-
-#[derive(TypedPath)]
-#[typed_path("/csb/import", rejection(AppError))]
-pub struct CsbImportPath;
 
 pub fn router() -> Router<AppState> {
     Router::new()

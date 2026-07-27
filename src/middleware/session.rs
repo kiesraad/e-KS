@@ -15,7 +15,7 @@ use crate::{
     AppError, AppState, PgStore, SESSION_COOKIE_NAME, Scope, Session,
     auth::{csrf_guard::enforce_csrf, session_extractor::user_agent_hash},
     common::{IndexPath, LoginStartPath, SelectElectionPath},
-    csb::index::pages::CsbIndexPath,
+    csb::index::CsbIndexPath,
     csrf_rejection_response,
     finalise::FinalisePath,
     store::{Store, StoreData},

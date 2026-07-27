@@ -180,9 +180,11 @@ mod tests {
     use axum::http::StatusCode;
 
     use crate::{
-        csb::examination::pages::CandidateCorrectionField,
+        csb::{WithCorrections, examination::structs::CandidateCorrectionField},
         persons::PersonId,
-        test_utils::{response_body_string, sample_candidate_list, sample_person},
+        test_utils::{
+            response_body_string, sample_candidate_list, sample_person, sample_political_group,
+        },
     };
 
     #[tokio::test]
@@ -211,8 +213,6 @@ mod tests {
 
     #[tokio::test]
     async fn display_name_correction_submit_persists_correction() {
-        use crate::test_utils::sample_political_group;
-
         let store = crate::CsbStore::new_for_test();
         let stream_id = store.stream_id;
         store.set_political_group(sample_political_group());
@@ -232,17 +232,17 @@ mod tests {
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
         assert_eq!(
-            store
-                .get_csb_corrected_display_name()
-                .map(|d| d.to_string()),
-            Some("Nieuwe Naam".to_string())
+            store.get_display_name(WithCorrections::Paper),
+            "Kiesraad Demo"
         );
+        assert_eq!(store.get_display_name(WithCorrections::All), "Nieuwe Naam");
     }
 
     #[tokio::test]
     async fn display_name_correction_submit_rerenders_on_invalid_value() {
         let store = crate::CsbStore::new_for_test();
         let stream_id = store.stream_id;
+        store.set_political_group(sample_political_group());
 
         let response = display_name_correction_submit(
             CsbDisplayNameCorrectionPath { stream_id },
@@ -258,7 +258,10 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        assert!(store.get_csb_corrected_display_name().is_none());
+        assert_eq!(
+            store.get_display_name(WithCorrections::All),
+            "Kiesraad Demo"
+        );
     }
 
     #[tokio::test]
@@ -326,7 +329,7 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::SEE_OTHER);
-        let corrected = store.get_csb_corrected_person(person_id).unwrap();
+        let corrected = store.get_person(person_id, WithCorrections::All).unwrap();
         assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
     }
 
@@ -358,6 +361,9 @@ mod tests {
         .into_response();
 
         assert_eq!(response.status(), StatusCode::OK);
-        assert!(store.get_csb_corrected_person(person_id).is_none());
+        assert_eq!(
+            store.get_person(person_id, WithCorrections::All),
+            store.get_person(person_id, WithCorrections::None)
+        );
     }
 }
