@@ -38,8 +38,7 @@ multiple-versions = "allow"
 
 [advisories]
 ignore = [
-    { id = "RUSTSEC-2026-0194", reason = "quick-xml <0.41 DoS (quadratic duplicate-attribute check) pulled transitively by eml-nl; no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
-    { id = "RUSTSEC-2026-0195", reason = "quick-xml <0.41 DoS (unbounded namespace-declaration allocation) pulled transitively by eml-nl; no release depending on quick-xml >=0.41 available upstream yet, see https://github.com/tafia/quick-xml/issues/969" },
+    { id = "RUSTSEC-2023-0071", reason = "rsa 0.9 pulled transitively by bergshamra-crypto (XML-DSig/XML-Enc); no patched release available upstream (rsa 0.10 is still a release candidate). The only private-key operation is RSA-OAEP unwrapping of an EncryptedID, which is reached only after the RD signature on the ArtifactResponse has been verified, so a chosen-ciphertext timing oracle is not reachable. Revisit when bergshamra publishes a release on a constant-time rsa." },
 ]
 
 [sources]
