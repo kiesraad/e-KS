@@ -58,3 +58,75 @@ pub fn eml110a(
 
     Ok(EML::from_election_definition_doc(definition).write_eml_root(true, true)?)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{ElectionConfig, Province, WaterCouncil};
+
+    fn check_eml(response: &str, expected: &str) {
+        let stringify_election_event = |eml: EML| {
+            format!(
+                "{:?}",
+                eml.as_election_definition_doc().unwrap().election_event
+            )
+        };
+
+        let received = stringify_election_event(response.parse().unwrap());
+        let expected = stringify_election_event(expected.parse().unwrap());
+
+        assert_eq!(received, expected, "received XML:\n{}", response);
+    }
+
+    #[test]
+    fn ek_export() {
+        let eml = eml110a(
+            &ElectionConfig::EK27,
+            vec!["Kiesraad Demo".to_string(), "Andere Partij".to_string()],
+        )
+        .unwrap();
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("testdata/110a-ek27.eml.xml"),
+        );
+    }
+
+    #[test]
+    fn ps1_export() {
+        let eml = eml110a(
+            &ElectionConfig::PS27(Province::GR),
+            vec!["Kiesraad Demo".to_string(), "Andere Partij".to_string()],
+        )
+        .unwrap();
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("testdata/110a-ps27-1.eml.xml"),
+        );
+    }
+
+    #[test]
+    fn ps2_export() {
+        let eml = eml110a(
+            &ElectionConfig::PS27(Province::LI),
+            vec!["Kiesraad Demo".to_string(), "Andere Partij".to_string()],
+        )
+        .unwrap();
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("testdata/110a-ps27-2.eml.xml"),
+        );
+    }
+
+    #[test]
+    fn ws_export() {
+        let eml = eml110a(
+            &ElectionConfig::WS27(WaterCouncil::Fryslan),
+            vec!["Water Water".to_string()],
+        )
+        .unwrap();
+        check_eml(
+            &String::from_utf8(eml).unwrap(),
+            include_str!("testdata/110a-ws27.eml.xml"),
+        );
+    }
+}
