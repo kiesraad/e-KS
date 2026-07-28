@@ -1,0 +1,22 @@
+import { expect, type Locator, type Page } from "@playwright/test";
+
+export class ExaminationPage {
+  readonly buttonFinalise: Locator;
+  readonly linkAddPoliticalGroup: Locator;
+  readonly headerExamination: Locator;
+
+
+  constructor(protected readonly page: Page) {
+    this.buttonFinalise = this.page.getByRole("button", {
+      name: "Afronden",
+    });
+    this.linkAddPoliticalGroup = this.page.getByRole("link", {
+      name: "Politieke groepering toevoegen",
+    });
+    this.headerExamination = this.page.getByRole("heading", {
+      name: "Onderzoek", exact: true,
+    });
+  }
+
+
+}
