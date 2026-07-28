@@ -101,7 +101,14 @@ pub fn create(state: AppState) -> Router<AppState> {
 
     // The load balancer only checks that this process is up, and holds no
     // `x-eks-key`: its probe is merged last so it sits outside that gate.
-    router.merge(lb_health_router())
+    let router = router.merge(lb_health_router());
+
+    // The CA's http-01 validators hold no `x-eks-key` either: merged outside
+    // that gate the same way.
+    #[cfg(feature = "acme")]
+    let router = router.merge(crate::acme::acme_challenge_router());
+
+    router
 }
 
 /// Global fetch-metadata CSRF protection, backstopping the session
@@ -371,6 +378,39 @@ mod tests {
             let body = response_body_string(response).await;
             assert!(body.contains(expected), "{uri} body: {body}");
         }
+    }
+
+    /// The challenge route must answer without an `x-eks-key` even when the
+    /// gate is configured.
+    #[cfg(feature = "acme")]
+    #[tokio::test]
+    async fn acme_challenge_answers_without_eks_key() {
+        let mut config = crate::Config::new_test();
+        config.eks_key = Some(secrecy::SecretString::from("s3cret"));
+        let state = AppState::new_for_tests_with_config(config).await;
+        state
+            .acme_store
+            .put_challenge("tok", "tok.thumbprint")
+            .await
+            .unwrap();
+        let app: Router = create(state.clone()).with_state(state.clone());
+
+        let request = Request::builder()
+            .uri("/.well-known/acme-challenge/tok")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.clone().oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::OK);
+        assert_eq!(response_body_string(response).await, "tok.thumbprint");
+
+        let request = Request::builder()
+            .uri("/.well-known/acme-challenge/unknown")
+            .body(Body::empty())
+            .unwrap();
+        let response = app.oneshot(request).await.expect("response");
+
+        assert_eq!(response.status(), StatusCode::NOT_FOUND);
     }
 
     /// The eks-key gate guards robots.txt and security.txt like every other

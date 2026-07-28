@@ -16,6 +16,8 @@ pub mod logging;
 pub mod server;
 pub mod translate;
 
+#[cfg(feature = "acme")]
+pub use config::AcmeConfig;
 pub use config::Config;
 #[cfg(feature = "tls")]
 pub use config::TlsConfig;
