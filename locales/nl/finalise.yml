@@ -1,5 +1,5 @@
 collection:
-  gather_h9: "Verzamel van alle kandidaten de H 9 instemmings\\u00ADverklaringen. Zorg ook dat alle kopieën van identiteitsbewijzen meegeleverd worden en leesbaar zijn."
+  gather_h9: Verzamel van alle kandidaten de H 9 instemmings\u00ADverklaringen. Zorg ook dat alle kopieën van identiteitsbewijzen meegeleverd worden en leesbaar zijn.
   pre_submission: "De 2 weken voor de dag van kandidaatstelling kunt u de documenten alvast laten controleren door het centraal stembureau, de zogeheten 'voorinlevering'. Maak hiervoor een afspraak."
   title: "Verzamelen, controleren en ondertekenen"
 complete_list:
@@ -15,7 +15,7 @@ delivery:
   only_on: "De dag van kandidaatstelling is op <strong>{}</strong>"
   title: Documenten inleveren
 follow_up_steps:
-  description: "Na het printen van de documenten zijn er nog enkele vervolgstappen die u buiten e-KS moet zetten. Hieronder wordt de rest van het kandidaatstellings\\u00ADproces tot en met de openbare zitting beschreven."
+  description: Na het printen van de documenten zijn er nog enkele vervolgstappen die u buiten e-KS moet zetten. Hieronder wordt de rest van het kandidaatstellings\u00ADproces tot en met de openbare zitting beschreven.
   title: Vervolgstappen
 header:
   description: "U heeft uw kandidaten en kandidatenlijsten aangemaakt. Om af te ronden, zijn er nog een paar stappen te doorlopen. Deze stappen staan uiteengezet op deze pagina."
@@ -33,11 +33,11 @@ print:
   h3_1_title: H 3-1 Machtiging plaatsen van aanduiding
   h3_2_description: Met de H 3-2 krijgt de inleveraar van de kandidatenlijst toestemming om de samengevoegde aanduiding boven de kandidatenlijst te plaatsen. Deze toestemming moet worden gegeven door iemand die hiertoe gemachtigd is van ieder van de betrokken politieke groeperingen.
   h3_2_title: H 3-2 Machtiging plaatsen van samengevoegde aanduiding
-  h4_description: "Met de H 4 verzamelt uw politieke groepering ondersteunings\\u00ADverklaringen van kiesgerechtigde kiezers. Dit is vereist voor politieke groeperingen die niet reeds vertegenwoordigd zijn in het betreffende orgaan of deelnemen met een blanco lijst."
-  h4_title: "H 4 Ondersteunings\\u00ADverklaringen"
+  h4_description: Met de H 4 verzamelt uw politieke groepering ondersteunings\u00ADverklaringen van kiesgerechtigde kiezers. Dit is vereist voor politieke groeperingen die niet reeds vertegenwoordigd zijn in het betreffende orgaan of deelnemen met een blanco lijst.
+  h4_title: H 4 Ondersteunings\u00ADverklaringen
   h9_consent: Met dit formulier stemmen kandidaten ermee in dat ze op de kandidatenlijst staan. Ook stemmen ze in met hun positie op de lijst.
   h9_identity: Bij het inleveren van deze H 9 hoort ook een leesbare kopie van het identiteitsbewijs.
-  h9_title: "H 9 Instemmings\\u00ADverklaringen"
+  h9_title: H 9 Instemmings\u00ADverklaringen
   incomplete_warning: "Let op! U kunt de documenten wel printen, maar ze zullen als incompleet worden beschouwd door het centraal stembureau. Los de waarschuwingen in stap 1 op om de lijst compleet te maken."
   title: Print de documenten uit
 verification:

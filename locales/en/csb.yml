@@ -127,9 +127,9 @@ omission:
     title_label: Omission title
   overview:
     description: Description
-    no_omissions: No omissions have been added yet.
-    no_corrections: No corrections have been added yet.
     help_text: Note in omission letter
+    no_corrections: No corrections have been added yet.
+    no_omissions: No omissions have been added yet.
     not_recoverable: Not recoverable
     recoverable: Recoverable
     title: Overview
@@ -144,5 +144,5 @@ progress: Progress
 status:
   approved: Approved
   in_progress: In progress
-  omission: Defect added
   name: Status
+  omission: Defect added

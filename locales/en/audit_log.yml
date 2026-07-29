@@ -41,9 +41,8 @@ empty: No events have been recorded yet.
 event:
   add_candidate_to_list: Added candidate to list
   create_candidate_list: Created list of candidates
-  create_name_authorisation: Created statutory name and authorised agent
   create_empty: Created empty political group
-  paper_correction: Paper corrections
+  create_name_authorisation: Created statutory name and authorised agent
   create_omission: Created omission
   create_person: Created person
   create_substitute_submitter: Created substitute submitter of the list
@@ -59,6 +58,7 @@ event:
   hide_download_warning: Dismissed download warning
   import: Imported political group
   import_csv: Imported CSV
+  paper_correction: Paper corrections
   remove_candidate_from_list: Removed candidate from list
   set_finished: Set finished state
   update_candidate_list_districts: Updated electoral districts of list
@@ -87,9 +87,9 @@ filter:
     correction: Corrections
     import: Import
     list_submitter: List submitter
-    paper_correction: Paper corrections
     name_authorisation: Statutory name and authorised agent
     omission: Omission
+    paper_correction: Paper corrections
     person: Person
     political_group: Political group
     set_finished: Finished state

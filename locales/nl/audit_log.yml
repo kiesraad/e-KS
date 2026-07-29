@@ -56,7 +56,7 @@ event:
   download_file: Bestand gedownload
   export_csv: CSV geëxporteerd
   hash: Event hash
-  hide_download_warning: "Download\\u00ADwaarschuwing gesloten"
+  hide_download_warning: Download\u00ADwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
   remove_candidate_from_list: Kandidaat van lijst verwijderd
