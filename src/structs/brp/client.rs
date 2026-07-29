@@ -240,6 +240,8 @@ pub enum BrpResponse {
 
 #[cfg(test)]
 mod tests {
+    use std::collections::HashSet;
+
     use crate::{
         persons::PersonId,
         test_utils::{sample_person, sample_person_from_brp},
@@ -300,15 +302,15 @@ mod tests {
         // Dit bsn voldoet aan de 11-proef maar staat niet in de mock brp
         person.personal_data.bsn = Some("123456782".parse().unwrap());
         match brp_client.verify(&person).await {
-            Ok(ommissions) => {
-                assert_eq!(ommissions.len(), 1);
-                let ommission = &ommissions[0];
+            Ok(omissions) => {
+                assert_eq!(omissions.len(), 1);
+                let omission = &omissions[0];
                 assert!(matches!(
-                    ommission.category,
+                    omission.category,
                     OmissionCategory::Candidate { .. }
                 ));
                 assert_eq!(
-                    ommission.description,
+                    omission.description,
                     "Er is geen persoon gevonden met dit burgerservicenummer",
                 )
             }
@@ -318,15 +320,15 @@ mod tests {
         let mut person = sample_person_from_brp();
         person.address.house_number_addition = Some("nope".parse().unwrap());
         match brp_client.verify(&person).await {
-            Ok(ommissions) => {
-                assert_eq!(ommissions.len(), 1);
-                let ommission = &ommissions[0];
+            Ok(omissions) => {
+                assert_eq!(omissions.len(), 1);
+                let omission = &omissions[0];
                 assert!(matches!(
-                    ommission.category,
+                    omission.category,
                     OmissionCategory::Candidate { .. }
                 ));
                 assert_eq!(
-                    ommission.description,
+                    omission.description,
                     "De huisnummertoevoeging komt niet overeen met de BRP",
                 )
             }
@@ -338,9 +340,25 @@ mod tests {
         // als het verkeerde bsn is ingevuld.
         person.personal_data.bsn = Some("999992806".parse().unwrap());
 
+        let expected_titles: HashSet<String> = [
+            "Onjuist huisnummer".to_string(),
+            "Onjuiste achternaam".to_string(),
+            "Onjuiste geboortedatum".to_string(),
+            "Onjuiste huisnummertoevoeging".to_string(),
+            "Onjuiste postcode".to_string(),
+            "Onjuiste straatnaam".to_string(),
+            "Onjuiste voorletters".to_string(),
+            "Onjuiste woonplaats".to_string(),
+        ]
+        .into();
+
         match brp_client.verify(&person).await {
-            Ok(ommissions) => {
-                assert_eq!(ommissions.len(), 8);
+            Ok(omissions) => {
+                let actual_titles = HashSet::from_iter(omissions.into_iter().map(|o| o.title));
+                assert_eq!(
+                    expected_titles.symmetric_difference(&actual_titles).count(),
+                    0
+                )
             }
             Err(e) => panic!("{e}"),
         }
