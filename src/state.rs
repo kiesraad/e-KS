@@ -11,6 +11,7 @@ use crate::{
     crypto::MasterKey,
     csb::CSB_MAIN_STREAM_ID,
     store::{Store, StoreRegistry},
+    structs::brp::BrpClient,
 };
 
 #[cfg(feature = "fixtures")]
@@ -34,6 +35,7 @@ pub struct AppState {
     pub id_deriver: IdDeriver,
     pub auth_service_state: AuthServiceState,
     pub db_health: DbHealth,
+    pub brp_client: BrpClient,
 }
 
 /// Contract the application's request extractors expect from the router
@@ -80,6 +82,13 @@ impl AppState {
             AuthServiceState::new_from_env().await?
         };
 
+        let brp_client = BrpClient::new(
+            &config.brp_client.base_url,
+            &config.brp_client.api_key,
+            &config.brp_client.persons_endpoint,
+            config.brp_client.timeout,
+        );
+
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
@@ -90,6 +99,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             db_health: DbHealth::default(),
+            brp_client,
         })
     }
 
@@ -178,6 +188,13 @@ impl AppState {
         let csb_main_store_registry =
             StoreRegistry::with_persistence(store_registry.persistence().clone(), master);
 
+        let brp_client = BrpClient::new(
+            &config.brp_client.base_url,
+            &config.brp_client.api_key,
+            &config.brp_client.persons_endpoint,
+            config.brp_client.timeout,
+        );
+
         Self {
             store_registry,
             csb_store_registry,
@@ -188,6 +205,7 @@ impl AppState {
             id_deriver,
             auth_service_state,
             db_health: DbHealth::default(),
+            brp_client,
         }
     }
 }

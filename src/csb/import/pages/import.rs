@@ -16,7 +16,7 @@ use crate::{
     },
     filters, redirect_success,
     store::Store,
-    structs::brp::BrpClient,
+    structs::brp::{BRP_PERSONS_ENDPOINT, BrpClient},
     trans,
     utils::parse_hash_prefix,
 };
@@ -131,14 +131,7 @@ async fn do_import(
         })
         .await?;
 
-    // TODO: get from env at higher level probably
-    let brp_client = BrpClient::new(
-        "http://localhost:5010",
-        "",
-        "haalcentraal/api/brp/personen",
-        Duration::from_secs(30),
-    );
-    do_brp_verification(&csb_store, &brp_client).await?;
+    do_brp_verification(&csb_store, &state.brp_client).await?;
 
     Ok(redirect_success(CsbPoliticalGroupPath {
         stream_id: csb_store.stream_id,
@@ -403,7 +396,7 @@ mod tests {
         let brp_client = BrpClient::new(
             "http://localhost:5010",
             "",
-            "haalcentraal/api/brp/personen",
+            BRP_PERSONS_ENDPOINT,
             Duration::from_secs(30),
         );
         do_brp_verification(&csb_store, &brp_client).await?;

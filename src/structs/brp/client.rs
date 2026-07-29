@@ -10,6 +10,9 @@ use crate::{
     structs::csb::{Omission, OmissionCategory},
 };
 
+pub const BRP_PERSONS_ENDPOINT: &str = "haalcentraal/api/brp/personen";
+pub const BRP_TIMEOUT: u64 = 30;
+
 #[derive(Clone)]
 pub struct BrpClient {
     http_client: Client,

@@ -1,11 +1,14 @@
 //! Loads runtime configuration from environment variables for AppState.
 //! Used by AppState::new to construct service URLs and storage settings.
 
-use std::{env, path::PathBuf};
+use std::{env, path::PathBuf, time::Duration};
 
 use secrecy::SecretString;
 
-use crate::AppError;
+use crate::{
+    AppError,
+    structs::brp::{BRP_PERSONS_ENDPOINT, BRP_TIMEOUT},
+};
 
 #[cfg(feature = "dev-features")]
 mod dev_defaults {
@@ -20,11 +23,16 @@ mod dev_defaults {
     pub(super) const DEFAULT_MASTER_ENCRYPTION_KEY: &str =
         "eks-dev-master-encryption-key-not-for-production";
 
+    pub(super) const BRP_API_KEY: &str = "";
+    pub(super) const BRP_BASE_URL: &str = "http://localhost:5010";
+
     pub(super) fn lookup(name: &'static str) -> Result<String, std::env::VarError> {
         std::collections::HashMap::from([
             ("STORAGE_URL", STORAGE_URL),
             ("ID_DERIVATION_KEY", ID_DERIVATION_KEY),
             ("MASTER_ENCRYPTION_KEY", DEFAULT_MASTER_ENCRYPTION_KEY),
+            ("BRP_BASE_URL", BRP_BASE_URL),
+            ("BRP_API_KEY", BRP_API_KEY),
         ])
         .get(name)
         .map(|value| (*value).to_string())
@@ -37,6 +45,15 @@ mod dev_defaults {
 pub struct TlsConfig {
     pub cert_path: PathBuf,
     pub key_path: PathBuf,
+}
+
+/// TLS configuration for serving HTTPS via rustls.
+#[derive(Debug, Clone)]
+pub struct BrpConfig {
+    pub base_url: String,
+    pub api_key: String,
+    pub persons_endpoint: String,
+    pub timeout: Duration,
 }
 
 /// Runtime configuration loaded from environment variables.
@@ -61,6 +78,7 @@ pub struct Config {
     /// container. Set via `DISABLE_AUTH_SERVICE` (`1`, `true`, or `yes`,
     /// case-insensitive); anything else leaves the auth-service enabled.
     pub disable_auth_service: bool,
+    pub brp_client: BrpConfig,
 }
 
 fn get_env_with<F>(name: &'static str, lookup: &mut F) -> Result<String, AppError>
@@ -117,6 +135,24 @@ impl Config {
             )
         });
 
+        let base_url = get_env_with("BRP_BASE_URL", &mut lookup)?;
+        let api_key = get_env_with("BRP_API_KEY", &mut lookup)?;
+
+        let timeout: u64 = lookup("BRP_TIMEOUT")
+            .unwrap_or(BRP_TIMEOUT.to_string())
+            .parse()
+            .map_err(|_| {
+                AppError::ConfigLoadError("Invalid BRP_TIMEOUT; please enter a number".to_string())
+            })?;
+
+        let brp_client = BrpConfig {
+            base_url,
+            api_key,
+            persons_endpoint: lookup("BRP_PERSONS_ENDPOINT")
+                .unwrap_or(BRP_PERSONS_ENDPOINT.to_string()),
+            timeout: Duration::from_secs(timeout),
+        };
+
         Ok(Self {
             storage_url: SecretString::from(storage_url),
             id_derivation_key: SecretString::from(id_derivation_key),
@@ -125,6 +161,7 @@ impl Config {
             server_name,
             eks_key,
             disable_auth_service,
+            brp_client,
         })
     }
 
@@ -138,6 +175,12 @@ impl Config {
             server_name: None,
             eks_key: None,
             disable_auth_service: false,
+            brp_client: BrpConfig {
+                base_url: "http://localhost:5010".to_string(),
+                api_key: "".to_string(),
+                persons_endpoint: BRP_PERSONS_ENDPOINT.to_string(),
+                timeout: Duration::from_secs(BRP_TIMEOUT),
+            },
         }
     }
 }
