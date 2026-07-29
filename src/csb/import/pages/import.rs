@@ -16,7 +16,7 @@ use crate::{
     },
     filters, redirect_success,
     store::Store,
-    structs::brp::{BRP_PERSONS_ENDPOINT, BrpClient},
+    structs::brp::BrpClient,
     trans,
     utils::parse_hash_prefix,
 };
@@ -164,9 +164,16 @@ pub async fn do_brp_verification(
         .update(CsbEvent::SetBrpValidationInProgress(true))
         .await?;
 
+    let already_validated = store.get_brp_validations();
+
     tokio::task::spawn(async move {
         let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
         for person in store.get_persons(WithCorrections::None) {
+            if already_validated.contains_key(&person.id) {
+                tracing::info!("Person {} has already been validated", person.id);
+                continue;
+            }
+
             tracing::info!("Checking person {} against the brp", person.id);
             ticker.tick().await;
 
@@ -210,6 +217,7 @@ mod tests {
 
     use crate::{
         AppState, CsbContext, ElectionConfig, PgEvent,
+        structs::brp::BRP_PERSONS_ENDPOINT,
         test_utils::{response_body_string, sample_person_from_brp},
         utils::format_hash,
     };

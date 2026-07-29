@@ -1,3 +1,5 @@
+use std::collections::HashMap;
+
 use parking_lot::{
     RawRwLock,
     lock_api::{MappedRwLockReadGuard, RwLockReadGuard},
@@ -229,6 +231,10 @@ impl CsbStore {
 
     pub fn get_persons(&self, corrections: WithCorrections) -> Vec<Person> {
         self.read(corrections).persons.values().cloned().collect()
+    }
+
+    pub fn get_brp_validations(&self) -> HashMap<PersonId, bool> {
+        self.data.read().brp_validations.clone()
     }
 
     /// Return the single stored omission. Test-only helper for asserting on
