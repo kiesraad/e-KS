@@ -64,6 +64,7 @@ impl StoreData for CsbStoreData {
                     hash,
                 });
             }
+            CsbEvent::CreateEmpty => {}
             CsbEvent::PaperCorrectedUpdate(payload) => {
                 // Replay the wrapped app event onto the corrected projection,
                 // keeping the CSB stream's event metadata.

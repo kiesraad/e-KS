@@ -36,6 +36,8 @@ finish_instruction:
   create_model_i1: Create model I 1
 finished: Finished
 form:
+  create_empty: Create empty
+  create_empty_explanation: "Or add an empty political group to manually copy the paper data:"
   hash: Enter the beginning of the hash code (at least 8 characters)
   import: Import
   import_political_group: Import political group

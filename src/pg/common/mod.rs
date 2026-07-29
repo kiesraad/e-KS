@@ -23,7 +23,7 @@ pub use crate::structs::common::{
     RVIG_COUNTRY_CODES_URL, Severity, StateOrProvince, StreetName, UtcDateTime, WithProblems,
 };
 
-pub use pages::{not_found, public_router, router, session_only_router, wellknown_router};
+pub use pages::{always_public_router, not_found, public_router, router, session_only_router};
 pub use paths::{
     HideDownloadWarningPath, IndexPath, LoginStartPath, LogoutPath, SelectElectionPath,
     SwitchElectionPath, SwitchLanguagePath,

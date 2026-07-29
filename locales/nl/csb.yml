@@ -36,8 +36,10 @@ finish_instruction:
   create_model_i1: Aanmaken model I 1
 finished: Afgerond
 form:
+  create_empty: Leeg aanmaken
+  create_empty_explanation: "Of voeg een lege politieke groepering toe om de papieren gegevens handmatig over te nemen:"
   hash: Voer het begin van de hash code in (minimaal 8 tekens)
-  import: Importeer
+  import: Importeren
   import_political_group: Politieke groepering importeren
 general:
   add_text: Voeg verzuimen toe voor basisgegevens

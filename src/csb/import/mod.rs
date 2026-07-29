@@ -6,4 +6,4 @@ mod paths;
 pub mod fixture;
 
 pub use pages::router;
-pub use paths::CsbImportPath;
+pub use paths::{CsbCreateEmptyPath, CsbImportPath};

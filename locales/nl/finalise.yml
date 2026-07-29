@@ -22,7 +22,7 @@ header:
   title: Nog een paar stappen
 hearing:
   date: "De zitting is op <strong>{}</strong> om <strong>{}</strong>"
-  description: "Bij deze zitting bepaalt het centraal stembureau welke partijen er op het stembiljet komen te staan, en wat de volgorde van partijen is."
+  description: "Bij deze zitting bepaalt het centraal stembureau welke partijen er op het stembiljet komen te staan, en wordt indien nodig door een loting de volgorde van partijen bepaald."
   open_to_public: U kunt de zitting bijwonen.
   title: Openbare zitting
 print:
