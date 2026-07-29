@@ -22,7 +22,7 @@ header:
   title: A few more steps
 hearing:
   date: "The session is on <strong>{}</strong> at <strong>{}</strong>"
-  description: "During this session, the central electoral committee determines which parties will appear on the ballot, and what the order of parties will be."
+  description: "During this session, the central electoral committee determines which parties will appear on the ballot, and if necessary, the order of the parties will be decided by lot."
   open_to_public: You may attend the session.
   title: Public session
 print:
