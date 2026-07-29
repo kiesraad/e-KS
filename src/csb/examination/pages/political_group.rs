@@ -78,7 +78,7 @@ pub async fn overview(
             political_group_omission_count,
             declarations_of_support_omission_count,
             declarations_of_support_card_path,
-            restoration_count: store.get_omission_count(),
+            restoration_count: store.get_rectification_count(),
         },
         context,
     )

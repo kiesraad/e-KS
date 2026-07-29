@@ -12,25 +12,16 @@
   {% set back_url = political_group.examination_path() %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
-{% macro columns_head(label) %}
-  <thead>
-    <tr>
-      <th scope="col">{{ label }}</th>
-      <th scope="col">{{ "csb.general.status"|trans }}</th>
-      <th scope="col"></th>
-    </tr>
-  </thead>
-{% endmacro %}
 {% macro submitter_tables(submitter) %}
   <table class="detail-table">
-    {{ columns_head("csb.general.personalia"|trans) }}
+    {{ paper_corrected::columns_head("csb.general.personalia"|trans) }}
     <tbody>
       {{ paper_corrected::data_row("person.fields.initials"|trans, submitter.initials) }}
       {{ paper_corrected::data_row("person.fields.last_name"|trans, submitter.last_name) }}
     </tbody>
   </table>
   <table class="detail-table">
-    {{ columns_head("person.correspondence_address"|trans) }}
+    {{ paper_corrected::columns_head("person.correspondence_address"|trans) }}
     <tbody>
       {{ paper_corrected::data_row("person.fields.postal_code"|trans, submitter.postal_code) }}
       {{ paper_corrected::data_row("person.fields.house_number"|trans, submitter.house_number) }}
@@ -86,7 +77,7 @@
     </div>
     <h2>{{ "csb.general.group_info"|trans }}</h2>
     <table class="detail-table">
-      {{ columns_head("common.general_information"|trans) }}
+      {{ paper_corrected::columns_head("common.general_information"|trans) }}
       <tbody>
         <tr class="clickable">
           <td>{{ "political_group.display_name"|trans }}: {{ paper_corrected::value(group_info.display_name) }}</td>
@@ -105,7 +96,7 @@
     {% else %}
       {% for name_authorisation in name_authorisations %}
         <table class="detail-table">
-          {{ columns_head(name_authorisation.heading) }}
+          {{ paper_corrected::columns_head(name_authorisation.heading) }}
           <tbody>
             {{ paper_corrected::data_row("political_group.legal_name"|trans, name_authorisation.legal_name) }}
             {{ paper_corrected::data_row("political_group.authorised_agent"|trans, name_authorisation.authorised_agent) }}

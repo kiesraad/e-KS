@@ -61,7 +61,7 @@ pub async fn overview(
             electoral_districts,
             candidates,
             omissions,
-            restoration_count: store.get_omission_count(),
+            restoration_count: store.get_rectification_count(),
         },
         context,
     )

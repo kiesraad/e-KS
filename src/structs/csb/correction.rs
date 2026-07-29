@@ -33,16 +33,14 @@ pub struct PersonCorrectionDelta {
 }
 
 impl PersonCorrectionDelta {
-    pub fn new() -> PersonCorrectionDelta {
-        PersonCorrectionDelta {
-            corrections: HashMap::new(),
-        }
-    }
-
     /// Add a correction to this delta
     /// Replaces the previous [`PersonCorrection`] variant in the delta if present
     pub fn add_correction(&mut self, correction: PersonCorrection) {
         self.corrections.insert(correction.kind(), correction);
+    }
+
+    pub fn remove_correction(&mut self, correction: &PersonCorrection) {
+        self.corrections.remove(&correction.kind());
     }
 
     pub fn apply(self, person: &mut Person) {

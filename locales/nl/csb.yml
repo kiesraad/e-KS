@@ -17,7 +17,6 @@ candidate:
   add_candidate_text: Voeg verzuimen toe voor deze kandidaat
   overview_text: Toegevoegde verzuimen kandidaat
   personal_details: Persoonsgegevens
-  status: Status
 correction:
   form:
     submit: Correctie opslaan
@@ -28,8 +27,8 @@ correction:
   paper_corrected: Papieren correctie
   title: Ambtshalve correcties
 declarations_of_support:
-  instruction: Meld problemen met de ondersteunings\u00ADverklaringen
-  title: Ondersteunings\u00ADverklaringen
+  instruction: "Meld problemen met de ondersteunings\\u00ADverklaringen"
+  title: "Ondersteunings\\u00ADverklaringen"
 examination: Onderzoek
 finish_examination: Afronden onderzoek
 finish_instruction:
@@ -45,7 +44,6 @@ general:
   group_info: Gegevens Politieke groepering
   overview_text: Toegevoegde verzuimen basisgegevens
   personalia: Personalia
-  status: Status
 group:
   added_on_paper: Toegevoegd bij papieren correcties
   all_brp_errors: Alle BRP fouten
@@ -127,7 +125,8 @@ omission:
     title_label: Titel verzuim
   overview:
     description: Omschrijving
-    empty: Er zijn nog geen verzuimen toegevoegd.
+    no_omissions: Er zijn nog geen verzuimen toegevoegd.
+    no_corrections: Er zijn nog geen ambtshalve correcties toegevoegd
     help_text: Verzuimbriefnotitie
     not_recoverable: Onherstelbaar
     recoverable: Herstelbaar
@@ -144,3 +143,4 @@ status:
   approved: Goedgekeurd
   in_progress: Controle bezig
   omission: Verzuim toegevoegd
+  name: Status

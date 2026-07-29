@@ -31,15 +31,6 @@
   {% set back_url = political_group.candidate_list_path(list_id) %}
   {% include "csb/components/header_examination_actions.html" %}
 {% endblock %}
-{% macro columns_head(label) %}
-  <thead>
-    <tr>
-      <th scope="col">{{ label }}</th>
-      <th scope="col">{{ "csb.candidate.status"|trans }}</th>
-      <th scope="col"></th>
-    </tr>
-  </thead>
-{% endmacro %}
 {% block content %}
   <section class="general-information">
     <div class="omission-cards">
@@ -85,7 +76,7 @@
     </div>
     <h2>{{ "csb.candidate.personal_details"|trans }}</h2>
     <table class="detail-table">
-      {{ columns_head("person.personal_details"|trans) }}
+      {{ paper_corrected::columns_head("person.personal_details"|trans) }}
       <tbody>
         {{ paper_corrected::editable_data_row("person.fields.initials"|trans, details.initials, political_group.correction_person_path(candidate.id, crate::csb::examination::structs::CandidateCorrectionField::Initials, list_id) ) }}
         {{ paper_corrected::data_row("person.fields.first_name"|trans, details.first_name) }}
@@ -97,7 +88,7 @@
       </tbody>
     </table>
     <table class="detail-table">
-      {{ columns_head("person.correspondence_address"|trans) }}
+      {{ paper_corrected::columns_head("person.correspondence_address"|trans) }}
       <tbody>
         {{ paper_corrected::data_row("person.fields.street_name"|trans, details.street_name) }}
         {{ paper_corrected::data_row("person.fields.house_number"|trans, details.house_number) }}
@@ -109,7 +100,7 @@
     </table>
     {% if details.has_representative %}
       <table class="detail-table">
-        {{ columns_head("person.representative"|trans) }}
+        {{ paper_corrected::columns_head("person.representative"|trans) }}
         <tbody>
           {{ paper_corrected::data_row("person.fields.name"|trans, details.representative_name) }}
           {{ paper_corrected::data_row("person.fields.street_name"|trans, details.representative_street_name) }}

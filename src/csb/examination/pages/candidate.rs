@@ -78,7 +78,7 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
-            restoration_count: store.get_omission_count(),
+            restoration_count: store.get_rectification_count(),
         },
         context,
     )

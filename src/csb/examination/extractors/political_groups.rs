@@ -23,7 +23,7 @@ impl CsbPoliticalGroup {
             political_group: store.get_political_group(crate::csb::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
-            omission_count: store.get_omission_count(),
+            omission_count: store.get_rectification_count(),
             first_candidate_name: store.get_first_candidate_name(crate::csb::WithCorrections::All),
         }
     }

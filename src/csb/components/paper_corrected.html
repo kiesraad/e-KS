@@ -24,6 +24,15 @@
     {% endif %}
   {% endif %}
 {% endmacro %}
+{% macro columns_head(label) %}
+  <thead>
+    <tr>
+      <th scope="col">{{ label }}</th>
+      <th scope="col">{{ "csb.status.name"|trans }}</th>
+      <th scope="col"></th>
+    </tr>
+  </thead>
+{% endmacro %}
 {% macro data_row(label, value) %}
   <tr>
     <td>{{ label }}: {{ value(value) }}</td>

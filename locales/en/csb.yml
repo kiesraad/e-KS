@@ -17,7 +17,6 @@ candidate:
   add_candidate_text: Add omissions for this candidate
   overview_text: Added omissions for this candidate
   personal_details: Personal details
-  status: Status
 correction:
   form:
     submit: Save correction
@@ -45,7 +44,6 @@ general:
   group_info: Political group information
   overview_text: Added omissions for the general information
   personalia: Personal details
-  status: Status
 group:
   added_on_paper: Added during paper corrections
   all_brp_errors: All BRP errors
@@ -127,7 +125,8 @@ omission:
     title_label: Omission title
   overview:
     description: Description
-    empty: No omissions have been added yet.
+    no_omissions: No omissions have been added yet.
+    no_corrections: No corrections have been added yet.
     help_text: Note in omission letter
     not_recoverable: Not recoverable
     recoverable: Recoverable
@@ -144,3 +143,4 @@ status:
   approved: Approved
   in_progress: In progress
   omission: Defect added
+  name: Status

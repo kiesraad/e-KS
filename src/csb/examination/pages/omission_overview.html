@@ -8,7 +8,7 @@
 {% block overlay_form %}
   <div class="omission-overview">
     {% if omissions.is_empty() %}
-      <p class="font-italic">{{ "csb.omission.overview.empty"|trans }}</p>
+      <p class="font-italic">{{ "csb.omission.overview.no_omissions"|trans }}</p>
     {% else %}
       <ul class="omission-list">
         {% for view in omissions %}

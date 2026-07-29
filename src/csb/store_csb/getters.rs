@@ -60,6 +60,22 @@ impl CsbStore {
         data.omissions.len()
     }
 
+    /// get the total number of CSB corrections added
+    pub fn get_correction_count(&self) -> usize {
+        let data = self.data.read();
+
+        data.csb_corrected_persons
+            .values()
+            .map(|p| p.get_corrections().len())
+            .sum::<usize>()
+            + data.csb_corrected_display_name.as_ref().map_or(0, |_| 1)
+    }
+
+    /// get the total number of CSB corrections and omissions
+    pub fn get_rectification_count(&self) -> usize {
+        self.get_omission_count() + self.get_correction_count()
+    }
+
     pub fn get_recoverable_omissions(&self) -> Vec<Omission> {
         let data = self.data.read();
 
@@ -172,7 +188,6 @@ impl CsbStore {
                 .get(&person_id)
                 .cloned()
         {
-            dbg!("conditional reached!");
             delta.apply(&mut person);
             Some(person)
         } else {

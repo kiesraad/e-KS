@@ -306,4 +306,19 @@ impl CsbPoliticalGroup {
         }
         .with_query_params(OmissionListQuery { list: Some(*list) })
     }
+
+    pub fn correction_person_path_from_all_rectifications(
+        &self,
+        person: &PersonId,
+        field: CandidateCorrectionField,
+    ) -> impl TypedPath {
+        CsbPersonCorrectionPath {
+            stream_id: self.stream_id,
+            person_id: *person,
+            field,
+        }
+        .with_query_params(QueryParamState::redirect_to(
+            self.all_restorations_path().to_string(),
+        ))
+    }
 }

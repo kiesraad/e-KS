@@ -1,7 +1,7 @@
 use axum_extra::routing::TypedPath;
 
 use crate::{
-    AppError, CsbStore, ElectoralDistrict, QueryParamState,
+    AppError, CsbStore, QueryParamState,
     candidate_lists::CandidateListId,
     csb::examination::extractors::CsbPoliticalGroup,
     persons::{Person, PersonId},

@@ -15,6 +15,8 @@ use crate::{
 #[template(path = "csb/examination/pages/all_restorations.html")]
 struct CsbAllRestorationsTemplate {
     political_group: CsbPoliticalGroup,
+    omission_count: usize,
+    correction_count: usize,
     restoration_count: usize,
     all_omissions: AllOmissions,
     all_corrections: AllCsbCorrections,
@@ -26,12 +28,16 @@ pub async fn all_restorations(
     store: CsbStore,
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
+    let omission_count = store.get_omission_count();
+    let correction_count = store.get_correction_count(); // TODO implement in store
     Ok(HtmlTemplate(
         CsbAllRestorationsTemplate {
             all_omissions: store.get_all_omissions(&political_group)?,
+            all_corrections: store.get_all_corrections(&political_group, context.session.locale)?,
             political_group,
-            restoration_count: store.get_omission_count(),
-            all_corrections: store.get_all_corrections()?,
+            omission_count,
+            correction_count,
+            restoration_count: store.get_rectification_count(),
         },
         context,
     )

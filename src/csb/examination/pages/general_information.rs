@@ -43,7 +43,7 @@ pub async fn overview(
             list_submitter: paper_corrected_list_submitter(&store),
             substitute_submitters: paper_corrected_substitute_submitters(&store),
             political_group_omissions: store.get_political_group_omissions(),
-            restoration_count: store.get_omission_count(),
+            restoration_count: store.get_rectification_count(),
         },
         context,
     )
