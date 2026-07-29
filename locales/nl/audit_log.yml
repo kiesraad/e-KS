@@ -41,9 +41,8 @@ empty: Er zijn nog geen gebeurtenissen vastgelegd.
 event:
   add_candidate_to_list: Kandidaat aan lijst toegevoegd
   create_candidate_list: Kandidatenlijst aangemaakt
-  create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_empty: Lege politieke groepering aangemaakt
-  paper_correction: Papieren correcties
+  create_name_authorisation: Statutaire naam en gemachtigde aangemaakt
   create_omission: Verzuim aangemaakt
   create_person: Persoon aangemaakt
   create_substitute_submitter: Vervanger herstel verzuim aangemaakt
@@ -59,6 +58,7 @@ event:
   hide_download_warning: Download\u00ADwaarschuwing gesloten
   import: Politieke groepering geïmporteerd
   import_csv: CSV geïmporteerd
+  paper_correction: Papieren correcties
   remove_candidate_from_list: Kandidaat van lijst verwijderd
   set_finished: Afgerond gezet
   update_candidate_list_districts: Kieskringen van lijst bijgewerkt
@@ -87,9 +87,9 @@ filter:
     correction: Ambtshalve correcties
     import: Import
     list_submitter: Lijstinleveraar
-    paper_correction: Papieren correcties
     name_authorisation: Statutaire naam en gemachtigde
     omission: Verzuim
+    paper_correction: Papieren correcties
     person: Persoon
     political_group: Politieke groepering
     set_finished: Afgerond
