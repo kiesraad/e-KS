@@ -174,10 +174,17 @@ pub async fn do_brp_verification(
                 continue;
             }
 
+            let candidate_lists = store
+                .get_candidate_lists(WithCorrections::None)
+                .iter()
+                .filter(|cl| cl.candidates.contains(&person.id))
+                .map(|cl| cl.id)
+                .collect();
+
             tracing::info!("Checking person {} against the brp", person.id);
             ticker.tick().await;
 
-            match brp_client.verify(&person).await {
+            match brp_client.verify(&person, candidate_lists).await {
                 Ok(omissions) => {
                     for omission in omissions {
                         if let Err(err) = omission.create(&store).await {

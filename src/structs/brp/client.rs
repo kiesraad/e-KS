@@ -5,6 +5,7 @@ use std::time::Duration;
 use super::{BrpField, BrpPerson};
 use crate::{
     AppError,
+    candidate_lists::CandidateListId,
     common::{Bsn, BsnOrNoneConfirmed},
     persons::Person,
     structs::csb::{Omission, OmissionCategory},
@@ -50,7 +51,11 @@ impl BrpClient {
         }
     }
 
-    pub async fn verify(&self, person: &Person) -> Result<Vec<Omission>, AppError> {
+    pub async fn verify(
+        &self,
+        person: &Person,
+        candidate_lists: Vec<CandidateListId>,
+    ) -> Result<Vec<Omission>, AppError> {
         let query = match person.personal_data.bsn {
             Some(BsnOrNoneConfirmed::Bsn(ref bsn)) => BrpQuery::ConsultWithBsn {
                 bsn: vec![bsn.clone()],
@@ -91,7 +96,7 @@ impl BrpClient {
             omissions.push(Omission::new(
                 OmissionCategory::Candidate {
                     person: person.id,
-                    lists: Vec::new(),
+                    lists: candidate_lists.clone(),
                 },
                 // TODO: These should likely be user configurable and translatable
                 title.to_string(),
@@ -281,7 +286,7 @@ mod tests {
 
         let person = sample_person_from_brp();
 
-        match brp_client.verify(&person).await {
+        match brp_client.verify(&person, Vec::new()).await {
             Err(e) => panic!("brp verification error: {e}"),
             Ok(omissions) if !omissions.is_empty() => panic!(
                 "person could not be verified: {}\nFollowing omissions were found: {:?}",
@@ -301,17 +306,18 @@ mod tests {
             Duration::from_secs(30),
         );
 
+        let list_id = CandidateListId::new();
         let mut person = sample_person(PersonId::new());
         // Dit bsn voldoet aan de 11-proef maar staat niet in de mock brp
         person.personal_data.bsn = Some("123456782".parse().unwrap());
-        match brp_client.verify(&person).await {
+        match brp_client.verify(&person, vec![list_id]).await {
             Ok(omissions) => {
                 assert_eq!(omissions.len(), 1);
                 let omission = &omissions[0];
-                assert!(matches!(
-                    omission.category,
-                    OmissionCategory::Candidate { .. }
-                ));
+                let OmissionCategory::Candidate { lists, .. } = &omission.category else {
+                    panic!("Unexpected omission category")
+                };
+                assert_eq!(lists, &[list_id]);
                 assert_eq!(
                     omission.description,
                     "Er is geen persoon gevonden met dit burgerservicenummer",
@@ -322,7 +328,7 @@ mod tests {
 
         let mut person = sample_person_from_brp();
         person.address.house_number_addition = Some("nope".parse().unwrap());
-        match brp_client.verify(&person).await {
+        match brp_client.verify(&person, Vec::new()).await {
             Ok(omissions) => {
                 assert_eq!(omissions.len(), 1);
                 let omission = &omissions[0];
@@ -355,7 +361,7 @@ mod tests {
         ]
         .into();
 
-        match brp_client.verify(&person).await {
+        match brp_client.verify(&person, Vec::new()).await {
             Ok(omissions) => {
                 let actual_titles = HashSet::from_iter(omissions.into_iter().map(|o| o.title));
                 assert_eq!(
@@ -364,6 +370,29 @@ mod tests {
                 )
             }
             Err(e) => panic!("{e}"),
+        }
+    }
+
+    #[tokio::test]
+    async fn omission_includes_candidate_lists() {
+        let brp_client = BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(30),
+        );
+
+        let person = sample_person_from_brp();
+        let list_id = CandidateListId::new();
+
+        match brp_client.verify(&person, vec![list_id]).await {
+            Err(e) => panic!("brp verification error: {e}"),
+            Ok(omissions) if !omissions.is_empty() => panic!(
+                "person could not be verified: {}\nFollowing omissions were found: {:?}",
+                serde_json::to_string_pretty(&person).unwrap(),
+                omissions
+            ),
+            _ => {}
         }
     }
 }
