@@ -34,6 +34,16 @@ impl BrpClient {
         }
     }
 
+    #[cfg(test)]
+    fn new_for_test() -> Self {
+        BrpClient::new(
+            "http://localhost:5010",
+            "",
+            "haalcentraal/api/brp/personen",
+            Duration::from_secs(5),
+        )
+    }
+
     pub async fn get_persons(&self, query: &BrpQuery) -> Result<Vec<BrpPerson>, AppError> {
         let url = format!("{}/{}", self.base_url, self.persons_endpoint);
 
@@ -259,12 +269,7 @@ mod tests {
 
     #[tokio::test]
     async fn brp_request() {
-        let brp_client = BrpClient::new(
-            "http://localhost:5010",
-            "",
-            "haalcentraal/api/brp/personen",
-            Duration::from_secs(30),
-        );
+        let brp_client = BrpClient::new_for_test();
         let query = BrpQuery::ConsultWithBsn {
             bsn: vec!["100600505".parse().unwrap()],
             fields: vec![BrpField::LastName],
@@ -277,12 +282,7 @@ mod tests {
 
     #[tokio::test]
     async fn brp_verify() {
-        let brp_client = BrpClient::new(
-            "http://localhost:5010",
-            "",
-            "haalcentraal/api/brp/personen",
-            Duration::from_secs(30),
-        );
+        let brp_client = BrpClient::new_for_test();
 
         let person = sample_person_from_brp();
 
@@ -299,12 +299,7 @@ mod tests {
 
     #[tokio::test]
     async fn brp_verify_returns_omissions() {
-        let brp_client = BrpClient::new(
-            "http://localhost:5010",
-            "",
-            "haalcentraal/api/brp/personen",
-            Duration::from_secs(30),
-        );
+        let brp_client = BrpClient::new_for_test();
 
         let list_id = CandidateListId::new();
         let mut person = sample_person(PersonId::new());
@@ -375,12 +370,7 @@ mod tests {
 
     #[tokio::test]
     async fn omission_includes_candidate_lists() {
-        let brp_client = BrpClient::new(
-            "http://localhost:5010",
-            "",
-            "haalcentraal/api/brp/personen",
-            Duration::from_secs(30),
-        );
+        let brp_client = BrpClient::new_for_test();
 
         let person = sample_person_from_brp();
         let list_id = CandidateListId::new();
