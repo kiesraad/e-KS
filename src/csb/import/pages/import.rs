@@ -16,7 +16,7 @@ use crate::{
     },
     filters, redirect_success,
     store::Store,
-    structs::brp::BrpClient,
+    structs::brp::{BrpClient, BrpStatus},
     trans,
     utils::parse_hash_prefix,
 };
@@ -157,24 +157,23 @@ pub async fn do_brp_verification(
     store: &Store<CsbStoreData>,
     brp_client: &BrpClient,
 ) -> Result<(), AppError> {
-    let store = store.clone();
-    let brp_client = brp_client.clone();
-
     store
-        .update(CsbEvent::SetBrpValidationInProgress(true))
+        .update(CsbEvent::SetBrpStatus(BrpStatus::InProgress))
         .await?;
 
     let already_validated = store.get_brp_validations();
 
-    tokio::task::spawn(async move {
+    let brp_client = brp_client.clone();
+    let task_store = store.clone();
+    let task = tokio::task::spawn(async move {
         let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
-        for person in store.get_persons(WithCorrections::None) {
+        for person in task_store.get_persons(WithCorrections::None) {
             if already_validated.contains_key(&person.id) {
                 tracing::info!("Person {} has already been validated", person.id);
                 continue;
             }
 
-            let candidate_lists = store
+            let candidate_lists = task_store
                 .get_candidate_lists(WithCorrections::None)
                 .iter()
                 .filter(|cl| cl.candidates.contains(&person.id))
@@ -187,7 +186,7 @@ pub async fn do_brp_verification(
             match brp_client.verify(&person, candidate_lists).await {
                 Ok(omissions) => {
                     for omission in omissions {
-                        if let Err(err) = omission.create(&store).await {
+                        if let Err(err) = omission.create(&task_store).await {
                             tracing::error!(
                                 "failed to record BRP omission for {}: {err}",
                                 person.id
@@ -203,16 +202,24 @@ pub async fn do_brp_verification(
 
         tracing::info!(
             "Finished checking candidates on list {:?}",
-            store.data.read().imported_data.political_group
+            task_store.data.read().imported_data.political_group
         );
 
-        if let Err(err) = store
-            .update(CsbEvent::SetBrpValidationInProgress(false))
+        if let Err(e) = task_store
+            .update(CsbEvent::SetBrpStatus(BrpStatus::Finished))
             .await
         {
-            tracing::error!("Failed to set BRP validation to false: {err}");
+            tracing::error!("Failed to set BRP validation to false: {e}");
         }
     });
+
+    if let Err(e) = task.await
+        && e.is_panic()
+    {
+        store
+            .update(CsbEvent::SetBrpStatus(BrpStatus::Aborted(e.to_string())))
+            .await?
+    }
 
     Ok(())
 }

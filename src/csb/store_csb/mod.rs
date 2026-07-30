@@ -16,7 +16,10 @@ use crate::{
     common::{DisplayName, UtcDateTime},
     persons::{Person, PersonId},
     store::{StoreData, StoreEvent},
-    structs::csb::{Correction, Omission, OmissionId},
+    structs::{
+        brp::BrpStatus,
+        csb::{Correction, Omission, OmissionId},
+    },
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
@@ -31,7 +34,7 @@ pub struct CsbStoreData {
     pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
     pub(crate) csb_corrected_display_name: Option<DisplayName>,
     pub(crate) brp_validations: HashMap<PersonId, bool>,
-    pub(crate) brp_validation_in_progress: bool,
+    pub(crate) brp_validation_status: BrpStatus,
 }
 
 impl StoreData for CsbStoreData {
@@ -113,7 +116,7 @@ impl StoreData for CsbStoreData {
             CsbEvent::BrpPersonValidated { person, valid } => {
                 self.brp_validations.insert(person, valid);
             }
-            CsbEvent::SetBrpValidationInProgress(value) => self.brp_validation_in_progress = value,
+            CsbEvent::SetBrpStatus(value) => self.brp_validation_status = value,
         }
     }
 
