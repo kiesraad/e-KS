@@ -870,6 +870,7 @@ dependencies = [
  "chrono",
  "chrono-tz",
  "csv",
+ "eks-locales",
  "eml-nl",
  "hkdf",
  "http-body-util",
@@ -877,7 +878,6 @@ dependencies = [
  "memory-serve",
  "parking_lot",
  "phf 0.14.0",
- "phf_codegen",
  "postcard",
  "rand",
  "regex",
@@ -907,11 +907,11 @@ dependencies = [
 
 [[package]]
 name = "eks-development"
-version = "0.5.4"
+version = "0.5.5"
 dependencies = [
  "anyhow",
  "eks",
- "regex",
+ "eks-locales",
  "saphyr",
  "serde",
  "serde-saphyr",
@@ -919,6 +919,15 @@ dependencies = [
  "tokio",
  "tracing",
  "tracing-subscriber",
+]
+
+[[package]]
+name = "eks-locales"
+version = "0.1.0"
+dependencies = [
+ "phf_codegen",
+ "regex",
+ "uuid",
 ]
 
 [[package]]

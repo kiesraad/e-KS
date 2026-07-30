@@ -101,9 +101,9 @@ Each configuration carries:
 
 ### Crates
 
-e-KS is a single Rust binary (`eks`) plus two supporting library crates. They are
-*not* a Cargo workspace: `validate` and `auth-service` are pulled in as
-path dependencies of the root crate, each keeping its own `Cargo.lock`.
+e-KS is a Cargo workspace: a single Rust binary (`eks`, the root crate) plus
+the member crates `validate`, `auth-service`, `development` and `tooling`,
+sharing one `Cargo.lock` and a workspace-level dependency list.
 
 - **`eks`** (root, `Cargo.toml` + `src/`): the application itself: an Axum web
   server with Askama HTML templates and an event-sourced domain model. The
@@ -123,6 +123,9 @@ path dependencies of the root crate, each keeping its own `Cargo.lock`.
   that brings up Docker dependencies and runs the app, the `setup` binary,
   `update_locales`, and `pdf_diff` (used by CI to to visualize PDF document
   differences).
+- **`tooling/`** (`eks-locales`): shared locale tooling, used by the `eks`
+  build script (locale codegen), the `eks` test suite (used-key scanning) and
+  the `update_locales` binary.
 
 Document generation is done in-process with the
 [`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF
