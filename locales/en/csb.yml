@@ -9,7 +9,7 @@ all_restorations:
   corrections_explanation: All created corrections are displayed here.
   explanation: Inspect all omissions and corrections here before concluding the examination.
   omissions_explanation: All created omissions are displayed here.
-  title: All rectifications
+  title: All omissions
 brp:
   correct: Correct
   errors: Errors

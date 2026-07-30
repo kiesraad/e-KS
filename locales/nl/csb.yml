@@ -9,7 +9,7 @@ all_restorations:
   corrections_explanation: Alle aangemaakte ambtshalve correcties vindt u hier.
   explanation: Bekijk hier alle verzuimen en correcties voordat u het onderzoek afrondt.
   omissions_explanation: Alle aangemaakte verzuimen vindt u hier.
-  title: Alle herstelacties
+  title: Alle verzuimen
 brp:
   correct: Correct
   errors: Fouten
