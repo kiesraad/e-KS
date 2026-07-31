@@ -127,9 +127,9 @@ omission:
     title_label: Titel verzuim
   overview:
     description: Omschrijving
-    no_omissions: Er zijn nog geen verzuimen toegevoegd.
-    no_corrections: Er zijn nog geen ambtshalve correcties toegevoegd
     help_text: Verzuimbriefnotitie
+    no_corrections: Er zijn nog geen ambtshalve correcties toegevoegd
+    no_omissions: Er zijn nog geen verzuimen toegevoegd.
     not_recoverable: Onherstelbaar
     recoverable: Herstelbaar
     title: Overzicht
@@ -144,5 +144,5 @@ progress: Voortgang
 status:
   approved: Goedgekeurd
   in_progress: Controle bezig
-  omission: Verzuim toegevoegd
   name: Status
+  omission: Verzuim toegevoegd

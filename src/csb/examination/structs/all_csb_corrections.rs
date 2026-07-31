@@ -176,7 +176,10 @@ mod tests {
     use std::str::FromStr;
 
     use crate::{
-        CsbEvent::{self}, common::{DisplayName, Initials, LastName, PlaceOfResidence}, structs::csb::Correction, test_utils::sample_person,
+        CsbEvent::{self},
+        common::{DisplayName, Initials, LastName, PlaceOfResidence},
+        structs::csb::Correction,
+        test_utils::sample_person,
     };
 
     use super::*;
@@ -262,10 +265,13 @@ mod tests {
             .iter()
             .find(|c| c.corrected.csb_corrected == Some("Smit".to_string()))
             .unwrap();
-        assert_eq!(p1_c2.edit_path, format!(
+        assert_eq!(
+            p1_c2.edit_path,
+            format!(
                 "/csb/examination/{}/correction/person/{}/last-name?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
                 store.stream_id, p_id1, store.stream_id
-            ));
+            )
+        );
         assert_eq!(p1_c2.label, "Achternaam".to_string());
 
         let p2_c1 = p2_corrections
@@ -273,10 +279,13 @@ mod tests {
             .iter()
             .find(|c| c.corrected.csb_corrected == Some("Amsterdam".to_string()))
             .unwrap();
-        assert_eq!(p2_c1.edit_path,format!(
+        assert_eq!(
+            p2_c1.edit_path,
+            format!(
                 "/csb/examination/{}/correction/person/{}/place-of-residence?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
                 store.stream_id, p_id2, store.stream_id
-            ));
+            )
+        );
         assert_eq!(p2_c1.label, "Woonplaats".to_string());
 
         Ok(())
@@ -287,20 +296,27 @@ mod tests {
         let store = CsbStore::new_for_test();
         let locale = Locale::Nl;
 
-        store.data.write().csb_corrected_display_name = Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
+        store.data.write().csb_corrected_display_name =
+            Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
 
         let corrections = store.get_all_corrections(locale)?;
-        
+
         assert_eq!(corrections.general.len(), 1);
         assert_eq!(corrections.candidates.len(), 0);
 
         let correction = &corrections.general[0];
 
-        assert_eq!(correction.corrected.csb_corrected, Some("Gecorrigeerde Partij".to_string()));
-        assert_eq!(correction.edit_path, format!(
+        assert_eq!(
+            correction.corrected.csb_corrected,
+            Some("Gecorrigeerde Partij".to_string())
+        );
+        assert_eq!(
+            correction.edit_path,
+            format!(
                 "/csb/examination/{}/correction/display-name?&redirect_to=%2Fcsb%2Fexamination%2F{}%2Fomissions",
                 store.stream_id, store.stream_id
-            ));
+            )
+        );
         assert_eq!(correction.label, "Geregistreerde aanduiding".to_string());
 
         Ok(())
