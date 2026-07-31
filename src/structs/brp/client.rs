@@ -35,11 +35,11 @@ impl BrpClient {
     }
 
     #[cfg(test)]
-    fn new_for_test() -> Self {
+    pub fn new_for_test() -> Self {
         BrpClient::new(
             "http://localhost:5010",
             "",
-            "haalcentraal/api/brp/personen",
+            BRP_PERSONS_ENDPOINT,
             Duration::from_secs(5),
         )
     }

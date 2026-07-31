@@ -153,6 +153,7 @@ pub async fn create_empty(
     }))
 }
 
+/// Performs the BRP validation in a separate task
 pub async fn do_brp_verification(
     store: &Store<CsbStoreData>,
     brp_client: &BrpClient,
@@ -161,67 +162,84 @@ pub async fn do_brp_verification(
         .update(CsbEvent::SetBrpStatus(BrpStatus::InProgress))
         .await?;
 
-    let already_validated = store.get_brp_validations();
-
     let brp_client = brp_client.clone();
     let task_store = store.clone();
-    let task = tokio::task::spawn(async move {
-        let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
-        for person in task_store.get_persons(WithCorrections::None) {
-            if already_validated.contains_key(&person.id) {
-                tracing::info!("Person {} has already been validated", person.id);
-                continue;
-            }
+    tokio::task::spawn(async move {
+        let task = tokio::task::spawn(verify_candidates(task_store.clone(), brp_client));
 
-            let candidate_lists = task_store
-                .get_candidate_lists(WithCorrections::None)
-                .iter()
-                .filter(|cl| cl.candidates.contains(&person.id))
-                .map(|cl| cl.id)
-                .collect();
-
-            tracing::info!("Checking person {} against the brp", person.id);
-            ticker.tick().await;
-
-            match brp_client.verify(&person, candidate_lists).await {
-                Ok(omissions) => {
-                    for omission in omissions {
-                        if let Err(err) = omission.create(&task_store).await {
-                            tracing::error!(
-                                "failed to record BRP omission for {}: {err}",
-                                person.id
-                            );
-                        }
-                    }
-                }
-                Err(err) => {
-                    tracing::error!("BRP verification failed for {}: {err}", person.id);
-                }
-            }
-        }
-
-        tracing::info!(
-            "Finished checking candidates on list {:?}",
-            task_store.data.read().imported_data.political_group
-        );
-
-        if let Err(e) = task_store
-            .update(CsbEvent::SetBrpStatus(BrpStatus::Finished))
-            .await
+        if let Err(e) = task.await
+            && e.is_panic()
+            && let Err(err) = task_store
+                .update(CsbEvent::SetBrpStatus(BrpStatus::Aborted(e.to_string())))
+                .await
         {
-            tracing::error!("Failed to set BRP validation to false: {e}");
+            tracing::error!("Failed to record aborted BRP status: {err}");
         }
     });
 
-    if let Err(e) = task.await
-        && e.is_panic()
-    {
-        store
-            .update(CsbEvent::SetBrpStatus(BrpStatus::Aborted(e.to_string())))
-            .await?
+    Ok(())
+}
+
+/// Check every not-yet-validated candidate on `store` against the BRP,
+/// recording an omission for each mismatch and marking the candidate as
+/// validated on success. Candidates already present in
+/// `CsbStoreData::brp_validations` are skipped, so a later call resumes instead
+/// of re-checking everyone.
+async fn verify_candidates(store: Store<CsbStoreData>, brp_client: BrpClient) {
+    let already_validated = store.get_brp_validations();
+    let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
+
+    for person in store.get_persons(WithCorrections::None) {
+        if already_validated.contains_key(&person.id) {
+            tracing::info!("Person {} has already been validated", person.id);
+            continue;
+        }
+
+        let candidate_lists = store
+            .get_candidate_lists(WithCorrections::None)
+            .iter()
+            .filter(|cl| cl.candidates.contains(&person.id))
+            .map(|cl| cl.id)
+            .collect();
+
+        tracing::info!("Checking person {} against the brp", person.id);
+        ticker.tick().await;
+
+        match brp_client.verify(&person, candidate_lists).await {
+            Ok(omissions) => {
+                let valid = omissions.is_empty();
+                for omission in omissions {
+                    if let Err(err) = omission.create(&store).await {
+                        tracing::error!("failed to record BRP omission for {}: {err}", person.id);
+                    }
+                }
+                if let Err(err) = store
+                    .update(CsbEvent::BrpPersonValidated {
+                        person: person.id,
+                        valid,
+                    })
+                    .await
+                {
+                    tracing::error!("failed to record BRP validation for {}: {err}", person.id);
+                }
+            }
+            Err(_) => {
+                tracing::error!("BRP verification failed for {}", person.id);
+            }
+        }
     }
 
-    Ok(())
+    tracing::info!(
+        "Finished checking candidates on list {:?}",
+        store.data.read().imported_data.political_group
+    );
+
+    if let Err(e) = store
+        .update(CsbEvent::SetBrpStatus(BrpStatus::Finished))
+        .await
+    {
+        tracing::error!("Failed to set BRP validation to false: {e}");
+    }
 }
 
 #[cfg(test)]
@@ -231,7 +249,6 @@ mod tests {
 
     use crate::{
         AppState, CsbContext, ElectionConfig, PgEvent,
-        structs::brp::BRP_PERSONS_ENDPOINT,
         test_utils::{response_body_string, sample_person_from_brp},
         utils::format_hash,
     };
@@ -247,6 +264,18 @@ mod tests {
 
         let hash = source_store.data.read().events[0].hash;
         Ok((source_stream, format_hash(&hash, false)))
+    }
+
+    /// Poll briefly for the background BRP check to finish, instead of
+    /// sleeping for the full courtesy timeout between candidates.
+    async fn wait_for_brp_status_finished(store: &Store<CsbStoreData>) {
+        for _ in 0..100 {
+            if matches!(store.data.read().brp_validation_status, BrpStatus::Finished) {
+                return;
+            }
+            tokio::time::sleep(Duration::from_millis(20)).await;
+        }
+        panic!("BRP verification did not finish in time");
     }
 
     #[tokio::test]
@@ -415,29 +444,74 @@ mod tests {
         person.address.house_number_addition = Some("nope".parse().unwrap());
         csb_store.add_person(person);
 
-        let brp_client = BrpClient::new(
-            "http://localhost:5010",
-            "",
-            BRP_PERSONS_ENDPOINT,
-            Duration::from_secs(30),
-        );
+        let brp_client = BrpClient::new_for_test();
         do_brp_verification(&csb_store, &brp_client).await?;
 
-        // The check runs in a spawned background task; poll briefly for its
-        // result instead of sleeping for the full courtesy timeout.
-        let mut omission = None;
-        for _ in 0..100 {
-            if let Some(o) = csb_store.data.read().omissions.values().next().cloned() {
-                omission = Some(o);
-                break;
-            }
-            tokio::time::sleep(Duration::from_millis(20)).await;
-        }
-        let omission = omission.expect("BRP verification did not record an omission in time");
+        wait_for_brp_status_finished(&csb_store).await;
+        let omission = csb_store.get_omission_for_test();
         assert_eq!(
             omission.description,
             "De huisnummertoevoeging komt niet overeen met de BRP"
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn do_brp_verification_returns_without_waiting_for_the_brp_check() -> Result<(), AppError>
+    {
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+
+        // Two candidates requires one BRP_COURTESY_TIMEOUT (1s) tick.
+        // do_brp_verification should return well before that.
+        csb_store.add_person(sample_person_from_brp());
+        csb_store.add_person(sample_person_from_brp());
+
+        let brp_client = BrpClient::new_for_test();
+
+        let start = tokio::time::Instant::now();
+        do_brp_verification(&csb_store, &brp_client).await?;
+        let elapsed = start.elapsed();
+        assert!(
+            elapsed < BRP_COURTESY_TIMEOUT,
+            "do_brp_verification should return immediately instead of waiting for the background check, took {elapsed:?}"
+        );
+
+        wait_for_brp_status_finished(&csb_store).await;
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn do_brp_verification_skips_already_validated_persons_on_a_later_call()
+    -> Result<(), AppError> {
+        let state = AppState::new_for_tests().await;
+        let csb_store = state
+            .csb_store_for_stream(StreamId::new(), ElectionConfig::EK27)
+            .await?;
+
+        let mut person = sample_person_from_brp();
+        person.address.house_number_addition = Some("nope".parse().unwrap());
+        csb_store.add_person(person);
+
+        let brp_client = BrpClient::new_for_test();
+
+        do_brp_verification(&csb_store, &brp_client).await?;
+        wait_for_brp_status_finished(&csb_store).await;
+        assert_eq!(csb_store.data.read().omissions.len(), 1);
+        assert_eq!(csb_store.data.read().brp_validations.len(), 1);
+
+        // Re-running verification should skip the already-validated candidate
+        // rather than re-checking them and recording a duplicate omission. With
+        // no candidate left to check, the background task has nothing to wait
+        // on, so a short fixed delay is enough instead of polling for
+        // `Finished` (which the first run has already left behind).
+        do_brp_verification(&csb_store, &brp_client).await?;
+        tokio::time::sleep(Duration::from_millis(100)).await;
+        assert_eq!(csb_store.data.read().omissions.len(), 1);
 
         Ok(())
     }
