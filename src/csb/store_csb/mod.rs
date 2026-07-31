@@ -203,12 +203,12 @@ impl crate::CsbStore {
 
 #[cfg(test)]
 mod tests {
-    use std::collections::HashSet;
+    use std::{collections::HashSet, str::FromStr};
 
     use super::*;
     use crate::{
         PgEvent, StreamId,
-        common::PlaceOfResidence,
+        common::{Initials, LastName, PlaceOfResidence},
         persons::Person,
         structs::csb::PersonCorrection,
         test_utils::{sample_person, sample_political_group},
@@ -270,6 +270,85 @@ mod tests {
             data.imported_data.political_group.display_name,
             sample_political_group().display_name
         );
+    }
+
+    #[test]
+    fn undoing_csb_correction_on_person_removes_csb_correction() {
+        let mut data = CsbStoreData::default();
+        let person = sample_person(PersonId::new());
+
+        data.paper_corrected_data
+            .persons
+            .insert(person.id, person.clone());
+        data.apply(StoreEvent::new(
+            1,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
+            )),
+        ));
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::LastName(LastName::from_str("Smit").unwrap()),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_persons.len(), 1);
+        assert_eq!(
+            data.csb_corrected_persons
+                .get(&person.id)
+                .unwrap()
+                .get_corrections()
+                .len(),
+            2
+        );
+
+        data.apply(StoreEvent::new(
+            3,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::LastName(person.name.last_name),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_persons.len(), 1);
+        assert_eq!(
+            data.csb_corrected_persons
+                .get(&person.id)
+                .unwrap()
+                .get_corrections()
+                .len(),
+            1
+        );
+
+        data.apply(StoreEvent::new(
+            4,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::Initials(person.name.initials),
+            )),
+        ));
+        assert_eq!(data.csb_corrected_persons.len(), 0);
+    }
+
+    #[test]
+    fn undoing_csb_correction_on_display_name_removes_csb_correction() {
+        let mut data = CsbStoreData::default();
+        data.paper_corrected_data.political_group.display_name =
+            Some(DisplayName::from_str("Partij").unwrap());
+        data.csb_corrected_display_name =
+            Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
+
+        data.apply(StoreEvent::new(
+            1,
+            CsbEvent::UpdateCorrection(Correction::DisplayName(
+                DisplayName::from_str("Partij").unwrap(),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_display_name, None);
     }
 
     #[test]

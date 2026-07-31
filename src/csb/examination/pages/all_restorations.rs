@@ -29,11 +29,11 @@ pub async fn all_restorations(
 ) -> Result<Response, AppError> {
     let political_group = CsbPoliticalGroup::new_from_csb_store(&store);
     let omission_count = store.get_omission_count();
-    let correction_count = store.get_correction_count(); // TODO implement in store
+    let correction_count = store.get_correction_count();
     Ok(HtmlTemplate(
         CsbAllRestorationsTemplate {
             all_omissions: store.get_all_omissions(&political_group)?,
-            all_corrections: store.get_all_corrections(&political_group, context.session.locale)?,
+            all_corrections: store.get_all_corrections(context.session.locale)?,
             political_group,
             omission_count,
             correction_count,
