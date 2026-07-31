@@ -49,10 +49,7 @@ structstruck::strike! {
             Address {
                 #[serde(rename = "verblijfadres")]
                 residence_address: struct BrpAddress {
-                    // TODO: Confirm that this should be officieleStraatnaam
-                    // Or handle this by checking if either matches? If this is only used as a correspondence address,
-                    // then that should be sufficient
-                    #[serde(rename = "officieleStraatnaam")]
+                    #[serde(rename = "korteStraatnaam")]
                     street_name: Option<String>,
                     #[serde(rename = "huisnummer")]
                     house_number: Option<u32>,

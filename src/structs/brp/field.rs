@@ -50,9 +50,6 @@ pub enum BrpField {
     DateMunicipalRegistration,
     #[serde(rename = "verblijfplaats.verblijfadres.korteStraatnaam")]
     StreetName,
-    // I think this is 'Naam openbare ruimte'
-    #[serde(rename = "verblijfplaats.verblijfadres.officieleStraatnaam")]
-    OfficialStreetName,
     #[serde(rename = "verblijfplaats.verblijfadres.huisnummer")]
     HouseNumber,
     #[serde(rename = "verblijfplaats.verblijfadres.huisletter")]

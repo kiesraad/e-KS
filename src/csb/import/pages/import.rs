@@ -202,12 +202,16 @@ async fn verify_candidates(store: Store<CsbStoreData>, brp_client: BrpClient) {
             .map(|cl| cl.id)
             .collect();
 
-        tracing::info!("Checking person {} against the brp", person.id);
         ticker.tick().await;
 
         match brp_client.verify(&person, candidate_lists).await {
             Ok(omissions) => {
                 let valid = omissions.is_empty();
+                tracing::info!(
+                    "Checking person {} against the brp {}",
+                    person.id,
+                    if valid { "(valid)" } else { "(invalid)" }
+                );
                 for omission in omissions {
                     if let Err(err) = omission.create(&store).await {
                         tracing::error!("failed to record BRP omission for {}: {err}", person.id);

@@ -76,7 +76,7 @@ impl BrpClient {
                     BrpField::Initials,
                     BrpField::LastNamePrefix,
                     BrpField::LastName,
-                    BrpField::OfficialStreetName,
+                    BrpField::StreetName,
                     BrpField::HouseNumber,
                     BrpField::HouseNumberAddition,
                     BrpField::PostalCode,
