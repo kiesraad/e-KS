@@ -64,6 +64,8 @@
 //! This layout keeps domain-specific routing and UI close to each other while
 //! sharing generic infrastructure via `core`, `auth`, `state`, and `store`.
 
+#[cfg(feature = "acme")]
+mod acme;
 mod auth;
 mod core;
 mod crypto;
@@ -86,14 +88,23 @@ pub mod router;
 #[cfg(feature = "fixtures")]
 mod fixtures;
 
-// The crate's public API is exactly what the `eks` binary needs; everything
+// The crate's public API is exactly what the binaries need; everything
 // else is re-exported `pub(crate)` so the flat `crate::X` import style keeps
 // working internally without growing the external interface.
+#[cfg(feature = "acme")]
+pub use acme::{
+    bootstrap_certificate, create_acme_account, parse_acme_account_credentials, run_acme_renewer,
+};
 pub use auth::session_store::run_session_sweeper;
 pub use core::{Config, logging, server};
 pub use error::AppError;
 pub use state::AppState;
 pub use store::run_db_prober;
+
+#[cfg(feature = "acme")]
+pub(crate) use acme::AcmeStore;
+#[cfg(feature = "acme")]
+pub(crate) use core::AcmeConfig;
 
 pub(crate) use middleware::{
     csb_store_middleware, db_gate_middleware, eks_key_middleware, health_router, lb_health_router,

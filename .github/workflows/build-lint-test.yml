@@ -247,7 +247,7 @@ jobs:
 
       - name: Build
         env:
-          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,tvs-mock"
+          CARGO_SET_FEATURES: "memory-serve,database,migrations,fixtures,tls,acme,tvs-mock"
         run: bin/build
 
       - name: Strip debug symbols
