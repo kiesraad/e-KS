@@ -21,6 +21,14 @@ test = false
 name = "pdf_diff"
 test = false
 
+[[bin]]
+name = "create_acme_account"
+test = false
+required-features = ["acme"]
+
+[features]
+acme = ["eks/acme"]
+
 [dependencies]
 anyhow = { workspace = true }
 tokio = { workspace = true, features = ["process"] }

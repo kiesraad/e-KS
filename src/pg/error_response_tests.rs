@@ -59,6 +59,27 @@ async fn database_error_maps_to_internal_server_error() {
     assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
 }
 
+#[cfg(feature = "acme")]
+#[tokio::test]
+async fn acme_error_maps_to_internal_server_error() {
+    let state = AppState::new_for_tests().await;
+    let store = crate::PgStore::new_for_test();
+    let app = Router::new()
+        .route(
+            "/",
+            get(|| async { AppError::AcmeError(instant_acme::Error::Str("boom")) }),
+        )
+        .layer(middleware::from_fn_with_state(state, render_error_pages));
+    let mut request = Request::builder().uri("/").body(Body::empty()).unwrap();
+    let mut session = crate::Session::new_test_with_locale(Locale::En);
+    session.set_stream_id(crate::StreamId::new());
+    request.extensions_mut().insert(session);
+    request.extensions_mut().insert(store);
+    let response = app.oneshot(request).await.expect("response");
+
+    assert_eq!(response.status(), StatusCode::INTERNAL_SERVER_ERROR);
+}
+
 fn get_multipart_error_request() -> Request<Body> {
     let body = "--boundary\r\n\
             Content-Disposition: form-data; name=\"fiel";
