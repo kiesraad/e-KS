@@ -18,7 +18,7 @@ fn collect_files_recursively(
 /// Finds translation keys used in templates and Rust sources under `path`.
 ///
 /// Keys are collected using simple regex scans and deduplicated
-fn find_used_keys(path: &std::path::Path) -> Vec<String> {
+pub fn find_used_keys(path: &std::path::Path) -> Vec<String> {
     let mut used_keys = Vec::new();
 
     let re = regex::Regex::new(r#""([\w\.]+)"\|trans"#).unwrap();

@@ -1,7 +1,3 @@
-include!("tooling/locales/collect_locale_files.rs");
-include!("tooling/locales/naive_yaml_parse.rs");
-include!("tooling/locales/load_locales.rs");
-
 fn main() {
     let out_dir = std::env::var("OUT_DIR").expect("OUT_DIR environment variable not set");
 
@@ -11,5 +7,8 @@ fn main() {
     #[cfg(feature = "memory-serve")]
     memory_serve::load_directory("./frontend/static");
 
-    load_locales(&out_dir);
+    eks_locales::load_locales(
+        std::path::Path::new(&out_dir),
+        std::path::Path::new("./locales"),
+    );
 }

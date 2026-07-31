@@ -101,9 +101,9 @@ Each configuration carries:
 
 ### Crates
 
-e-KS is a single Rust binary (`eks`) plus two supporting library crates. They are
-*not* a Cargo workspace: `validate` and `auth-service` are pulled in as
-path dependencies of the root crate, each keeping its own `Cargo.lock`.
+e-KS is a Cargo workspace: a single Rust binary (`eks`, the root crate) plus
+the member crates `validate`, `auth-service`, `development` and `tooling`,
+sharing one `Cargo.lock` and a workspace-level dependency list.
 
 - **`eks`** (root, `Cargo.toml` + `src/`): the application itself: an Axum web
   server with Askama HTML templates and an event-sourced domain model. The
@@ -123,6 +123,9 @@ path dependencies of the root crate, each keeping its own `Cargo.lock`.
   that brings up Docker dependencies and runs the app, the `setup` binary,
   `update_locales`, and `pdf_diff` (used by CI to to visualize PDF document
   differences).
+- **`tooling/`** (`eks-locales`): shared locale tooling, used by the `eks`
+  build script (locale codegen), the `eks` test suite (used-key scanning) and
+  the `update_locales` binary.
 
 Document generation is done in-process with the
 [`textris-pdf`](https://github.com/tweedegolf/textris-pdf) library: the PDF
@@ -358,6 +361,9 @@ Runtime configuration is read from environment variables once at startup into a
 | `ID_DERIVATION_KEY` | Master secret for stream-id derivation. |
 | `MASTER_ENCRYPTION_KEY` | Master secret from which the key-wrapping key for the per-stream encryption keys is derived. |
 | `TLS_CERT_PATH` / `TLS_KEY_PATH` | HTTPS certificate and key; both or neither. |
+| `ACME_DIRECTORY_URL` / `ACME_DOMAIN` | Enable ACME certificate renewal (`acme` feature): the CA directory (e.g. Let's Encrypt production or staging) and the FQDN to order for; both or neither, requires TLS. |
+| `ACME_ACCOUNT_CREDENTIALS` | ACME account credentials JSON from the `create_acme_account` tool; contains the account's private key, so supply it like the master secrets. Required when ACME is enabled. |
+| `ACME_ROOT_CA_PATH` | Optional extra trust root for the ACME directory's own TLS (pebble testing only). |
 | `SERVER_NAME` | Short server identifier shown in the page footer. |
 | `EKS_KEY` | Optional shared secret for the `x-eks-key` request gate. |
 | `BIND_ADDRESS` | Address the server binds to (also accepted as a CLI argument). |
@@ -388,7 +394,66 @@ and enables the embedding and TLS features.
 | `livereload` | Live-reload assets and templates during development. |
 | `memory-serve` | Serve the frontend assets embedded in the binary. |
 | `tls` | Serve over HTTPS via rustls. |
+| `acme` | Renew the TLS certificate via ACME (Let's Encrypt) http-01. |
 | `db-tests` / `net-tests` | Enable database- and network-dependent tests. |
+
+### ACME certificate renewal
+
+With the `acme` feature compiled in and `ACME_DIRECTORY_URL` + `ACME_DOMAIN`
+set, each instance renews its own certificate: a background task
+(`src/acme/renewer.rs`) checks daily whether the certificate at
+`TLS_CERT_PATH` expires within 30 days and, if so, orders a new one, writes
+the renewed cert/key back to the configured paths, and hot-reloads the running
+server without a restart. An instance may also start without provisioned
+cert/key files: at boot it writes a short-lived self-signed placeholder to
+the TLS paths (`src/acme/bootstrap.rs`) so the HTTPS server can come up, and
+the renewer replaces it with a real certificate on its first pass.
+
+Because the application is scaled horizontally, http-01 challenge tokens are
+stored in the database, so the CA's validation request to
+`/.well-known/acme-challenge/<token>` can be answered by any instance. That
+route is merged outside the `eks-key` gate, like `/lb-health`. Challenge
+tokens are public by protocol. Deployment prerequisites:
+
+- Provision `ACME_ACCOUNT_CREDENTIALS` (see below).
+- Apply `deploy/schema.sql` to the database manually before enabling
+  ACME (the `acme_challenges` table is not part of the startup migrations).
+- The CA dials `http://<domain>:80/.well-known/acme-challenge/...`; the load
+  balancer must forward that path to the instances, or redirect it to HTTPS
+  (the CA follows redirects and does not validate the certificate).
+- The cert/key files should be writable; on a read-only volume the renewed
+  certificate stays active in memory only and is lost on restart.
+
+#### Initializing the ACME account
+
+The ACME account is a deployment-level secret, not runtime state: it is
+created once per environment and deployed as configuration, like the master
+secrets. The application never registers accounts on its own; with ACME
+enabled it refuses to start without valid credentials.
+
+1. Create the account, from any machine with outbound HTTPS to the CA (no
+   inbound validation happens at registration):
+
+   ```sh
+   ACME_DIRECTORY_URL=https://acme-v02.api.letsencrypt.org/directory \
+   ACME_CONTACT=mailto:ops@example.nl \
+   cargo run -p eks-development --features acme --bin create_acme_account
+   ```
+
+   This registers an account (terms of service agreed, optional contact) and
+   prints its credentials as a single JSON line to stdout.
+2. Add that line to the environment file on every instance as
+   `ACME_ACCOUNT_CREDENTIALS=...`, alongside the other master secrets (never
+   on the command line). All instances share the one account; ACME accounts
+   are designed for concurrent reuse.
+3. At startup the application checks that the credentials parse and that
+   their embedded directory matches `ACME_DIRECTORY_URL`, so a staging
+   account can never be deployed against production (or vice versa); use a
+   separate account per directory.
+
+To rotate the account (e.g. after a suspected key leak), run step 1 again,
+replace the variable, and restart the instances. The old account can simply
+be abandoned; certificates it issued remain valid.
 
 ## Event storage and the event hash chain
 

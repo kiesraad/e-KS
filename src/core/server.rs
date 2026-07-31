@@ -14,7 +14,8 @@ use crate::{AppError, Config};
 pub async fn serve(router: Router, listener: TcpListener, config: &Config) -> Result<(), AppError> {
     #[cfg(feature = "tls")]
     if let Some(tls_config) = config.tls.as_ref() {
-        return tls::serve(router, listener, tls_config).await;
+        let rustls_config = build_rustls_config(tls_config).await?;
+        return serve_tls(router, listener, rustls_config).await;
     }
 
     #[cfg(not(feature = "tls"))]
@@ -31,6 +32,11 @@ pub async fn serve(router: Router, listener: TcpListener, config: &Config) -> Re
 
     Ok(())
 }
+
+#[cfg(feature = "acme")]
+pub(crate) use tls::server_config_from_pem;
+#[cfg(feature = "tls")]
+pub use tls::{build_rustls_config, serve_tls};
 
 #[cfg(feature = "tls")]
 mod tls {
@@ -53,15 +59,21 @@ mod tls {
 
     use crate::{AppError, TlsConfig};
 
-    pub async fn serve(
+    /// Rustls listener config from the configured cert/key files; the ACME
+    /// renewer hot-reloads renewed certificates through a clone.
+    pub async fn build_rustls_config(tls: &TlsConfig) -> Result<RustlsConfig, AppError> {
+        Ok(RustlsConfig::from_config(Arc::new(
+            build_server_config(tls).await?,
+        )))
+    }
+
+    /// Serve HTTPS with a pre-built [`RustlsConfig`] (HSTS + graceful shutdown).
+    pub async fn serve_tls(
         router: Router,
         listener: TcpListener,
-        tls: &TlsConfig,
+        config: RustlsConfig,
     ) -> Result<(), AppError> {
         let addr = listener.local_addr().map_err(AppError::ServerError)?;
-
-        let server_config = build_server_config(tls).await?;
-        let config = RustlsConfig::from_config(Arc::new(server_config));
 
         // HSTS: served only over TLS, so the header is meaningful here.
         // 1 year + includeSubDomains matches NCSC HTTPS guidance; preload is
@@ -88,9 +100,6 @@ mod tls {
         Ok(())
     }
 
-    /// Builds a rustls `ServerConfig` aligned with NCSC TLS 2025-05:
-    /// TLS 1.3 only ("Goed"), AEAD cipher suites, post-quantum hybrid key
-    /// exchange (X25519MLKEM768) preferred.
     async fn build_server_config(tls: &TlsConfig) -> Result<ServerConfig, AppError> {
         let cert_bytes = tokio::fs::read(&tls.cert_path)
             .await
@@ -99,10 +108,20 @@ mod tls {
             .await
             .map_err(AppError::ServerError)?;
 
-        let cert_chain: Vec<CertificateDer<'static>> = CertificateDer::pem_slice_iter(&cert_bytes)
+        server_config_from_pem(&cert_bytes, &key_bytes)
+    }
+
+    /// Builds a rustls `ServerConfig` aligned with NCSC TLS 2025-05:
+    /// TLS 1.3 only ("Goed"), AEAD cipher suites, post-quantum hybrid key
+    /// exchange (X25519MLKEM768) preferred.
+    pub(crate) fn server_config_from_pem(
+        cert_bytes: &[u8],
+        key_bytes: &[u8],
+    ) -> Result<ServerConfig, AppError> {
+        let cert_chain: Vec<CertificateDer<'static>> = CertificateDer::pem_slice_iter(cert_bytes)
             .collect::<Result<_, _>>()
             .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS cert PEM: {e}")))?;
-        let key = PrivateKeyDer::from_pem_slice(&key_bytes)
+        let key = PrivateKeyDer::from_pem_slice(key_bytes)
             .map_err(|e| AppError::ConfigLoadError(format!("invalid TLS key PEM: {e}")))?;
 
         let mut provider = aws_lc_rs::default_provider();
@@ -197,6 +216,17 @@ mod tests {
         let mut config = Config::new_test();
         config.tls = Some(tls);
         config
+    }
+
+    #[test]
+    fn server_config_from_pem_accepts_fixture_and_rejects_garbage() {
+        let tls = fixture_tls();
+        let cert = std::fs::read(&tls.cert_path).unwrap();
+        let key = std::fs::read(&tls.key_path).unwrap();
+
+        super::tls::server_config_from_pem(&cert, &key).expect("fixture cert/key");
+        assert!(super::tls::server_config_from_pem(b"garbage", &key).is_err());
+        assert!(super::tls::server_config_from_pem(&cert, b"garbage").is_err());
     }
 
     #[tokio::test]

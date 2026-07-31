@@ -47,6 +47,9 @@ pub enum AppError {
 
     AuthError(auth_service::error::AuthError),
 
+    #[cfg(feature = "acme")]
+    AcmeError(instant_acme::Error),
+
     NoStorageConfigured,
     IntegrityViolation,
 
@@ -97,6 +100,8 @@ impl Display for AppError {
             AppError::EventDecodeError(err) => write!(f, "Event decode error: {err}"),
             AppError::EmlError(err) => write!(f, "EML error: {err}"),
             AppError::AuthError(err) => write!(f, "Authentication error: {err}"),
+            #[cfg(feature = "acme")]
+            AppError::AcmeError(err) => write!(f, "ACME error: {err}"),
         }
     }
 }
@@ -248,6 +253,13 @@ impl From<auth_service::error::AuthError> for AppError {
         AppError::AuthError(err)
     }
 }
+
+#[cfg(feature = "acme")]
+impl From<instant_acme::Error> for AppError {
+    fn from(err: instant_acme::Error) -> Self {
+        AppError::AcmeError(err)
+    }
+}
 #[cfg(test)]
 mod tests {
     use crate::AppError;
@@ -298,5 +310,14 @@ mod tests {
         // Non-database errors are never infrastructure failures.
         assert!(!AppError::Unauthorised.is_infrastructure_failure());
         assert!(!AppError::GenericNotFound.is_infrastructure_failure());
+    }
+
+    #[cfg(feature = "acme")]
+    #[test]
+    fn converts_and_displays_acme_errors() {
+        let err = AppError::from(instant_acme::Error::Str("no http-01 challenge"));
+        assert!(err.to_string().starts_with("ACME error:"));
+        assert!(err.to_string().contains("no http-01 challenge"));
+        assert!(!err.is_infrastructure_failure());
     }
 }

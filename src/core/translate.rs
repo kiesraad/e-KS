@@ -15,9 +15,9 @@ macro_rules! trans {
 
 #[cfg(test)]
 mod tests {
-    use crate::translate::{LOCALE_EN, LOCALE_NL};
+    use eks_locales::find_used_keys;
 
-    include!("../../tooling/locales/find_used_keys.rs");
+    use crate::translate::{LOCALE_EN, LOCALE_NL};
 
     #[test]
     fn test_unused_translation_keys() {

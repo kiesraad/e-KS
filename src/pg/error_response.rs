@@ -201,6 +201,8 @@ impl ErrorResponse {
             ),
             #[cfg(feature = "database")]
             AppError::DatabaseError(_) => internal(),
+            #[cfg(feature = "acme")]
+            AppError::AcmeError(_) => internal(),
             AppError::InternalServerError
             | AppError::NoStorageConfigured
             | AppError::IntegrityViolation
