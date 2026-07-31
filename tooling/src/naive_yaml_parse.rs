@@ -38,7 +38,7 @@ fn pop_to_indent(prefix: &mut Vec<String>, last_indent: usize, indent: usize) {
 ///
 /// This ignores blank lines and comments, expects indentation in 2-space
 /// steps, and does not support complex YAML features.
-fn naive_yaml_parse(prefix: &str, yml: &str) -> Vec<(String, String)> {
+pub(crate) fn naive_yaml_parse(prefix: &str, yml: &str) -> Vec<(String, String)> {
     let mut results = Vec::new();
     let mut prefix = vec![prefix.to_string()];
     let mut last_indent: usize = 0;
@@ -53,7 +53,11 @@ fn naive_yaml_parse(prefix: &str, yml: &str) -> Vec<(String, String)> {
         if parsed.value.is_empty() {
             prefix.push(parsed.key.to_string());
         } else {
-            let value = parsed.value.trim_matches('"').trim_matches('\'').to_string();
+            let value = parsed
+                .value
+                .trim_matches('"')
+                .trim_matches('\'')
+                .to_string();
             results.push((format!("{}.{}", prefix.join("."), parsed.key), value));
         }
 
@@ -115,5 +119,58 @@ goodnight: Good night
         let output = naive_yaml_parse("messages", yaml);
 
         assert_eq!(output, expected);
+    }
+
+    #[test]
+    fn test_skips_comments_and_blank_lines() {
+        let yaml = r#"
+# leading comment
+greeting: "Hello"
+
+nested:
+  # inner comment
+  value: "Nested"
+
+goodnight: "Good night"
+"#;
+
+        let output = naive_yaml_parse("messages", yaml);
+
+        assert_eq!(
+            output,
+            vec![
+                ("messages.greeting".to_string(), "Hello".to_string()),
+                ("messages.nested.value".to_string(), "Nested".to_string()),
+                ("messages.goodnight".to_string(), "Good night".to_string()),
+            ]
+        );
+    }
+
+    #[test]
+    fn test_skips_lines_without_a_colon() {
+        let output = naive_yaml_parse("messages", "greeting: \"Hello\"\nnot a mapping line\n");
+
+        assert_eq!(
+            output,
+            vec![("messages.greeting".to_string(), "Hello".to_string())]
+        );
+    }
+
+    #[test]
+    #[should_panic(expected = "Keys containing '.' are not supported")]
+    fn test_rejects_dotted_keys() {
+        naive_yaml_parse("messages", "greeting.formal: \"Hello\"\n");
+    }
+
+    #[test]
+    #[should_panic(expected = "Multiline values are not supported")]
+    fn test_rejects_literal_block_values() {
+        naive_yaml_parse("messages", "greeting: |\n  Hello\n");
+    }
+
+    #[test]
+    #[should_panic(expected = "Multiline values are not supported")]
+    fn test_rejects_folded_block_values() {
+        naive_yaml_parse("messages", "greeting: >\n  Hello\n");
     }
 }

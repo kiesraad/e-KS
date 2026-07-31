@@ -20,12 +20,12 @@ jobs:
       pull-requests: write # to add a comment with the sigrid results
     steps:
       - name: Check out repository
-        uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
         with:
           persist-credentials: false
 
       - name: Sigrid CI
-        uses: Software-Improvement-Group/sigridci@22c056b2bd315a51d7867e681ec9374d72cb618c # main
+        uses: Software-Improvement-Group/sigridci@39939375047c74432ca8d1b2afd94fd4bc2b336c # main
         with:
           customer: kiesraad
           system: e-ks
