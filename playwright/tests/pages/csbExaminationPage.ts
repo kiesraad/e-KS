@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-export class ExaminationPage {
+export class CsbExaminationPage {
   readonly buttonFinalise: Locator;
   readonly linkAddPoliticalGroup: Locator;
   readonly headerExamination: Locator;
@@ -18,5 +18,7 @@ export class ExaminationPage {
     });
   }
 
-
+  async selectPoliticalGroup(politicalgroup: string) {
+    await this.page.getByRole("cell", { name: politicalgroup , exact: true }).click();
+  }
 }

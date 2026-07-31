@@ -7,7 +7,7 @@ export class CsbImportPage {
   readonly textfieldHashcode: Locator;
 
 
-  constructor(protected readonly page: Page) {
+  constructor( readonly page: Page) {
     this.buttonImport = this.page.getByRole("button", {
       name: "Importeren",
     });
