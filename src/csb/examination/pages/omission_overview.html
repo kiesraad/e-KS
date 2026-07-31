@@ -27,9 +27,9 @@
                 <p>In {{ view.districts }}</p>
                 <h5>{{ "csb.omission.overview.description"|trans }}</h5>
                 <p>{{ view.omission.description }}</p>
-                {% if !view.omission.help_text.is_empty() %}
+                {% if let Some(help_text) = view.omission.help_text() %}
                   <h5>{{ "csb.omission.overview.help_text"|trans }}</h5>
-                  <p>{{ view.omission.help_text }}</p>
+                  <p>{{ help_text }}</p>
                 {% endif %}
               </div>
               <button type="submit"

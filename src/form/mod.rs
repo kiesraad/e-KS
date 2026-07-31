@@ -9,7 +9,9 @@ pub use csrf::{TokenValue, csrf_token_matches, generate_csrf_token};
 pub use file_form::FileForm;
 pub use form_data::FormData;
 pub use merge_errors::MergeErrors;
-pub use string_validators::{is_teletex_char, validate_length, validate_teletex_chars};
+pub use string_validators::{
+    is_teletex_char, validate_length, validate_multi_line_teletex_chars, validate_teletex_chars,
+};
 pub use validation_error::ValidationError;
 
 use axum::extract::{FromRequest, Request};
