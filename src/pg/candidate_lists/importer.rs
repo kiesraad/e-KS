@@ -113,13 +113,25 @@ fn validate_record(
     candidate_number: usize,
     locale: Locale,
 ) -> Result<Person, ImportCandidateListError> {
-    record.validate_create().map_err(|error| {
-        ImportCandidateListError::Messages(field_error_messages(
-            candidate_number,
-            error.errors(),
-            locale,
-        ))
-    })
+    record
+        .validate_create()
+        .map(refresh_bag_checks)
+        .map_err(|error| {
+            ImportCandidateListError::Messages(field_error_messages(
+                candidate_number,
+                error.errors(),
+                locale,
+            ))
+        })
+}
+
+/// Imported addresses bypass the address forms, so refresh their BAG flags here.
+fn refresh_bag_checks(mut person: Person) -> Person {
+    person.address.update_is_known_in_bag();
+    if let Some(representative) = &mut person.representative {
+        representative.address.update_is_known_in_bag();
+    }
+    person
 }
 
 fn upsert_person(
@@ -523,6 +535,78 @@ mod tests {
             store.get_candidate_list(list_id)?.candidates.len(),
             MAX_CANDIDATES
         );
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_runs_bag_check_on_correspondence_address() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        list.create(&store).await?;
+
+        let csv = format!(
+            "{}\r\n{}{}",
+            csv_headers(),
+            "H.A.H.A.,Henk,,Jansen,Amsterdam,NL,kandidaat heeft geen BSN,01-02-1990,v,1012JS,1,,Dam,Amsterdam,,,,,,,,,\r\n",
+            "H.A.H.A.,Piet,,Pietersen,Juinen,NL,kandidaat heeft geen BSN,01-02-1990,v,1234AB,10,A,Stationsstraat,Juinen,,,,,,,,,\r\n"
+        );
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        let candidates = store.get_candidate_list(list_id)?.candidates;
+        let known = store.get_person(candidates[0])?;
+        let unknown = store.get_person(candidates[1])?;
+
+        assert_eq!(known.address.known_in_bag, Some(true));
+        assert_eq!(unknown.address.known_in_bag, Some(false));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn import_runs_bag_check_on_representative_address() -> Result<(), AppError> {
+        let store = PgStore::new_for_test();
+        let list_id = CandidateListId::new();
+        let mut list = sample_candidate_list(list_id);
+
+        list.create(&store).await?;
+
+        let csv = format!(
+            "{}\r\n{}",
+            csv_headers(),
+            "H.A.H.A.,Henk,,Jansen,Antwerp,BE,kandidaat heeft geen BSN,01-02-1990,v,,,,,,P.,Pietje,,Puk,1012JS,1,,Dam,Amsterdam\r\n"
+        );
+
+        import_candidate_list_csv(
+            &mut list,
+            &store,
+            csv.as_bytes(),
+            Locale::En,
+            "test.csv".to_string(),
+            0,
+        )
+        .await
+        .expect("import should succeed");
+
+        let candidate_id = store.get_candidate_list(list_id)?.candidates[0];
+        let representative = store
+            .get_person(candidate_id)?
+            .representative
+            .expect("representative should be present");
+
+        assert_eq!(representative.address.known_in_bag, Some(true));
 
         Ok(())
     }
