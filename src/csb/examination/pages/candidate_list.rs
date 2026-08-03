@@ -128,9 +128,11 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id));
         Omission::new(
             OmissionCategory::CandidateList(vec![list_id]),
-            "Too many candidates".to_string(),
-            "The list holds more candidates than allowed.".to_string(),
-            String::new(),
+            "Too many candidates".parse().unwrap(),
+            "The list holds more candidates than allowed."
+                .parse()
+                .unwrap(),
+            None,
         )
         .create(&store)
         .await

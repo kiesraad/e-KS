@@ -300,9 +300,9 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "Missing consent".to_string(),
-            "The declaration of consent is missing.".to_string(),
-            String::new(),
+            "Missing consent".parse().unwrap(),
+            "The declaration of consent is missing.".parse().unwrap(),
+            None,
         )
         .create(&store)
         .await

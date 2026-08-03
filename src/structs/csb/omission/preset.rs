@@ -111,6 +111,32 @@ pub mod tests {
     }
 
     #[test]
+    fn presets_fit_the_omission_field_constraints() {
+        // A preset-filled form must pass validation unmodified, so every
+        // preset has to parse into the constrained omission types.
+        use crate::structs::csb::{OmissionText, OmissionTitle};
+
+        for presets in PRESET_OMISSIONS.values() {
+            for preset in presets {
+                preset
+                    .title
+                    .parse::<OmissionTitle>()
+                    .unwrap_or_else(|e| panic!("preset title {:?}: {e:?}", preset.title));
+                preset
+                    .description
+                    .parse::<OmissionText>()
+                    .unwrap_or_else(|e| panic!("preset description {:?}: {e:?}", preset.title));
+                if !preset.help_text.is_empty() {
+                    preset
+                        .help_text
+                        .parse::<OmissionText>()
+                        .unwrap_or_else(|e| panic!("preset help text {:?}: {e:?}", preset.title));
+                }
+            }
+        }
+    }
+
+    #[test]
     fn interpolate_fills_known_tokens_and_keeps_the_rest() {
         let placeholders = OmissionPlaceholders {
             candidate_number: Some("3".to_string()),

@@ -189,27 +189,27 @@ mod tests {
 
         Omission::new(
             OmissionCategory::PoliticalGroup,
-            pg_title.clone(),
-            "description".to_string(),
-            "help_text".to_string(),
+            pg_title.parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
 
         Omission::new(
             OmissionCategory::CandidateList(vec![list_id]),
-            list_title.clone(),
-            "description".to_string(),
-            "help_text".to_string(),
+            list_title.parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
 
         Omission::new(
             OmissionCategory::DeclarationsOfSupport(vec![ElectoralDistrict::UT]),
-            dos_title.clone(),
-            "description".to_string(),
-            "help_text".to_string(),
+            dos_title.parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
@@ -219,9 +219,9 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            candidate_title.clone(),
-            "description".to_string(),
-            "help_text".to_string(),
+            candidate_title.parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
@@ -275,18 +275,18 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "candidate title".to_string(),
-            "description".to_string(),
-            "help_text".to_string(),
+            "candidate title".parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
 
         Omission::new(
             OmissionCategory::CandidateList(vec![list_id]),
-            "list title".to_string(),
-            "description".to_string(),
-            "help_text".to_string(),
+            "list title".parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await?;
@@ -417,9 +417,9 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "title".to_string(),
-            "description".to_string(),
-            "help_text".to_string(),
+            "title".parse().unwrap(),
+            "description".parse().unwrap(),
+            Some("help_text".parse().unwrap()),
         )
         .create(&store)
         .await
@@ -449,9 +449,9 @@ mod tests {
                     person: person_id,
                     lists: vec![list_id],
                 },
-                "title".to_string(),
-                "description".to_string(),
-                "help_text".to_string(),
+                "title".parse().unwrap(),
+                "description".parse().unwrap(),
+                Some("help_text".parse().unwrap()),
             )
             .create(&store)
             .await
