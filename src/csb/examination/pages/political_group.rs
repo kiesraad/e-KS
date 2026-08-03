@@ -270,9 +270,9 @@ mod tests {
         let stream_id = store.stream_id;
         Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Deposit missing".to_string(),
-            "The deposit has not been paid.".to_string(),
-            String::new(),
+            "Deposit missing".parse().unwrap(),
+            "The deposit has not been paid.".parse().unwrap(),
+            None,
         )
         .create(&store)
         .await

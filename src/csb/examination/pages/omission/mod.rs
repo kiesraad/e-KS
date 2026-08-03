@@ -550,18 +550,18 @@ mod tests {
         // A recoverable and an irreparable omission scoped to the list.
         Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Waarborgsom ontbreekt".to_string(),
-            "De waarborgsom ontbreekt.".to_string(),
-            "Betaal de waarborgsom.".to_string(),
+            "Waarborgsom ontbreekt".parse().unwrap(),
+            "De waarborgsom ontbreekt.".parse().unwrap(),
+            Some("Betaal de waarborgsom.".parse().unwrap()),
         )
         .create(&store)
         .await
         .unwrap();
         let mut irreparable = Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Aanduiding niet geregistreerd".to_string(),
-            "De aanduiding is niet geregistreerd.".to_string(),
-            String::new(),
+            "Aanduiding niet geregistreerd".parse().unwrap(),
+            "De aanduiding is niet geregistreerd.".parse().unwrap(),
+            None,
         );
         irreparable.recoverable = false;
         irreparable.create(&store).await.unwrap();
@@ -615,9 +615,9 @@ mod tests {
 
         let omission = Omission::new(
             OmissionCategory::CandidateList(vec![list]),
-            "Waarborgsom ontbreekt".to_string(),
-            "De waarborgsom ontbreekt.".to_string(),
-            String::new(),
+            "Waarborgsom ontbreekt".parse().unwrap(),
+            "De waarborgsom ontbreekt.".parse().unwrap(),
+            None,
         );
         omission.create(&store).await.unwrap();
         let omission_id = omission.id;
@@ -658,9 +658,9 @@ mod tests {
 
         let omission = Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Deposit missing".to_string(),
-            "The deposit is missing.".to_string(),
-            String::new(),
+            "Deposit missing".parse().unwrap(),
+            "The deposit is missing.".parse().unwrap(),
+            None,
         );
         omission.create(&store).await.unwrap();
         let omission_id = omission.id;
@@ -752,8 +752,11 @@ mod tests {
         assert!(location.contains(&format!("/list/{list}")));
 
         let omission = store.get_omission_for_test();
-        assert_eq!(omission.title, "Waarborgsom ontbreekt");
-        assert_eq!(omission.description, "De waarborgsom ontbreekt.");
+        assert_eq!(omission.title.to_string(), "Waarborgsom ontbreekt");
+        assert_eq!(
+            omission.description.to_string(),
+            "De waarborgsom ontbreekt."
+        );
         assert!(matches!(
             &omission.category,
             OmissionCategory::CandidateList(lists) if lists == &[list]

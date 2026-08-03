@@ -1,7 +1,11 @@
 use serde::Deserialize;
 use validate::Validate;
 
-use crate::{ElectoralDistrict, candidate_lists::CandidateListId, structs::csb::Omission};
+use crate::{
+    ElectoralDistrict,
+    candidate_lists::CandidateListId,
+    structs::csb::{Omission, OmissionText, OmissionTitle},
+};
 
 /// Form backing the "add omission" dialog. The category is not part of the form:
 /// it is derived from the dialog's path parameters and set on the resulting
@@ -10,12 +14,13 @@ use crate::{ElectoralDistrict, candidate_lists::CandidateListId, structs::csb::O
 #[validate(target = "Omission")]
 #[serde(default)]
 pub struct OmissionForm {
-    #[validate(not_empty)]
+    #[validate(parse = "OmissionTitle")]
     pub title: String,
     /// The description shown on model I 1.
-    #[validate(not_empty)]
+    #[validate(parse = "OmissionText")]
     pub description: String,
     /// The note added to the omission letter ("verzuimbrief").
+    #[validate(parse = "OmissionText", optional)]
     pub help_text: String,
     /// Whether the omission is recoverable ("herstelbaar"). Rendered as a
     /// checkbox: when it is unchecked the browser submits nothing, so serde
@@ -50,9 +55,12 @@ impl Default for OmissionForm {
 impl From<Omission> for OmissionForm {
     fn from(value: Omission) -> Self {
         OmissionForm {
-            title: value.title,
-            description: value.description,
-            help_text: value.help_text,
+            title: value.title.to_string(),
+            description: value.description.to_string(),
+            help_text: value
+                .help_text()
+                .map(ToString::to_string)
+                .unwrap_or_default(),
             recoverable: value.recoverable,
             electoral_districts: Vec::new(),
             candidate_lists: Vec::new(),
@@ -84,5 +92,41 @@ mod tests {
     #[test]
     fn fresh_form_defaults_to_recoverable() {
         assert!(OmissionForm::default().recoverable);
+    }
+
+    #[test]
+    fn title_rejects_line_breaks() {
+        let form = OmissionForm {
+            title: "titel met\nregeleinde".to_string(),
+            description: "omschrijving".to_string(),
+            ..OmissionForm::default()
+        };
+        let errors = form.validate_create().expect_err("newline in title");
+        assert!(errors.errors().iter().any(|(field, _)| field == "title"));
+    }
+
+    #[test]
+    fn description_allows_line_breaks_but_rejects_other_control_chars() {
+        let form = OmissionForm {
+            title: "titel".to_string(),
+            // A textarea submits \r\n line breaks; those must stay valid.
+            description: "regel één\r\nregel twee".to_string(),
+            help_text: "notitie\nmet regels".to_string(),
+            ..OmissionForm::default()
+        };
+        form.validate_create().expect("line breaks are valid");
+
+        let form = OmissionForm {
+            title: "titel".to_string(),
+            description: "omschrijving met \u{0008} backspace".to_string(),
+            ..OmissionForm::default()
+        };
+        let errors = form.validate_create().expect_err("control char");
+        assert!(
+            errors
+                .errors()
+                .iter()
+                .any(|(field, _)| field == "description")
+        );
     }
 }

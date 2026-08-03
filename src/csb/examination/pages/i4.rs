@@ -36,7 +36,7 @@ pub async fn gen_i4(
             by_district
                 .entry(district)
                 .or_default()
-                .push(omission.description);
+                .push(omission.description.to_string());
         }
 
         let designation = store.get_display_name(crate::csb::WithCorrections::All);

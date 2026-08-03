@@ -188,9 +188,9 @@ mod tests {
         let stream_id = store.stream_id;
         Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Deposit missing".to_string(),
-            "The deposit has not been paid.".to_string(),
-            String::new(),
+            "Deposit missing".parse().unwrap(),
+            "The deposit has not been paid.".parse().unwrap(),
+            None,
         )
         .create(&store)
         .await
@@ -221,9 +221,9 @@ mod tests {
         let stream_id = store.stream_id;
         let mut omission = Omission::new(
             OmissionCategory::PoliticalGroup,
-            "Unregistered designation".to_string(),
-            "The designation is not registered.".to_string(),
-            String::new(),
+            "Unregistered designation".parse().unwrap(),
+            "The designation is not registered.".parse().unwrap(),
+            None,
         );
         omission.recoverable = false;
         omission.create(&store).await.unwrap();

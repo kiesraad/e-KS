@@ -243,9 +243,9 @@ mod tests {
                 person: person_id,
                 lists: vec![list_id],
             },
-            "title".to_string(),
-            "description".to_string(),
-            "help_text".to_string(),
+            "title".parse().unwrap(),
+            "description".parse().unwrap(),
+            "help_text".parse().ok(),
         )
         .create(&store)
         .await
@@ -275,9 +275,9 @@ mod tests {
                     person: person_id,
                     lists: vec![list_id],
                 },
-                "title".to_string(),
-                "description".to_string(),
-                "help_text".to_string(),
+                "title".parse().unwrap(),
+                "description".parse().unwrap(),
+                "help_text".parse().ok(),
             )
             .create(&store)
             .await

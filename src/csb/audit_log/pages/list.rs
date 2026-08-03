@@ -318,9 +318,9 @@ mod tests {
         csb_store
             .update(CsbEvent::CreateOmission(Omission::new(
                 OmissionCategory::PoliticalGroup,
-                "test".to_string(),
-                "test".to_string(),
-                "test".to_string(),
+                "test".parse().unwrap(),
+                "test".parse().unwrap(),
+                Some("test".parse().unwrap()),
             )))
             .await?;
 
