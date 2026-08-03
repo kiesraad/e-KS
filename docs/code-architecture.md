@@ -225,7 +225,7 @@ member works across all imported streams.
 
 #### Scopes
 
-Sessions and streams both carry a `Scope` (`src/core/scope.rs`):
+Sessions and streams both carry a `Scope` (`src/core/scope.rs`) of one of the following variants:
 
 - **`PoliticalGroup`** (the default): a political-group session only reaches
   the single stream derived from its own identifier.
@@ -268,7 +268,7 @@ The CSB section has two projections of its own on the shared store machinery
   replays the source stream up to it (`PgStoreData::snapshot_until`), and
   persists the snapshot as a `CsbEvent::Import` on a **fresh** `ImportedByCsb`
   stream. The political group's own stream is never written to, and importing
-  the same source stream twice is rejected.
+  the same source stream twice is rejected (might change with #999).
 - **`examination`**: the examination of the imported lists. An overview
   groups the imported political groups by finished/unfinished; detail pages
   render the imported data read-only; omissions and corrections are recorded
@@ -289,9 +289,9 @@ An **omission** (*verzuim*) is a defect found during examination.
 `OmissionCategory` ties each omission to what it concerns: the political
 group itself, a candidate list (with the affected electoral districts), or a
 candidate (with the affected lists). Recoverable omissions feed the I 4
-notice. A **correction** (`CsbEvent::UpdateCorrection`) records a fix to
+notice. A **correction** (*ambtshalve correctie*) (`CsbEvent::UpdateCorrection`) records a fix to
 imported person data (initials, last name, date of birth, place of
-residence); corrected persons are kept in a separate map in the projection
+residence); corrections on persons are kept in a separate map in the projection
 (`csb_corrected_persons`), so the imported snapshot itself stays untouched.
 
 #### Paper-corrections mode
@@ -321,7 +321,8 @@ order on an incoming request is:
    key is unset this layer is a no-op. Intended for gating the app behind a
    known upstream.
 2. **Tracing and security headers.** HTTP tracing is opened, and the security
-   response headers (CSP, `X-Frame-Options`, etc.) are scheduled.
+2. **Tracing and security headers.** HTTP tracing is opened, and the security
+response headers (CSP, `X-Frame-Options`, etc.) are scheduled for development.
 3. **`session_middleware`.** Reads the `EKS_SESSION_ID` cookie and looks the
    session up in the `SessionStore`. A missing or invalid session redirects to
    `/login`. Otherwise the session's `last_activity` is refreshed and the
