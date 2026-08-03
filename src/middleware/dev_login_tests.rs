@@ -217,6 +217,40 @@ async fn dev_login_with_fixtures_loads_fixture_data() {
     assert!(store.get_candidate_list_count() > 0);
 }
 
+/// The `name` query sets the fixture group's display name and the redirect
+/// carries the chain hash of the stream's last event.
+#[cfg(feature = "fixtures")]
+#[tokio::test]
+async fn dev_login_with_fixtures_uses_name_and_returns_last_event_hash() {
+    let (state, app) = test_app().await;
+
+    let response = app
+        .oneshot(dev_login_request("fixtures=true&name=Unieke%20Groep"))
+        .await
+        .expect("response");
+
+    assert_eq!(response.status(), StatusCode::SEE_OTHER);
+
+    let store = open_store(&state).await;
+    assert_eq!(
+        store
+            .get_political_group()
+            .display_name
+            .expect("display name")
+            .to_string(),
+        "Unieke Groep"
+    );
+
+    let last_hash = store.get_events().last().expect("events").hash;
+    let header = response
+        .headers()
+        .get(crate::middleware::dev_login::LAST_EVENT_HASH_HEADER)
+        .expect("hash header")
+        .to_str()
+        .expect("ascii header");
+    assert_eq!(header, crate::utils::format_hash(&last_hash, false));
+}
+
 #[tokio::test]
 async fn dev_login_scopes_session_to_political_group() {
     let (state, app) = test_app().await;

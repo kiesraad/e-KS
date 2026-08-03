@@ -3,6 +3,12 @@ import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage";
 import { SelectElectionPage } from "./pages/selectElectionPage";
 
+type CsbLogin = {
+  page: Page;
+  groupName: string;
+  lastEventHash: string;
+};
+
 type Fixtures = {
   login: Page;
   noExistingData: Page;
@@ -10,6 +16,7 @@ type Fixtures = {
   provincialCouncilElection: Page;
   provincialCouncilFrisianElection: Page;
   waterAuthorityElection: Page;
+  csbLogin: CsbLogin;
 };
 
 export const test = base.extend<Fixtures>({
@@ -21,6 +28,20 @@ export const test = base.extend<Fixtures>({
   noExistingData: async ({ page }, use) => {
     await page.goto("/dev/login?fixtures=false");
     await use(page);
+  },
+
+  // Load fixtures into a fresh political-group stream with a unique name and
+  // capture the chain hash of its last event, then log in as CSB. The hash can
+  // be entered on the CSB import page to import the group.
+  csbLogin: async ({ page }, use) => {
+    const groupName = `Test Partij ${Math.random().toString(36).slice(2, 10)}`;
+    const response = await page.request.get(
+      `/dev/login?fixtures=true&name=${encodeURIComponent(groupName)}`,
+      { maxRedirects: 0 },
+    );
+    const lastEventHash = response.headers()["x-last-event-hash"] ?? "";
+    await page.goto("/dev/login?csb=true");
+    await use({ page, groupName, lastEventHash });
   },
 
   deleteExistingCandidateLists: async ({ page }, use) => {
