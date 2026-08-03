@@ -307,7 +307,7 @@ impl CsbPoliticalGroup {
         .with_query_params(OmissionListQuery { list: Some(*list) })
     }
 
-    pub fn correction_person_path_from_all_rectifications(
+    pub fn correction_person_path_from_all_restorations(
         &self,
         person: &PersonId,
         field: CandidateCorrectionField,

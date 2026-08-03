@@ -72,7 +72,7 @@ impl CsbStore {
     }
 
     /// get the total number of CSB corrections and omissions
-    pub fn get_rectification_count(&self) -> usize {
+    pub fn get_restoration_count(&self) -> usize {
         self.get_omission_count() + self.get_correction_count()
     }
 

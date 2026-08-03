@@ -22,8 +22,8 @@
     <a class="button secondary icon-restoration"
        href="{{ political_group.all_restorations_path() }}">
       {{ "csb.all_restorations.title"|trans }}
-      {% if restoration_count > 0 %}
-        <span class="restoration_count">{{ restoration_count }}</span>
+      {% if political_group.restoration_count > 0 %}
+        <span class="restoration_count">{{ political_group.restoration_count }}</span>
       {% endif %}
     </a>
     <a href="{{ back_url }}" class="button secondary">{{ "action.back"|trans }}</a>

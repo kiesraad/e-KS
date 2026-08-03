@@ -27,7 +27,6 @@ struct CsbCandidateTemplate {
     details: PaperCorrectedPersonDetails,
     position: PaperCorrected,
     candidate_omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 pub async fn overview(
@@ -78,7 +77,6 @@ pub async fn overview(
             details,
             position,
             candidate_omissions,
-            restoration_count: store.get_rectification_count(),
         },
         context,
     )

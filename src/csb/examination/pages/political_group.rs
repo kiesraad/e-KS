@@ -25,7 +25,6 @@ struct CsbPoliticalGroupTemplate {
     political_group_omission_count: usize,
     declarations_of_support_omission_count: usize,
     declarations_of_support_card_path: String,
-    restoration_count: usize,
 }
 
 /// Render the placeholder political group overview page.
@@ -78,7 +77,6 @@ pub async fn overview(
             political_group_omission_count,
             declarations_of_support_omission_count,
             declarations_of_support_card_path,
-            restoration_count: store.get_rectification_count(),
         },
         context,
     )

@@ -17,7 +17,6 @@ struct CsbAllRestorationsTemplate {
     political_group: CsbPoliticalGroup,
     omission_count: usize,
     correction_count: usize,
-    restoration_count: usize,
     all_omissions: AllOmissions,
     all_corrections: AllCsbCorrections,
 }
@@ -37,7 +36,6 @@ pub async fn all_restorations(
             political_group,
             omission_count,
             correction_count,
-            restoration_count: store.get_rectification_count(),
         },
         context,
     )

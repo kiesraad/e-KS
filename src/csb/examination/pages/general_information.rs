@@ -25,7 +25,6 @@ struct CsbGeneralInformationTemplate {
     list_submitter: Option<PaperCorrectedSubmitter>,
     substitute_submitters: Vec<PaperCorrectedSubmitter>,
     political_group_omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 /// Render the placeholder general information (basisgegevens) page for a
@@ -43,7 +42,6 @@ pub async fn overview(
             list_submitter: paper_corrected_list_submitter(&store),
             substitute_submitters: paper_corrected_substitute_submitters(&store),
             political_group_omissions: store.get_political_group_omissions(),
-            restoration_count: store.get_rectification_count(),
         },
         context,
     )

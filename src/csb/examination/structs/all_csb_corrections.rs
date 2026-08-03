@@ -114,7 +114,7 @@ impl CsbStore {
                         label: field.label(locale),
                         corrected,
                         edit_path: political_group
-                            .correction_person_path_from_all_rectifications(person, field)
+                            .correction_person_path_from_all_restorations(person, field)
                             .to_string(),
                     },
                 )
