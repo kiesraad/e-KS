@@ -33,7 +33,7 @@ pub async fn all_restorations(
     Ok(HtmlTemplate(
         CsbAllRestorationsTemplate {
             all_omissions: store.get_all_omissions(&political_group)?,
-            all_corrections: store.get_all_corrections(context.session.locale)?,
+            all_corrections: store.get_all_corrections(&political_group, context.session.locale),
             political_group,
             omission_count,
             correction_count,
@@ -50,11 +50,11 @@ mod tests {
     use reqwest::StatusCode;
 
     use crate::{
-        ElectoralDistrict,
+        CsbEvent, ElectoralDistrict,
         candidate_lists::{CandidateList, CandidateListId},
-        common::UtcDateTime,
+        common::{PlaceOfResidence, UtcDateTime},
         persons::PersonId,
-        structs::csb::{Omission, OmissionCategory},
+        structs::csb::{Correction, Omission, OmissionCategory, PersonCorrection},
         test_utils::{response_body_string, sample_person},
     };
 
@@ -195,6 +195,49 @@ mod tests {
         let body = response_body_string(response).await;
         assert!(body.contains("candidate title"));
         assert!(body.contains("list title"));
+
+        Ok(())
+    }
+
+    #[tokio::test]
+    async fn all_restorations_shows_corrections_for_paper_added_candidates() -> Result<(), AppError>
+    {
+        let store = CsbStore::new_for_test();
+
+        // The candidate only exists in the corrected projection: it was added
+        // during paper corrections.
+        let person_id = PersonId::new();
+        store
+            .data
+            .write()
+            .paper_corrected_data
+            .persons
+            .insert(person_id, sample_person(person_id));
+
+        store
+            .update(CsbEvent::UpdateCorrection(Correction::Person(
+                person_id,
+                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
+                    "Amsterdam".to_string(),
+                )),
+            )))
+            .await?;
+
+        let response = all_restorations(
+            CsbAllRestorationsPath {
+                stream_id: store.stream_id,
+            },
+            CsbContext::new_test(),
+            store,
+        )
+        .await?;
+
+        assert_eq!(response.status(), StatusCode::OK);
+        let body = response_body_string(response).await;
+        // The corrected place of residence renders next to the struck-through
+        // paper-corrected one.
+        assert!(body.contains(r#"<s class="imported-value">Juinen</s>"#));
+        assert!(body.contains(r#"<strong class="csb-corrected-value">Amsterdam</strong>"#));
 
         Ok(())
     }

@@ -72,6 +72,21 @@ impl PersonCorrection {
         }
     }
 
+    /// Whether applying this correction would change the person, i.e. its
+    /// value differs from the one the person already has.
+    pub fn changes(&self, person: &Person) -> bool {
+        match self {
+            PersonCorrection::Initials(initials) => &person.name.initials != initials,
+            PersonCorrection::LastName(last_name) => &person.name.last_name != last_name,
+            PersonCorrection::DateOfBirth(date_of_birth) => {
+                person.personal_data.date_of_birth.as_ref() != Some(date_of_birth)
+            }
+            PersonCorrection::PlaceOfResidence(place_of_residence) => {
+                person.personal_data.place_of_residence.as_ref() != Some(place_of_residence)
+            }
+        }
+    }
+
     pub fn change(&self, locale: Locale) -> FieldChange {
         let (field, new_value) = match self {
             PersonCorrection::Initials(v) => (

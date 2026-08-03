@@ -7,7 +7,7 @@ use crate::{
     common::{DateOfBirth, Initials, LastName, PlaceOfResidence},
     csb::examination::extractors::CsbPoliticalGroup,
     form::ValidationError,
-    persons::{Person, PersonId},
+    persons::PersonId,
     structs::csb::PersonCorrection,
 };
 
@@ -64,23 +64,5 @@ fn parse_person_correction(
         CandidateCorrectionField::PlaceOfResidence => value
             .parse::<PlaceOfResidence>()
             .map(PersonCorrection::PlaceOfResidence),
-    }
-}
-
-/// Extract the string representation of a specific field from a person,
-/// using the same formatting as the examination page display.
-fn extract_field(field: CandidateCorrectionField, person: &Person) -> String {
-    match field {
-        CandidateCorrectionField::Initials => person.name.initials.to_string(),
-        CandidateCorrectionField::LastName => person.name.last_name_with_prefix(),
-        CandidateCorrectionField::DateOfBirth => {
-            DateOfBirth::format_option(&person.personal_data.date_of_birth)
-        }
-        CandidateCorrectionField::PlaceOfResidence => person
-            .personal_data
-            .place_of_residence
-            .as_ref()
-            .map(|p| p.to_string())
-            .unwrap_or_default(),
     }
 }

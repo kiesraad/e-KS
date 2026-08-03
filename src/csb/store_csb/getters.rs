@@ -175,12 +175,9 @@ impl CsbStore {
 
     /// The person (candidate) with this id, if any.
     pub fn get_person(&self, person_id: PersonId, corrections: WithCorrections) -> Option<Person> {
-        let data = self.read(corrections);
-
-        let person = data.persons.get(&person_id).cloned();
+        let mut person = self.read(corrections).persons.get(&person_id).cloned()?;
 
         if corrections == WithCorrections::All
-            && let Some(mut person) = person.clone()
             && let Some(delta) = self
                 .data
                 .read()
@@ -189,10 +186,9 @@ impl CsbStore {
                 .cloned()
         {
             delta.apply(&mut person);
-            Some(person)
-        } else {
-            person
         }
+
+        Some(person)
     }
 
     pub fn get_all_csb_corrected_persons(&self) -> Vec<PersonId> {

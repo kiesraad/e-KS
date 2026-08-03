@@ -90,52 +90,7 @@ impl StoreData for CsbStoreData {
             CsbEvent::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
-            CsbEvent::UpdateCorrection(correction) => match correction {
-                Correction::DisplayName(display_name) => {
-                    let display_name = Some(display_name);
-                    if self.paper_corrected_data.political_group.display_name == display_name {
-                        self.csb_corrected_display_name = None;
-                    } else {
-                        self.csb_corrected_display_name = display_name;
-                    }
-                }
-                Correction::Person(person_id, correction) => {
-                    let person = self.paper_corrected_data.persons.get(&person_id);
-                    let should_keep = if let Some(person) = person {
-                        match &correction {
-                            PersonCorrection::Initials(initials) => {
-                                &person.name.initials != initials
-                            }
-                            PersonCorrection::LastName(last_name) => {
-                                &person.name.last_name != last_name
-                            }
-                            PersonCorrection::DateOfBirth(date_of_birth) => {
-                                person.personal_data.date_of_birth.as_ref() != Some(date_of_birth)
-                            }
-                            PersonCorrection::PlaceOfResidence(place_of_residence) => {
-                                person.personal_data.place_of_residence.as_ref()
-                                    != Some(place_of_residence)
-                            }
-                        }
-                    } else {
-                        false
-                    };
-
-                    if should_keep {
-                        self.csb_corrected_persons
-                            .entry(person_id)
-                            .or_default()
-                            .add_correction(correction);
-                    } else if let Entry::Occupied(mut entry) =
-                        self.csb_corrected_persons.entry(person_id)
-                    {
-                        entry.get_mut().remove_correction(&correction);
-                        if entry.get().get_corrections().is_empty() {
-                            entry.remove_entry();
-                        }
-                    }
-                }
-            },
+            CsbEvent::UpdateCorrection(correction) => self.apply_correction(correction),
         }
     }
 
@@ -145,6 +100,50 @@ impl StoreData for CsbStoreData {
 
     fn scope() -> Scope {
         Scope::ImportedByCsb
+    }
+}
+
+impl CsbStoreData {
+    /// Record a CSB correction. Correcting a value back to the one already in
+    /// the paper-corrected projection undoes the correction instead.
+    fn apply_correction(&mut self, correction: Correction) {
+        match correction {
+            Correction::DisplayName(display_name) => {
+                let display_name = Some(display_name);
+
+                self.csb_corrected_display_name =
+                    if self.paper_corrected_data.political_group.display_name == display_name {
+                        None
+                    } else {
+                        display_name
+                    };
+            }
+            Correction::Person(person_id, correction) => {
+                self.apply_person_correction(person_id, correction)
+            }
+        }
+    }
+
+    fn apply_person_correction(&mut self, person_id: PersonId, correction: PersonCorrection) {
+        // A correction on an unknown person is dropped: there is nothing to
+        // correct it against.
+        let changes = self
+            .paper_corrected_data
+            .persons
+            .get(&person_id)
+            .is_some_and(|person| correction.changes(person));
+
+        if changes {
+            self.csb_corrected_persons
+                .entry(person_id)
+                .or_default()
+                .add_correction(correction);
+        } else if let Entry::Occupied(mut entry) = self.csb_corrected_persons.entry(person_id) {
+            entry.get_mut().remove_correction(&correction);
+            if entry.get().get_corrections().is_empty() {
+                entry.remove_entry();
+            }
+        }
     }
 }
 
