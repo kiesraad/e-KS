@@ -93,10 +93,7 @@ impl BrpClient {
             }
             None => {
                 // TODO: This needs to be implemented
-                tracing::warn!(
-                    "Person {} does not have a BSN filled in (or none confirmed)",
-                    person.id,
-                );
+                tracing::warn!("Person {} does not have a BSN filled in", person.id,);
                 return Err(AppError::GenericNotFound);
             }
         };

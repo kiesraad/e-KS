@@ -14,7 +14,9 @@ use crate::{
         WithCorrections,
         examination::{CsbExaminationOverviewPath, CsbPoliticalGroupPath},
     },
-    filters, redirect_success,
+    filters,
+    persons::Person,
+    redirect_success,
     store::Store,
     structs::brp::{BrpClient, BrpStatus},
     trans,
@@ -153,7 +155,8 @@ pub async fn create_empty(
     }))
 }
 
-/// Performs the BRP validation in a separate task
+/// Verifies every candidate against the BRP in a background task. Returns
+/// immediately after spawning it instead of waiting for it to finish.
 pub async fn do_brp_verification(
     store: &Store<CsbStoreData>,
     brp_client: &BrpClient,
@@ -162,74 +165,53 @@ pub async fn do_brp_verification(
         .update(CsbEvent::SetBrpStatus(BrpStatus::InProgress))
         .await?;
 
-    let brp_client = brp_client.clone();
-    let task_store = store.clone();
-    tokio::task::spawn(async move {
-        let task = tokio::task::spawn(verify_candidates(task_store.clone(), brp_client));
-
-        if let Err(e) = task.await
-            && e.is_panic()
-            && let Err(err) = task_store
-                .update(CsbEvent::SetBrpStatus(BrpStatus::Aborted(e.to_string())))
-                .await
-        {
-            tracing::error!("Failed to record aborted BRP status: {err}");
-        }
-    });
+    // Spawned and intentionally not awaited here: verifying every candidate is
+    // slow, and this must not block the request that triggered it.
+    tokio::task::spawn(monitor_verification(store.clone(), brp_client.clone()));
 
     Ok(())
 }
 
-/// Check every not-yet-validated candidate on `store` against the BRP,
-/// recording an omission for each mismatch and marking the candidate as
-/// validated on success. Candidates already present in
-/// `CsbStoreData::brp_validations` are skipped, so a later call resumes instead
-/// of re-checking everyone.
-async fn verify_candidates(store: Store<CsbStoreData>, brp_client: BrpClient) {
+async fn monitor_verification(store: Store<CsbStoreData>, brp_client: BrpClient) {
+    let outcome = tokio::task::spawn(verify_candidates(store.clone(), brp_client)).await;
+
+    let error = match outcome {
+        Ok(Ok(())) => return,
+        Ok(Err(err)) => err.to_string(),
+        Err(join_err) => join_err.to_string(),
+    };
+
+    if let Err(err) = store
+        .update(CsbEvent::SetBrpStatus(BrpStatus::Aborted(error)))
+        .await
+    {
+        tracing::error!("failed to record aborted BRP status: {err}");
+    }
+}
+
+/// Check every not-yet-validated candidate on `store` against the BRP.
+/// Candidates already present in `CsbStoreData::brp_validations` are skipped,
+/// so a later call resumes instead of re-checking everyone. A single
+/// candidate's failure is logged and does not stop the rest of the sweep; only
+/// a failure to record the final status is propagated to the caller.
+async fn verify_candidates(
+    store: Store<CsbStoreData>,
+    brp_client: BrpClient,
+) -> Result<(), AppError> {
     let already_validated = store.get_brp_validations();
     let mut ticker = tokio::time::interval(BRP_COURTESY_TIMEOUT);
 
     for person in store.get_persons(WithCorrections::None) {
         if already_validated.contains_key(&person.id) {
-            tracing::info!("Person {} has already been validated", person.id);
+            tracing::debug!("Person {} has already been validated", person.id);
             continue;
         }
 
-        let candidate_lists = store
-            .get_candidate_lists(WithCorrections::None)
-            .iter()
-            .filter(|cl| cl.candidates.contains(&person.id))
-            .map(|cl| cl.id)
-            .collect();
-
+        tracing::info!("Checking person {} against the brp", person.id);
         ticker.tick().await;
 
-        match brp_client.verify(&person, candidate_lists).await {
-            Ok(omissions) => {
-                let valid = omissions.is_empty();
-                tracing::info!(
-                    "Checking person {} against the brp {}",
-                    person.id,
-                    if valid { "(valid)" } else { "(invalid)" }
-                );
-                for omission in omissions {
-                    if let Err(err) = omission.create(&store).await {
-                        tracing::error!("failed to record BRP omission for {}: {err}", person.id);
-                    }
-                }
-                if let Err(err) = store
-                    .update(CsbEvent::BrpPersonValidated {
-                        person: person.id,
-                        valid,
-                    })
-                    .await
-                {
-                    tracing::error!("failed to record BRP validation for {}: {err}", person.id);
-                }
-            }
-            Err(_) => {
-                tracing::error!("BRP verification failed for {}", person.id);
-            }
+        if let Err(err) = verify_candidate(&store, &brp_client, &person).await {
+            tracing::error!("BRP verification failed for {}: {err}", person.id);
         }
     }
 
@@ -238,12 +220,39 @@ async fn verify_candidates(store: Store<CsbStoreData>, brp_client: BrpClient) {
         store.data.read().imported_data.political_group
     );
 
-    if let Err(e) = store
+    store
         .update(CsbEvent::SetBrpStatus(BrpStatus::Finished))
         .await
-    {
-        tracing::error!("Failed to set BRP validation to false: {e}");
+}
+
+/// Verify this candidate against the BRP, creating omissions that contain the
+/// lists this candidate is on. Finally, the store is updated with a
+/// `BrpPersonValidated` event.
+async fn verify_candidate(
+    store: &Store<CsbStoreData>,
+    brp_client: &BrpClient,
+    person: &Person,
+) -> Result<(), AppError> {
+    let candidate_lists = store
+        .get_candidate_lists(WithCorrections::None)
+        .iter()
+        .filter(|cl| cl.candidates.contains(&person.id))
+        .map(|cl| cl.id)
+        .collect();
+
+    let omissions = brp_client.verify(person, candidate_lists).await?;
+    let valid = omissions.is_empty();
+
+    for omission in omissions {
+        omission.create(store).await?;
     }
+
+    store
+        .update(CsbEvent::BrpPersonValidated {
+            person: person.id,
+            valid,
+        })
+        .await
 }
 
 #[cfg(test)]
