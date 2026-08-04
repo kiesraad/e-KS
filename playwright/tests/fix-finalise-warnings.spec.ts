@@ -93,7 +93,7 @@ test.describe("fix submit warnings", async () => {
     const manageCandidateListPage = new ManageCandidateListPage(page);
     await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
     await expect(
-      await manageCandidateListPage.getCandidateLocator("Nagelhout"),
+      await manageCandidateListPage.getCandidateLocator("Smit"),
     ).toBeVisible();
     await manageCandidateListPage.buttonFinalise.click();
     await page.waitForURL("/finalise");
