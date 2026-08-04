@@ -31,6 +31,9 @@ pub struct AppState {
     /// (eID §9.7), backed by the configured storage so they survive restarts
     /// and are shared across instances.
     pub pending_requests: PendingRequestStore,
+    /// ACME challenge tokens, shared across instances.
+    #[cfg(feature = "acme")]
+    pub acme_store: crate::AcmeStore,
     pub id_deriver: IdDeriver,
     pub auth_service_state: AuthServiceState,
     pub db_health: DbHealth,
@@ -80,6 +83,9 @@ impl AppState {
             AuthServiceState::new_from_env().await?
         };
 
+        #[cfg(feature = "acme")]
+        let acme_store = crate::AcmeStore::from_storage_url(config.storage_url.expose_secret())?;
+
         Ok(Self {
             config: Box::leak(Box::new(config)),
             store_registry,
@@ -87,6 +93,8 @@ impl AppState {
             csb_main_store_registry,
             sessions,
             pending_requests,
+            #[cfg(feature = "acme")]
+            acme_store,
             id_deriver,
             auth_service_state,
             db_health: DbHealth::default(),
@@ -104,7 +112,7 @@ impl AppState {
             self.store_registry
                 .get_or_create_with_init(stream_id, election, |store| async move {
                     if store.data.read().events.is_empty() && load_fixtures {
-                        crate::fixtures::load(&PgStore::own(store)).await?;
+                        crate::fixtures::load(&PgStore::own(store), None).await?;
                     }
                     Ok(())
                 })
@@ -178,6 +186,10 @@ impl AppState {
         let csb_main_store_registry =
             StoreRegistry::with_persistence(store_registry.persistence().clone(), master);
 
+        #[cfg(feature = "acme")]
+        let acme_store = crate::AcmeStore::from_storage_url(config.storage_url.expose_secret())
+            .expect("test AcmeStore must initialize");
+
         Self {
             store_registry,
             csb_store_registry,
@@ -185,6 +197,8 @@ impl AppState {
             config: Box::leak(Box::new(config)),
             sessions,
             pending_requests,
+            #[cfg(feature = "acme")]
+            acme_store,
             id_deriver,
             auth_service_state,
             db_health: DbHealth::default(),

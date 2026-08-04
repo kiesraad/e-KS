@@ -38,6 +38,17 @@ pub fn validate_teletex_chars(value: &str) -> Result<(), ValidationError> {
     })
 }
 
+/// [`validate_teletex_chars`], but with line breaks allowed (textarea fields).
+pub fn validate_multi_line_teletex_chars(value: &str) -> Result<(), ValidationError> {
+    value.chars().try_for_each(|c| {
+        if c == '\n' || is_teletex_char(c) {
+            Ok(())
+        } else {
+            Err(ValidationError::InvalidValue)
+        }
+    })
+}
+
 pub fn is_teletex_char(c: char) -> bool {
     let code = c as u32;
     (32..127).contains(&code) || (161..383).contains(&code)
@@ -68,6 +79,19 @@ mod tests {
 
         let err = validate_length("abcdef", 1, 5).expect_err("too long");
         assert_eq!(err, ValidationError::ValueTooLong(6, 5));
+    }
+
+    #[test]
+    fn validate_multi_line_teletex_chars_allows_only_line_breaks_extra() {
+        assert!(validate_multi_line_teletex_chars("regel één\nregel twee").is_ok());
+        assert_eq!(
+            validate_multi_line_teletex_chars("tab\there").expect_err("tab"),
+            ValidationError::InvalidValue
+        );
+        assert_eq!(
+            validate_multi_line_teletex_chars("regel\réinde").expect_err("bare carriage return"),
+            ValidationError::InvalidValue
+        );
     }
 
     #[test]

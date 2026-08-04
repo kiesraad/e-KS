@@ -13,6 +13,7 @@ pub struct CsbPoliticalGroup {
     pub political_group: PoliticalGroup,
     pub stream_id: StreamId,
     pub is_examination_finished: bool,
+    pub restoration_count: usize,
     pub omission_count: usize,
     pub first_candidate_name: Option<FullName>,
 }
@@ -23,6 +24,7 @@ impl CsbPoliticalGroup {
             political_group: store.get_political_group(crate::csb::WithCorrections::All),
             stream_id: store.stream_id,
             is_examination_finished: store.is_examination_finished(),
+            restoration_count: store.get_restoration_count(),
             omission_count: store.get_omission_count(),
             first_candidate_name: store.get_first_candidate_name(crate::csb::WithCorrections::All),
         }
@@ -132,6 +134,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         };
@@ -148,6 +151,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: Some(FullName {
                 last_name: "Jansen".parse().unwrap(),
@@ -168,6 +172,7 @@ mod tests {
             },
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         };

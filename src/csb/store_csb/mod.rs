@@ -5,7 +5,7 @@ mod getters;
 pub use event::CsbEvent;
 pub use getters::WithCorrections;
 
-use std::collections::HashMap;
+use std::collections::{HashMap, hash_map::Entry};
 
 use serde::{Deserialize, Serialize};
 
@@ -14,9 +14,9 @@ use crate::structs::political_groups::PoliticalGroup;
 use crate::{
     PgStoreData, Scope,
     common::{DisplayName, UtcDateTime},
-    persons::{Person, PersonId},
+    persons::PersonId,
     store::{StoreData, StoreEvent},
-    structs::csb::{Correction, Omission, OmissionId},
+    structs::csb::{Correction, Omission, OmissionId, PersonCorrection, PersonCorrectionDelta},
 };
 
 /// Event-sourced domain projection for a single (stream, election) pair on the
@@ -28,7 +28,7 @@ pub struct CsbStoreData {
     pub(crate) events: Vec<StoreEvent<CsbEvent>>,
     pub(crate) is_examination_finished: bool,
     pub(crate) omissions: HashMap<OmissionId, Omission>,
-    pub(crate) csb_corrected_persons: HashMap<PersonId, Person>,
+    pub(crate) csb_corrected_persons: HashMap<PersonId, PersonCorrectionDelta>,
     pub(crate) csb_corrected_display_name: Option<DisplayName>,
 }
 
@@ -90,24 +90,7 @@ impl StoreData for CsbStoreData {
             CsbEvent::DeleteOmission { omission_id } => {
                 self.omissions.remove(&omission_id);
             }
-            CsbEvent::UpdateCorrection(correction) => match correction {
-                Correction::DisplayName(display_name) => {
-                    self.csb_corrected_display_name = Some(display_name);
-                }
-                Correction::Person(person_id, correction) => {
-                    let person = self
-                        .csb_corrected_persons
-                        .entry(person_id)
-                        .or_insert_with(|| {
-                            self.imported_data
-                                .persons
-                                .get(&person_id)
-                                .cloned()
-                                .unwrap_or_default()
-                        });
-                    correction.apply(person);
-                }
-            },
+            CsbEvent::UpdateCorrection(correction) => self.apply_correction(correction),
         }
     }
 
@@ -117,6 +100,50 @@ impl StoreData for CsbStoreData {
 
     fn scope() -> Scope {
         Scope::ImportedByCsb
+    }
+}
+
+impl CsbStoreData {
+    /// Record a CSB correction. Correcting a value back to the one already in
+    /// the paper-corrected projection undoes the correction instead.
+    fn apply_correction(&mut self, correction: Correction) {
+        match correction {
+            Correction::DisplayName(display_name) => {
+                let display_name = Some(display_name);
+
+                self.csb_corrected_display_name =
+                    if self.paper_corrected_data.political_group.display_name == display_name {
+                        None
+                    } else {
+                        display_name
+                    };
+            }
+            Correction::Person(person_id, correction) => {
+                self.apply_person_correction(person_id, correction)
+            }
+        }
+    }
+
+    fn apply_person_correction(&mut self, person_id: PersonId, correction: PersonCorrection) {
+        // A correction on an unknown person is dropped: there is nothing to
+        // correct it against.
+        let changes = self
+            .paper_corrected_data
+            .persons
+            .get(&person_id)
+            .is_some_and(|person| correction.changes(person));
+
+        if changes {
+            self.csb_corrected_persons
+                .entry(person_id)
+                .or_default()
+                .add_correction(correction);
+        } else if let Entry::Occupied(mut entry) = self.csb_corrected_persons.entry(person_id) {
+            entry.get_mut().remove_correction(&correction);
+            if entry.get().get_corrections().is_empty() {
+                entry.remove_entry();
+            }
+        }
     }
 }
 
@@ -175,10 +202,13 @@ impl crate::CsbStore {
 
 #[cfg(test)]
 mod tests {
+    use std::{collections::HashSet, str::FromStr};
+
     use super::*;
     use crate::{
         PgEvent, StreamId,
-        common::PlaceOfResidence,
+        common::{Initials, LastName, PlaceOfResidence},
+        persons::Person,
         structs::csb::PersonCorrection,
         test_utils::{sample_person, sample_political_group},
     };
@@ -242,6 +272,85 @@ mod tests {
     }
 
     #[test]
+    fn undoing_csb_correction_on_person_removes_csb_correction() {
+        let mut data = CsbStoreData::default();
+        let person = sample_person(PersonId::new());
+
+        data.paper_corrected_data
+            .persons
+            .insert(person.id, person.clone());
+        data.apply(StoreEvent::new(
+            1,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::Initials(Initials::from_str("A.B.").unwrap()),
+            )),
+        ));
+        data.apply(StoreEvent::new(
+            2,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::LastName(LastName::from_str("Smit").unwrap()),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_persons.len(), 1);
+        assert_eq!(
+            data.csb_corrected_persons
+                .get(&person.id)
+                .unwrap()
+                .get_corrections()
+                .len(),
+            2
+        );
+
+        data.apply(StoreEvent::new(
+            3,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::LastName(person.name.last_name),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_persons.len(), 1);
+        assert_eq!(
+            data.csb_corrected_persons
+                .get(&person.id)
+                .unwrap()
+                .get_corrections()
+                .len(),
+            1
+        );
+
+        data.apply(StoreEvent::new(
+            4,
+            CsbEvent::UpdateCorrection(Correction::Person(
+                person.id,
+                PersonCorrection::Initials(person.name.initials),
+            )),
+        ));
+        assert_eq!(data.csb_corrected_persons.len(), 0);
+    }
+
+    #[test]
+    fn undoing_csb_correction_on_display_name_removes_csb_correction() {
+        let mut data = CsbStoreData::default();
+        data.paper_corrected_data.political_group.display_name =
+            Some(DisplayName::from_str("Partij").unwrap());
+        data.csb_corrected_display_name =
+            Some(DisplayName::from_str("Gecorrigeerde Partij").unwrap());
+
+        data.apply(StoreEvent::new(
+            1,
+            CsbEvent::UpdateCorrection(Correction::DisplayName(
+                DisplayName::from_str("Partij").unwrap(),
+            )),
+        ));
+
+        assert_eq!(data.csb_corrected_display_name, None);
+    }
+
+    #[test]
     fn correction_display_name_sets_corrected_display_name() {
         let mut data = CsbStoreData::default();
         data.apply(StoreEvent::new(1, import_event()));
@@ -259,7 +368,6 @@ mod tests {
     fn correction_person_accumulates_multiple_corrections() {
         let person_id = PersonId::new();
         let person = sample_person(person_id);
-        let original_last_name = person.name.last_name.to_string();
 
         let mut data = CsbStoreData::default();
         data.apply(StoreEvent::new(1, import_event_with_person(person)));
@@ -273,8 +381,10 @@ mod tests {
             )),
         ));
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), original_last_name);
+        assert_eq!(
+            corrected.get_corrections(),
+            HashSet::from([PersonCorrection::Initials("X.Y.Z.".parse().unwrap())])
+        );
 
         // last name
         data.apply(StoreEvent::new(
@@ -285,12 +395,17 @@ mod tests {
             )),
         ));
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
+        assert_eq!(
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap())
+            ])
+        );
 
         // date of birth
         data.apply(StoreEvent::new(
-            2,
+            4,
             CsbEvent::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
@@ -298,21 +413,18 @@ mod tests {
         ));
 
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(
-            corrected
-                .personal_data
-                .date_of_birth
-                .as_ref()
-                .unwrap()
-                .to_string(),
-            "1985-06-15"
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap()),
+                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap())
+            ])
         );
 
         // place of residence
         data.apply(StoreEvent::new(
-            2,
+            5,
             CsbEvent::UpdateCorrection(Correction::Person(
                 person_id,
                 PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
@@ -322,20 +434,16 @@ mod tests {
         ));
 
         let corrected = data.csb_corrected_persons.get(&person_id).unwrap();
-        assert_eq!(corrected.name.initials.to_string(), "X.Y.Z.");
-        assert_eq!(corrected.name.last_name.to_string(), "Bakker");
         assert_eq!(
-            corrected
-                .personal_data
-                .date_of_birth
-                .as_ref()
-                .unwrap()
-                .to_string(),
-            "1985-06-15"
-        );
-        assert_eq!(
-            corrected.personal_data.place_of_residence,
-            Some(PlaceOfResidence::Known("Amsterdam".to_string()))
+            corrected.get_corrections(),
+            HashSet::from([
+                PersonCorrection::Initials("X.Y.Z.".parse().unwrap()),
+                PersonCorrection::LastName("Bakker".parse().unwrap()),
+                PersonCorrection::DateOfBirth("15-06-1985".parse().unwrap()),
+                PersonCorrection::PlaceOfResidence(PlaceOfResidence::Known(
+                    "Amsterdam".to_string()
+                ))
+            ])
         );
     }
 }

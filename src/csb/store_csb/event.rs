@@ -99,7 +99,7 @@ impl Event for CsbEvent {
             CsbEvent::CreateEmpty => String::new(),
             CsbEvent::PaperCorrectedUpdate(event) => event.details(),
             CsbEvent::SetFinished(value) => value.to_string(),
-            CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.clone(),
+            CsbEvent::CreateOmission(o) | CsbEvent::UpdateOmission(o) => o.description.to_string(),
             CsbEvent::DeleteOmission { omission_id } => omission_id.to_string(),
             CsbEvent::UpdateCorrection(_) => String::new(),
         }

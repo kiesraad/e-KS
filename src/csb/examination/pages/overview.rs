@@ -61,6 +61,7 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            restoration_count: 0,
             omission_count: 0,
             first_candidate_name: None,
         }]);
@@ -86,6 +87,7 @@ mod tests {
             political_group: sample_political_group(),
             stream_id: StreamId::new(),
             is_examination_finished: false,
+            restoration_count: 0, /* omission count should be used and > 0 */
             omission_count: 3,
             first_candidate_name: None,
         }]);

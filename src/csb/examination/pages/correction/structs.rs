@@ -1,9 +1,6 @@
 use crate::{
     CsbStore,
-    csb::{
-        WithCorrections,
-        examination::{pages::correction::extract_field, structs::CandidateCorrectionField},
-    },
+    csb::{WithCorrections, examination::structs::CandidateCorrectionField},
     persons::PersonId,
 };
 
@@ -69,15 +66,15 @@ impl FieldValues {
 
         let imported = imported
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .unwrap_or_default();
         let paper_corrected = paper_corrected
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .filter(|v| v != &imported);
         let current_correction = csb_corrected
             .as_ref()
-            .map(|p| extract_field(field, p))
+            .map(|p| field.extract(p))
             .filter(|v| v != paper_corrected.as_ref().unwrap_or(&imported));
 
         Self {

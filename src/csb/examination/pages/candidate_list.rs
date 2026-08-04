@@ -19,7 +19,6 @@ struct CsbCandidateListTemplate {
     electoral_districts: Vec<ElectoralDistrict>,
     candidates: Vec<CsbCandidate>,
     omissions: Vec<Omission>,
-    restoration_count: usize,
 }
 
 pub async fn overview(
@@ -61,7 +60,6 @@ pub async fn overview(
             electoral_districts,
             candidates,
             omissions,
-            restoration_count: store.get_omission_count(),
         },
         context,
     )
@@ -128,9 +126,11 @@ mod tests {
         store.add_candidate_list(sample_candidate_list(list_id));
         Omission::new(
             OmissionCategory::CandidateList(vec![list_id]),
-            "Too many candidates".to_string(),
-            "The list holds more candidates than allowed.".to_string(),
-            String::new(),
+            "Too many candidates".parse().unwrap(),
+            "The list holds more candidates than allowed."
+                .parse()
+                .unwrap(),
+            None,
         )
         .create(&store)
         .await

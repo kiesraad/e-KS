@@ -1,6 +1,7 @@
 use axum::{
     extract::{Query, State},
-    response::{IntoResponse, Redirect},
+    http::{HeaderName, HeaderValue},
+    response::{IntoResponse, Redirect, Response},
 };
 use axum_extra::extract::CookieJar;
 use secrecy::SecretString;
@@ -10,14 +11,18 @@ use crate::{
     AppError, AppState, CsbMainEvent, ElectionConfig, Locale, PgEvent, PgStoreData, Scope, Session,
     StreamId,
     auth::session_extractor::{build_session_cookie, user_agent_hash},
-    common::{IndexPath, SelectElectionPath},
+    common::{DisplayName, IndexPath, SelectElectionPath},
     csb::index::CsbIndexPath,
     political_groups::PoliticalGroup,
     store::Store,
-    utils::random_bsn,
+    utils::{format_hash, random_bsn},
 };
 
 pub const DEV_LOGIN_PATH: &str = "/dev/login";
+
+/// Response header on the dev-login redirect carrying the chain hash of the
+/// stream's last event, so end-to-end tests can drive the CSB import flow.
+pub const LAST_EVENT_HASH_HEADER: HeaderName = HeaderName::from_static("x-last-event-hash");
 
 /// Placeholder `NameID` for dev-login sessions, which skip the SAML flow.
 const DEV_LOGIN_NAME_ID: &str = "dev-login-placeholder-name-id";
@@ -28,6 +33,7 @@ pub struct DevLoginQuery {
     fixtures: Option<bool>,
     select_election: Option<bool>,
     csb: Option<bool>,
+    name: Option<String>,
 }
 
 /// Dev login. By default the session and its stream are scoped to
@@ -58,7 +64,15 @@ async fn perform_dev_login(
     query: DevLoginQuery,
     headers: axum::http::HeaderMap,
     scope: Scope,
-) -> Result<impl IntoResponse, AppError> {
+) -> Result<Response, AppError> {
+    let fixture_name: Option<DisplayName> = query
+        .name
+        .as_deref()
+        .filter(|s| !s.is_empty())
+        .map(str::parse)
+        .transpose()
+        .map_err(|_| AppError::UserError("invalid political group name".to_string()))?;
+
     let id_code: SecretString = query
         .bsn
         .as_deref()
@@ -84,6 +98,7 @@ async fn perform_dev_login(
     session.saml_name_id = DEV_LOGIN_NAME_ID.to_string();
 
     let load_fixtures = query.fixtures.unwrap_or(false);
+    let mut last_event_hash = None;
 
     let redirect_to = match scope {
         Scope::CentralElectoralCommittee => {
@@ -110,11 +125,18 @@ async fn perform_dev_login(
             } else {
                 let election = ElectionConfig::EK27;
                 let (store, was_new) =
-                    ensure_dev_store(&state, stream_id, load_fixtures, election).await?;
+                    ensure_dev_store(&state, stream_id, load_fixtures, fixture_name, election)
+                        .await?;
 
                 if was_new {
                     store.update(PgEvent::DeveloperLogin { stream_id }).await?;
                 }
+                last_event_hash = store
+                    .data
+                    .read()
+                    .events
+                    .last()
+                    .map(|e| format_hash(&e.hash, false));
 
                 session.set_current_election(election);
                 IndexPath.to_string()
@@ -125,16 +147,26 @@ async fn perform_dev_login(
     state.sessions.cleanup_expired().await;
     state.sessions.insert(session.clone()).await;
 
-    Ok((
+    let mut response = (
         jar.add(build_session_cookie(&session)),
         Redirect::to(&redirect_to),
-    ))
+    )
+        .into_response();
+
+    if let Some(hash) = last_event_hash {
+        // The hash is uppercase hex with spaces, always a valid header value
+        let value = HeaderValue::from_str(&hash).map_err(|_| AppError::InternalServerError)?;
+        response.headers_mut().insert(LAST_EVENT_HASH_HEADER, value);
+    }
+
+    Ok(response)
 }
 
 async fn ensure_dev_store(
     state: &AppState,
     stream_id: StreamId,
     load_fixtures: bool,
+    fixture_name: Option<DisplayName>,
     election: ElectionConfig,
 ) -> Result<(Store<PgStoreData>, bool), AppError> {
     let store = state
@@ -152,10 +184,12 @@ async fn ensure_dev_store(
     if load_fixtures {
         #[cfg(feature = "fixtures")]
         {
-            crate::fixtures::load(&crate::PgStore::own(store.clone())).await?;
+            crate::fixtures::load(&crate::PgStore::own(store.clone()), fixture_name).await?;
             return Ok((store, store_is_empty));
         }
     }
+    #[cfg(not(feature = "fixtures"))]
+    let _ = fixture_name;
 
     Ok((store, store_is_empty))
 }

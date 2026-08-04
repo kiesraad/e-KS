@@ -67,6 +67,24 @@ async fn run(listener: TcpListener, config: Config) -> Result<(), AppError> {
 
     // Start the server
     let router = router::create(state.clone()).with_state(state.clone());
+
+    // The renewer hot-reloads renewed certificates through a clone of the
+    // TLS config the server listens with.
+    #[cfg(feature = "acme")]
+    if let (Some(tls), Some(acme)) = (state.config.tls.as_ref(), state.config.acme.as_ref()) {
+        // Fail fast on malformed account credentials.
+        let _ = eks::parse_acme_account_credentials(acme)?;
+        eks::bootstrap_certificate(acme, tls).await?;
+        let rustls_config = server::build_rustls_config(tls).await?;
+        tokio::spawn(eks::run_acme_renewer(
+            acme,
+            tls,
+            rustls_config.clone(),
+            state.acme_store.clone(),
+        ));
+        return server::serve_tls(router, listener, rustls_config).await;
+    }
+
     server::serve(router, listener, state.config).await?;
 
     Ok(())
