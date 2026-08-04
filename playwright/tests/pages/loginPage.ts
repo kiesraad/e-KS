@@ -11,6 +11,5 @@ export class loginPage {
     this.buttonLogin = this.page.getByRole("button", {
       name: "Inloggen",
     });
-
   }
 }

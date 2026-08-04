@@ -11,7 +11,7 @@ type CsbLogin = {
 
 type Fixtures = {
   login: Page;
-  noExistingData: Page; 
+  noExistingData: Page;
   deleteExistingCandidateLists: Page;
   provincialCouncilElection: Page;
   provincialCouncilFrisianElection: Page;
@@ -65,8 +65,6 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
 
-  
-
   provincialCouncilElection: async ({ page }, use) => {
     await page.goto("/dev/login?select_election=true");
     const selectElectionPage = new SelectElectionPage(page);
@@ -112,5 +110,4 @@ export const test = base.extend<Fixtures>({
 
     await use(page);
   },
-
 });

@@ -1,4 +1,4 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export class CsbOverviewPage {
   readonly linkAuditLog: Locator;
@@ -28,5 +28,4 @@ export class CsbOverviewPage {
       name: "Onderzoek",
     });
   }
-
 }

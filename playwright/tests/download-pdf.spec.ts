@@ -63,8 +63,10 @@ test.describe("download documents", async () => {
 
     expect(download.suggestedFilename()).toMatch(/^[a-z0-9-]+-v\d+\.zip$/);
     expect((await stat(await download.path())).size).toBeGreaterThan(1024);
-    
+
     await finalisePage.linkCandidateList.click();
-    await expect(page.getByText("Let op: de documenten zijn al gedownload.")).toBeVisible();
+    await expect(
+      page.getByText("Let op: de documenten zijn al gedownload."),
+    ).toBeVisible();
   });
 });

@@ -1,4 +1,4 @@
-import { type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export class CsbGeneralInformationPage {
   readonly headerGeneralInformation: Locator;
@@ -7,8 +7,7 @@ export class CsbGeneralInformationPage {
   readonly linkRegisteredDesignation: Locator;
   readonly textCorrectedName: Locator;
 
-
-  constructor( readonly page: Page) {
+  constructor(readonly page: Page) {
     this.headerGeneralInformation = this.page.getByRole("heading", {
       name: "Basisgegevens",
     });
@@ -21,7 +20,8 @@ export class CsbGeneralInformationPage {
     this.linkRegisteredDesignation = this.page.getByRole("cell", {
       name: "Geregistreerde aanduiding",
     });
-    this.textCorrectedName = this.page.getByRole('row', { name: 'Geregistreerde aanduiding:' }).getByRole('strong');
+    this.textCorrectedName = this.page
+      .getByRole("row", { name: "Geregistreerde aanduiding:" })
+      .getByRole("strong");
   }
-
 }

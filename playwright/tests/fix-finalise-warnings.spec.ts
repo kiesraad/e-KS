@@ -1,16 +1,16 @@
 import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { CreatePersonPage } from "./pages/createPersonPage.ts";
+import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 import { FinalisePage } from "./pages/finalisePage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { OverviewPage } from "./pages/overviewPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
-import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
-import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {
@@ -85,11 +85,8 @@ test.describe("fix submit warnings", async () => {
 
   test("csv import", async ({ deleteExistingCandidateLists: page }) => {
     await page.goto("/candidate-lists");
-    await new CandidateListsOverviewPage(page).buttonAddList
-      .click();
-    await new EditListDetailsPage(page).addDistricts([
-      "Saba",
-    ]);
+    await new CandidateListsOverviewPage(page).buttonAddList.click();
+    await new EditListDetailsPage(page).addDistricts(["Saba"]);
     await new ManageCandidateListPage(page).buttonCSV.click();
     const csvImportExport = new CsvImportExportPage(page);
     await csvImportExport.uploadCsvFile("candidate-list-warnings.csv");
@@ -106,5 +103,5 @@ test.describe("fix submit warnings", async () => {
     await expect(finalisePage.linkPlaceOfResidenceNotFound).toBeVisible();
     await expect(finalisePage.linkAdressIncorrect).toBeVisible();
     await expect(finalisePage.linkTooYoung.first()).toBeVisible();
-    });
+  });
 });

@@ -1,4 +1,4 @@
-import { type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export class CsbImportPage {
   readonly buttonImport: Locator;
@@ -6,8 +6,7 @@ export class CsbImportPage {
   readonly headerImport: Locator;
   readonly textfieldHashcode: Locator;
 
-
-  constructor( readonly page: Page) {
+  constructor(readonly page: Page) {
     this.buttonImport = this.page.getByRole("button", {
       name: "Importeren",
     });
@@ -20,5 +19,5 @@ export class CsbImportPage {
     this.textfieldHashcode = this.page.getByRole("textbox", {
       name: "Voer het begin van de hash code in",
     });
-  } 
+  }
 }

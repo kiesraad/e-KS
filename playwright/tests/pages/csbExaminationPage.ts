@@ -1,10 +1,9 @@
-import { expect, type Locator, type Page } from "@playwright/test";
+import type { Locator, Page } from "@playwright/test";
 
 export class CsbExaminationPage {
   readonly buttonFinalise: Locator;
   readonly linkAddPoliticalGroup: Locator;
   readonly headerExamination: Locator;
-
 
   constructor(protected readonly page: Page) {
     this.buttonFinalise = this.page.getByRole("button", {
@@ -14,11 +13,14 @@ export class CsbExaminationPage {
       name: "Politieke groepering toevoegen",
     });
     this.headerExamination = this.page.getByRole("heading", {
-      name: "Onderzoek", exact: true,
+      name: "Onderzoek",
+      exact: true,
     });
   }
 
   async selectPoliticalGroup(politicalgroup: string) {
-    await this.page.getByRole("cell", { name: politicalgroup , exact: true }).click();
+    await this.page
+      .getByRole("cell", { name: politicalgroup, exact: true })
+      .click();
   }
 }

@@ -2,13 +2,13 @@ import { expect } from "@playwright/test";
 import { test } from "./fixtures.ts";
 import type { ListSubmitter } from "./models/listSubmitter.ts";
 import type { NameAuthorisation } from "./models/nameAuthorisation.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 import { ListDesignationPage } from "./pages/listDesignationPage.ts";
 import { ListSubmittersPage } from "./pages/listSubmittersPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
 import { SubstituteSubmittersPage } from "./pages/substituteSubmittersPage.ts";
 import { randomName } from "./utils/random.ts";
-import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
 
 test.describe("provide general information for political group", async () => {
   test("provide general information for political group", async ({
@@ -208,5 +208,5 @@ test.describe("provide general information for political group", async () => {
     await expect(page.getByText("55 / 50 kandidaten").first()).toBeVisible();
     await candidateListsOverviewPage.linkFinalize.click();
     await expect(page.getByText("5 kandidaten te veel").first()).toBeVisible();
-    });
+  });
 });

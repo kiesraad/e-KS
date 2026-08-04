@@ -1,18 +1,18 @@
 import { expect, type Locator, type Page } from "@playwright/test";
 
-
 export class csbPoliticalGroupPage {
-    readonly switchFinalize: Locator;
-    readonly buttonRectifications: Locator;
-    readonly buttonBack: Locator;
-    readonly linkAllErrors: Locator;
-    readonly buttonPaperCorrections: Locator;
-    readonly linkGeneralInformation: Locator;
-    readonly linkSupportDeclarations: Locator;
-  
+  readonly switchFinalize: Locator;
+  readonly buttonRectifications: Locator;
+  readonly buttonBack: Locator;
+  readonly linkAllErrors: Locator;
+  readonly buttonPaperCorrections: Locator;
+  readonly linkGeneralInformation: Locator;
+  readonly linkSupportDeclarations: Locator;
 
   constructor(protected readonly page: Page) {
-    this.switchFinalize = this.page.getByLabel("Onderzoek afronden of heropenen");
+    this.switchFinalize = this.page.getByLabel(
+      "Onderzoek afronden of heropenen",
+    );
     this.buttonRectifications = this.page.getByRole("button", {
       name: "Alle herstelacties",
     });
@@ -34,8 +34,8 @@ export class csbPoliticalGroupPage {
   }
 
   async selectedGroup(politicalgroup: string) {
-    await expect(this.page.getByRole("heading", { name: politicalgroup })).toBeVisible();
+    await expect(
+      this.page.getByRole("heading", { name: politicalgroup }),
+    ).toBeVisible();
   }
 }
-
-

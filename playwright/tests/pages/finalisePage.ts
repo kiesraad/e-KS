@@ -31,14 +31,15 @@ export class FinalisePage {
       name: "BSN",
     });
     this.linkDateOfBirth = this.page.getByRole("link", {
-      name: "Geboortedatum", exact: true,
+      name: "Geboortedatum",
+      exact: true,
     });
     this.linkPlaceOfResidenceNotFound = this.page.getByRole("link", {
       name: "Woonplaats niet gevonden",
     });
     this.linkAdressIncorrect = this.page.getByRole("link", {
       name: "Adres",
-    }); 
+    });
     this.linkTooYoung = this.page.getByRole("link", {
       name: "Te jong",
     });
