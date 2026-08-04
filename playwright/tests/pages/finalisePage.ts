@@ -6,6 +6,10 @@ export class FinalisePage {
   readonly linkRegisteredDesignation: Locator;
   readonly linkNoLegalName: Locator;
   readonly linkBSN: Locator;
+  readonly linkDateOfBirth: Locator;
+  readonly linkPlaceOfResidenceNotFound: Locator;
+  readonly linkAdressIncorrect: Locator;
+  readonly linkTooYoung: Locator;
   readonly linkTooManyCandidates: Locator;
   readonly linkIncorrectDate: Locator;
   readonly linkCandidateList: Locator;
@@ -25,6 +29,18 @@ export class FinalisePage {
     });
     this.linkBSN = this.page.getByRole("link", {
       name: "BSN",
+    });
+    this.linkDateOfBirth = this.page.getByRole("link", {
+      name: "Geboortedatum", exact: true,
+    });
+    this.linkPlaceOfResidenceNotFound = this.page.getByRole("link", {
+      name: "Woonplaats niet gevonden",
+    });
+    this.linkAdressIncorrect = this.page.getByRole("link", {
+      name: "Adres",
+    }); 
+    this.linkTooYoung = this.page.getByRole("link", {
+      name: "Te jong",
     });
     this.linkTooManyCandidates = this.page.getByRole("link", {
       name: /\d+ (kandidaat|kandidaten) te veel/,

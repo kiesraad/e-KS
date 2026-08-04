@@ -6,9 +6,7 @@ import { SelectElectionPage } from "./pages/selectElectionPage";
 
 type Fixtures = {
   login: Page;
-  loginCSB: Page;
-  noExistingData: Page;
-  noExistingDataCSB: Page;  
+  noExistingData: Page; 
   deleteExistingCandidateLists: Page;
   provincialCouncilElection: Page;
   provincialCouncilFrisianElection: Page;
@@ -22,21 +20,10 @@ export const test = base.extend<Fixtures>({
     await use(page);
   },
 
-  loginCSB: async ({ page }, use) => {
-    await page.goto("/dev/login?fixtures=true&csb=true");
-    await use(page);
-  },
-
   noExistingData: async ({ page }, use) => {
     await page.goto("/dev/login?fixtures=false");
     await use(page);
   },
-
-  noExistingDataCSB: async ({ page }, use) => {
-    await page.goto("/dev/login?fixtures=false&csb=true");
-    await use(page);
-  },
-
 
   deleteExistingCandidateLists: async ({ page }, use) => {
     await page.goto(`/dev/login?fixtures=true`);

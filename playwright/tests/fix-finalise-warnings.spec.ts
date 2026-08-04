@@ -8,6 +8,9 @@ import { ManageCandidateListPage } from "./pages/manageCandidateListPage.ts";
 import { NameAuthorisationPage } from "./pages/nameAuthorisationPage.ts";
 import { OverviewPage } from "./pages/overviewPage.ts";
 import { PoliticalGroupPage } from "./pages/politicalGroupPage.ts";
+import { CsvImportExportPage } from "./pages/csvImportExportPage.ts";
+import { CandidateListsOverviewPage } from "./pages/candidateListsOverviewPage.ts";
+import { EditListDetailsPage } from "./pages/editListDetailsPage.ts";
 
 test.describe("fix submit warnings", async () => {
   test("general information", async ({ noExistingData: page }) => {
@@ -79,4 +82,29 @@ test.describe("fix submit warnings", async () => {
     await page.waitForURL("/finalise");
     await expect(finalisePage.linkTooManyCandidates).not.toBeVisible();
   });
+
+  test("csv import", async ({ deleteExistingCandidateLists: page }) => {
+    await page.goto("/candidate-lists");
+    await new CandidateListsOverviewPage(page).buttonAddList
+      .click();
+    await new EditListDetailsPage(page).addDistricts([
+      "Saba",
+    ]);
+    await new ManageCandidateListPage(page).buttonCSV.click();
+    const csvImportExport = new CsvImportExportPage(page);
+    await csvImportExport.uploadCsvFile("candidate-list-warnings.csv");
+    const manageCandidateListPage = new ManageCandidateListPage(page);
+    await expect(manageCandidateListPage.headingCandidateList).toBeVisible();
+    await expect(
+      await manageCandidateListPage.getCandidateLocator("Nagelhout"),
+    ).toBeVisible();
+    await manageCandidateListPage.buttonFinalise.click();
+    await page.waitForURL("/finalise");
+    const finalisePage = new FinalisePage(page);
+    await expect(finalisePage.linkBSN).toBeVisible();
+    await expect(finalisePage.linkDateOfBirth).toBeVisible();
+    await expect(finalisePage.linkPlaceOfResidenceNotFound).toBeVisible();
+    await expect(finalisePage.linkAdressIncorrect).toBeVisible();
+    await expect(finalisePage.linkTooYoung.first()).toBeVisible();
+    });
 });

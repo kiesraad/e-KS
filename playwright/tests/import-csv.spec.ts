@@ -23,7 +23,7 @@ test.describe("import and export candidates with csv file", () => {
     ).toBeVisible();
   });
 
-  test("import with errors", async ({ login: page }) => {
+  test("import with validation errors", async ({ login: page }) => {
     const csvImportExport = new CsvImportExportPage(page);
     await csvImportExport.uploadCsvFile("candidate-list-export-nh.csv");
     await expect(csvImportExport.textFailure).toBeVisible();
