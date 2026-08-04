@@ -290,9 +290,9 @@ An **omission** (*verzuim*) is a defect found during examination.
 group itself, a candidate list (with the affected electoral districts), or a
 candidate (with the affected lists). Recoverable omissions feed the I 4
 notice. A **correction** (*ambtshalve correctie*) (`CsbEvent::UpdateCorrection`) records a fix to
-imported person data (initials, last name, date of birth, place of
-residence); corrections on persons are kept in a separate map in the projection
-(`csb_corrected_persons`), so the imported snapshot itself stays untouched.
+the imported political group appellation and person data (initials, last name,
+date of birth, place of residence); corrections on persons are kept in a separate
+map in the projection (`csb_corrected_persons`), so the imported snapshot itself stays untouched.
 
 #### Paper-corrections mode
 
