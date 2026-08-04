@@ -1,10 +1,10 @@
-use crate::{AppError, PgStore};
+use crate::{AppError, PgStore, common::DisplayName};
 
 mod candidate_list;
 mod persons;
 mod political_groups;
 
-pub async fn load(store: &PgStore) -> Result<(), AppError> {
+pub async fn load(store: &PgStore, display_name: Option<DisplayName>) -> Result<(), AppError> {
     let person_count = store.get_person_count();
     let candidate_list_count = store.get_candidate_list_count();
 
@@ -16,7 +16,7 @@ pub async fn load(store: &PgStore) -> Result<(), AppError> {
 
     persons::load(store).await?;
     candidate_list::load(store).await?;
-    political_groups::load(store).await?;
+    political_groups::load(store, display_name).await?;
 
     Ok(())
 }
@@ -28,7 +28,7 @@ mod tests {
     #[tokio::test]
     async fn test_load_all_fixtures() {
         let store = PgStore::new_for_test();
-        load(&store).await.unwrap();
+        load(&store, None).await.unwrap();
         let persons = crate::persons::Person::list(
             &store,
             50,
